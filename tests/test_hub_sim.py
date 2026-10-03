@@ -33,7 +33,9 @@ from .helpers import (
     LIGHT_SWITCH,
     NODE_ACTUATOR,
     OUR_ADDRESS,
+    ROCKER_A,
     UID_LIGHT_SWITCH,
+    UID_ROCKER_A,
     entity_id,
 )
 from .property_helpers import real_wait
@@ -250,3 +252,49 @@ async def test_a_light_joins_a_second_room_and_leaves_its_first_over_the_mesh(
     assert state_transitions.lost() == []
     now = hass.states.get(eid)
     assert (now.state, now.last_changed) == (STATE_ON, before.last_changed)
+
+
+async def test_a_key_wired_to_lock_a_light_over_the_mesh(
+    hass: HomeAssistant,
+    sim_mesh: Mesh,
+    sim_entry: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    """Review-4 brief 38 over the simulated mesh: `assign_key` with `mode: lock` leaves the rocker's vendor client
+    alone publishing to the light's element group, its 0x5006 / 0x5007 / 0x5008 and KeyMode 3 in its Admin
+    server, and the light asked for its lock; the key's event entity says `lock`. Unverified on air."""
+    path = tmp_path / "MeshNetwork.json"
+    shutil.copy(CDB_PATH, path)
+    sim_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        sim_entry, data={**sim_entry.data, CONF_CDB_PATH: str(path)}
+    )
+    light = await start(hass, sim_entry, UID_LIGHT_SWITCH)
+    key = entity_id(hass, "event", UID_ROCKER_A)
+    await hass.services.async_call(
+        DOMAIN,
+        "assign_key",
+        {"key_entity": key, "target_entity": light, "mode": "lock", "lock_seconds": 60},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    servers = sim_mesh.node(ROCKER_A).servers
+    assert servers is not None
+    assert {
+        pid: servers.state[ROCKER_A].properties[pid][1].hex()
+        for pid in (0x5006, 0x5007, 0x5008, 0x5003)
+    } == {0x5006: "090001", 0x5007: "02013c00", 0x5008: "00010000", 0x5003: "03"}
+    target = sim_entry.runtime_data.cdb.element(LIGHT_SWITCH)
+    [group] = target.subscriptions("05271013")  # the light's element group
+    assert servers.config.models[(ROCKER_A, "05271015")].publish_address == group
+    assert servers.config.models[(ROCKER_A, "1001")].publish_address == 0
+    assert any(
+        m.src == OUR_ADDRESS and m.opcode == 0x02 and m.params[:2] == b"\x09\x00"
+        for m in sim_mesh.node(LIGHT_SWITCH).received
+    )  # the light was asked for its lock (Admin Get 0x0009)
+    attrs = hass.states.get(key).attributes
+    assert (
+        attrs["connection"],
+        attrs["connection_address"],
+        attrs["connection_lock_seconds"],
+    ) == ("lock", f"{LIGHT_SWITCH:04X}", 60)

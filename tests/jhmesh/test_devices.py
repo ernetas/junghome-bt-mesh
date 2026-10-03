@@ -37,7 +37,9 @@ from jhmesh.devices import (
     meta_list,
     meter_element,
     pick_insert,
+    with_key_lock,
 )
+from jhmesh.properties import EnforcedOutput
 
 from .conftest import (
     CDB_PATH,
@@ -910,6 +912,55 @@ def test_scene_group_device_and_no_connection():
         key, "1001", "C04E"
     )  # the element group of the DALI insert's temperature element: no device
     assert _connection(cdb, 0x0149) == KeyConnection("device", 0xC04E, 0x0233)
+
+
+def test_a_property_mode_key_is_a_lock_once_its_values_are_known():
+    """`GetConnection` (network-logic.md §2.7): a key publishing from its LBC User Property client alone is in
+    property mode, which the export cannot tell apart further; its 0x5006 / 0x5007 make it a lock link."""
+    cdb = CDB.load(CDB_PATH)
+    key = cdb.element(0x0234)
+    assert key is not None
+    _unpublish(key)
+    _publish(
+        key, "05271015", "C061"
+    )  # the vendor client alone, to the 1-gang light's element group
+    device = _connection(cdb, 0x0234)
+    assert device == KeyConnection(
+        "device", 0xC061, 0x0148, "Push-button 1-gang 0148", property_mode=True
+    )
+    assert with_key_lock(device, {}) is device  # nothing read yet
+    values = {0x5006: bytes.fromhex("090001"), 0x5007: bytes.fromhex("02013c00")}
+    lock = with_key_lock(device, values)
+    assert lock is not None
+    assert (lock.kind, lock.address, lock.target, lock.name, lock.lock) == (
+        "lock",
+        0xC061,
+        0x0148,
+        "Push-button 1-gang 0148",
+        EnforcedOutput(2, 1, 60),
+    )
+    assert with_key_lock(device, {**values, 0x5003: b"\x05"}) is device
+    _publish(
+        key, "05271015", "C04F"
+    )  # its own element group: a room link in property mode
+    room = _connection(cdb, 0x0234)
+    assert room is not None
+    assert room.property_mode
+    assert getattr(with_key_lock(room, values), "kind", None) == "lock"
+    _publish(
+        key, "1001", "C04F"
+    )  # the OnOff client publishes too: light or switch mode
+    light = _connection(cdb, 0x0234)
+    assert light == KeyConnection("room", 0xC04F)
+    assert with_key_lock(light, values) is light
+    assert with_key_lock(None, values) is None
+    _unpublish(key)
+    _publish(
+        key, "05271015", "C005"
+    )  # the gateway's group: a gateway link, never a lock
+    gateway = _connection(cdb, 0x0234)
+    assert gateway == KeyConnection("gateway", 0xC005, 0x00DC)
+    assert with_key_lock(gateway, values) is gateway
 
 
 def test_metadata_reads_room_links_and_scene_keys_best_effort(tmp_path: Path):

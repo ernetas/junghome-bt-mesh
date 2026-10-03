@@ -85,8 +85,8 @@ Before group C and D, write down (privately, not in the repository):
 - the edge evaluation of the input used in C4: `tools/mesh_poc.py --cdb <export.json> prop get <input el> input_edge_detection`;
 - both thresholds of the socket used in D1 (its *Switch-on* / *Switch-off threshold* sensors with their attributes,
   or `prop get <socket el> turn_on_threshold` / `turn_off_threshold`);
-- the connection of the key used in D2: its event entity's `connection`, `connection_address`, `connection_name`,
-  its *Key mode* sensor, and `prop get <key el> key_mode`;
+- the connection of the key used in D2 (and of the key and the input used in D9): its event entity's `connection`,
+  `connection_address`, `connection_name`, its *Key mode* sensor, and `prop get <key el> key_mode`;
 - which room each light used in D3 sits in;
 - every value A7 reads (the hex `prop get` prints), before C6 changes any of them.
 
@@ -133,6 +133,7 @@ pass removed the markers of the checks that passed.
 | [D6](#d6--both-sides-changed-merge-optional) | Both-changed merge (optional) | gateway, the app, a firewall rule | room names, restored | — |
 | [D7](#d7--configuration-changes-without-a-reload) | Configuration changes without a reload | a light, a key | a room and a key, undone | — |
 | [D8](#d8--several-rooms-per-light-leaving-a-room-f4-5) | Several rooms per light, leaving a room | a light, two rooms | rooms, set back | — |
+| [D9](#d9--key-connections-colour-temperature-lock-function-property-users-brief-38) | Key → colour temperature, lock function, property users: the app captured first | spare key, DALI TW light, a light, socket, mini actuator, the app | key wiring and locks, restored | **yes** |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -785,6 +786,72 @@ starting state restored; the app shows Home Assistant's changes only once it tak
   `custom_components/junghome_ble/strings.json::services.remove_from_room.description`,
   `net:uc:adddevicetogroups`, `net:uc:deletedevicefromgroups`.
 
+### D9 · Key connections: colour temperature, lock function, property users (brief 38)
+
+- **Checks:** review-4 F4-4 — `assign_key` with `target_element: color_temperature` (the Level client alone to the
+  tunable-white light's temperature element) and with `mode: lock` (key mode *property*: `0x5006` / `0x5007` /
+  `0x5008` on the key, the vendor client publishing to the load's element group), the property-user wiring of a
+  mini-actuator target, and the event entity's `connection: lock` read back from a key. All of it was written from
+  the app's code alone: **capture the app first** (step 1), then compare Home Assistant's sequences with it.
+- **Needs:** a spare push-button key (best one with no function or linked to the gateway), `<tw light>`, `<light>`,
+  `<socket>`, `<mini el>` and `<input>`; the app; **a person at home pressing keys**. Enable the key's *Key mode*
+  sensor.
+- **Safety:** **rewires a real key** — a wrong plan leaves it dead until it is reassigned or cleared — and locks a
+  light and a socket. Note the key's connection first (as for D2); restore it in step 4; unlock every load in the
+  app or with its *Lock* switch if a lock outlives the sitting.
+- **Do:**
+  1. *Capture the app* (`--seconds 900`, session `sweep-d9-app`): in the app's connection screen of the spare key,
+     connect it in turn to (a) `<tw light>`'s colour temperature, (b) the lock function of `<light>` with a time
+     limit (note it), (c) the lock function of `<socket>` without one, (d) `<socket>` from `<input>` (the app's
+     *Switching* category: a mini-actuator input to a property user), and (e) `<mini el>` from the key. After each,
+     press the key's up and down sides once and note what the load does. Then `mesh_sniff.py decode --json`; keep
+     only the decoded sequences of each connection, with addresses mapped to the fixture's (`tests/fixtures`) and no
+     key material, as the test data of `tests/test_mesh_config.py` (`test_assign_key_to_a_tw_lights_colour_temperature`,
+     `test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence`,
+     `test_a_lock_link_to_a_socket_wires_the_property_user_publications`,
+     `test_assign_key_to_a_mini_actuator_wires_both_channels_property_users`). Note in particular whether the app
+     sends `ResetKeySetPropertyMode` inside its lock link, which values it writes to `0x5008`, and whether its
+     *Get* of `0x0009` goes to the load.
+  2. *Home Assistant* (session `sweep-d9-ha`), the same connections:
+     ```yaml
+     action: junghome_ble.assign_key
+     data: { key_entity: <key>, target_entity: <tw light>, target_element: color_temperature }
+     ```
+     then `target_entity: <light>`, `mode: lock`, `lock_seconds: <the app's limit>`; `target_entity: <socket>`,
+     `mode: lock`; `key_entity: <input>`, `target_entity: <socket>`; `target_entity: <light on <mini el>>`. Press the
+     key after each as in step 1; after each lock link look at the key's event entity.
+  3. Restart Home Assistant once while the key holds a lock link: the event entity asks the key for `0x5006` /
+     `0x5007` again (`--src <ha> --grep '5006|5007'`).
+  4. Restore: the key's and the input's noted connections (`clear_key`, `assign_key` back, or the app), every load
+     unlocked.
+- **Capture:** `--grep 'Publication|Subscription|5003|5006|5007|5008|0x0009'` in both sessions, side by side.
+- **Pass:** Home Assistant's Config messages match the app's (Home Assistant's documented order: new wiring first,
+  the clear after, the vendor writes once the Config plan was accepted); the `0x5006` / `0x5007` / `0x5008` values
+  and KeyMode `3` match; the key changes the colour temperature (a), locks and unlocks the light and socket with the
+  noted time limit (b, c; the loads' `locked` attribute follows), the input switches the socket (d); the event entity
+  says `connection: lock` with `connection_lock_seconds` after (b) and (c) and again after the restart; after step 4
+  `config audit` of the key's node shows no difference from the export. A difference in step 1 against the tests is
+  a bug to fix before the markers go.
+- **Markers:** `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key`,
+  `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link`,
+  `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._target_element`,
+  `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function`,
+  `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._request_lock`,
+  `custom_components/junghome_ble/mesh_config.py::TARGET_COLOR_TEMPERATURE`,
+  `custom_components/junghome_ble/jhmesh/properties.py::key_lock_values`,
+  `custom_components/junghome_ble/jhmesh/properties.py::key_lock`,
+  `custom_components/junghome_ble/jhmesh/devices.py::KeyConnection`,
+  `custom_components/junghome_ble/event.py::<module>`,
+  `custom_components/junghome_ble/event.py::connection_attributes`,
+  `custom_components/junghome_ble/strings.json::services.assign_key.fields.mode.description`,
+  `custom_components/junghome_ble/strings.json::services.assign_key.fields.target_element.description`,
+  `custom_components/junghome_ble/strings.json::services.assign_key.fields.lock_seconds.description`,
+  `custom_components/junghome_ble/strings.json::selector.key_mode.options.lock`,
+  `custom_components/junghome_ble/strings.json::selector.target_element.options.color_temperature`,
+  `net:uc:setlockingfunctionconnection`, `net:uc:requestlockfunctionforcontrolkeyselection`,
+  `net:enum:deviceconnection.element` (its LIGHT_TEMPERATURE half), `net:uc:configurepublicationsforpropertyuser`,
+  `prod:key-mode:property`. The slat element needs a blind ([F](#f--not-checkable-here)).
+
 ## E · Credentials, sequence numbers and keys
 
 **Not fully reversible.** Each item says what stays changed. Leave them for last, and skip any you would rather not
@@ -851,7 +918,7 @@ spend.
 | Why | Markers |
 |---|---|
 | **Energy puck** (none): its meter, counters, reset, energy history | `custom_components/junghome_ble/jhmesh/devices.py::meter_element`, `custom_components/junghome_ble/jhmesh/devices.py::Light`, `custom_components/junghome_ble/coordinator.py::SENSOR_READINGS`, `custom_components/junghome_ble/coordinator.py::PROPERTY_POWER_ON_TIME`, `custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption`, `custom_components/junghome_ble/button.py::<module>`, `custom_components/junghome_ble/energy_history.py::<module>`, `custom_components/junghome_ble/sensor.py::<module>` (puck part) |
-| **Blinds** (none): cover, lock function select, wind alarm, reference run, *All blinds*, scenes, *update entity* | `custom_components/junghome_ble/cover.py::JungHomeCover._update_read`, `custom_components/junghome_ble/cover.py::<module>`, `custom_components/junghome_ble/cover.py::JungHomeAllBlinds`, `custom_components/junghome_ble/const.py::COVER_LEVEL_OPEN`, `custom_components/junghome_ble/select.py::JungHomeLockFunction`, `custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm`, `custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun`, `custom_components/junghome_ble/services.py::_store_scene` |
+| **Blinds** (none): cover, lock function select, wind alarm, reference run, *All blinds*, scenes, *update entity*, a key on a blind's slats (`assign_key` `target_element: slat`, brief 38) | `custom_components/junghome_ble/strings.json::selector.target_element.options.slat`, `custom_components/junghome_ble/cover.py::JungHomeCover._update_read`, `custom_components/junghome_ble/cover.py::<module>`, `custom_components/junghome_ble/cover.py::JungHomeAllBlinds`, `custom_components/junghome_ble/const.py::COVER_LEVEL_OPEN`, `custom_components/junghome_ble/select.py::JungHomeLockFunction`, `custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm`, `custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun`, `custom_components/junghome_ble/services.py::_store_scene` |
 | **Room thermostats** (none): climate, window, *All thermostats*, key lock bits 3 / 4, *update entity* | `custom_components/junghome_ble/climate.py::JungHomeClimate._update_read`, `custom_components/junghome_ble/climate.py::<module>`, `custom_components/junghome_ble/climate.py::JungHomeAllThermostats`, `custom_components/junghome_ble/binary_sensor.py::JungHomeRtrWindow`, `ui:vm:roomtemperatureviewmodel.changemode` |
 | **Detectors** (none): walking test, illuminance, continuous on / off, *update entity* | `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now`, `custom_components/junghome_ble/switch.py::JungHomeWalkingTest`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance`, `custom_components/junghome_ble/sensor.py::JungHomeForcedOff`, `custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE` |
 | **Battery nodes** (none): keep-awake, how long a transmitter stays awake | `custom_components/junghome_ble/keep_awake.py::<module>` |

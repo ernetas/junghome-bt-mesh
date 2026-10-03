@@ -397,6 +397,7 @@ def test_service_select_options_match_the_code(
     expected = {
         "key": set(services.KEY_LETTERS),
         "mode": set(mesh_config.MODES),
+        "target_element": set(mesh_config.TARGET_ELEMENTS),
         "trigger": set(schedules.TRIGGERS),
         "weekdays": set(V.DAYS),
         "action": set(services.SCHEDULE_ACTIONS),

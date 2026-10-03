@@ -2025,19 +2025,23 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::PropertyModeCodec",
-    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode"
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
     "tests/jhmesh/test_properties.py::test_scene_config_and_property_mode_codecs",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding",
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
     "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode"
    ],
-   "missing": "mode 3 is only decoded (key-mode sensor) and reset (ResetKeySetPropertyMode); assign_key cannot write it: no KeySetPropertyMode 0x5006 [prop][STATEFUL] + 0x5007/0x5008 up/down values for the locking function (0x0009), RTR auto/manu (0x1246) or eco/comfort (0x120B) targets, and no LBC User Property client publication for it; a lock-function target (0x0009 on a light or socket) can be checked on air here, the RTR targets (0x1246 / 0x120B) cannot",
+   "missing": "mode 3 is written for the lock-function target (0x0009 on a light or socket, `assign_key` `mode: lock`, unverified on air: docs/on-air-sweep.md D9) and read back from a key; the RTR targets — auto/manu (0x1246) and eco/comfort (0x120B), KeySetPropertyMode with their up / down values — have no service path and are not decoded back",
    "class": "build",
-   "verify": "on-air"
+   "verify": "absent-hardware"
   },
   {
    "id": "prod:key-mode:rtr",

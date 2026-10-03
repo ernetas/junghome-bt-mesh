@@ -784,15 +784,17 @@
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode",
     "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
     "custom_components/junghome_ble/config_entities.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
     "tests/test_mesh_config.py::test_assign_key_to_the_gateway_uses_key_mode_6",
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
     "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode"
    ],
-   "missing": "assign_key can write key modes 0 light, 1 move, 2 scene, 5 switch and 6 gateway only: key mode 3 (property: lock / scheduler / HVAC-mode targets written through KeySetPropertyMode 0x5006 [target u16][STATELESS|STATEFUL] and the up/on 0x5007 / down/off 0x5008 values, EnforceOutput 0x0009, SchedulerEnabled 0x1246 or RtrHvacMode 0x120B with the app's values, p085h8/e) and 4 (RTR) have no service path (KEY_MODE_CLIENTS / KEY_MODES); a key already in mode 3 is not decoded back into its target and values (0x5007 / 0x5008 stay raw codecs; the app decodes them through p085h8/e); only ResetKeySetPropertyMode is sent (mesh_config._reset_property_mode)",
+   "missing": "assign_key writes key modes 0 light, 1 move, 2 scene, 3 property (the lock function 0x0009 of a light or socket only, `mode: lock`), 5 switch and 6 gateway: key mode 3 for the RTR's SchedulerEnabled 0x1246 / RtrHvacMode 0x120B and key mode 4 (RTR) have no service path, and a key in mode 3 is decoded back only as a lock (0x5006 / 0x5007 through `properties.key_lock`)",
    "class": "build",
    "verify": "offline"
   },
@@ -833,15 +835,17 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/jhmesh/properties.py::PropertyModeCodec",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode"
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
    ],
    "tests": [
-    "tests/jhmesh/test_properties.py::test_scene_config_and_property_mode_codecs",
-    "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset"
+    "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding"
    ],
    "class": "dup",
-   "reason": "written only as part of key mode 3 (property), whose missing service path (0x5006 target + mode, 0x5007 / 0x5008 up / down values for EnforceOutput 0x0009, SchedulerEnabled 0x1246, RtrHvacMode 0x120B, and decoding a configured key's values back via p085h8/e) is the prop:0x5003 row; the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection / ui:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
+   "reason": "written only as part of key mode 3 (property), whose remaining service path (the RTR's SchedulerEnabled 0x1246 / RtrHvacMode 0x120B targets and their decoding) is the prop:0x5003 row; the lock-function link writes and decodes it (custom_components/junghome_ble/jhmesh/properties.py::key_lock_values, custom_components/junghome_ble/jhmesh/properties.py::key_lock); the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
    "dup_of": "prop:0x5003"
   },
   {
@@ -849,14 +853,17 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode"
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
-    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding"
    ],
    "class": "dup",
-   "reason": "written only as part of key mode 3 (property), whose missing service path (0x5006 target + mode, 0x5007 / 0x5008 up / down values for EnforceOutput 0x0009, SchedulerEnabled 0x1246, RtrHvacMode 0x120B, and decoding a configured key's values back via p085h8/e) is the prop:0x5003 row; the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection / ui:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
+   "reason": "written only as part of key mode 3 (property), whose remaining service path (the RTR's SchedulerEnabled 0x1246 / RtrHvacMode 0x120B targets and their decoding) is the prop:0x5003 row; the lock-function link writes and decodes it (custom_components/junghome_ble/jhmesh/properties.py::key_lock_values, custom_components/junghome_ble/jhmesh/properties.py::key_lock); the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
    "dup_of": "prop:0x5003"
   },
   {
@@ -864,14 +871,17 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode"
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
-    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding"
    ],
    "class": "dup",
-   "reason": "written only as part of key mode 3 (property), whose missing service path (0x5006 target + mode, 0x5007 / 0x5008 up / down values for EnforceOutput 0x0009, SchedulerEnabled 0x1246, RtrHvacMode 0x120B, and decoding a configured key's values back via p085h8/e) is the prop:0x5003 row; the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection / ui:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
+   "reason": "written only as part of key mode 3 (property), whose remaining service path (the RTR's SchedulerEnabled 0x1246 / RtrHvacMode 0x120B targets and their decoding) is the prop:0x5003 row; the lock-function link writes and decodes it (custom_components/junghome_ble/jhmesh/properties.py::key_lock_values, custom_components/junghome_ble/jhmesh/properties.py::key_lock); the same behaviour is also prod:key-mode:property (write) and net:uc:requestlockfunctionforcontrolkeyselection (read-back). The reset (ResetKeySetPropertyMode) is implemented and tested",
    "dup_of": "prop:0x5003"
   },
   {

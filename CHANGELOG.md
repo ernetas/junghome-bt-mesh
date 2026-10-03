@@ -345,6 +345,15 @@
   room unwires it from that key too. The `rooms` attribute and the rooms' *All lights in …* / *All sockets in …*
   entities follow in place, without a reload. `set_room` still moves a device into exactly one room. Unverified on
   air, and so is the app's view of a device Home Assistant put into several rooms.
+- Key connections the app's connection screens make (review-4 F4-4): `junghome_ble.assign_key` takes
+  `target_element` — `color_temperature` makes the key's dimming (Level) client alone drive a tunable-white light's
+  colour temperature, `slat` a blind's slats — and `mode: lock`, the app's locking function on a light or socket:
+  the up / on side locks the load in its current state (for `lock_seconds`, or until unlocked), the down / off side
+  unlocks it (key mode *property*, with the lock written into the key's `0x5006`–`0x5008`; the load is asked for
+  its lock afterwards). A socket or mini-actuator target also gets the app's property-user wiring on all its
+  elements. A key in key mode *property* is asked what it sets once per connection, and one that locks a load shows
+  `connection: lock` with `connection_lock_seconds` on its event entity. Unverified on air: written from the app's
+  code, logged as never tried when used; `docs/on-air-sweep.md` D9 captures the app making each link.
 
 ### CLI tools and library
 

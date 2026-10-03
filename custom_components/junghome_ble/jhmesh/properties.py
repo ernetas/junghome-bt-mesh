@@ -713,6 +713,54 @@ class PropertyModeCodec(Codec):
         return PropertyMode(int.from_bytes(data[:2], "little"), data[2] == 1)
 
 
+# A key in KeyMode *property* (3) as `SetLockingFunctionConnection` leaves it (`network-logic.md` §2.6): KeySetPropertyMode
+# 0x5006 names EnforceOutput 0x0009, statefully; its up / on half 0x5007 locks the target, its down / off half 0x5008
+# unlocks it. Which property the key's LBC User Property client then sets on the target is the firmware's business.
+ENFORCED_OUTPUT, KEY_MODE_PROPERTY = 0x0009, 3
+KEY_PROPERTY_MODE, KEY_VALUE_UP, KEY_VALUE_DOWN, KEY_MODE_ID = (
+    0x5006,
+    0x5007,
+    0x5008,
+    0x5003,
+)
+
+
+def key_lock_values(time_s: int = 0) -> tuple[bytes, bytes, bytes]:
+    """Return the 0x5006, 0x5007 and 0x5008 values of a key that locks its target's current state (unverified on air).
+
+    `(0x0009, stateful)`; up = `lock_output(time_s)` (`02 01 <s>`, 0 = no limit), down = `UNLOCK` (`00 01 00 00`),
+    the unlock the app's *Lock* page sends (`LockFunctionViewModelDelegate$unlockDevice`). Nobody has watched the app
+    write a key's lock link yet: `docs/on-air-sweep.md` D9 captures it.
+    """
+    codec = EnforcedOutputCodec()
+    return (
+        PropertyModeCodec().encode(PropertyMode(ENFORCED_OUTPUT, stateful=True)),
+        codec.encode(lock_output(time_s)),
+        codec.encode(UNLOCK),
+    )
+
+
+def key_lock(values: Mapping[int, bytes]) -> EnforcedOutput | None:
+    """Decode a key's cached 0x5006 / 0x5007 (and KeyMode 0x5003, when known) into the lock its up half sets.
+
+    None unless KeySetPropertyMode names EnforceOutput statefully and the up value is a lock (any command but unlock):
+    a key the app or `assign_key` wired otherwise was reset to `(0, stateless)` first (`ResetKeySetPropertyMode`). A
+    known KeyMode other than *property* means the values are left over. A value that does not decode counts as none.
+    The app reads the same two properties to show a key's lock connection (`GetConnection.h()`). Unverified on air.
+    """
+    mode_value = values.get(KEY_MODE_ID)
+    if mode_value is not None and mode_value[:1] != bytes([KEY_MODE_PROPERTY]):
+        return None
+    try:
+        mode = PropertyModeCodec().decode(values.get(KEY_PROPERTY_MODE, b""))
+        up = EnforcedOutputCodec().decode(values.get(KEY_VALUE_UP, b""))
+    except ValueError:
+        return None
+    if mode != PropertyMode(ENFORCED_OUTPUT, stateful=True) or not up.locked:
+        return None
+    return up
+
+
 EDGE_BEHAVIOUR = {0: "no_reaction", 1: "on", 2: "off", 3: "toggle"}
 
 

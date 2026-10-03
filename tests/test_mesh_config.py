@@ -739,6 +739,234 @@ async def test_move_mode_is_accepted_but_flagged_untested(
     assert bench.keys.modes[ROCKER_A] == b"\x01"
 
 
+# ----------------------------------------------------------------------------- target elements, lock links (brief 38)
+# Written from the app's code (network-logic.md §2.1, §2.6) and checked byte for byte against it here; the on-air
+# capture of the app making each link (docs/on-air-sweep.md D9) is still to come: unverified on air.
+
+LOCK_MODE = bytes.fromhex(
+    "090001"
+)  # KeySetPropertyMode: EnforceOutput 0x0009, stateful
+UNLOCK = bytes.fromhex("00010000")  # the app's unlock: command 0, priority 1, no time
+
+
+def lock_up(seconds: int) -> bytes:
+    """The up / on value of a lock link: lock the current state (`02 01 <s u16 LE>`)."""
+    return bytes([2, 1]) + seconds.to_bytes(2, "little")
+
+
+async def test_assign_key_to_a_tw_lights_colour_temperature(
+    bench: Bench, caplog: pytest.LogCaptureFixture
+) -> None:
+    """`DeviceConnection.Element.LIGHT_TEMPERATURE`: the Level client alone publishes to the temperature element's
+    group (0233 → C04E), in light mode; the OnOff and vendor clients are cleared. Flagged as never tried."""
+    await bench.configurator.assign_key(
+        ROCKER_A, element=DALI_LOAD, target_element="color_temperature"
+    )
+    assert "on the color_temperature element" in caplog.text
+    assert bench.config_pdus() == [
+        (DALI_NODE, pub_set(ROCKER_A, 0xC04E, "1003")),
+        (DALI_NODE, sub_add(ROCKER_A, 0xC04E, "1003")),
+        *CLEAR_ROCKER_A,
+    ]
+    assert bench.app_pdus() == [(ROCKER_A, p) for p in RESET_PROPERTY_MODE] + [
+        (ROCKER_A, admin_set(0x5003, b"\x00"))
+    ]
+    pf = bench.reload()
+    assert pub(pf, ROCKER_A, "1003") == 0xC04E
+    assert pub(pf, ROCKER_A, "1001") is None
+
+
+async def test_assign_key_to_a_blinds_slats(tmp_path: Path, fast: FastAsyncio) -> None:
+    """`DeviceConnection.Element.SLAT`: the Level client of a blinds puck's input publishes to the slat element's
+    group (0601 → C0A1), in move mode."""
+    bench = await make_bench(tmp_path, FIXTURES / "Blinds.json")
+    key, slat_group, old_group = 0x0701, 0xC0A1, 0xC0B0
+    await bench.configurator.assign_key(key, element=0x0600, target_element="slat")
+    assert bench.config_pdus() == [
+        (0x0700, pub_set(key, slat_group, "1003")),
+        (0x0700, sub_add(key, slat_group, "1003")),
+        (0x0700, pub_set(key, 0x0000, "1001")),
+        (0x0700, sub_del(key, old_group, "1001")),
+        (0x0700, pub_set(key, 0x0000, "05271015")),
+        (0x0700, sub_del(key, old_group, "05271015")),
+    ]
+    assert bench.keys.modes[key] == b"\x01"
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "key"),
+    [
+        ({"room": "WC", "target_element": "slat"}, "service_target_element_needs_device"),
+        ({"element": DALI_LOAD, "target_element": "slat"}, "service_target_element_missing"),
+        ({"element": SWITCH_LOAD, "target_element": "color_temperature"}, "service_target_element_missing"),
+        ({"element": DALI_LOAD, "target_element": "rgb"}, "service_target_element_missing"),
+        ({"element": DALI_LOAD, "target_element": "color_temperature", "mode": "switch"}, "service_invalid_mode"),
+        ({"element": DIMMER_LOAD, "lock_seconds": 60}, "service_lock_seconds_needs_lock"),
+        ({"element": DIMMER_LOAD, "mode": "lock", "lock_seconds": 0x10000}, "service_lock_seconds_needs_lock"),
+        ({"element": DALI_LOAD + 1, "mode": "lock"}, "service_lock_unsupported"),
+        ({"element": GATEWAY, "mode": "lock"}, "service_invalid_mode"),
+        ({"room": "WC", "mode": "lock"}, "service_invalid_mode"),
+        ({"scene": "All off", "mode": "lock"}, "service_invalid_mode"),
+    ],
+)  # fmt: skip
+async def test_target_element_and_lock_validation(
+    bench: Bench, kwargs: dict[str, Any], key: str
+) -> None:
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(ROCKER_A, **kwargs)
+    assert exc.value.translation_key == key
+    assert bench.config_pdus() == []
+    assert bench.app_pdus() == []
+    assert bench.file_unchanged()
+
+
+async def test_a_blind_is_no_lock_target_and_needs_slats_for_one(
+    tmp_path: Path, fast: FastAsyncio
+) -> None:
+    """Lock-out protection and wind alarm (a blind's lock functions) are not offered; a blind without a slat
+    element and a light have no slat target."""
+    bench = await make_bench(tmp_path, FIXTURES / "Blinds.json")
+    for kwargs, key in (
+        ({"element": 0x0500, "mode": "lock"}, "service_lock_unsupported"),
+        ({"element": 0x0700, "target_element": "slat"}, "service_target_element_missing"),
+        ({"element": 0x0500, "target_element": "color_temperature"}, "service_target_element_missing"),
+    ):  # fmt: skip
+        with pytest.raises(ServiceValidationError) as exc:
+            await bench.configurator.assign_key(0x0602, **kwargs)  # type: ignore[arg-type]
+        assert exc.value.translation_key == key
+    assert bench.config_pdus() == []
+
+
+async def test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence(
+    bench: Bench, caplog: pytest.LogCaptureFixture
+) -> None:
+    """`SetLockingFunctionConnection` on a switched light (network-logic.md §2.6): the key's LBC User Property client
+    alone publishes to (and listens on) the light's element group, whose User Property server is there already; then
+    KeySetPropertyMode (0x0009, stateful), the up value `02 01 <s>`, the down value unlock — each acknowledged and
+    confirmed, with no ResetKeySetPropertyMode before them — KeyMode 3 (property) and a Get of the light's lock."""
+    assert (
+        await bench.configurator.assign_key(
+            ROCKER_A, element=SWITCH_LOAD, mode="lock", lock_seconds=600
+        )
+        is True
+    )
+    assert "'lock' has never been tried" in caplog.text
+    assert bench.config_pdus() == [
+        (DALI_NODE, pub_set(ROCKER_A, 0xC061, "05271015")),
+        (DALI_NODE, sub_add(ROCKER_A, 0xC061, "05271015")),
+        (DALI_NODE, pub_set(ROCKER_A, 0x0000, "1001")),
+        (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "1001")),
+        (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "05271015")),
+    ]
+    assert bench.app_pdus() == [
+        (ROCKER_A, admin_set(0x5006, LOCK_MODE)),
+        (ROCKER_A, admin_set(0x5007, lock_up(600))),
+        (ROCKER_A, admin_set(0x5008, UNLOCK)),
+        (ROCKER_A, admin_set(0x5003, b"\x03")),
+        (SWITCH_LOAD, M.vendor_property_get("admin", 0x0009)),
+    ]
+    assert bench.keys.values[ROCKER_A, 0x5006] == LOCK_MODE
+    assert bench.keys.modes[ROCKER_A] == b"\x03"
+    pf = bench.reload()
+    assert pub(pf, ROCKER_A, "05271015") == 0xC061
+    assert pub(pf, ROCKER_A, "1001") is None
+    before = ProjectFile.load(ANDROID_PATH)
+    assert (
+        pf.meta == before.meta
+    )  # a device link: the app keeps no row for it, KeySetPropertyMode lives on the key
+
+
+async def test_a_lock_link_to_a_socket_wires_the_property_user_publications(
+    bench: Bench,
+) -> None:
+    """A socket target: its User Property servers' groups are listened to by the vendor client alone; no time
+    limit means `02 01 00 00`."""
+    await bench.configurator.assign_key(ROCKER_A, element=SOCKET_NODE, mode="lock")
+    assert bench.config_pdus() == [
+        (DALI_NODE, sub_add(ROCKER_A, SOCKET_GROUP, "05271015")),
+        (DALI_NODE, sub_add(ROCKER_A, SENSOR_GROUP, "05271015")),
+        (DALI_NODE, pub_set(ROCKER_A, SOCKET_GROUP, "05271015")),
+        (DALI_NODE, pub_set(ROCKER_A, 0x0000, "1001")),
+        (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "1001")),
+        (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "05271015")),
+    ]
+    assert (ROCKER_A, admin_set(0x5007, lock_up(0))) in bench.app_pdus()
+    assert bench.app_pdus()[-1] == (SOCKET_NODE, M.vendor_property_get("admin", 0x0009))
+
+
+async def test_assign_key_to_a_mini_actuator_wires_both_channels_property_users(
+    bench: Bench,
+) -> None:
+    """`ConfigurePublicationsForPropertyUser` covers mini actuators too: the key's clients listen to the User Property
+    group of every element of the puck, both channels (C080, C081)."""
+    await bench.configurator.assign_key(ROCKER_A, element=ACTUATOR_OUT1)
+    assert bench.config_pdus() == [
+        (DALI_NODE, sub_add(ROCKER_A, 0xC080, "1001")),
+        (DALI_NODE, sub_add(ROCKER_A, 0xC080, "05271015")),
+        (DALI_NODE, sub_add(ROCKER_A, 0xC081, "1001")),
+        (DALI_NODE, sub_add(ROCKER_A, 0xC081, "05271015")),
+        (DALI_NODE, pub_set(ROCKER_A, 0xC080, "1001")),
+        (DALI_NODE, pub_set(ROCKER_A, 0xC080, "05271015")),
+        *UNLISTEN_ROCKER_A,
+    ]
+
+
+async def test_a_lock_needs_the_keys_property_client(bench: Bench) -> None:
+    """The socket's sensor element has an OnOff client but no LBC User Property client: no lock from it."""
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(
+            SOCKET_SENSOR, element=DIMMER_LOAD, mode="lock"
+        )
+    assert exc.value.translation_key == "service_key_mode_unsupported"
+    assert bench.file_unchanged()
+
+
+async def test_a_lock_function_the_key_does_not_take_keeps_the_wiring(
+    bench: Bench,
+) -> None:
+    """The up value is neither taken nor answered and reads back empty: the error names it, the Config wiring is
+    recorded, no KeyMode is written and the light is not asked for its lock."""
+    bench.keys.refuse = {0x5007}
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.assign_key(ROCKER_A, element=SWITCH_LOAD, mode="lock")
+    assert exc.value.translation_key == "service_key_lock_not_applied"
+    assert exc.value.translation_placeholders == {"address": "0234", "property": "5007"}
+    assert pub(bench.reload(), ROCKER_A, "05271015") == 0xC061
+    assert ROCKER_A not in bench.keys.modes
+    assert all(dst == ROCKER_A for dst, _ in bench.app_pdus())
+
+
+async def test_a_lock_function_the_key_stays_silent_on_says_what_was_applied(
+    bench: Bench,
+) -> None:
+    bench.keys.refuse = {0x5006}
+    bench.keys.answer_gets = False
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.assign_key(ROCKER_A, element=SWITCH_LOAD, mode="lock")
+    assert exc.value.translation_key == "service_no_reply"
+    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_LOCK_WIRED
+
+
+async def test_a_lost_link_before_the_lock_read_still_wires_the_key(
+    bench: Bench, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The Get of the light's lock is best effort: the key is wired and recorded when it cannot go out."""
+    original = bench.hub.proxy.send_access
+
+    async def flaky(dst: int, pdu: bytes, **kwargs: Any) -> None:
+        if dst == SWITCH_LOAD:
+            raise ConnectionError("gone")
+        await original(dst, pdu, **kwargs)
+
+    caplog.set_level("DEBUG", logger=mc.__name__)
+    with patch.object(bench.hub.proxy, "send_access", flaky):
+        assert await bench.configurator.assign_key(
+            ROCKER_A, element=SWITCH_LOAD, mode="lock"
+        )
+    assert "0148: its lock function was not asked for: gone" in caplog.text
+    assert bench.keys.modes[ROCKER_A] == b"\x03"
+
+
 # ----------------------------------------------------------------------------- key -> scene (review-3 F15)
 
 

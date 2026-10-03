@@ -94,7 +94,14 @@ from .light import (
     async_step_dim,
     async_stop_dim,
 )
-from .mesh_config import MODES, MeshConfigurator, run_to_end, scene_action_for
+from .mesh_config import (
+    LOCK_SECONDS_MAX,
+    MODES,
+    TARGET_ELEMENTS,
+    MeshConfigurator,
+    run_to_end,
+    scene_action_for,
+)
 from .model_update import async_follow_export
 from .schedules import (
     TRIGGERS,
@@ -187,6 +194,8 @@ ATTR_KEY_DEVICE = "key_device"
 ATTR_TARGET_ENTITY = "target_entity"
 ATTR_TARGET_DEVICE = "target_device"
 ATTR_MODE = "mode"
+ATTR_TARGET_ELEMENT = "target_element"
+ATTR_LOCK_SECONDS = "lock_seconds"
 ATTR_SLOT = "slot"
 ATTR_TRIGGER = "trigger"
 ATTR_TIME = "time"
@@ -273,6 +282,10 @@ ASSIGN_KEY_SCHEMA = vol.All(
             vol.Optional(ATTR_ROOM): cv.string,
             vol.Optional(ATTR_SCENE): cv.string,
             vol.Optional(ATTR_MODE): vol.In(MODES),
+            vol.Optional(ATTR_TARGET_ELEMENT): vol.In(tuple(TARGET_ELEMENTS)),
+            vol.Optional(ATTR_LOCK_SECONDS): vol.All(
+                vol.Coerce(int), vol.Range(min=0, max=LOCK_SECONDS_MAX)
+            ),
         }
     ),
     cv.has_at_least_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
@@ -1078,19 +1091,23 @@ async def _delete_room(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
 
 async def _assign_key(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     entry_id, key = _resolve_key(hass, call.data)
-    mode = call.data.get(ATTR_MODE)
+    options: dict[str, Any] = {
+        "mode": call.data.get(ATTR_MODE),
+        "target_element": call.data.get(ATTR_TARGET_ELEMENT),
+        "lock_seconds": call.data.get(ATTR_LOCK_SECONDS),
+    }
     if (room := call.data.get(ATTR_ROOM)) is not None:
         await _run(
             hass,
             entry_id,
-            lambda c: c.assign_key(key.address, room=room, mode=mode),
+            lambda c: c.assign_key(key.address, room=room, **options),
         )
         return None
     if (scene := call.data.get(ATTR_SCENE)) is not None:
         await _run(
             hass,
             entry_id,
-            lambda c: c.assign_key(key.address, scene=scene, mode=mode),
+            lambda c: c.assign_key(key.address, scene=scene, **options),
         )
         return None
     target_entry, element = _resolve_target(hass, call.data)
@@ -1099,7 +1116,7 @@ async def _assign_key(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
     await _run(
         hass,
         entry_id,
-        lambda c: c.assign_key(key.address, element=element, mode=mode),
+        lambda c: c.assign_key(key.address, element=element, **options),
     )
     return None
 

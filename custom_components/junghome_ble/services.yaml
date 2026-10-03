@@ -151,7 +151,24 @@ assign_key:
             - switch
             - move
             - gateway
+            - lock
             - light_and_switch
+    target_element:
+      example: "color_temperature"
+      selector:
+        select:
+          translation_key: target_element
+          options:
+            - color_temperature
+            - slat
+    lock_seconds:
+      example: 3600
+      selector:
+        number:
+          min: 0
+          max: 65535
+          mode: box
+          unit_of_measurement: s
 
 clear_key:
   fields:

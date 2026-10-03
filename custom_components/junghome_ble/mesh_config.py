@@ -118,13 +118,16 @@ from .jhmesh.devices import (
     GATEWAY_PID,
     GROUP_RANGE,
     KEY_LOCATION,
+    MINI_ACTUATOR_PIDS,
     SCENE_CLIENT,
     SOCKET_PIDS,
     Metadata,
     as_int,
+    ctl_temperature_element,
     is_room,
     load_kind,
     meta_list,
+    slat_element,
 )
 from .jhmesh.export import (
     DEFAULT_SCENE_ICON,
@@ -133,6 +136,7 @@ from .jhmesh.export import (
     KEY_MODE_GATEWAY,
     KEY_MODE_LIGHT,
     KEY_MODE_MOVE,
+    KEY_MODE_PROPERTY,
     KEY_MODE_SCENE,
     KEY_MODE_SERVERS,
     KEY_MODE_SWITCH,
@@ -174,13 +178,15 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 # Service-facing mode names. `light_and_switch` is a room function (lamps and sockets together); `gateway` is only
-# meaningful with the gateway's primary element as the target (network-logic.md §2.3, "key -> gateway").
-MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LIGHT_AND_SWITCH = (
+# meaningful with the gateway's primary element as the target (network-logic.md §2.3, "key -> gateway"); `lock` is
+# the app's locking function on a light or socket, KeyMode *property* (network-logic.md §2.6).
+MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LIGHT_AND_SWITCH, MODE_LOCK = (
     "light",
     "switch",
     "move",
     "gateway",
     "light_and_switch",
+    "lock",
 )
 KEY_MODES: dict[str, int] = {
     MODE_LIGHT: KEY_MODE_LIGHT,
@@ -188,6 +194,7 @@ KEY_MODES: dict[str, int] = {
     MODE_MOVE: KEY_MODE_MOVE,
     MODE_GATEWAY: KEY_MODE_GATEWAY,
     MODE_LIGHT_AND_SWITCH: KEY_MODE_LIGHT,
+    MODE_LOCK: KEY_MODE_PROPERTY,
 }
 ROOM_FUNCTIONS: dict[
     str, str
@@ -197,13 +204,24 @@ ROOM_FUNCTIONS: dict[
     MODE_MOVE: "BLIND",
     MODE_LIGHT_AND_SWITCH: "LIGHT_AND_SWITCH",
 }
-DEVICE_MODES = frozenset({MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY})
+DEVICE_MODES = frozenset({MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LOCK})
 ROOM_MODES = frozenset(ROOM_FUNCTIONS)
 # a scene link's key mode: never a `mode` of the action, which names the scene instead (`assign_key(scene=…)`)
 MODE_SCENE = "scene"
-# blinds: no such device was ever wired from here; scene links: never tried on a real device (review-3 F15)
-UNTESTED_MODES = frozenset({MODE_MOVE, MODE_SCENE})
+# blinds: no such device was ever wired from here; scene links: never tried on a real device (review-3 F15); lock
+# links: written from the app's code alone, no capture of the app making one yet (review-4 brief 38)
+UNTESTED_MODES = frozenset({MODE_MOVE, MODE_SCENE, MODE_LOCK})
 MODES = tuple(KEY_MODES)
+# `DeviceConnection.Element` beyond the target's own element (network-logic.md §2.1), with the mode the target's kind
+# gives: a tunable-white light's temperature element (LIGHT_TEMPERATURE, `Light.temperature_address`) and a blind's
+# slat element (SLAT, `Blind.slat_address`), either driven by the key's Level client alone. Unverified on air.
+TARGET_COLOR_TEMPERATURE, TARGET_SLAT = "color_temperature", "slat"
+TARGET_ELEMENTS: dict[str, str] = {
+    TARGET_COLOR_TEMPERATURE: MODE_LIGHT,
+    TARGET_SLAT: MODE_MOVE,
+}
+LEVEL_CLIENT = "1003"
+LOCK_SECONDS_MAX = 0xFFFF  # EnforceOutput's time field, u16 seconds; 0 = no limit
 
 # Client models the key element publishes from, per key mode (network-logic.md §2.1).
 KEY_MODE_CLIENTS: dict[int, tuple[str, ...]] = {
@@ -212,6 +230,7 @@ KEY_MODE_CLIENTS: dict[int, tuple[str, ...]] = {
     KEY_MODE_SWITCH: ("1001", "05271015"),
     KEY_MODE_GATEWAY: ("05271015",),
     KEY_MODE_SCENE: (SCENE_CLIENT,),  # publish only, to all nodes
+    KEY_MODE_PROPERTY: ("05271015",),
 }
 # `RemoveConnectionForAddress` never touches these models of a key element (network-logic.md §2.3 step 4).
 CLEAR_KEEP_MODELS = frozenset({"1100", "05271013", "05271011"})
@@ -422,6 +441,10 @@ APPLIED_KEY_WIRED = (
     "Every connection of the key was configured and is recorded in the mesh export; only the key mode is "
     "missing — run the action again with the same target to set it."
 )
+APPLIED_LOCK_WIRED = (
+    "Every connection of the key was configured and is recorded in the mesh export; its lock function and key mode "
+    "are missing — run the action again with the same target to set them."
+)
 APPLIED_SCENE_WIRED = (
     "The key publishes its scene recalls to all devices and that is recorded in the mesh export; the scene it "
     "recalls and its key mode are missing — run the action again with the same scene to set them."
@@ -542,6 +565,11 @@ class KeyPlan:
     # a scene link: the scene the key's KeyModeSceneConfig names, and the `meta` row recorded once the key took it
     scene: int | None = None
     record_scene: Callable[[ProjectFile], None] | None = None
+    # the client models the key publishes from when not all of the key mode's (a target element: the Level client
+    # alone); a lock link: the key's 0x5006 / 0x5007 / 0x5008 values and the load whose lock they set
+    clients: tuple[str, ...] | None = None
+    lock: tuple[bytes, bytes, bytes] | None = None
+    lock_target: int | None = None
 
 
 def _validation(key: str, **placeholders: str) -> ServiceValidationError:
@@ -719,6 +747,19 @@ def derive_mode(element: Element) -> str:
     if has_model(element, "1000"):
         return MODE_SWITCH
     raise _validation("service_no_mode", address=hexaddr(element.address))
+
+
+def _lockable(element: Element) -> bool:
+    """Whether a key may lock `element` (`MODE_LOCK`): a light or socket of a product with the lock function 0x0009.
+
+    Its element must host the LBC User Property server the key's vendor client publishes to. A blind has a lock
+    function too, but its lock-out protection and wind alarm are not offered here (no blind to check them on).
+    """
+    return (
+        load_kind(element) in ("light", "socket")
+        and (element.node.pid or 0) in P.LOCKABLE
+        and has_model(element, USER_PROPERTY_SERVER)
+    )
 
 
 def _confirms_property(params: bytes, prop: int, value: bytes) -> bool:
@@ -2510,21 +2551,40 @@ class MeshConfigurator:
         )
 
     def _plan_device_link(
-        self, pf: ProjectFile, key: Element, address: int, mode: str | None
+        self,
+        pf: ProjectFile,
+        key: Element,
+        address: int,
+        mode: str | None,
+        target_element: str | None = None,
+        lock_seconds: int | None = None,
     ) -> KeyPlan:
         """`SetDeviceConnection`: the key's clients go to the target's element group; the target itself is untouched.
 
         Its servers already sit on that group since provisioning; a target the app never wired completely gets the
-        missing subscriptions. A socket target additionally gets `ConfigurePublicationsForPropertyUser`: its User
-        Property servers publish to their element groups and the key's clients subscribe there.
+        missing subscriptions. A socket or mini-actuator target additionally gets
+        `ConfigurePublicationsForPropertyUser` (the app filters to those two kinds): the User Property servers on
+        every one of its elements — a mini actuator's inputs E1 / E2 included — publish to their element groups and
+        the key's clients subscribe there. Unverified on air for a mini actuator (none was wired from here).
+
+        `target_element` picks another element of the target (`TARGET_ELEMENTS`, `_target_element`); `mode: lock`
+        is the app's locking function (`SetLockingFunctionConnection`, `_write_lock_function`). Both unverified on air.
         """
         target = self._element(pf, address)
+        clients: tuple[str, ...] | None = None
+        if target_element is not None:
+            target, mode = self._target_element(target, target_element, mode)
+            clients = (LEVEL_CLIENT,)
         mode = mode or derive_mode(target)
         if mode not in DEVICE_MODES or (
             (mode == MODE_GATEWAY) != (target.node.pid == GATEWAY_PID)
         ):
             raise _validation(
                 "service_invalid_mode", mode=mode, target=hexaddr(target.address)
+            )
+        if mode == MODE_LOCK and not _lockable(target):
+            raise _validation(
+                "service_lock_unsupported", target=hexaddr(target.address)
             )
         key_mode = KEY_MODES[mode]
         groups = element_groups(pf)
@@ -2537,26 +2597,89 @@ class MeshConfigurator:
         for model in KEY_MODE_SERVERS[key_mode]:
             if has_model(target, model) and not _subscribed(target, model, publish):
                 steps += self._steps(pf, pf.subscribe(target, model, publish))
-        if target.node.pid in SOCKET_PIDS:
-            clients = [m for m in KEY_MODE_CLIENTS[key_mode] if has_model(key, m)]
-            for element in target.node.elements:
-                group = groups.get(element.address)
-                if group is None or not has_model(element, USER_PROPERTY_SERVER):
-                    continue
-                if pf.publication(element, USER_PROPERTY_SERVER) != group:
-                    # a model publishes with the AppKey it is bound to: bind first, as the app does (review-3 W10)
-                    bind = self._bind_step(element, USER_PROPERTY_SERVER)
-                    if bind is not None:
-                        steps.append(bind)
-                    steps += self._steps(
-                        pf,
-                        pf.set_publication(
-                            element.node, element, USER_PROPERTY_SERVER, group
-                        ),
-                    )
-                for model in clients:
-                    steps += self._steps(pf, pf.subscribe(key, model, group))
-        return KeyPlan(steps, key_mode, publish, mode, f"element {target.address:04X}")
+        if target.node.pid in SOCKET_PIDS | MINI_ACTUATOR_PIDS:
+            steps += self._property_user_steps(
+                pf, key, target, clients or KEY_MODE_CLIENTS[key_mode], groups
+            )
+        plan = KeyPlan(
+            steps,
+            key_mode,
+            publish,
+            mode,
+            f"element {target.address:04X}",
+            clients=clients,
+        )
+        if mode == MODE_LOCK:
+            plan = replace(
+                plan,
+                lock=P.key_lock_values(lock_seconds or 0),
+                lock_target=target.address,
+            )
+        return plan
+
+    @staticmethod
+    def _target_element(
+        target: Element, choice: str, mode: str | None
+    ) -> tuple[Element, str]:
+        """Return the element a `target_element` names on the target load, and the mode it takes; else refuse.
+
+        `color_temperature`: a tunable-white light's temperature element (`ctl_temperature_element`), in the light
+        mode the app derives from a tunable-white target; `slat`: a blind's slat element (`slat_element`), in move
+        mode. Another mode than that one is refused. Unverified on air.
+        """
+        wanted = TARGET_ELEMENTS.get(choice)
+        element: Element | None = None
+        if choice == TARGET_COLOR_TEMPERATURE and load_kind(target) == "light":
+            element = ctl_temperature_element(target.node, target)
+        elif choice == TARGET_SLAT and load_kind(target) == "blind":
+            element = slat_element(target.node)
+        if wanted is None or element is None:
+            raise _validation(
+                "service_target_element_missing",
+                target=hexaddr(target.address),
+                target_element=choice,
+            )
+        if (mode or wanted) != wanted:
+            raise _validation(
+                "service_invalid_mode",
+                mode=str(mode),
+                target=f"{hexaddr(element.address)} ({choice})",
+            )
+        return element, wanted
+
+    def _property_user_steps(
+        self,
+        pf: ProjectFile,
+        key: Element,
+        target: Element,
+        models: Iterable[str],
+        groups: dict[int, int],
+    ) -> list[ConfigStep]:
+        """`ConfigurePublicationsForPropertyUser`: the target node's User Property servers publish to their groups.
+
+        Every such server publishes to its element's group, and the key's client `models` (those it hosts) subscribe
+        to each such group.
+        """
+        steps: list[ConfigStep] = []
+        clients = [m for m in models if has_model(key, m)]
+        for element in target.node.elements:
+            group = groups.get(element.address)
+            if group is None or not has_model(element, USER_PROPERTY_SERVER):
+                continue
+            if pf.publication(element, USER_PROPERTY_SERVER) != group:
+                # a model publishes with the AppKey it is bound to: bind first, as the app does (review-3 W10)
+                bind = self._bind_step(element, USER_PROPERTY_SERVER)
+                if bind is not None:
+                    steps.append(bind)
+                steps += self._steps(
+                    pf,
+                    pf.set_publication(
+                        element.node, element, USER_PROPERTY_SERVER, group
+                    ),
+                )
+            for model in clients:
+                steps += self._steps(pf, pf.subscribe(key, model, group))
+        return steps
 
     def _plan_scene_link(
         self, pf: ProjectFile, key: Element, scene: str | int, mode: str | None
@@ -2976,6 +3099,40 @@ class MeshConfigurator:
                 mode=str(P.KEY_MODE.get(key_mode, key_mode)),
             )
 
+    async def _write_lock_function(
+        self, key: int, values: tuple[bytes, bytes, bytes]
+    ) -> None:
+        """Write the key's lock function — KeySetPropertyMode 0x5006, up 0x5007, down 0x5008 — and confirm each.
+
+        `SetLockingFunctionConnection` (network-logic.md §2.6) writes them before its `SetDeviceConnection`; here
+        they follow the Config plan as every other vendor write does, so a refused plan leaves the key as it was.
+        No `ResetKeySetPropertyMode` before them: it would only be overwritten. Unverified on air.
+        """
+        props = (
+            PROPERTY_KEY_PROPERTY_MODE,
+            PROPERTY_KEY_VALUE_UP,
+            PROPERTY_KEY_VALUE_DOWN,
+        )
+        for prop, value in zip(props, values, strict=True):
+            if not await self._write_key_property(key, prop, value, APPLIED_LOCK_WIRED):
+                raise _failure(
+                    "service_key_lock_not_applied",
+                    address=hexaddr(key),
+                    property=f"{prop:04X}",
+                )
+
+    async def _request_lock(self, target: int) -> None:
+        """Ask the locked load for its lock function (Admin Get 0x0009), as the app does once a lock link is made.
+
+        The answer reaches the load's entities like any other (`ElementState.note_lock`). Best effort: the key is
+        wired whatever comes back, so a lost link is only logged. Unverified on air.
+        """
+        pdu = M.vendor_property_get("admin", P.ENFORCED_OUTPUT)
+        try:
+            await self.hub.proxy.send_access(target, pdu)
+        except (ConnectionError, OSError) as err:
+            _LOGGER.debug("%04X: its lock function was not asked for: %s", target, err)
+
     async def _write_scene_config(self, key: int, scene: int) -> None:
         """Write KeyModeSceneConfig 0x5002 = (scene, no transition), as the app does, and confirm it.
 
@@ -3234,15 +3391,28 @@ class MeshConfigurator:
         room: str | None = None,
         scene: str | int | None = None,
         mode: str | None = None,
+        target_element: str | None = None,
+        lock_seconds: int | None = None,
     ) -> bool:
         """Wire the key element at `key_address` to a load element (`element`), a `room` or a `scene`.
 
-        `mode` picks the key mode (`light` / `switch` / `move` / `gateway`, rooms also `light_and_switch`); left
-        out, a device target gets the mode the app derives from it and a room gets `light`. A scene (number or
-        name) is recalled on every node, in key mode *scene*; it takes no `mode`.
+        `mode` picks the key mode (`light` / `switch` / `move` / `gateway` / `lock`, rooms also
+        `light_and_switch`); left out, a device target gets the mode the app derives from it and a room gets
+        `light`. A scene (number or name) is recalled on every node, in key mode *scene*; it takes no `mode`.
+
+        A device target only: `target_element` drives a tunable-white light's colour temperature or a blind's slats
+        (`TARGET_ELEMENTS`) with the key's Level client; `mode: lock` makes the key lock (up / on) and unlock (down /
+        off) a light or socket, for `lock_seconds` (0 or left out: no limit) — KeyMode *property* with the lock in the
+        key's 0x5006 to 0x5008 (`_write_lock_function`), then the load is asked for its lock. Both unverified on air.
         """
         if sum(target is not None for target in (element, room, scene)) != 1:
             raise _validation("service_one_target")
+        if target_element is not None and element is None:
+            raise _validation("service_target_element_needs_device")
+        if lock_seconds is not None and (
+            mode != MODE_LOCK or not 0 <= lock_seconds <= LOCK_SECONDS_MAX
+        ):
+            raise _validation("service_lock_seconds_needs_lock")
         async with self.lock:
             pf = await self._load()
             key = self._element(pf, key_address)
@@ -3252,18 +3422,27 @@ class MeshConfigurator:
                 plan = self._plan_scene_link(pf, key, scene, mode)
             else:
                 assert element is not None  # exactly one target, checked above
-                plan = self._plan_device_link(pf, key, element, mode)
-            clients = [m for m in KEY_MODE_CLIENTS[plan.key_mode] if has_model(key, m)]
+                plan = self._plan_device_link(
+                    pf, key, element, mode, target_element, lock_seconds
+                )
+            clients = [
+                m
+                for m in plan.clients or KEY_MODE_CLIENTS[plan.key_mode]
+                if has_model(key, m)
+            ]
             if not clients:
                 raise _validation(
                     "service_key_mode_unsupported",
                     address=hexaddr(key.address),
                     mode=plan.mode,
                 )
-            if plan.mode in UNTESTED_MODES:
+            if plan.mode in UNTESTED_MODES or target_element is not None:
                 _LOGGER.warning(
-                    "Key mode %r has never been tried on a real device from Home Assistant; check the result in the app",
+                    "Key mode %r%s has never been tried on a real device from Home Assistant; check the result in the app",
                     plan.mode,
+                    ""
+                    if target_element is None
+                    else f" on the {target_element} element",
                 )
             steps = list(plan.steps)
             for model in clients:
@@ -3284,19 +3463,23 @@ class MeshConfigurator:
                 )
                 # every Config step was accepted: the key is wired as planned, whatever the vendor writes do next
                 try:
-                    if plan.scene is None:
-                        await self._reset_property_mode(key.address)
-                    else:
+                    if plan.scene is not None:
                         await self._write_scene_config(key.address, plan.scene)
                         assert (
                             plan.record_scene is not None
                         )  # a scene plan always has it
                         plan.record_scene(pf)
+                    elif plan.lock is not None:
+                        await self._write_lock_function(key.address, plan.lock)
+                    else:
+                        await self._reset_property_mode(key.address)
                     await self._write_key_mode(key.address, plan.key_mode)
                 except (HomeAssistantError, asyncio.CancelledError):
                     await self._save(pf)
                     raise
             await self._save(pf)
+            if plan.lock_target is not None:
+                await self._request_lock(plan.lock_target)
             _LOGGER.info(
                 "Key %04X now drives %s in mode %r (publishes to %04X), %d Config messages",
                 key.address,

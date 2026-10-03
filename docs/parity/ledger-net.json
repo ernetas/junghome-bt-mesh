@@ -2022,18 +2022,24 @@
   },
   {
    "id": "net:enum:deviceconnection.element",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_resolve_target",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link"
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._target_element",
+    "custom_components/junghome_ble/mesh_config.py::TARGET_ELEMENTS",
+    "custom_components/junghome_ble/jhmesh/devices.py::slat_element",
+    "custom_components/junghome_ble/jhmesh/devices.py::ctl_temperature_element"
    ],
    "tests": [
     "tests/test_services.py::test_assign_key_to_a_target_device_and_a_single_key_device",
-    "tests/test_services.py::test_assign_key_to_a_blind_uses_move_mode"
+    "tests/test_services.py::test_assign_key_to_a_blind_uses_move_mode",
+    "tests/test_services.py::test_assign_key_to_a_blinds_slats",
+    "tests/test_mesh_config.py::test_assign_key_to_a_tw_lights_colour_temperature",
+    "tests/test_mesh_config.py::test_assign_key_to_a_blinds_slats",
+    "tests/test_mesh_config.py::test_target_element_and_lock_validation"
    ],
-   "missing": "a key can target a load's primary element (MAIN / DIM) or a blind's position element (BLIND) only; SLAT (the c2() slat element) and LIGHT_TEMPERATURE (TW range start+1) cannot be chosen (review-3 F15 'target-element choice')",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air: MAIN / DIM / BLIND are the target's own element; LIGHT_TEMPERATURE (`target_element: color_temperature`, the Level client alone to the tunable-white light's temperature element, key mode light) is docs/on-air-sweep.md D9; SLAT (`target_element: slat`, key mode move) needs a blind, none here"
   },
   {
    "id": "net:enum:devicefilter",
@@ -3225,7 +3231,7 @@
     "tests/test_services.py::test_assign_key_by_device_and_letter_to_a_room_and_the_gateway",
     "tests/test_input_edges.py::test_inputs_offer_device_triggers_named_e1_e2"
    ],
-   "missing": "inputs can be wired as Switching / Light / Hangings (move) / Group / Scene / Gateway through assign_key; the Temperature category (KeyMode RTR 4), Eco|Comfort / Auto|Manu and the locking functions are missing, and BOTH (connected inputs) cannot be addressed",
+   "missing": "inputs can be wired as Switching / Light / Hangings (move) / Group / Scene / Gateway and to a light's or socket's lock function (`mode: lock`) through assign_key; the Temperature category (KeyMode RTR 4) and Eco|Comfort / Auto|Manu are missing, and BOTH (connected inputs) cannot be addressed",
    "class": "build",
    "verify": "absent-hardware"
   },
@@ -3244,17 +3250,18 @@
   },
   {
    "id": "net:uc:configurepublicationsforpropertyuser",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link"
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._property_user_steps"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_assign_key_to_a_socket_wires_the_property_user_publications",
-    "tests/test_mesh_config.py::test_socket_target_repairs_a_missing_property_publication"
+    "tests/test_mesh_config.py::test_socket_target_repairs_a_missing_property_publication",
+    "tests/test_mesh_config.py::test_assign_key_to_a_mini_actuator_wires_both_channels_property_users",
+    "tests/test_mesh_config.py::test_a_lock_link_to_a_socket_wires_the_property_user_publications"
    ],
-   "missing": "done for socket targets only; the app filters to sockets and mini actuators, so a key linked to a mini actuator gets no 0x0527:1013 publication / client subscription wiring",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air for a mini-actuator target: socket and mini-actuator targets get the wiring on every element with a User Property server, a mini actuator's inputs included (docs/on-air-sweep.md D9); the app also applies it to a mini-actuator source, which Home Assistant does not"
   },
   {
    "id": "net:uc:configuresocket",
@@ -3727,14 +3734,17 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::KeyConnection",
-    "custom_components/junghome_ble/jhmesh/devices.py::ConnectionKind"
+    "custom_components/junghome_ble/jhmesh/devices.py::ConnectionKind",
+    "custom_components/junghome_ble/jhmesh/devices.py::key_connection",
+    "custom_components/junghome_ble/jhmesh/devices.py::with_key_lock"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_key_connections_of_the_fixture_network",
     "tests/jhmesh/test_devices.py::test_room_link_names_the_room_the_app_recorded",
-    "tests/jhmesh/test_devices.py::test_scene_group_device_and_no_connection"
+    "tests/jhmesh/test_devices.py::test_scene_group_device_and_no_connection",
+    "tests/jhmesh/test_devices.py::test_a_property_mode_key_is_a_lock_once_its_values_are_known"
    ],
-   "missing": "device / room / scene / gateway connections are classified from the export; a lock-function connection (KeySetPropertyMode set) is not recognised as such, and the target element (blind / slat / TW) is not reported",
+   "missing": "device / room / scene / gateway and lock-function connections are classified; a link to a slat or tunable-white temperature element is reported as a device link to that element's address, not named as such",
    "class": "build",
    "verify": "offline"
   },
@@ -3788,7 +3798,7 @@
     "tests/test_mesh_config.py::test_assign_key_needs_a_client_model_of_the_mode",
     "tests/jhmesh/test_export.py::test_set_room_uses_the_linked_buttons_key_mode_models"
    ],
-   "missing": "CLIENTS for Property 3 (0x0527:1015) and RTR 4 (0x1003) are missing, since those key modes cannot be assigned; SERVER sets match",
+   "missing": "CLIENTS for RTR 4 (0x1003) are missing, since that key mode cannot be assigned; Property 3 (0x0527:1015) is there for the lock-function link; SERVER sets match",
    "class": "build",
    "verify": "offline"
   },
@@ -4440,12 +4450,21 @@
   },
   {
    "id": "net:uc:requestlockfunctionforcontrolkeyselection",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "0x5006 KeySetPropertyMode / 0x5007 up value are never read to classify a key as a lock-function connection; the on-air check needs a key wired to a lock function in the app first",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/event.py::JungHomeButtonEvent._maybe_read_property_mode",
+    "custom_components/junghome_ble/event.py::JungHomeButtonEvent._read_property_mode",
+    "custom_components/junghome_ble/event.py::connection_attributes",
+    "custom_components/junghome_ble/jhmesh/devices.py::with_key_lock",
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock"
+   ],
+   "tests": [
+    "tests/test_key_mode.py::test_a_key_in_property_mode_is_asked_what_it_locks",
+    "tests/test_key_mode.py::test_a_lock_connection_names_its_time_limit",
+    "tests/jhmesh/test_devices.py::test_a_property_mode_key_is_a_lock_once_its_values_are_known",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding"
+   ],
+   "note": "Unverified on air: a mains key whose export link publishes from its LBC User Property client alone is asked for 0x5006 / 0x5007 once per link and shows `connection: lock` (docs/on-air-sweep.md D9, step 3); the scheduler (0x1246) and HVAC-mode (0x120B) targets of an RTR stay undecoded (no RTR here)"
   },
   {
    "id": "net:uc:requestmanufacturerinfos",
@@ -4530,6 +4549,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._property_user_steps",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/mesh_config.py::derive_mode"
    ],
@@ -4537,9 +4557,11 @@
     "tests/test_mesh_config.py::test_assign_key_to_a_dimmer_sends_the_apps_light_mode_sequence",
     "tests/test_mesh_config.py::test_assign_key_derives_the_mode_from_the_target",
     "tests/test_mesh_config.py::test_assign_key_to_the_gateway_uses_key_mode_6",
-    "tests/test_mesh_config.py::test_assign_key_to_a_socket_wires_the_property_user_publications"
+    "tests/test_mesh_config.py::test_assign_key_to_a_socket_wires_the_property_user_publications",
+    "tests/test_mesh_config.py::test_assign_key_to_a_tw_lights_colour_temperature",
+    "tests/test_mesh_config.py::test_assign_key_to_a_mini_actuator_wires_both_channels_property_users"
    ],
-   "missing": "SLAT and LIGHT_TEMPERATURE target elements cannot be chosen; detectors and RTRs cannot be the source (only Button elements); the property-user wiring covers socket targets only (not mini actuators); ResetKeySetPropertyMode is sent after the Config plan rather than before it, and missing target subscriptions are added where the app writes nothing on the target",
+   "missing": "detectors and RTRs cannot be the source (only Button elements); ResetKeySetPropertyMode is sent after the Config plan rather than before it, and missing target subscriptions are added where the app writes nothing on the target",
    "class": "build",
    "verify": "offline"
   },
@@ -4577,16 +4599,25 @@
   },
   {
    "id": "net:uc:setlockingfunctionconnection",
-   "status": "gap",
+   "status": "partial",
    "code": [
-    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._plan_device_link",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._request_lock",
+    "custom_components/junghome_ble/mesh_config.py::MODE_LOCK",
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values"
    ],
    "tests": [
-    "tests/jhmesh/test_properties.py::test_scene_config_and_property_mode_codecs"
+    "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",
+    "tests/test_mesh_config.py::test_a_lock_link_to_a_socket_wires_the_property_user_publications",
+    "tests/test_mesh_config.py::test_a_lock_function_the_key_does_not_take_keeps_the_wiring",
+    "tests/test_mesh_config.py::test_a_lost_link_before_the_lock_read_still_wires_the_key",
+    "tests/test_hub_sim.py::test_a_key_wired_to_lock_a_light_over_the_mesh",
+    "tests/jhmesh/test_properties.py::test_key_lock_values_and_their_decoding"
    ],
-   "missing": "no key -> locking function link: 0x5006 = (0x0009, STATEFUL), 0x5007 / 0x5008 lock / unlock values (lock 02 01 <s>, lock-out 02 FE <s>, wind 01 FF 00 00 00 00), then a device or property-mode room connection and an Admin Get 0x0009 on the target; the switch / duration lock can be checked on a light or socket here, lock-out protection and wind alarm need a blind (none here)",
+   "missing": "a light or socket can be locked from a key (`assign_key` `mode: lock`, lock the current state `02 01 <s>`, unlock `00 01 00 00`), unverified on air (docs/on-air-sweep.md D9); still missing: the property-mode room connection (SetGroupConnection.PropertyModeParams, functions *_PROPERTY_MODE) and a blind's lock-out protection `02 FE <s>` and wind alarm `01 FF 00 00 00 00` (no blind here)",
    "class": "build",
-   "verify": "on-air"
+   "verify": "offline"
   },
   {
    "id": "net:uc:setmulticonnection",

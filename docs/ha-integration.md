@@ -453,7 +453,11 @@ without an app name share one device per node.
   to the JUNG HOME Gateway: the gesture events above), `group` (some other group) or `none` (no function) —
   `connection_address` (the load element, the room group or the group), `connection_name` (the load's, room's or
   scene's name, when the export has it) and `connection_scene` (a scene key's number, from share exports). It
-  follows the `assign_key` / `clear_key` actions at once, without a reload.
+  follows the `assign_key` / `clear_key` actions at once, without a reload. A key whose device or room link
+  publishes from its LBC User Property client alone is in key mode *property*, which the export cannot tell apart
+  further: its entity asks the key once per connection for `0x5006` / `0x5007` (not a battery key, which sleeps), and
+  a key that locks its target says `lock` (the address and name are the locked load's) with `connection_lock_seconds`
+  (the lock's time limit, `0` = until unlocked) — **unverified on air**.
 - A diagnostic **Key mode** sensor per key (`0x5003`, off by default: one read per key and connection) shows the
   mode the device itself holds: `light`, `move` (blinds), `scene`, `property`, `rtr` (temperature), `switch`,
   `gateway`. It is read-only; `assign_key` changes it.
@@ -1219,7 +1223,21 @@ hand), the action refuses with *"export from the app again"* — export, replace
   device — its Scene Client publishes to all nodes, the key is told the scene (`0x5002`) and gets key mode *scene*,
   and the export records the app's `keyModeSceneConfigExports` row so the app shows it; leave `mode` empty; **not
   yet tried on a real device**); `mode` optional (`light` = on/off + dimming, `switch` = on/off, `move` = blinds —
-  untested, `gateway`; rooms also `light_and_switch`). Leave `mode` empty to get what the app would pick.
+  untested, `gateway`, `lock`; rooms also `light_and_switch`). Leave `mode` empty to get what the app would pick.
+  Device targets also take, **unverified on air** (written from the app's code; `docs/on-air-sweep.md` D9 captures
+  the app making them):
+  - `target_element` — `color_temperature`: the key's Level client alone publishes to a tunable-white light's
+    temperature element (the app's *light temperature* connection, key mode *light*); `slat`: to a blind's slat
+    element (key mode *move*). A light without a temperature element, or a blind without slats, is refused.
+  - `mode: lock` — the app's locking function on a light or socket: the key's LBC User Property client alone
+    publishes to the load's element group, the key gets *KeySetPropertyMode* `0x5006` = (`0x0009` lock function,
+    stateful), up / on `0x5007` = lock the current state (`02 01 <s>`), down / off `0x5008` = unlock (`00 01 00 00`),
+    each confirmed, then key mode *property* (3); the load is then asked for its lock. `lock_seconds` (0–65535, empty
+    or 0 = until unlocked) is the lock's time limit. Blinds (lock-out protection, wind alarm) and rooms are refused.
+    The app keeps no `meta` row for such a link; the key itself holds it.
+  A socket or mini-actuator target also gets the app's *property user* wiring: the User Property servers of all its
+  elements (a mini actuator's inputs included) publish to their element groups and the key's clients listen there
+  (unverified on air for a mini actuator).
 - **`clear_key`** — the app's *No function*.
 
 A key of a **battery device** (wall transmitter, battery binary-input puck) only answers while its device is awake:

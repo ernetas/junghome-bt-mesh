@@ -1017,6 +1017,18 @@
     "service_key_mode_unsupported": {
       "message": "Key {address} has no client model for mode {mode}."
     },
+    "service_target_element_needs_device": {
+      "message": "A target element only applies to a key connected to a device, not to a room or a scene."
+    },
+    "service_target_element_missing": {
+      "message": "Target {target} has no {target_element} element a key could drive."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "A lock time only applies to mode lock, from 0 to 65535 seconds."
+    },
+    "service_lock_unsupported": {
+      "message": "A key cannot lock target {target}: only a light or a socket can be locked from a key."
+    },
     "service_no_element_group": {
       "message": "Element {address} has no element group: the JUNG HOME app never wired it. Connect it once in the app first."
     },
@@ -1040,6 +1052,9 @@
     },
     "service_key_scene_not_applied": {
       "message": "Key {address} did not take scene {scene}; it publishes its scene recalls to all devices and that is recorded in the mesh export — run the action again with the same scene to set it."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Key {address} did not take its lock function (property {property}); its connections were configured and are recorded in the mesh export — run the action again with the same target to set it."
     },
     "service_export_newer": {
       "message": "The mesh export {path} was changed outside Home Assistant (by the JUNG HOME app or by hand) after Home Assistant loaded it. Export the project from the app again, replace the file (Reconfigure) and retry."
@@ -1648,7 +1663,15 @@
         },
         "mode": {
           "name": "Mode",
-          "description": "What the key does: light (on/off and dimming), switch (on/off), move (blinds; untested), gateway (event reporting), or for rooms light_and_switch (lights and sockets together). Left empty, the mode follows the target."
+          "description": "What the key does: light (on/off and dimming), switch (on/off), move (blinds; untested), gateway (event reporting), lock (the up / on side locks a light or socket in its current state, the down / off side unlocks it; unverified on air), or for rooms light_and_switch (lights and sockets together). Left empty, the mode follows the target."
+        },
+        "target_element": {
+          "name": "Target element",
+          "description": "Device targets only: drive another part of the target with the key's dimming client alone, color_temperature (a tunable-white light's colour temperature, mode light) or slat (a blind's slats, mode move). Unverified on air."
+        },
+        "lock_seconds": {
+          "name": "Lock time",
+          "description": "Mode lock only: how long a lock from the key holds, in seconds (0 or empty: until the key unlocks it). Unverified on air."
         }
       }
     },
@@ -2040,7 +2063,14 @@
         "switch": "Switch (on/off)",
         "move": "Blinds (untested)",
         "gateway": "Gateway (report events)",
-        "light_and_switch": "Lights and sockets (rooms only)"
+        "light_and_switch": "Lights and sockets (rooms only)",
+        "lock": "Lock and unlock (unverified on air)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Colour temperature (unverified on air)",
+        "slat": "Slats (unverified on air)"
       }
     },
     "schedule_trigger": {

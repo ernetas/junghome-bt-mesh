@@ -2490,7 +2490,7 @@
     "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
    ],
    "class": "dup",
-   "reason": "the only shortfall is that a key-mode-3 key's 0x5006 / 0x5007 / 0x5008 targets are never read, so its lock-function / scheduler / HVAC-mode label is missing; recorded there (the key-mode-3 write path is prod:key-mode:property)",
+   "reason": "a key-mode-3 key's 0x5006 / 0x5007 are read and a lock-function link is labelled `lock`; the scheduler / HVAC-mode labels of an RTR target are missing; recorded there (the key-mode-3 write path is prod:key-mode:property)",
    "dup_of": "net:uc:requestlockfunctionforcontrolkeyselection"
   },
   {

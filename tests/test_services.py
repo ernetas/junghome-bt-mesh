@@ -1101,6 +1101,40 @@ async def test_assign_key_to_a_blind_uses_move_mode(
 
 
 @pytest.mark.parametrize("export_source", [BLINDS_PATH])
+async def test_assign_key_to_a_blinds_slats(hass: HomeAssistant, env: Env) -> None:
+    """Brief 38: `target_element: slat` makes the key's Level client alone publish to the slat element's group (the
+    blinds mini's 0501); a room takes no target element. Unverified on air."""
+    key = env.hub.devices.by_address[0x0149]
+    key_entity = er.async_get(hass).async_get_entity_id("event", DOMAIN, key.unique_id)
+    await call(
+        hass,
+        "assign_key",
+        {
+            "key_entity": key_entity,
+            "target_entity": blind_entity(hass, env, 0x0500),
+            "target_element": "slat",
+        },
+    )
+    await settled(hass, env)
+    pf = env.reload()
+    group = pf.publication(0x0149, "1003")
+    assert group is not None
+    assert [e.address for e in pf.group_members(group)] == [
+        0x0149,
+        0x0501,
+    ]  # the key listens too
+    assert pf.publication(0x0149, "1001") is None
+    assert env.modes[0x0149] == bytes([KEY_MODE_MOVE])
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(
+            hass,
+            "assign_key",
+            {"key_entity": key_entity, "room": "Kitchen", "target_element": "slat"},
+        )
+    assert exc.value.translation_key == "service_target_element_needs_device"
+
+
+@pytest.mark.parametrize("export_source", [BLINDS_PATH])
 async def test_set_room_and_scenes_take_a_blind(hass: HomeAssistant, env: Env) -> None:
     """PLT-07: a blind joins a room like any load; a scene stores its position and slats as the JUNG blind action.
 

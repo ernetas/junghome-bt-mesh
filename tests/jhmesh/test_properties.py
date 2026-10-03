@@ -290,6 +290,29 @@ def test_scene_config_and_property_mode_codecs():
         P.decode(0x5006, h("0900"))
 
 
+def test_key_lock_values_and_their_decoding():
+    """A lock link's 0x5006 / 0x5007 / 0x5008 (network-logic.md §2.6), and back: only a stateful EnforceOutput mode
+    with a lock as its up value, under KeyMode property when that is known, is a lock."""
+    assert P.key_lock_values(600) == (h("090001"), h("02015802"), h("00010000"))
+    mode, up, _down = P.key_lock_values()
+    assert up == h("02010000")  # no time limit
+    values = {0x5006: mode, 0x5007: h("02013c00")}
+    assert P.key_lock(values) == P.EnforcedOutput(2, 1, 60)
+    assert P.key_lock({**values, 0x5003: h("03")}) == P.EnforcedOutput(2, 1, 60)
+    assert (
+        P.key_lock({**values, 0x5003: h("05")}) is None
+    )  # left over from before a switch link
+    assert P.key_lock({**values, 0x5006: h("090000")}) is None  # stateless
+    assert (
+        P.key_lock({**values, 0x5006: h("461201")}) is None
+    )  # the RTR's scheduler, not a lock
+    assert (
+        P.key_lock({**values, 0x5007: h("00010000")}) is None
+    )  # an unlock as the up value
+    assert P.key_lock({0x5006: mode}) is None  # the up value not read yet
+    assert P.key_lock({}) is None
+
+
 def test_edge_detection_codec_bit_layout():
     value = P.EdgeDetection(edge_mode=True, rising="on", falling="off")
     assert P.encode(0x5009, value) == b"\x13"  # falling 2 << 3 | rising 1 << 1 | mode 1

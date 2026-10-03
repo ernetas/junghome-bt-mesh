@@ -29,14 +29,18 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from .cdb import canonical_uuid, is_virtual
+from .properties import key_lock
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from .cdb import CDB, Element, Node
+    from .properties import EnforcedOutput
 
 SOCKET_PIDS = {0x0003, 0x000C}
 DETECTOR_PIDS = frozenset(
@@ -414,12 +418,13 @@ class Blind(Device):
         return (self.address, self.slat_address)
 
 
-ConnectionKind = Literal["device", "room", "scene", "gateway", "group"]
+ConnectionKind = Literal["device", "room", "scene", "gateway", "group", "lock"]
 KEY_CLIENT_MODELS = (
     "1001",
     "1003",
     "05271015",
 )  # OnOff / Level / JUNG vendor clients: what a key publishes from
+PROPERTY_CLIENT = "05271015"  # the LBC User Property client: the only one a key in KeyMode *property* (3) publishes from
 SCENE_CLIENT = "1205"
 ALL_SCENES = 0xFFFF  # a scene key's Scene Client publishes its recalls here (`network-logic.md` §4.3)
 
@@ -434,6 +439,11 @@ class KeyConnection:
     `scene` the number when the export records it; `gateway`: the gateway's element group (key events for the
     gateway, and for Home Assistant); `group`: any other group, a room group included (not what the app wires).
     `name` is the load's, room's or scene's name when known.
+
+    `property_mode`: a device or room link published from the LBC User Property client alone, though the key hosts an
+    OnOff or Level client too — KeyMode *property* (3), whose meaning sits in the key's 0x5006 to 0x5008, not in the
+    export. Once those are known (`with_key_lock`), a lock-function link (`SetLockingFunctionConnection`) is
+    `lock`: `target` / `name` still name what it locks, `lock` is the lock its up half sets. Unverified on air.
     """
 
     kind: ConnectionKind
@@ -441,6 +451,8 @@ class KeyConnection:
     target: int | None = None
     name: str | None = None
     scene: int | None = None
+    property_mode: bool = False
+    lock: EnforcedOutput | None = None
 
 
 @dataclass
@@ -879,14 +891,20 @@ def _build_light(ctx: BuildContext, node: Node, element: Element) -> Light:
     )
 
 
-def _build_blind(ctx: BuildContext, node: Node, element: Element) -> Blind:
+def slat_element(node: Node) -> Element | None:
+    """Return a blind node's slat element (`Blind.slat_address`): the last of several blind Level elements, else None."""
     levels = _blind_level_elements(node, node.pid or 0)
+    return levels[-1] if len(levels) > 1 else None
+
+
+def _build_blind(ctx: BuildContext, node: Node, element: Element) -> Blind:
+    slat = slat_element(node)
     return Blind(
         element.address,
         ctx.unique_id(node, element),
         _load_name(ctx, node, element),
         node,
-        levels[-1].address if len(levels) > 1 else None,
+        slat.address if slat else None,
         rooms=ctx.rooms_of(element, ("1002",)),
     )
 
@@ -999,16 +1017,65 @@ def key_connection(
     if publish is None:
         return None
     owner = _element_groups(cdb).get(publish)
+    property_mode = _publishes_properties_only(element)
     if owner == element.address:
         room = meta.room_links.get(element.address)
-        return KeyConnection("room", publish, room, devices.rooms.get(room or -1))
+        return KeyConnection(
+            "room",
+            publish,
+            room,
+            devices.rooms.get(room or -1),
+            property_mode=property_mode,
+        )
     node = cdb.node_by_addr(owner) if owner is not None else None
     if node is not None and node.pid == GATEWAY_PID:
         return KeyConnection("gateway", publish, owner)
     if owner is not None:
         device = devices.by_address.get(owner)
-        return KeyConnection("device", publish, owner, device.name if device else None)
+        return KeyConnection(
+            "device",
+            publish,
+            owner,
+            device.name if device else None,
+            property_mode=property_mode,
+        )
     return KeyConnection("group", publish, name=devices.rooms.get(publish))
+
+
+def _publishes_properties_only(element: Element) -> bool:
+    """Whether only the key's LBC User Property client publishes, though it hosts an OnOff or Level client too.
+
+    A key in light, switch or move mode publishes from those as well (`network-logic.md` §2.1); one in property mode
+    from the vendor client alone. A gateway link does too, but the gateway's group says what that is.
+    """
+    clients = [
+        m for m in KEY_CLIENT_MODELS if m != PROPERTY_CLIENT and m in element.models
+    ]
+    return (
+        bool(clients)
+        and BuildContext.publish_address(element, PROPERTY_CLIENT) is not None
+        and all(BuildContext.publish_address(element, m) is None for m in clients)
+    )
+
+
+def with_key_lock(
+    connection: KeyConnection | None, values: Mapping[int, bytes]
+) -> KeyConnection | None:
+    """Return `connection` as a `lock` link when the key's cached 0x5003 / 0x5006 / 0x5007 say it is one (`key_lock`).
+
+    Only a device or room link in property mode qualifies; anything else, or a key whose values are not known yet,
+    comes back as it is.
+    """
+    if (
+        connection is None
+        or not connection.property_mode
+        or connection.kind not in ("device", "room")
+    ):
+        return connection
+    lock = key_lock(values)
+    if lock is None:
+        return connection
+    return replace(connection, kind="lock", lock=lock)
 
 
 def _central_element(device: Device, group: int) -> int:
