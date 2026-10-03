@@ -2189,12 +2189,14 @@ async def test_a_late_scene_action_status_of_another_scene_does_not_answer_the_s
     assert env.reload().cdb.scenes[2] == []
 
 
+@pytest.mark.unavailable_ok  # the test empties a load's cached state, so an entity of it may show `unknown`
 async def test_store_scene_after_a_reload_records_the_present_state(
     hass: HomeAssistant, env: Env
 ) -> None:
     """PLT-05: a `store_scene` right after another call's reload runs on a hub whose state cache is still empty;
     it asks the load for its state instead of recording nothing (or reading the torn-down hub it picked before
-    the lock)."""
+    the lock). The cache is emptied by hand here, so an entity of that load writing its state in between shows
+    `unknown`: the transitions check (`unavailable_ok`) does not apply."""
     env.hub.element_state(LIGHT_CTL).on = True
     env.hub.element_state(LIGHT_CTL).lightness = 0xFFFF
     env.hub.element_state(LIGHT_CTL).kelvin = 2700
