@@ -114,6 +114,9 @@ answered unicast within 50–250 ms), its Sets leaving the proxy node with TTL 4
 
 ## What it can settle next (`cross-repo-analysis.md` §8, `roadmap.md` §4)
 
+The integration's own open checks — everything the code and docs still call *unverified on air* — are listed, with
+the captures that settle them, in [`on-air-sweep.md`](on-air-sweep.md).
+
 Passive, whenever the event happens:
 - `0x5012` codes 0–3 from a KeyMode-6 **rocker** element (`0293`/`0297`): press top and bottom while capturing.
 - Whether `Scene Recall` / `OnOff Set` from keys are doubled (same TID, fresh SEQ).

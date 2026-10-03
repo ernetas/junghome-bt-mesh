@@ -67,8 +67,10 @@ scripts/package_ha.sh              builds dist/junghome_ble.zip for unzipping in
 tools/mesh_report.py               renders docs/network-topology.md from the iOS dump
 tools/mesh_poc.py                  CLI: scan / listen (sniffer) / get / set / blink / lightness / ctl / scene / scene-actions / sched / health / prop / config / devices
 tools/mesh_sniff.py                passive capture with a Nordic nRF Sniffer dongle (key-free) + offline/live decoding
+tools/on_air.py                    lists every "unverified on air" marker with the symbol holding it
 docs/poc-gatt-proxy.md             PoC design, run log and on-air findings (incl. button events)
 docs/sniffer.md                    nRF sniffer setup, the capture/decode pipeline, what the first captures established
+docs/on-air-sweep.md               the on-air verification checklist: what is still unverified, how to check it, pass criteria
 docs/hidden-features.md            what the devices expose beyond the app: compositions, on-air property lists, unused SIG/Config states
 docs/bluetooth-recheck.md          the full sweep of every Bluetooth layer (advertising, GATT, mesh, models, HA side): verified vs open
 docs/ha-integration.md             HA integration: user docs (devices, entities, setup, troubleshooting) + developer notes

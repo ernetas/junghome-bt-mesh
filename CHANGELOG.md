@@ -347,6 +347,11 @@
   link holds. `tests/test_fake_conformance.py` holds the three proxy fakes to one behaviour (filter type answers,
   segmentation and acknowledgements, replay protection, IV Update): the integration's fake now answers the filter
   type it was asked for, and the library's drops a replayed PDU and fails its test on one.
+- Internal: `docs/on-air-sweep.md` is the checklist of the on-air sweep (review-4 brief 30): every behaviour still
+  unverified that this installation can check, from watch-only to key-changing, with its steps, captures, pass
+  criterion, hardware and whether it can be undone, and what cannot be checked here and why. `tools/on_air.py`
+  lists every such marker of the code, docs, ledger and unreleased changelog with the symbol holding it, and with
+  `--uncovered` the ones the checklist does not cite.
 
 ## 1.0.0
 
