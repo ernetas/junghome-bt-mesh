@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME tramite Bluetooth",
+        "description": "Home Assistant entra direttamente nella tua rete mesh JUNG HOME tramite Bluetooth, usando l'esportazione della rete dell'app JUNG HOME, che contiene le chiavi mesh. Scegli da dove proviene l'esportazione.",
+        "menu_options": {
+          "gateway": "Recuperala dal gateway JUNG HOME",
+          "upload": "Carica il file di esportazione dell'app",
+          "path": "Usa un file sull'host di Home Assistant"
+        },
+        "data": {
+          "cdb_path": "File di esportazione mesh",
+          "metadata_dir": "Directory dei metadati dell'app",
+          "unicast": "Il nostro indirizzo unicast"
+        },
+        "data_description": {
+          "cdb_path": "Percorso assoluto sull'host di Home Assistant, ad es. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Facoltativo, solo per `MeshNetwork.json` da un backup iOS: la cartella `Application Support` dell'app con `device_metadata.json` e `scene_metadata.json`, così le entità ricevono i nomi che hai dato loro nell'app. `JungHome.json` contiene già i nomi.",
+          "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "È questa la tua installazione JUNG HOME?",
+        "description": "Un proxy Bluetooth Mesh della rete {network_id} è nel raggio d'azione. Home Assistant propone ogni rete Bluetooth Mesh che vede, anche quelle di altre marche — ad esempio le luci di un vicino. Prosegui solo se questa è la tua installazione JUNG HOME; ti verrà poi chiesta l'esportazione mesh dell'app."
+      },
+      "zeroconf_confirm": {
+        "title": "Gateway JUNG HOME trovato",
+        "description": "Un gateway JUNG HOME si annuncia su {host}. Prosegui per recuperare da esso l'esportazione della rete dell'app JUNG HOME: inserirai poi la password della sua chiave di rete, oppure approverai una richiesta di accesso nell'app. Come per un indirizzo digitato a mano, il suo certificato viene fissato al primo contatto prima che venga inviato qualsiasi dato. La configurazione dal gateway rilevato non è verificata su dispositivi reali."
+      },
+      "gateway": {
+        "title": "Recupera l'esportazione dal gateway JUNG HOME",
+        "description": "Il gateway conserva una copia dell'esportazione della rete dell'app. Inserisci il suo indirizzo e la password della sua chiave di rete (dall'app JUNG HOME) per un accesso immediato, oppure lascia vuota la password e approva la richiesta di accesso nell'app dopo aver proseguito (Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte, entro tre minuti; compare come «{user_name}»). L'esportazione viene salvata in `junghome_ble/` nella directory di configurazione di Home Assistant. Contiene tutte le chiavi mesh, come l'esportazione del telefono: mantieni privati i backup di quella directory.",
+        "data": {
+          "gateway_host": "Indirizzo del gateway",
+          "gateway_password": "Password della chiave di rete"
+        },
+        "data_description": {
+          "gateway_host": "Indirizzo IP o nome host del gateway JUNG HOME. Un gateway che Home Assistant ha trovato in rete è già inserito. Altrimenti il valore predefinito `junghome.local` funziona in molte reti, oppure usa il suo indirizzo IP (mostrato nell'app in Impostazioni → Gateway).",
+          "gateway_password": "Facoltativa. Con essa il gateway concede subito l'accesso; senza, approvi la richiesta nell'app."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanzate",
+            "description": "Mantieni il valore predefinito, a meno che anche un secondo Home Assistant o gli strumenti a riga di comando del repository entrino in questa installazione: ognuno ha bisogno di un proprio indirizzo.",
+            "data": {
+              "unicast": "Il nostro indirizzo unicast"
+            },
+            "data_description": {
+              "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "In attesa dell'approvazione nell'app JUNG HOME"
+      },
+      "gateway_refetch": {
+        "title": "Recupera di nuovo l'esportazione",
+        "description": "Recupera l'esportazione attuale della rete dal gateway su {host} con l'accesso salvato. Se il gateway non lo accetta più, ti verrà chiesto di approvare una nuova richiesta di accesso nell'app.",
+        "sections": {
+          "advanced": {
+            "name": "Avanzate",
+            "description": "Mantieni il valore predefinito, a meno che anche un secondo Home Assistant o gli strumenti a riga di comando del repository entrino in questa installazione: ognuno ha bisogno di un proprio indirizzo.",
+            "data": {
+              "unicast": "Il nostro indirizzo unicast"
+            },
+            "data_description": {
+              "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Carica il file di esportazione dell'app",
+        "description": "Nell'app JUNG HOME apri Progetto → Condividi tramite file e invia a te stesso il `JungHome.json` che crea, poi caricalo qui. Viene salvato in `junghome_ble/` nella directory di configurazione di Home Assistant. Contiene tutte le chiavi mesh: mantieni privati i backup di quella directory.",
+        "data": {
+          "export_file": "File di esportazione mesh"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanzate",
+            "description": "Mantieni il valore predefinito, a meno che anche un secondo Home Assistant o gli strumenti a riga di comando del repository entrino in questa installazione: ognuno ha bisogno di un proprio indirizzo.",
+            "data": {
+              "unicast": "Il nostro indirizzo unicast"
+            },
+            "data_description": {
+              "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Usa un file sull'host di Home Assistant",
+        "description": "Copia prima sull'host di Home Assistant il `JungHome.json` dell'app (Progetto → Condividi tramite file; contiene i nomi dei tuoi dispositivi) oppure `MeshNetwork.json` (backup iOS) e inserisci il suo percorso.",
+        "data": {
+          "cdb_path": "File di esportazione mesh",
+          "metadata_dir": "Directory dei metadati dell'app"
+        },
+        "data_description": {
+          "cdb_path": "Percorso assoluto sull'host di Home Assistant, ad es. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Facoltativo, solo per `MeshNetwork.json` da un backup iOS: la cartella `Application Support` dell'app con `device_metadata.json` e `scene_metadata.json`, così le entità ricevono i nomi che hai dato loro nell'app. `JungHome.json` contiene già i nomi."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanzate",
+            "description": "Mantieni il valore predefinito, a meno che anche un secondo Home Assistant o gli strumenti a riga di comando del repository entrino in questa installazione: ognuno ha bisogno di un proprio indirizzo.",
+            "data": {
+              "unicast": "Il nostro indirizzo unicast"
+            },
+            "data_description": {
+              "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Aggiorna l'esportazione mesh JUNG HOME",
+        "description": "Usalo dopo aver rimesso in servizio o ricollegato dispositivi nell'app JUNG HOME, oppure dopo un Key Refresh: fornisci una nuova esportazione della stessa rete. I dispositivi scomparsi dall'esportazione vengono rimossi. Allo stesso tempo si può cambiare l'indirizzo mesh di Home Assistant.",
+        "menu_options": {
+          "gateway_refetch": "Recuperala di nuovo dal gateway su {host}",
+          "gateway": "Recuperala dal gateway JUNG HOME",
+          "upload": "Carica il file di esportazione dell'app",
+          "path": "Usa un file sull'host di Home Assistant",
+          "import_gateway": "Importa le entità dell'integrazione JUNG HOME Gateway",
+          "areas": "Cambia l'area in cui vanno i dispositivi di ogni stanza"
+        },
+        "data": {
+          "cdb_path": "File di esportazione mesh",
+          "metadata_dir": "Directory dei metadati dell'app",
+          "unicast": "Il nostro indirizzo unicast"
+        },
+        "data_description": {
+          "cdb_path": "Percorso assoluto sull'host di Home Assistant, ad es. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Facoltativo, solo per `MeshNetwork.json` da un backup iOS: la cartella `Application Support` dell'app con `device_metadata.json` e `scene_metadata.json`, così le entità ricevono i nomi che hai dato loro nell'app. `JungHome.json` contiene già i nomi.",
+          "unicast": "Indirizzo mesh esadecimale che Home Assistant userà come nodo (0001–7FFF). Non deve essere usato da un altro nodo; il valore predefinito è fuori dall'intervallo dell'app."
+        }
+      },
+      "import_gateway": {
+        "title": "Importa dall'integrazione JUNG HOME Gateway",
+        "description": "L'integrazione JUNG HOME Gateway (`junghome`) è configurata accanto a questa. Le sue entità possono essere rilevate qui, così i loro ID entità, nomi, aree, etichette e la cronologia proseguono con l'integrazione Bluetooth Mesh. L'abbinamento avviene per nome del dispositivo (il nome dall'app JUNG HOME) e tipo di entità; vengono sostituite solo le entità di questa integrazione che non hai ancora rinominato o personalizzato.\n\n**{count} entità verranno spostate** (entità del gateway → sostituisce):\n{matched}\n\n**Restano come sono** (già personalizzate qui; quella del gateway resta dov'è):\n{customised}\n\n**Nessuna controparte nel gateway** (restano come sono):\n{unmatched}\n\n**Entità del gateway senza controparte qui** (restano con la voce del gateway):\n{gateway_only}\n\nInviando, entrambe le integrazioni vengono scaricate, le entità spostate, l'area, il nome personalizzato e le etichette di ogni dispositivo del gateway abbinato copiati sul dispositivo corrispondente qui, la voce del gateway disattivata e questa ricaricata. Elimina poi la voce del gateway."
+      },
+      "gateway_certificate": {
+        "title": "Il certificato del gateway è cambiato",
+        "description": "Il gateway JUNG HOME su {host} ora presenta il certificato {observed}; la voce aveva registrato {expected}. Prosegui solo se hai sostituito tu stesso il gateway o il suo certificato — altrimenti un altro dispositivo della tua rete risponde al posto del gateway."
+      },
+      "reauth_confirm": {
+        "title": "Concedi di nuovo a Home Assistant l'accesso al gateway",
+        "description": "Il gateway JUNG HOME su {host} non accetta più l'accesso che Home Assistant ha registrato per la mesh {title} (probabilmente è stato rimosso nell'app JUNG HOME in Impostazioni → Gateway → Autorizzazioni di accesso). I dispositivi continuano a funzionare tramite Bluetooth; si è fermata solo la consegna delle modifiche di Home Assistant al gateway. Inserisci la password della chiave di rete del gateway (dall'app JUNG HOME) per un accesso immediato, oppure lasciala vuota e approva la richiesta di accesso nell'app dopo aver proseguito (Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte, entro tre minuti; compare come «{user_name}»). Viene rinnovato solo l'accesso: l'esportazione non viene recuperata di nuovo.",
+        "data": {
+          "gateway_password": "Password della chiave di rete"
+        },
+        "data_description": {
+          "gateway_password": "Facoltativa. Con essa il gateway concede subito l'accesso; senza, approvi la richiesta nell'app. Non viene salvata."
+        }
+      },
+      "areas": {
+        "title": "Stanze e aree",
+        "description": "Scegli l'area di Home Assistant per ogni stanza dell'app JUNG HOME. Una stanza è precompilata con l'area dello stesso nome, o con l'area che ha il nome della stanza come alias. Lascia vuota una stanza per avere un'area con il nome della stanza (creata se non esiste). Anche i dispositivi senza una stanza propria ne ricevono una: i tasti di un pulsante la stanza del carico accanto a loro, quelli di un trasmettitore da parete la stanza che i suoi tasti comandano. Dal menu Riconfigura, questo sposta i dispositivi che si trovano ancora nell'area assegnata dalla scelta precedente; un dispositivo che hai messo tu stesso in un'altra area non viene mai spostato.",
+        "data": {
+          "assign_areas": "Metti i dispositivi JUNG HOME nelle aree"
+        },
+        "data_description": {
+          "assign_areas": "Disattivato: i nuovi dispositivi partono senza area e le stanze qui sotto vengono ignorate."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Apri l'app JUNG HOME e approva la richiesta di accesso «{user_name}» in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte. Il gateway su {host} attende fino a tre minuti."
+    },
+    "error": {
+      "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+      "not_a_directory": "Il percorso dei metadati non è una directory.",
+      "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+      "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+      "address_in_use": "Quell'indirizzo appartiene a un nodo della mesh; scegline uno non usato.",
+      "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+      "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+      "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella rilevata.",
+      "mesh_already_configured": "Questa mesh è già configurata come un'altra voce (probabilmente la sua chiave di rete è stata rinnovata da quando Home Assistant l'ha vista l'ultima volta). Usa Riconfigura di quella voce invece di aggiungerne una nuova.",
+      "invalid_host": "Inserisci l'indirizzo IP o il nome host del gateway.",
+      "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+      "invalid_auth": "Il gateway ha rifiutato la password della chiave di rete.",
+      "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+      "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+      "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+      "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+      "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+      "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo.",
+      "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+      "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0."
+    },
+    "abort": {
+      "already_configured": "Questa rete mesh è già configurata.",
+      "already_in_progress": "È già in corso una configurazione di questa rete mesh.",
+      "not_supported": "Questo dispositivo Bluetooth non è un Mesh Proxy.",
+      "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+      "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima.",
+      "reconfigure_successful": "L'esportazione mesh è stata aggiornata.",
+      "no_gateway_entry": "L'integrazione JUNG HOME Gateway non è configurata; non c'è nulla da importare.",
+      "nothing_to_import": "Non resta alcuna entità del gateway da rilevare. Entità di questa integrazione senza controparte:\n{unmatched}\n\nEntità del gateway senza controparte qui:\n{gateway_only}",
+      "import_successful": "{count} entità sono state rilevate dall'integrazione JUNG HOME Gateway:\n{matched}\n\nRimaste come erano (già personalizzate qui):\n{customised}\n\nSenza controparte nel gateway:\n{unmatched}\n\nAncora con la voce del gateway:\n{gateway_only}\n\nLa voce del gateway è stata disattivata; eliminala in Impostazioni → Dispositivi e servizi → JUNG HOME quando tutto sembra a posto.",
+      "certificate_vouched_by_mesh": "Il gateway JUNG HOME su {host} presenta il certificato {observed}, ma il nodo del gateway ha garantito per {expected} tramite la mesh. Non è stato inviato nulla a quell'indirizzo: probabilmente un altro dispositivo della tua rete risponde al posto del gateway. Se hai sostituito tu stesso il gateway o il suo certificato, riconfigura di nuovo mentre Home Assistant è connesso alla mesh: il nodo del gateway comunica allora il nuovo certificato.",
+      "import_unload_failed": "Impossibile scaricare {title}, quindi non è stato importato nulla; ogni voce che l'importazione aveva scaricato viene configurata di nuovo. Controlla il registro, poi riprova l'importazione.",
+      "reauth_successful": "Il gateway JUNG HOME accetta di nuovo Home Assistant. Le modifiche fatte nel frattempo in Home Assistant gli arrivano con la prossima modifica, o subito con l'azione Sincronizza il gateway.",
+      "areas_updated": "Le aree delle stanze sono salvate; {count} dispositivi spostati nella nuova area della loro stanza.",
+      "not_loaded": "L'integrazione non è in esecuzione: configurala prima di nuovo.",
+      "not_junghome_gateway": "Questo dispositivo non si annuncia come gateway JUNG HOME (nessun produttore JUNG o nessun numero di serie).",
+      "not_ipv4_address": "Il gateway non ha annunciato alcun indirizzo IPv4. Aggiungi l'integrazione a mano e inserisci l'indirizzo del gateway."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni di JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Segnala i clic solo dopo aver escluso un doppio clic",
+          "heartbeats": "Heartbeat dei nodi (segna come non disponibile un dispositivo silenzioso)",
+          "allow_provisioning": "Consenti a Home Assistant di aggiungere e rimuovere dispositivi (sperimentale)",
+          "provisioner_identity": "Scrivi Home Assistant nel file della rete come provisioner (sperimentale, non verificato con l'app)",
+          "follow_app": "Segui le modifiche fatte nell'app JUNG HOME",
+          "gateway_check": "Controlla l'esportazione del gateway ogni sei ore",
+          "sync_areas": "Sposta i dispositivi quando cambia la loro stanza JUNG"
+        },
+        "data_description": {
+          "click_delay": "Un evento `click` viene trattenuto per mezzo secondo e scartato se segue un secondo clic, così una doppia pressione genera solo `double_click`. Disattivato: ogni pressione genera subito `click` e la seconda pressione di una doppia pressione genera anche `double_click`.",
+          "heartbeats": "A ogni dispositivo alimentato da rete viene chiesto di inviare un heartbeat a Home Assistant ogni 64 secondi (un'impostazione standard di Bluetooth Mesh che l'app JUNG lascia disattivata). Un dispositivo che non invia nulla per circa tre minuti e mezzo ha le sue entità segnate come non disponibili finché non viene sentito di nuovo. Disattivando questa opzione si dice ai dispositivi di smettere (di nuovo alla connessione successiva se non è stato possibile avvisarli tutti subito); disattivala prima di rimuovere l'integrazione, che dopo non può più avvisarli.",
+          "allow_provisioning": "Consente all'azione `junghome_ble.add_device` di mettere in servizio un nuovo dispositivo JUNG e configurarlo come farebbe l'app, sul modello di un dispositivo dello stesso prodotto già presente nella rete, e a `junghome_ble.remove_device` di ripristinare un dispositivo e toglierlo dalla rete. Non ancora provato su dispositivi reali: provalo prima con un dispositivo di riserva. L'aggiunta consegna al dispositivo le chiavi della rete; la rimozione non può essere annullata.",
+          "provisioner_identity": "Ogni file che Home Assistant scrive o consegna al gateway riceve una voce provisioner per Home Assistant, con propri intervalli di indirizzi separati da quelli dell'app e che contengono l'indirizzo di Home Assistant, e i dispositivi aggiunti da Home Assistant che mancano nel file dell'app vengono reinseriti. Stanze, scene e dispositivi creati da Home Assistant prendono allora i loro indirizzi dai suoi intervalli. Nessuna app JUNG ha ancora importato un file del genere: provalo su un'installazione di riserva dell'app (importa il file da `junghome_ble.export_network`) prima che lo veda la tua app o il tuo gateway. Disattivato: i file vengono scritti esattamente come senza questa opzione.",
+          "follow_app": "Quando il telefono con l'app JUNG HOME viene sentito sulla mesh, una voce configurata dal gateway recupera l'esportazione del gateway alcuni minuti dopo che il telefono è tornato silenzioso (al massimo ogni 15 minuti) e la adotta se è cambiata: dispositivi, stanze, scene e collegamenti dei tasti modificati nell'app arrivano a Home Assistant senza Riconfigura. Una voce configurata da un file mostra invece un avviso di riparazione, non appena l'app è stata vista modificare la configurazione di un dispositivo. Per questo non viene inviato nulla sulla mesh. Non verificato su dispositivi reali.",
+          "gateway_check": "Una voce configurata dal gateway chiede al gateway la sua esportazione ogni sei ore e la adotta se è cambiata, il che coglie ciò che l'app ha modificato mentre Home Assistant non sentiva il telefono. Una richiesta al gateway; non viene inviato nulla sulla mesh. Nessun effetto su una voce configurata da un file.",
+          "sync_areas": "Quando un dispositivo cambia stanza nell'app (non appena Home Assistant segue la nuova esportazione) o tramite un'azione sulle stanze, si sposta anche nell'area della nuova stanza — a meno che tu stesso non l'abbia messo in un'area. Disattivato: un dispositivo resta nell'area in cui è partito. Non verificato su dispositivi reali."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Connessione mesh"
+      },
+      "motion": {
+        "name": "Movimento"
+      },
+      "occupancy": {
+        "name": "Presenza"
+      },
+      "fault": {
+        "name": "Guasto"
+      },
+      "wind_alarm": {
+        "name": "Allarme vento"
+      },
+      "reference_run_active": {
+        "name": "Corsa di riferimento"
+      },
+      "gateway_api_available": {
+        "name": "API disponibile"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Client in attesa di approvazione"
+      },
+      "gateway_network_problem": {
+        "name": "Problema di rete"
+      },
+      "gateway_mesh_problem": {
+        "name": "Problema Bluetooth Mesh"
+      },
+      "gateway_cloud_problem": {
+        "name": "Problema cloud"
+      },
+      "gateway_cloud_connected": {
+        "name": "Connessione cloud"
+      },
+      "window_open": {
+        "name": "Finestra aperta"
+      },
+      "input_state": {
+        "name": "Stato ingresso"
+      },
+      "input_state_key": {
+        "name": "Stato ingresso {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Funzione programmazione oraria"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Pulsante {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Doppio clic",
+              "hold_start": "Pressione prolungata iniziata",
+              "hold_end": "Pressione prolungata rilasciata",
+              "press_on": "Premuto acceso / su",
+              "press_off": "Premuto spento / giù",
+              "scene": "Scena richiamata",
+              "dim": "Regolazione luminosità"
+            }
+          },
+          "connection": {
+            "name": "Collegamento",
+            "state": {
+              "device": "Dispositivo",
+              "room": "Stanza",
+              "scene": "Scena",
+              "gateway": "Gateway",
+              "group": "Gruppo",
+              "none": "Nessuno"
+            }
+          },
+          "reason": {
+            "name": "Motivo della fine della pressione prolungata",
+            "state": {
+              "timeout": "Nessun rilascio ricevuto in tempo",
+              "link_lost": "Collegamento perso",
+              "stopped": "Integrazione arrestata"
+            }
+          },
+          "position": {
+            "name": "Posizione",
+            "state": {
+              "top": "In alto",
+              "bottom": "In basso",
+              "rocker": "Bilanciere",
+              "left_top": "Sinistra, in alto",
+              "left_bottom": "Sinistra, in basso",
+              "right_top": "Destra, in alto",
+              "right_bottom": "Destra, in basso",
+              "left_rocker": "Bilanciere sinistro",
+              "right_rocker": "Bilanciere destro"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Ingresso {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Doppio clic",
+              "hold_start": "Pressione prolungata iniziata",
+              "hold_end": "Pressione prolungata rilasciata",
+              "press_on": "Premuto acceso / su",
+              "press_off": "Premuto spento / giù",
+              "scene": "Scena richiamata",
+              "dim": "Regolazione luminosità"
+            }
+          },
+          "connection": {
+            "name": "Collegamento",
+            "state": {
+              "device": "Dispositivo",
+              "room": "Stanza",
+              "scene": "Scena",
+              "gateway": "Gateway",
+              "group": "Gruppo",
+              "none": "Nessuno"
+            }
+          },
+          "reason": {
+            "name": "Motivo della fine della pressione prolungata",
+            "state": {
+              "timeout": "Nessun rilascio ricevuto in tempo",
+              "link_lost": "Collegamento perso",
+              "stopped": "Integrazione arrestata"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Potenza"
+      },
+      "voltage": {
+        "name": "Tensione"
+      },
+      "current": {
+        "name": "Corrente"
+      },
+      "energy": {
+        "name": "Energia"
+      },
+      "energy_resettable": {
+        "name": "Energia dall'azzeramento"
+      },
+      "energy_since_on": {
+        "name": "Energia dall'accensione"
+      },
+      "power_on_time": {
+        "name": "Tempo di accensione"
+      },
+      "proxy_node": {
+        "name": "Nodo proxy"
+      },
+      "link_state": {
+        "name": "Stato del collegamento",
+        "state": {
+          "bluetooth_off": "Nessun Bluetooth",
+          "searching": "Ricerca di un nodo proxy",
+          "connecting": "Connessione in corso",
+          "updating": "Connesso, aggiornamento degli stati dei dispositivi",
+          "connected": "Connesso",
+          "failed": "Connessione non riuscita",
+          "disconnected": "Disconnesso"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Dispositivi non raggiungibili",
+        "state_attributes": {
+          "devices": {
+            "name": "Dispositivi"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Panoramica mesh",
+        "state_attributes": {
+          "nodes": {
+            "name": "Nodi"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Illuminamento"
+      },
+      "battery": {
+        "name": "Batteria"
+      },
+      "installed": {
+        "name": "Installato"
+      },
+      "key_mode": {
+        "name": "Modalità del tasto",
+        "state": {
+          "light": "Luce",
+          "move": "Tapparella",
+          "scene": "Scena",
+          "property": "Proprietà",
+          "rtr": "Temperatura",
+          "switch": "Commutazione",
+          "gateway": "Gateway"
+        }
+      },
+      "key_mode_key": {
+        "name": "Modalità del tasto {key}",
+        "state": {
+          "light": "Luce",
+          "move": "Tapparella",
+          "scene": "Scena",
+          "property": "Proprietà",
+          "rtr": "Temperatura",
+          "switch": "Commutazione",
+          "gateway": "Gateway"
+        }
+      },
+      "schedules": {
+        "name": "Programmazioni orarie"
+      },
+      "scenes": {
+        "name": "Scene"
+      },
+      "switch_off_at": {
+        "name": "Si spegne alle"
+      },
+      "switch_on_threshold": {
+        "name": "Soglia di accensione"
+      },
+      "switch_off_threshold": {
+        "name": "Soglia di spegnimento"
+      },
+      "last_seen": {
+        "name": "Ultimo contatto"
+      },
+      "rssi": {
+        "name": "Intensità del segnale"
+      },
+      "hops": {
+        "name": "Salti"
+      },
+      "last_restart": {
+        "name": "Ultimo riavvio"
+      },
+      "clock_offset": {
+        "name": "Scostamento dell'orologio"
+      },
+      "iv_index": {
+        "name": "Indice IV"
+      },
+      "sequence_used": {
+        "name": "Numeri di sequenza usati"
+      },
+      "mesh_sequence_used": {
+        "name": "Numeri di sequenza mesh usati"
+      },
+      "switching_cycles": {
+        "name": "Cicli di commutazione"
+      },
+      "power_on_cycles": {
+        "name": "Cicli di accensione"
+      },
+      "gateway_ip": {
+        "name": "Indirizzo IP"
+      },
+      "gateway_firmware": {
+        "name": "Versione firmware"
+      },
+      "gateway_firmware_build": {
+        "name": "Build del firmware"
+      },
+      "gateway_serial": {
+        "name": "Numero di serie"
+      },
+      "gateway_access_requests": {
+        "name": "Richieste di accesso",
+        "state_attributes": {
+          "clients": {
+            "name": "Client"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "Client API",
+        "state_attributes": {
+          "clients": {
+            "name": "Client"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Registro errori",
+        "state_attributes": {
+          "entries": {
+            "name": "Voci"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Ultimo caricamento dell'esportazione"
+      },
+      "forced_off": {
+        "name": "Acceso/spento permanente",
+        "state": {
+          "inactive": "Inattivo",
+          "off": "Spento permanente",
+          "on": "Acceso permanente"
+        }
+      },
+      "sleep_mode": {
+        "name": "Modalità sospensione",
+        "state": {
+          "awake": "Attivo",
+          "asleep": "In sospensione"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Corsa di riferimento"
+      },
+      "identify": {
+        "name": "Identifica"
+      },
+      "clear_faults": {
+        "name": "Cancella guasti"
+      },
+      "reset_consumption": {
+        "name": "Azzera consumo"
+      },
+      "fetch_gateway_export": {
+        "name": "Recupera l'esportazione dal gateway"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Posizione della tapparella al ritorno della rete"
+      },
+      "blind_ventilation_position": {
+        "name": "Posizione di ventilazione"
+      },
+      "color_temp_max": {
+        "name": "Temperatura di colore massima"
+      },
+      "color_temp_min": {
+        "name": "Temperatura di colore minima"
+      },
+      "comfort_temperature": {
+        "name": "Temperatura comfort"
+      },
+      "default_color_temp": {
+        "name": "Temperatura di colore all'accensione"
+      },
+      "default_lightness": {
+        "name": "Luminosità all'accensione"
+      },
+      "eco_temperature": {
+        "name": "Temperatura ECO"
+      },
+      "frost_protection_temperature": {
+        "name": "Temperatura antigelo"
+      },
+      "lightness_max": {
+        "name": "Luminosità massima"
+      },
+      "lightness_min": {
+        "name": "Luminosità minima"
+      },
+      "lock_time_limit": {
+        "name": "Limite di tempo del blocco"
+      },
+      "motor_reversal_time": {
+        "name": "Tempo minimo di inversione del motore"
+      },
+      "off_delay": {
+        "name": "Ritardo allo spegnimento"
+      },
+      "on_delay": {
+        "name": "Ritardo all'accensione"
+      },
+      "pir_sensor_a": {
+        "name": "Zona di attivazione A"
+      },
+      "pir_sensor_b": {
+        "name": "Zona di attivazione B"
+      },
+      "pir_sensor_c": {
+        "name": "Zona di attivazione C"
+      },
+      "repetition_time": {
+        "name": "Tempo di ripetizione"
+      },
+      "running_time": {
+        "name": "Tempo di corsa"
+      },
+      "sensor_offset": {
+        "name": "Offset del sensore di temperatura"
+      },
+      "slat_position_on_power": {
+        "name": "Posizione delle lamelle al ritorno della rete"
+      },
+      "slat_ventilation_position": {
+        "name": "Posizione di ventilazione delle lamelle"
+      },
+      "slats_move_time": {
+        "name": "Tempo di rotazione delle lamelle"
+      },
+      "switch_blocking_time": {
+        "name": "Tempo minimo tra due commutazioni"
+      },
+      "switch_on_brightness": {
+        "name": "Soglia di luminosità"
+      },
+      "timed_on_duration": {
+        "name": "Tempo di ritardo allo spegnimento"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Modalità di funzionamento",
+        "state": {
+          "blinds": "Veneziana (con lamelle)",
+          "shutter": "Tapparella (senza lamelle)",
+          "awning": "Tenda da sole"
+        }
+      },
+      "controller_type": {
+        "name": "Uscita del regolatore",
+        "state": {
+          "pi_control": "Modulazione a larghezza d'impulso (PWM)",
+          "two_point_control": "Regolazione a due punti"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Modalità di funzionamento",
+        "state": {
+          "guard": "Luogo di montaggio",
+          "presence": "Luminosità della stanza"
+        }
+      },
+      "dim_mode": {
+        "name": "Modalità di regolazione",
+        "state": {
+          "leading_edge": "Taglio di fase in salita (RL)",
+          "trailing_edge": "Taglio di fase in discesa (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Modalità di funzionamento",
+        "state": {
+          "none": "Nessuna",
+          "comfort": "Comfort",
+          "eco": "ECO",
+          "frost": "Protezione antigelo"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Fronte di discesa",
+        "state": {
+          "no_reaction": "Nessuna reazione",
+          "on": "Accendi",
+          "off": "Spegni",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Fronte di discesa {key}",
+        "state": {
+          "no_reaction": "Nessuna reazione",
+          "on": "Accendi",
+          "off": "Spegni",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Fronte di salita",
+        "state": {
+          "no_reaction": "Nessuna reazione",
+          "on": "Accendi",
+          "off": "Spegni",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Fronte di salita {key}",
+        "state": {
+          "no_reaction": "Nessuna reazione",
+          "on": "Accendi",
+          "off": "Spegni",
+          "toggle": "Commuta"
+        }
+      },
+      "led_colour_off": {
+        "name": "Colore del LED (spento)",
+        "state": {
+          "red": "Rosso",
+          "green": "Verde",
+          "white": "Bianco",
+          "blue": "Blu",
+          "violet": "Viola",
+          "orange": "Arancione",
+          "yellow": "Giallo",
+          "cyan": "Ciano",
+          "no_color": "Nessun colore"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "Colore del LED (spento) {key}",
+        "state": {
+          "red": "Rosso",
+          "green": "Verde",
+          "white": "Bianco",
+          "blue": "Blu",
+          "violet": "Viola",
+          "orange": "Arancione",
+          "yellow": "Giallo",
+          "cyan": "Ciano",
+          "no_color": "Nessun colore"
+        }
+      },
+      "led_colour_on": {
+        "name": "Colore del LED (acceso)",
+        "state": {
+          "red": "Rosso",
+          "green": "Verde",
+          "white": "Bianco",
+          "blue": "Blu",
+          "violet": "Viola",
+          "orange": "Arancione",
+          "yellow": "Giallo",
+          "cyan": "Ciano",
+          "no_color": "Nessun colore"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "Colore del LED (acceso) {key}",
+        "state": {
+          "red": "Rosso",
+          "green": "Verde",
+          "white": "Bianco",
+          "blue": "Blu",
+          "violet": "Viola",
+          "orange": "Arancione",
+          "yellow": "Giallo",
+          "cyan": "Ciano",
+          "no_color": "Nessun colore"
+        }
+      },
+      "main_page": {
+        "name": "Visualizzazione locale",
+        "state": {
+          "target_temperature": "Temperatura impostata",
+          "current_temperature": "Temperatura effettiva",
+          "clock": "Ora"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Comportamento al ritorno della tensione di rete",
+        "state": {
+          "no_reaction": "Nessuna reazione",
+          "move_up": "Salita a 0 %",
+          "move_down": "Discesa a 100 %",
+          "stop": "Stop",
+          "move_to_stored_position": "Posizione memorizzata",
+          "position_for_network_failure": "Posizione per guasto di rete"
+        }
+      },
+      "operation_site": {
+        "name": "Luogo di utilizzo",
+        "state": {
+          "indoor": "Interno",
+          "outdoor": "Esterno"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Comportamento al ritorno della rete",
+        "state": {
+          "off": "Spento",
+          "on": "Acceso",
+          "restore": "Stato precedente"
+        }
+      },
+      "sensor_selection": {
+        "name": "Sensore di temperatura",
+        "state": {
+          "internal": "Ambiente",
+          "external": "Pavimento",
+          "internal_and_external": "Ambiente e pavimento"
+        }
+      },
+      "valve_output": {
+        "name": "Regolazione della valvola",
+        "state": {
+          "normally_closed": "NC - normalmente chiusa",
+          "normally_open": "NO - normalmente aperta"
+        }
+      },
+      "lock_function": {
+        "name": "Funzione di blocco",
+        "state": {
+          "unlocked": "Sbloccato",
+          "keep_state": "Bloccato (mantieni posizione)",
+          "lockout_protection": "Protezione anti-chiusura fuori",
+          "wind_alarm": "Allarme vento"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Tutte le prese"
+      },
+      "room_sockets": {
+        "name": "Tutte le prese in {room}"
+      },
+      "automatic_dst": {
+        "name": "Cambio dell'ora attivo"
+      },
+      "backlight_auto_off": {
+        "name": "Spegni automaticamente il display"
+      },
+      "blinds_invert_output": {
+        "name": "Funzionamento invertito"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Funzionamento diurno"
+      },
+      "dim_to_warm": {
+        "name": "Regolazione a luce calda"
+      },
+      "input_edge_mode": {
+        "name": "Valutazione dei fronti"
+      },
+      "input_edge_mode_key": {
+        "name": "Valutazione dei fronti {key}"
+      },
+      "invert_output": {
+        "name": "Inverti l'uscita di commutazione"
+      },
+      "led_colour_sync": {
+        "name": "Sincronizza i colori dei LED"
+      },
+      "led_night_mode": {
+        "name": "Modalità notte del LED"
+      },
+      "lock": {
+        "name": "Blocco",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Modalità di blocco",
+            "state": {
+              "keep_state": "Mantieni lo stato attuale",
+              "lockout_protection": "Protezione anti-chiusura fuori",
+              "wind_alarm": "Allarme vento",
+              "enforced_value": "Stato forzato"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Limite di tempo del blocco"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Spegnimento manuale durante il tempo di ritardo"
+      },
+      "prewarning": {
+        "name": "Preavviso di spegnimento"
+      },
+      "scheduler_enabled": {
+        "name": "Funzionamento automatico"
+      },
+      "status_led": {
+        "name": "LED di stato"
+      },
+      "status_led_key": {
+        "name": "LED di stato {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Sensibilità al tocco ridotta"
+      },
+      "use_last_lightness": {
+        "name": "Usa la luminosità precedente"
+      },
+      "sensor_publication": {
+        "name": "Valori dei sensori per sistemi IoT"
+      },
+      "local_devices_lock": {
+        "name": "Blocca il comando"
+      },
+      "factory_reset_time_limit": {
+        "name": "Blocca il ripristino di fabbrica"
+      },
+      "key_lock": {
+        "name": "Blocco tasti"
+      },
+      "configuration_lock": {
+        "name": "Blocca la configurazione sul dispositivo"
+      },
+      "walking_test": {
+        "name": "Test di camminata"
+      },
+      "time_keeper": {
+        "name": "Orologio di riferimento"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Modalità di funzionamento",
+            "state": {
+              "blinds": "Veneziana (con lamelle)",
+              "shutter": "Tapparella avvolgibile",
+              "awning": "Tenda da sole",
+              "unknown": "Sconosciuto"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Tutte le tapparelle"
+      },
+      "room_blinds": {
+        "name": "Tutte le tapparelle in {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Protezione antigelo"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Tutti i termostati"
+      },
+      "room_thermostats": {
+        "name": "Tutti i termostati in {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Tutte le luci"
+      },
+      "room_lights": {
+        "name": "Tutte le luci in {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Pulsante A {subtype}",
+      "b": "Pulsante B {subtype}",
+      "c": "Pulsante C {subtype}",
+      "d": "Pulsante D {subtype}",
+      "e1": "Ingresso E1 {subtype}",
+      "e2": "Ingresso E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "cliccato",
+      "double_click": "cliccato due volte",
+      "hold_start": "pressione prolungata iniziata",
+      "hold_end": "pressione prolungata rilasciata",
+      "press_on": "premuto acceso / su",
+      "press_off": "premuto spento / giù",
+      "scene": "ha richiamato una scena",
+      "dim": "regolazione luminosità",
+      "click_up": "cliccato (metà superiore)",
+      "click_down": "cliccato (metà inferiore)",
+      "double_click_up": "cliccato due volte (metà superiore)",
+      "double_click_down": "cliccato due volte (metà inferiore)",
+      "hold_start_up": "pressione prolungata iniziata (metà superiore)",
+      "hold_start_down": "pressione prolungata iniziata (metà inferiore)",
+      "hold_end_up": "pressione prolungata rilasciata (metà superiore)",
+      "hold_end_down": "pressione prolungata rilasciata (metà inferiore)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Impossibile inviare il comando alla mesh JUNG; nessun nodo proxy è connesso."
+    },
+    "no_answer": {
+      "message": "Il dispositivo JUNG non ha risposto; il comando potrebbe comunque essere stato eseguito e viene verificato di nuovo alla prossima connessione."
+    },
+    "device_not_reachable": {
+      "message": "{entity} non ha risposto al comando (3 tentativi in 9 s); potrebbe non essere stato eseguito. Se il resto della mesh risponde ancora, il dispositivo viene mostrato come non disponibile finché non viene sentito di nuovo: verifica che sia alimentato."
+    },
+    "cannot_load": {
+      "message": "Impossibile leggere l'esportazione mesh {path}."
+    },
+    "no_proxy_visible": {
+      "message": "Nessun nodo della mesh JUNG è ancora visibile tramite Bluetooth."
+    },
+    "export_keys_stale": {
+      "message": "I dispositivi della mesh JUNG sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete dell'esportazione: le chiavi sono state rinnovate dopo la creazione dell'esportazione. Esporta di nuovo la rete dall'app JUNG HOME e usala in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant non ha alcun adattatore o proxy Bluetooth collegabile: la mesh JUNG non è raggiungibile."
+    },
+    "duplicate_mesh": {
+      "message": "{others} gestisce già questa mesh JUNG HOME; si può caricare una sola voce per mesh. Rimuovi una delle due voci."
+    },
+    "seq_store_not_written": {
+      "message": "Impossibile salvare il record dei numeri di sequenza di una versione precedente nell'archivio della mesh (`.storage/junghome_ble.seq.*`); verifica che la directory di configurazione sia scrivibile."
+    },
+    "seq_floor_not_written": {
+      "message": "Il record dei numeri di sequenza è stato ripristinato da un backup e la sua soglia minima (`.storage/junghome_ble.seq.*.floor`) non ha potuto essere scritta prima di saltare avanti; verifica che la directory di configurazione sia scrivibile."
+    },
+    "service_entry_not_loaded": {
+      "message": "L'integrazione della mesh JUNG HOME non è caricata (o si sta ricaricando); riprova tra un momento."
+    },
+    "service_not_connected": {
+      "message": "La mesh JUNG HOME non è connessa; riprova quando un nodo proxy è nel raggio d'azione."
+    },
+    "service_entry_ambiguous": {
+      "message": "È configurata più di una rete mesh JUNG HOME; indica la rete mesh (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} non è un dispositivo o un'entità della mesh JUNG HOME."
+    },
+    "service_not_a_load": {
+      "message": "{name} non è un dispositivo JUNG HOME su cui questa azione funziona."
+    },
+    "service_not_a_key": {
+      "message": "{name} non è un tasto di un pulsante JUNG HOME."
+    },
+    "service_key_required": {
+      "message": "{name} ha i tasti {keys}; indica la lettera del tasto per sceglierne uno."
+    },
+    "service_unknown_key": {
+      "message": "{name} non ha alcun tasto {letter} (ha {keys})."
+    },
+    "service_no_loads": {
+      "message": "La destinazione non indica alcuna luce o presa JUNG HOME."
+    },
+    "service_target_other_network": {
+      "message": "Il tasto e la sua destinazione appartengono a reti mesh diverse."
+    },
+    "service_unknown_element": {
+      "message": "L'elemento {address} non è nell'esportazione mesh."
+    },
+    "service_no_room": {
+      "message": "Nell'esportazione mesh non c'è alcuna stanza chiamata {room}."
+    },
+    "service_room_exists": {
+      "message": "Esiste già una stanza chiamata {room}."
+    },
+    "service_room_key_drives_load": {
+      "message": "Non rimosso dalla stanza {room}: {device} è comandato da {button} tramite il collegamento di quel tasto alla stanza, e lasciare la stanza lo scollega anche dal tasto. Esegui di nuovo l'azione con Anche se un tasto lo comanda, oppure assegna prima al tasto un'altra funzione."
+    },
+    "service_invalid_room_name": {
+      "message": "Una stanza ha bisogno di un nome."
+    },
+    "service_no_mode": {
+      "message": "Nessuna modalità del tasto è adatta all'elemento {address}; indica la modalità."
+    },
+    "service_invalid_mode": {
+      "message": "La modalità {mode} non può essere usata con la destinazione {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Il tasto {address} non ha alcun modello client per la modalità {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Un elemento di destinazione vale solo per un tasto collegato a un dispositivo, non a una stanza o a una scena."
+    },
+    "service_target_element_missing": {
+      "message": "La destinazione {target} non ha alcun elemento {target_element} che un tasto possa comandare."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Un tempo di blocco vale solo per la modalità lock, da 0 a 65535 secondi."
+    },
+    "service_lock_unsupported": {
+      "message": "Un tasto non può bloccare la destinazione {target}: da un tasto si possono bloccare solo una luce o una presa."
+    },
+    "service_no_element_group": {
+      "message": "L'elemento {address} non ha alcun gruppo di elementi: l'app JUNG HOME non lo ha mai collegato. Collegalo prima una volta nell'app."
+    },
+    "service_one_target": {
+      "message": "Indica esattamente una destinazione: un dispositivo, un'entità, una stanza o una scena."
+    },
+    "service_config_refused": {
+      "message": "Il nodo {node} ha rifiutato {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Il nodo {node} non ha risposto a {message}; è alimentato e nel raggio d'azione? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Non inviato: {nodes} non hanno risposto all'ultima richiesta di Home Assistant e risultano non raggiungibili (le loro entità non sono disponibili), quindi il piano si fermerebbe al loro primo messaggio. Verifica che siano alimentati e nel raggio d'azione, ed esegui di nuovo l'azione quando rispondono. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Il nodo {node} funziona a batteria e non ha risposto a {message}: è in sospensione. Premi uno dei suoi tasti per svegliarlo, poi esegui subito di nuovo l'azione. Se non reagisce nemmeno alla pressione di un tasto, di solito la batteria è scarica: sostituiscila. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Il tasto {address} non ha accettato la modalità {mode}; i suoi collegamenti sono stati configurati e sono registrati nell'esportazione mesh — esegui di nuovo l'azione con la stessa destinazione per impostare la modalità."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Il tasto {address} non ha accettato la scena {scene}; pubblica i suoi richiami di scena a tutti i dispositivi e ciò è registrato nell'esportazione mesh — esegui di nuovo l'azione con la stessa scena per impostarla."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Il tasto {address} non ha accettato la sua funzione di blocco (proprietà {property}); i suoi collegamenti sono stati configurati e sono registrati nell'esportazione mesh — esegui di nuovo l'azione con la stessa destinazione per impostarla."
+    },
+    "service_export_newer": {
+      "message": "L'esportazione mesh {path} è stata modificata al di fuori di Home Assistant (dall'app JUNG HOME o a mano) dopo che Home Assistant l'ha caricata. Esporta di nuovo il progetto dall'app, sostituisci il file (Riconfigura) e riprova."
+    },
+    "service_export_load_failed": {
+      "message": "Impossibile leggere l'esportazione mesh {path}: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Impossibile scrivere l'esportazione mesh {path}: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} non può accettare quel valore: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Il termostato non ha ancora comunicato la sua temperatura {preset}; riprova tra un momento."
+    },
+    "led_colour_unknown": {
+      "message": "I colori dei LED di {entity} non sono ancora noti; il dispositivo non ha risposto alla lettura."
+    },
+    "service_room_name_reserved": {
+      "message": "«{name}» è un nome che la mesh riserva ai gruppi interni; scegli un altro nome per la stanza."
+    },
+    "service_name_blank": {
+      "message": "Un nome non può essere vuoto."
+    },
+    "service_name_too_long": {
+      "message": "L'app JUNG HOME non può rinominare in «{name}»: la sua ridenominazione accetta al massimo {max_length} caratteri."
+    },
+    "service_name_not_allowed": {
+      "message": "L'app JUNG HOME rifiuta il nome «{name}»: interpreta il segno % come inizio di un segnaposto (passano solo %% e %n)."
+    },
+    "service_room_range_full": {
+      "message": "Nell'intervallo dell'app non resta alcun indirizzo di gruppo libero; elimina prima una stanza non usata nell'app JUNG HOME."
+    },
+    "gateway_certificate_changed": {
+      "message": "Il gateway JUNG HOME su {host} presenta un certificato diverso da quello registrato ({expected} contro {observed}). Se il gateway o il suo certificato sono stati sostituiti di proposito, riconfigura la voce."
+    },
+    "service_ambiguous_scene": {
+      "message": "«{scene}» è sia un numero di scena sia il nome di un'altra scena; rinomina quella scena per distinguerle."
+    },
+    "service_unknown_scene": {
+      "message": "Nell'esportazione mesh non esiste alcuna scena «{scene}»; indica il nome della scena come lo mostra l'app JUNG HOME, oppure il suo numero."
+    },
+    "service_scene_exists": {
+      "message": "Esiste già una scena chiamata «{scene}»."
+    },
+    "service_scene_range_full": {
+      "message": "Nell'intervallo dell'app non resta alcun numero di scena libero; elimina prima una scena non usata."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant assegna alle nuove stanze gli indirizzi di gruppo liberi più alti dell'intervallo dell'app, affinché le prossime stanze dell'app non ricevano gli stessi; restano solo {free} indirizzi liberi sotto il prossimo, e l'app lo raggiungerebbe presto. Elimina le stanze non usate, oppure attiva l'opzione dell'identità di provisioner, che assegna a Home Assistant un proprio intervallo."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant assegna alle nuove scene i numeri di scena liberi più alti dell'intervallo dell'app, affinché le prossime scene dell'app non ricevano gli stessi; restano solo {free} numeri liberi sotto il prossimo, e l'app lo raggiungerebbe presto. Elimina le scene non usate, oppure attiva l'opzione dell'identità di provisioner, che assegna a Home Assistant un proprio intervallo."
+    },
+    "add_device_groups_crowded": {
+      "message": "I gruppi di elementi del nuovo dispositivo occuperebbero gli indirizzi di gruppo liberi più alti dell'intervallo dell'app, ma sotto di essi restano solo {free} indirizzi liberi, e le prossime stanze dell'app li raggiungerebbero presto. Elimina le stanze non usate, oppure attiva l'opzione dell'identità di provisioner, che assegna a Home Assistant un proprio intervallo."
+    },
+    "service_not_a_scene_element": {
+      "message": "L'elemento {address} non può memorizzare scene (non ha alcun Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Il dispositivo {address} non ha memorizzato la scena {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Il dispositivo {address} non ha spazio per la scena {scene}: contiene già {capacity} scene, comprese quelle a tempo. Rimuovilo prima da un'altra scena. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Il dispositivo {address} contiene ancora la scena {scene} dopo l'eliminazione ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "Il gateway JUNG HOME non ha fornito la sua esportazione, e questa azione ne ha bisogno: la copia conservata da Home Assistant potrebbe non contenere ciò che l'app JUNG HOME ha modificato nel frattempo. Riprova quando il gateway risponde (il registro indica perché non l'ha fatto)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Questa rete è stata configurata da un file, che potrebbe non contenere le scene create nell'app JUNG HOME dopo l'esportazione; eliminare i numeri di scena che il file non conosce eliminerebbe quelle scene da ogni dispositivo. Esegui prima una simulazione e confronta i numeri che elenca con l'app, poi elimina con «L'esportazione mesh è aggiornata» attivato, oppure indica i numeri da eliminare."
+    },
+    "service_unused_scenes_known": {
+      "message": "I numeri di scena {numbers} sono scene dell'esportazione mesh; eliminale con Elimina scena."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Il dispositivo {address} ha memorizzato la scena {scene} ma non ha accettato la descrizione della scena (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Lo stato di {address} non è noto, quindi la scena {scene} verrebbe memorizzata senza la sua descrizione, e togliere dalla scena un altro canale del dispositivo eliminerebbe poi anche questo. Indica lo stato da memorizzare (oppure commuta una volta il dispositivo) e riprova. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Questa rete non è stata configurata da un gateway JUNG HOME (nessun indirizzo e token del gateway nella voce); riconfigura la voce dal gateway per sincronizzarla."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Il gateway su {host} non ha accettato l'esportazione: {error}."
+    },
+    "service_send_failed": {
+      "message": "La connessione alla mesh JUNG si è interrotta durante l'invio di {message} al nodo {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Il nodo {node} è nell'esportazione mesh {path} ma non nella rete che Home Assistant ha caricato in precedenza da essa; ricarica l'integrazione (Impostazioni → Dispositivi e servizi → JUNG HOME → Ricarica) affinché segua l'esportazione, poi riprova. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "Il gateway JUNG HOME su {host} contiene un'esportazione più recente ({gateway}) del file che Home Assistant caricherebbe ({file}); caricarlo cancellerebbe ciò che l'app JUNG HOME ha modificato nel frattempo. La prossima modifica fatta in Home Assistant adotta l'esportazione del gateway e vi riporta le modifiche di Home Assistant. Se questo errore si ripresenta (una voce senza una copia dell'ultimo caricamento dell'app non può distinguerle), recupera di nuovo l'esportazione del gateway (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura; il file che sostituisce viene conservato accanto come `.pre-reconfigure`), poi ripeti la modifica fatta in Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "Il gateway JUNG HOME su {host} ha risposto solo con il semplice database dei dispositivi (senza nomi dei dispositivi né collegamenti alle stanze); adottarlo li cancellerebbe dal file che Home Assistant conserva. Riprova quando il gateway non è più occupato, oppure recupera di nuovo l'esportazione dell'app."
+    },
+    "identify_no_answer": {
+      "message": "Il dispositivo JUNG non ha risposto alla richiesta di identificazione; è alimentato e nel raggio d'azione?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} non è una rete mesh JUNG HOME; indica il config_entry_id di una di esse (oppure omettilo quando ne è configurata una sola)."
+    },
+    "service_all_not_supported": {
+      "message": "Questa azione non accetta entity_id: all; indica le luci, le prese, i dispositivi, le aree o le etichette a cui si applica."
+    },
+    "edge_detection_unknown": {
+      "message": "La valutazione dei fronti di {entity} non è ancora nota; l'ingresso non ha risposto alla lettura."
+    },
+    "reset_consumption_refused": {
+      "message": "La presa JUNG non ha azzerato il suo contatore {property}; comunica ancora un valore diverso da 0."
+    },
+    "setup_state_unknown": {
+      "message": "L'impostazione attuale di {entity} non è ancora nota; il dispositivo non ha risposto alla lettura."
+    },
+    "setting_no_answer": {
+      "message": "Il dispositivo JUNG non ha risposto né alla modifica di {entity} né alla rilettura; potrebbe comunque aver accettato il nuovo valore. È alimentato e nel raggio d'azione?"
+    },
+    "setting_asleep": {
+      "message": "Il dispositivo a batteria di {entity} non ha risposto: è in sospensione. Premi uno dei suoi tasti per svegliarlo, poi ripeti subito la modifica. Se non reagisce nemmeno alla pressione di un tasto, di solito la batteria è scarica: sostituiscila."
+    },
+    "setting_not_applied": {
+      "message": "Il dispositivo JUNG non ha accettato il nuovo valore di {entity}; ne comunica ancora un altro."
+    },
+    "setting_not_supported": {
+      "message": "Il dispositivo JUNG non ha l'impostazione di {entity}: ha risposto alla modifica senza un valore."
+    },
+    "schedule_no_reply": {
+      "message": "Il dispositivo JUNG {address} non ha risposto riguardo alle sue programmazioni orarie."
+    },
+    "schedule_not_applied": {
+      "message": "Il dispositivo JUNG {address} non ha accettato la modifica dello slot di programmazione {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Tutti i 16 slot di programmazione del dispositivo JUNG {address} sono occupati; eliminane prima uno."
+    },
+    "schedule_empty_slot": {
+      "message": "Lo slot di programmazione {slot} del dispositivo JUNG {address} non contiene alcuna programmazione."
+    },
+    "schedule_not_supported": {
+      "message": "{name} non esegue programmazioni orarie proprie."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. La programmazione è già stata scritta su {created}: eliminala lì prima di chiamare di nuovo, altrimenti quei dispositivi la eseguono due volte."
+    },
+    "schedule_action_not_applicable": {
+      "message": "La programmazione non è adatta a {name}: {fields} non si applica."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "La programmazione non è adatta a {name}: un termostato ha bisogno di una temperatura."
+    },
+    "schedule_action_needs_position": {
+      "message": "La programmazione non è adatta a {name}: una tapparella ha bisogno di una posizione."
+    },
+    "schedule_action_needs_action": {
+      "message": "La programmazione non è adatta a {name}: ha bisogno di un'azione (acceso o spento)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "La programmazione non è adatta a {name}: una luminosità va con l'azione acceso."
+    },
+    "threshold_not_supported": {
+      "message": "{name} non è una presa JUNG HOME con misurazione e soglie."
+    },
+    "threshold_incomplete": {
+      "message": "{name} non contiene alcuna soglia da modificare (o non ha risposto): indica sia la potenza sia la durata."
+    },
+    "threshold_not_applied": {
+      "message": "La presa JUNG {address} non ha accettato la sua soglia {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Impossibile inviare la soglia {which} alla presa JUNG {address}; nessun nodo proxy è connesso. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "La presa e i dispositivi che le sue soglie devono commutare appartengono a reti mesh diverse."
+    },
+    "scene_state_not_applicable": {
+      "message": "Lo stato non è adatto a {name}: {fields} non si applica."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Lo stato non è adatto a {name}: un termostato ha bisogno di una temperatura."
+    },
+    "scene_state_needs_position": {
+      "message": "Lo stato non è adatto a {name}: una tapparella ha bisogno di una posizione."
+    },
+    "scene_state_needs_action": {
+      "message": "Lo stato non è adatto a {name}: ha bisogno di un'azione (acceso o spento)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Lo stato non è adatto a {name}: una luminosità va con l'azione acceso."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} non ha comunicato il nuovo stato in tempo; la scena non è stata memorizzata."
+    },
+    "service_gateway_token_rejected": {
+      "message": "Il gateway JUNG HOME su {host} non accetta più l'accesso di Home Assistant, quindi l'esportazione non gli è stata consegnata. Concedi di nuovo l'accesso tramite la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi esegui di nuovo questa operazione."
+    },
+    "seq_store_lost": {
+      "message": "Il record dei numeri di sequenza dell'indirizzo {unicast} è perso; Home Assistant non riutilizzerà numeri che la mesh ha già visto. Apri il problema da riparare per proseguire oltre di essi."
+    },
+    "address_in_use": {
+      "message": "Un nodo della mesh occupa l'indirizzo {unicast} di Home Assistant; riconfigura l'integrazione con uno libero ({suggestion} lo è)."
+    },
+    "add_device_not_allowed": {
+      "message": "L'aggiunta e la rimozione di dispositivi sono disattivate per questa rete: attiva prima *Consenti a Home Assistant di aggiungere e rimuovere dispositivi* nelle opzioni dell'integrazione."
+    },
+    "add_device_not_found": {
+      "message": "Nessun nuovo dispositivo JUNG si annuncia su {address}; esegui `find_new_devices` e usa un indirizzo che elenca."
+    },
+    "add_device_not_jung": {
+      "message": "Il dispositivo su {address} non dichiara di essere un dispositivo JUNG."
+    },
+    "add_device_no_template": {
+      "message": "Nella rete non c'è ancora alcun dispositivo del prodotto {product}: aggiungi il primo con l'app JUNG HOME, Home Assistant ne copia la configurazione."
+    },
+    "add_device_no_address": {
+      "message": "Al di fuori degli intervalli dei provisioner non resta alcun intervallo di indirizzi libero per il nuovo dispositivo."
+    },
+    "provisioner_identity_failed": {
+      "message": "Impossibile unire la voce provisioner di Home Assistant all'esportazione ({error}); non è stato modificato nulla. Vedi il registro."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant non può avere propri intervalli di indirizzi in questa rete: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Impossibile connettersi al nuovo dispositivo: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "La messa in servizio del nuovo dispositivo non è riuscita: {error}. È ancora nuovo; riprova."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "La messa in servizio del nuovo dispositivo su {unicast} non è stata confermata ({error}). Potrebbe aver ricevuto le chiavi della rete, quindi Home Assistant lo mantiene in sospeso: ripristinalo con l'azione `junghome_ble.reset_pending_device` (unicast {unicast}; aggiungi `force` se non risponde, come non può fare un dispositivo che non ha mai ricevuto le sue chiavi), poi aggiungilo di nuovo. Fino ad allora i suoi indirizzi restano riservati."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Impossibile salvare la chiave del nuovo dispositivo nell'archivio protetto di Home Assistant ({error}), quindi la messa in servizio si è fermata prima che il dispositivo ricevesse qualcosa: è ancora nuovo e non è stato riservato nulla per esso su {unicast}. Libera spazio o ripara la memoria, poi riprova."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Il dispositivo è stato messo in servizio su {unicast} ma la sua configurazione non è riuscita al passaggio {step} ({error}) e non ha confermato un ripristino. L'app non lo conosce: ripristinalo con l'azione `junghome_ble.reset_pending_device` (unicast {unicast}), poi aggiungilo di nuovo. Fino ad allora i suoi indirizzi restano riservati."
+    },
+    "add_device_record_failed": {
+      "message": "Il dispositivo è stato configurato ma non registrato su {unicast} ({error}). L'app non lo conosce: ripristinalo con l'azione `junghome_ble.reset_pending_device` (unicast {unicast}), poi aggiungilo di nuovo. Fino ad allora i suoi indirizzi restano riservati."
+    },
+    "add_device_no_beacon": {
+      "message": "L'indice IV della rete non è ancora confermato sulla connessione Bluetooth attuale (non vi è arrivato alcun beacon di rete), e il nuovo dispositivo ne manterrebbe uno sbagliato. Attendi la prossima connessione a un dispositivo JUNG e riprova."
+    },
+    "add_device_key_refresh": {
+      "message": "L'app JUNG HOME sta rinnovando la chiave di rete (Key Refresh fase 1): un dispositivo aggiunto ora riceverebbe la chiave che sta per essere ritirata. Completa il rinnovo delle chiavi nell'app (Home Assistant lo segue), poi riprova."
+    },
+    "add_device_name_too_long": {
+      "message": "Il nome «{name}» è più lungo di quanto l'app JUNG HOME accetti per un dispositivo: al massimo {max_length} caratteri."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Nessun dispositivo messo in servizio da Home Assistant senza registrarlo è noto come {device}; il problema da riparare *Un dispositivo aggiunto da Home Assistant non è registrato* elenca gli indirizzi di quelli esistenti."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Su {unicast} ora c'è un altro dispositivo della rete, quindi non è stato inviato alcun ripristino e non è stato modificato nulla. Usa `force` per dimenticare il dispositivo in sospeso a quell'indirizzo (ripristinalo a mano se esiste ancora)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Il dispositivo su {unicast} non ha confermato il suo ripristino; non è stato modificato nulla. Usa `force` per un dispositivo che è stato ripristinato a mano o che non c'è più definitivamente."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Impossibile inviare il ripristino al dispositivo su {unicast} ({error}); non è stato modificato nulla."
+    },
+    "remove_device_gateway": {
+      "message": "Il gateway non può essere rimosso in questo modo."
+    },
+    "remove_device_mesh": {
+      "message": "Indica un dispositivo JUNG, non la rete."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Il dispositivo {address} non ha confermato il suo ripristino e in seguito non è stato visto annunciarsi come nuovo dispositivo. Potrebbe essere stato ripristinato comunque (la sua conferma può andare persa e nessuno scanner Bluetooth potrebbe essere nel suo raggio d'azione), oppure non ha ricevuto il ripristino; l'esportazione mesh è invariata. Esegui di nuovo l'azione, oppure usa `force` se il dispositivo non c'è più definitivamente."
+    },
+    "remove_device_proxy": {
+      "message": "Il dispositivo {address} è il nodo proxy tramite cui Home Assistant è connesso: il suo ripristino interromperebbe la connessione su cui torna la sua conferma. Attendi che Home Assistant si connetta tramite un altro dispositivo (il sensore Nodo proxy), oppure usa `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Il blocco del dispositivo di {entity} non è ancora noto; il dispositivo non ha risposto alla lettura."
+    },
+    "cover_locked": {
+      "message": "{entity} è bloccato e ignora i comandi finché non viene sbloccato (il suo interruttore Blocco o la sua Funzione di blocco)."
+    },
+    "cover_wind_alarm": {
+      "message": "Un allarme vento blocca {entity}; ignora i comandi finché l'allarme non termina (la sua Funzione di blocco o il suo interruttore Blocco)."
+    },
+    "load_locked": {
+      "message": "{entity} è bloccato (nell'app JUNG HOME, da un tasto o dal suo interruttore Blocco) e mantiene il suo stato finché non viene sbloccato."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} non è un dimmer JUNG HOME: in questo modo si possono regolare solo i dimmer e i canali DALI a bianco regolabile."
+    },
+    "locate_no_answer": {
+      "message": "Il dispositivo JUNG {node} non ha risposto alla richiesta di annunciare la sua identità; è alimentato e nel raggio d'azione? Un dispositivo a batteria è in sospensione e risponde solo quando è attivo."
+    },
+    "locate_refused": {
+      "message": "Il dispositivo JUNG {node} ha rifiutato di annunciare la sua identità: {status}."
+    },
+    "locate_not_supported": {
+      "message": "Il dispositivo JUNG {node} non può annunciare la sua identità (Node Identity non è supportato)."
+    },
+    "approve_no_gateway": {
+      "message": "Questa rete non è stata configurata da un gateway JUNG HOME (nessun indirizzo e token del gateway nella voce): non c'è alcun gateway presso cui approvare dei client."
+    },
+    "approve_gateway_distrusted": {
+      "message": "Il gateway JUNG HOME su {host} non è stato interrogato: {error}. Non è stato approvato nulla."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "Il gateway JUNG HOME su {host} non accetta più l'accesso di Home Assistant, quindi non è stato approvato nulla. Concedi di nuovo l'accesso tramite la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi esegui di nuovo questa operazione."
+    },
+    "approve_client_not_waiting": {
+      "message": "Nessun client API chiamato «{client}» è in attesa di accesso presso il gateway (in attesa: {waiting}). Non è stato approvato nulla."
+    },
+    "approve_gateway_busy": {
+      "message": "Il gateway JUNG HOME su {host} è occupato con un'altra richiesta di configurazione; riprova tra un minuto. Non è stato approvato nulla."
+    },
+    "approve_gateway_failed": {
+      "message": "Il gateway JUNG HOME su {host} non ha eseguito quanto richiesto: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant non aggiorna il firmware JUNG: aggiorna il dispositivo con l'app JUNG HOME."
+    },
+    "add_device_node_not_configured": {
+      "message": "Impossibile configurare il nuovo dispositivo su {unicast} al passaggio {step} ({error}). Home Assistant lo ha ripristinato, come fa l'app JUNG HOME, e il dispositivo ha confermato: è di nuovo un dispositivo nuovo e non è riservato nulla per esso. Un dispositivo che non è il prodotto o l'inserto che annuncia viene rifiutato in questo modo; altrimenti aggiungilo di nuovo."
+    },
+    "add_device_provisioning_reset": {
+      "message": "La messa in servizio del nuovo dispositivo su {unicast} non è stata confermata ({error}). Home Assistant lo ha ripristinato e il dispositivo ha confermato: è di nuovo un dispositivo nuovo e non è riservato nulla per esso. Riprova."
+    },
+    "time_keeper_role_failed": {
+      "message": "Il dispositivo su {address} non ha assunto il suo ruolo per l'ora ({error}). La pubblicazione del suo Time Server è già stata modificata: commuta di nuovo l'orologio di riferimento quando il dispositivo risponde."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} è commutato dal termostato ambiente {thermostats} (collegato nell'app JUNG HOME) e non viene commutato a mano, come nell'app."
+    },
+    "load_forced_short": {
+      "message": "Il rilevatore di {entity} lo mantiene acceso o spento (acceso / spento permanente): sposta l'interruttore del funzionamento automatico del rilevatore in posizione centrale per terminarlo."
+    },
+    "load_forced_on_button": {
+      "message": "Il rilevatore di {entity} lo mantiene acceso (acceso permanente): premi il tasto ON del rilevatore per terminarlo."
+    },
+    "load_forced_off_button": {
+      "message": "Il rilevatore di {entity} lo mantiene spento (spento permanente): premi il tasto OFF del rilevatore per terminarlo."
+    },
+    "load_forced_on_presence": {
+      "message": "Il rilevatore di {entity} lo mantiene acceso (acceso permanente): il tasto di programmazione del rilevatore lo termina."
+    },
+    "load_forced_off_presence": {
+      "message": "Il rilevatore di {entity} lo mantiene spento (spento permanente): il tasto di programmazione del rilevatore lo termina."
+    },
+    "cover_slats_open": {
+      "message": "{entity} è completamente aperta: le sue lamelle non possono essere mosse finché non viene abbassata, come nell'app JUNG HOME."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} è in modalità boost: scegli un'altra preimpostazione per terminare il boost prima di impostare una temperatura, come nell'app JUNG HOME."
+    },
+    "service_detector_device_only": {
+      "message": "Il rilevatore {address} può comandare un solo dispositivo: indica come destinazione una luce, una presa o un dispositivo, non una stanza o una scena."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Il rilevatore {address} non può comandare una destinazione nella modalità {mode}: un rilevatore non ha alcuna modalità del tasto, quindi commuta solo una luce, una presa o una tapparella nella modalità data dalla destinazione, senza funzione di blocco, termostato ambiente, gateway o elemento di destinazione."
+    },
+    "gateway_fetch_refused": {
+      "message": "L'esportazione non è stata recuperata dal gateway JUNG HOME su {host}: {error}. Non è cambiato nulla; gli avvisi di riparazione indicano cosa fare."
+    },
+    "service_unknown_area": {
+      "message": "Non esiste alcuna area con l'ID {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} non è una scena di una rete JUNG HOME."
+    },
+    "remove_device_needs_confirm": {
+      "message": "La rimozione di un dispositivo non può essere annullata: aggiungi \"confirm: true\" alla chiamata per eseguirla (oppure \"dry_run: true\" per vedere cosa farebbe)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Eliminare una scena anche se un dispositivo non risponde lascia la scena memorizzata in quel dispositivo: aggiungi \"confirm: true\" alla chiamata per eseguirla (oppure \"dry_run: true\" per vedere cosa farebbe)."
+    },
+    "plan_key_device": {
+      "message": "{key} ora comanda {target}; {messages} messaggi"
+    },
+    "plan_key_room": {
+      "message": "{key} ora comanda la stanza {room}; {messages} messaggi"
+    },
+    "plan_key_scene": {
+      "message": "{key} ora richiama la scena {scene}; {messages} messaggi"
+    },
+    "plan_key_cleared": {
+      "message": "{key} ora non ha alcuna funzione; {messages} messaggi"
+    },
+    "plan_room_joined": {
+      "message": "{devices} ora nella stanza {room}; {messages} messaggi"
+    },
+    "plan_room_left": {
+      "message": "{devices} tolti dalla stanza {room}; {messages} messaggi"
+    },
+    "plan_room_deleted": {
+      "message": "Stanza {room} eliminata; {messages} messaggi"
+    },
+    "plan_device_removed": {
+      "message": "{device} rimosso dalla rete; {messages} messaggi agli altri dispositivi"
+    },
+    "plan_scene_deleted": {
+      "message": "Scena {scene} eliminata; {messages} messaggi"
+    },
+    "plan_finished": {
+      "message": "Azione {action} completata; {messages} messaggi"
+    },
+    "plan_stopped": {
+      "message": "Azione {action} fermata dopo {applied} di {total} messaggi: {error}"
+    },
+    "plan_cancelled": {
+      "message": "L'azione {action} è stata annullata dopo {applied} di {total} messaggi; l'esportazione mesh registra ciò che è stato applicato"
+    },
+    "logbook_scene_from_key": {
+      "message": "ha richiamato la scena {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "nessun rilascio ricevuto in tempo"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "collegamento perso"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integrazione arrestata"
+    },
+    "logbook_scene_number": {
+      "message": "Scena {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scena"
+    },
+    "logbook_recalled": {
+      "message": "è stata richiamata"
+    },
+    "logbook_recalled_by": {
+      "message": "è stata richiamata da {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Dispositivi JUNG HOME mancanti nell'esportazione",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Recupera di nuovo l'esportazione dal gateway",
+            "description": "{count} dispositivo/i della mesh JUNG HOME {title} si annunciano tramite Bluetooth ma non sono nell'esportazione caricata da Home Assistant: {devices}. Sono stati aggiunti all'installazione (o rimessi in servizio) dopo la creazione di quell'esportazione, quindi Home Assistant non ha entità per loro. Conferma per recuperare l'esportazione attuale dal gateway JUNG HOME su {host} con l'accesso che Home Assistant possiede già, verificarla e riconfigurare l'integrazione a partire da essa, come fa Riconfigura → Recuperala di nuovo dal gateway; l'esportazione che sostituisce viene conservata come copia (`.pre-reconfigure`). Il problema scompare non appena la nuova esportazione li elenca. Non verificato su dispositivi reali."
+          },
+          "upload": {
+            "title": "Carica una nuova esportazione",
+            "description": "{count} dispositivo/i della mesh JUNG HOME {title} si annunciano tramite Bluetooth ma non sono nell'esportazione caricata da Home Assistant: {devices}. Sono stati aggiunti all'installazione (o rimessi in servizio) dopo la creazione di quell'esportazione, quindi Home Assistant non ha entità per loro. Esporta la rete dall'app JUNG HOME (Progetto → Condividi tramite file) e carica qui il file: Home Assistant lo verifica, lo conserva in `junghome_ble/` nella sua directory di configurazione (contiene tutte le chiavi mesh) e riconfigura l'integrazione a partire da esso; l'esportazione che sostituisce viene conservata come copia. Una voce che leggeva la sua esportazione da un percorso sull'host usa da quel momento la copia caricata — per mantenere il percorso, copia invece lì il nuovo file e usa Riconfigura.. Il problema scompare non appena la nuova esportazione li elenca. Non verificato su dispositivi reali.",
+            "data": {
+              "export_file": "File di esportazione mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Nella nuova esportazione un nodo ha l'indirizzo di Home Assistant, quindi la voce non può usarla. Assegna prima a Home Assistant un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), poi carica lì l'esportazione.",
+          "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+          "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+          "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+          "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+          "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+          "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+          "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+          "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0.",
+          "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+          "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+          "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+          "not_a_directory": "Il percorso dei metadati non è una directory.",
+          "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+          "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+          "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "no_gateway_pin": "Home Assistant non ha registrato alcun accesso o certificato per il gateway {host}, quindi non gli invia nulla: non è cambiato nulla. Recupera invece l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il certificato del gateway può essere verificato.",
+          "certificate_changed": "Il gateway su {host} presenta un certificato diverso da quello che Home Assistant ha fissato per esso: non gli è stato inviato nulla e non è cambiato nulla. Se hai sostituito il gateway o il suo certificato, recupera l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il nuovo certificato può essere verificato; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway.",
+          "token_rejected": "Il gateway su {host} non accetta più l'accesso di Home Assistant: non è cambiato nulla. Segui la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi ripara di nuovo questo problema.",
+          "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+          "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Dispositivi JUNG HOME mancanti nell'esportazione",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Recupera di nuovo l'esportazione dal gateway",
+            "description": "{count} dispositivo/i della mesh JUNG HOME {title} si annunciano tramite Bluetooth ma non sono nell'esportazione caricata da Home Assistant: {devices}. Sono stati aggiunti all'installazione (o rimessi in servizio) dopo la creazione di quell'esportazione, quindi Home Assistant non ha entità per loro per ora. Home Assistant chiede al gateway la sua esportazione attuale e la adotta da solo quando questa li elenca. Conferma per recuperare l'esportazione attuale dal gateway JUNG HOME su {host} con l'accesso che Home Assistant possiede già, verificarla e riconfigurare l'integrazione a partire da essa, come fa Riconfigura → Recuperala di nuovo dal gateway; l'esportazione che sostituisce viene conservata come copia (`.pre-reconfigure`). Se il problema resta, nemmeno l'esportazione del gateway li conosce: apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il suo progetto), poi ripara di nuovo. Non verificato su dispositivi reali."
+          },
+          "upload": {
+            "title": "Carica una nuova esportazione",
+            "description": "{count} dispositivo/i della mesh JUNG HOME {title} si annunciano tramite Bluetooth ma non sono nell'esportazione caricata da Home Assistant: {devices}. Sono stati aggiunti all'installazione (o rimessi in servizio) dopo la creazione di quell'esportazione, quindi Home Assistant non ha entità per loro per ora. Home Assistant chiede al gateway la sua esportazione attuale e la adotta da solo quando questa li elenca. Esporta la rete dall'app JUNG HOME (Progetto → Condividi tramite file) e carica qui il file: Home Assistant lo verifica, lo conserva in `junghome_ble/` nella sua directory di configurazione (contiene tutte le chiavi mesh) e riconfigura l'integrazione a partire da esso; l'esportazione che sostituisce viene conservata come copia. Una voce che leggeva la sua esportazione da un percorso sull'host usa da quel momento la copia caricata — per mantenere il percorso, copia invece lì il nuovo file e usa Riconfigura.. Se il problema resta, nemmeno l'esportazione del gateway li conosce: apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il suo progetto), poi ripara di nuovo. Non verificato su dispositivi reali.",
+            "data": {
+              "export_file": "File di esportazione mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Nella nuova esportazione un nodo ha l'indirizzo di Home Assistant, quindi la voce non può usarla. Assegna prima a Home Assistant un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), poi carica lì l'esportazione.",
+          "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+          "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+          "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+          "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+          "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+          "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+          "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+          "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0.",
+          "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+          "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+          "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+          "not_a_directory": "Il percorso dei metadati non è una directory.",
+          "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+          "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+          "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "no_gateway_pin": "Home Assistant non ha registrato alcun accesso o certificato per il gateway {host}, quindi non gli invia nulla: non è cambiato nulla. Recupera invece l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il certificato del gateway può essere verificato.",
+          "certificate_changed": "Il gateway su {host} presenta un certificato diverso da quello che Home Assistant ha fissato per esso: non gli è stato inviato nulla e non è cambiato nulla. Se hai sostituito il gateway o il suo certificato, recupera l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il nuovo certificato può essere verificato; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway.",
+          "token_rejected": "Il gateway su {host} non accetta più l'accesso di Home Assistant: non è cambiato nulla. Segui la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi ripara di nuovo questo problema.",
+          "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+          "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "L'app JUNG HOME ha modificato l'installazione",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Recupera di nuovo l'esportazione dal gateway",
+            "description": "L'app JUNG HOME è stata vista modificare la configurazione di un dispositivo della mesh {title} (un collegamento di un tasto, una stanza, una scena o un'impostazione di un dispositivo), quindi l'esportazione caricata da Home Assistant potrebbe non corrispondere più all'installazione: ciò che è stato modificato nell'app non è ancora in Home Assistant. Conferma per recuperare l'esportazione attuale dal gateway JUNG HOME su {host} con l'accesso che Home Assistant possiede già, verificarla e riconfigurare l'integrazione a partire da essa, come fa Riconfigura → Recuperala di nuovo dal gateway; l'esportazione che sostituisce viene conservata come copia (`.pre-reconfigure`). Non verificato su dispositivi reali."
+          },
+          "upload": {
+            "title": "Carica una nuova esportazione",
+            "description": "L'app JUNG HOME è stata vista modificare la configurazione di un dispositivo della mesh {title} (un collegamento di un tasto, una stanza, una scena o un'impostazione di un dispositivo), quindi l'esportazione caricata da Home Assistant potrebbe non corrispondere più all'installazione: ciò che è stato modificato nell'app non è ancora in Home Assistant. Quando hai finito nell'app, esporta da essa la rete (Progetto → Condividi tramite file) e carica qui il file: Home Assistant lo verifica, lo conserva in `junghome_ble/` nella sua directory di configurazione (contiene tutte le chiavi mesh) e riconfigura l'integrazione a partire da esso; l'esportazione che sostituisce viene conservata come copia. Una voce che leggeva la sua esportazione da un percorso sull'host usa da quel momento la copia caricata — per mantenere il percorso, copia invece lì il nuovo file e usa Riconfigura, il che fa scomparire anche questo avviso. Non verificato su dispositivi reali.",
+            "data": {
+              "export_file": "File di esportazione mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Nella nuova esportazione un nodo ha l'indirizzo di Home Assistant, quindi la voce non può usarla. Assegna prima a Home Assistant un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), poi carica lì l'esportazione.",
+          "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+          "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+          "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+          "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+          "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+          "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+          "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+          "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0.",
+          "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+          "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+          "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+          "not_a_directory": "Il percorso dei metadati non è una directory.",
+          "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+          "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+          "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "no_gateway_pin": "Home Assistant non ha registrato alcun accesso o certificato per il gateway {host}, quindi non gli invia nulla: non è cambiato nulla. Recupera invece l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il certificato del gateway può essere verificato.",
+          "certificate_changed": "Il gateway su {host} presenta un certificato diverso da quello che Home Assistant ha fissato per esso: non gli è stato inviato nulla e non è cambiato nulla. Se hai sostituito il gateway o il suo certificato, recupera l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il nuovo certificato può essere verificato; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway.",
+          "token_rejected": "Il gateway su {host} non accetta più l'accesso di Home Assistant: non è cambiato nulla. Segui la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi ripara di nuovo questo problema.",
+          "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+          "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Pulsanti JUNG HOME con un inserto diverso da quello dell'esportazione",
+      "description": "{devices}: questi pulsanti della mesh JUNG HOME {title} annunciano un inserto diverso da quello nell'esportazione caricata da Home Assistant (esportazione → dispositivo). L'inserto è stato sostituito dopo la creazione di quell'esportazione, quindi Home Assistant e l'app potrebbero mostrare per loro il tipo di carico sbagliato. Controlla i dispositivi nell'app JUNG HOME, esporta di nuovo la rete e aggiorna questa integrazione (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura); il problema scompare non appena l'esportazione indica gli inserti che i dispositivi annunciano. Non verificato su dispositivi reali."
+    },
+    "node_clock_wrong": {
+      "title": "Dispositivi JUNG HOME con l'orologio sbagliato",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Invia l'ora adesso",
+            "description": "{devices}: questi dispositivi della mesh JUNG HOME {title} possono eseguire programmazioni orarie (commutazioni a orario o ad alba / tramonto) e il loro orologio è sbagliato: nessuna ora, più di un minuto di scarto rispetto a Home Assistant, o una differenza di fuso orario diversa da quella che Home Assistant ha inviato loro. Le loro programmazioni scattano all'ora sbagliata finché non ricevono di nuovo l'ora. Home Assistant la invia dopo ogni connessione e una volta al giorno; conferma per inviarla adesso e interrogare di nuovo questi dispositivi. Il problema scompare non appena rispondono con l'ora giusta. Se si ripresenta, controlla il fuso orario di Home Assistant (Impostazioni → Sistema → Generale) e se i dispositivi sono raggiungibili. Non verificato su dispositivi reali."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "not_connected": "Al momento Home Assistant non ha alcuna connessione alla mesh. Riprova quando è connesso."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Le chiavi della mesh JUNG HOME stanno cambiando",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Recupera di nuovo l'esportazione dal gateway",
+            "description": "La mesh {title} ha annunciato un Key Refresh di cui Home Assistant non ha sentito la consegna della nuova chiave di rete (un Key Refresh che vede fin dall'inizio viene seguito e non genera alcun avviso). Una volta completato, le chiavi nell'esportazione usata da Home Assistant non sono più valide e il controllo si fermerà. Lascia prima terminare il rinnovo delle chiavi nell'app JUNG HOME. Conferma per recuperare l'esportazione attuale dal gateway JUNG HOME su {host} con l'accesso che Home Assistant possiede già, verificarla e riconfigurare l'integrazione a partire da essa, come fa Riconfigura → Recuperala di nuovo dal gateway; l'esportazione che sostituisce viene conservata come copia (`.pre-reconfigure`). Non verificato su dispositivi reali."
+          },
+          "upload": {
+            "title": "Carica una nuova esportazione",
+            "description": "La mesh {title} ha annunciato un Key Refresh di cui Home Assistant non ha sentito la consegna della nuova chiave di rete (un Key Refresh che vede fin dall'inizio viene seguito e non genera alcun avviso). Una volta completato, le chiavi nell'esportazione usata da Home Assistant non sono più valide e il controllo si fermerà. Lascia prima terminare il rinnovo delle chiavi nell'app JUNG HOME. Esporta la rete dall'app JUNG HOME (Progetto → Condividi tramite file) e carica qui il file: Home Assistant lo verifica, lo conserva in `junghome_ble/` nella sua directory di configurazione (contiene tutte le chiavi mesh) e riconfigura l'integrazione a partire da esso; l'esportazione che sostituisce viene conservata come copia. Una voce che leggeva la sua esportazione da un percorso sull'host usa da quel momento la copia caricata — per mantenere il percorso, copia invece lì il nuovo file e usa Riconfigura.. Non verificato su dispositivi reali.",
+            "data": {
+              "export_file": "File di esportazione mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Nella nuova esportazione un nodo ha l'indirizzo di Home Assistant, quindi la voce non può usarla. Assegna prima a Home Assistant un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), poi carica lì l'esportazione.",
+          "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+          "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+          "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+          "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+          "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+          "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+          "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+          "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0.",
+          "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+          "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+          "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+          "not_a_directory": "Il percorso dei metadati non è una directory.",
+          "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+          "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+          "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "no_gateway_pin": "Home Assistant non ha registrato alcun accesso o certificato per il gateway {host}, quindi non gli invia nulla: non è cambiato nulla. Recupera invece l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il certificato del gateway può essere verificato.",
+          "certificate_changed": "Il gateway su {host} presenta un certificato diverso da quello che Home Assistant ha fissato per esso: non gli è stato inviato nulla e non è cambiato nulla. Se hai sostituito il gateway o il suo certificato, recupera l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il nuovo certificato può essere verificato; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway.",
+          "token_rejected": "Il gateway su {host} non accetta più l'accesso di Home Assistant: non è cambiato nulla. Segui la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi ripara di nuovo questo problema.",
+          "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+          "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "I dispositivi JUNG HOME ignorano Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Salta oltre i numeri che i dispositivi conoscono",
+            "description": "Home Assistant sente la mesh JUNG HOME {title} tramite il suo nodo proxy, ma nessun dispositivo ha risposto alle sue richieste di stato. I nodi scartano i messaggi di Home Assistant come ripetizioni. Due cause sono probabili: l'archivio dei numeri di sequenza di questa integrazione (`.storage/junghome_ble.*`) è andato perso o è stato ripristinato da un backup più vecchio, quindi Home Assistant invia ora numeri di sequenza che i nodi hanno già visto; oppure un altro client mesh (ad esempio lo strumento `mesh_poc.py`) trasmette con lo stesso indirizzo unicast {unicast}. Assegna a Home Assistant un indirizzo nuovo e non usato (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast, e assicurati che nessun altro client lo usi) oppure, se l'archivio è andato perso o è stato ripristinato (e nessun altro client usa l'indirizzo), conferma per far avanzare i numeri di sequenza di Home Assistant di 1 048 576 e riconnetterlo. Non ripristinare l'archivio dei numeri di sequenza da un backup per risolvere il problema: una copia più vecchia ripete solo numeri che i dispositivi hanno già visto. Il problema scompare da solo non appena un dispositivo risponde di nuovo a Home Assistant."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Un altro client usa l'indirizzo JUNG HOME di Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Salta oltre i numeri di sequenza dell'altro client",
+            "description": "Home Assistant ha ricevuto un messaggio della mesh JUNG HOME {title} inviato dal proprio indirizzo unicast {unicast} con un numero di sequenza che non ha mai usato: un altro client mesh trasmette con lo stesso indirizzo — una seconda installazione di Home Assistant, lo strumento `mesh_poc.py` configurato con questo indirizzo, o una copia di questa installazione avviata altrove. Due mittenti sullo stesso indirizzo riutilizzano i numeri di sequenza l'uno dell'altro e i dispositivi scartano tutto ciò che sta sotto quelli dell'altro client, quindi Home Assistant non invia nulla alla mesh finché il problema non viene riparato (i comandi falliscono, gli stati non vengono aggiornati). Ferma l'altro client, oppure assegna a esso o a Home Assistant un altro indirizzo non usato (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast). Poi conferma per far proseguire Home Assistant con i numeri di sequenza oltre quelli con cui è stato visto l'altro client e inviare di nuovo. Se l'altro client continua a inviare da questo indirizzo, il problema si ripresenta. Non ripristinare l'archivio dei numeri di sequenza da un backup per risolvere il problema. Non verificato su dispositivi reali: un secondo client sull'indirizzo di Home Assistant è stato solo simulato."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Un altro client usa ancora l'indirizzo JUNG HOME di Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Salta di nuovo oltre i numeri di sequenza dell'altro client",
+            "description": "Home Assistant ha saltato oltre i numeri di sequenza di un altro client mesh sul suo indirizzo {unicast} nella mesh JUNG HOME {title}, e da allora l'altro client ha inviato di nuovo da quell'indirizzo: è ancora in funzione. Saltare avanti non serve finché lo è. Assegna a Home Assistant un indirizzo unicast nuovo e non usato (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), oppure ferma l'altro client o spostalo su un altro indirizzo. Fino ad allora Home Assistant non invia nulla alla mesh. Conferma solo quando l'altro client non usa più questo indirizzo: Home Assistant prosegue allora di nuovo oltre i suoi numeri e riprende a inviare. Non verificato su dispositivi reali: un secondo client sull'indirizzo di Home Assistant è stato solo simulato."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Nessun Bluetooth per la mesh JUNG HOME",
+      "description": "La mesh JUNG HOME {title} viene raggiunta tramite Bluetooth, ma Home Assistant non ha più alcun adattatore o proxy Bluetooth collegabile: l'adattatore è spento, scollegato o guasto, oppure ogni proxy Bluetooth ESPHome con connessioni attive è offline. Tutti i dispositivi della mesh restano non disponibili finché uno non torna. Controlla Impostazioni → Dispositivi e servizi → Bluetooth. Il problema scompare non appena un adattatore o proxy Bluetooth è di nuovo disponibile."
+    },
+    "duplicate_mesh": {
+      "title": "Due voci coprono la stessa mesh JUNG HOME",
+      "description": "{title} e {others} sono entrambe configurate per la stessa mesh JUNG HOME. Condividono i suoi contatori dei numeri di sequenza (`.storage/junghome_ble.seq.*`), quindi solo una di esse può funzionare: {others} è in esecuzione e {title} non è stata avviata. Rimuovi una di queste voci (Impostazioni → Dispositivi e servizi); se rimuovi {others}, ricarica poi {title}."
+    },
+    "gateway_import": {
+      "title": "Rileva le entità dell'integrazione JUNG HOME Gateway",
+      "description": "L'integrazione JUNG HOME Gateway è configurata accanto all'integrazione Bluetooth Mesh {title}, quindi ogni luce, presa, tasto e scena esiste due volte. Sposta qui le entità del gateway — mantengono i loro ID entità, nomi, aree e cronologia — in Impostazioni → Dispositivi e servizi → JUNG HOME (Bluetooth Mesh) → Riconfigura → Importa le entità dell'integrazione JUNG HOME Gateway, poi elimina la voce del gateway. Ignora questo problema se vuoi mantenerle entrambe."
+    },
+    "export_stale": {
+      "title": "Le chiavi della mesh JUNG HOME sono cambiate",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Recupera di nuovo l'esportazione dal gateway",
+            "description": "Home Assistant è connesso a un nodo della mesh JUNG HOME {title}, ma nulla di ciò che sente può essere decifrato con le chiavi dell'esportazione: ogni messaggio di rete e il beacon del nodo falliscono l'autenticazione. La mesh ha completato un Key Refresh (un «rinnovo delle chiavi» nell'app JUNG HOME) dopo la creazione di quell'esportazione, quindi il file non è più aggiornato. Conferma per recuperare l'esportazione attuale dal gateway JUNG HOME su {host} con l'accesso che Home Assistant possiede già, verificarla e riconfigurare l'integrazione a partire da essa, come fa Riconfigura → Recuperala di nuovo dal gateway; l'esportazione che sostituisce viene conservata come copia (`.pre-reconfigure`). Il problema scompare non appena un messaggio viene di nuovo decifrato. Non verificato su dispositivi reali."
+          },
+          "upload": {
+            "title": "Carica una nuova esportazione",
+            "description": "Home Assistant è connesso a un nodo della mesh JUNG HOME {title}, ma nulla di ciò che sente può essere decifrato con le chiavi dell'esportazione: ogni messaggio di rete e il beacon del nodo falliscono l'autenticazione. La mesh ha completato un Key Refresh (un «rinnovo delle chiavi» nell'app JUNG HOME) dopo la creazione di quell'esportazione, quindi il file non è più aggiornato. Esporta la rete dall'app JUNG HOME (Progetto → Condividi tramite file) e carica qui il file: Home Assistant lo verifica, lo conserva in `junghome_ble/` nella sua directory di configurazione (contiene tutte le chiavi mesh) e riconfigura l'integrazione a partire da esso; l'esportazione che sostituisce viene conservata come copia. Una voce che leggeva la sua esportazione da un percorso sull'host usa da quel momento la copia caricata — per mantenere il percorso, copia invece lì il nuovo file e usa Riconfigura.. Il problema scompare non appena un messaggio viene di nuovo decifrato. Non verificato su dispositivi reali.",
+            "data": {
+              "export_file": "File di esportazione mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` dall'app (Condividi tramite file) oppure `MeshNetwork.json` da un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Nella nuova esportazione un nodo ha l'indirizzo di Home Assistant, quindi la voce non può usarla. Assegna prima a Home Assistant un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast), poi carica lì l'esportazione.",
+          "cannot_connect": "Impossibile raggiungere il gateway a quell'indirizzo.",
+          "cannot_load": "Impossibile leggere l'esportazione mesh. Verifica che il file sia l'esportazione JSON dell'app (e, per un percorso, che il percorso sia corretto).",
+          "cannot_store": "Impossibile scrivere l'esportazione nella directory di configurazione di Home Assistant.",
+          "export_keys_stale": "I dispositivi di questa mesh sono visibili tramite Bluetooth, ma nessuno annuncia la chiave di rete di questa esportazione: le chiavi della rete sono state rinnovate (un Key Refresh nell'app JUNG HOME) dopo che l'esportazione è stata creata. Esporta di nuovo la rete dall'app JUNG HOME, oppure recuperala di nuovo dal gateway, e usa quel file.",
+          "gateway_error": "Il gateway ha risposto con un errore. Controlla il suo stato nell'app JUNG HOME e riprova.",
+          "gateway_busy": "Il gateway è occupato con un'altra richiesta di configurazione. Riprova tra un minuto.",
+          "invalid_address": "L'indirizzo deve essere esadecimale tra 0001 e 7FFF.",
+          "invalid_export": "Il file non è un'esportazione mesh JUNG HOME (o è danneggiato): deve contenere la rete con le sue chiavi, i nodi e una chiave di rete con indice 0.",
+          "invalid_metadata": "La directory dei metadati non contiene device_metadata.json e scene_metadata.json dell'app nel formato previsto.",
+          "no_project": "Il gateway non contiene alcuna esportazione della rete. Apri una volta l'app JUNG HOME mentre è connessa al gateway (carica il progetto automaticamente) e assicurati che il firmware del gateway sia 2.1 o successivo.",
+          "no_proxy_visible": "Al momento nessun nodo di questa rete mesh è visibile tramite Bluetooth. Assicurati che un adattatore Bluetooth o un proxy Bluetooth ESPHome sia nel raggio d'azione di un dispositivo JUNG alimentato da rete.",
+          "not_a_directory": "Il percorso dei metadati non è una directory.",
+          "not_approved": "La richiesta di accesso non è stata approvata in tempo nell'app. Invia di nuovo e approvala in Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte.",
+          "token_rejected": "Il gateway non accetta più l'accesso salvato. Invia di nuovo per richiedere un nuovo accesso.",
+          "upload_failed": "Impossibile elaborare il file caricato. Prova a caricarlo di nuovo."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "no_gateway_pin": "Home Assistant non ha registrato alcun accesso o certificato per il gateway {host}, quindi non gli invia nulla: non è cambiato nulla. Recupera invece l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il certificato del gateway può essere verificato.",
+          "certificate_changed": "Il gateway su {host} presenta un certificato diverso da quello che Home Assistant ha fissato per esso: non gli è stato inviato nulla e non è cambiato nulla. Se hai sostituito il gateway o il suo certificato, recupera l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura, dove il nuovo certificato può essere verificato; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway.",
+          "token_rejected": "Il gateway su {host} non accetta più l'accesso di Home Assistant: non è cambiato nulla. Segui la riautenticazione che Home Assistant richiede (Impostazioni → Dispositivi e servizi), poi ripara di nuovo questo problema.",
+          "network_mismatch": "L'esportazione appartiene a una rete mesh diversa da quella di questa voce.",
+          "mesh_already_configured": "Questa mesh è già configurata come un'altra voce; due voci della stessa mesh condividerebbero i suoi numeri di sequenza. Riconfigura invece quella voce, oppure rimuovila prima."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Il certificato del gateway JUNG HOME è cambiato",
+      "description": "Il gateway JUNG HOME su {host} non corrisponde più al certificato TLS che Home Assistant ha fissato per esso: l'host presenta un altro certificato, oppure il nodo del gateway ne comunica un altro tramite la mesh. Home Assistant ha smesso di usare il gateway (non vi invia né il token di accesso né l'esportazione); i dispositivi continuano a funzionare tramite Bluetooth. Se hai sostituito il gateway o il suo certificato, apri Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura e recupera di nuovo l'esportazione dal gateway; altrimenti un altro dispositivo della tua rete potrebbe rispondere al posto del gateway — controlla la tua rete."
+    },
+    "gateway_sync_failed": {
+      "title": "Esportazione JUNG HOME non consegnata al gateway",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Consegna l'esportazione al gateway",
+            "description": "Home Assistant ha modificato l'installazione JUNG HOME (una stanza, un collegamento di un tasto o una scena) e ha riscritto la sua esportazione mesh, ma il gateway JUNG HOME su {host} non ha accettato la nuova esportazione: {error}. Finché non lo fa, il gateway e l'app mostrano lo stato vecchio — e la prossima modifica nell'app sovrascriverebbe quella di Home Assistant. Home Assistant riprova due volte, a 15 secondi di distanza, come fa l'app. Verifica che il gateway sia raggiungibile, poi conferma per consegnargli subito l'esportazione, come fa l'azione Sincronizza il gateway (`junghome_ble.sync_gateway`): si rifiuta quando il gateway contiene modifiche che Home Assistant non ha visto, che il caricamento cancellerebbe. Il problema scompare quando un caricamento riesce. Non verificato su dispositivi reali."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "not_loaded": "La voce JUNG HOME a cui appartiene questo problema al momento non è in esecuzione. Riprova quando è configurata.",
+          "sync_failed": "L'esportazione non è stata consegnata al gateway: {error} Il problema resta; riparalo di nuovo quando la causa è stata eliminata."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "Una modifica JUNG HOME su {title} è stata interrotta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Una modifica JUNG HOME è stata interrotta",
+            "description": "Home Assistant si è fermato a metà di {action}: {accepted} dei suoi {total} messaggi di configurazione avevano raggiunto i dispositivi. Questi sono ora registrati nell'esportazione mesh, quindi l'esportazione indica ciò che i dispositivi contengono. Esegui di nuovo l'azione con la stessa destinazione per completarla. Con un gateway JUNG HOME, l'esportazione registrata gli viene consegnata con la prossima modifica o con l'azione `junghome_ble.sync_gateway`. Conferma per chiudere questo avviso."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Nome del dispositivo non trasmesso all'app JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Rinomina il dispositivo",
+            "description": "{device} è stato rinominato in Home Assistant in «{name}», un nome che l'app JUNG HOME rifiuta: un nome non può essere vuoto né più lungo di 30 caratteri, e l'app interpreta il segno % come inizio di un segnaposto (passano solo %% e %n). L'esportazione mesh e l'app mantengono il vecchio nome del dispositivo. Inserisci un nome che l'app accetta: Home Assistant lo assegna al dispositivo e lo trasmette all'esportazione (e, con un gateway, all'app) come ogni ridenominazione. Il problema scompare quando il nome è stato trasmesso. Non verificato su dispositivi reali.",
+            "data": {
+              "name": "Nome"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Un nome non può essere vuoto.",
+          "name_not_allowed": "L'app interpreta il segno % come inizio di un segnaposto: passano solo %% e %n.",
+          "name_too_long": "L'app accetta nomi di al massimo 30 caratteri."
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "not_loaded": "La voce JUNG HOME a cui appartiene questo problema al momento non è in esecuzione. Riprova quando è configurata.",
+          "device_gone": "Il dispositivo indicato da questo problema non è più in Home Assistant."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "I dispositivi aggiunti da Home Assistant non hanno ricevuto la nuova chiave di rete",
+      "description": "L'app JUNG HOME ha rinnovato la chiave di rete della mesh {title} e Home Assistant ha seguito il rinnovo fino alla fine. L'app non conosce i dispositivi aggiunti da Home Assistant, quindi Home Assistant consegna loro la nuova chiave da solo, ma il dispositivo o i dispositivi su {addresses} non l'hanno confermata. Assicurati che siano alimentati e nel raggio d'azione: Home Assistant riprova a ogni nuova connessione Bluetooth. Un dispositivo che non ha mai ricevuto la nuova chiave non è più raggiungibile: esegui un ripristino di fabbrica, poi aggiungilo di nuovo (rimuovilo prima da Home Assistant con `junghome_ble.remove_device` o `junghome_ble.reset_pending_device`, con `force`). Non ancora provato su un dispositivo reale. Il problema scompare quando ogni dispositivo di questo tipo ha confermato."
+    },
+    "pending_device": {
+      "title": "Un dispositivo aggiunto da Home Assistant non è registrato",
+      "description": "Home Assistant ha messo in servizio un dispositivo JUNG della mesh {title} con `junghome_ble.add_device`, ma la sua configurazione o la sua registrazione nell'esportazione non è riuscita: il dispositivo su {addresses} ha le chiavi della rete, l'app JUNG HOME e l'esportazione non lo conoscono, e i suoi indirizzi e gruppi di elementi restano riservati affinché nessun altro dispositivo li riceva. Ripristinalo con l'azione `junghome_ble.reset_pending_device` (il suo indirizzo unicast) e aggiungilo di nuovo; per un dispositivo che hai già ripristinato a mano, o che non c'è più, usa `force`. Non ancora provato su un dispositivo reale. Il problema scompare quando non resta alcun dispositivo di questo tipo."
+    },
+    "vault_unwritable": {
+      "title": "Impossibile salvare le chiavi dei dispositivi JUNG HOME",
+      "description": "Home Assistant non ha potuto scrivere il suo archivio protetto per la mesh {title} ({path}; ultimo errore: {error}) durante l'aggiunta del dispositivo su {address}. L'archivio contiene le chiavi dei dispositivi che Home Assistant aggiunge, che nessun altro possiede finché l'esportazione non le registra, quindi il dispositivo non è stato messo in servizio: non ha ricevuto nulla ed è ancora nuovo. Di solito significa che il disco è pieno o che il suo file system è stato rimontato in sola lettura, spesso a causa di una scheda SD difettosa. Libera spazio o ripara la memoria (un file system rimontato in sola lettura di solito richiede il riavvio dell'host), poi aggiungi di nuovo il dispositivo; non modificare, eliminare o sostituire i file dell'archivio. Non ancora provato su un dispositivo reale. Il problema scompare da solo non appena una scrittura dell'archivio va a buon fine."
+    },
+    "carry_over_conflict": {
+      "title": "L'app JUNG HOME ha sovrascritto una modifica fatta da Home Assistant su {title}",
+      "description": "Home Assistant ha adottato l'esportazione che l'app JUNG HOME ha consegnato per ultima al gateway e vi ha riportato le proprie modifiche, ma nel frattempo l'app aveva modificato le stesse voci. Viene mantenuta la versione dell'app per: {paths}. I dispositivi potrebbero contenere ancora ciò che Home Assistant aveva scritto: {held}. Controlla quelle stanze, scene e collegamenti nell'app e in Home Assistant, e impostali di nuovo da una sola parte. L'app non vede ciò che Home Assistant aggiunge finché non importa un file. Il problema scompare con la prossima adozione dell'esportazione del gateway che non presenti un conflitto del genere."
+    },
+    "scene_held": {
+      "title": "Dei dispositivi contengono ancora una scena JUNG HOME eliminata su {title}",
+      "description": "Una scena è stata eliminata con «Anche se un dispositivo non risponde» mentre alcuni dei suoi dispositivi non erano raggiungibili o hanno rifiutato; la contengono ancora e la richiamano con qualsiasi scena con quel numero. Numero di scena: dispositivi — {members}. Home Assistant non assegna questi numeri a nessuna nuova scena. Quando i dispositivi sono di nuovo raggiungibili, esegui l'azione Elimina le scene inutilizzate con «Simulazione» disattivata: elimina quei numeri dai dispositivi e il problema scompare."
+    },
+    "gateway_token_rejected": {
+      "title": "Il gateway JUNG HOME non accetta più Home Assistant",
+      "description": "Il gateway JUNG HOME su {host} rifiuta l'accesso che Home Assistant ha registrato per la mesh {title} (probabilmente è stato rimosso nell'app JUNG HOME in Impostazioni → Gateway → Autorizzazioni di accesso). Home Assistant continua a modificare stanze, collegamenti dei tasti e scene nella propria esportazione, ma non la consegna più al gateway, quindi l'app non vede quelle modifiche; i dispositivi continuano a funzionare. Home Assistant chiede di nuovo l'accesso: segui la sua richiesta di riautenticare JUNG HOME (Impostazioni → Dispositivi e servizi; anche Riparazioni la elenca come autenticazione scaduta) e inserisci la password della chiave di rete del gateway oppure approva la nuova richiesta di accesso nell'app. Il problema scompare non appena il gateway accetta di nuovo Home Assistant; l'azione Sincronizza il gateway consegna poi le modifiche fatte nel frattempo."
+    },
+    "seq_store_lost": {
+      "title": "Numeri di sequenza della mesh JUNG HOME {title} persi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Prosegui oltre i numeri già inviati",
+            "description": "L'archivio dei numeri di sequenza di questa integrazione (`.storage/junghome_ble.seq.*`) non contiene alcun record utilizzabile per l'indirizzo {unicast} di Home Assistant, sebbene quell'indirizzo abbia già inviato in passato. Ripartire da 0 riutilizzerebbe numeri di sequenza che i dispositivi hanno già visto: ignorerebbero Home Assistant, e ogni numero riutilizzato indebolisce la crittografia della mesh. Ripristinare l'archivio da un backup ha lo stesso effetto — una copia più vecchia ripete ogni numero inviato da quando è stata creata — quindi non ripristinare i file `junghome_ble.seq.*`. Conferma per far proseguire Home Assistant di 1 048 576 numeri oltre l'ultimo valore che riesce ancora a leggere (4 194 304 oltre la soglia minima che mantiene insieme al contatore in `junghome_ble.seq.*.floor`, o oltre 0, se non ne resta nessuno) e riconfigurare l'integrazione."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "floor_not_written": "Impossibile scrivere la soglia minima dei numeri di sequenza (`.storage/junghome_ble.seq.*.floor`): non è stato modificato nulla e l'integrazione resta ferma. Controlla il disco su cui si trova la configurazione di Home Assistant, poi ripara di nuovo il problema."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Impossibile salvare i numeri di sequenza JUNG HOME",
+      "description": "Da oltre un minuto Home Assistant non riesce a scrivere l'archivio dei numeri di sequenza della mesh {title} ({path}; ultimo errore: {error}). Ogni messaggio ai dispositivi porta un nuovo numero di sequenza e Home Assistant invia solo numeri che ha salvato, affinché un riavvio non ne ripeta mai uno: finché una scrittura non riesce non invia nulla alla mesh — i comandi falliscono e lo stato non viene aggiornato. Di solito significa che il disco è pieno o che il suo file system è stato rimontato in sola lettura, spesso a causa di una scheda SD difettosa. Libera spazio o ripara la memoria (un file system rimontato in sola lettura di solito richiede il riavvio dell'host); non modificare, eliminare o sostituire i file dell'archivio. Il problema scompare da solo non appena una scrittura va a buon fine e l'invio riprende."
+    },
+    "address_in_use": {
+      "title": "L'indirizzo JUNG HOME di Home Assistant è occupato",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sposta Home Assistant su {suggestion}",
+            "description": "Nell'esportazione della mesh {title} un nodo occupa l'indirizzo unicast {unicast} da cui Home Assistant invia. Entrambi verrebbero presi per un unico mittente: i dispositivi scartano uno dei due come ripetizione e le risposte vanno a quello sbagliato. Conferma per assegnare a Home Assistant l'indirizzo libero {suggestion} e riconfigurare l'integrazione, come fa Riconfigura → Avanzate → Il nostro indirizzo unicast. Assicurati che nessun altro client mesh (gli strumenti a riga di comando di questa integrazione, un altro Home Assistant) invii da {suggestion}. I numeri di sequenza sono conservati per indirizzo: quello nuovo prosegue il proprio record, oppure parte abbastanza avanti se Home Assistant non ne ha alcuno, così nessun numero viene inviato due volte. Non verificato su dispositivi reali."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "cannot_load": "Impossibile leggere l'esportazione della voce, quindi non è possibile determinare un indirizzo libero: non è cambiato nulla. Carica una nuova esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura.",
+          "no_free_address": "L'esportazione non lascia alcun indirizzo libero per Home Assistant: non è cambiato nulla. Controlla l'esportazione in Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura.",
+          "address_taken": "{suggestion} non è più libero nell'esportazione (nel frattempo è cambiata): non è cambiato nulla. Ripara di nuovo il problema per ottenere un nuovo suggerimento."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "L'indirizzo JUNG HOME di Home Assistant potrebbe essere assegnato",
+      "description": "L'indirizzo unicast {unicast} da cui Home Assistant invia nella mesh {title} si trova nell'intervallo di indirizzi di uno dei provisioner dell'app, oppure è stato usato da un nodo rimosso. Continua a funzionare finché l'app non mette in servizio un nodo su di esso; prima di allora sposta Home Assistant su un indirizzo libero (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast; {suggestion} è libero)."
+    },
+    "sequence_space_low": {
+      "title": "I numeri di sequenza della mesh JUNG HOME stanno per esaurirsi",
+      "description": "Nella mesh {title}, {source} ha usato il {percent} % dei numeri di sequenza dell'indice IV {iv_index}. Ogni mittente si ferma alla fine di questo spazio finché la mesh non passa all'indice IV successivo (un IV Update), che il gateway JUNG HOME avvia da solo; Home Assistant lo segue ma non ne avvia uno. Mantieni il gateway alimentato e connesso alla mesh; senza un gateway, la mesh si ferma non appena un mittente esaurisce i numeri. Il problema scompare da solo dopo l'aggiornamento."
+    },
+    "iv_index_mismatch": {
+      "title": "La mesh JUNG HOME è a un altro indice IV",
+      "description": "La mesh {title} è all'indice IV {mesh}, l'archivio dei numeri di sequenza di Home Assistant a {ours}: troppo distanti perché Home Assistant possa seguire (segue la mesh fino a 42 in avanti, al massimo una volta ogni 192 ore, e mai all'indietro). Nel frattempo i dispositivi ignorano Home Assistant. Succede quando Home Assistant è rimasto assente durante molti IV Update, quando il suo archivio (`.storage/junghome_ble.seq.*`) appartiene a un'altra mesh, o quando dei beacon falsificati con la chiave di rete lo hanno spinto avanti. Assegna a Home Assistant un nuovo indirizzo unicast (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura → Avanzate → Il nostro indirizzo unicast): lì riparte dall'indice IV della mesh. Non ripristinare l'archivio da un backup e non modificarlo: un record più vecchio o modificato ripete numeri di sequenza che i dispositivi hanno già visto, e comunque l'avvio successivo sovrascrive una modifica manuale. Il problema scompare da solo quando arriva un beacon raggiungibile."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant è avanti rispetto all'indice IV della mesh JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Torna all'indice IV della mesh",
+            "description": "La mesh {title} è all'indice IV {mesh}, l'archivio dei numeri di sequenza di Home Assistant a {ours} — avanti rispetto a essa, cosa che la mesh non è mai: i dispositivi ignorano Home Assistant, ed esso non può seguire una mesh che è dietro di lui. Succede quando il suo archivio (`.storage/junghome_ble.seq.*`) appartiene a un'altra mesh, o quando dei beacon falsificati con la chiave di rete lo hanno spinto avanti. Conferma per riportare Home Assistant all'indice IV della mesh e riconfigurare l'integrazione: i suoi numeri di sequenza proseguono al di sopra di ogni numero che ha inviato da quell'indice in poi, così nessuno viene usato due volte. Non ripristinare invece l'archivio da un backup e non modificarlo: un record più vecchio o modificato ripete numeri che i dispositivi hanno già visto. L'altra via per tornare indietro è un nuovo indirizzo unicast per Home Assistant (Impostazioni → Dispositivi e servizi → JUNG HOME → Riconfigura). Non verificato su dispositivi reali: un indice IV avanti rispetto alla mesh non è stato osservato su una mesh reale."
+          }
+        },
+        "abort": {
+          "entry_gone": "La voce JUNG HOME a cui appartiene questo problema non è più configurata.",
+          "iv_index_not_ahead": "Home Assistant non è più irraggiungibilmente avanti rispetto alla mesh, oppure il suo stato IV è cambiato da quando il problema è stato segnalato: non è stato modificato nulla. Se il problema si ripresenta, riparalo di nuovo.",
+          "seq_store_not_written": "Impossibile scrivere la soglia minima dei numeri di sequenza (`.storage/junghome_ble.seq.*.floor`): non è stato modificato nulla. Controlla il disco su cui si trova la configurazione di Home Assistant, poi ripara di nuovo il problema."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "I Puck JUNG HOME non hanno un orologio di riferimento",
+      "description": "La mesh {title} ha Puck attuatori JUNG del tipo più vecchio ({pucks}): ricevono l'ora da un orologio di riferimento, un dispositivo alimentato da rete che trasmette loro l'ora. Nessun dispositivo della mesh lo è, quindi i timer dei Puck derivano. Attiva l'interruttore *Orologio di riferimento* (un'entità di configurazione, disattivata per impostazione predefinita) di un dispositivo sempre alimentato, come una presa o un mini attuatore; l'app JUNG HOME ne sceglie uno da sola quando configura un Puck. Non verificato su dispositivi reali. Il problema scompare non appena un dispositivo è l'orologio di riferimento."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Imposta stanza",
+      "description": "Mette luci e prese JUNG HOME in una stanza della mesh (l'«area» dell'app). Una stanza che non esiste ancora viene creata solo con Crea la stanza, così un nome digitato male viene rifiutato. Il dispositivo lascia ogni altra stanza; i tasti già collegati alla stanza iniziano a comandarlo. L'esportazione mesh viene riscritta e Home Assistant la segue senza ricaricare l'integrazione. Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "room": {
+          "name": "Stanza",
+          "description": "Nome della stanza nell'app JUNG HOME."
+        },
+        "create": {
+          "name": "Crea la stanza",
+          "description": "Crea la stanza quando la mesh non ne ha nessuna con quel nome. Disattivato, un nome sconosciuto viene rifiutato."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Aggiungi alla stanza",
+      "description": "Mette luci, prese e tapparelle JUNG HOME anche in una stanza della mesh: restano nelle stanze in cui si trovano, poiché l'app consente a un dispositivo di stare in più stanze. Una stanza che non esiste ancora viene creata solo con Crea la stanza. I tasti già collegati alla stanza iniziano a comandarli. L'esportazione mesh viene riscritta e Home Assistant la segue senza ricaricare l'integrazione. Non verificato su dispositivi reali. Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "room": {
+          "name": "Stanza",
+          "description": "Nome della stanza nell'app JUNG HOME."
+        },
+        "create": {
+          "name": "Crea la stanza",
+          "description": "Crea la stanza quando la mesh non ne ha nessuna con quel nome. Disattivato, un nome sconosciuto viene rifiutato."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Rimuovi dalla stanza",
+      "description": "Toglie luci, prese e tapparelle JUNG HOME da una stanza della mesh; restano nelle altre loro stanze, e un dispositivo può finire in nessuna. Un dispositivo che un tasto comanda tramite il suo collegamento alla stanza viene rifiutato, a meno che Anche se un tasto lo comanda sia attivo: lasciare la stanza lo scollega anche da quel tasto. L'esportazione mesh viene riscritta e Home Assistant la segue senza ricaricare l'integrazione. Non verificato su dispositivi reali. Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "room": {
+          "name": "Stanza",
+          "description": "Nome della stanza nell'app JUNG HOME."
+        },
+        "force": {
+          "name": "Anche se un tasto lo comanda",
+          "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Crea stanza",
+      "description": "Crea una stanza vuota nell'esportazione mesh (non viene inviato nulla ai dispositivi). Home Assistant le assegna l'indirizzo di gruppo libero più alto dell'intervallo dell'app: l'app non la vede finché non importa un file, e assegna alla sua prossima stanza quello libero più basso. Su richiesta risponde con l'indirizzo di gruppo della stanza. Solo amministratori.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Nome della nuova stanza."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Rinomina stanza",
+      "description": "Rinomina una stanza nell'esportazione mesh (non viene inviato nulla ai dispositivi). Solo amministratori.",
+      "fields": {
+        "room": {
+          "name": "Stanza",
+          "description": "Nome attuale della stanza."
+        },
+        "new_name": {
+          "name": "Nuovo nome",
+          "description": "Il nuovo nome."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Elimina stanza",
+      "description": "Elimina una stanza: i suoi dispositivi la lasciano, i tasti collegati alla stanza perdono la loro funzione e la stanza viene rimossa dall'esportazione mesh. I dispositivi stessi restano utilizzabili. Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "room": {
+          "name": "Stanza",
+          "description": "Nome della stanza da eliminare."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Assegna tasto",
+      "description": "Collega un tasto di un pulsante o un rilevatore a una luce, una presa, una tapparella, un termostato ambiente, il gateway, una stanza o una scena, esattamente come fa il collegamento del tasto dell'app JUNG HOME: il collegamento precedente del tasto viene rimosso, il tasto viene collegato alla destinazione e ne viene impostata la modalità del tasto (un rilevatore non ne ha e comanda un solo dispositivo). L'esportazione mesh viene riscritta e Home Assistant la segue senza ricaricare l'integrazione. Un rilevatore come sorgente e la modalità temperatura non sono verificati su dispositivi reali. Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "key_entity": {
+          "name": "Tasto",
+          "description": "L'entità evento del pulsante del tasto, oppure un'entità di un rilevatore."
+        },
+        "key_device": {
+          "name": "Dispositivo del tasto",
+          "description": "Il dispositivo pulsante che contiene il tasto (da usare con Lettera del tasto quando ha più tasti), oppure un rilevatore."
+        },
+        "key": {
+          "name": "Lettera del tasto",
+          "description": "Quale tasto del dispositivo: A, B, C o D; E1 o E2 per un ingresso di un mini attuatore."
+        },
+        "target_entity": {
+          "name": "Entità di destinazione",
+          "description": "La luce, la presa, la tapparella o il termostato ambiente che il tasto deve comandare."
+        },
+        "target_device": {
+          "name": "Dispositivo di destinazione",
+          "description": "Il dispositivo che il tasto deve comandare: una luce, una presa, oppure il gateway (il tasto segnala allora clic, doppi clic e pressioni prolungate a Home Assistant)."
+        },
+        "room": {
+          "name": "Stanza di destinazione",
+          "description": "La stanza le cui luci o prese il tasto deve comandare."
+        },
+        "scene": {
+          "name": "Scena di destinazione",
+          "description": "La scena che il tasto deve richiamare su ogni dispositivo, per numero o per nome (modalità del tasto scene; lascia vuoto Modalità). Non ancora provato su un dispositivo reale."
+        },
+        "mode": {
+          "name": "Modalità",
+          "description": "Cosa fa il tasto: light (acceso/spento e regolazione della luminosità), switch (acceso/spento), move (tapparelle; non testato), gateway (segnalazione di eventi), lock (il lato su / acceso blocca una luce o una presa nel suo stato attuale, il lato giù / spento la sblocca; non verificato su dispositivi reali), temperature (il valore impostato di un termostato ambiente; non verificato su dispositivi reali), oppure per le stanze light_and_switch (luci e prese insieme). Se lasciata vuota, la modalità segue la destinazione."
+        },
+        "target_element": {
+          "name": "Elemento di destinazione",
+          "description": "Solo destinazioni dispositivo: comanda un'altra parte della destinazione solo con il client di regolazione del tasto, color_temperature (la temperatura di colore di una luce a bianco regolabile, modalità light) o slat (le lamelle di una veneziana, modalità move). Non verificato su dispositivi reali."
+        },
+        "lock_seconds": {
+          "name": "Tempo di blocco",
+          "description": "Solo modalità lock: per quanto tempo dura un blocco dal tasto, in secondi (0 o vuoto: finché il tasto non lo sblocca). Non verificato su dispositivi reali."
+        },
+        "room_area": {
+          "name": "Stanza per area",
+          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+        },
+        "scene_entity": {
+          "name": "Entità scena",
+          "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Libera tasto",
+      "description": "Toglie ogni funzione a un tasto di un pulsante: il suo collegamento a un dispositivo, al gateway o a una stanza viene rimosso (il «Nessuna funzione» dell'app). Risponde quanti dei suoi messaggi i dispositivi hanno applicato, se l'esportazione mesh è stata scritta e quali dispositivi sono cambiati; con Simulazione, invece, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "key_entity": {
+          "name": "Tasto",
+          "description": "L'entità evento del pulsante del tasto."
+        },
+        "key_device": {
+          "name": "Dispositivo del tasto",
+          "description": "Il dispositivo pulsante che contiene il tasto (da usare con Lettera del tasto quando ha più tasti)."
+        },
+        "key": {
+          "name": "Lettera del tasto",
+          "description": "Quale tasto del dispositivo: A, B, C o D; E1 o E2 per un ingresso di un mini attuatore."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Crea scena",
+      "description": "Crea una scena vuota nell'esportazione mesh (non viene inviato nulla ai dispositivi). Memorizza dei dispositivi in essa con Memorizza scena. Home Assistant le assegna il numero di scena libero più alto dell'intervallo dell'app: l'app non la vede finché non importa un file, e assegna alla sua prossima scena quello libero più basso. Su richiesta risponde con il numero della scena. Solo amministratori.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Nome della nuova scena."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Rinomina scena",
+      "description": "Rinomina una scena nell'esportazione mesh (non viene inviato nulla ai dispositivi). Solo amministratori.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Nome o numero attuale della scena."
+        },
+        "new_name": {
+          "name": "Nuovo nome",
+          "description": "Il nuovo nome."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "scene_entity": {
+          "name": "Entità scena",
+          "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Memorizza scena",
+      "description": "Salva lo stato attuale di luci, prese, tapparelle e termostati JUNG HOME in una scena, come fa il «salva dispositivo nella scena» dell'app: imposta prima i dispositivi come la scena deve lasciarli, poi chiama questa azione. Ogni dispositivo memorizza il suo stato sotto la scena (Scene Store) insieme alla relativa descrizione JUNG, e l'esportazione mesh registra il membro. Home Assistant la segue senza ricaricare l'integrazione. Con uno stato indicato (azione, luminosità, temperatura di colore, temperatura), ogni dispositivo viene prima impostato su di esso e si attende che lo raggiunga; una tapparella con una posizione indicata non viene mossa, la scena memorizza quella posizione per essa. Solo amministratori.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Nome o numero della scena (creata con Crea scena o nell'app)."
+        },
+        "action": {
+          "name": "Azione",
+          "description": "Accendi o spegni le luci e le prese prima di memorizzare."
+        },
+        "brightness_pct": {
+          "name": "Luminosità",
+          "description": "Regola le luci a questa luminosità prima di memorizzare (l'azione è allora acceso)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura di colore",
+          "description": "Imposta le luci a bianco regolabile a questa temperatura di colore prima di memorizzare."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Posizione in cui la scena porta una tapparella: 0 chiusa, 100 aperta."
+        },
+        "tilt_position": {
+          "name": "Posizione di inclinazione",
+          "description": "Posizione delle lamelle in cui la scena porta una veneziana; la posizione della tapparella se omessa."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Imposta i termostati a questa temperatura prima di memorizzare."
+        },
+        "scene_entity": {
+          "name": "Entità scena",
+          "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Stato da memorizzare",
+          "description": "Imposta prima i dispositivi su questo stato; se lasciato vuoto, viene memorizzato il loro stato attuale."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Rimuovi dalla scena",
+      "description": "Toglie luci, prese, tapparelle e termostati JUNG HOME da una scena: ogni dispositivo dimentica la scena (Scene Delete) e l'esportazione mesh elimina il membro. Home Assistant la segue senza ricaricare l'integrazione. Solo amministratori.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Nome o numero della scena."
+        },
+        "scene_entity": {
+          "name": "Entità scena",
+          "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Elimina scena",
+      "description": "Elimina una scena: ogni dispositivo che l'ha memorizzata la dimentica, i tasti di quei dispositivi che la richiamano perdono i loro collegamenti e la scena viene rimossa dall'esportazione mesh. Home Assistant la segue senza ricaricare l'integrazione. Su richiesta risponde con i dispositivi saltati con «Anche se un dispositivo non risponde» (che richiede Conferma) e con ciò che i messaggi dei tasti hanno applicato; con Simulazione, cosa invierebbe e cambierebbe. Solo amministratori.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Nome o numero della scena da eliminare."
+        },
+        "force": {
+          "name": "Anche se un dispositivo non risponde",
+          "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        },
+        "scene_entity": {
+          "name": "Entità scena",
+          "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        },
+        "confirm": {
+          "name": "Conferma",
+          "description": "Necessaria con «Anche se un dispositivo non risponde»: da qui non si può far dimenticare la scena a un dispositivo che la mantiene. Non necessaria per una simulazione."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Elimina le scene inutilizzate",
+      "description": "Legge il registro delle scene di ogni dispositivo ed elenca, o elimina, le scene che l'esportazione mesh non conosce (né una scena né la scena di un timer dell'app), come fa l'app quando apre il suo elenco dei timer. Una simulazione, salvo indicazione contraria. Con un gateway, funziona solo sull'esportazione attuale del gateway; su una rete configurata da un file, l'eliminazione richiede «L'esportazione mesh è aggiornata» o i numeri da eliminare. Risponde con i numeri per dispositivo. Solo amministratori.",
+      "fields": {
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Elenca solo i numeri che verrebbero eliminati; non viene eliminato nulla. Attiva per impostazione predefinita."
+        },
+        "numbers": {
+          "name": "Numeri di scena",
+          "description": "Elimina solo questi numeri di scena (nessuno dei quali è una scena dell'esportazione mesh)."
+        },
+        "confirm_stale_export": {
+          "name": "L'esportazione mesh è aggiornata",
+          "description": "Per una rete configurata da un file: il file contiene ogni scena dell'app, comprese quelle create dopo l'esportazione. Senza questa opzione vengono eliminati solo i numeri indicati."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Sincronizza il gateway",
+      "description": "Consegna al gateway JUNG HOME l'esportazione mesh usata da Home Assistant, come fa l'app dopo ogni modifica. Viene eseguita automaticamente dopo ogni azione che riscrive l'esportazione; chiamala per riprovare dopo la riparazione «esportazione non consegnata al gateway», oppure dopo aver modificato tu stesso il file. Solo amministratori.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Ottieni programmazioni orarie",
+      "description": "Legge le programmazioni orarie che i carichi JUNG HOME eseguono da soli (la pagina Automazione dell'app): fino a 16 slot per carico, ciascuno un'attivazione a orario, all'alba o al tramonto in alcuni giorni della settimana con ciò che il carico fa allora. Risponde per entità con i suoi slot usati, nei campi che accetta Crea programmazione oraria."
+    },
+    "create_schedule": {
+      "name": "Crea programmazione oraria",
+      "description": "Scrive una programmazione nel primo slot libero di ogni carico JUNG HOME indicato, che poi la esegue da solo, senza Home Assistant. Una programmazione all'alba o al tramonto invia prima al nodo la posizione della casa di Home Assistant. Risponde per entità con lo slot usato. Non testato su un dispositivo. Solo amministratori.",
+      "fields": {
+        "trigger": {
+          "name": "Attivazione",
+          "description": "Quando scatta la programmazione: a un'ora del giorno, oppure all'alba o al tramonto."
+        },
+        "time": {
+          "name": "Ora",
+          "description": "Ora del giorno di una programmazione a orario."
+        },
+        "not_before": {
+          "name": "Non prima delle",
+          "description": "Una programmazione all'alba o al tramonto non scatta prima di quest'ora (nessun limite se omessa)."
+        },
+        "not_after": {
+          "name": "Non dopo le",
+          "description": "Una programmazione all'alba o al tramonto non scatta dopo quest'ora (nessun limite se omessa)."
+        },
+        "offset": {
+          "name": "Scostamento",
+          "description": "Minuti prima (negativo) o dopo l'alba o il tramonto."
+        },
+        "weekdays": {
+          "name": "Giorni della settimana",
+          "description": "Giorni in cui scatta la programmazione; ogni giorno se omessi."
+        },
+        "enabled": {
+          "name": "Attiva",
+          "description": "Se la programmazione scatta; una disattivata attende Attiva programmazione oraria."
+        },
+        "action": {
+          "name": "Azione",
+          "description": "Accendi o spegni una luce o una presa."
+        },
+        "brightness_pct": {
+          "name": "Luminosità",
+          "description": "Luminosità a cui si accende un dimmer (l'azione è allora acceso)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura di colore",
+          "description": "Temperatura di colore di una luce a bianco regolabile, a passi di 100 K."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Posizione in cui si porta una tapparella: 0 chiusa, 100 aperta."
+        },
+        "tilt_position": {
+          "name": "Posizione di inclinazione",
+          "description": "Posizione delle lamelle di una veneziana; la posizione della tapparella se omessa."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Temperatura impostata di un termostato ambiente."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Quando",
+          "description": "Quando scatta la programmazione."
+        },
+        "what": {
+          "name": "Cosa",
+          "description": "Su cosa viene impostato il carico quando scatta."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Aggiorna programmazione oraria",
+      "description": "Riscrive sul posto uno slot di programmazione usato di ogni carico JUNG HOME indicato, come fa la modifica dell'app, con i campi che accetta Crea programmazione oraria: indicali tutti di nuovo, nulla di omesso viene mantenuto dallo slot. Una programmazione all'alba o al tramonto invia prima al nodo la posizione della casa di Home Assistant; quando una scrittura fallisce, la vecchia programmazione dello slot viene riscritta. Non verificato su dispositivi reali. Solo amministratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numero dello slot di programmazione (0–15) da riscrivere, come lo elencano Ottieni programmazioni orarie e il sensore Programmazioni orarie."
+        },
+        "trigger": {
+          "name": "Attivazione",
+          "description": "Quando scatta la programmazione: a un'ora del giorno, oppure all'alba o al tramonto."
+        },
+        "time": {
+          "name": "Ora",
+          "description": "Ora del giorno di una programmazione a orario."
+        },
+        "not_before": {
+          "name": "Non prima delle",
+          "description": "Una programmazione all'alba o al tramonto non scatta prima di quest'ora (nessun limite se omessa)."
+        },
+        "not_after": {
+          "name": "Non dopo le",
+          "description": "Una programmazione all'alba o al tramonto non scatta dopo quest'ora (nessun limite se omessa)."
+        },
+        "offset": {
+          "name": "Scostamento",
+          "description": "Minuti prima (negativo) o dopo l'alba o il tramonto."
+        },
+        "weekdays": {
+          "name": "Giorni della settimana",
+          "description": "Giorni in cui scatta la programmazione; ogni giorno se omessi."
+        },
+        "enabled": {
+          "name": "Attiva",
+          "description": "Se la programmazione scatta; una disattivata attende Attiva programmazione oraria."
+        },
+        "action": {
+          "name": "Azione",
+          "description": "Accendi o spegni una luce o una presa."
+        },
+        "brightness_pct": {
+          "name": "Luminosità",
+          "description": "Luminosità a cui si accende un dimmer (l'azione è allora acceso)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura di colore",
+          "description": "Temperatura di colore di una luce a bianco regolabile, a passi di 100 K."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Posizione in cui si porta una tapparella: 0 chiusa, 100 aperta."
+        },
+        "tilt_position": {
+          "name": "Posizione di inclinazione",
+          "description": "Posizione delle lamelle di una veneziana; la posizione della tapparella se omessa."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Temperatura impostata di un termostato ambiente."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Quando",
+          "description": "Quando scatta la programmazione."
+        },
+        "what": {
+          "name": "Cosa",
+          "description": "Su cosa viene impostato il carico quando scatta."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Attiva programmazione oraria",
+      "description": "Permette di nuovo a uno slot di programmazione dei carichi JUNG HOME di scattare. Solo amministratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numero dello slot di programmazione (0–15), come lo elencano Ottieni programmazioni orarie e il sensore Programmazioni orarie."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Disattiva programmazione oraria",
+      "description": "Impedisce a uno slot di programmazione dei carichi JUNG HOME di scattare, senza eliminarlo. Solo amministratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numero dello slot di programmazione (0–15), come lo elencano Ottieni programmazioni orarie e il sensore Programmazioni orarie."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Elimina programmazione oraria",
+      "description": "Libera uno slot di programmazione dei carichi JUNG HOME. Solo amministratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numero dello slot di programmazione (0–15), come lo elencano Ottieni programmazioni orarie e il sensore Programmazioni orarie."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Imposta soglia",
+      "description": "Imposta una soglia di una presa JUNG HOME con misurazione, il profilo Automatico dell'app: quando la potenza della presa resta al livello per la durata, accende (soglia di accensione) o spegne (soglia di spegnimento) da sola le luci e le prese scelte, senza Home Assistant. Non testato su un dispositivo. Su richiesta risponde quanti dei messaggi di collegamento i dispositivi hanno applicato. Solo amministratori.",
+      "fields": {
+        "threshold": {
+          "name": "Soglia",
+          "description": "Quale delle due soglie della presa impostare."
+        },
+        "power": {
+          "name": "Potenza",
+          "description": "Livello di potenza in W (a passi di 0,1 W); il livello attuale della presa se omesso."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Secondi per cui la potenza deve restare al livello; la durata attuale della presa se omessa."
+        },
+        "enabled": {
+          "name": "Attiva",
+          "description": "Se la soglia commuta; una disattivata mantiene il suo livello e la sua durata. Se omesso, la soglia mantiene il suo stato (una nuova è attiva). Se viene disattivata mentre neanche l'altra soglia è attiva, le luci e le prese vengono scollegate come nell'app: indica di nuovo i dispositivi quando la riattivi."
+        },
+        "devices": {
+          "name": "Dispositivi",
+          "description": "Le luci e le prese che entrambe le soglie commutano, in sostituzione dell'elenco attuale; se omesso, l'elenco resta. L'esportazione mesh viene riscritta quando cambia, e Home Assistant la segue senza ricaricare l'integrazione."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Elimina soglia",
+      "description": "Cancella entrambe le soglie di una presa JUNG HOME con misurazione e scollega le luci e le prese che commutavano, come fa l'eliminazione dell'app. Home Assistant segue l'esportazione mesh riscritta senza ricaricare l'integrazione quando dei dispositivi sono stati scollegati. Su richiesta risponde quanti dei messaggi di collegamento i dispositivi hanno applicato. Solo amministratori."
+    },
+    "audit_network": {
+      "name": "Verifica la rete",
+      "description": "Legge, senza modificare nulla, cosa contiene la configurazione mesh dei dispositivi JUNG HOME — relay, network transmit, TTL predefinito, beacon, GATT proxy e friend, le chiavi di rete e di applicazione che ogni dispositivo possiede (per indice, mai una chiave), e per ogni modello la sua pubblicazione, le sottoscrizioni e le chiavi di applicazione associate — e la confronta con l'esportazione mesh. Risponde per dispositivo con le sue impostazioni e ogni differenza trovata, ed elenca i dispositivi che non hanno risposto. La verifica di tutti i dispositivi richiede alcuni minuti; i dispositivi a batteria sono in sospensione e vengono esclusi, a meno che non siano indicati.",
+      "fields": {
+        "device": {
+          "name": "Dispositivo",
+          "description": "Verifica solo il nodo mesh dietro questo dispositivo (una luce, un tasto, una presa o il nodo stesso). Se lasciato vuoto, viene verificato ogni nodo alimentato da rete."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Esporta la rete",
+      "description": "Risponde con l'esportazione usata da Home Assistant — con le stanze, i tasti, i collegamenti e le scene che ha modificato — come file di condivisione dell'app JUNG HOME o come database mesh, per un backup o per importarla nell'app. Solo amministratori: contiene tutte le chiavi della mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Formato",
+          "description": "Il file di condivisione dell'app (JungHome.json) oppure il database mesh (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Rete",
+          "description": "La rete JUNG HOME da esportare; necessaria solo quando ce ne sono diverse."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Trova nuovi dispositivi",
+      "description": "Elenca i dispositivi JUNG nelle vicinanze che non sono ancora in una rete, con l'indirizzo Bluetooth di cui ha bisogno `add_device`."
+    },
+    "add_device": {
+      "name": "Aggiungi dispositivo (sperimentale)",
+      "description": "Aggiunge un nuovo dispositivo JUNG alla rete come farebbe l'app: lo mette in servizio con il metodo più sicuro che il dispositivo offre (Static OOB quando lo offre e il suo valore è indicato, l'algoritmo HMAC-SHA256, altrimenti No OOB come l'app — senza autenticazione, qualcuno nel raggio Bluetooth durante l'operazione potrebbe intercettare le chiavi della rete), lo configura secondo le regole dell'app in base a ciò che il dispositivo comunica (rifiutato quando non corrisponde a ciò che ha un dispositivo dello stesso prodotto già presente nella rete) e lo registra nell'esportazione (consegnata al gateway). Un dispositivo la cui configurazione fallisce viene ripristinato, come fa l'app. I suoi gruppi di elementi prendono gli indirizzi di gruppo liberi più alti dell'intervallo dell'app (l'app non vede il dispositivo finché non importa un file). La risposta elenca i passaggi eseguiti. Richiede l'opzione *Consenti a Home Assistant di aggiungere dispositivi* della voce. Solo amministratori. I metodi autenticati, le regole di configurazione e il ripristino non sono verificati su dispositivi reali.",
+      "fields": {
+        "address": {
+          "name": "Indirizzo Bluetooth",
+          "description": "L'indirizzo che `find_new_devices` elenca per il dispositivo."
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Il nome del nuovo dispositivo."
+        },
+        "config_entry_id": {
+          "name": "Rete",
+          "description": "La rete JUNG HOME a cui aggiungerlo; necessaria solo quando ce ne sono diverse."
+        },
+        "static_oob": {
+          "name": "Valore Static OOB",
+          "description": "Solo per un dispositivo che offre l'autenticazione Static OOB: il suo valore di 16 o 32 byte in esadecimale, come lo documenta il produttore (non si conosce alcun dispositivo JUNG che la offra). Mai registrato nel log. Un dispositivo che accetta solo la messa in servizio autenticata viene rifiutato senza di esso, e un dispositivo che non la offre viene rifiutato con esso."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Rimuovi dispositivo (sperimentale)",
+      "description": "Ripristina un dispositivo JUNG (dimentica la rete e torna a essere un dispositivo nuovo) e lo toglie dalla rete come fa l'app: i collegamenti degli altri dispositivi verso di esso vengono rimossi, l'esportazione lo registra come rimosso e viene consegnata al gateway. Non può essere annullato. Richiede l'opzione *Consenti a Home Assistant di aggiungere e rimuovere dispositivi* della voce. Richiede Conferma; con Simulazione risponde invece cosa invierebbe e cambierebbe, e non la richiede. Solo amministratori.",
+      "fields": {
+        "device": {
+          "name": "Dispositivo",
+          "description": "Il dispositivo JUNG da rimuovere (uno qualsiasi dei suoi dispositivi in Home Assistant)."
+        },
+        "force": {
+          "name": "Anche se non risponde",
+          "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso."
+        },
+        "confirm": {
+          "name": "Conferma",
+          "description": "Necessaria per eseguirla: la rimozione di un dispositivo non può essere annullata. Non necessaria per una simulazione."
+        },
+        "dry_run": {
+          "name": "Simulazione",
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Ripristina dispositivo in sospeso (sperimentale)",
+      "description": "Ripristina un dispositivo JUNG che `add_device` ha messo in servizio ma non è riuscito a configurare o registrare (il problema da riparare *Un dispositivo aggiunto da Home Assistant non è registrato* li elenca): gli invia un Config Node Reset con la chiave del dispositivo che solo Home Assistant possiede, così torna a essere un dispositivo nuovo, e libera i suoi indirizzi. Non ancora provato su un dispositivo reale. Richiede l'opzione *Consenti a Home Assistant di aggiungere dispositivi* della voce. Solo amministratori.",
+      "fields": {
+        "uuid": {
+          "name": "UUID del dispositivo",
+          "description": "L'UUID del dispositivo, come lo hanno fornito `add_device` o `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Indirizzo unicast",
+          "description": "L'indirizzo unicast primario del dispositivo (esadecimale, come lo indica il problema da riparare); con l'UUID, devono corrispondere entrambi."
+        },
+        "force": {
+          "name": "Anche se non risponde",
+          "description": "Dimentica il dispositivo anche se non conferma il ripristino (uno ripristinato a mano, o che non c'è più definitivamente)."
+        },
+        "config_entry_id": {
+          "name": "Rete",
+          "description": "La rete JUNG HOME a cui è stato aggiunto il dispositivo; necessaria solo quando ce ne sono diverse."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Localizza dispositivo",
+      "description": "Fa annunciare a un dispositivo JUNG la sua Node Identity — un annuncio Bluetooth che solo le chiavi di questa mesh collegano al dispositivo — per un massimo di un minuto e poi smettere, così uno scanner Bluetooth può capire quale radio è quel dispositivo. Non modifica nient'altro; in ogni caso il dispositivo smette da solo dopo un minuto. Solo amministratori. Non verificato su dispositivi reali.",
+      "fields": {
+        "device": {
+          "name": "Dispositivo",
+          "description": "Il dispositivo JUNG da localizzare (uno qualsiasi dei suoi dispositivi in Home Assistant)."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Secondi di annuncio, da 5 a 60 (un dispositivo smette da solo dopo 60)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Approva client del gateway",
+      "description": "Elenca i client API in attesa di accesso presso il gateway JUNG HOME (un'altra integrazione, uno script) e approva quello indicato, come fa Impostazioni → Gateway → Autorizzazioni di accesso → Richieste aperte nell'app. Un client approvato ottiene l'intera API del gateway, compresa l'esportazione della rete con tutte le chiavi mesh: approva solo un client che hai avviato tu stesso. Senza il nome di un client li elenca soltanto (attiva la risposta). La revoca dell'accesso resta all'app. Solo amministratori, per una rete configurata dal gateway. Non verificato su dispositivi reali.",
+      "fields": {
+        "client": {
+          "name": "Client",
+          "description": "Il nome con cui il client chiede l'accesso, esattamente come elencato sotto `waiting`. Se lasciato vuoto, non viene approvato nulla."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Avvia regolazione luminosità",
+      "description": "Avvia la regolazione verso l'alto o verso il basso di un dimmer JUNG HOME, come quando si tiene premuto un bilanciere, fino a Ferma regolazione luminosità (o alla fine dell'intervallo). Non ancora provato su un dispositivo reale.",
+      "fields": {
+        "direction": {
+          "name": "Direzione",
+          "description": "Più luminoso (up) o più scuro (down)."
+        },
+        "speed": {
+          "name": "Velocità",
+          "description": "Quanto velocemente, in percentuale dell'intervallo di luminosità al secondo (predefinito 20: da spento al massimo in 5 secondi)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Ferma regolazione luminosità",
+      "description": "Ferma nel punto in cui si trova un dimmer JUNG HOME messo in movimento da Avvia regolazione luminosità. Non ancora provato su un dispositivo reale."
+    },
+    "step_dim": {
+      "name": "Regola la luminosità di un passo",
+      "description": "Rende un dimmer JUNG HOME più luminoso o più scuro di un passo. Non ancora provato su un dispositivo reale.",
+      "fields": {
+        "step": {
+          "name": "Passo",
+          "description": "Percentuale dell'intervallo di luminosità: positiva più luminoso, negativa più scuro."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Luce (acceso/spento, regolazione)",
+        "switch": "Commutazione (acceso/spento)",
+        "move": "Tapparelle (non testato)",
+        "gateway": "Gateway (segnala eventi)",
+        "light_and_switch": "Luci e prese (solo stanze)",
+        "lock": "Blocca e sblocca (non verificato su dispositivi reali)",
+        "temperature": "Temperatura (termostato ambiente, non testato)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Temperatura di colore (non verificato su dispositivi reali)",
+        "slat": "Lamelle (non verificato su dispositivi reali)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Ora del giorno",
+        "sunrise": "Alba",
+        "sunset": "Tramonto"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Acceso",
+        "off": "Spento"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Lunedì",
+        "tue": "Martedì",
+        "wed": "Mercoledì",
+        "thu": "Giovedì",
+        "fri": "Venerdì",
+        "sat": "Sabato",
+        "sun": "Domenica"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Soglia di accensione",
+        "switch_off": "Soglia di spegnimento"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "File di condivisione dell'app (JungHome.json)",
+        "cdb": "Database mesh (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Più luminoso",
+        "down": "Più scuro"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Inserto di commutazione",
+        "two_gang_switch": "Inserto di commutazione 2 canali",
+        "dimming": "Inserto dimmer",
+        "two_gang_dimming": "Inserto dimmer 2 canali",
+        "tw_dimming": "Inserto DALI",
+        "blind": "Inserto per tapparelle",
+        "extension": "Inserto derivato",
+        "not_available": "Nessun inserto"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Tasto su / giù",
+        "one_rocker": "Bilanciere",
+        "two_left_two_right": "Tasto | Tasto",
+        "one_left_two_right": "Bilanciere | Tasto",
+        "two_left_one_right": "Tasto | Bilanciere",
+        "one_left_one_right": "Bilanciere | Bilanciere"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Pulsante 1 canale",
+        "push_button_2": "Pulsante 2 canali",
+        "socket_metering": "Presa (con misurazione)",
+        "socket": "Presa",
+        "switch_actuator_mini": "Attuatore di commutazione 1 canale mini",
+        "blinds_actuator_mini": "Attuatore per tapparelle 1 canale mini",
+        "wall_transmitter_1": "Trasmettitore da parete 1 canale",
+        "wall_transmitter_2": "Trasmettitore da parete 2 canali",
+        "motion_detector_1m": "Rilevatore di movimento 1 m",
+        "motion_detector_2m": "Rilevatore di movimento 2 m",
+        "presence_detector": "Rilevatore di presenza",
+        "room_thermostat": "Termostato ambiente",
+        "gateway": "Gateway",
+        "switch_actuator_1_energy": "Attuatore di commutazione 1 canale 2 ingressi energia",
+        "switch_actuator_2": "Attuatore di commutazione 2 canali 2 ingressi",
+        "dimmer_actuator": "Attuatore dimmer 1 canale 2 ingressi",
+        "blinds_actuator": "Attuatore per tapparelle PP2 1 canale 2 ingressi",
+        "dali_actuator": "Attuatore DALI 1 canale 2 ingressi",
+        "mini_sensor_mains": "Mini sensore 2 ingressi alimentazione di rete",
+        "mini_sensor_battery": "Mini sensore 2 ingressi a batteria"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Rete Bluetooth Mesh",
+        "switch": "Luce commutata",
+        "dimmer": "Luce dimmerabile",
+        "ctl": "Luce a bianco regolabile (DALI)",
+        "blind": "Motore per tapparella / avvolgibile",
+        "push_buttons": "Pulsanti",
+        "unknown_product": "Prodotto {pid}"
+      }
+    }
+  }
+}
