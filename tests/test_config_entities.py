@@ -324,12 +324,14 @@ def test_lock_goes_to_every_lockable_load_disabled_by_default() -> None:
 
 def test_blinds_are_lockable_too() -> None:
     cdb = CDB.load(FIXTURES / "Blinds.json")
-    hub = SimpleNamespace(
-        cdb=cdb,
-        devices=build_devices(cdb, Metadata.from_export(cdb.export_meta)),
-        states={},
-        device_ids={},
-        entry=SimpleNamespace(title="test", entry_id="entry"),
+    hub = ph.with_inserts(
+        SimpleNamespace(
+            cdb=cdb,
+            devices=build_devices(cdb, Metadata.from_export(cdb.export_meta)),
+            states={},
+            device_ids={},
+            entry=SimpleNamespace(title="test", entry_id="entry"),
+        )
     )
     blinds = {b.address for b in hub.devices.blinds}
     locks = {t.address: t.page for t in C.lock_targets(hub)}

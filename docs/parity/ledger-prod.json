@@ -1120,18 +1120,21 @@
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::BLIND_FUNCTION",
     "custom_components/junghome_ble/jhmesh/devices.py::_blind_level_elements",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_blind"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_blind",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_blinds_insert_on_a_push_button_is_a_blind_next_to_lamp_servers",
     "tests/jhmesh/test_export.py::test_guess_actuator_function_blinds_and_rtr",
-    "tests/test_cover.py::test_blinds_are_derived_from_the_export"
+    "tests/test_cover.py::test_blinds_are_derived_from_the_export",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:dimming",
@@ -1144,18 +1147,21 @@
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::LAMP_FUNCTIONS",
     "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
-    "custom_components/junghome_ble/jhmesh/devices.py::_build_light"
+    "custom_components/junghome_ble/jhmesh/devices.py::_build_light",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
     "tests/jhmesh/test_devices.py::test_build_devices_kind_follows_models",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:extension",
@@ -1167,16 +1173,19 @@
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::NO_LOAD_FUNCTIONS",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
-    "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load"
+    "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:gateway",
@@ -1187,14 +1196,17 @@
     "custom_components/junghome_ble/jhmesh/devices.py::insert_function",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
-    "custom_components/junghome_ble/jhmesh/devices.py::GATEWAY_PID"
+    "custom_components/junghome_ble/jhmesh/devices.py::GATEWAY_PID",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "InsertId 0x0002 is never read over the mesh (only the value the app cached in its export meta is used, cdb._note_insert_functions; the provisioning read RequestRequiredData is listed NOT_COVERED in commission.py), only push-buttons 0x0001/0x0002 consult it (every other product's load device comes from its composition), and the insert description label (Info tab) is shown nowhere in HA; on a push-button a reported function 9 is ignored by insert_function() and the composition decides, where the app's DeviceMapper creates no load device",
+   "missing": "the InsertId is read for push-buttons only (export, JUNG advertisement, a fallback Get: inserts.py::NodeInserts.function; the provisioning read RequestRequiredData stays NOT_COVERED in commission.py) and named on the node device; every other product's load device comes from its composition; on a push-button a reported function 9 is ignored by insert_function() and the composition decides, where the app's DeviceMapper creates no load device",
    "class": "build",
    "verify": "offline"
   },
@@ -1208,17 +1220,20 @@
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::NO_LOAD_FUNCTIONS",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:rtr",
@@ -1229,14 +1244,17 @@
     "custom_components/junghome_ble/jhmesh/devices.py::insert_function",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
-    "custom_components/junghome_ble/jhmesh/devices.py::THERMOSTAT_PIDS"
+    "custom_components/junghome_ble/jhmesh/devices.py::THERMOSTAT_PIDS",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
-    "tests/jhmesh/test_export.py::test_guess_actuator_function_blinds_and_rtr"
+    "tests/jhmesh/test_export.py::test_guess_actuator_function_blinds_and_rtr",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "InsertId 0x0002 is never read over the mesh (only the value the app cached in its export meta is used, cdb._note_insert_functions; the provisioning read RequestRequiredData is listed NOT_COVERED in commission.py), only push-buttons 0x0001/0x0002 consult it (every other product's load device comes from its composition), and the insert description label (Info tab) is shown nowhere in HA; the Rtr function's G(1) gate is not applied: the RTR sensor-selection select (0x1221) is offered on every RTR whatever its InsertId, and on a push-button a reported 8 is ignored by insert_function()",
+   "missing": "the InsertId is read for push-buttons only (export, JUNG advertisement, a fallback Get: inserts.py::NodeInserts.function; the provisioning read RequestRequiredData stays NOT_COVERED in commission.py) and named on the node device; every other product's load device comes from its composition; the Rtr function's G(1) gate is not applied: the RTR sensor-selection select (0x1221) is offered on every RTR whatever its InsertId, and on a push-button a reported 8 is ignored by insert_function()",
    "class": "build",
    "verify": "offline"
   },
@@ -1251,7 +1269,9 @@
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::LAMP_FUNCTIONS",
     "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
-    "custom_components/junghome_ble/jhmesh/devices.py::meter_element"
+    "custom_components/junghome_ble/jhmesh/devices.py::meter_element",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
@@ -1259,11 +1279,12 @@
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
     "tests/jhmesh/test_devices.py::test_build_devices_kind_follows_models",
     "tests/jhmesh/test_devices.py::test_the_energy_puck_output_is_a_metered_light",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:tw-dimming",
@@ -1276,18 +1297,21 @@
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::LAMP_FUNCTIONS",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_light",
-    "custom_components/junghome_ble/jhmesh/devices.py::ctl_temperature_element"
+    "custom_components/junghome_ble/jhmesh/devices.py::ctl_temperature_element",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
     "tests/jhmesh/test_devices.py::test_ctl_light_knows_its_temperature_element",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:two-gang-dimming",
@@ -1299,17 +1323,20 @@
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::LAMP_FUNCTIONS",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:two-gang-switch",
@@ -1321,17 +1348,20 @@
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
     "custom_components/junghome_ble/jhmesh/devices.py::LAMP_FUNCTIONS",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
     "tests/jhmesh/test_devices.py::test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
    "class": "dup",
    "dup_of": "prop:0x0002",
-   "reason": "the only missing piece is reading InsertId 0x0002 over the mesh (and showing the insert function in node details), which prop:0x0002 tracks; the function value itself is decoded and mapped (devices.insert_function)"
+   "reason": "the InsertId 0x0002 itself is tracked by prop:0x0002 (export, advertisement, a fallback Get); the function value is decoded and mapped (devices.insert_function) and named on the node device (inserts.NodeInserts.node_model)"
   },
   {
    "id": "prod:actuator-function:unknown",
@@ -1342,14 +1372,17 @@
     "custom_components/junghome_ble/jhmesh/devices.py::insert_function",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
-    "tests/jhmesh/test_devices.py::test_without_a_known_insert_the_composition_decides"
+    "tests/jhmesh/test_devices.py::test_without_a_known_insert_the_composition_decides",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "InsertId 0x0002 is never read over the mesh (only the value the app cached in its export meta is used, cdb._note_insert_functions; the provisioning read RequestRequiredData is listed NOT_COVERED in commission.py), only push-buttons 0x0001/0x0002 consult it (every other product's load device comes from its composition), and the insert description label (Info tab) is shown nowhere in HA; an unknown raw function (Unknown(raw)) makes insert_function() return None, so the composition decides and can create a load device where the app's mapper creates none",
+   "missing": "the InsertId is read for push-buttons only (export, JUNG advertisement, a fallback Get: inserts.py::NodeInserts.function; the provisioning read RequestRequiredData stays NOT_COVERED in commission.py) and named on the node device; every other product's load device comes from its composition; an unknown raw function (Unknown(raw)) makes insert_function() return None, so the composition decides and can create a load device where the app's mapper creates none",
    "class": "build",
    "verify": "offline"
   },
@@ -1362,14 +1395,17 @@
     "custom_components/junghome_ble/jhmesh/devices.py::insert_function",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/export.py::guess_actuator_function",
-    "custom_components/junghome_ble/jhmesh/devices.py::_is_load"
+    "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.function",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
     "tests/jhmesh/test_cdb.py::test_insert_function_comes_from_the_share_meta",
-    "tests/jhmesh/test_devices.py::test_without_a_known_insert_the_composition_decides"
+    "tests/jhmesh/test_devices.py::test_without_a_known_insert_the_composition_decides",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "InsertId 0x0002 is never read over the mesh (only the value the app cached in its export meta is used, cdb._note_insert_functions; the provisioning read RequestRequiredData is listed NOT_COVERED in commission.py), only push-buttons 0x0001/0x0002 consult it (every other product's load device comes from its composition), and the insert description label (Info tab) is shown nowhere in HA; unset (0xFFFF) makes insert_function() return None, so on a push-button the composition decides and can create a load device where the app's mapper creates none (\"Device does not support insert id's\")",
+   "missing": "the InsertId is read for push-buttons only (export, JUNG advertisement, a fallback Get: inserts.py::NodeInserts.function; the provisioning read RequestRequiredData stays NOT_COVERED in commission.py) and named on the node device; every other product's load device comes from its composition; unset (0xFFFF) makes insert_function() return None, so on a push-button the composition decides and can create a load device where the app's mapper creates none (\"Device does not support insert id's\")",
    "class": "build",
    "verify": "offline"
   },
@@ -1858,67 +1894,75 @@
   },
   {
    "id": "prod:insert-type:generic-insert",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::INSERT_TYPE",
     "custom_components/junghome_ble/jhmesh/properties.py::InsertIdCodec",
-    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type"
+    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type",
+    "custom_components/junghome_ble/inserts.py::NodeInserts._ask",
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS",
+    "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept"
    ],
-   "class": "build",
-   "verify": "on-air",
-   "missing": "Home Assistant never reads InsertId (0x0002) from a node: InsertIdCodec decodes the insert type, and the export rows Home Assistant writes for nodes it adds carry a guess (export.guess_insert_type: GenericInsert for push-buttons, NoInsert for every other product), but nothing tells inserts apart by it. Reading it (advert, then a User Get): review 4 brief 33."
+   "note": "Unverified on air: the insert type comes with an InsertId Get's answer (inserts.py::NodeInserts._ask, kept with the node information) and is decoded in the device diagnostics; the JUNG advertisement does not carry it, and the export rows Home Assistant writes carry a guess (export.py::guess_insert_type). Nothing in the app acts on it beyond the device identifier, so nothing here does either."
   },
   {
    "id": "prod:insert-type:no-insert",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::INSERT_TYPE",
     "custom_components/junghome_ble/jhmesh/properties.py::InsertIdCodec",
-    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type"
+    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type",
+    "custom_components/junghome_ble/inserts.py::NodeInserts._ask",
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS",
+    "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept"
    ],
-   "class": "build",
-   "verify": "on-air",
-   "missing": "Home Assistant never reads InsertId (0x0002) from a node: InsertIdCodec decodes the insert type, and the export rows Home Assistant writes for nodes it adds carry a guess (export.guess_insert_type: GenericInsert for push-buttons, NoInsert for every other product), but nothing tells inserts apart by it. Reading it (advert, then a User Get): review 4 brief 33."
+   "note": "Unverified on air: the insert type comes with an InsertId Get's answer (inserts.py::NodeInserts._ask, kept with the node information) and is decoded in the device diagnostics; the JUNG advertisement does not carry it, and the export rows Home Assistant writes carry a guess (export.py::guess_insert_type). Nothing in the app acts on it beyond the device identifier, so nothing here does either."
   },
   {
    "id": "prod:insert-type:not-supported",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::INSERT_TYPE",
     "custom_components/junghome_ble/jhmesh/properties.py::InsertIdCodec",
-    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type"
+    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type",
+    "custom_components/junghome_ble/inserts.py::NodeInserts._ask",
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS",
+    "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept"
    ],
-   "class": "build",
-   "verify": "on-air",
-   "missing": "Home Assistant never reads InsertId (0x0002) from a node: InsertIdCodec decodes the insert type, and the export rows Home Assistant writes for nodes it adds carry a guess (export.guess_insert_type: GenericInsert for push-buttons, NoInsert for every other product), but nothing tells inserts apart by it. Reading it (advert, then a User Get): review 4 brief 33. This value is only decoded (never written or acted on)."
+   "note": "Unverified on air: the insert type comes with an InsertId Get's answer (inserts.py::NodeInserts._ask, kept with the node information) and is decoded in the device diagnostics; the JUNG advertisement does not carry it, and the export rows Home Assistant writes carry a guess (export.py::guess_insert_type). Nothing in the app acts on it beyond the device identifier, so nothing here does either."
   },
   {
    "id": "prod:insert-type:unknown",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::INSERT_TYPE",
     "custom_components/junghome_ble/jhmesh/properties.py::InsertIdCodec",
-    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type"
+    "custom_components/junghome_ble/jhmesh/export.py::guess_insert_type",
+    "custom_components/junghome_ble/inserts.py::NodeInserts._ask",
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS",
+    "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
-    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses"
+    "tests/jhmesh/test_export.py::test_actuator_function_and_insert_type_guesses",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept"
    ],
-   "class": "build",
-   "verify": "on-air",
-   "missing": "Home Assistant never reads InsertId (0x0002) from a node: InsertIdCodec decodes the insert type, and the export rows Home Assistant writes for nodes it adds carry a guess (export.guess_insert_type: GenericInsert for push-buttons, NoInsert for every other product), but nothing tells inserts apart by it. Reading it (advert, then a User Get): review 4 brief 33. This value is only decoded (never written or acted on)."
+   "note": "Unverified on air: the insert type comes with an InsertId Get's answer (inserts.py::NodeInserts._ask, kept with the node information) and is decoded in the device diagnostics; the JUNG advertisement does not carry it, and the export rows Home Assistant writes carry a guess (export.py::guess_insert_type). Nothing in the app acts on it beyond the device identifier, so nothing here does either."
   },
   {
    "id": "prod:key-mode:gateway",

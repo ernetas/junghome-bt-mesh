@@ -223,6 +223,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     entry.runtime_data = hub
     # what an action, a rename or the unknown-node adoption has the hub follow the export with (review-4 D23)
     hub.follow_export = partial(async_follow_export, hass, entry.entry_id)
+    # what the nodes advertised or answered of their inserts, before any device is registered (`inserts.py`)
+    await hub.inserts.async_setup()
     remove_stale_devices(hass, entry, hub)
     drop_retired_entities(hass, retired_unique_ids(hub))
     enable_now_default(

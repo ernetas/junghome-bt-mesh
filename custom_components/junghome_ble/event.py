@@ -220,6 +220,19 @@ class JungHomeButtonEvent(JungHomeEntity, EventEntity):
             **connection_attributes(button),
         }
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the key's address, location and connection; where it sits on its node once the key layout is known.
+
+        The `position` (`inserts.NodeInserts.position`: `top`, `left_rocker`, `right_bottom`, ...) comes from the
+        node's ButtonLayout — its export, its advertisement or its answer to a Get — so it can arrive after the
+        entity was added; the hub then tells the entity to write its state again.
+        """
+        attrs = dict(self._attr_extra_state_attributes)
+        if (position := self.hub.inserts.position(self.button)) is not None:
+            attrs["position"] = position
+        return attrs
+
     async def async_added_to_hass(self) -> None:
         """Also subscribe to the hub's button events for this address."""
         await super().async_added_to_hass()

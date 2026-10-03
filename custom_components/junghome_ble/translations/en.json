@@ -256,6 +256,20 @@
               "link_lost": "Link lost",
               "stopped": "Integration stopped"
             }
+          },
+          "position": {
+            "name": "Position",
+            "state": {
+              "top": "Top",
+              "bottom": "Bottom",
+              "rocker": "Rocker",
+              "left_top": "Left, top",
+              "left_bottom": "Left, bottom",
+              "right_top": "Right, top",
+              "right_bottom": "Right, bottom",
+              "left_rocker": "Left rocker",
+              "right_rocker": "Right rocker"
+            }
           }
         }
       },
@@ -1319,6 +1333,10 @@
       "title": "JUNG HOME devices missing from the export",
       "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them yet. Home Assistant asks the gateway {host} for its current export and takes it over by itself when that lists them. If this issue stays, the gateway's export does not know them either: open the JUNG HOME app once while it is connected to the gateway (it uploads its project), or export the network from the app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure)."
     },
+    "insert_mismatch": {
+      "title": "JUNG HOME push-buttons with another insert than in the export",
+      "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was replaced after that export was made, so Home Assistant and the app may show the wrong kind of load for them. Check the devices in the JUNG HOME app, export the network again and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure); the issue clears once the export names the inserts the devices advertise. Unverified on air."
+    },
     "key_refresh": {
       "title": "JUNG HOME mesh keys are changing",
       "description": "The mesh {title} announced a key refresh whose new network key Home Assistant did not hear being handed out (a key refresh it sees from the start is followed and raises nothing). Once it completes, the keys in the export used by Home Assistant are no longer valid and control will stop. Export the network again from the JUNG HOME app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure)."
@@ -2010,6 +2028,28 @@
       "options": {
         "up": "Brighter",
         "down": "Darker"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Switch insert",
+        "two_gang_switch": "2-gang switch insert",
+        "dimming": "Dimming insert",
+        "two_gang_dimming": "2-gang dimming insert",
+        "tw_dimming": "DALI insert",
+        "blind": "Blinds insert",
+        "extension": "Extension insert",
+        "not_available": "No insert"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Button top / bottom",
+        "one_rocker": "Rocker",
+        "two_left_two_right": "Button | Button",
+        "one_left_two_right": "Rocker | Button",
+        "two_left_one_right": "Button | Rocker",
+        "one_left_one_right": "Rocker | Rocker"
       }
     }
   }

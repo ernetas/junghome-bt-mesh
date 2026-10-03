@@ -23,21 +23,36 @@
   },
   {
    "id": "prop:0x0002",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::InsertIdCodec",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_insert_functions",
     "custom_components/junghome_ble/jhmesh/devices.py::insert_function",
-    "custom_components/junghome_ble/jhmesh/commission.py::NOT_COVERED"
+    "custom_components/junghome_ble/jhmesh/commission.py::NOT_COVERED",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.read_unknown",
+    "custom_components/junghome_ble/inserts.py::NodeInserts._ask",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.note_advert",
+    "custom_components/junghome_ble/inserts.py::apply_reported",
+    "custom_components/junghome_ble/inserts.py::node_adverts",
+    "custom_components/junghome_ble/jhmesh/devices.py::pick_insert",
+    "custom_components/junghome_ble/jhmesh/cdb.py::Node",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._adv_seen",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.node_model",
+    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
-    "tests/jhmesh/test_messages.py::test_describe_insert_id"
+    "tests/jhmesh/test_messages.py::test_describe_insert_id",
+    "tests/test_inserts.py::test_without_an_export_insert_the_advertised_one_decides",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept",
+    "tests/test_inserts.py::test_the_reads_are_a_connect_step",
+    "tests/jhmesh/test_devices.py::test_the_insert_comes_from_the_export_then_from_what_the_node_reported",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "InsertId is never read over the mesh: the app sends an LBC User Get 0x0002 to every element with the 0527:1013 server at provisioning (RequestRequiredData) and derives the load device class from it; we only take the value the app cached in its export (cdb._note_insert_functions) or guess from the composition, commission.py lists the read as NOT_COVERED, and node details (function + insert type) are not shown in HA",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air: the InsertId Get (LBC User 0x0002, inserts.py::NodeInserts.read_unknown) is asked only of a push-button whose export and advertisement told nothing, after the export's value and the JUNG advertisement (the app's own order differs: it reads the InsertId at provisioning, where onboard.py::async_add_device takes the advertised function instead; commission.py::NOT_COVERED still lists that read). The node device's model names the insert (inserts.py::NodeInserts.node_model), the device diagnostics decode the answer."
   },
   {
    "id": "prop:0x0003",
@@ -728,13 +743,23 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES",
-    "custom_components/junghome_ble/keep_awake.py::KeepAwake._keep_alive"
+    "custom_components/junghome_ble/keep_awake.py::KeepAwake._keep_alive",
+    "custom_components/junghome_ble/jhmesh/cdb.py::_note_button_layouts",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.layout",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.read_unknown",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.buttons_model",
+    "custom_components/junghome_ble/jhmesh/devices.py::key_position",
+    "custom_components/junghome_ble/event.py::JungHomeButtonEvent.extra_state_attributes"
    ],
    "tests": [
     "tests/test_keep_awake.py::test_the_keep_alive_follows_the_apps_cadence",
-    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
+    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys",
+    "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept",
+    "tests/jhmesh/test_cdb.py::test_button_layout_comes_from_the_android_share_meta",
+    "tests/jhmesh/test_devices.py::test_key_positions_follow_the_button_layout"
    ],
-   "missing": "the layout is only read as a battery keep-alive; it is not read at commissioning (commission.py NOT_COVERED), not shown, and the app's change-layout flow (write + reset + re-provision of the node, ButtonLayoutViewModel) has no HA equivalent; the re-provision half of the layout change needs a spare device for on-air confirmation (running it on the installation re-provisions a real node)",
+   "missing": "the layout is read (the export's buttonLayoutExports, the JUNG advertisement, an Admin Get of a push-button nothing told about) and shown (buttons device model, each key's position attribute), but not read at commissioning (commission.py NOT_COVERED), and the app's change-layout flow (write + reset + re-provision of the node, ButtonLayoutViewModel) has no HA equivalent; the re-provision half of the layout change needs a spare device for on-air confirmation (running it on the installation re-provisions a real node)",
    "class": "build",
    "verify": "offline"
   },

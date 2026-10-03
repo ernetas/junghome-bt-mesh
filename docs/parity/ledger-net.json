@@ -3999,18 +3999,22 @@
   },
   {
    "id": "net:uc:observecontrolswitchkeyassignment",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::Button",
-    "custom_components/junghome_ble/jhmesh/devices.py::KeyConnection"
+    "custom_components/junghome_ble/jhmesh/devices.py::KeyConnection",
+    "custom_components/junghome_ble/jhmesh/devices.py::key_position",
+    "custom_components/junghome_ble/jhmesh/devices.py::KEY_POSITIONS",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.position",
+    "custom_components/junghome_ble/event.py::JungHomeButtonEvent.extra_state_attributes"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_key_connections_of_the_fixture_network",
-    "tests/test_key_mode.py::test_event_entities_say_what_their_key_drives"
+    "tests/test_key_mode.py::test_event_entities_say_what_their_key_drives",
+    "tests/jhmesh/test_devices.py::test_key_positions_follow_the_button_layout",
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "missing": "assignments are per key element; the ButtonLayout (0x5001) that decides which key positions exist and which rocker each belongs to is not read ('Unknown Button Layout' handling absent)",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air: each key's event entity carries its connection and, from the node's ButtonLayout (export, advertisement or Get), its position (top / bottom, left / right, rocker); without a known layout there is no position, the app's 'Unknown Button Layout'. The positions of the mixed layouts (Rocker | Button, Button | Rocker) follow the documented element order and were not seen on air."
   },
   {
    "id": "net:uc:observegatewayconfig",

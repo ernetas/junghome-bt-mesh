@@ -100,6 +100,9 @@ NODE_INFO_VENDOR: Final = {
     0x0005: "stm32_version",
 }
 NODE_INFO_TIME_ROLE: Final = "time_role"
+# A push-button's insert and key layout as the node answered them (`inserts.py`): its InsertId (LBC User 0x0002) and
+# ButtonLayout (LBC Admin 0x5001), asked only of a node whose export and advertisement told neither
+NODE_INFO_INSERT: Final = {0x0002: "insert_id", 0x5001: "button_layout"}
 # Suffix of the item that records a node answering an item of `NODE_INFO` / `NODE_INFO_VENDOR` without a value (it
 # does not have it): `"<item>.unsupported"` holds the raw software version it answered under, so the Get is not sent
 # again on every link, and a firmware update (another version) asks again.
@@ -493,6 +496,8 @@ ISSUE_UNKNOWN_NODES: Final = (
 )
 # ... the same issue's wording for an entry set up from the gateway, whose export Home Assistant fetches by itself
 ISSUE_UNKNOWN_NODES_GATEWAY: Final = "unknown_nodes_gateway"
+# push-buttons advertising another insert than the one the export cached for them: an insert was swapped (`inserts.py`)
+ISSUE_INSERT_MISMATCH: Final = "insert_mismatch"
 ISSUE_DUPLICATE_MESH: Final = (
     "duplicate_mesh"  # another entry already covers this mesh UUID: their sequence-number
     # records can roll each other back (the config flow refuses this for anything set up

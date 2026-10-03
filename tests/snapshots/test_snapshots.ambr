@@ -441,7 +441,7 @@
     'labels': set({
     }),
     'manufacturer': 'JUNG',
-    'model': 'Push-button 1-gang',
+    'model': 'Push-button 1-gang (Switch insert)',
     'model_id': '0x0001',
     'name': 'Push-button 1-gang 0148',
     'name_by_user': None,
@@ -525,7 +525,7 @@
     'labels': set({
     }),
     'manufacturer': 'JUNG',
-    'model': 'Push-button 2-gang',
+    'model': 'Push-button 2-gang (DALI insert)',
     'model_id': '0x0002',
     'name': 'Push-button 2-gang 0232',
     'name_by_user': None,
@@ -567,7 +567,7 @@
     'labels': set({
     }),
     'manufacturer': 'JUNG',
-    'model': 'Push-button 1-gang',
+    'model': 'Push-button 1-gang (Dimming insert)',
     'model_id': '0x0001',
     'name': 'Push-button 1-gang 0300',
     'name_by_user': None,

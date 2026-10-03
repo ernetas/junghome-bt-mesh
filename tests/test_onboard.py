@@ -36,8 +36,14 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.entity import mesh_identifier, node_identifier
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi
 from custom_components.junghome_ble.jhmesh import config_messages as C
+from custom_components.junghome_ble.jhmesh.advert import JungAdvertisement
+from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
-from custom_components.junghome_ble.jhmesh.devices import element_group_address
+from custom_components.junghome_ble.jhmesh.devices import (
+    Metadata,
+    build_devices,
+    element_group_address,
+)
 from custom_components.junghome_ble.jhmesh.export import (
     AllocationCrowded,
     ProjectFile,
@@ -58,6 +64,8 @@ from custom_components.junghome_ble.jhmesh.vault import RefreshProgress
 from custom_components.junghome_ble.services import CONFIGURATORS
 
 from .conftest import (
+    CDB_PATH,
+    META_DIR,
     PROXY_NODE,
     SHARE_EXPORT_PATH,
     FakeProxyLink,
@@ -292,6 +300,9 @@ async def test_add_device_provisions_commissions_and_records_it(
     unicast = int(str(result["unicast"]), 16)
     assert result["elements"] == len(template.elements)
     assert result["template"] == f"{TEMPLATE:04X}"
+    # the app's missing-devices check (F4-12): the template has no app device row in the share fixture, so the new
+    # node gets one, where a push-button with a switch insert (what it advertised) is two devices
+    assert result["missing_devices"] == {"recorded": 1, "expected": 2}
     assert device.data is not None
     assert device.data.unicast == unicast
     assert device.data.net_key == hub.proxy.nk.key
@@ -325,6 +336,25 @@ async def test_add_device_provisions_commissions_and_records_it(
         blocking=True,
     )
     assert node.uuid not in vault.nodes
+
+
+def test_the_template_is_a_node_with_the_advertised_insert_when_there_is_one() -> None:
+    """F4-12: a push-button takes any insert; the export's node of the same product and insert is the better model."""
+    cdb = CDB.load(Path(CDB_PATH))
+    build_devices(
+        cdb, Metadata(Path(META_DIR) / "device_metadata.json")
+    )  # the cached InsertIds: 0148 switch, 0300 dimming
+
+    def template(pid: int, function: int) -> int:
+        return onboard._template(cdb, JungAdvertisement(1, pid, function, 0)).unicast
+
+    assert template(0x0001, 2) == 0x0300  # the dimming one
+    assert template(0x0001, 0) == 0x0148
+    assert (
+        template(0x0001, 5) == 0x0148
+    )  # no blinds insert in the export: the first of the product
+    assert template(0x0001, 0xFF) == 0x0148  # not an insert
+    assert template(0x0003, 0) == 0x0172  # a socket has no insert to match
 
 
 async def test_add_device_refusals(

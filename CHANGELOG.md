@@ -296,6 +296,22 @@
   pick up a change made in the app at once. One request per value and device every 2 s at most; a battery device is
   not asked (it sleeps), and without a link the entity keeps its state and the action does not fail. Covers,
   thermostats and detectors are unverified on air.
+- Each push-button's insert and key layout (review-4 F4-12). Every JUNG node advertises, without a key, its actuator
+  function and button layout; Home Assistant now keeps the latest of each node's records. The node device's model
+  names its insert (*Push-button 2-gang (DALI insert)*), a buttons device's model the key layout (*Push-buttons
+  (Rocker | Button)*), and each key's event entity has a `position` attribute (`top`, `left_rocker`,
+  `right_bottom`, ...), all in Home Assistant's language. Where the export has no insert for a push-button (a
+  `MeshNetwork.json` without the app's metadata), the advertised insert decides whether its load is a light or a
+  blind; one that advertised nothing is asked once, read-only (its InsertId and button layout), and its answer kept.
+  An insert learnt only after the setup shows at once and decides the devices from the next reload.
+  A push-button advertising another insert than the export's (the insert was replaced after the export was made)
+  raises the repair *JUNG HOME push-buttons with another insert than in the export*. The layout is also read from the
+  Android app's share export. Unverified on air: the Gets, and the key positions of the mixed layouts.
+
+- `add_device` shapes a push-button after a node of the export with the insert it advertises when there is one,
+  writes the advertised insert into its app device rows instead of the template's, and runs the app's check of the
+  number of devices a node yields: a difference is logged and returned in the response (`missing_devices`).
+  Unverified on air.
 
 ### CLI tools and library
 

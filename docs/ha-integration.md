@@ -425,7 +425,9 @@ without an app name share one device per node.
   same half (a click of the other half is a separate `click`). Single keys have no `side`. The attribute is also part
   of the `junghome_ble_button_action` bus event.
 - Attributes: `mesh_address`, `location` (element location, `0040`–`0043` = key A–D, on a mini actuator `0040` /
-  `0041` = input E1 / E2), and what the key drives, read
+  `0041` = input E1 / E2), `position` once the node's key layout is known (push-buttons and wall transmitters:
+  `top` / `bottom`, `rocker`, `left_top` … `right_bottom`, `left_rocker` / `right_rocker`; see
+  [Inserts and key layouts](#inserts-and-key-layouts)), and what the key drives, read
   from the export's publications the way the app shows it: `connection` — `device` (a load's element group),
   `room` (the key's own group, which the room's loads listen to), `scene` (recalls to all scenes), `gateway` (linked
   to the JUNG HOME Gateway: the gesture events above), `group` (some other group) or `none` (no function) —
@@ -660,10 +662,10 @@ time read back their old register); one at a time is reliable.
 | Device | Represents | Details |
 |---|---|---|
 | *JUNG HOME mesh &lt;uuid&gt;* (service) | The mesh network | Hosts the *Proxy node* sensor |
-| *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID, serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room |
+| *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room |
 | Light / socket device | One output of a node | Identifier `<node uuid>-<element location>` (`0001` / `0002`); model *Switched light*, *Dimmable light* or *Tunable-white (DALI) light* for a light, the product name (*Socket (metering)*, *Socket*) for a socket; linked to the node device |
 | Blind device | One blind / shutter / awning drive of a node | Identifier `<node uuid>-<location of the position element>`, the same scheme as a light; model *Blind / shutter drive*; hosts the `cover` and the blind parameters; linked to the node device |
-| *Push-buttons* device | One **gang** of keys: the keys the app presents as one device (a 2-gang push-button set up as two devices in the app gives two of these, both linked to the same node device) | Identifier `<node uuid>-<lowest key location>-buttons`; model *Push-buttons*; linked to the node device |
+| *Push-buttons* device | One **gang** of keys: the keys the app presents as one device (a 2-gang push-button set up as two devices in the app gives two of these, both linked to the same node device) | Identifier `<node uuid>-<lowest key location>-buttons`; model *Push-buttons*, with the node's key layout once known (*Push-buttons (Rocker &#124; Button)*); linked to the node device |
 
 The first room a load belongs to in the app is used as the *suggested area* of its light or socket device, so devices
 land in the right Home Assistant area when you accept the suggestion.
@@ -685,6 +687,31 @@ issue (see [Troubleshooting](#repair-issue-device-name-not-passed-on-to-the-jung
 or the node device of an actuator or the gateway is Home Assistant's alone. The same name rules apply to
 `create_room`, `rename_room`, `create_scene` and `rename_scene`; the 30-character limit only to the renames, as the
 app's screens for a new room or scene set none.
+
+### Inserts and key layouts
+
+A JUNG push-button takes any insert — switch, dimmer, DALI, blinds or an extension without a load — and its
+composition does not say which; the app reads the node's *InsertId* (LBC User property `0x0002`) when it adds it and
+caches it in the export. Every JUNG node also says it to anyone listening, every 1.2 s and without a key: its JUNG
+manufacturer record carries its actuator function and its *button layout* (`0x5001`: which of its key elements are
+keys and which rockers). Home Assistant takes them in this order (review-4 F4-12):
+
+1. the export: the InsertId the app cached for the node (`meta.devices[].deviceId`, or the app's metadata files),
+   and the layout the Android app's share export caches (`meta.buttonLayoutExports`);
+2. the node's latest advertisement, from Home Assistant's Bluetooth cache at setup and from every advert it sees;
+3. only for a push-button neither told about: an *LBC User Get* of its InsertId and an *LBC Admin Get* of its layout,
+   read-only, once per connection until it answers (a connect-time step after the others); the answer is kept with
+   what the node told about itself, so it is asked once. Unverified on air.
+
+Where the export has no insert for a push-button (a `MeshNetwork.json` loaded without the app's metadata), the
+reported one decides whether its outputs are lights or a blind — at setup when it is known by then, else from the
+next reload (a log line says so); the node device names the insert at once. The node device's model names the
+insert, a buttons device's model the layout, and each key's event entity gets a `position` attribute, in Home
+Assistant's language. The positions of the mixed layouts (*Rocker | Button*, *Button | Rocker*) follow the documented
+element order and are unverified on air. A push-button that advertises another insert than the export's raises the
+repair issue [*JUNG HOME push-buttons with another insert than in the export*](#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export);
+the export's insert keeps deciding its devices until a new export is loaded. The device diagnostics show, per node,
+what the export, the advertisement and an answer said (`insert`) and the decoded answers (`node_info`).
 
 ## Prerequisites
 
@@ -1595,7 +1622,8 @@ Assistant to add devices* is on (it is off by default):
 1. the name is checked first, as the app checks one — not blank, at most 30 characters, no `%` sign but `%%` and `%n`
    — and numbered as the app numbers a name another device already has (`Hall light` → `Hall light 2`; the action's
    answer says the name used); a node of the network with the same product becomes the *template* — the first device
-   of a product has to be added with the app;
+   of a product has to be added with the app; for a push-button, one with the insert the device advertises when the
+   export has one;
 2. the device gets addresses above every provisioner's range (no app allocates there), planned on the export as it is
    now (the gateway's, adopted first, when the app changed the network since the last reload), its element groups
    at the top of the app's group range like the rooms Home Assistant creates (the app does not see them until it
@@ -1618,8 +1646,11 @@ Assistant to add devices* is on (it is off by default):
 3. the app's post-provisioning Config sequence goes out through the proxy link (`jhmesh.commission`: AppKey, bindings,
    the template's relay / TTL / transmit settings, element groups, device-type groups), each step's status checked;
 4. the node's configuration is read back (the audit's Gets) and recorded in the export exactly as the node answered —
-   node entry, element groups, the app's device rows copied from the template — which is handed to the gateway like
-   any change; the entry reloads with the new device.
+   node entry, element groups, the app's device rows copied from the template (carrying the insert the device
+   advertised, not the template's) — which is handed to the gateway like any change; the entry reloads with the new
+   device. The app's check of the number of devices a node yields follows (one for a socket, room thermostat,
+   gateway, wall transmitter, mini sensor or extension insert, three for a 2-gang switch or dimmer, two otherwise):
+   a difference is logged and answered as `missing_devices` (`recorded`, `expected`); the device stays added.
 
 **`junghome_ble.remove_device`** (`device`, `force`; administrators only, same option) takes a device out the app's
 way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
@@ -1814,6 +1845,15 @@ that is up, and the issue clears. For an entry set up
 from a file, or when the gateway's export does not know the device either (open the app once while it is connected
 to the gateway so it uploads), export again from the app and update the integration (**Reconfigure**); the issue is
 cleared when the new export loads and is raised again only for nodes still missing from it.
+
+### Repair issue "JUNG HOME push-buttons with another insert than in the export"
+
+A push-button advertises another insert (switch, dimmer, DALI, blinds, extension) than the one the export cached for
+it, listed as *export → device*: the insert was replaced after the export was made. Its devices are still built from
+the export's insert, so a blind may show as a light or the other way round, in the app too. Check the device in the
+JUNG HOME app, export the network again and update the integration (**Reconfigure**); the issue clears as soon as
+the device advertises the export's insert again, and is not raised again by an export that names the new insert.
+Unverified on air.
 
 ### Repair issue "A JUNG HOME change on … was interrupted"
 
@@ -2106,6 +2146,7 @@ Layout of `custom_components/junghome_ble/`:
 | `config_entities.py` | Property → entity mapping, `PropertyReader` (initial reads — held while there is no link —, writes, status handlers) |
 | `identity.py` | `VaultKeeper` (`hub.vault`): the mesh's `jhmesh.vault.Vault` in `.storage/junghome_ble.vault.<mesh uuid>` and its `.backup` copy (private, atomic, every write checked through `TrackedStore.written`: `async_save` says whether it landed, a failed one is retried; an unreadable one is set aside under a timestamped name, never overwritten, removed only once that copy landed; `async_recover` takes Home Assistant's entry back from the export when the vault lost it, `jhmesh.vault.recognise`); the configurator merges it into every file it writes or uploads only with `OPTION_PROVISIONER_IDENTITY` (`MeshConfigurator._with_identity`) |
 | `vault_refresh.py` | `VaultKeyRefresh` (`hub.vault_refresh`): the vault's devices taken through the app's key refresh as far as it is proven (`jhmesh.vaultrefresh`; NetKey Update, Phase Set 2, Phase Set 3), in the background on every move of the followed refresh and every new link; the `vault_key_refresh_lagging` repair; its diagnostics section. Unverified on air |
+| `inserts.py` | `NodeInserts` (`hub.inserts`): each node's insert and key layout from the export, its JUNG advertisement (`_adv_seen`) or a read-only Get (a connect-time step); the device models and key positions they give; the `insert_mismatch` repair; `apply_reported` before the devices are registered. Unverified on air |
 | `keep_awake.py` | `KeepAwake` (`hub.keep_awake`): the app's keep-alive for a battery node while a Config plan or a parameter change addresses it — one task per node, reference-counted holds, an `Admin Get 0x5001` once the node was quiet for `KEEP_AWAKE_INTERVAL`, none while there is no link |
 | `gateway_api.py`, `tls.py` | The JUNG HOME Gateway REST client the config flow uses (access request / password registration, project download) and the certificate pinning it relies on (the gateway's certificate is self-signed; the pin comes over the mesh, `0xC003`, or is confirmed in the flow and then checked against `0xC003` by the hub before the gateway is used) |
 | `diagnostics.py` | Entry and device diagnostics, in every entry state (an entry not loaded: its state, reason, visible proxies and export summary); the link history; keys, token, paths (in error texts too) and Bluetooth addresses redacted |

@@ -29,9 +29,14 @@ from jhmesh.devices import (
     Thermostat,
     build_devices,
     ctl_temperature_element,
+    expected_device_count,
+    insert_function,
+    insert_mismatch,
+    key_position,
     load_kind,
     meta_list,
     meter_element,
+    pick_insert,
 )
 
 from .conftest import (
@@ -1124,6 +1129,93 @@ def test_a_lamp_insert_is_never_a_blind_and_no_insert_is_no_load(cdb: CDB):
         assert d.by_address.get(0x0900) is None
         assert d.by_address.get(0x0901) is None
         assert isinstance(d.by_address.get(0x0902), Button)
+
+
+def test_the_insert_comes_from_the_export_then_from_what_the_node_reported(cdb: CDB):
+    """F4-12: the export's InsertId decides; where it has none (or one the app writes unread), the node's own report
+    (its advertisement or an InsertId Get, `Node.reported_function`) does; neither leaves it to the composition."""
+    node = _push_button(None, ["1000", "1002"], ["1000", "1002"])
+    cdb.nodes.append(node)
+    node.reported_function = 5  # it advertises a blinds insert
+    assert insert_function(node) == 5
+    assert isinstance(build_devices(cdb).by_address.get(0x0900), Blind)
+    for exported in (None, 0xFFFF, 8):  # not cached, unset, nonsense on a push-button
+        node.insert_function = exported
+        assert insert_function(node) == 5
+    node.insert_function = 2  # the export's dimming insert wins over the report
+    assert insert_function(node) == 2
+    assert isinstance(build_devices(cdb).by_address.get(0x0900), Light)
+    node.insert_function, node.reported_function = None, 0xFFFF
+    assert insert_function(node) is None
+    # another product: no insert, whatever it reports
+    assert pick_insert(0x0003, 0, 0) is None
+    assert pick_insert(0x0001, None, None) is None
+    assert pick_insert(0x0001, 6, 7) == 6
+
+
+def test_an_insert_mismatch_is_a_push_button_whose_report_differs_from_its_export():
+    assert insert_mismatch(0x0002, 4, 5)
+    assert not insert_mismatch(0x0002, 4, 4)
+    assert not insert_mismatch(0x0002, None, 5)  # nothing cached: nothing swapped
+    assert not insert_mismatch(0x0002, 4, 0xFFFF)  # an unset report says nothing
+    assert not insert_mismatch(0x0002, 0xFFFF, 5)
+    assert not insert_mismatch(0x0003, 0, 5)  # a socket has no insert to swap
+
+
+@pytest.mark.parametrize(
+    ("layout", "positions"),
+    [
+        (0, {0x40: "top", 0x41: "bottom"}),
+        (1, {0x40: "rocker", 0x41: None}),
+        (
+            2,
+            {
+                0x40: "left_top",
+                0x41: "left_bottom",
+                0x42: "right_top",
+                0x43: "right_bottom",
+            },
+        ),
+        (3, {0x40: "left_rocker", 0x41: None, 0x42: "right_top", 0x43: "right_bottom"}),
+        (4, {0x40: "left_top", 0x41: "left_bottom", 0x42: "right_rocker", 0x43: None}),
+        (5, {0x40: "left_rocker", 0x41: None, 0x42: "right_rocker"}),
+        (0xFF, {0x40: None}),  # unknown
+        (None, {0x40: None}),
+    ],
+)
+def test_key_positions_follow_the_button_layout(
+    layout: int | None, positions: dict[int, str | None]
+):
+    for location, position in positions.items():
+        assert key_position(layout, location) == position
+
+
+@pytest.mark.parametrize(
+    ("pid", "function", "expected"),
+    [
+        (0x0003, 0, 1),  # metering socket: one device
+        (0x000A, 8, 1),  # RTR
+        (0x0005, None, 1),  # wall transmitter
+        (0x0002, 6, 1),  # push-button with an extension insert: the keys alone
+        (0x0002, 1, 3),  # 2-gang switch: two loads and the keys
+        (0x0011, 3, 3),
+        (0x0001, 0, 2),  # switch, dimming, DALI, blinds: the load and the keys
+        (0x0004, 2, 2),
+        (0x0002, 4, 2),
+        (0x000D, 5, 2),
+        (
+            0x0002,
+            7,
+            None,
+        ),  # not available, unset, unknown: the app's own error, no count here
+        (0x0002, 0xFFFF, None),
+        (0x0001, None, None),
+    ],
+)
+def test_expected_device_count_is_the_apps_missing_devices_table(
+    pid: int, function: int | None, expected: int | None
+):
+    assert expected_device_count(pid, function) == expected
 
 
 def test_an_insert_id_on_another_product_changes_nothing(cdb: CDB):

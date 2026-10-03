@@ -72,6 +72,7 @@ from .helpers import (
     entity_id,
     vendor_button_event,
 )
+from .property_helpers import with_inserts
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
@@ -261,8 +262,10 @@ async def test_keys_without_app_names_share_one_device(
 def test_device_info_without_parents(cdb: CDB) -> None:
     """Device info stays valid before the parent devices exist (no `via_device_id`), for a node whose UUID is not
     a MAC (the phone), and for loads without rooms."""
-    hub = SimpleNamespace(
-        cdb=cdb, devices=Devices(), device_ids={}, states={}, node_info=lambda _: {}
+    hub = with_inserts(
+        SimpleNamespace(
+            cdb=cdb, devices=Devices(), device_ids={}, states={}, node_info=lambda _: {}
+        )
     )
     node = cdb.nodes[0]  # the provisioning phone: random UUID, no product
     info = node_device_info(hub, node)

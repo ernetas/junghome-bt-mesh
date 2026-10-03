@@ -22,10 +22,12 @@ Nothing here has run against a real device yet: the flow is exercised against th
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from . import config_messages as C
 from .cdb import Element, Node, canonical_uuid
+from .devices import expected_device_count
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -166,12 +168,14 @@ def record(
     audit: NodeAudit,
     plan: Plan,
     name: str,
+    function: int | None = None,
 ) -> Node:
     """Put the new node into the export: its entry, its element groups, its app device rows, what it holds.
 
     Every publication, subscription list and AppKey binding comes from the node's answers to the read-back
     (`audit.NodeAudit.models`), not from the plan: the file then says what the node holds even where the plan and
-    the node disagree. A model whose Get went unanswered keeps the empty value `node_entry` gave it.
+    the node disagree. A model whose Get went unanswered keeps the empty value `node_entry` gave it. `function`:
+    the actuator function the device advertised, for its device rows (`ProjectFile.clone_device_rows`).
     """
     node = pf.add_node_entry(entry, [(g.address, g.name) for g in plan.groups])
     for row in audit.models:
@@ -184,7 +188,33 @@ def record(
         if row.node_app_keys is not None:
             model = next(m for m in element.raw_models if m["modelId"] == row.model)
             model["bind"] = list(row.node_app_keys)
-    if not pf.clone_device_rows(template, node, name):
-        # a template the app has no device row for (an export without `meta`): one device on the primary element
-        pf.set_device_name(node, [node.elements[0].location], name)
+    if not pf.clone_device_rows(template, node, name, function):
+        # a template the app has no device row for (an export without `meta`): one device on the primary element,
+        # with the advertised function rather than the one guessed from the composition
+        device = pf.set_device_name(node, [node.elements[0].location], name)
+        if function is not None:
+            device["deviceId"]["actuatorFunctionId"] = function
     return node
+
+
+@dataclass(frozen=True)
+class DeviceCount:
+    """The app devices recorded for a new node against the number its product and insert call for."""
+
+    recorded: int
+    expected: int
+
+
+def missing_devices(
+    pf: ProjectFile, node: Node, function: int | None
+) -> DeviceCount | None:
+    """Run the app's check after adding a device (`CheckForMissingDevices`): None when the node has its devices.
+
+    The node's app device rows (`ProjectFile.device_rows`) against `devices.expected_device_count` for its product
+    and `function` (what it advertised, else the template's InsertId); a function the check has no count for passes.
+    """
+    expected = expected_device_count(node.pid, function)
+    recorded = len(pf.device_rows(node))
+    if expected is None or recorded == expected:
+        return None
+    return DeviceCount(recorded, expected)

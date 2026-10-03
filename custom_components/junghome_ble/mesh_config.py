@@ -157,6 +157,7 @@ from .jhmesh.export import (
     write_private_with_backup,
 )
 from .jhmesh.merge import MISSING, Change, apply_changes, diff_documents
+from .jhmesh.onboarding import DeviceCount, missing_devices
 from .jhmesh.onboarding import record as record_node
 from .jhmesh.pdu import ALL_PROXIES
 from .jhmesh.vault import RangeError, Ranges
@@ -2026,12 +2027,15 @@ class MeshConfigurator:
         audit: NodeAudit,
         plan: Plan,
         name: str,
-    ) -> None:
+        function: int | None = None,
+    ) -> DeviceCount | None:
         """Record a node Home Assistant just provisioned and commissioned (review-3 N3; `onboard.async_add_device`).
 
         On the export as it is now (the gateway's, when the app changed it meanwhile): the template's entry is
         turned into the new node's (`entry_for`), then `onboarding.record` adds it with what the node answered, its
-        element groups and its app device rows; saved and handed to the gateway like any change.
+        element groups and its app device rows (carrying `function`, the actuator function it advertised); saved and
+        handed to the gateway like any change. Returns the app's missing-devices check of the recorded rows
+        (`onboarding.missing_devices`): None when the node has the devices its product and insert call for.
         """
         async with self.lock:
             pf = await self._load()
@@ -2042,12 +2046,20 @@ class MeshConfigurator:
             )
             template_now = pf.cdb.node_by_addr(template.unicast)
             assert template_now is not None
-            node = record_node(pf, template_now, entry_for(raw), audit, plan, name)
+            node = record_node(
+                pf, template_now, entry_for(raw), audit, plan, name, function
+            )
+            count = missing_devices(
+                pf,
+                node,
+                function if function is not None else template_now.insert_function,
+            )
             # the vault keeps what the file got for it (review-3 N1): the app's next upload lacks the node
             self.hub.vault.identity().remember_recorded(pf, node.uuid)
             await self._save(pf)
             await self.hub.vault.async_save()
             _LOGGER.info("Recorded the new node %r in the export", name)
+            return count
 
     async def remove_node(self, unicast: int, *, force: bool = False) -> bool:
         """Remove the node whose primary element is `unicast` from the network (review-3 N4, experimental).

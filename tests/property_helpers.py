@@ -12,6 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from custom_components.junghome_ble import const
+from custom_components.junghome_ble.inserts import NodeInserts
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh.cdb import CDB
@@ -160,7 +161,7 @@ def fake_hub(states: dict[int, Any] | None = None) -> Any:
     meta = Metadata(
         Path(META_DIR) / "device_metadata.json", Path(META_DIR) / "scene_metadata.json"
     )
-    return SimpleNamespace(
+    hub = SimpleNamespace(
         cdb=cdb,
         devices=build_devices(cdb, meta),
         states=states or {},
@@ -168,6 +169,15 @@ def fake_hub(states: dict[int, Any] | None = None) -> Any:
         node_info=lambda unicast: {},  # nothing read: `JungHomeHub.node_info`
         entry=SimpleNamespace(title="test", entry_id="entry"),
     )
+    return with_inserts(hub)
+
+
+def with_inserts(hub: Any) -> Any:
+    """Give a hub stand-in a real hub's insert bookkeeping (`inserts.NodeInserts`): nothing advertised or read."""
+    if not hasattr(hub, "node_info"):
+        hub.node_info = lambda unicast: {}
+    hub.inserts = NodeInserts(hub, "insert_mismatch_entry")
+    return hub
 
 
 # --------------------------------------------------------------------------- fixtures (aliased by each test module)

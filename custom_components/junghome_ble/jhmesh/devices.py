@@ -57,7 +57,27 @@ PUSH_BUTTON_PIDS = frozenset({0x0001, 0x0002})
 # switch, 2-gang switch, dimming, 2-gang dimming, tunable white
 LAMP_FUNCTIONS = frozenset({0, 1, 2, 3, 4})
 BLIND_FUNCTION = 5
+EXTENSION_FUNCTION = 6
 NO_LOAD_FUNCTIONS = frozenset({6, 7})  # extension (a satellite insert), not available
+INSERT_FUNCTIONS = LAMP_FUNCTIONS | {BLIND_FUNCTION} | NO_LOAD_FUNCTIONS
+TWO_GANG_FUNCTIONS = frozenset({1, 3})  # 2-gang switch, 2-gang dimming: two loads
+# Products that are one app device whatever their function (`CheckForMissingDevices`): RTR, sockets, gateway, mini
+# sensors, wall transmitters
+SINGLE_DEVICE_PIDS = frozenset(
+    {0x000A, 0x0003, 0x000C, 0x000B, 0x0015, 0x0016, 0x0006, 0x0005}
+)
+# ButtonLayout (0x5001, `properties.BUTTON_LAYOUT`) → key element location → where that key sits (`key_position`)
+KEY_POSITIONS: dict[int, dict[int, str]] = {
+    0: {0x40: "top", 0x41: "bottom"},  # one key top, one bottom
+    1: {0x40: "rocker"},  # one rocker
+    2: {0x40: "left_top", 0x41: "left_bottom", 0x42: "right_top", 0x43: "right_bottom"},
+    3: {0x40: "left_rocker", 0x42: "right_top", 0x43: "right_bottom"},
+    4: {0x40: "left_top", 0x41: "left_bottom", 0x42: "right_rocker"},
+    5: {0x40: "left_rocker", 0x42: "right_rocker"},  # rocker | rocker
+}
+# products whose ButtonLayout says which keys and rockers their key elements are: push-buttons, wall transmitters
+# (a mini actuator's layout only tells whether its two inputs act as one)
+KEY_LAYOUT_PIDS = frozenset({0x0001, 0x0002, 0x0005, 0x0006})
 # Servers that make a Generic Level element part of a lamp rather than a blind: a dimmer's own level server sits
 # next to its OnOff / Lightness servers, a CTL lamp's temperature element next to a CTL Temperature server.
 LAMP_LEVEL_MODELS = {"1000", "1300", "1306"}
@@ -634,17 +654,71 @@ class ElementRule:
     build: DeviceFactory
 
 
+def _insert(function: int | None) -> int | None:
+    """Return `function` when it is an insert a push-button can carry (`INSERT_FUNCTIONS`), else None."""
+    return function if function in INSERT_FUNCTIONS else None
+
+
 def insert_function(node: Node) -> int | None:
     """Return the push-button's known insert (`LAMP_FUNCTIONS`, `BLIND_FUNCTION`, `NO_LOAD_FUNCTIONS`), else None.
 
-    None for every other product (their load is fixed; the composition rules know it) and for a value the app
-    writes when it has not read the InsertId (0xFFFF unset) or that makes no sense on a push-button.
+    The export's cached InsertId first (`Node.insert_function`); where it has none, or one the app writes when it
+    has not read the InsertId (0xFFFF unset) or that makes no sense on a push-button, what the node itself
+    reported (`Node.reported_function`: its advertisement, else an InsertId Get). None for every other product
+    (their load is fixed; the composition rules know it).
     """
-    function = node.insert_function
-    if node.pid not in PUSH_BUTTON_PIDS or function is None:
+    return pick_insert(node.pid, node.insert_function, node.reported_function)
+
+
+def pick_insert(
+    pid: int | None, exported: int | None, reported: int | None
+) -> int | None:
+    """Return a product's insert from the export's InsertId and the node's report, in that order (`insert_function`)."""
+    if pid not in PUSH_BUTTON_PIDS:
         return None
-    known = function in LAMP_FUNCTIONS or function in NO_LOAD_FUNCTIONS
-    return function if known or function == BLIND_FUNCTION else None
+    first = _insert(exported)
+    return first if first is not None else _insert(reported)
+
+
+def insert_mismatch(
+    pid: int | None, exported: int | None, reported: int | None
+) -> bool:
+    """Whether a push-button reports another insert than the one the export cached for it: the insert was swapped."""
+    first, second = _insert(exported), _insert(reported)
+    return (
+        pid in PUSH_BUTTON_PIDS
+        and first is not None
+        and second is not None
+        and first != second
+    )
+
+
+def key_position(layout: int | None, location: int) -> str | None:
+    """Return where the key at element `location` sits under ButtonLayout `layout` (`KEY_POSITIONS`); None when unknown.
+
+    A rocker is one element (top = on / up, bottom = off / down), a key one element each: one top / bottom pair
+    is `0040` + `0041`, a 2-gang's left half `0040` (+ `0041`), its right half `0042` (+ `0043`)
+    (`docs/ios-app-data.md`, the app's cached layouts against the element lists). The mixed layouts (3, 4) follow
+    that rule; unverified on air.
+    """
+    return KEY_POSITIONS.get(layout, {}).get(location) if layout is not None else None
+
+
+def expected_device_count(pid: int | None, function: int | None) -> int | None:
+    """Return how many app devices the node should yield, the app's `CheckForMissingDevices`; None: no expectation.
+
+    One for a single-device product (`SINGLE_DEVICE_PIDS`) and for an extension insert, three for a 2-gang
+    switch or dimmer (two loads and the keys), two for any other load function (the load and the keys or inputs).
+    The app reports a function it cannot place (unset, unknown, not available) as an error of its own; here that
+    is no expectation.
+    """
+    if pid in SINGLE_DEVICE_PIDS or function == EXTENSION_FUNCTION:
+        return 1
+    if function in TWO_GANG_FUNCTIONS:
+        return 3
+    if function in LAMP_FUNCTIONS or function == BLIND_FUNCTION:
+        return 2
+    return None
 
 
 def _is_load(node: Node, element: Element, pid: int) -> bool:

@@ -4544,14 +4544,22 @@
   },
   {
    "id": "mgmt:flow:checkformissingdevices",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/onboarding.py::record"
+    "custom_components/junghome_ble/jhmesh/onboarding.py::missing_devices",
+    "custom_components/junghome_ble/jhmesh/onboarding.py::record",
+    "custom_components/junghome_ble/jhmesh/devices.py::expected_device_count",
+    "custom_components/junghome_ble/jhmesh/devices.py::SINGLE_DEVICE_PIDS",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.device_rows",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.record_node",
+    "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
-   "tests": [],
-   "missing": "after commissioning nothing checks the number of logical devices the node yields (2 for blind/dimming/switch/TW, 3 for two-gang, 1 for the single-device PIDs); record() clones the template's device rows instead, so a miscount is never reported. To build: the product table is in the inventory; a check over devices.build_devices for the new node is unit-testable.",
-   "class": "build",
-   "verify": "offline"
+   "tests": [
+    "tests/jhmesh/test_devices.py::test_expected_device_count_is_the_apps_missing_devices_table",
+    "tests/jhmesh/test_onboarding.py::test_the_new_nodes_rows_carry_the_function_it_advertised",
+    "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it"
+   ],
+   "note": "Unverified on air (add_device has not run against a real device): after recording, the new node's app device rows are counted against the app's table for its product and advertised function; a difference is logged and returned in the action's response (missing_devices) rather than failing the add, which has provisioned the node by then"
   },
   {
    "id": "mgmt:flow:checkforupdate",

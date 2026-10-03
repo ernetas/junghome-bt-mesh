@@ -1117,3 +1117,38 @@ def test_insert_function_comes_from_the_share_meta():
         only_keys.nodes[3].insert_function == 7
     )  # the node's insert, whichever of its app devices says it
     assert CDB.from_network(net, {"devices": None}).nodes[3].insert_function is None
+
+
+def test_button_layout_comes_from_the_android_share_meta():
+    """F4-12: the Android app caches each node's ButtonLayout in `meta.buttonLayoutExports` by element address."""
+    cdb = CDB.load(FIXTURES / "JungHome-android.json")
+    layouts = {n.unicast: n.button_layout for n in cdb.nodes}
+    assert (layouts[0x0148], layouts[0x0232], layouts[0x0300]) == (1, 5, 1)
+    assert layouts[0x0172] is None  # the socket has none
+    net = _network()
+    second = _node(net, 3)["elements"][1]["index"] + int(
+        _node(net, 3)["unicastAddress"], 16
+    )
+    meta = {
+        "buttonLayoutExports": [
+            {"mode": 2, "elementAddress": second},  # any element of the node names it
+            {"mode": True, "elementAddress": 0x0148},  # not a number
+            {"mode": 0, "elementAddress": "0148"},
+            {"mode": 0, "elementAddress": 0x7000},  # no node there
+            "not a row",
+        ]
+    }
+    cdb = CDB.from_network(net, meta)
+    assert [n.button_layout for n in cdb.nodes] == [
+        None,
+        None,
+        None,
+        2,
+        None,
+        None,
+        None,
+    ]
+    assert (
+        CDB.from_network(net, {"buttonLayoutExports": None}).nodes[3].button_layout
+        is None
+    )

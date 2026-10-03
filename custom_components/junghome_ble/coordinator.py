@@ -86,6 +86,7 @@ from .const import (
     ISSUE_DUPLICATE_MESH,
     ISSUE_EXPORT_STALE,
     ISSUE_GATEWAY_CERTIFICATE,
+    ISSUE_INSERT_MISMATCH,
     ISSUE_IV_INDEX_AHEAD,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
@@ -148,6 +149,7 @@ from .energy_history import async_backfill, floor_hour
 from .entity import PRODUCT_NAMES, update_node_device
 from .gateway_api import JungHomeGatewayApi, api_for_entry
 from .identity import async_vault_keeper
+from .inserts import NodeInserts
 from .jhmesh import config_messages as C
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
@@ -2257,6 +2259,8 @@ class JungHomeHub:
         self.vault_refresh = VaultKeyRefresh(
             self, issue_id(entry, ISSUE_VAULT_KEY_REFRESH)
         )
+        # each node's insert and key layout: export, advert, a Get (`inserts.py`, review-4 F4-12)
+        self.inserts = NodeInserts(self, issue_id(entry, ISSUE_INSERT_MISMATCH))
         self._lost_at: float | None = (
             None  # monotonic time the last link was lost, while no new one is up
         )
@@ -2470,6 +2474,7 @@ class JungHomeHub:
         # the last hub saw advertising: any it still lacks are re-reported (`async_stop` cleared them all already;
         # this covers a hub whose predecessor never ran)
         self._clear_issues()
+        self.inserts.report_mismatch()
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
             self._report_address_shared()
@@ -2596,6 +2601,7 @@ class JungHomeHub:
             ISSUE_DUPLICATE_MESH,
             ISSUE_BLUETOOTH_UNAVAILABLE,
             ISSUE_VAULT_KEY_REFRESH,
+            ISSUE_INSERT_MISMATCH,
         ):
             ir.async_delete_issue(self.hass, DOMAIN, issue_id(self.entry, key))
 
@@ -2838,6 +2844,10 @@ class JungHomeHub:
         if (node := self.node_for_address(info.address)) is not None:
             self.node_rssi[node.unicast] = info.rssi
             self._signal_node(node.unicast)
+            # its JUNG record, merged into the proxy advert's data: insert and key layout (`inserts.py`)
+            self.inserts.note_advert(
+                node, parse_manufacturer_data(info.manufacturer_data)
+            )
         self._check_unknown_node(info)
 
     def _ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
@@ -3741,6 +3751,7 @@ class JungHomeHub:
         await self._connect_step("scene actions", self._get_scene_actions)
         await self._connect_step("faults", self._get_faults)
         await self._connect_step("current scenes", self._get_current_scenes)
+        await self._connect_step("inserts", self.inserts.read_unknown)
 
     async def _connect_step(
         self, name: str, step: Callable[[], Awaitable[bool]]

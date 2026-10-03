@@ -172,7 +172,8 @@ def node_registry_fields(hub: JungHomeHub, node: Node) -> NodeRegistryFields:
 def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
     """Return the device info of a node device, hanging off the mesh device.
 
-    The model id is the JUNG product id; the software version (review-3 F1), hardware revision and manufacturer
+    The model is the product and a push-button's insert once known (`inserts.NodeInserts.node_model`), the model id
+    the JUNG product id; the software version (review-3 F1), hardware revision and manufacturer
     are the node's SIG 0x001A / 0x0010 / 0x0011 once read (`node_registry_fields`; `update_node_device` fills them
     in when they arrive later). A room thermostat's or detector's entities live on the node device itself, so it
     carries that device's app name and first room, as a load's own device does.
@@ -191,7 +192,7 @@ def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
         identifiers={(DOMAIN, node_identifier(node))},
         name=unit.name if unit is not None else f"{node.name} {node.unicast:04X}",
         manufacturer=fields.manufacturer,
-        model=product_name(node.pid),
+        model=hub.inserts.node_model(node),
         serial_number=mac,
     )
     if unit is not None and unit.rooms:
@@ -211,7 +212,7 @@ def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
 
 @callback
 def update_node_device(hass: HomeAssistant, hub: JungHomeHub, node: Node) -> None:
-    """Show what the node told about itself after its device was registered (`node_registry_fields`)."""
+    """Show what the node told about itself after its device was registered (`node_registry_fields`, its insert)."""
     device_id = hub.device_ids.get(node_identifier(node))
     if device_id is None:
         return
@@ -224,16 +225,36 @@ def update_node_device(hass: HomeAssistant, hub: JungHomeHub, node: Node) -> Non
         fields.sw_version or device.sw_version,
         fields.hw_version or device.hw_version,
     )
-    if (device.manufacturer, device.sw_version, device.hw_version) != (
+    model = hub.inserts.node_model(node)
+    if (device.manufacturer, device.sw_version, device.hw_version, device.model) != (
         fields.manufacturer,
         *known,
+        model,
     ):
         registry.async_update_device(
             device_id,
             manufacturer=fields.manufacturer,
             sw_version=known[0],
             hw_version=known[1],
+            model=model,
         )
+
+
+@callback
+def update_buttons_devices(hass: HomeAssistant, hub: JungHomeHub, node: Node) -> None:
+    """Show the node's key layout on its buttons devices once it is known (`inserts.NodeInserts.buttons_model`)."""
+    registry = dr.async_get(hass)
+    model = hub.inserts.buttons_model(node)
+    for gang in {
+        buttons_device_id(button_gang(hub, b))
+        for b in hub.devices.buttons
+        if b.node is node
+    }:
+        device = registry.async_get_device_by_identifier(
+            (DOMAIN, gang), hub.entry.entry_id
+        )
+        if device is not None and device.model != model:
+            registry.async_update_device(device.id, model=model)
 
 
 def register_parent_devices(hass: HomeAssistant, hub: JungHomeHub) -> None:
@@ -328,7 +349,7 @@ def buttons_device_info(hub: JungHomeHub, gang: list[Button]) -> DeviceInfo:
         identifiers={(DOMAIN, buttons_device_id(gang))},
         name=gang[0].group_name,
         manufacturer="JUNG",
-        model="Push-buttons",
+        model=hub.inserts.buttons_model(gang[0].node),
     )
     if (via := hub.device_ids.get(node_identifier(gang[0].node))) is not None:
         info["via_device_id"] = via

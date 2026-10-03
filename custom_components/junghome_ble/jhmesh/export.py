@@ -1503,22 +1503,32 @@ class ProjectFile:
         row["addresses"] += [hexaddr(a) for a in sorted(own)]
         self.cdb = CDB.from_network(self.net, self.meta)
 
-    def clone_device_rows(self, template: Node, node: Node, name: str) -> int:
-        """Give `node` the app device rows `template` has (its split into devices, product and insert), named `name`.
-
-        Several devices of one node get the template's names made unique with the new name in front. Returns how
-        many rows were added.
-        """
-        rows = [
+    def device_rows(self, node: Node) -> list[dict[str, Any]]:
+        """Return the app device rows (`meta.devices`) of `node`: the app's logical devices of it."""
+        return [
             dev
             for dev in meta_rows(self._meta("devices"))
             if isinstance(dev.get("deviceId"), dict)
-            and canonical_uuid(str(dev["deviceId"].get("nodeId", ""))) == template.uuid
+            and canonical_uuid(str(dev["deviceId"].get("nodeId", ""))) == node.uuid
         ]
+
+    def clone_device_rows(
+        self, template: Node, node: Node, name: str, function: int | None = None
+    ) -> int:
+        """Give `node` the app device rows `template` has (its split into devices, product and insert), named `name`.
+
+        Several devices of one node get the template's names made unique with the new name in front. `function`:
+        the actuator function the new node advertised, which its rows carry instead of the template's (the app
+        reads the InsertId of every node it adds; a push-button's insert need not be its template's). Returns how
+        many rows were added.
+        """
+        rows = self.device_rows(template)
         mac = mac_from_uuid(node.uuid)
         for i, row in enumerate(rows):
             clone = copy.deepcopy(row)
             clone["deviceId"]["nodeId"] = node.uuid
+            if function is not None:
+                clone["deviceId"]["actuatorFunctionId"] = function
             clone["name"] = name if len(rows) == 1 else f"{name} {i + 1}"
             if "macAddress" in clone:
                 clone["macAddress"] = mac

@@ -22,7 +22,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeGuard
 
 from .advert import JUNG_COMPANY_ID
 from .crypto import AppKeyMaterial, NetKeyMaterial, aes_cmac, s1
@@ -293,6 +293,13 @@ class Node:
     # the actuator function (InsertId 0x0002, `properties.ACTUATOR_FUNCTION`) the app cached for the node in the
     # export's `meta.devices[].deviceId`: what insert a push-button carries, which its composition does not tell
     insert_function: int | None = field(default=None, compare=False)
+    # the ButtonLayout (0x5001, `properties.BUTTON_LAYOUT`) the app cached for the node (`meta.buttonLayoutExports`,
+    # share exports of the Android app only): which keys and rockers its key elements are
+    button_layout: int | None = field(default=None, compare=False)
+    # the actuator function the node itself reported — its JUNG advertisement (`jhmesh.advert`) or an InsertId Get
+    # — set by whoever heard it before the device model is built: `devices.insert_function` falls back to it where
+    # the export cached none
+    reported_function: int | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -436,6 +443,7 @@ class CDB:
         labels: dict[int, bytes] = {}
         all_nodes = _parse_nodes(_list(net.get("nodes"), "nodes"), labels)
         _note_insert_functions(all_nodes, meta)
+        _note_button_layouts(all_nodes, meta)
         nodes = [n for n in all_nodes if not n.excluded]
         groups: dict[int, str] = {}
         for i, g_raw in enumerate(_list(net.get("groups"), "groups")):
@@ -742,3 +750,26 @@ def _note_insert_functions(nodes: list[Node], meta: dict[str, Any] | None) -> No
         )
         if node.insert_function is None or load:
             node.insert_function = function
+
+
+def _note_button_layouts(nodes: list[Node], meta: dict[str, Any] | None) -> None:
+    """Set `Node.button_layout` from the app's `meta.buttonLayoutExports` rows (`{mode, elementAddress}`), best effort.
+
+    A row names an element of the node (the app writes the primary one); a row without an integer mode or for an
+    address no node has is skipped.
+    """
+    by_address = {e.address: n for n in nodes for e in n.elements}
+    rows = (meta or {}).get("buttonLayoutExports")
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        mode, address = row.get("mode"), row.get("elementAddress")
+        if not (_plain_int(mode) and _plain_int(address)):
+            continue
+        if (node := by_address.get(address)) is not None:
+            node.button_layout = mode
+
+
+def _plain_int(value: Any) -> TypeGuard[int]:
+    """Whether a JSON value is an integer (a boolean is not one, though Python counts it as one)."""
+    return isinstance(value, int) and not isinstance(value, bool)

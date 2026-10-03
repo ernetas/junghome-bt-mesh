@@ -36,6 +36,7 @@ from .const import (
     DOMAIN,
     ISSUE_CARRY_OVER_CONFLICT,
     NODE_INFO,
+    NODE_INFO_INSERT,
     NODE_INFO_TIME_ROLE,
     NODE_INFO_UNSUPPORTED,
     NODE_INFO_VENDOR,
@@ -71,9 +72,11 @@ TO_REDACT_ENTRY = {
 }
 TO_REDACT_LINK = {"proxy_address", "address"}  # Bluetooth MACs of the proxy nodes
 # the property of each item of a node's information (`JungHomeHub.node_info`), whose codec renders it
-NODE_INFO_SPECS = {name: P.SIG_PROPERTIES[pid] for pid, name in NODE_INFO.items()} | {
-    name: P.PROPERTIES[pid] for pid, name in NODE_INFO_VENDOR.items()
-}
+NODE_INFO_SPECS = (
+    {name: P.SIG_PROPERTIES[pid] for pid, name in NODE_INFO.items()}
+    | {name: P.PROPERTIES[pid] for pid, name in NODE_INFO_VENDOR.items()}
+    | {name: P.PROPERTIES[pid] for pid, name in NODE_INFO_INSERT.items()}
+)
 # a UUID as a carry-over path names a node or app device (upper case, no dashes): a JUNG node's holds its MAC
 _PATH_UUID = re.compile(r"[0-9A-Fa-f]{32}")
 UUID_MAC_PART = (
@@ -162,6 +165,28 @@ def _node_info(hub: JungHomeHub, node: Node) -> dict[str, str]:
         except (KeyError, ValueError):
             out[name] = raw.hex()
     return out
+
+
+def _insert(hub: JungHomeHub, node: Node) -> dict[str, Any]:
+    """Describe what is known of the node's insert and key layout, and from where (`inserts.py`).
+
+    The export's cached InsertId and ButtonLayout, the node's latest JUNG advertisement (its function and layout,
+    not its MAC), the function the device model was built with and the insert and layout shown now.
+    """
+    advert = hub.inserts.adverts.get(node.unicast)
+    return {
+        "export_function": node.insert_function,
+        "export_layout": node.button_layout,
+        "advert": None
+        if advert is None
+        else {
+            "function": advert.actuator_function_id,
+            "layout": advert.button_layout,
+        },
+        "built_with": node.reported_function,
+        "function": hub.inserts.function(node),
+        "layout": hub.inserts.layout(node),
+    }
 
 
 def _device_summary(hub: JungHomeHub, node: Node | None = None) -> dict[str, Any]:
@@ -520,6 +545,7 @@ async def async_get_device_diagnostics(
                 ],
             },
             "node_info": _node_info(hub, node),
+            "insert": _insert(hub, node),
             "devices": _device_summary(hub, node),
             "audit": audit.as_dict()
             if (audit := hub.audits.get(node.unicast))

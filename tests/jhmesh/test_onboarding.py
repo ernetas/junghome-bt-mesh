@@ -15,7 +15,9 @@ from jhmesh.cdb import InvalidExport
 from jhmesh.export import ExportError, ProjectFile
 from jhmesh.onboarding import (
     CommissioningError,
+    DeviceCount,
     free_unicast_block,
+    missing_devices,
     node_entry,
     node_for,
     record,
@@ -299,6 +301,56 @@ def test_record_with_a_template_the_app_has_a_row_for(cdb: CDB) -> None:
     assert rows
     assert "macAddress" not in rows[0]
     assert pf.cdb.node_by_addr(0x7F00) is node
+
+
+def _rows_of(pf: ProjectFile, uuid: str) -> list[dict[str, Any]]:
+    return [
+        d
+        for d in pf.meta["devices"]
+        if isinstance(d.get("deviceId"), dict)
+        and d["deviceId"]["nodeId"].upper() == uuid.upper()
+    ]
+
+
+def test_the_new_nodes_rows_carry_the_function_it_advertised(cdb: CDB) -> None:
+    """F4-12: a push-button takes any insert, so its rows say the insert it advertised, not its template's; the
+    app's missing-devices check counts its rows against what that insert calls for."""
+    pf = ProjectFile.load(FIXTURES / "JungHome.json")
+    template = pf.cdb.node_by_addr(
+        0x0148
+    )  # one row only: the share fixture names its load alone
+    assert template is not None
+    raw = next(n for n in pf.net["nodes"] if n["unicastAddress"] == "0148")
+    entry = node_entry(raw, uuid=NEW_UUID, unicast=0x7F00, dev_key=NEW_KEY, name="Hall")
+    plan = commission.Plan(0x7F00, len(template.elements), 0x0148, [], [])
+    audit = A.NodeAudit(node=0x7F00, name="Hall", answered=True)
+    node = record(pf, template, entry, audit, plan, "Hall", 5)
+    rows = _rows_of(pf, NEW_UUID)
+    assert [r["deviceId"]["actuatorFunctionId"] for r in rows] == [5]
+    assert missing_devices(pf, node, 5) == DeviceCount(recorded=1, expected=2)
+    assert missing_devices(pf, node, 6) is None  # an extension insert: the keys alone
+    assert missing_devices(pf, node, 0xFFFF) is None  # no count for an unset function
+
+
+def test_a_template_without_rows_gets_one_with_the_advertised_function(
+    cdb: CDB,
+) -> None:
+    pf = ProjectFile.load(FIXTURES / "JungHome.json")
+    template = pf.cdb.node_by_addr(0x0232)  # no app device row in the share fixture
+    assert template is not None
+    raw = next(n for n in pf.net["nodes"] if n["unicastAddress"] == "0232")
+    entry = node_entry(raw, uuid=NEW_UUID, unicast=0x7F00, dev_key=NEW_KEY, name="Hall")
+    plan = commission.Plan(0x7F00, len(template.elements), 0x0232, [], [])
+    audit = A.NodeAudit(node=0x7F00, name="Hall", answered=True)
+    record(pf, template, entry, audit, plan, "Hall", 5)
+    assert [r["deviceId"]["actuatorFunctionId"] for r in _rows_of(pf, NEW_UUID)] == [5]
+    # without one, the composition's guess (`export.guess_actuator_function`) stays
+    other = "11111111-2222-4333-8444-666666666666"
+    entry = node_entry(raw, uuid=other, unicast=0x7E00, dev_key=NEW_KEY, name="Den")
+    record(
+        pf, template, entry, audit, commission.Plan(0x7E00, 5, 0x0232, [], []), "Den"
+    )
+    assert [r["deviceId"]["actuatorFunctionId"] for r in _rows_of(pf, other)] == [4]
 
 
 # ----------------------------------------------------------------------------- the client's part (review-4 D2, P4-6)

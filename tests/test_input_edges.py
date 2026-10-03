@@ -66,12 +66,14 @@ EDGE_ON_OFF = bytes([2 << 3 | 1 << 1 | 1])
 
 def blinds_hub() -> Any:
     cdb = CDB.load(BLINDS_PATH)
-    return SimpleNamespace(
-        cdb=cdb,
-        devices=build_devices(cdb, Metadata.from_export(cdb.export_meta)),
-        states={},
-        device_ids={},
-        entry=SimpleNamespace(title="test", entry_id="entry"),
+    return ph.with_inserts(
+        SimpleNamespace(
+            cdb=cdb,
+            devices=build_devices(cdb, Metadata.from_export(cdb.export_meta)),
+            states={},
+            device_ids={},
+            entry=SimpleNamespace(title="test", entry_id="entry"),
+        )
     )
 
 

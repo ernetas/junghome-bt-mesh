@@ -62,6 +62,7 @@ from .jhmesh import config_messages as C
 from .jhmesh.advert import parse_manufacturer_data
 from .jhmesh.cdb import canonical_uuid
 from .jhmesh.crypto import NetKeyMaterial
+from .jhmesh.devices import INSERT_FUNCTIONS, PUSH_BUTTON_PIDS, insert_function
 from .jhmesh.export import (
     RENAME_MAX_LENGTH,
     AllocationCrowded,
@@ -210,12 +211,29 @@ def _unique_name(pf: ProjectFile, name: str) -> str:
     return name
 
 
-def _template(cdb: CDB, product_id: int) -> Node:
-    """Return the node of the export the new one is shaped after: the same product, the first one in the export."""
-    template = next((n for n in cdb.nodes if n.pid == product_id), None)
-    if template is None:
+def _advertised_insert(advert: JungAdvertisement) -> int | None:
+    """Return the insert a push-button advertises (`devices.INSERT_FUNCTIONS`); None for anything else."""
+    if (
+        advert.product_id in PUSH_BUTTON_PIDS
+        and advert.actuator_function_id in INSERT_FUNCTIONS
+    ):
+        return advert.actuator_function_id
+    return None
+
+
+def _template(cdb: CDB, advert: JungAdvertisement) -> Node:
+    """Return the node of the export the new one is shaped after: the same product, the same insert when one has it.
+
+    A push-button takes any insert, and the export's device rows (`ProjectFile.clone_device_rows`) carry the
+    template's: one with the insert the device advertises (`insert_function`) is the better model; otherwise the
+    first node of the product.
+    """
+    product_id = advert.product_id
+    same = [n for n in cdb.nodes if n.pid == product_id]
+    if not same:
         raise _validation("add_device_no_template", product=f"0x{product_id:04X}")
-    return template
+    insert = _advertised_insert(advert)
+    return next((n for n in same if insert_function(n) == insert), same[0])
 
 
 async def _place(
@@ -424,7 +442,7 @@ async def async_add_device(
     pf = await configurator.async_current_export()
     cdb = pf.cdb
     name = _unique_name(pf, name)
-    template = _template(cdb, advert.product_id)
+    template = _template(cdb, advert)
     count = len(template.elements)
     unicast, group_range = await _place(hub, configurator, cdb, count)
     # planned before the node is known: its addresses must still be free in the export. Its element groups from the
@@ -488,7 +506,7 @@ async def async_add_device(
             error=str(err),
         ) from err
     try:
-        await configurator.record_node(
+        missing = await configurator.record_node(
             template,
             lambda raw: node_entry(
                 raw, uuid=uuid, unicast=unicast, dev_key=result.device_key, name=name
@@ -496,18 +514,33 @@ async def async_add_device(
             audit,
             plan,
             name,
+            _advertised_insert(advert),
         )
     except HomeAssistantError as err:
         raise _failure(
             "add_device_record_failed", unicast=f"{unicast:04X}", error=str(err)
         ) from err
-    return {
+    response: dict[str, Any] = {
         "unicast": f"{unicast:04X}",
         "uuid": uuid,
         "name": name,
         "elements": count,
         "template": f"{template.unicast:04X}",
     }
+    if missing is not None:
+        # the app's missing-devices check: the app would build another number of devices from the recorded rows
+        _LOGGER.warning(
+            "The new node %04X was recorded with %d app device(s), its product and insert call for %d: "
+            "check it in the JUNG HOME app",
+            unicast,
+            missing.recorded,
+            missing.expected,
+        )
+        response["missing_devices"] = {
+            "recorded": missing.recorded,
+            "expected": missing.expected,
+        }
+    return response
 
 
 # ------------------------------------------------------------------ pending nodes

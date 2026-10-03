@@ -756,7 +756,8 @@ class FakeProxyLink:
     def _answer_node_info(self, src: int, dst: int, access: bytes) -> None:
         """Answer the rest of a node's information (`PropertyReader._read_version`) as every JUNG node does.
 
-        SIG 0x0010 / 0x0011 and LBC 0x0003 .. 0x0005 with the value `node_info` holds, else without one (the
+        SIG 0x0010 / 0x0011, LBC 0x0003 .. 0x0005 and a push-button's InsertId (User 0x0002) and ButtonLayout (Admin
+        0x5001, `inserts.NodeInserts.read_unknown`) with the value `node_info` holds, else without one (the
         property unknown); a Time Role Get with `time_roles`' role, "client" (3) by default, as on air.
         """
         if access == M.time_role_get():
@@ -766,15 +767,22 @@ class FakeProxyLink:
                 encode_opcode(M.TIME_ROLE_STATUS) + self.time_roles.get(dst, b"\x03"),
             )
             return
+        vendor = (
+            ("manufacturer", 0x0003),
+            ("manufacturer", 0x0004),
+            ("manufacturer", 0x0005),
+            ("user", 0x0002),
+            ("admin", 0x5001),
+        )
         for pid in (0x0010, 0x0011):
             if access == M.generic_property_get("manufacturer", pid):
                 status = encode_opcode(M.GEN_MANU_PROP_STATUS)
                 break
         else:
-            for pid in (0x0003, 0x0004, 0x0005):
-                if access == M.vendor_property_get("manufacturer", pid):
+            for kind, pid in vendor:
+                if access == M.vendor_property_get(kind, pid):
                     status = encode_opcode(
-                        M.VENDOR_PROPERTY_STATUS_OPCODES["manufacturer"], M.JUNG_CID
+                        M.VENDOR_PROPERTY_STATUS_OPCODES[kind], M.JUNG_CID
                     )
                     break
             else:

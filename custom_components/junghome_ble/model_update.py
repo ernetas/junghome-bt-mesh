@@ -64,6 +64,7 @@ from .entity import (
     register_parent_devices,
     room_central_prefix,
 )
+from .inserts import apply_reported
 from .onboard import async_update_pending_issue
 
 if TYPE_CHECKING:
@@ -125,6 +126,9 @@ async def _async_follow(
     )
     if cdb.mesh_uuid.lower() != hub.cdb.mesh_uuid.lower():
         raise ApplyRefused("the export is of another mesh")
+    # what the push-buttons advertised or answered of their inserts, as the setup takes it (`inserts.async_setup`):
+    # without it a node whose export has no InsertId would come back with another load class and force a reload
+    devices = apply_reported(cdb, devices, hub.inserts.adverts, hub.node_info)
     if await hub.vault.async_recover(cdb, unicast):
         raise ApplyRefused(
             "Home Assistant's provisioner identity was taken back from it"
