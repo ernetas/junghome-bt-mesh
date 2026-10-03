@@ -482,6 +482,13 @@ Dependencies (hard unless marked *soft*):
 - **Wave 11 (brief 43): done.** The task-based user guide `docs/user/`, the developer docs `docs/dev/`, a German quick
   start, the generated entity reference with its drift test, and a link checker over every doc; `ha-integration.md`
   stays the reference, its headings pinned. Two flaky tests found while merging made deterministic.
+- **Wave 12 (briefs 44–46): done.** U4-5 repairs that fix (gateway sync, a free address, a new export, a device
+  name) and a *Learn more* link on every repair (44); U4-7 *Mesh connection*, *Unreachable devices* and *Mesh
+  overview*, U4-12 room central entities hidden for new registrations only (M9) (45); U4-3 five tested blueprints
+  in `blueprints/` (46). Merging found the overview holding a link change back behind its rate limit (fixed: a link
+  change is written at once). Follow-ups: a *device offline* blueprint over *Unreachable devices*; `start_dim` is
+  still called untried in the reference, the guide and the action strings while sweep section G says review 3 saw it
+  work.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -489,4 +496,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 44–67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 47–67 are TODO; the on-air sweep is the maintainer's.
