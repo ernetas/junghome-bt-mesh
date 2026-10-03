@@ -28,15 +28,21 @@ weicht ab: Was die App *Bereich* nennt, heißt hier *Raum*, denn *Bereich* ist i
 
 ## Einrichten
 
-Unter *Einstellungen → Geräte & Dienste* erscheint oft von selbst eine Karte *Bluetooth-Mesh-Netzwerk …* unter
-*Entdeckt*: **Hinzufügen** wählen. Sonst *Einstellungen → Geräte & Dienste → Integration hinzufügen → JUNG HOME
-(Bluetooth Mesh)*. Home Assistant fragt dann, woher der Netzwerk-Export der App kommt — eine der drei Quellen:
+Unter *Einstellungen → Geräte & Dienste → Entdeckt* erscheint oft von selbst eine Karte:
+
+- *JUNG HOME Gateway …*, wenn ein JUNG HOME Gateway im Netzwerk ist: **Hinzufügen** und bestätigen führt direkt zum
+  Gateway-Formular unten, mit der Adresse des Gateways schon eingetragen (noch nicht auf echter Hardware geprüft).
+- *Bluetooth Mesh …*, wenn ein Bluetooth-Mesh-Netzwerk in Reichweite ist. Home Assistant bietet jedes an, das es
+  sieht, auch die anderer Hersteller: nur hinzufügen, wenn es deine JUNG HOME Installation ist.
+
+Sonst *Einstellungen → Geräte & Dienste → Integration hinzufügen → JUNG HOME (Bluetooth Mesh)*. Home Assistant fragt
+dann (außer bei der Gateway-Karte), woher der Netzwerk-Export der App kommt — eine der drei Quellen:
 
 1. **Vom JUNG HOME Gateway abrufen** (Gateway-Firmware 2.1 oder neuer): Adresse des Gateways eingeben
-   (`junghome.local` oder die IP-Adresse aus der App unter *Einstellungen → Gateway*). Dann entweder das
-   Netzwerk-Key-Passwort aus der App eingeben, oder das Feld leer lassen und in der App unter *Einstellungen →
-   Gateway → Zugriffsberechtigungen → Offene Anfragen* die Anfrage *Home Assistant (Bluetooth Mesh)* innerhalb von
-   drei Minuten bestätigen.
+   (ein gefundenes Gateway ist schon eingetragen; sonst `junghome.local` oder die IP-Adresse aus der App unter
+   *Einstellungen → Gateway*). Dann entweder das Netzwerk-Key-Passwort aus der App eingeben, oder das Feld leer
+   lassen und in der App unter *Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen* die Anfrage
+   *Home Assistant (Bluetooth Mesh)* innerhalb von drei Minuten bestätigen.
 2. **Exportdatei der App hochladen**: in der App *Projekt → Projektübergabe* öffnen, die Projektdatei `JungHome.json`
    speichern oder an dich selbst schicken und im Dialog hochladen. Das geht auch direkt auf dem Handy mit der Home
    Assistant Companion App: die Datei in den Dateien des Handys speichern und im Dialog auswählen (nicht mit jedem
@@ -44,8 +50,8 @@ Unter *Einstellungen → Geräte & Dienste* erscheint oft von selbst eine Karte 
 3. **Eine Datei auf dem Home-Assistant-Host verwenden**: `JungHome.json` zum Beispiel nach `/config/junghome/`
    kopieren und den Pfad eingeben.
 
-Das Feld *Unsere Unicast-Adresse* auf `0D00` lassen. Nur ein zweites Home Assistant an derselben Installation braucht
-eine eigene Adresse.
+Den eingeklappten Abschnitt *Erweitert* (Feld *Unsere Unicast-Adresse*, Vorschlag `0D00`) so lassen. Nur ein
+zweites Home Assistant an derselben Installation braucht eine eigene Adresse.
 
 > **Den Export geheim halten.** Er enthält alle Schlüssel der Installation: wer die Datei hat, kann jedes Gerät
 > steuern und umkonfigurieren. Nicht weitergeben, nirgends hochladen.

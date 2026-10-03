@@ -1,6 +1,6 @@
 {
   "config": {
-    "flow_title": "Bluetooth-Mesh-Netzwerk {network_id}",
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "JUNG HOME über Bluetooth",
@@ -22,21 +22,31 @@
         }
       },
       "bluetooth_confirm": {
-        "title": "Bluetooth-Mesh-Netzwerk gefunden",
-        "description": "Ein Bluetooth-Mesh-Proxy des Netzwerks {network_id} ist in Reichweite. Wenn das deine JUNG HOME Installation ist, fahre fort und stelle den Mesh-Export der App bereit."
+        "title": "Ist das deine JUNG HOME Installation?",
+        "description": "Ein Bluetooth-Mesh-Proxy des Netzwerks {network_id} ist in Reichweite. Home Assistant bietet jedes Bluetooth-Mesh-Netzwerk an, das es sieht, auch die anderer Hersteller – etwa die Leuchten eines Nachbarn. Fahre nur fort, wenn das deine JUNG HOME Installation ist; danach wirst du nach dem Mesh-Export der App gefragt."
       },
       "gateway": {
         "title": "Export vom JUNG HOME Gateway abrufen",
         "description": "Das Gateway hält eine Kopie des Netzwerkexports der App. Gib seine Adresse ein und entweder sein Netzwerk-Key-Passwort (aus der JUNG HOME App) für sofortigen Zugriff, oder lass das Passwort leer und gib die Zugriffsanfrage nach dem Fortfahren in der App frei (Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen, innerhalb von drei Minuten; sie erscheint als „{user_name}“). Der Export wird unter `junghome_ble/` im Konfigurationsverzeichnis von Home Assistant gespeichert. Er enthält wie der Export vom Smartphone jeden Mesh-Key – halte Backups dieses Verzeichnisses privat.",
         "data": {
           "gateway_host": "Gateway-Adresse",
-          "gateway_password": "Netzwerk-Key-Passwort",
-          "unicast": "Unsere Unicast-Adresse"
+          "gateway_password": "Netzwerk-Key-Passwort"
         },
         "data_description": {
-          "gateway_host": "IP-Adresse oder Hostname des JUNG HOME Gateways. Der Vorschlag `junghome.local` funktioniert in vielen Netzwerken; sonst nimm seine IP-Adresse (in der App unter Einstellungen → Gateway).",
-          "gateway_password": "Optional. Damit gewährt das Gateway den Zugriff sofort; ohne gibst du die Anfrage in der App frei.",
-          "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+          "gateway_host": "IP-Adresse oder Hostname des JUNG HOME Gateways. Ein Gateway, das Home Assistant im Netzwerk gefunden hat, ist schon eingetragen. Sonst funktioniert der Vorschlag `junghome.local` in vielen Netzwerken, oder nimm seine IP-Adresse (in der App unter Einstellungen → Gateway).",
+          "gateway_password": "Optional. Damit gewährt das Gateway den Zugriff sofort; ohne gibst du die Anfrage in der App frei."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Erweitert",
+            "description": "Lass den Vorschlag stehen, außer ein zweites Home Assistant oder die Kommandozeilen-Werkzeuge des Repositorys nutzen diese Installation auch: Jedes braucht eine eigene Adresse.",
+            "data": {
+              "unicast": "Unsere Unicast-Adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+            }
+          }
         }
       },
       "gateway_register": {
@@ -45,23 +55,40 @@
       "gateway_refetch": {
         "title": "Export erneut abrufen",
         "description": "Ruft den aktuellen Netzwerkexport mit dem gespeicherten Zugriff vom Gateway unter {host} ab. Akzeptiert das Gateway ihn nicht mehr, wirst du gebeten, eine neue Zugriffsanfrage in der App freizugeben.",
-        "data": {
-          "unicast": "Unsere Unicast-Adresse"
-        },
-        "data_description": {
-          "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+        "data": {},
+        "sections": {
+          "advanced": {
+            "name": "Erweitert",
+            "description": "Lass den Vorschlag stehen, außer ein zweites Home Assistant oder die Kommandozeilen-Werkzeuge des Repositorys nutzen diese Installation auch: Jedes braucht eine eigene Adresse.",
+            "data": {
+              "unicast": "Unsere Unicast-Adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+            }
+          }
         }
       },
       "upload": {
         "title": "Exportdatei der App hochladen",
         "description": "Öffne in der JUNG HOME App „Projekt → Projektübergabe“ und schick dir die erzeugte `JungHome.json`, dann lade sie hier hoch. Sie wird unter `junghome_ble/` im Konfigurationsverzeichnis von Home Assistant gespeichert. Sie enthält jeden Mesh-Key – halte Backups dieses Verzeichnisses privat.",
         "data": {
-          "export_file": "Mesh-Exportdatei",
-          "unicast": "Unsere Unicast-Adresse"
+          "export_file": "Mesh-Exportdatei"
         },
         "data_description": {
-          "export_file": "`JungHome.json` aus der App (Projektübergabe) oder `MeshNetwork.json` aus einem iOS-Backup.",
-          "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+          "export_file": "`JungHome.json` aus der App (Projektübergabe) oder `MeshNetwork.json` aus einem iOS-Backup."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Erweitert",
+            "description": "Lass den Vorschlag stehen, außer ein zweites Home Assistant oder die Kommandozeilen-Werkzeuge des Repositorys nutzen diese Installation auch: Jedes braucht eine eigene Adresse.",
+            "data": {
+              "unicast": "Unsere Unicast-Adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+            }
+          }
         }
       },
       "path": {
@@ -69,13 +96,23 @@
         "description": "Kopiere zuerst die `JungHome.json` der App („Projekt → Projektübergabe“; enthält deine Gerätenamen) oder die `MeshNetwork.json` (iOS-Backup) auf den Home-Assistant-Host und gib ihren Pfad ein.",
         "data": {
           "cdb_path": "Mesh-Exportdatei",
-          "metadata_dir": "Metadaten-Verzeichnis der App",
-          "unicast": "Unsere Unicast-Adresse"
+          "metadata_dir": "Metadaten-Verzeichnis der App"
         },
         "data_description": {
           "cdb_path": "Absoluter Pfad auf dem Home-Assistant-Host, z. B. `/config/junghome/JungHome.json`.",
-          "metadata_dir": "Optional, nur für `MeshNetwork.json` aus einem iOS-Backup: der Ordner `Application Support` der App mit `device_metadata.json` und `scene_metadata.json`, damit die Entitäten die Namen bekommen, die du ihnen in der App gegeben hast. `JungHome.json` enthält die Namen bereits.",
-          "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+          "metadata_dir": "Optional, nur für `MeshNetwork.json` aus einem iOS-Backup: der Ordner `Application Support` der App mit `device_metadata.json` und `scene_metadata.json`, damit die Entitäten die Namen bekommen, die du ihnen in der App gegeben hast. `JungHome.json` enthält die Namen bereits."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Erweitert",
+            "description": "Lass den Vorschlag stehen, außer ein zweites Home Assistant oder die Kommandozeilen-Werkzeuge des Repositorys nutzen diese Installation auch: Jedes braucht eine eigene Adresse.",
+            "data": {
+              "unicast": "Unsere Unicast-Adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadezimale Mesh-Adresse, die Home Assistant als Knoten verwendet (0001–7FFF). Sie darf von keinem anderen Knoten belegt sein; der Vorschlag liegt außerhalb des Adressbereichs der App."
+            }
+          }
         }
       },
       "reconfigure": {
@@ -127,6 +164,10 @@
         "data_description": {
           "assign_areas": "Aus: Neue Geräte starten ohne Bereich, und die Räume unten werden ignoriert."
         }
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME Gateway gefunden",
+        "description": "Ein JUNG HOME Gateway meldet sich unter {host}. Fahre fort, um den Netzwerk-Export der JUNG HOME App von ihm abzurufen: Danach gibst du das Passwort des Netzwerkschlüssels ein oder bestätigst eine Zugriffsanfrage in der App. Wie bei einer eingetippten Adresse wird sein Zertifikat beim ersten Kontakt festgehalten, bevor etwas gesendet wird. Die Einrichtung über das gefundene Gateway ist auf echten Geräten noch nicht überprüft."
       }
     },
     "progress": {
@@ -152,7 +193,7 @@
       "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
       "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
       "invalid_export": "Die Datei ist kein JUNG HOME Mesh-Export (oder sie ist beschädigt): Sie muss das Netzwerk mit seinen Keys, Knoten und einem Netzwerk-Key mit Index 0 enthalten.",
-      "certificate_changed": "Das Zertifikat des Gateways weicht von dem für diesen Eintrag gespeicherten ab. Bestätige unten, wenn du das Gateway oder sein Zertifikat ersetzt hast."
+      "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
     },
     "abort": {
       "already_configured": "Dieses Mesh-Netzwerk ist bereits eingerichtet.",
@@ -168,7 +209,9 @@
       "import_unload_failed": "{title} konnte nicht entladen werden, deshalb wurde nichts importiert; jeder Eintrag, den der Import entladen hatte, wird wieder eingerichtet. Prüfe das Protokoll und versuche den Import erneut.",
       "reauth_successful": "Das JUNG HOME Gateway akzeptiert Home Assistant wieder. Änderungen, die inzwischen in Home Assistant gemacht wurden, erreichen es mit der nächsten Änderung oder sofort mit der Aktion „Gateway synchronisieren“.",
       "areas_updated": "Die Bereiche der Räume sind gespeichert; {count} Geräte wurden in den neuen Bereich ihres Raums verschoben.",
-      "not_loaded": "Die Integration läuft nicht: Richte sie zuerst wieder ein."
+      "not_loaded": "Die Integration läuft nicht: Richte sie zuerst wieder ein.",
+      "not_ipv4_address": "Das Gateway hat keine IPv4-Adresse angekündigt. Füge die Integration von Hand hinzu und gib die Adresse des Gateways ein.",
+      "not_junghome_gateway": "Dieses Gerät gibt sich nicht als JUNG HOME Gateway aus (kein Hersteller JUNG oder keine Seriennummer)."
     }
   },
   "options": {
@@ -1575,7 +1618,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1589,7 +1632,8 @@
           "not_a_directory": "Der Metadaten-Pfad ist kein Verzeichnis.",
           "not_approved": "Die Zugriffsanfrage wurde in der App nicht rechtzeitig bestätigt. Sende erneut ab und bestätige sie unter Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen.",
           "token_rejected": "Das Gateway akzeptiert den gespeicherten Zugriff nicht mehr. Sende erneut ab, um den Zugriff neu anzufragen.",
-          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch."
+          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
+          "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
@@ -1621,7 +1665,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1635,7 +1679,8 @@
           "not_a_directory": "Der Metadaten-Pfad ist kein Verzeichnis.",
           "not_approved": "Die Zugriffsanfrage wurde in der App nicht rechtzeitig bestätigt. Sende erneut ab und bestätige sie unter Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen.",
           "token_rejected": "Das Gateway akzeptiert den gespeicherten Zugriff nicht mehr. Sende erneut ab, um den Zugriff neu anzufragen.",
-          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch."
+          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
+          "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
@@ -1667,7 +1712,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1681,7 +1726,8 @@
           "not_a_directory": "Der Metadaten-Pfad ist kein Verzeichnis.",
           "not_approved": "Die Zugriffsanfrage wurde in der App nicht rechtzeitig bestätigt. Sende erneut ab und bestätige sie unter Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen.",
           "token_rejected": "Das Gateway akzeptiert den gespeicherten Zugriff nicht mehr. Sende erneut ab, um den Zugriff neu anzufragen.",
-          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch."
+          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
+          "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
@@ -1732,7 +1778,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1746,7 +1792,8 @@
           "not_a_directory": "Der Metadaten-Pfad ist kein Verzeichnis.",
           "not_approved": "Die Zugriffsanfrage wurde in der App nicht rechtzeitig bestätigt. Sende erneut ab und bestätige sie unter Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen.",
           "token_rejected": "Das Gateway akzeptiert den gespeicherten Zugriff nicht mehr. Sende erneut ab, um den Zugriff neu anzufragen.",
-          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch."
+          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
+          "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
@@ -1764,7 +1811,7 @@
         "step": {
           "confirm": {
             "title": "Über die Nummern hinausspringen, die die Geräte kennen",
-            "description": "Home Assistant hört das JUNG HOME Mesh {title} über seinen Proxy-Knoten, aber kein einziges Gerät hat auf seine Statusabfragen geantwortet. Die Knoten verwerfen die Nachrichten von Home Assistant als Wiederholungen (Replays). Zwei Ursachen sind wahrscheinlich: Der Sequenznummern-Speicher dieser Integration (`.storage/junghome_ble.*`) ging verloren oder wurde aus einem älteren Backup wiederhergestellt, sodass Home Assistant jetzt Sequenznummern sendet, die die Knoten schon gesehen haben; oder ein anderer Mesh-Client (zum Beispiel das Werkzeug `mesh_poc.py`) sendet mit derselben Unicast-Adresse {unicast}. Gib Home Assistant entweder eine neue, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse, und stelle sicher, dass kein anderer Client sie verwendet) oder bestätige – wenn der Speicher verloren ging oder wiederhergestellt wurde (und kein anderer Client die Adresse verwendet) –, damit Home Assistant seine Sequenznummern um 1 048 576 vorrückt und sich neu verbindet. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben: Eine ältere Kopie wiederholt nur Nummern, die die Geräte schon gesehen haben. Die Reparatur verschwindet von selbst, sobald ein Gerät Home Assistant wieder antwortet."
+            "description": "Home Assistant hört das JUNG HOME Mesh {title} über seinen Proxy-Knoten, aber kein einziges Gerät hat auf seine Statusabfragen geantwortet. Die Knoten verwerfen die Nachrichten von Home Assistant als Wiederholungen (Replays). Zwei Ursachen sind wahrscheinlich: Der Sequenznummern-Speicher dieser Integration (`.storage/junghome_ble.*`) ging verloren oder wurde aus einem älteren Backup wiederhergestellt, sodass Home Assistant jetzt Sequenznummern sendet, die die Knoten schon gesehen haben; oder ein anderer Mesh-Client (zum Beispiel das Werkzeug `mesh_poc.py`) sendet mit derselben Unicast-Adresse {unicast}. Gib Home Assistant entweder eine neue, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse, und stelle sicher, dass kein anderer Client sie verwendet) oder bestätige – wenn der Speicher verloren ging oder wiederhergestellt wurde (und kein anderer Client die Adresse verwendet) –, damit Home Assistant seine Sequenznummern um 1 048 576 vorrückt und sich neu verbindet. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben: Eine ältere Kopie wiederholt nur Nummern, die die Geräte schon gesehen haben. Die Reparatur verschwindet von selbst, sobald ein Gerät Home Assistant wieder antwortet."
           }
         },
         "abort": {
@@ -1778,7 +1825,7 @@
         "step": {
           "confirm": {
             "title": "Über die Sequenznummern des anderen Clients hinausspringen",
-            "description": "Home Assistant hat eine Nachricht des JUNG HOME Mesh {title} empfangen, die von seiner eigenen Unicast-Adresse {unicast} mit einer Sequenznummer gesendet wurde, die es nie verwendet hat: Ein anderer Mesh-Client sendet mit derselben Adresse – eine zweite Home Assistant Installation, das Werkzeug `mesh_poc.py` mit dieser Adresse oder eine anderswo gestartete Kopie dieser Installation. Zwei Sender auf einer Adresse verwenden gegenseitig ihre Sequenznummern erneut, und die Geräte verwerfen alles, was unter denen des anderen Clients liegt. Deshalb sendet Home Assistant nichts an das Mesh, bis dies repariert ist (Befehle schlagen fehl, Zustände werden nicht aktualisiert). Beende den anderen Client oder gib ihm oder Home Assistant eine andere, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse). Bestätige dann, damit Home Assistant seine Sequenznummern hinter denen fortsetzt, mit denen der andere Client gesehen wurde, und wieder sendet. Sendet der andere Client weiter von dieser Adresse, kommt die Reparatur wieder. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
+            "description": "Home Assistant hat eine Nachricht des JUNG HOME Mesh {title} empfangen, die von seiner eigenen Unicast-Adresse {unicast} mit einer Sequenznummer gesendet wurde, die es nie verwendet hat: Ein anderer Mesh-Client sendet mit derselben Adresse – eine zweite Home Assistant Installation, das Werkzeug `mesh_poc.py` mit dieser Adresse oder eine anderswo gestartete Kopie dieser Installation. Zwei Sender auf einer Adresse verwenden gegenseitig ihre Sequenznummern erneut, und die Geräte verwerfen alles, was unter denen des anderen Clients liegt. Deshalb sendet Home Assistant nichts an das Mesh, bis dies repariert ist (Befehle schlagen fehl, Zustände werden nicht aktualisiert). Beende den anderen Client oder gib ihm oder Home Assistant eine andere, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse). Bestätige dann, damit Home Assistant seine Sequenznummern hinter denen fortsetzt, mit denen der andere Client gesehen wurde, und wieder sendet. Sendet der andere Client weiter von dieser Adresse, kommt die Reparatur wieder. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
           }
         },
         "abort": {
@@ -1792,7 +1839,7 @@
         "step": {
           "confirm": {
             "title": "Erneut über die Sequenznummern des anderen Clients hinausspringen",
-            "description": "Home Assistant ist über die Sequenznummern eines anderen Mesh-Clients auf seiner Adresse {unicast} im JUNG HOME Mesh {title} hinausgesprungen, und der andere Client hat seitdem erneut von dieser Adresse gesendet: Er läuft noch. Solange er läuft, hilft das Vorspringen nicht. Gib Home Assistant eine neue, unbenutzte Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) oder beende den anderen Client bzw. gib ihm eine andere Adresse. Bis dahin sendet Home Assistant nichts an das Mesh. Bestätige erst, wenn der andere Client diese Adresse nicht mehr verwendet: Home Assistant setzt dann erneut hinter seinen Nummern fort und sendet wieder. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
+            "description": "Home Assistant ist über die Sequenznummern eines anderen Mesh-Clients auf seiner Adresse {unicast} im JUNG HOME Mesh {title} hinausgesprungen, und der andere Client hat seitdem erneut von dieser Adresse gesendet: Er läuft noch. Solange er läuft, hilft das Vorspringen nicht. Gib Home Assistant eine neue, unbenutzte Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) oder beende den anderen Client bzw. gib ihm eine andere Adresse. Bis dahin sendet Home Assistant nichts an das Mesh. Bestätige erst, wenn der andere Client diese Adresse nicht mehr verwendet: Home Assistant setzt dann erneut hinter seinen Nummern fort und sendet wieder. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
           }
         },
         "abort": {
@@ -1832,7 +1879,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1846,7 +1893,8 @@
           "not_a_directory": "Der Metadaten-Pfad ist kein Verzeichnis.",
           "not_approved": "Die Zugriffsanfrage wurde in der App nicht rechtzeitig bestätigt. Sende erneut ab und bestätige sie unter Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen.",
           "token_rejected": "Das Gateway akzeptiert den gespeicherten Zugriff nicht mehr. Sende erneut ab, um den Zugriff neu anzufragen.",
-          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch."
+          "upload_failed": "Die hochgeladene Datei konnte nicht verarbeitet werden. Lade sie erneut hoch.",
+          "gateway_busy": "Das Gateway ist mit einer anderen Konfigurationsanfrage beschäftigt. Versuche es in einer Minute erneut."
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
@@ -1962,7 +2010,7 @@
         "step": {
           "confirm": {
             "title": "Home Assistant auf {suggestion} umziehen",
-            "description": "Im Export des Mesh {title} belegt ein Knoten die Unicast-Adresse {unicast}, von der Home Assistant sendet. Beide würden für einen Sender gehalten: Die Geräte verwerfen einen von beiden als Wiederholung, und Antworten gehen an den falschen. Bestätige, um Home Assistant die freie Adresse {suggestion} zu geben und die Integration neu einzurichten, wie es Neu konfigurieren → Unsere Unicast-Adresse tut. Stelle sicher, dass kein anderer Mesh-Client (die Kommandozeilen-Werkzeuge dieser Integration, ein anderes Home Assistant) von {suggestion} sendet. Sequenznummern werden pro Adresse geführt: Die neue setzt ihren eigenen Eintrag fort oder beginnt weit genug voraus, wenn Home Assistant keinen für sie hat, sodass keine Nummer doppelt gesendet wird. Auf echten Geräten noch nicht überprüft."
+            "description": "Im Export des Mesh {title} belegt ein Knoten die Unicast-Adresse {unicast}, von der Home Assistant sendet. Beide würden für einen Sender gehalten: Die Geräte verwerfen einen von beiden als Wiederholung, und Antworten gehen an den falschen. Bestätige, um Home Assistant die freie Adresse {suggestion} zu geben und die Integration neu einzurichten, wie es Neu konfigurieren → Erweitert → Unsere Unicast-Adresse tut. Stelle sicher, dass kein anderer Mesh-Client (die Kommandozeilen-Werkzeuge dieser Integration, ein anderes Home Assistant) von {suggestion} sendet. Sequenznummern werden pro Adresse geführt: Die neue setzt ihren eigenen Eintrag fort oder beginnt weit genug voraus, wenn Home Assistant keinen für sie hat, sodass keine Nummer doppelt gesendet wird. Auf echten Geräten noch nicht überprüft."
           }
         },
         "abort": {
@@ -1975,7 +2023,7 @@
     },
     "address_reserved": {
       "title": "Die JUNG HOME Adresse von Home Assistant könnte vergeben werden",
-      "description": "Die Unicast-Adresse {unicast}, von der Home Assistant im Mesh {title} sendet, liegt im Adressbereich eines der Provisioner der App oder wurde von einem entfernten Knoten verwendet. Sie funktioniert weiter, bis die App dort einen Knoten in Betrieb nimmt; ziehe Home Assistant vorher auf eine freie Adresse um (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse; {suggestion} ist frei)."
+      "description": "Die Unicast-Adresse {unicast}, von der Home Assistant im Mesh {title} sendet, liegt im Adressbereich eines der Provisioner der App oder wurde von einem entfernten Knoten verwendet. Sie funktioniert weiter, bis die App dort einen Knoten in Betrieb nimmt; ziehe Home Assistant vorher auf eine freie Adresse um (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse; {suggestion} ist frei)."
     },
     "sequence_space_low": {
       "title": "Die Sequenznummern des JUNG HOME Mesh werden knapp",
@@ -1983,7 +2031,7 @@
     },
     "iv_index_mismatch": {
       "title": "Das JUNG HOME Mesh ist auf einem anderen IV-Index",
-      "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours}: zu weit auseinander, als dass Home Assistant folgen könnte (es folgt dem Mesh bis zu 42 voraus, höchstens einmal alle 192 Stunden und nie zurück). Die Geräte ignorieren Home Assistant solange. Das passiert, wenn Home Assistant über viele IV-Updates hinweg nicht da war, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Gib Home Assistant eine neue Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Unsere Unicast-Adresse): Dort beginnt es beim IV-Index des Mesh. Stelle den Speicher nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Sequenznummern, die die Geräte schon gesehen haben, und der nächste Start überschreibt eine Handbearbeitung ohnehin. Die Reparatur verschwindet von selbst, wenn ein Beacon in Reichweite eintrifft."
+      "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours}: zu weit auseinander, als dass Home Assistant folgen könnte (es folgt dem Mesh bis zu 42 voraus, höchstens einmal alle 192 Stunden und nie zurück). Die Geräte ignorieren Home Assistant solange. Das passiert, wenn Home Assistant über viele IV-Updates hinweg nicht da war, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Gib Home Assistant eine neue Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse): Dort beginnt es beim IV-Index des Mesh. Stelle den Speicher nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Sequenznummern, die die Geräte schon gesehen haben, und der nächste Start überschreibt eine Handbearbeitung ohnehin. Die Reparatur verschwindet von selbst, wenn ein Beacon in Reichweite eintrifft."
     },
     "iv_index_ahead": {
       "title": "Home Assistant ist dem IV-Index des JUNG HOME Mesh voraus",
