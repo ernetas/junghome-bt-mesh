@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME per Bluetooth",
+        "description": "Home Assistant s'uneix directament al teu mesh JUNG HOME per Bluetooth fent servir l'exportació de xarxa de l'aplicació JUNG HOME, que conté les claus del mesh. Tria d'on ve l'exportació.",
+        "menu_options": {
+          "gateway": "Obtén-la de la passarel·la JUNG HOME",
+          "upload": "Carrega el fitxer d'exportació de l'aplicació",
+          "path": "Utilitza un fitxer de l'amfitrió de Home Assistant"
+        },
+        "data": {
+          "cdb_path": "Fitxer d'exportació del mesh",
+          "metadata_dir": "Directori de metadades de l'aplicació",
+          "unicast": "La nostra adreça unicast"
+        },
+        "data_description": {
+          "cdb_path": "Camí absolut a l'amfitrió de Home Assistant, p. ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcional, només per a `MeshNetwork.json` d'una còpia de seguretat d'iOS: la carpeta `Application Support` de l'aplicació amb `device_metadata.json` i `scene_metadata.json`, perquè les entitats rebin els noms que els vas donar a l'aplicació. `JungHome.json` ja inclou els noms.",
+          "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "És aquesta la teva instal·lació JUNG HOME?",
+        "description": "Hi ha a l'abast un proxy Bluetooth Mesh de la xarxa {network_id}. Home Assistant ofereix totes les xarxes Bluetooth Mesh que detecta, també les d'altres marques — els llums d'un veí, per exemple. Continua només si aquesta és la teva instal·lació JUNG HOME; després se't demanarà l'exportació del mesh de l'aplicació."
+      },
+      "zeroconf_confirm": {
+        "title": "S'ha trobat una passarel·la JUNG HOME",
+        "description": "Una passarel·la JUNG HOME s'anuncia a {host}. Continua per obtenir-ne l'exportació de xarxa de l'aplicació JUNG HOME: després introduiràs la contrasenya de la seva clau de xarxa o aprovaràs una sol·licitud d'accés a l'aplicació. Igual que amb una adreça que escriguis, el seu certificat es fixa en el primer contacte, abans d'enviar res. La configuració des de la passarel·la descoberta no s'ha verificat en dispositius reals."
+      },
+      "gateway": {
+        "title": "Obtén l'exportació de la passarel·la JUNG HOME",
+        "description": "La passarel·la conserva una còpia de l'exportació de xarxa de l'aplicació. Introdueix-ne l'adreça i, o bé la contrasenya de la seva clau de xarxa (de l'aplicació JUNG HOME) per a un accés immediat, o bé deixa la contrasenya buida i aprova la sol·licitud d'accés a l'aplicació després de continuar (Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes, en un termini de tres minuts; hi apareix com a «{user_name}»). L'exportació es desa a `junghome_ble/` dins del directori de configuració de Home Assistant. Conté totes les claus del mesh, com l'exportació del telèfon — mantén privades les còpies de seguretat d'aquest directori.",
+        "data": {
+          "gateway_host": "Adreça de la passarel·la",
+          "gateway_password": "Contrasenya de la clau de xarxa"
+        },
+        "data_description": {
+          "gateway_host": "Adreça IP o nom d'amfitrió de la passarel·la JUNG HOME. Si Home Assistant ha trobat una passarel·la a la xarxa, ja hi és emplenada. Si no, el valor per defecte `junghome.local` funciona en moltes xarxes; també pots fer servir la seva adreça IP (es mostra a l'aplicació a Configuració → Passarel·la).",
+          "gateway_password": "Opcional. Amb ella, la passarel·la concedeix l'accés immediatament; sense ella, aproves la sol·licitud a l'aplicació."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avançat",
+            "description": "Deixa el valor per defecte tret que un segon Home Assistant, o les eines de línia d'ordres del repositori, també s'uneixin a aquesta instal·lació: cadascun necessita una adreça pròpia.",
+            "data": {
+              "unicast": "La nostra adreça unicast"
+            },
+            "data_description": {
+              "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Esperant l'aprovació a l'aplicació JUNG HOME"
+      },
+      "gateway_refetch": {
+        "title": "Torna a obtenir l'exportació",
+        "description": "Obté l'exportació de xarxa actual de la passarel·la a {host} amb l'accés desat. Si la passarel·la ja no l'accepta, se't demanarà que aprovis una sol·licitud d'accés nova a l'aplicació.",
+        "sections": {
+          "advanced": {
+            "name": "Avançat",
+            "description": "Deixa el valor per defecte tret que un segon Home Assistant, o les eines de línia d'ordres del repositori, també s'uneixin a aquesta instal·lació: cadascun necessita una adreça pròpia.",
+            "data": {
+              "unicast": "La nostra adreça unicast"
+            },
+            "data_description": {
+              "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Carrega el fitxer d'exportació de l'aplicació",
+        "description": "A l'aplicació JUNG HOME, obre Projecte → Comparteix mitjançant fitxer i envia't el `JungHome.json` que crea; després carrega'l aquí. Es desa a `junghome_ble/` dins del directori de configuració de Home Assistant. Conté totes les claus del mesh — mantén privades les còpies de seguretat d'aquest directori.",
+        "data": {
+          "export_file": "Fitxer d'exportació del mesh"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avançat",
+            "description": "Deixa el valor per defecte tret que un segon Home Assistant, o les eines de línia d'ordres del repositori, també s'uneixin a aquesta instal·lació: cadascun necessita una adreça pròpia.",
+            "data": {
+              "unicast": "La nostra adreça unicast"
+            },
+            "data_description": {
+              "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Utilitza un fitxer de l'amfitrió de Home Assistant",
+        "description": "Primer copia a l'amfitrió de Home Assistant el `JungHome.json` de l'aplicació (Projecte → Comparteix mitjançant fitxer; inclou els noms dels teus dispositius) o el `MeshNetwork.json` (còpia de seguretat d'iOS) i introdueix-ne el camí.",
+        "data": {
+          "cdb_path": "Fitxer d'exportació del mesh",
+          "metadata_dir": "Directori de metadades de l'aplicació"
+        },
+        "data_description": {
+          "cdb_path": "Camí absolut a l'amfitrió de Home Assistant, p. ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcional, només per a `MeshNetwork.json` d'una còpia de seguretat d'iOS: la carpeta `Application Support` de l'aplicació amb `device_metadata.json` i `scene_metadata.json`, perquè les entitats rebin els noms que els vas donar a l'aplicació. `JungHome.json` ja inclou els noms."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avançat",
+            "description": "Deixa el valor per defecte tret que un segon Home Assistant, o les eines de línia d'ordres del repositori, també s'uneixin a aquesta instal·lació: cadascun necessita una adreça pròpia.",
+            "data": {
+              "unicast": "La nostra adreça unicast"
+            },
+            "data_description": {
+              "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Actualitza l'exportació del mesh JUNG HOME",
+        "description": "Fes-ho servir després de tornar a posar en servei o tornar a cablejar dispositius a l'aplicació JUNG HOME, o després d'un Key Refresh: proporciona una exportació nova de la mateixa xarxa. Els dispositius que han desaparegut de l'exportació s'eliminen. Alhora es pot canviar l'adreça mesh pròpia de Home Assistant.",
+        "menu_options": {
+          "gateway_refetch": "Torna a obtenir-la de la passarel·la a {host}",
+          "gateway": "Obtén-la de la passarel·la JUNG HOME",
+          "upload": "Carrega el fitxer d'exportació de l'aplicació",
+          "path": "Utilitza un fitxer de l'amfitrió de Home Assistant",
+          "import_gateway": "Importa les entitats de la integració JUNG HOME Gateway",
+          "areas": "Canvia a quina àrea van els dispositius de cada habitació"
+        },
+        "data": {
+          "cdb_path": "Fitxer d'exportació del mesh",
+          "metadata_dir": "Directori de metadades de l'aplicació",
+          "unicast": "La nostra adreça unicast"
+        },
+        "data_description": {
+          "cdb_path": "Camí absolut a l'amfitrió de Home Assistant, p. ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcional, només per a `MeshNetwork.json` d'una còpia de seguretat d'iOS: la carpeta `Application Support` de l'aplicació amb `device_metadata.json` i `scene_metadata.json`, perquè les entitats rebin els noms que els vas donar a l'aplicació. `JungHome.json` ja inclou els noms.",
+          "unicast": "Adreça mesh hexadecimal que Home Assistant farà servir com a node (0001–7FFF). No la pot utilitzar cap altre node; el valor per defecte és fora de l'interval de l'aplicació."
+        }
+      },
+      "import_gateway": {
+        "title": "Importa des de la integració JUNG HOME Gateway",
+        "description": "La integració JUNG HOME Gateway (`junghome`) està configurada al costat d'aquesta. Les seves entitats es poden traspassar aquí perquè els seus ID d'entitat, noms, àrees, etiquetes i historial continuïn amb la integració Bluetooth Mesh. La correspondència es fa pel nom del dispositiu (el nom de l'aplicació JUNG HOME) i el tipus d'entitat; només se substitueixen les entitats d'aquesta integració que encara no has reanomenat ni personalitzat.\n\n**Es mouran {count} entitats** (entitat de la passarel·la → substitueix):\n{matched}\n\n**Es mantenen tal com són** (ja personalitzades aquí; la de la passarel·la es queda on és):\n{customised}\n\n**Sense equivalent a la passarel·la** (es mantenen tal com són):\n{unmatched}\n\n**Entitats de la passarel·la sense equivalent aquí** (es queden amb l'entrada de la passarel·la):\n{gateway_only}\n\nEn enviar, es descarreguen les dues integracions, es mouen les entitats, es copien l'àrea, el nom personalitzat i les etiquetes de cada dispositiu de la passarel·la coincident al dispositiu corresponent d'aquí, es desactiva l'entrada de la passarel·la i es torna a carregar aquesta. Després, elimina l'entrada de la passarel·la."
+      },
+      "gateway_certificate": {
+        "title": "El certificat de la passarel·la ha canviat",
+        "description": "La passarel·la JUNG HOME a {host} presenta ara el certificat {observed}; l'entrada tenia registrat {expected}. Continua només si tu mateix has substituït la passarel·la o el seu certificat — si no, un altre dispositiu de la teva xarxa està responent com si fos la passarel·la."
+      },
+      "reauth_confirm": {
+        "title": "Torna a donar accés a la passarel·la a Home Assistant",
+        "description": "La passarel·la JUNG HOME a {host} ja no accepta l'accés que Home Assistant va registrar per al mesh {title} (probablement es va eliminar a l'aplicació JUNG HOME a Configuració → Passarel·la → Permisos d'accés). Els dispositius continuen funcionant per Bluetooth; només s'ha aturat el lliurament dels canvis de Home Assistant a la passarel·la. Introdueix la contrasenya de la clau de xarxa de la passarel·la (de l'aplicació JUNG HOME) per a un accés immediat, o deixa-la buida i aprova la sol·licitud d'accés a l'aplicació després de continuar (Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes, en un termini de tres minuts; hi apareix com a «{user_name}»). Només es renova l'accés: l'exportació no es torna a obtenir.",
+        "data": {
+          "gateway_password": "Contrasenya de la clau de xarxa"
+        },
+        "data_description": {
+          "gateway_password": "Opcional. Amb ella, la passarel·la concedeix l'accés immediatament; sense ella, aproves la sol·licitud a l'aplicació. No es desa."
+        }
+      },
+      "areas": {
+        "title": "Habitacions i àrees",
+        "description": "Tria l'àrea de Home Assistant per a cada habitació de l'aplicació JUNG HOME. Cada habitació s'emplena prèviament amb l'àrea del mateix nom, o amb l'àrea que té el nom de l'habitació com a àlies. Deixa una habitació buida per tenir una àrea amb el nom de l'habitació (es crea si no n'hi ha cap). Els dispositius sense habitació pròpia també en reben una: les tecles d'un polsador, l'habitació de la càrrega que tenen al costat; les d'un emissor de paret, l'habitació que commuten les seves tecles. Des del menú Reconfigura, això mou els dispositius que encara són a l'àrea que els va donar l'elecció anterior; un dispositiu que tu mateix has posat en una altra àrea no es mou mai.",
+        "data": {
+          "assign_areas": "Posa els dispositius JUNG HOME en àrees"
+        },
+        "data_description": {
+          "assign_areas": "Desactivat: els dispositius nous comencen sense àrea i les habitacions de sota s'ignoren."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Obre l'aplicació JUNG HOME i aprova la sol·licitud d'accés «{user_name}» a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes. La passarel·la a {host} espera fins a tres minuts."
+    },
+    "error": {
+      "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+      "not_a_directory": "El camí de les metadades no és un directori.",
+      "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+      "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+      "address_in_use": "Aquesta adreça pertany a un node del mesh; tria'n una que no es faci servir.",
+      "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+      "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+      "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la que s'ha descobert.",
+      "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada (probablement la seva clau de xarxa s'ha renovat des que Home Assistant la va veure per última vegada). Fes servir Reconfigura en aquella entrada en lloc d'afegir-ne una de nova.",
+      "invalid_host": "Introdueix l'adreça IP o el nom d'amfitrió de la passarel·la.",
+      "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+      "invalid_auth": "La passarel·la ha rebutjat la contrasenya de la clau de xarxa.",
+      "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+      "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+      "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+      "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+      "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+      "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar.",
+      "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+      "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0."
+    },
+    "abort": {
+      "already_configured": "Aquesta xarxa mesh ja està configurada.",
+      "already_in_progress": "Ja hi ha una configuració d'aquesta xarxa mesh en curs.",
+      "not_supported": "Aquest dispositiu Bluetooth no és un proxy mesh.",
+      "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+      "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer.",
+      "reconfigure_successful": "S'ha actualitzat l'exportació del mesh.",
+      "no_gateway_entry": "La integració JUNG HOME Gateway no està configurada; no hi ha res a importar.",
+      "nothing_to_import": "No queda cap entitat de la passarel·la per traspassar. Entitats d'aquesta integració sense equivalent:\n{unmatched}\n\nEntitats de la passarel·la sense equivalent aquí:\n{gateway_only}",
+      "import_successful": "S'han traspassat {count} entitats de la integració JUNG HOME Gateway:\n{matched}\n\nEs mantenen tal com eren (ja personalitzades aquí):\n{customised}\n\nSense equivalent a la passarel·la:\n{unmatched}\n\nEncara amb l'entrada de la passarel·la:\n{gateway_only}\n\nL'entrada de la passarel·la s'ha desactivat; elimina-la a Configuració → Dispositius i serveis → JUNG HOME quan tot estigui bé.",
+      "certificate_vouched_by_mesh": "La passarel·la JUNG HOME a {host} presenta el certificat {observed}, però el node de la passarel·la ha garantit {expected} pel mesh. No s'ha enviat res a aquesta adreça: probablement un altre dispositiu de la teva xarxa està responent com si fos la passarel·la. Si tu mateix has substituït la passarel·la o el seu certificat, torna a reconfigurar mentre Home Assistant està connectat al mesh: llavors el node de la passarel·la informa del certificat nou.",
+      "import_unload_failed": "No s'ha pogut descarregar {title}, així que no s'ha importat res; totes les entrades que la importació havia descarregat es tornen a configurar. Revisa el registre i torna a provar la importació.",
+      "reauth_successful": "La passarel·la JUNG HOME torna a acceptar Home Assistant. Els canvis fets mentrestant a Home Assistant hi arriben amb el canvi següent, o immediatament amb l'acció Sincronitza la passarel·la.",
+      "areas_updated": "S'han desat les àrees de les habitacions; {count} dispositius s'han mogut a la nova àrea de la seva habitació.",
+      "not_loaded": "La integració no s'està executant: primer torna-la a configurar.",
+      "not_junghome_gateway": "Aquest dispositiu no s'anuncia com a passarel·la JUNG HOME (sense fabricant JUNG o sense número de sèrie).",
+      "not_ipv4_address": "La passarel·la no ha anunciat cap adreça IPv4. Afegeix la integració manualment i introdueix l'adreça de la passarel·la."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcions de JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Informa dels clics només quan es descarta un doble clic",
+          "heartbeats": "Heartbeats dels nodes (marca com a no disponible un dispositiu silenciós)",
+          "allow_provisioning": "Permet que Home Assistant afegeixi i elimini dispositius (experimental)",
+          "provisioner_identity": "Escriu Home Assistant al fitxer de la xarxa com a aprovisionador (experimental, no verificat amb l'aplicació)",
+          "follow_app": "Segueix els canvis fets a l'aplicació JUNG HOME",
+          "gateway_check": "Comprova l'exportació de la passarel·la cada sis hores",
+          "sync_areas": "Mou els dispositius quan canvia la seva habitació JUNG"
+        },
+        "data_description": {
+          "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`.",
+          "heartbeats": "A cada dispositiu alimentat per la xarxa elèctrica se li demana que enviï un heartbeat a Home Assistant cada 64 segons (un paràmetre estàndard de Bluetooth Mesh que l'aplicació JUNG deixa desactivat). Si un dispositiu no envia res durant uns tres minuts i mig, les seves entitats es marquen com a no disponibles fins que se'l torna a sentir. Desactivar-ho indica als dispositius que s'aturin (de nou a la connexió següent si no s'ha pogut avisar-los tots alhora); desactiva-ho abans d'eliminar la integració, que després ja no els ho pot indicar.",
+          "allow_provisioning": "Permet que l'acció `junghome_ble.add_device` posi en servei un dispositiu JUNG nou i el configuri com ho faria l'aplicació, a partir d'un dispositiu del mateix producte que ja és a la xarxa, i que `junghome_ble.remove_device` restableixi un dispositiu i el tregui de la xarxa. Encara no s'ha provat en dispositius reals: prova-ho primer amb un dispositiu de recanvi. En afegir un dispositiu se li lliuren les claus de la xarxa; l'eliminació no es pot desfer.",
+          "provisioner_identity": "Cada fitxer que Home Assistant escriu o lliura a la passarel·la rep una entrada d'aprovisionador per a Home Assistant, amb intervals d'adreces propis, separats dels de l'aplicació i que contenen l'adreça de Home Assistant, i s'hi tornen a afegir els dispositius que Home Assistant ha afegit i que falten al fitxer de l'aplicació. Les habitacions, escenes i dispositius que crea Home Assistant prenen llavors les adreces dels seus propis intervals. Cap aplicació JUNG no ha importat encara un fitxer així: prova-ho en una instal·lació de recanvi de l'aplicació (importa el fitxer de `junghome_ble.export_network`) abans que el vegin la teva pròpia aplicació o la teva passarel·la. Desactivat: els fitxers s'escriuen exactament com sense aquesta opció.",
+          "follow_app": "Quan se sent al mesh el telèfon que executa l'aplicació JUNG HOME, una entrada configurada des de la passarel·la n'obté l'exportació uns minuts després que el telèfon hagi callat (com a màxim cada 15 minuts) i l'adopta si ha canviat: els dispositius, habitacions, escenes i vinculacions de tecla canviats a l'aplicació arriben a Home Assistant sense Reconfigura. Una entrada configurada des d'un fitxer mostra en canvi un avís de reparació, un cop s'ha vist l'aplicació canviant la configuració d'un dispositiu. No s'envia res al mesh per fer-ho. No verificat en dispositius reals.",
+          "gateway_check": "Una entrada configurada des de la passarel·la li demana l'exportació cada sis hores i l'adopta si ha canviat, cosa que detecta el que l'aplicació ha canviat mentre Home Assistant no sentia el telèfon. Una sol·licitud a la passarel·la; no s'envia res al mesh. No té cap efecte en una entrada configurada des d'un fitxer.",
+          "sync_areas": "Quan un dispositiu canvia d'habitació a l'aplicació (un cop Home Assistant segueix l'exportació nova) o mitjançant una acció d'habitació, també es mou a l'àrea de la nova habitació — tret que tu mateix l'hagis posat en una àrea. Desactivat: un dispositiu es queda a l'àrea on va començar. No verificat en dispositius reals."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Connexió amb el mesh"
+      },
+      "motion": {
+        "name": "Moviment"
+      },
+      "occupancy": {
+        "name": "Ocupació"
+      },
+      "fault": {
+        "name": "Avaria"
+      },
+      "wind_alarm": {
+        "name": "Alarma de vent"
+      },
+      "reference_run_active": {
+        "name": "Recorregut de referència"
+      },
+      "gateway_api_available": {
+        "name": "API disponible"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Client pendent d'aprovació"
+      },
+      "gateway_network_problem": {
+        "name": "Problema de xarxa"
+      },
+      "gateway_mesh_problem": {
+        "name": "Problema del Bluetooth Mesh"
+      },
+      "gateway_cloud_problem": {
+        "name": "Problema del núvol"
+      },
+      "gateway_cloud_connected": {
+        "name": "Connexió al núvol"
+      },
+      "window_open": {
+        "name": "Finestra oberta"
+      },
+      "input_state": {
+        "name": "Estat de l'entrada"
+      },
+      "input_state_key": {
+        "name": "Estat de l'entrada {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Funció de programació"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Botó {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Doble clic",
+              "hold_start": "Pulsació mantinguda iniciada",
+              "hold_end": "Pulsació mantinguda alliberada",
+              "press_on": "Premut encès / amunt",
+              "press_off": "Premut apagat / avall",
+              "scene": "Escena activada",
+              "dim": "Regulació"
+            }
+          },
+          "connection": {
+            "name": "Vinculació",
+            "state": {
+              "device": "Dispositiu",
+              "room": "Habitació",
+              "scene": "Escena",
+              "gateway": "Passarel·la",
+              "group": "Grup",
+              "none": "Cap"
+            }
+          },
+          "reason": {
+            "name": "Motiu del final de la pulsació mantinguda",
+            "state": {
+              "timeout": "No s'ha detectat l'alliberament a temps",
+              "link_lost": "Enllaç perdut",
+              "stopped": "Integració aturada"
+            }
+          },
+          "position": {
+            "name": "Posició",
+            "state": {
+              "top": "A dalt",
+              "bottom": "A baix",
+              "rocker": "Balancí",
+              "left_top": "Esquerra, a dalt",
+              "left_bottom": "Esquerra, a baix",
+              "right_top": "Dreta, a dalt",
+              "right_bottom": "Dreta, a baix",
+              "left_rocker": "Balancí esquerre",
+              "right_rocker": "Balancí dret"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Entrada {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Doble clic",
+              "hold_start": "Pulsació mantinguda iniciada",
+              "hold_end": "Pulsació mantinguda alliberada",
+              "press_on": "Premut encès / amunt",
+              "press_off": "Premut apagat / avall",
+              "scene": "Escena activada",
+              "dim": "Regulació"
+            }
+          },
+          "connection": {
+            "name": "Vinculació",
+            "state": {
+              "device": "Dispositiu",
+              "room": "Habitació",
+              "scene": "Escena",
+              "gateway": "Passarel·la",
+              "group": "Grup",
+              "none": "Cap"
+            }
+          },
+          "reason": {
+            "name": "Motiu del final de la pulsació mantinguda",
+            "state": {
+              "timeout": "No s'ha detectat l'alliberament a temps",
+              "link_lost": "Enllaç perdut",
+              "stopped": "Integració aturada"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Potència"
+      },
+      "voltage": {
+        "name": "Tensió"
+      },
+      "current": {
+        "name": "Corrent"
+      },
+      "energy": {
+        "name": "Energia"
+      },
+      "energy_resettable": {
+        "name": "Energia des del restabliment"
+      },
+      "energy_since_on": {
+        "name": "Energia des de l'encesa"
+      },
+      "power_on_time": {
+        "name": "Temps en funcionament"
+      },
+      "proxy_node": {
+        "name": "Node proxy"
+      },
+      "link_state": {
+        "name": "Estat de l'enllaç",
+        "state": {
+          "bluetooth_off": "Sense Bluetooth",
+          "searching": "Cercant un node proxy",
+          "connecting": "Connectant",
+          "updating": "Connectat, actualitzant els estats dels dispositius",
+          "connected": "Connectat",
+          "failed": "Ha fallat la connexió",
+          "disconnected": "Desconnectat"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Dispositius inaccessibles",
+        "state_attributes": {
+          "devices": {
+            "name": "Dispositius"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Resum del mesh",
+        "state_attributes": {
+          "nodes": {
+            "name": "Nodes"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Il·luminància"
+      },
+      "battery": {
+        "name": "Bateria"
+      },
+      "installed": {
+        "name": "Instal·lat"
+      },
+      "key_mode": {
+        "name": "Mode de tecla",
+        "state": {
+          "light": "Llum",
+          "move": "Persiana",
+          "scene": "Escena",
+          "property": "Propietat",
+          "rtr": "Temperatura",
+          "switch": "Commutació",
+          "gateway": "Passarel·la"
+        }
+      },
+      "key_mode_key": {
+        "name": "Mode de tecla {key}",
+        "state": {
+          "light": "Llum",
+          "move": "Persiana",
+          "scene": "Escena",
+          "property": "Propietat",
+          "rtr": "Temperatura",
+          "switch": "Commutació",
+          "gateway": "Passarel·la"
+        }
+      },
+      "schedules": {
+        "name": "Programacions"
+      },
+      "scenes": {
+        "name": "Escenes"
+      },
+      "switch_off_at": {
+        "name": "S'apaga a les"
+      },
+      "switch_on_threshold": {
+        "name": "Llindar d'encesa"
+      },
+      "switch_off_threshold": {
+        "name": "Llindar d'apagada"
+      },
+      "last_seen": {
+        "name": "Vist per última vegada"
+      },
+      "rssi": {
+        "name": "Intensitat del senyal"
+      },
+      "hops": {
+        "name": "Salts"
+      },
+      "last_restart": {
+        "name": "Últim reinici"
+      },
+      "clock_offset": {
+        "name": "Desviació del rellotge"
+      },
+      "iv_index": {
+        "name": "Índex IV"
+      },
+      "sequence_used": {
+        "name": "Números de seqüència utilitzats"
+      },
+      "mesh_sequence_used": {
+        "name": "Números de seqüència del mesh utilitzats"
+      },
+      "switching_cycles": {
+        "name": "Cicles de commutació"
+      },
+      "power_on_cycles": {
+        "name": "Cicles d'encesa"
+      },
+      "gateway_ip": {
+        "name": "Adreça IP"
+      },
+      "gateway_firmware": {
+        "name": "Versió del microprogramari"
+      },
+      "gateway_firmware_build": {
+        "name": "Compilació del microprogramari"
+      },
+      "gateway_serial": {
+        "name": "Número de sèrie"
+      },
+      "gateway_access_requests": {
+        "name": "Sol·licituds d'accés",
+        "state_attributes": {
+          "clients": {
+            "name": "Clients"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "Clients de l'API",
+        "state_attributes": {
+          "clients": {
+            "name": "Clients"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Registre d'errors",
+        "state_attributes": {
+          "entries": {
+            "name": "Entrades"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Última càrrega de l'exportació"
+      },
+      "forced_off": {
+        "name": "Encès / apagat permanent",
+        "state": {
+          "inactive": "Inactiu",
+          "off": "Apagat permanent",
+          "on": "Encès permanent"
+        }
+      },
+      "sleep_mode": {
+        "name": "Mode de repòs",
+        "state": {
+          "awake": "Despert",
+          "asleep": "En repòs"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Recorregut de referència"
+      },
+      "identify": {
+        "name": "Identifica"
+      },
+      "clear_faults": {
+        "name": "Esborra les avaries"
+      },
+      "reset_consumption": {
+        "name": "Restableix el consum"
+      },
+      "fetch_gateway_export": {
+        "name": "Obtén l'exportació de la passarel·la"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Posició de la persiana en tornar la tensió de xarxa"
+      },
+      "blind_ventilation_position": {
+        "name": "Posició de ventilació"
+      },
+      "color_temp_max": {
+        "name": "Temperatura de color màxima"
+      },
+      "color_temp_min": {
+        "name": "Temperatura de color mínima"
+      },
+      "comfort_temperature": {
+        "name": "Temperatura de confort"
+      },
+      "default_color_temp": {
+        "name": "Temperatura de color en encendre"
+      },
+      "default_lightness": {
+        "name": "Brillantor en encendre"
+      },
+      "eco_temperature": {
+        "name": "Temperatura ECO"
+      },
+      "frost_protection_temperature": {
+        "name": "Temperatura de protecció antigelada"
+      },
+      "lightness_max": {
+        "name": "Brillantor màxima"
+      },
+      "lightness_min": {
+        "name": "Brillantor mínima"
+      },
+      "lock_time_limit": {
+        "name": "Límit de temps del bloqueig"
+      },
+      "motor_reversal_time": {
+        "name": "Temps mínim d'inversió del motor"
+      },
+      "off_delay": {
+        "name": "Retard a la desconnexió"
+      },
+      "on_delay": {
+        "name": "Retard a la connexió"
+      },
+      "pir_sensor_a": {
+        "name": "Zona d'activació A"
+      },
+      "pir_sensor_b": {
+        "name": "Zona d'activació B"
+      },
+      "pir_sensor_c": {
+        "name": "Zona d'activació C"
+      },
+      "repetition_time": {
+        "name": "Temps de repetició"
+      },
+      "running_time": {
+        "name": "Temps de recorregut"
+      },
+      "sensor_offset": {
+        "name": "Compensació del sensor de temperatura"
+      },
+      "slat_position_on_power": {
+        "name": "Posició de les lamel·les en tornar la tensió de xarxa"
+      },
+      "slat_ventilation_position": {
+        "name": "Posició de ventilació de les lamel·les"
+      },
+      "slats_move_time": {
+        "name": "Temps d'inversió de les lamel·les"
+      },
+      "switch_blocking_time": {
+        "name": "Temps mínim entre commutacions"
+      },
+      "switch_on_brightness": {
+        "name": "Llindar de lluminositat"
+      },
+      "timed_on_duration": {
+        "name": "Temps de funcionament posterior"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Mode de funcionament",
+        "state": {
+          "blinds": "Persiana (amb lamel·les)",
+          "shutter": "Persiana enrotllable (sense lamel·les)",
+          "awning": "Tendal"
+        }
+      },
+      "controller_type": {
+        "name": "Sortida del regulador",
+        "state": {
+          "pi_control": "Modulació per amplada de pols (PWM)",
+          "two_point_control": "Regulació de dos punts"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Mode de funcionament",
+        "state": {
+          "guard": "Lloc de muntatge",
+          "presence": "Lluminositat de l'habitació"
+        }
+      },
+      "dim_mode": {
+        "name": "Mode de regulació",
+        "state": {
+          "leading_edge": "Tall d'inici de fase (RL)",
+          "trailing_edge": "Tall de final de fase (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Mode de funcionament",
+        "state": {
+          "none": "Cap",
+          "comfort": "Confort",
+          "eco": "ECO",
+          "frost": "Protecció antigelada"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Flanc descendent",
+        "state": {
+          "no_reaction": "Cap reacció",
+          "on": "Encén",
+          "off": "Apaga",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Flanc descendent {key}",
+        "state": {
+          "no_reaction": "Cap reacció",
+          "on": "Encén",
+          "off": "Apaga",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Flanc ascendent",
+        "state": {
+          "no_reaction": "Cap reacció",
+          "on": "Encén",
+          "off": "Apaga",
+          "toggle": "Commuta"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Flanc ascendent {key}",
+        "state": {
+          "no_reaction": "Cap reacció",
+          "on": "Encén",
+          "off": "Apaga",
+          "toggle": "Commuta"
+        }
+      },
+      "led_colour_off": {
+        "name": "Color del LED (apagat)",
+        "state": {
+          "red": "Vermell",
+          "green": "Verd",
+          "white": "Blanc",
+          "blue": "Blau",
+          "violet": "Violeta",
+          "orange": "Taronja",
+          "yellow": "Groc",
+          "cyan": "Cian",
+          "no_color": "Sense color"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "Color del LED (apagat) {key}",
+        "state": {
+          "red": "Vermell",
+          "green": "Verd",
+          "white": "Blanc",
+          "blue": "Blau",
+          "violet": "Violeta",
+          "orange": "Taronja",
+          "yellow": "Groc",
+          "cyan": "Cian",
+          "no_color": "Sense color"
+        }
+      },
+      "led_colour_on": {
+        "name": "Color del LED (encès)",
+        "state": {
+          "red": "Vermell",
+          "green": "Verd",
+          "white": "Blanc",
+          "blue": "Blau",
+          "violet": "Violeta",
+          "orange": "Taronja",
+          "yellow": "Groc",
+          "cyan": "Cian",
+          "no_color": "Sense color"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "Color del LED (encès) {key}",
+        "state": {
+          "red": "Vermell",
+          "green": "Verd",
+          "white": "Blanc",
+          "blue": "Blau",
+          "violet": "Violeta",
+          "orange": "Taronja",
+          "yellow": "Groc",
+          "cyan": "Cian",
+          "no_color": "Sense color"
+        }
+      },
+      "main_page": {
+        "name": "Pantalla local",
+        "state": {
+          "target_temperature": "Temperatura de consigna",
+          "current_temperature": "Temperatura real",
+          "clock": "Hora"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Comportament en tornar la tensió de xarxa",
+        "state": {
+          "no_reaction": "Cap reacció",
+          "move_up": "Pujada fins al 0 %",
+          "move_down": "Baixada fins al 100 %",
+          "stop": "Atura",
+          "move_to_stored_position": "Posició desada",
+          "position_for_network_failure": "Posició per a fallada de xarxa"
+        }
+      },
+      "operation_site": {
+        "name": "Lloc d'ús",
+        "state": {
+          "indoor": "Interior",
+          "outdoor": "Exterior"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Comportament en tornar la tensió",
+        "state": {
+          "off": "Apagat",
+          "on": "Encès",
+          "restore": "Estat anterior"
+        }
+      },
+      "sensor_selection": {
+        "name": "Sensor de temperatura",
+        "state": {
+          "internal": "Habitació",
+          "external": "Terra",
+          "internal_and_external": "Habitació i terra"
+        }
+      },
+      "valve_output": {
+        "name": "Ajust de la vàlvula",
+        "state": {
+          "normally_closed": "NC - normalment tancada",
+          "normally_open": "NO - normalment oberta"
+        }
+      },
+      "lock_function": {
+        "name": "Funció de bloqueig",
+        "state": {
+          "unlocked": "Desbloquejat",
+          "keep_state": "Bloquejat (manté la posició)",
+          "lockout_protection": "Protecció contra tancament a fora",
+          "wind_alarm": "Alarma de vent"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Tots els endolls"
+      },
+      "room_sockets": {
+        "name": "Tots els endolls de {room}"
+      },
+      "automatic_dst": {
+        "name": "Canvi d'hora actiu"
+      },
+      "backlight_auto_off": {
+        "name": "Apaga la pantalla automàticament"
+      },
+      "blinds_invert_output": {
+        "name": "Funcionament invers"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Funcionament diürn"
+      },
+      "dim_to_warm": {
+        "name": "Regulació càlida"
+      },
+      "input_edge_mode": {
+        "name": "Avaluació de flancs"
+      },
+      "input_edge_mode_key": {
+        "name": "Avaluació de flancs {key}"
+      },
+      "invert_output": {
+        "name": "Inverteix la sortida de commutació"
+      },
+      "led_colour_sync": {
+        "name": "Sincronitza els colors del LED"
+      },
+      "led_night_mode": {
+        "name": "Mode nocturn del LED"
+      },
+      "lock": {
+        "name": "Bloqueig",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Mode de bloqueig",
+            "state": {
+              "keep_state": "Manté l'estat actual",
+              "lockout_protection": "Protecció contra tancament a fora",
+              "wind_alarm": "Alarma de vent",
+              "enforced_value": "Estat forçat"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Límit de temps del bloqueig"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Apagada manual durant el temps de funcionament posterior"
+      },
+      "prewarning": {
+        "name": "Avís d'apagada"
+      },
+      "scheduler_enabled": {
+        "name": "Funcionament automàtic"
+      },
+      "status_led": {
+        "name": "LED d'estat"
+      },
+      "status_led_key": {
+        "name": "LED d'estat {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Sensibilitat tàctil reduïda"
+      },
+      "use_last_lightness": {
+        "name": "Utilitza la brillantor anterior"
+      },
+      "sensor_publication": {
+        "name": "Valors dels sensors per a sistemes IoT"
+      },
+      "local_devices_lock": {
+        "name": "Bloqueja el funcionament"
+      },
+      "factory_reset_time_limit": {
+        "name": "Bloqueja el restabliment de fàbrica"
+      },
+      "key_lock": {
+        "name": "Bloqueig de tecles"
+      },
+      "configuration_lock": {
+        "name": "Bloqueja la configuració al dispositiu"
+      },
+      "walking_test": {
+        "name": "Prova de pas"
+      },
+      "time_keeper": {
+        "name": "Rellotge de referència"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Mode de funcionament",
+            "state": {
+              "blinds": "Persianes (amb lamel·les)",
+              "shutter": "Persiana enrotllable",
+              "awning": "Tendal",
+              "unknown": "Desconegut"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Totes les persianes"
+      },
+      "room_blinds": {
+        "name": "Totes les persianes de {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Protecció antigelada"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Tots els termòstats"
+      },
+      "room_thermostats": {
+        "name": "Tots els termòstats de {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Tots els llums"
+      },
+      "room_lights": {
+        "name": "Tots els llums de {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Microprogramari"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Botó A {subtype}",
+      "b": "Botó B {subtype}",
+      "c": "Botó C {subtype}",
+      "d": "Botó D {subtype}",
+      "e1": "Entrada E1 {subtype}",
+      "e2": "Entrada E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "clicat",
+      "double_click": "doble clic",
+      "hold_start": "pulsació mantinguda iniciada",
+      "hold_end": "pulsació mantinguda alliberada",
+      "press_on": "premut encès / amunt",
+      "press_off": "premut apagat / avall",
+      "scene": "ha activat una escena",
+      "dim": "regulant",
+      "click_up": "clicat (meitat superior)",
+      "click_down": "clicat (meitat inferior)",
+      "double_click_up": "doble clic (meitat superior)",
+      "double_click_down": "doble clic (meitat inferior)",
+      "hold_start_up": "pulsació mantinguda iniciada (meitat superior)",
+      "hold_start_down": "pulsació mantinguda iniciada (meitat inferior)",
+      "hold_end_up": "pulsació mantinguda alliberada (meitat superior)",
+      "hold_end_down": "pulsació mantinguda alliberada (meitat inferior)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "No s'ha pogut enviar l'ordre al mesh JUNG; no hi ha cap node proxy connectat."
+    },
+    "no_answer": {
+      "message": "El dispositiu JUNG no ha respost; pot ser que l'ordre s'hagi executat igualment i es torna a comprovar amb la connexió següent."
+    },
+    "device_not_reachable": {
+      "message": "{entity} no ha respost a l'ordre (3 intents en 9 s); pot ser que no s'hagi executat. Si la resta del mesh encara respon, el dispositiu es mostra com a no disponible fins que se'l torni a sentir: comprova que tingui alimentació."
+    },
+    "cannot_load": {
+      "message": "No s'ha pogut llegir l'exportació del mesh {path}."
+    },
+    "no_proxy_visible": {
+      "message": "Encara no es veu per Bluetooth cap node del mesh JUNG."
+    },
+    "export_keys_stale": {
+      "message": "Es veuen per Bluetooth dispositius del mesh JUNG, però cap no anuncia la clau de xarxa de l'exportació: les claus es van renovar després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME i fes-la servir a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant no té cap adaptador ni proxy Bluetooth connectable: no es pot accedir al mesh JUNG."
+    },
+    "duplicate_mesh": {
+      "message": "{others} ja executa aquest mesh JUNG HOME; només es pot carregar una entrada per mesh. Elimina una de les dues entrades."
+    },
+    "seq_store_not_written": {
+      "message": "No s'ha pogut desar el registre de números de seqüència d'una versió anterior al magatzem del mesh (`.storage/junghome_ble.seq.*`); comprova que el directori de configuració es pugui escriure."
+    },
+    "seq_floor_not_written": {
+      "message": "El registre de números de seqüència s'ha restaurat d'una còpia de seguretat, i el seu límit inferior (`.storage/junghome_ble.seq.*.floor`) no s'ha pogut escriure abans de saltar endavant; comprova que el directori de configuració es pugui escriure."
+    },
+    "service_entry_not_loaded": {
+      "message": "La integració del mesh JUNG HOME no està carregada (o s'està tornant a carregar); torna-ho a provar d'aquí a un moment."
+    },
+    "service_not_connected": {
+      "message": "El mesh JUNG HOME no està connectat; torna-ho a provar quan hi hagi un node proxy a l'abast."
+    },
+    "service_entry_ambiguous": {
+      "message": "Hi ha més d'una xarxa mesh JUNG HOME configurada; indica la xarxa mesh (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} no és un dispositiu ni una entitat del mesh JUNG HOME."
+    },
+    "service_not_a_load": {
+      "message": "{name} no és un dispositiu JUNG HOME sobre el qual funcioni aquesta acció."
+    },
+    "service_not_a_key": {
+      "message": "{name} no és una tecla d'un polsador JUNG HOME."
+    },
+    "service_key_required": {
+      "message": "{name} té les tecles {keys}; indica la lletra de la tecla per triar-ne una."
+    },
+    "service_unknown_key": {
+      "message": "{name} no té cap tecla {letter} (té {keys})."
+    },
+    "service_no_loads": {
+      "message": "L'objectiu no indica cap llum ni endoll JUNG HOME."
+    },
+    "service_target_other_network": {
+      "message": "La tecla i el seu objectiu pertanyen a xarxes mesh diferents."
+    },
+    "service_unknown_element": {
+      "message": "L'element {address} no és a l'exportació del mesh."
+    },
+    "service_no_room": {
+      "message": "No hi ha cap habitació anomenada {room} a l'exportació del mesh."
+    },
+    "service_room_exists": {
+      "message": "Ja existeix una habitació anomenada {room}."
+    },
+    "service_room_key_drives_load": {
+      "message": "No s'ha tret de l'habitació {room}: {device} el commuta {button} a través de la vinculació d'aquesta tecla amb l'habitació, i sortir de l'habitació també el desvincula de la tecla. Torna a executar l'acció amb Fins i tot si una tecla el controla, o primer dona una altra funció a la tecla."
+    },
+    "service_invalid_room_name": {
+      "message": "Una habitació necessita un nom."
+    },
+    "service_no_mode": {
+      "message": "Cap mode de tecla no s'adequa a l'element {address}; indica el mode."
+    },
+    "service_invalid_mode": {
+      "message": "El mode {mode} no es pot fer servir amb l'objectiu {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "La tecla {address} no té cap model client per al mode {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Un element objectiu només s'aplica a una tecla vinculada a un dispositiu, no a una habitació ni a una escena."
+    },
+    "service_target_element_missing": {
+      "message": "L'objectiu {target} no té cap element {target_element} que una tecla pugui controlar."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Un temps de bloqueig només s'aplica al mode lock, de 0 a 65535 segons."
+    },
+    "service_lock_unsupported": {
+      "message": "Una tecla no pot bloquejar l'objectiu {target}: des d'una tecla només es pot bloquejar un llum o un endoll."
+    },
+    "service_no_element_group": {
+      "message": "L'element {address} no té cap grup d'elements: l'aplicació JUNG HOME no l'ha vinculat mai. Primer vincula'l una vegada a l'aplicació."
+    },
+    "service_one_target": {
+      "message": "Indica exactament un objectiu: un dispositiu, una entitat, una habitació o una escena."
+    },
+    "service_config_refused": {
+      "message": "El node {node} ha rebutjat {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "El node {node} no ha respost a {message}; està alimentat i a l'abast? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "No s'ha enviat: {nodes} no han respost a l'última sol·licitud de Home Assistant i es consideren inaccessibles (les seves entitats no estan disponibles), així que el pla s'aturaria al seu primer missatge. Comprova que estiguin alimentats i a l'abast, i torna a executar l'acció quan responguin. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "El node {node} funciona amb bateria i no ha respost a {message}: està en repòs. Prem una de les seves tecles per despertar-lo i torna a executar l'acció immediatament. Si tampoc no reacciona a la pulsació d'una tecla, normalment la bateria està esgotada: substitueix-la. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "La tecla {address} no ha acceptat el mode de tecla {mode}; les seves vinculacions s'han configurat i consten a l'exportació del mesh — torna a executar l'acció amb el mateix objectiu per definir el mode."
+    },
+    "service_key_scene_not_applied": {
+      "message": "La tecla {address} no ha acceptat l'escena {scene}; publica les seves activacions d'escena a tots els dispositius i això consta a l'exportació del mesh — torna a executar l'acció amb la mateixa escena per definir-la."
+    },
+    "service_key_lock_not_applied": {
+      "message": "La tecla {address} no ha acceptat la seva funció de bloqueig (propietat {property}); les seves vinculacions s'han configurat i consten a l'exportació del mesh — torna a executar l'acció amb el mateix objectiu per definir-la."
+    },
+    "service_export_newer": {
+      "message": "L'exportació del mesh {path} s'ha canviat fora de Home Assistant (amb l'aplicació JUNG HOME o a mà) després que Home Assistant la carregués. Torna a exportar el projecte des de l'aplicació, substitueix el fitxer (Reconfigura) i torna-ho a provar."
+    },
+    "service_export_load_failed": {
+      "message": "No s'ha pogut llegir l'exportació del mesh {path}: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "No s'ha pogut escriure l'exportació del mesh {path}: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} no pot acceptar aquest valor: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "El termòstat encara no ha informat de la seva temperatura {preset}; torna-ho a provar d'aquí a un moment."
+    },
+    "led_colour_unknown": {
+      "message": "Encara no es coneixen els colors del LED de {entity}; el dispositiu no ha respost a la lectura."
+    },
+    "service_room_name_reserved": {
+      "message": "«{name}» és un nom que el mesh reserva per a grups interns; tria un altre nom d'habitació."
+    },
+    "service_name_blank": {
+      "message": "Un nom no pot estar buit."
+    },
+    "service_name_too_long": {
+      "message": "L'aplicació JUNG HOME no pot canviar el nom a «{name}»: el seu canvi de nom accepta com a màxim {max_length} caràcters."
+    },
+    "service_name_not_allowed": {
+      "message": "L'aplicació JUNG HOME rebutja el nom «{name}»: interpreta un signe % com l'inici d'un marcador de posició (només s'accepten %% i %n)."
+    },
+    "service_room_range_full": {
+      "message": "No queda cap adreça de grup lliure a l'interval de l'aplicació; primer elimina una habitació no utilitzada a l'aplicació JUNG HOME."
+    },
+    "gateway_certificate_changed": {
+      "message": "La passarel·la JUNG HOME a {host} presenta un certificat diferent del registrat (registrat {expected}, presentat {observed}). Si la passarel·la o el seu certificat s'han substituït expressament, reconfigura l'entrada."
+    },
+    "service_ambiguous_scene": {
+      "message": "«{scene}» és alhora un número d'escena i el nom d'una altra escena; canvia el nom d'aquella escena per distingir-les."
+    },
+    "service_unknown_scene": {
+      "message": "No existeix cap escena «{scene}» a l'exportació del mesh; indica el nom de l'escena tal com el mostra l'aplicació JUNG HOME, o el seu número."
+    },
+    "service_scene_exists": {
+      "message": "Ja existeix una escena anomenada «{scene}»."
+    },
+    "service_scene_range_full": {
+      "message": "No queda cap número d'escena lliure a l'interval de l'aplicació; primer elimina una escena no utilitzada."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant dona a les habitacions noves les adreces de grup lliures més altes de l'interval de l'aplicació, perquè les properes habitacions de l'aplicació no rebin les mateixes; només queden {free} adreces lliures per sota de la següent, i l'aplicació aviat hi arribaria. Elimina les habitacions no utilitzades, o activa l'opció d'identitat d'aprovisionador, que dona a Home Assistant un interval propi."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant dona a les escenes noves els números d'escena lliures més alts de l'interval de l'aplicació, perquè les properes escenes de l'aplicació no rebin els mateixos; només queden {free} números lliures per sota del següent, i l'aplicació aviat hi arribaria. Elimina les escenes no utilitzades, o activa l'opció d'identitat d'aprovisionador, que dona a Home Assistant un interval propi."
+    },
+    "add_device_groups_crowded": {
+      "message": "Els grups d'elements del dispositiu nou ocuparien les adreces de grup lliures més altes de l'interval de l'aplicació, però només en queden {free} de lliures per sota, i les properes habitacions de l'aplicació aviat hi arribarien. Elimina les habitacions no utilitzades, o activa l'opció d'identitat d'aprovisionador, que dona a Home Assistant un interval propi."
+    },
+    "service_not_a_scene_element": {
+      "message": "L'element {address} no pot desar escenes (no té Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "El dispositiu {address} no ha desat l'escena {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "El dispositiu {address} no té lloc per a l'escena {scene}: ja en conté {capacity}, incloses les escenes de temporitzador. Primer treu-lo d'una altra escena. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "El dispositiu {address} encara conté l'escena {scene} després de l'eliminació ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "La passarel·la JUNG HOME no ha lliurat la seva exportació, i aquesta acció la necessita: pot ser que a la còpia que conserva Home Assistant li falti el que l'aplicació JUNG HOME ha canviat des d'aleshores. Torna-ho a provar quan la passarel·la respongui (el registre explica per què no ho ha fet)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Aquesta xarxa es va configurar a partir d'un fitxer, al qual poden faltar escenes creades a l'aplicació JUNG HOME després d'exportar-lo; eliminar els números d'escena que el fitxer no coneix eliminaria aquestes escenes de tots els dispositius. Primer fes una simulació i compara els números que mostra amb l'aplicació; després elimina amb «L'exportació del mesh està actualitzada» activat, o indica els números que cal eliminar."
+    },
+    "service_unused_scenes_known": {
+      "message": "Els números d'escena {numbers} són escenes de l'exportació del mesh; elimina-les amb Elimina l'escena."
+    },
+    "service_scene_action_not_applied": {
+      "message": "El dispositiu {address} ha desat l'escena {scene} però no ha acceptat la descripció de l'escena (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "No es coneix l'estat de {address}, així que l'escena {scene} es desaria sense la seva descripció, i treure un altre canal del dispositiu de l'escena també eliminaria aquest. Indica l'estat que cal desar (o commuta el dispositiu una vegada) i torna-ho a provar. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Aquesta xarxa no es va configurar des d'una passarel·la JUNG HOME (l'entrada no té adreça ni testimoni de passarel·la); reconfigura l'entrada des de la passarel·la per sincronitzar-la."
+    },
+    "service_gateway_sync_failed": {
+      "message": "La passarel·la a {host} no ha acceptat l'exportació: {error}."
+    },
+    "service_send_failed": {
+      "message": "S'ha perdut la connexió amb el mesh JUNG mentre s'enviava {message} al node {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "El node {node} és a l'exportació del mesh {path} però no a la xarxa que Home Assistant n'havia carregat abans; torna a carregar la integració (Configuració → Dispositius i serveis → JUNG HOME → Torna a carregar) perquè segueixi l'exportació i torna-ho a provar. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "La passarel·la JUNG HOME a {host} conté una exportació més recent ({gateway}) que el fitxer que Home Assistant carregaria ({file}); carregar-lo esborraria el que l'aplicació JUNG HOME ha canviat des d'aleshores. El següent canvi fet a Home Assistant adopta l'exportació de la passarel·la i hi trasllada els canvis propis de Home Assistant. Si aquest error torna a aparèixer (una entrada sense còpia de l'última càrrega de l'aplicació no els pot distingir), torna a obtenir l'exportació de la passarel·la (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura; el fitxer que substitueix es conserva al costat com a `.pre-reconfigure`) i després repeteix el canvi fet a Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "La passarel·la JUNG HOME a {host} ha respost només amb la base de dades de dispositius sense res més (sense noms de dispositius ni vincles d'habitacions); adoptar-la els esborraria del fitxer que conserva Home Assistant. Torna-ho a provar quan la passarel·la ja no estigui ocupada, o torna a obtenir l'exportació de l'aplicació."
+    },
+    "identify_no_answer": {
+      "message": "El dispositiu JUNG no ha respost a la sol·licitud d'identificació; està alimentat i a l'abast?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} no és una xarxa mesh JUNG HOME; indica el config_entry_id d'una (o omet-lo quan només n'hi ha una de configurada)."
+    },
+    "service_all_not_supported": {
+      "message": "Aquesta acció no accepta entity_id: all; indica els llums, endolls, dispositius, àrees o etiquetes als quals s'aplica."
+    },
+    "edge_detection_unknown": {
+      "message": "Encara no es coneix l'avaluació de flancs de {entity}; l'entrada no ha respost a la lectura."
+    },
+    "reset_consumption_refused": {
+      "message": "L'endoll JUNG no ha restablert el seu comptador {property}; encara informa d'un valor diferent de 0."
+    },
+    "setup_state_unknown": {
+      "message": "Encara no es coneix el paràmetre actual de {entity}; el dispositiu no ha respost a la lectura."
+    },
+    "setting_no_answer": {
+      "message": "El dispositiu JUNG no ha respost ni al canvi de {entity} ni a la relectura; pot ser que hagi acceptat el valor nou igualment. Està alimentat i a l'abast?"
+    },
+    "setting_asleep": {
+      "message": "El dispositiu amb bateria de {entity} no ha respost: està en repòs. Prem una de les seves tecles per despertar-lo i torna a fer el canvi immediatament. Si tampoc no reacciona a la pulsació d'una tecla, normalment la bateria està esgotada: substitueix-la."
+    },
+    "setting_not_applied": {
+      "message": "El dispositiu JUNG no ha acceptat el valor nou de {entity}; encara n'informa d'un altre."
+    },
+    "setting_not_supported": {
+      "message": "El dispositiu JUNG no té el paràmetre de {entity}: ha respost al canvi sense cap valor."
+    },
+    "schedule_no_reply": {
+      "message": "El dispositiu JUNG {address} no ha respost sobre les seves programacions."
+    },
+    "schedule_not_applied": {
+      "message": "El dispositiu JUNG {address} no ha acceptat el canvi de la posició de programació {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Les 16 posicions de programació del dispositiu JUNG {address} estan ocupades; primer elimina'n una."
+    },
+    "schedule_empty_slot": {
+      "message": "La posició de programació {slot} del dispositiu JUNG {address} no conté cap programació."
+    },
+    "schedule_not_supported": {
+      "message": "{name} no executa programacions pròpies."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. La programació ja s'ha escrit a {created}: elimina-la d'allà abans de tornar a fer la crida, o aquests dispositius l'executaran dues vegades."
+    },
+    "schedule_action_not_applicable": {
+      "message": "La programació no s'adequa a {name}: {fields} no s'hi aplica."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "La programació no s'adequa a {name}: un termòstat necessita una temperatura."
+    },
+    "schedule_action_needs_position": {
+      "message": "La programació no s'adequa a {name}: una persiana necessita una posició."
+    },
+    "schedule_action_needs_action": {
+      "message": "La programació no s'adequa a {name}: necessita una acció (encès o apagat)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "La programació no s'adequa a {name}: una brillantor va amb l'acció encès."
+    },
+    "threshold_not_supported": {
+      "message": "{name} no és un endoll JUNG HOME amb mesura i llindars."
+    },
+    "threshold_incomplete": {
+      "message": "{name} no conté cap llindar per canviar (o no ha respost): indica tant la potència com la durada."
+    },
+    "threshold_not_applied": {
+      "message": "L'endoll JUNG {address} no ha acceptat el seu llindar {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "No s'ha pogut enviar el llindar {which} a l'endoll JUNG {address}; no hi ha cap node proxy connectat. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "L'endoll i els dispositius que els seus llindars han de commutar pertanyen a xarxes mesh diferents."
+    },
+    "scene_state_not_applicable": {
+      "message": "L'estat no s'adequa a {name}: {fields} no s'hi aplica."
+    },
+    "scene_state_needs_temperature": {
+      "message": "L'estat no s'adequa a {name}: un termòstat necessita una temperatura."
+    },
+    "scene_state_needs_position": {
+      "message": "L'estat no s'adequa a {name}: una persiana necessita una posició."
+    },
+    "scene_state_needs_action": {
+      "message": "L'estat no s'adequa a {name}: necessita una acció (encès o apagat)."
+    },
+    "scene_state_brightness_off": {
+      "message": "L'estat no s'adequa a {name}: una brillantor va amb l'acció encès."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} no ha informat del nou estat a temps; l'escena no s'ha desat."
+    },
+    "service_gateway_token_rejected": {
+      "message": "La passarel·la JUNG HOME a {host} ja no accepta l'accés de Home Assistant, així que no se li ha lliurat l'exportació. Torna a donar accés mitjançant la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a executar això."
+    },
+    "seq_store_lost": {
+      "message": "S'ha perdut el registre de números de seqüència de l'adreça {unicast}; Home Assistant no reutilitzarà números que el mesh ja ha vist. Obre el problema de reparació per continuar més enllà d'aquests números."
+    },
+    "address_in_use": {
+      "message": "Un node del mesh ocupa l'adreça {unicast} de Home Assistant; reconfigura la integració amb una adreça lliure ({suggestion} ho és)."
+    },
+    "add_device_not_allowed": {
+      "message": "Afegir i eliminar dispositius està desactivat per a aquesta xarxa: primer activa *Permet que Home Assistant afegeixi i elimini dispositius* a les opcions de la integració."
+    },
+    "add_device_not_found": {
+      "message": "Cap dispositiu JUNG nou no s'anuncia a {address}; executa `find_new_devices` i fes servir una adreça que mostri."
+    },
+    "add_device_not_jung": {
+      "message": "El dispositiu a {address} no indica que sigui un dispositiu JUNG."
+    },
+    "add_device_no_template": {
+      "message": "Encara no hi ha cap dispositiu del producte {product} a la xarxa: afegeix el primer amb l'aplicació JUNG HOME, i Home Assistant en copiarà la configuració."
+    },
+    "add_device_no_address": {
+      "message": "No queda cap interval d'adreces lliure per al dispositiu nou fora dels intervals dels aprovisionadors."
+    },
+    "provisioner_identity_failed": {
+      "message": "No s'ha pogut fusionar l'entrada d'aprovisionador de Home Assistant amb l'exportació ({error}); no s'ha canviat res. Consulta el registre."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant no pot tenir intervals d'adreces propis en aquesta xarxa: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "No s'ha pogut connectar amb el dispositiu nou: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Ha fallat la posada en servei del dispositiu nou: {error}. Continua sent nou; torna-ho a provar."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "La posada en servei del dispositiu nou a {unicast} no s'ha confirmat ({error}). Pot ser que hagi rebut les claus de la xarxa, així que Home Assistant el conserva com a pendent: restableix-lo amb l'acció `junghome_ble.reset_pending_device` (unicast {unicast}; afegeix `force` si no respon, com no pot fer-ho un dispositiu que no ha rebut mai les claus) i després torna'l a afegir. Fins aleshores, les seves adreces continuen reservades."
+    },
+    "add_device_vault_unwritable": {
+      "message": "No s'ha pogut desar la clau del dispositiu nou al magatzem segur (vault) de Home Assistant ({error}), així que la posada en servei s'ha aturat abans que el dispositiu rebés res: continua sent nou i no s'hi ha reservat res a {unicast}. Allibera espai o repara l'emmagatzematge i torna-ho a provar."
+    },
+    "add_device_commissioning_failed": {
+      "message": "El dispositiu s'ha posat en servei a {unicast}, però la seva configuració ha fallat al pas {step} ({error}) i no ha confirmat cap restabliment. L'aplicació no el coneix: restableix-lo amb l'acció `junghome_ble.reset_pending_device` (unicast {unicast}) i després torna'l a afegir. Fins aleshores, les seves adreces continuen reservades."
+    },
+    "add_device_record_failed": {
+      "message": "El dispositiu s'ha configurat però no s'ha registrat a {unicast} ({error}). L'aplicació no el coneix: restableix-lo amb l'acció `junghome_ble.reset_pending_device` (unicast {unicast}) i després torna'l a afegir. Fins aleshores, les seves adreces continuen reservades."
+    },
+    "add_device_no_beacon": {
+      "message": "L'índex IV de la xarxa encara no està confirmat a la connexió Bluetooth actual (no hi ha arribat cap balisa de xarxa), i el dispositiu nou en conservaria un d'erroni. Espera la connexió següent a un dispositiu JUNG i torna-ho a provar."
+    },
+    "add_device_key_refresh": {
+      "message": "L'aplicació JUNG HOME està renovant la clau de xarxa (Key Refresh, fase 1): un dispositiu afegit ara rebria la clau que s'està retirant. Acaba la renovació de claus a l'aplicació (Home Assistant la segueix) i torna-ho a provar."
+    },
+    "add_device_name_too_long": {
+      "message": "El nom «{name}» és més llarg del que l'aplicació JUNG HOME accepta per a un dispositiu: {max_length} caràcters com a màxim."
+    },
+    "reset_pending_device_unknown": {
+      "message": "No es coneix com a {device} cap dispositiu que Home Assistant hagi posat en servei sense registrar-lo; el problema de reparació *Un dispositiu afegit per Home Assistant no està registrat* mostra les adreces dels que hi ha."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Ara hi ha un altre dispositiu de la xarxa a {unicast}, així que no s'ha enviat cap restabliment i no s'ha canviat res. Fes servir `force` per oblidar el dispositiu pendent d'aquesta adreça (restableix-lo a mà si encara existeix)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "El dispositiu a {unicast} no ha confirmat el seu restabliment; no s'ha canviat res. Fes servir `force` per a un dispositiu que s'ha restablert a mà o que ha desaparegut definitivament."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "No s'ha pogut enviar el restabliment al dispositiu a {unicast} ({error}); no s'ha canviat res."
+    },
+    "remove_device_gateway": {
+      "message": "La passarel·la no es pot eliminar d'aquesta manera."
+    },
+    "remove_device_mesh": {
+      "message": "Indica un dispositiu JUNG, no la xarxa."
+    },
+    "remove_device_unconfirmed": {
+      "message": "El dispositiu {address} no ha confirmat el seu restabliment i després no s'ha vist anunciant-se com a dispositiu nou. Pot ser que s'hagi restablert igualment (la seva confirmació es pot perdre, i potser no hi ha cap escàner Bluetooth al seu abast), o que no hagi rebut el restabliment; l'exportació del mesh no ha canviat. Torna a executar l'acció, o fes servir `force` si el dispositiu ha desaparegut definitivament."
+    },
+    "remove_device_proxy": {
+      "message": "El dispositiu {address} és el node proxy a través del qual està connectat Home Assistant: el seu restabliment acabaria la connexió per on torna la seva confirmació. Espera que Home Assistant es connecti a través d'un altre dispositiu (el sensor Node proxy), o fes servir `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Encara no es coneix el bloqueig del dispositiu de {entity}; el dispositiu no ha respost a la lectura."
+    },
+    "cover_locked": {
+      "message": "{entity} està bloquejat i ignora les ordres fins que es desbloquegi (el seu interruptor Bloqueig o la seva Funció de bloqueig)."
+    },
+    "cover_wind_alarm": {
+      "message": "Una alarma de vent reté {entity}; ignora les ordres fins que s'acabi l'alarma (la seva Funció de bloqueig o el seu interruptor Bloqueig)."
+    },
+    "load_locked": {
+      "message": "{entity} està bloquejat (a l'aplicació JUNG HOME, per una tecla o pel seu interruptor Bloqueig) i manté el seu estat fins que es desbloquegi."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} no és un regulador JUNG HOME: d'aquesta manera només es poden regular els reguladors i els canals DALI de blanc ajustable."
+    },
+    "locate_no_answer": {
+      "message": "El dispositiu JUNG {node} no ha respost a la sol·licitud d'anunciar la seva identitat; està alimentat i a l'abast? Un dispositiu amb bateria està en repòs i només respon mentre està despert."
+    },
+    "locate_refused": {
+      "message": "El dispositiu JUNG {node} s'ha negat a anunciar la seva identitat: {status}."
+    },
+    "locate_not_supported": {
+      "message": "El dispositiu JUNG {node} no pot anunciar la seva identitat (no admet Node Identity)."
+    },
+    "approve_no_gateway": {
+      "message": "Aquesta xarxa no es va configurar des d'una passarel·la JUNG HOME (l'entrada no té adreça ni testimoni de passarel·la): no hi ha cap passarel·la on aprovar clients."
+    },
+    "approve_gateway_distrusted": {
+      "message": "No s'ha consultat la passarel·la JUNG HOME a {host}: {error}. No s'ha aprovat res."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "La passarel·la JUNG HOME a {host} ja no accepta l'accés de Home Assistant, així que no s'ha aprovat res. Torna a donar accés mitjançant la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a executar això."
+    },
+    "approve_client_not_waiting": {
+      "message": "Cap client de l'API anomenat «{client}» no espera accés a la passarel·la (en espera: {waiting}). No s'ha aprovat res."
+    },
+    "approve_gateway_busy": {
+      "message": "La passarel·la JUNG HOME a {host} està ocupada amb una altra sol·licitud de configuració; torna-ho a provar d'aquí a un minut. No s'ha aprovat res."
+    },
+    "approve_gateway_failed": {
+      "message": "La passarel·la JUNG HOME a {host} no ha fet el que se li ha demanat: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant no actualitza el microprogramari JUNG: actualitza el dispositiu amb l'aplicació JUNG HOME."
+    },
+    "add_device_node_not_configured": {
+      "message": "El dispositiu nou a {unicast} no s'ha pogut configurar al pas {step} ({error}). Home Assistant l'ha restablert, com fa l'aplicació JUNG HOME, i ho ha confirmat: torna a ser un dispositiu nou i no s'hi ha reservat res. Així es rebutja un dispositiu que no és el producte o el mecanisme que anuncia; en cas contrari, torna'l a afegir."
+    },
+    "add_device_provisioning_reset": {
+      "message": "La posada en servei del dispositiu nou a {unicast} no s'ha confirmat ({error}). Home Assistant l'ha restablert, i ho ha confirmat: torna a ser un dispositiu nou i no s'hi ha reservat res. Torna-ho a provar."
+    },
+    "time_keeper_role_failed": {
+      "message": "El dispositiu a {address} no ha acceptat la seva funció horària ({error}). La publicació del seu Time Server ja s'ha canviat: torna a commutar el rellotge de referència quan el dispositiu respongui."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} el commuta el termòstat d'ambient {thermostats} (vinculat a l'aplicació JUNG HOME) i no es commuta a mà, com a l'aplicació."
+    },
+    "load_forced_short": {
+      "message": "El detector de {entity} el manté encès o apagat (encès / apagat permanent): mou l'interruptor del detector per al funcionament automàtic a la posició central per acabar-ho."
+    },
+    "load_forced_on_button": {
+      "message": "El detector de {entity} el manté encès (encès permanent): prem el botó ON del detector per acabar-ho."
+    },
+    "load_forced_off_button": {
+      "message": "El detector de {entity} el manté apagat (apagat permanent): prem el botó OFF del detector per acabar-ho."
+    },
+    "load_forced_on_presence": {
+      "message": "El detector de {entity} el manté encès (encès permanent): el botó de programació del detector ho acaba."
+    },
+    "load_forced_off_presence": {
+      "message": "El detector de {entity} el manté apagat (apagat permanent): el botó de programació del detector ho acaba."
+    },
+    "cover_slats_open": {
+      "message": "{entity} està completament oberta: les seves lamel·les no es poden moure fins que es baixi, com a l'aplicació JUNG HOME."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} està en mode boost: tria un altre mode predefinit per acabar el boost abans de definir una temperatura, com a l'aplicació JUNG HOME."
+    },
+    "service_detector_device_only": {
+      "message": "El detector {address} només pot controlar un dispositiu: indica com a objectiu un llum, un endoll o un dispositiu, no una habitació ni una escena."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "El detector {address} no pot controlar un objectiu en mode {mode}: un detector no té mode de tecla, així que només commuta un llum, un endoll o una persiana en el mode que dona l'objectiu, sense funció de bloqueig, termòstat d'ambient, passarel·la ni element objectiu."
+    },
+    "gateway_fetch_refused": {
+      "message": "No s'ha obtingut l'exportació de la passarel·la JUNG HOME a {host}: {error}. No ha canviat res; els avisos de reparació indiquen què cal fer."
+    },
+    "service_unknown_area": {
+      "message": "No hi ha cap àrea amb l'ID {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} no és una escena d'una xarxa JUNG HOME."
+    },
+    "remove_device_needs_confirm": {
+      "message": "L'eliminació d'un dispositiu no es pot desfer: afegeix \"confirm: true\" a la crida per dur-la a terme (o \"dry_run: true\" per veure què faria)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Eliminar una escena fins i tot si un dispositiu no respon fa que aquest dispositiu la conservi: afegeix \"confirm: true\" a la crida per dur-ho a terme (o \"dry_run: true\" per veure què faria)."
+    },
+    "plan_key_device": {
+      "message": "{key} ara controla {target}; {messages} missatges"
+    },
+    "plan_key_room": {
+      "message": "{key} ara controla l'habitació {room}; {messages} missatges"
+    },
+    "plan_key_scene": {
+      "message": "{key} ara activa l'escena {scene}; {messages} missatges"
+    },
+    "plan_key_cleared": {
+      "message": "{key} ara no té cap funció; {messages} missatges"
+    },
+    "plan_room_joined": {
+      "message": "{devices} ara a l'habitació {room}; {messages} missatges"
+    },
+    "plan_room_left": {
+      "message": "{devices} tret(s) de l'habitació {room}; {messages} missatges"
+    },
+    "plan_room_deleted": {
+      "message": "Habitació {room} eliminada; {messages} missatges"
+    },
+    "plan_device_removed": {
+      "message": "{device} eliminat de la xarxa; {messages} missatges als altres dispositius"
+    },
+    "plan_scene_deleted": {
+      "message": "Escena {scene} eliminada; {messages} missatges"
+    },
+    "plan_finished": {
+      "message": "Acció {action} acabada; {messages} missatges"
+    },
+    "plan_stopped": {
+      "message": "Acció {action} aturada després de {applied} de {total} missatges: {error}"
+    },
+    "plan_cancelled": {
+      "message": "L'acció {action} s'ha cancel·lat després de {applied} de {total} missatges; l'exportació del mesh registra el que s'ha aplicat"
+    },
+    "logbook_scene_from_key": {
+      "message": "ha activat l'escena {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "no s'ha detectat l'alliberament a temps"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "enllaç perdut"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integració aturada"
+    },
+    "logbook_scene_number": {
+      "message": "Escena {scene}"
+    },
+    "logbook_scene": {
+      "message": "Escena"
+    },
+    "logbook_recalled": {
+      "message": "s'ha activat"
+    },
+    "logbook_recalled_by": {
+      "message": "l'ha activat {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Falten dispositius JUNG HOME a l'exportació",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Torna a obtenir l'exportació de la passarel·la",
+            "description": "{count} dispositiu(s) del mesh JUNG HOME {title} s'anuncien per Bluetooth però no són a l'exportació que Home Assistant ha carregat: {devices}. Es van afegir a la instal·lació (o es van tornar a posar en servei) després de fer aquesta exportació, de manera que Home Assistant no té entitats per a ells. Confirma per obtenir l'exportació actual de la passarel·la JUNG HOME a {host} amb l'accés que Home Assistant ja té, comprovar-la i tornar a configurar la integració a partir d'ella, com fa Reconfigura → Torna a obtenir-la de la passarel·la; l'exportació que substitueix es conserva com a còpia (`.pre-reconfigure`). El problema desapareix quan l'exportació nova els inclou. No verificat en dispositius reals."
+          },
+          "upload": {
+            "title": "Carrega una exportació nova",
+            "description": "{count} dispositiu(s) del mesh JUNG HOME {title} s'anuncien per Bluetooth però no són a l'exportació que Home Assistant ha carregat: {devices}. Es van afegir a la instal·lació (o es van tornar a posar en servei) després de fer aquesta exportació, de manera que Home Assistant no té entitats per a ells. Exporta la xarxa des de l'aplicació JUNG HOME (Projecte → Comparteix mitjançant fitxer) i carrega el fitxer aquí: Home Assistant el comprova, el desa a `junghome_ble/` dins del seu directori de configuració (conté totes les claus del mesh) i torna a configurar la integració a partir d'ell; l'exportació que substitueix es conserva com a còpia. Una entrada que llegia l'exportació d'un camí de l'amfitrió fa servir a partir d'aleshores la còpia carregada — per mantenir el camí, copia-hi el fitxer nou i fes servir Reconfigura. El problema desapareix quan l'exportació nova els inclou. No verificat en dispositius reals.",
+            "data": {
+              "export_file": "Fitxer d'exportació del mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+          "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+          "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+          "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+          "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+          "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+          "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+          "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0.",
+          "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+          "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+          "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "not_a_directory": "El camí de les metadades no és un directori.",
+          "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+          "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+          "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
+          "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+          "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Falten dispositius JUNG HOME a l'exportació",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Torna a obtenir l'exportació de la passarel·la",
+            "description": "{count} dispositiu(s) del mesh JUNG HOME {title} s'anuncien per Bluetooth però no són a l'exportació que Home Assistant ha carregat: {devices}. Es van afegir a la instal·lació (o es van tornar a posar en servei) després de fer aquesta exportació, de manera que Home Assistant no té entitats per a ells encara. Home Assistant demana a la passarel·la la seva exportació actual i l'adopta per si mateix quan els inclou. Confirma per obtenir l'exportació actual de la passarel·la JUNG HOME a {host} amb l'accés que Home Assistant ja té, comprovar-la i tornar a configurar la integració a partir d'ella, com fa Reconfigura → Torna a obtenir-la de la passarel·la; l'exportació que substitueix es conserva com a còpia (`.pre-reconfigure`). Si el problema continua, l'exportació de la passarel·la tampoc no els coneix: obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el seu projecte) i torna a reparar-lo. No verificat en dispositius reals."
+          },
+          "upload": {
+            "title": "Carrega una exportació nova",
+            "description": "{count} dispositiu(s) del mesh JUNG HOME {title} s'anuncien per Bluetooth però no són a l'exportació que Home Assistant ha carregat: {devices}. Es van afegir a la instal·lació (o es van tornar a posar en servei) després de fer aquesta exportació, de manera que Home Assistant no té entitats per a ells encara. Home Assistant demana a la passarel·la la seva exportació actual i l'adopta per si mateix quan els inclou. Exporta la xarxa des de l'aplicació JUNG HOME (Projecte → Comparteix mitjançant fitxer) i carrega el fitxer aquí: Home Assistant el comprova, el desa a `junghome_ble/` dins del seu directori de configuració (conté totes les claus del mesh) i torna a configurar la integració a partir d'ell; l'exportació que substitueix es conserva com a còpia. Una entrada que llegia l'exportació d'un camí de l'amfitrió fa servir a partir d'aleshores la còpia carregada — per mantenir el camí, copia-hi el fitxer nou i fes servir Reconfigura. Si el problema continua, l'exportació de la passarel·la tampoc no els coneix: obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el seu projecte) i torna a reparar-lo. No verificat en dispositius reals.",
+            "data": {
+              "export_file": "Fitxer d'exportació del mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+          "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+          "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+          "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+          "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+          "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+          "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+          "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0.",
+          "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+          "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+          "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "not_a_directory": "El camí de les metadades no és un directori.",
+          "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+          "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+          "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
+          "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+          "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "L'aplicació JUNG HOME ha canviat la instal·lació",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Torna a obtenir l'exportació de la passarel·la",
+            "description": "S'ha vist l'aplicació JUNG HOME canviant la configuració d'un dispositiu del mesh {title} (una vinculació de tecla, una habitació, una escena o un paràmetre d'un dispositiu), així que pot ser que l'exportació que ha carregat Home Assistant ja no coincideixi amb la instal·lació: el que s'ha canviat a l'aplicació encara no és a Home Assistant. Confirma per obtenir l'exportació actual de la passarel·la JUNG HOME a {host} amb l'accés que Home Assistant ja té, comprovar-la i tornar a configurar la integració a partir d'ella, com fa Reconfigura → Torna a obtenir-la de la passarel·la; l'exportació que substitueix es conserva com a còpia (`.pre-reconfigure`). No verificat en dispositius reals."
+          },
+          "upload": {
+            "title": "Carrega una exportació nova",
+            "description": "S'ha vist l'aplicació JUNG HOME canviant la configuració d'un dispositiu del mesh {title} (una vinculació de tecla, una habitació, una escena o un paràmetre d'un dispositiu), així que pot ser que l'exportació que ha carregat Home Assistant ja no coincideixi amb la instal·lació: el que s'ha canviat a l'aplicació encara no és a Home Assistant. Quan acabis a l'aplicació, exporta-hi la xarxa (Projecte → Comparteix mitjançant fitxer) i carrega el fitxer aquí: Home Assistant el comprova, el desa a `junghome_ble/` dins del seu directori de configuració (conté totes les claus del mesh) i torna a configurar la integració a partir d'ell; l'exportació que substitueix es conserva com a còpia. Una entrada que llegia l'exportació d'un camí de l'amfitrió fa servir a partir d'aleshores la còpia carregada — per mantenir el camí, copia-hi el fitxer nou i fes servir Reconfigura, que també fa desaparèixer aquest avís. No verificat en dispositius reals.",
+            "data": {
+              "export_file": "Fitxer d'exportació del mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+          "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+          "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+          "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+          "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+          "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+          "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+          "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0.",
+          "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+          "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+          "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "not_a_directory": "El camí de les metadades no és un directori.",
+          "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+          "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+          "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
+          "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+          "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Polsadors JUNG HOME amb un mecanisme diferent del de l'exportació",
+      "description": "{devices}: aquests polsadors del mesh JUNG HOME {title} anuncien un mecanisme diferent del de l'exportació que ha carregat Home Assistant (exportació → dispositiu). El mecanisme es va substituir després de fer aquesta exportació, així que pot ser que Home Assistant i l'aplicació hi mostrin un tipus de càrrega erroni. Comprova els dispositius a l'aplicació JUNG HOME, torna a exportar la xarxa i actualitza aquesta integració (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura); el problema desapareix quan l'exportació indica els mecanismes que anuncien els dispositius. No verificat en dispositius reals."
+    },
+    "node_clock_wrong": {
+      "title": "Dispositius JUNG HOME amb el rellotge incorrecte",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Envia l'hora ara",
+            "description": "{devices}: aquests dispositius del mesh JUNG HOME {title} poden executar programacions (commutació horària o a la sortida / posta de sol) i el seu rellotge és incorrecte: no tenen hora, van més d'un minut desfasats respecte a Home Assistant o tenen una diferència de zona horària diferent de la que els va enviar Home Assistant. Les seves programacions s'executen a l'hora equivocada fins que tornin a rebre l'hora. Home Assistant l'envia després de cada connexió i una vegada al dia; confirma per enviar-la ara i tornar a consultar aquests dispositius. El problema desapareix quan responen amb l'hora correcta. Si torna a aparèixer, comprova la zona horària de Home Assistant (Configuració → Sistema → General) i que els dispositius siguin accessibles. No verificat en dispositius reals."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "not_connected": "Ara mateix Home Assistant no té connexió amb el mesh. Torna-ho a provar quan estigui connectat."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Les claus del mesh JUNG HOME estan canviant",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Torna a obtenir l'exportació de la passarel·la",
+            "description": "El mesh {title} ha anunciat un Key Refresh del qual Home Assistant no ha sentit el lliurament de la nova clau de xarxa (un Key Refresh que veu des del principi se segueix i no genera res). Quan acabi, les claus de l'exportació que fa servir Home Assistant ja no seran vàlides i el control s'aturarà. Primer deixa que la renovació de claus acabi a l'aplicació JUNG HOME. Confirma per obtenir l'exportació actual de la passarel·la JUNG HOME a {host} amb l'accés que Home Assistant ja té, comprovar-la i tornar a configurar la integració a partir d'ella, com fa Reconfigura → Torna a obtenir-la de la passarel·la; l'exportació que substitueix es conserva com a còpia (`.pre-reconfigure`). No verificat en dispositius reals."
+          },
+          "upload": {
+            "title": "Carrega una exportació nova",
+            "description": "El mesh {title} ha anunciat un Key Refresh del qual Home Assistant no ha sentit el lliurament de la nova clau de xarxa (un Key Refresh que veu des del principi se segueix i no genera res). Quan acabi, les claus de l'exportació que fa servir Home Assistant ja no seran vàlides i el control s'aturarà. Primer deixa que la renovació de claus acabi a l'aplicació JUNG HOME. Exporta la xarxa des de l'aplicació JUNG HOME (Projecte → Comparteix mitjançant fitxer) i carrega el fitxer aquí: Home Assistant el comprova, el desa a `junghome_ble/` dins del seu directori de configuració (conté totes les claus del mesh) i torna a configurar la integració a partir d'ell; l'exportació que substitueix es conserva com a còpia. Una entrada que llegia l'exportació d'un camí de l'amfitrió fa servir a partir d'aleshores la còpia carregada — per mantenir el camí, copia-hi el fitxer nou i fes servir Reconfigura. No verificat en dispositius reals.",
+            "data": {
+              "export_file": "Fitxer d'exportació del mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+          "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+          "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+          "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+          "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+          "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+          "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+          "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0.",
+          "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+          "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+          "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "not_a_directory": "El camí de les metadades no és un directori.",
+          "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+          "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+          "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
+          "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+          "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "Els dispositius JUNG HOME ignoren Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Salta més enllà dels números que coneixen els dispositius",
+            "description": "Home Assistant sent el mesh JUNG HOME {title} a través del seu node proxy, però cap dispositiu no ha respost a les seves consultes d'estat. Els nodes descarten els missatges de Home Assistant com a repeticions. Hi ha dues causes probables: el magatzem de números de seqüència d'aquesta integració (`.storage/junghome_ble.*`) s'ha perdut o s'ha restaurat d'una còpia de seguretat més antiga, de manera que Home Assistant envia ara números de seqüència que els nodes ja han vist; o un altre client mesh (per exemple l'eina `mesh_poc.py`) transmet amb la mateixa adreça unicast {unicast}. O bé dona a Home Assistant una adreça nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast, i assegura't que cap altre client no la faci servir) o bé, si el magatzem s'ha perdut o restaurat (i cap altre client no fa servir l'adreça), confirma per deixar que Home Assistant avanci els seus números de seqüència 1 048 576 posicions i es torni a connectar. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho: una còpia més antiga només repeteix números que els dispositius ja han vist. El problema desapareix tot sol tan bon punt un dispositiu torna a respondre a Home Assistant."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Un altre client fa servir l'adreça JUNG HOME de Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Salta més enllà dels números de seqüència de l'altre client",
+            "description": "Home Assistant ha rebut un missatge del mesh JUNG HOME {title} enviat des de la seva pròpia adreça unicast {unicast} amb un número de seqüència que no ha fet servir mai: un altre client mesh transmet amb la mateixa adreça — una segona instal·lació de Home Assistant, l'eina `mesh_poc.py` configurada amb aquesta adreça o una còpia d'aquesta instal·lació iniciada en un altre lloc. Dos emissors en una mateixa adreça reutilitzen els números de seqüència l'un de l'altre, i els dispositius descarten tot el que queda per sota dels de l'altre client, així que Home Assistant no envia res al mesh fins que es repari (les ordres fallen i els estats no s'actualitzen). Atura l'altre client, o dona-li a ell o a Home Assistant una altra adreça que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast). Després confirma per deixar que Home Assistant continuï els seus números de seqüència més enllà d'aquells amb què s'ha vist l'altre client i torni a enviar. Si l'altre client continua enviant des d'aquesta adreça, el problema torna a aparèixer. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Un altre client encara fa servir l'adreça JUNG HOME de Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Torna a saltar més enllà dels números de seqüència de l'altre client",
+            "description": "Home Assistant ha saltat més enllà dels números de seqüència d'un altre client mesh a la seva adreça {unicast} al mesh JUNG HOME {title}, i des d'aleshores l'altre client ha tornat a enviar des d'aquesta adreça: encara està en funcionament. Mentre ho estigui, saltar endavant no serveix de res. Dona a Home Assistant una adreça unicast nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast), o atura l'altre client o mou-lo a una altra adreça. Fins aleshores, Home Assistant no envia res al mesh. Confirma només quan l'altre client ja no faci servir aquesta adreça: Home Assistant tornarà a continuar més enllà dels seus números i reprendrà l'enviament. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "No hi ha Bluetooth per al mesh JUNG HOME",
+      "description": "El mesh JUNG HOME {title} s'accedeix per Bluetooth, però a Home Assistant no li queda cap adaptador ni proxy Bluetooth connectable: l'adaptador està apagat, desconnectat o ha fallat, o tots els proxies Bluetooth d'ESPHome amb connexions actives estan fora de línia. Tots els dispositius del mesh estan no disponibles fins que en torni a haver un. Comprova Configuració → Dispositius i serveis → Bluetooth. El problema desapareix tan bon punt torna a haver-hi un adaptador o un proxy Bluetooth disponible."
+    },
+    "duplicate_mesh": {
+      "title": "Dues entrades cobreixen el mateix mesh JUNG HOME",
+      "description": "{title} i {others} estan configurades per al mateix mesh JUNG HOME. Comparteixen els seus comptadors de números de seqüència (`.storage/junghome_ble.seq.*`), així que només se'n pot executar una: {others} s'està executant i {title} no s'ha iniciat. Elimina una d'aquestes entrades (Configuració → Dispositius i serveis); si elimines {others}, després torna a carregar {title}."
+    },
+    "gateway_import": {
+      "title": "Traspassa les entitats de la integració JUNG HOME Gateway",
+      "description": "La integració JUNG HOME Gateway està configurada al costat de la integració Bluetooth Mesh {title}, així que cada llum, endoll, tecla i escena existeix dues vegades. Mou aquí les entitats de la passarel·la — conserven els seus ID d'entitat, noms, àrees i historial — a Configuració → Dispositius i serveis → JUNG HOME (Bluetooth Mesh) → Reconfigura → Importa les entitats de la integració JUNG HOME Gateway, i després elimina l'entrada de la passarel·la. Ignora aquest problema si vols conservar totes dues."
+    },
+    "export_stale": {
+      "title": "Les claus del mesh JUNG HOME han canviat",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Torna a obtenir l'exportació de la passarel·la",
+            "description": "Home Assistant està connectat a un node del mesh JUNG HOME {title}, però no pot desxifrar res del que sent amb les claus de l'exportació: tots els missatges de xarxa i la balisa (beacon) del node fallen l'autenticació. El mesh ha completat un Key Refresh (una «renovació de claus» a l'aplicació JUNG HOME) després de fer aquesta exportació, de manera que el fitxer està desactualitzat. Confirma per obtenir l'exportació actual de la passarel·la JUNG HOME a {host} amb l'accés que Home Assistant ja té, comprovar-la i tornar a configurar la integració a partir d'ella, com fa Reconfigura → Torna a obtenir-la de la passarel·la; l'exportació que substitueix es conserva com a còpia (`.pre-reconfigure`). El problema desapareix tan bon punt es torna a desxifrar un missatge. No verificat en dispositius reals."
+          },
+          "upload": {
+            "title": "Carrega una exportació nova",
+            "description": "Home Assistant està connectat a un node del mesh JUNG HOME {title}, però no pot desxifrar res del que sent amb les claus de l'exportació: tots els missatges de xarxa i la balisa (beacon) del node fallen l'autenticació. El mesh ha completat un Key Refresh (una «renovació de claus» a l'aplicació JUNG HOME) després de fer aquesta exportació, de manera que el fitxer està desactualitzat. Exporta la xarxa des de l'aplicació JUNG HOME (Projecte → Comparteix mitjançant fitxer) i carrega el fitxer aquí: Home Assistant el comprova, el desa a `junghome_ble/` dins del seu directori de configuració (conté totes les claus del mesh) i torna a configurar la integració a partir d'ell; l'exportació que substitueix es conserva com a còpia. Una entrada que llegia l'exportació d'un camí de l'amfitrió fa servir a partir d'aleshores la còpia carregada — per mantenir el camí, copia-hi el fitxer nou i fes servir Reconfigura. El problema desapareix tan bon punt es torna a desxifrar un missatge. No verificat en dispositius reals.",
+            "data": {
+              "export_file": "Fitxer d'exportació del mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` de l'aplicació (Comparteix mitjançant fitxer) o `MeshNetwork.json` d'una còpia de seguretat d'iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
+          "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
+          "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
+          "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
+          "gateway_error": "La passarel·la ha respost amb un error. Comprova'n l'estat a l'aplicació JUNG HOME i torna-ho a provar.",
+          "gateway_busy": "La passarel·la està ocupada amb una altra sol·licitud de configuració. Torna-ho a provar d'aquí a un minut.",
+          "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
+          "invalid_export": "El fitxer no és una exportació del mesh JUNG HOME (o està malmès): ha de contenir la xarxa amb les seves claus, els nodes i una clau de xarxa a l'índex 0.",
+          "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
+          "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
+          "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "not_a_directory": "El camí de les metadades no és un directori.",
+          "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
+          "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
+          "upload_failed": "No s'ha pogut processar el fitxer carregat. Prova de tornar-lo a carregar."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
+          "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
+          "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "El certificat de la passarel·la JUNG HOME ha canviat",
+      "description": "La passarel·la JUNG HOME a {host} ja no coincideix amb el certificat TLS que Home Assistant hi va fixar: l'amfitrió presenta un altre certificat, o el node de la passarel·la n'informa d'un altre pel mesh. Home Assistant ha deixat de fer servir la passarel·la (no s'hi envia cap testimoni d'accés ni cap exportació); els dispositius continuen funcionant per Bluetooth. Si has substituït la passarel·la o el seu certificat, obre Configuració → Dispositius i serveis → JUNG HOME → Reconfigura i torna a obtenir l'exportació de la passarel·la; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la — comprova la teva xarxa."
+    },
+    "gateway_sync_failed": {
+      "title": "L'exportació JUNG HOME no s'ha lliurat a la passarel·la",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Lliura l'exportació a la passarel·la",
+            "description": "Home Assistant ha canviat la instal·lació JUNG HOME (una habitació, una vinculació de tecla o una escena) i ha reescrit la seva exportació del mesh, però la passarel·la JUNG HOME a {host} no ha acceptat l'exportació nova: {error}. Fins que ho faci, la passarel·la i l'aplicació mostren l'estat antic — i el següent canvi de l'aplicació sobreescriuria el de Home Assistant. Home Assistant ho torna a provar dues vegades, amb 15 segons d'interval, com fa l'aplicació. Comprova que la passarel·la sigui accessible i després confirma per lliurar-li l'exportació ara, com fa l'acció Sincronitza la passarel·la (`junghome_ble.sync_gateway`): es nega a fer-ho quan la passarel·la conté canvis que Home Assistant no ha vist, que la càrrega esborraria. El problema desapareix quan una càrrega té èxit. No verificat en dispositius reals."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "not_loaded": "L'entrada JUNG HOME a la qual pertany aquest problema no s'està executant ara mateix. Torna-ho a provar quan estigui configurada.",
+          "sync_failed": "L'exportació no s'ha lliurat a la passarel·la: {error} El problema continua; torna a reparar-lo quan la causa hagi desaparegut."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "S'ha interromput un canvi JUNG HOME a {title}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "S'ha interromput un canvi JUNG HOME",
+            "description": "Home Assistant s'ha aturat enmig de {action}: {accepted} dels seus {total} missatges de configuració havien arribat als dispositius. Ara aquests consten a l'exportació del mesh, de manera que l'exportació diu el que tenen els dispositius. Torna a executar l'acció amb el mateix objectiu per acabar-la. Amb una passarel·la JUNG HOME, l'exportació registrada se li lliura amb el canvi següent o amb l'acció `junghome_ble.sync_gateway`. Confirma per descartar aquest avís."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "El nom del dispositiu no s'ha transmès a l'aplicació JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Canvia el nom del dispositiu",
+            "description": "{device} s'ha reanomenat a Home Assistant com a «{name}», un nom que l'aplicació JUNG HOME rebutja: un nom no pot estar buit ni tenir més de 30 caràcters, i l'aplicació interpreta un signe % com l'inici d'un marcador de posició (només s'accepten %% i %n). L'exportació del mesh i l'aplicació conserven el nom antic del dispositiu. Introdueix un nom que l'aplicació accepti: Home Assistant hi anomena el dispositiu i el transmet a l'exportació (i, amb una passarel·la, a l'aplicació) com qualsevol canvi de nom. El problema desapareix quan el nom s'ha transmès. No verificat en dispositius reals.",
+            "data": {
+              "name": "Nom"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Un nom no pot estar buit.",
+          "name_not_allowed": "L'aplicació interpreta un signe % com l'inici d'un marcador de posició: només s'accepten %% i %n.",
+          "name_too_long": "L'aplicació accepta noms de 30 caràcters com a màxim."
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "not_loaded": "L'entrada JUNG HOME a la qual pertany aquest problema no s'està executant ara mateix. Torna-ho a provar quan estigui configurada.",
+          "device_gone": "El dispositiu que esmenta aquest problema ja no és a Home Assistant."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Dispositius afegits per Home Assistant no han rebut la nova clau de xarxa",
+      "description": "L'aplicació JUNG HOME ha renovat la clau de xarxa del mesh {title}, i Home Assistant ha seguit la renovació fins al final. L'aplicació no coneix els dispositius que ha afegit Home Assistant, així que Home Assistant els lliura la clau nova ell mateix, però el dispositiu o els dispositius a {addresses} no l'han confirmada. Assegura't que estiguin alimentats i a l'abast: Home Assistant ho torna a provar amb cada connexió Bluetooth nova. Un dispositiu que no ha rebut mai la clau nova ja no es pot contactar: fes-li un restabliment de fàbrica i torna'l a afegir (primer elimina'l de Home Assistant amb `junghome_ble.remove_device` o `junghome_ble.reset_pending_device`, amb `force`). Encara no s'ha provat en un dispositiu real. El problema desapareix quan tots aquests dispositius ho han confirmat."
+    },
+    "pending_device": {
+      "title": "Un dispositiu afegit per Home Assistant no està registrat",
+      "description": "Home Assistant ha posat en servei un dispositiu JUNG del mesh {title} amb `junghome_ble.add_device`, però la seva configuració o el seu registre a l'exportació ha fallat: el dispositiu a {addresses} té les claus de la xarxa, l'aplicació JUNG HOME i l'exportació no el coneixen, i les seves adreces i grups d'elements continuen reservats perquè cap altre dispositiu no els rebi. Restableix-lo amb l'acció `junghome_ble.reset_pending_device` (la seva adreça unicast) i torna'l a afegir; per a un dispositiu que ja has restablert a mà, o un que ja no hi és, fes servir `force`. Encara no s'ha provat en un dispositiu real. El problema desapareix quan no en queda cap."
+    },
+    "vault_unwritable": {
+      "title": "No es poden desar les claus dels dispositius JUNG HOME",
+      "description": "Home Assistant no ha pogut escriure el seu magatzem segur (vault) del mesh {title} ({path}; últim error: {error}) mentre afegia el dispositiu a {address}. El magatzem conté les claus dels dispositius que afegeix Home Assistant, que ningú més no té fins que l'exportació les registra, així que el dispositiu no s'ha posat en servei: no ha rebut res i continua sent nou. Normalment això vol dir que el disc és ple o que el seu sistema de fitxers s'ha tornat a muntar només de lectura, sovint per una targeta SD que falla. Allibera espai o repara l'emmagatzematge (un sistema de fitxers muntat de nou només de lectura sol requerir reiniciar l'amfitrió) i després torna a afegir el dispositiu; no editis, eliminis ni substitueixis els fitxers del magatzem. Encara no s'ha provat en un dispositiu real. El problema desapareix tot sol tan bon punt una escriptura del magatzem té èxit."
+    },
+    "carry_over_conflict": {
+      "title": "L'aplicació JUNG HOME ha sobreescrit un canvi que Home Assistant va fer a {title}",
+      "description": "Home Assistant ha adoptat l'exportació que l'aplicació JUNG HOME va lliurar per última vegada a la passarel·la i hi ha traslladat els seus propis canvis, però mentrestant l'aplicació havia canviat les mateixes entrades. Es conserva la versió de l'aplicació per a: {paths}. Pot ser que els dispositius encara tinguin el que havia escrit Home Assistant: {held}. Comprova aquestes habitacions, escenes i vinculacions a l'aplicació i a Home Assistant, i torna-les a definir des d'un sol costat. L'aplicació no veu el que afegeix Home Assistant fins que importa un fitxer. El problema desapareix amb la següent adopció de l'exportació de la passarel·la que no tingui cap conflicte d'aquest tipus."
+    },
+    "scene_held": {
+      "title": "Hi ha dispositius que encara tenen una escena JUNG HOME eliminada a {title}",
+      "description": "S'ha eliminat una escena amb «Fins i tot si un dispositiu no respon» mentre alguns dels seus dispositius no es podien contactar o s'hi negaven; encara la tenen i l'activen amb qualsevol escena d'aquest número. Número d'escena: dispositius — {members}. Home Assistant no dona aquests números a cap escena nova. Quan els dispositius tornin a ser accessibles, executa l'acció Elimina les escenes no utilitzades amb «Simulació» desactivat: n'elimina aquests números i el problema desapareix."
+    },
+    "gateway_token_rejected": {
+      "title": "La passarel·la JUNG HOME ja no accepta Home Assistant",
+      "description": "La passarel·la JUNG HOME a {host} rebutja l'accés que Home Assistant va registrar per al mesh {title} (probablement es va eliminar a l'aplicació JUNG HOME a Configuració → Passarel·la → Permisos d'accés). Home Assistant continua canviant habitacions, vinculacions de tecla i escenes a la seva pròpia exportació, però ja no la lliura a la passarel·la, de manera que l'aplicació no veu aquests canvis; els dispositius continuen funcionant. Home Assistant torna a demanar accés: segueix la seva sol·licitud per tornar a autenticar JUNG HOME (Configuració → Dispositius i serveis; Reparacions també la mostra com a autenticació caducada) i introdueix la contrasenya de la clau de xarxa de la passarel·la o aprova la nova sol·licitud d'accés a l'aplicació. El problema desapareix quan la passarel·la torna a acceptar Home Assistant; llavors l'acció Sincronitza la passarel·la lliura els canvis fets des d'aleshores."
+    },
+    "seq_store_lost": {
+      "title": "S'han perdut els números de seqüència del mesh JUNG HOME {title}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Continua més enllà dels números ja enviats",
+            "description": "El magatzem de números de seqüència d'aquesta integració (`.storage/junghome_ble.seq.*`) no conté cap registre utilitzable per a l'adreça {unicast} de Home Assistant, tot i que aquesta adreça ja ha enviat abans. Tornar a començar a 0 reutilitzaria números de seqüència que els dispositius ja han vist: ignorarien Home Assistant, i cada número reutilitzat debilita el xifratge del mesh. Restaurar el magatzem d'una còpia de seguretat fa el mateix — una còpia més antiga repeteix tots els números enviats des que es va fer —, així que no restauris els fitxers `junghome_ble.seq.*`. Confirma per deixar que Home Assistant continuï 1 048 576 números més enllà de l'últim valor que encara pot llegir (4 194 304 més enllà del límit inferior que manté al dia amb el comptador a `junghome_ble.seq.*.floor`, o més enllà de 0, quan no en queda cap) i torni a configurar la integració."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "floor_not_written": "No s'ha pogut escriure el límit inferior dels números de seqüència (`.storage/junghome_ble.seq.*.floor`): no s'ha canviat res i la integració continua aturada. Comprova el disc on hi ha la configuració de Home Assistant i després torna a reparar el problema."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "No es poden desar els números de seqüència JUNG HOME",
+      "description": "Fa més d'un minut que Home Assistant no pot escriure el magatzem de números de seqüència del mesh {title} ({path}; últim error: {error}). Cada missatge als dispositius porta un número de seqüència nou, i Home Assistant només envia números que ha desat, perquè un reinici no en repeteixi mai cap: fins que una escriptura tingui èxit, no envia res al mesh — les ordres fallen i l'estat no s'actualitza. Normalment això vol dir que el disc és ple o que el seu sistema de fitxers s'ha tornat a muntar només de lectura, sovint per una targeta SD que falla. Allibera espai o repara l'emmagatzematge (un sistema de fitxers muntat de nou només de lectura sol requerir reiniciar l'amfitrió); no editis, eliminis ni substitueixis els fitxers del magatzem. El problema desapareix tot sol tan bon punt una escriptura té èxit i l'enviament es reprèn."
+    },
+    "address_in_use": {
+      "title": "L'adreça JUNG HOME de Home Assistant està ocupada",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Mou Home Assistant a {suggestion}",
+            "description": "A l'exportació del mesh {title}, un node ocupa l'adreça unicast {unicast} des de la qual envia Home Assistant. Tots dos es prendrien per un sol emissor: els dispositius en descarten un com a repetició, i les respostes van a l'equivocat. Confirma per donar a Home Assistant l'adreça lliure {suggestion} i tornar a configurar la integració, com fa Reconfigura → Avançat → La nostra adreça unicast. Assegura't que cap altre client mesh (les eines de línia d'ordres d'aquesta integració, un altre Home Assistant) no enviï des de {suggestion}. Els números de seqüència es conserven per adreça: la nova continua el seu propi registre, o comença prou endavant quan Home Assistant no en té cap per a ella, de manera que cap número no s'envia dues vegades. No verificat en dispositius reals."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "cannot_load": "No s'ha pogut llegir l'exportació de l'entrada, així que no es pot determinar cap adreça lliure: no ha canviat res. Carrega una exportació nova a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura.",
+          "no_free_address": "L'exportació no deixa cap adreça lliure per a Home Assistant: no ha canviat res. Comprova l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura.",
+          "address_taken": "{suggestion} ja no està lliure a l'exportació (ha canviat mentrestant): no ha canviat res. Torna a reparar el problema per obtenir un suggeriment nou."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "L'adreça JUNG HOME de Home Assistant es podria assignar a un altre",
+      "description": "L'adreça unicast {unicast} des de la qual envia Home Assistant al mesh {title} és dins de l'interval d'adreces d'un dels aprovisionadors de l'aplicació, o la va fer servir un node eliminat. Continua funcionant fins que l'aplicació hi posi en servei un node; abans d'això, mou Home Assistant a una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast; {suggestion} està lliure)."
+    },
+    "sequence_space_low": {
+      "title": "Els números de seqüència del mesh JUNG HOME s'estan esgotant",
+      "description": "Al mesh {title}, {source} ha fet servir el {percent} % dels números de seqüència de l'índex IV {iv_index}. Cada emissor s'atura al final d'aquest espai fins que el mesh passa a l'índex IV següent (una IV Update), que la passarel·la JUNG HOME inicia per si mateixa; Home Assistant la segueix però no n'inicia cap. Mantén la passarel·la alimentada i connectada al mesh; sense passarel·la, el mesh s'atura quan un emissor s'esgota. El problema desapareix tot sol després de l'actualització."
+    },
+    "iv_index_mismatch": {
+      "title": "El mesh JUNG HOME és en un altre índex IV",
+      "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours}: massa allunyats perquè Home Assistant el pugui seguir (segueix el mesh fins a 42 per endavant, com a màxim una vegada cada 192 hores, i mai enrere). Mentrestant, els dispositius ignoren Home Assistant. Això passa quan Home Assistant ha estat absent durant moltes IV Updates, quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Dona a Home Assistant una adreça unicast nova (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast): allà comença des de l'índex IV del mesh. No restauris el magatzem d'una còpia de seguretat ni l'editis: un registre més antic o editat repeteix números de seqüència que els dispositius ja han vist, i de tota manera el següent inici sobreescriu una edició manual. El problema desapareix tot sol quan arriba una balisa dins de l'abast."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant va per davant de l'índex IV del mesh JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Torna a l'índex IV del mesh",
+            "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours} — per davant, cosa que el mesh no és mai: els dispositius ignoren Home Assistant, i aquest no pot seguir un mesh que va per darrere seu. Això passa quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Confirma per tornar Home Assistant a l'índex IV del mesh i tornar a configurar la integració: els seus números de seqüència continuen per sobre de tots els números que va enviar des d'aquest índex, de manera que cap no es fa servir dues vegades. No restauris el magatzem d'una còpia de seguretat ni l'editis en lloc d'això: un registre més antic o editat repeteix números que els dispositius ja han vist. L'altra manera de tornar enrere és una adreça unicast nova per a Home Assistant (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura). No verificat en dispositius reals: no s'ha vist mai un índex IV per davant del mesh en un de real."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "iv_index_not_ahead": "Home Assistant ja no va fora d'abast per davant del mesh, o el seu estat IV ha canviat des que es va generar el problema: no s'ha canviat res. Si el problema torna a aparèixer, torna a reparar-lo.",
+          "seq_store_not_written": "No s'ha pogut escriure el límit inferior dels números de seqüència (`.storage/junghome_ble.seq.*.floor`): no s'ha canviat res. Comprova el disc on hi ha la configuració de Home Assistant i després torna a reparar el problema."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "Els Pucks JUNG HOME no tenen rellotge de referència",
+      "description": "El mesh {title} té Pucks actuadors JUNG de la generació anterior ({pucks}): prenen l'hora d'un rellotge de referència, un dispositiu alimentat per la xarxa elèctrica que els retransmet l'hora. Cap dispositiu del mesh no ho és, així que els temporitzadors dels Pucks es desajusten. Activa l'interruptor *Rellotge de referència* (una entitat de configuració, desactivada per defecte) d'un dispositiu que estigui sempre alimentat, com ara un endoll o un actuador mini; l'aplicació JUNG HOME en tria un ella mateixa quan configura un Puck. No verificat en dispositius reals. El problema desapareix quan un dispositiu fa de rellotge de referència."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Defineix l'habitació",
+      "description": "Posa llums i endolls JUNG HOME en una habitació del mesh (l'«area» de l'aplicació). Una habitació que encara no existeix només es crea amb Crea l'habitació, de manera que un nom mal escrit es rebutja. El dispositiu surt de totes les altres habitacions; les tecles ja vinculades a l'habitació comencen a controlar-lo. L'exportació del mesh es reescriu i Home Assistant la segueix sense tornar a carregar la integració. Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "room": {
+          "name": "Habitació",
+          "description": "Nom de l'habitació a l'aplicació JUNG HOME."
+        },
+        "create": {
+          "name": "Crea l'habitació",
+          "description": "Crea l'habitació quan el mesh no en té cap amb aquest nom. Desactivat, es rebutja un nom desconegut."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Afegeix a l'habitació",
+      "description": "Posa també llums, endolls i persianes JUNG HOME en una habitació del mesh: es queden a les habitacions on ja són, ja que l'aplicació permet que un dispositiu sigui a diverses habitacions. Una habitació que encara no existeix només es crea amb Crea l'habitació. Les tecles ja vinculades a l'habitació comencen a controlar-los. L'exportació del mesh es reescriu i Home Assistant la segueix sense tornar a carregar la integració. No verificat en dispositius reals. Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "room": {
+          "name": "Habitació",
+          "description": "Nom de l'habitació a l'aplicació JUNG HOME."
+        },
+        "create": {
+          "name": "Crea l'habitació",
+          "description": "Crea l'habitació quan el mesh no en té cap amb aquest nom. Desactivat, es rebutja un nom desconegut."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Treu de l'habitació",
+      "description": "Treu llums, endolls i persianes JUNG HOME d'una habitació del mesh; es queden a les seves altres habitacions, i un dispositiu pot acabar sense cap. Un dispositiu que una tecla controla a través de la seva vinculació amb l'habitació es rebutja tret que Fins i tot si una tecla el controla estigui activat: sortir de l'habitació també el desvincula d'aquesta tecla. L'exportació del mesh es reescriu i Home Assistant la segueix sense tornar a carregar la integració. No verificat en dispositius reals. Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "room": {
+          "name": "Habitació",
+          "description": "Nom de l'habitació a l'aplicació JUNG HOME."
+        },
+        "force": {
+          "name": "Fins i tot si una tecla el controla",
+          "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Crea una habitació",
+      "description": "Crea una habitació buida a l'exportació del mesh (no s'envia res als dispositius). Home Assistant li dona l'adreça de grup lliure més alta de l'interval de l'aplicació: l'aplicació no la veu fins que importa un fitxer, i dona a la seva propera habitació la lliure més baixa. Respon l'adreça de grup de l'habitació quan se li demana. Només per a administradors.",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Nom de l'habitació nova."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Canvia el nom de l'habitació",
+      "description": "Canvia el nom d'una habitació a l'exportació del mesh (no s'envia res als dispositius). Només per a administradors.",
+      "fields": {
+        "room": {
+          "name": "Habitació",
+          "description": "Nom actual de l'habitació."
+        },
+        "new_name": {
+          "name": "Nom nou",
+          "description": "El nom nou."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Elimina l'habitació",
+      "description": "Elimina una habitació: els seus dispositius en surten, les tecles vinculades a l'habitació perden la seva funció i l'habitació s'elimina de l'exportació del mesh. Els dispositius mateixos continuen sent operables. Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "room": {
+          "name": "Habitació",
+          "description": "Nom de l'habitació que cal eliminar."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Assigna una tecla",
+      "description": "Vincula una tecla d'un polsador o un detector a un llum, un endoll, una persiana, un termòstat d'ambient, la passarel·la, una habitació o una escena, exactament com fa la vinculació de tecla de l'aplicació JUNG HOME: s'elimina la vinculació anterior de la tecla, la tecla es vincula a l'objectiu i se'n defineix el mode de tecla (un detector no en té i només controla un dispositiu). L'exportació del mesh es reescriu i Home Assistant la segueix sense tornar a carregar la integració. Un detector com a origen i el mode de temperatura no s'han verificat en dispositius reals. Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "key_entity": {
+          "name": "Tecla",
+          "description": "L'entitat d'esdeveniment de botó de la tecla, o una entitat d'un detector."
+        },
+        "key_device": {
+          "name": "Dispositiu de la tecla",
+          "description": "El polsador que conté la tecla (fes-lo servir amb Lletra de la tecla quan té diverses tecles), o un detector."
+        },
+        "key": {
+          "name": "Lletra de la tecla",
+          "description": "Quina tecla del dispositiu: A, B, C o D; E1 o E2 per a una entrada d'un actuador mini."
+        },
+        "target_entity": {
+          "name": "Entitat objectiu",
+          "description": "El llum, l'endoll, la persiana o el termòstat d'ambient que ha de controlar la tecla."
+        },
+        "target_device": {
+          "name": "Dispositiu objectiu",
+          "description": "El dispositiu que ha de controlar la tecla: un llum, un endoll o la passarel·la (llavors la tecla informa Home Assistant dels clics, dobles clics i pulsacions mantingudes)."
+        },
+        "room": {
+          "name": "Habitació objectiu",
+          "description": "L'habitació els llums o endolls de la qual ha de controlar la tecla."
+        },
+        "scene": {
+          "name": "Escena objectiu",
+          "description": "L'escena que la tecla ha d'activar a tots els dispositius, per número o per nom (mode de tecla escena; deixa Mode buit). Encara no s'ha provat en un dispositiu real."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Què fa la tecla: light (encès/apagat i regulació), switch (encès/apagat), move (persianes; sense provar), gateway (informe d'esdeveniments), lock (el costat amunt / encès bloqueja un llum o un endoll en el seu estat actual, el costat avall / apagat el desbloqueja; no verificat en dispositius reals), temperature (la consigna d'un termòstat d'ambient; no verificat en dispositius reals), o per a habitacions light_and_switch (llums i endolls junts). Si es deixa buit, el mode segueix l'objectiu."
+        },
+        "target_element": {
+          "name": "Element objectiu",
+          "description": "Només per a objectius de dispositiu: controla una altra part de l'objectiu només amb el client de regulació de la tecla, color_temperature (la temperatura de color d'un llum de blanc ajustable, mode light) o slat (les lamel·les d'una persiana, mode move). No verificat en dispositius reals."
+        },
+        "lock_seconds": {
+          "name": "Temps de bloqueig",
+          "description": "Només en mode lock: quant de temps dura un bloqueig des de la tecla, en segons (0 o buit: fins que la tecla el desbloqueja). No verificat en dispositius reals."
+        },
+        "room_area": {
+          "name": "Habitació per àrea",
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+        },
+        "scene_entity": {
+          "name": "Entitat d'escena",
+          "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Buida la tecla",
+      "description": "Deixa una tecla d'un polsador sense funció: s'elimina la seva vinculació amb un dispositiu, la passarel·la o una habitació (el «Sense funció» de l'aplicació). Respon quants dels seus missatges han aplicat els dispositius, si s'ha escrit l'exportació del mesh i quins dispositius han canviat; amb Simulació, en canvi, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "key_entity": {
+          "name": "Tecla",
+          "description": "L'entitat d'esdeveniment de botó de la tecla."
+        },
+        "key_device": {
+          "name": "Dispositiu de la tecla",
+          "description": "El polsador que conté la tecla (fes-lo servir amb Lletra de la tecla quan té diverses tecles)."
+        },
+        "key": {
+          "name": "Lletra de la tecla",
+          "description": "Quina tecla del dispositiu: A, B, C o D; E1 o E2 per a una entrada d'un actuador mini."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Crea una escena",
+      "description": "Crea una escena buida a l'exportació del mesh (no s'envia res als dispositius). Desa-hi dispositius amb Desa l'escena. Home Assistant li dona el número d'escena lliure més alt de l'interval de l'aplicació: l'aplicació no la veu fins que importa un fitxer, i dona a la seva propera escena el lliure més baix. Respon el número d'escena quan se li demana. Només per a administradors.",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Nom de l'escena nova."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Canvia el nom de l'escena",
+      "description": "Canvia el nom d'una escena a l'exportació del mesh (no s'envia res als dispositius). Només per a administradors.",
+      "fields": {
+        "scene": {
+          "name": "Escena",
+          "description": "Nom o número actual de l'escena."
+        },
+        "new_name": {
+          "name": "Nom nou",
+          "description": "El nom nou."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "scene_entity": {
+          "name": "Entitat d'escena",
+          "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Desa l'escena",
+      "description": "Desa l'estat actual de llums, endolls, persianes i termòstats JUNG HOME en una escena, com fa el «desa el dispositiu a l'escena» de l'aplicació: primer posa els dispositius tal com els ha de deixar l'escena i després crida això. Cada dispositiu desa el seu estat sota l'escena (Scene Store) juntament amb la seva descripció JUNG, i l'exportació del mesh registra el membre. Home Assistant la segueix sense tornar a carregar la integració. Si s'indica un estat (acció, brillantor, temperatura de color, temperatura), primer s'hi posa cada dispositiu i s'espera fins que hi arriba; una persiana amb una posició indicada no es mou, l'escena desa aquesta posició per a ella. Només per a administradors.",
+      "fields": {
+        "scene": {
+          "name": "Escena",
+          "description": "Nom o número de l'escena (creada amb Crea una escena o a l'aplicació)."
+        },
+        "action": {
+          "name": "Acció",
+          "description": "Encén o apaga els llums i els endolls abans de desar."
+        },
+        "brightness_pct": {
+          "name": "Brillantor",
+          "description": "Regula els llums a aquesta brillantor abans de desar (l'acció és llavors encès)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura de color",
+          "description": "Posa els llums de blanc ajustable a aquesta temperatura de color abans de desar."
+        },
+        "position": {
+          "name": "Posició",
+          "description": "Posició a la qual l'escena mou una persiana: 0 tancada, 100 oberta."
+        },
+        "tilt_position": {
+          "name": "Posició d'inclinació",
+          "description": "Posició de les lamel·les a la qual l'escena mou una persiana; la posició de la persiana si s'omet."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Posa els termòstats a aquesta temperatura abans de desar."
+        },
+        "scene_entity": {
+          "name": "Entitat d'escena",
+          "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Estat que cal desar",
+          "description": "Primer posa els dispositius en aquest estat; si es deixa buit, es desa el seu estat actual."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Treu de l'escena",
+      "description": "Treu llums, endolls, persianes i termòstats JUNG HOME d'una escena: cada dispositiu oblida l'escena (Scene Delete) i l'exportació del mesh elimina el membre. Home Assistant la segueix sense tornar a carregar la integració. Només per a administradors.",
+      "fields": {
+        "scene": {
+          "name": "Escena",
+          "description": "Nom o número de l'escena."
+        },
+        "scene_entity": {
+          "name": "Entitat d'escena",
+          "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Elimina l'escena",
+      "description": "Elimina una escena: tots els dispositius que la tenien desada l'obliden, les tecles d'aquests dispositius que l'activen perden les seves vinculacions i l'escena s'elimina de l'exportació del mesh. Home Assistant la segueix sense tornar a carregar la integració. Respon, quan se li demana, els dispositius omesos amb «Fins i tot si un dispositiu no respon» (que necessita Confirma) i què han aplicat els missatges de les tecles; amb Simulació, què enviaria i canviaria. Només per a administradors.",
+      "fields": {
+        "scene": {
+          "name": "Escena",
+          "description": "Nom o número de l'escena que cal eliminar."
+        },
+        "force": {
+          "name": "Fins i tot si un dispositiu no respon",
+          "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        },
+        "scene_entity": {
+          "name": "Entitat d'escena",
+          "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        },
+        "confirm": {
+          "name": "Confirma",
+          "description": "Necessari amb «Fins i tot si un dispositiu no respon»: des d'aquí no es pot fer que un dispositiu que conserva l'escena l'oblidi. No cal per a una simulació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Elimina les escenes no utilitzades",
+      "description": "Llegeix el registre d'escenes de cada dispositiu i mostra, o elimina, les escenes que l'exportació del mesh no coneix (ni una escena ni l'escena d'un temporitzador de l'aplicació), com fa l'aplicació quan s'obre la seva llista de temporitzadors. És una simulació tret que s'indiqui el contrari. Amb una passarel·la, només funciona amb l'exportació actual de la passarel·la; en una xarxa configurada a partir d'un fitxer, eliminar necessita «L'exportació del mesh està actualitzada» o els números que cal eliminar. Respon els números per dispositiu. Només per a administradors.",
+      "fields": {
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només mostra els números que s'eliminarien; no s'elimina res. Activat per defecte."
+        },
+        "numbers": {
+          "name": "Números d'escena",
+          "description": "Elimina només aquests números d'escena (cap d'ells una escena de l'exportació del mesh)."
+        },
+        "confirm_stale_export": {
+          "name": "L'exportació del mesh està actualitzada",
+          "description": "Per a una xarxa configurada a partir d'un fitxer: el fitxer conté totes les escenes de l'aplicació, incloses les creades després d'exportar-lo. Sense això, només s'eliminen els números indicats."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Sincronitza la passarel·la",
+      "description": "Lliura a la passarel·la JUNG HOME l'exportació del mesh que fa servir Home Assistant, com fa l'aplicació després de cada canvi. S'executa automàticament després de cada acció que reescriu l'exportació; crida-la per tornar-ho a provar després de la reparació «exportació no lliurada a la passarel·la», o després d'editar el fitxer tu mateix. Només per a administradors.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Obtén les programacions",
+      "description": "Llegeix les programacions que executen per si mateixes les càrregues JUNG HOME (la pàgina d'automatismes de l'aplicació): fins a 16 posicions per càrrega, cadascuna un activador d'hora, sortida o posta de sol en alguns dies de la setmana amb el que fa llavors la càrrega. Respon per entitat amb les seves posicions utilitzades, amb els camps que accepta Crea una programació."
+    },
+    "create_schedule": {
+      "name": "Crea una programació",
+      "description": "Escriu una programació a la primera posició lliure de cada càrrega JUNG HOME seleccionada, que llavors l'executa per si mateixa, sense Home Assistant. Una programació de sortida o posta de sol envia primer al node la ubicació de casa de Home Assistant. Respon per entitat amb la posició utilitzada. Sense provar en un dispositiu. Només per a administradors.",
+      "fields": {
+        "trigger": {
+          "name": "Activador",
+          "description": "Quan s'activa la programació: a una hora del dia, o a la sortida o la posta de sol."
+        },
+        "time": {
+          "name": "Hora",
+          "description": "Hora del dia d'una programació horària."
+        },
+        "not_before": {
+          "name": "No abans de",
+          "description": "Una programació de sortida o posta de sol no s'activa abans d'aquesta hora (oberta si s'omet)."
+        },
+        "not_after": {
+          "name": "No després de",
+          "description": "Una programació de sortida o posta de sol no s'activa després d'aquesta hora (oberta si s'omet)."
+        },
+        "offset": {
+          "name": "Desplaçament",
+          "description": "Minuts abans (negatiu) o després de la sortida o la posta de sol."
+        },
+        "weekdays": {
+          "name": "Dies de la setmana",
+          "description": "Dies en què s'activa la programació; cada dia si s'omet."
+        },
+        "enabled": {
+          "name": "Activada",
+          "description": "Si la programació s'activa; una de desactivada espera Activa la programació."
+        },
+        "action": {
+          "name": "Acció",
+          "description": "Encén o apaga un llum o un endoll."
+        },
+        "brightness_pct": {
+          "name": "Brillantor",
+          "description": "Brillantor amb què s'encén un regulador (l'acció és llavors encès)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura de color",
+          "description": "Temperatura de color d'un llum de blanc ajustable, en passos de 100 K."
+        },
+        "position": {
+          "name": "Posició",
+          "description": "Posició a la qual es mou una persiana: 0 tancada, 100 oberta."
+        },
+        "tilt_position": {
+          "name": "Posició d'inclinació",
+          "description": "Posició de les lamel·les d'una persiana; la posició de la persiana si s'omet."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Temperatura objectiu d'un termòstat d'ambient."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Quan",
+          "description": "Quan s'activa la programació."
+        },
+        "what": {
+          "name": "Què",
+          "description": "A què es posa la càrrega quan s'activa."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Actualitza la programació",
+      "description": "Reescriu al mateix lloc una posició de programació utilitzada de cada càrrega JUNG HOME seleccionada, com fa l'edició de l'aplicació, amb els camps que accepta Crea una programació: torna'ls a indicar tots, res del que s'ometi es conserva de la posició. Una programació de sortida o posta de sol envia primer al node la ubicació de casa de Home Assistant; quan una escriptura falla, es torna a escriure la programació antiga de la posició. No verificat en dispositius reals. Només per a administradors.",
+      "fields": {
+        "slot": {
+          "name": "Posició",
+          "description": "Número de la posició de programació (0–15) que cal reescriure, tal com la mostren Obtén les programacions i el sensor Programacions."
+        },
+        "trigger": {
+          "name": "Activador",
+          "description": "Quan s'activa la programació: a una hora del dia, o a la sortida o la posta de sol."
+        },
+        "time": {
+          "name": "Hora",
+          "description": "Hora del dia d'una programació horària."
+        },
+        "not_before": {
+          "name": "No abans de",
+          "description": "Una programació de sortida o posta de sol no s'activa abans d'aquesta hora (oberta si s'omet)."
+        },
+        "not_after": {
+          "name": "No després de",
+          "description": "Una programació de sortida o posta de sol no s'activa després d'aquesta hora (oberta si s'omet)."
+        },
+        "offset": {
+          "name": "Desplaçament",
+          "description": "Minuts abans (negatiu) o després de la sortida o la posta de sol."
+        },
+        "weekdays": {
+          "name": "Dies de la setmana",
+          "description": "Dies en què s'activa la programació; cada dia si s'omet."
+        },
+        "enabled": {
+          "name": "Activada",
+          "description": "Si la programació s'activa; una de desactivada espera Activa la programació."
+        },
+        "action": {
+          "name": "Acció",
+          "description": "Encén o apaga un llum o un endoll."
+        },
+        "brightness_pct": {
+          "name": "Brillantor",
+          "description": "Brillantor amb què s'encén un regulador (l'acció és llavors encès)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatura de color",
+          "description": "Temperatura de color d'un llum de blanc ajustable, en passos de 100 K."
+        },
+        "position": {
+          "name": "Posició",
+          "description": "Posició a la qual es mou una persiana: 0 tancada, 100 oberta."
+        },
+        "tilt_position": {
+          "name": "Posició d'inclinació",
+          "description": "Posició de les lamel·les d'una persiana; la posició de la persiana si s'omet."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Temperatura objectiu d'un termòstat d'ambient."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Quan",
+          "description": "Quan s'activa la programació."
+        },
+        "what": {
+          "name": "Què",
+          "description": "A què es posa la càrrega quan s'activa."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Activa la programació",
+      "description": "Permet que una posició de programació de càrregues JUNG HOME es torni a activar. Només per a administradors.",
+      "fields": {
+        "slot": {
+          "name": "Posició",
+          "description": "Número de la posició de programació (0–15), tal com la mostren Obtén les programacions i el sensor Programacions."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Desactiva la programació",
+      "description": "Impedeix que una posició de programació de càrregues JUNG HOME s'activi, sense eliminar-la. Només per a administradors.",
+      "fields": {
+        "slot": {
+          "name": "Posició",
+          "description": "Número de la posició de programació (0–15), tal com la mostren Obtén les programacions i el sensor Programacions."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Elimina la programació",
+      "description": "Allibera una posició de programació de càrregues JUNG HOME. Només per a administradors.",
+      "fields": {
+        "slot": {
+          "name": "Posició",
+          "description": "Número de la posició de programació (0–15), tal com la mostren Obtén les programacions i el sensor Programacions."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Defineix el llindar",
+      "description": "Defineix un llindar d'un endoll JUNG HOME amb mesura, el perfil Automàtic de l'aplicació: quan la potència de l'endoll es manté en el nivell durant el temps indicat, encén (llindar d'encesa) o apaga (llindar d'apagada) per si mateix els llums i endolls triats, sense Home Assistant. Sense provar en un dispositiu. Respon, quan se li demana, quants dels missatges de vinculació han aplicat els dispositius. Només per a administradors.",
+      "fields": {
+        "threshold": {
+          "name": "Llindar",
+          "description": "Quin dels dos llindars de l'endoll cal definir."
+        },
+        "power": {
+          "name": "Potència",
+          "description": "Nivell de potència en W (passos de 0,1 W); el nivell actual de l'endoll si s'omet."
+        },
+        "duration": {
+          "name": "Durada",
+          "description": "Segons que la potència s'ha de mantenir en el nivell; la durada actual de l'endoll si s'omet."
+        },
+        "enabled": {
+          "name": "Activat",
+          "description": "Si el llindar commuta; un de desactivat conserva el seu nivell i la seva durada. Si s'omet, el llindar conserva el seu estat (un de nou s'activa). Si es desactiva mentre l'altre llindar tampoc no està actiu, els llums i els endolls es desvinculen com a l'aplicació: torna a indicar els dispositius en activar-lo."
+        },
+        "devices": {
+          "name": "Dispositius",
+          "description": "Els llums i els endolls que commuten tots dos llindars, en substitució de la llista actual; si s'omet, la llista es manté. L'exportació del mesh es reescriu quan canvia, i Home Assistant la segueix sense tornar a carregar la integració."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Elimina el llindar",
+      "description": "Esborra tots dos llindars d'un endoll JUNG HOME amb mesura i desvincula els llums i els endolls que commutaven, com fa l'eliminació de l'aplicació. Home Assistant segueix l'exportació del mesh reescrita sense tornar a carregar la integració quan s'han desvinculat dispositius. Respon, quan se li demana, quants dels missatges de vinculació han aplicat els dispositius. Només per a administradors."
+    },
+    "audit_network": {
+      "name": "Audita la xarxa",
+      "description": "Llegeix, sense canviar res, què conté la configuració mesh dels dispositius JUNG HOME — relay, network transmit, TTL per defecte, beacon, GATT proxy i friend, les claus de xarxa i d'aplicació que té cada dispositiu (per índex, mai una clau) i, per a cada model, la seva publicació, subscripcions i claus d'aplicació vinculades — i ho compara amb l'exportació del mesh. Respon per dispositiu amb els seus paràmetres i cada diferència trobada, i mostra els dispositius que no han respost. Auditar tots els dispositius triga uns minuts; els dispositius amb bateria estan en repòs i s'ometen tret que s'indiquin.",
+      "fields": {
+        "device": {
+          "name": "Dispositiu",
+          "description": "Audita només el node mesh que hi ha darrere d'aquest dispositiu (un llum, una tecla, un endoll o el mateix node). Si es deixa buit, s'auditen tots els nodes alimentats per la xarxa elèctrica."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Exporta la xarxa",
+      "description": "Respon l'exportació que fa servir Home Assistant — amb les habitacions, tecles, vinculacions i escenes que ha canviat — com a fitxer de compartició de l'aplicació JUNG HOME o com a base de dades del mesh, per a una còpia de seguretat o per importar-la a l'aplicació. Només per a administradors: conté totes les claus del mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Format",
+          "description": "El fitxer de compartició de l'aplicació (JungHome.json) o la base de dades del mesh (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Xarxa",
+          "description": "La xarxa JUNG HOME que cal exportar; només cal quan n'hi ha diverses."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Cerca dispositius nous",
+      "description": "Mostra els dispositius JUNG propers que encara no són en cap xarxa, amb l'adreça Bluetooth que necessita `add_device`."
+    },
+    "add_device": {
+      "name": "Afegeix un dispositiu (experimental)",
+      "description": "Afegeix un dispositiu JUNG nou a la xarxa com ho faria l'aplicació: el posa en servei amb el mètode més segur que ofereix el dispositiu (Static OOB quan l'ofereix i se n'indica el valor, l'algorisme HMAC-SHA256; si no, No OOB com l'aplicació — sense autenticació, algú a l'abast del Bluetooth mentre s'executa podria interceptar les claus de la xarxa), el configura segons les regles de l'aplicació a partir del que informa el dispositiu (es rebutja si no coincideix amb el que té un dispositiu del mateix producte que ja és a la xarxa) i el registra a l'exportació (lliurada a la passarel·la). Un dispositiu la configuració del qual falla es restableix, com fa l'aplicació. Els seus grups d'elements ocupen les adreces de grup lliures més altes de l'interval de l'aplicació (l'aplicació no veu el dispositiu fins que importa un fitxer). La resposta mostra els passos fets. Necessita l'opció de l'entrada *Permet que Home Assistant afegeixi dispositius*. Només per a administradors. Els mètodes autenticats, les regles de configuració i el restabliment no s'han verificat en dispositius reals.",
+      "fields": {
+        "address": {
+          "name": "Adreça Bluetooth",
+          "description": "L'adreça que `find_new_devices` mostra per al dispositiu."
+        },
+        "name": {
+          "name": "Nom",
+          "description": "El nom del dispositiu nou."
+        },
+        "config_entry_id": {
+          "name": "Xarxa",
+          "description": "La xarxa JUNG HOME a la qual cal afegir-lo; només cal quan n'hi ha diverses."
+        },
+        "static_oob": {
+          "name": "Valor Static OOB",
+          "description": "Només per a un dispositiu que ofereix autenticació Static OOB: el seu valor de 16 o 32 bytes en hexadecimal, tal com el documenta el fabricant (no se sap de cap dispositiu JUNG que l'ofereixi). No es registra mai. Un dispositiu que només accepta una posada en servei autenticada es rebutja sense aquest valor, i un dispositiu que no l'ofereix es rebutja amb ell."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Elimina un dispositiu (experimental)",
+      "description": "Restableix un dispositiu JUNG (oblida la xarxa i torna a ser un dispositiu nou) i el treu de la xarxa com fa l'aplicació: s'eliminen les vinculacions d'altres dispositius amb ell, l'exportació el registra com a eliminat i es lliura a la passarel·la. No es pot desfer. Necessita l'opció de l'entrada *Permet que Home Assistant afegeixi i elimini dispositius*. Necessita Confirma; amb Simulació, en canvi, respon què enviaria i canviaria, i no en necessita. Només per a administradors.",
+      "fields": {
+        "device": {
+          "name": "Dispositiu",
+          "description": "El dispositiu JUNG que cal eliminar (qualsevol dels seus dispositius a Home Assistant)."
+        },
+        "force": {
+          "name": "Fins i tot si no respon",
+          "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell."
+        },
+        "confirm": {
+          "name": "Confirma",
+          "description": "Necessari per dur-ho a terme: l'eliminació d'un dispositiu no es pot desfer. No cal per a una simulació."
+        },
+        "dry_run": {
+          "name": "Simulació",
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Restableix un dispositiu pendent (experimental)",
+      "description": "Restableix un dispositiu JUNG que `add_device` ha posat en servei però no ha pogut configurar ni registrar (el problema de reparació *Un dispositiu afegit per Home Assistant no està registrat* els mostra): li envia un Config Node Reset amb la clau del dispositiu que només té Home Assistant, de manera que torna a ser un dispositiu nou, i n'allibera les adreces. Encara no s'ha provat en un dispositiu real. Necessita l'opció de l'entrada *Permet que Home Assistant afegeixi dispositius*. Només per a administradors.",
+      "fields": {
+        "uuid": {
+          "name": "UUID del dispositiu",
+          "description": "L'UUID del dispositiu, tal com el va donar `add_device` o `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Adreça unicast",
+          "description": "L'adreça unicast principal del dispositiu (hexadecimal, tal com l'esmenta el problema de reparació); amb l'UUID, totes dues han de coincidir."
+        },
+        "force": {
+          "name": "Fins i tot si no respon",
+          "description": "Oblida el dispositiu tot i que no confirmi el restabliment (un de restablert a mà, o que ha desaparegut definitivament)."
+        },
+        "config_entry_id": {
+          "name": "Xarxa",
+          "description": "La xarxa JUNG HOME a la qual es va afegir el dispositiu; només cal quan n'hi ha diverses."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Localitza un dispositiu",
+      "description": "Fa que un dispositiu JUNG anunciï la seva Node Identity — un anunci Bluetooth que només les claus d'aquest mesh associen al dispositiu — durant un minut com a màxim i després s'aturi, perquè un escàner Bluetooth pugui saber quina ràdio és aquest dispositiu. No canvia res més; de tota manera, el dispositiu s'atura sol al cap d'un minut. Només per a administradors. No verificat en dispositius reals.",
+      "fields": {
+        "device": {
+          "name": "Dispositiu",
+          "description": "El dispositiu JUNG que cal localitzar (qualsevol dels seus dispositius a Home Assistant)."
+        },
+        "duration": {
+          "name": "Durada",
+          "description": "Segons d'anunci, de 5 a 60 (un dispositiu s'atura sol al cap de 60)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Aprova un client de la passarel·la",
+      "description": "Mostra els clients de l'API que esperen accés a la passarel·la JUNG HOME (una altra integració, un script) i aprova el que s'indica, com fa Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes de l'aplicació. Un client aprovat obté tota l'API de la passarel·la, inclosa l'exportació de la xarxa amb totes les claus del mesh: aprova només un client que hagis iniciat tu mateix. Sense nom de client, només els mostra (activa la resposta). La revocació de l'accés es fa a l'aplicació. Només per a administradors, per a una xarxa configurada des de la passarel·la. No verificat en dispositius reals.",
+      "fields": {
+        "client": {
+          "name": "Client",
+          "description": "El nom amb què el client demana accés, exactament com apareix a `waiting`. Si es deixa buit, no s'aprova res."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Inicia la regulació",
+      "description": "Comença a regular un regulador JUNG HOME cap amunt o cap avall, com quan es manté premut un balancí, fins a Atura la regulació (o el final de l'interval). Encara no s'ha provat en un dispositiu real.",
+      "fields": {
+        "direction": {
+          "name": "Direcció",
+          "description": "Més clar (amunt) o més fosc (avall)."
+        },
+        "speed": {
+          "name": "Velocitat",
+          "description": "Com de ràpid, en percentatge de l'interval de brillantor per segon (per defecte 20: d'apagat a màxim en 5 segons)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Atura la regulació",
+      "description": "Atura on és ara un regulador JUNG HOME que Inicia la regulació ha posat en moviment. Encara no s'ha provat en un dispositiu real."
+    },
+    "step_dim": {
+      "name": "Regula un pas",
+      "description": "Fa un regulador JUNG HOME més clar o més fosc en un pas. Encara no s'ha provat en un dispositiu real.",
+      "fields": {
+        "step": {
+          "name": "Pas",
+          "description": "Percentatge de l'interval de brillantor: positiu més clar, negatiu més fosc."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Llum (encès/apagat, regulació)",
+        "switch": "Commutació (encès/apagat)",
+        "move": "Persianes (sense provar)",
+        "gateway": "Passarel·la (informa d'esdeveniments)",
+        "light_and_switch": "Llums i endolls (només habitacions)",
+        "lock": "Bloqueja i desbloqueja (no verificat en dispositius reals)",
+        "temperature": "Temperatura (termòstat d'ambient, sense provar)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Temperatura de color (no verificat en dispositius reals)",
+        "slat": "Lamel·les (no verificat en dispositius reals)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Hora del dia",
+        "sunrise": "Sortida del sol",
+        "sunset": "Posta de sol"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Encès",
+        "off": "Apagat"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Dilluns",
+        "tue": "Dimarts",
+        "wed": "Dimecres",
+        "thu": "Dijous",
+        "fri": "Divendres",
+        "sat": "Dissabte",
+        "sun": "Diumenge"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Llindar d'encesa",
+        "switch_off": "Llindar d'apagada"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Fitxer de compartició de l'aplicació (JungHome.json)",
+        "cdb": "Base de dades del mesh (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Més clar",
+        "down": "Més fosc"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Mecanisme de commutació",
+        "two_gang_switch": "Mecanisme de commutació de 2 canals",
+        "dimming": "Mecanisme de regulació",
+        "two_gang_dimming": "Mecanisme de regulació de 2 canals",
+        "tw_dimming": "Mecanisme DALI",
+        "blind": "Mecanisme de persianes",
+        "extension": "Mecanisme auxiliar",
+        "not_available": "Sense mecanisme"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Botó a dalt / a baix",
+        "one_rocker": "Balancí",
+        "two_left_two_right": "Botó | Botó",
+        "one_left_two_right": "Balancí | Botó",
+        "two_left_one_right": "Botó | Balancí",
+        "one_left_one_right": "Balancí | Balancí"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Polsador d'1 canal",
+        "push_button_2": "Polsador de 2 canals",
+        "socket_metering": "Endoll (amb mesura)",
+        "socket": "Endoll",
+        "switch_actuator_mini": "Actuador de commutació mini d'1 canal",
+        "blinds_actuator_mini": "Actuador de persianes mini d'1 canal",
+        "wall_transmitter_1": "Emissor de paret d'1 canal",
+        "wall_transmitter_2": "Emissor de paret de 2 canals",
+        "motion_detector_1m": "Detector de moviment 1 m",
+        "motion_detector_2m": "Detector de moviment 2 m",
+        "presence_detector": "Detector de presència",
+        "room_thermostat": "Termòstat d'ambient",
+        "gateway": "Passarel·la",
+        "switch_actuator_1_energy": "Actuador de commutació d'1 canal i 2 entrades amb mesura d'energia",
+        "switch_actuator_2": "Actuador de commutació de 2 canals i 2 entrades",
+        "dimmer_actuator": "Actuador regulador d'1 canal i 2 entrades",
+        "blinds_actuator": "Actuador de persianes PP2 d'1 canal i 2 entrades",
+        "dali_actuator": "Actuador DALI d'1 canal i 2 entrades",
+        "mini_sensor_mains": "Minisensor de 2 entrades, de xarxa",
+        "mini_sensor_battery": "Minisensor de 2 entrades, de bateria"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Xarxa Bluetooth Mesh",
+        "switch": "Llum commutat",
+        "dimmer": "Llum regulable",
+        "ctl": "Llum de blanc ajustable (DALI)",
+        "blind": "Motor de persiana / persiana enrotllable",
+        "push_buttons": "Polsadors",
+        "unknown_product": "Producte {pid}"
+      }
+    }
+  }
+}
