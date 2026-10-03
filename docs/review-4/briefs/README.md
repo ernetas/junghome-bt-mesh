@@ -134,5 +134,6 @@ check on air. *human* = needs a person.
 | [65](65-public-release.md) | Fresh public repository, first-release notes | P5 | 22 | M | local *human* | 02, 06, 43, 64, M2 | new repository, `CHANGELOG.md`, `CONTRIBUTING.md` |
 | [66](66-hacs-first-release.md) | First full release and a green HACS run (HACS-2) | P6 | 23 | S–M | local *human* | 06, 65, M14 | `ci.yml`, `release.yml`, `CHANGELOG.md` |
 | [67](67-hacs-default-submission.md) | hacs/default submission (HACS-3) | P6 | 24 | S | local *human* | 66, M14, M15 | `README.md`, `hacs.json` |
+| [68](68-more-languages.md) | The languages of the JUNG HOME gateway integration (24 beyond en, de) | P3 | 14b | L | local | 51 | `translations/<lang>.json` |
 
 Briefs 01 and 02 should be cherry-picked first in wave 1; every later brief assumes the strict fake teardown.
