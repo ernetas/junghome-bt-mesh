@@ -71,6 +71,9 @@ Layout of `custom_components/junghome_ble/`:
 | `repairs.py` | The fix flows of the fixable repair issues: skip the sequence numbers ahead (`seq_store_lost`, `pdus_dropped`, `address_shared`), take the IV index back (`iv_index_mismatch` when Home Assistant is ahead), send Time Set again (`node_clock_wrong`), dismiss a notice (`plan_interrupted`), sync the gateway (`gateway_sync_failed`), move to a free address (`address_in_use`), load a new export through the config flow's helpers (`unknown_nodes`, `export_stale`, `key_refresh`, `app_changed`), ask for another device name (`device_name_rejected`). Every issue's *Learn more* link is `const.ISSUE_LEARN_MORE` |
 | `backup.py` | The backup platform: `async_pre_backup` marks every mesh's sequence-number records with a token of the backup (`in_backup`, `HAState.backup_token`) and waits up to `BACKUP_WRITE_TIMEOUT` for both copies to carry it; `async_post_backup` removes it. `JungHomeHub.async_create` skips a record carrying a token this process did not set `SEQ_SKIP_AHEAD` ahead (`_async_skip_restored_record`) |
 | `const.py` | Constants shared by every module: configuration keys, timings, signal names, repair issue ids (`issue_id`) |
+| `dispatch.py` | `chain_status_handler`: a second consumer of a message type that already has a `STATUS_HANDLERS` row (the detectors on Sensor Status and OnOff Set, the thermostat on Sensor Status), run after the earlier handler |
+| `errors.py` | `mesh_errors`: the context manager that turns a command's transport errors into the translated `HomeAssistantError` (`TimeoutError` → the site's own key or `send_failed`, `ConnectionError` / `OSError` → `send_failed`) |
+| `conversions.py` | Pure Generic Level conversions — thermostat set-point (`temperature_to_level`, `level_to_temperature`) and blind closedness (`closedness_to_level`, `level_to_closedness`) — used by the platforms, the configurator, the actions and the schedules without importing a platform |
 | `strings.json`, `translations/en.json`, `translations/de.json`, `icons.json` | Config-flow, entity, exception and issue translations (English, German); icons |
 | `quality_scale.yaml` | Rule status for the Integration Quality Scale |
 | `brand/` | The integration's icon (`icon.png`, `icon@2x.png`, `dark_icon.png`, `dark_icon@2x.png`): the JUNG HOME brand images Home Assistant's brands repository publishes for `custom_integrations/junghome`. Home Assistant 2026.3 and later take a custom integration's icon from here; the HACS `brands` check accepts it |
@@ -155,7 +158,7 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   Admin/User Property Status for config entities and the power-on-hour counter) is one more decorated function, in the
   coordinator or in the module that owns the feature; `ElementState` already has `level`, `battery` and
   `properties` slots for them. A message type that *already has* a row (Sensor Status, OnOff Set) gets a second
-  consumer through `binary_sensor.chain_status_handler`, which re-registers the row with a wrapper that runs the
+  consumer through `dispatch.chain_status_handler`, which re-registers the row with a wrapper that runs the
   previous handler first — the detector handlers work that way, so the coordinator keeps its socket-meter and
   rocker-event logic untouched.
 - Detectors (`binary_sensor.py`, `sensor.py`): a detector's Sensor Status readings `0x004D` / `0x0055` are cached in

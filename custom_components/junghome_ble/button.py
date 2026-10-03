@@ -38,6 +38,7 @@ from .entity import (
     node_device_info,
     node_unit_device_info,
 )
+from .errors import mesh_errors
 from .gateway_status import gateway_polls
 
 if TYPE_CHECKING:
@@ -102,16 +103,8 @@ class JungHomeIdentifyButton(JungHomeEntity, ButtonEntity):
         Its own text: the generic `no_answer` promises a re-check with the next connection, which state-changing
         commands get and a Health Attention Set does not.
         """
-        try:
+        with mesh_errors(timeout_key="identify_no_answer"):
             await self.hub.identify(self.node)
-        except TimeoutError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="identify_no_answer"
-            ) from err
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
 
 
 class JungHomeClearFaultsButton(JungHomeEntity, ButtonEntity):
@@ -132,16 +125,8 @@ class JungHomeClearFaultsButton(JungHomeEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Clear the register; a node that does not answer the read-back is reported."""
-        try:
+        with mesh_errors(timeout_key="no_answer"):
             await self.hub.clear_faults(self.node)
-        except TimeoutError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="no_answer"
-            ) from err
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
 
 
 class JungHomeResetConsumptionButton(JungHomeEntity, ButtonEntity):
@@ -164,20 +149,13 @@ class JungHomeResetConsumptionButton(JungHomeEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Reset the counters; one the load keeps counting, or does not answer for, is reported."""
         try:
-            await self.hub.reset_consumption(self.load)
+            with mesh_errors(timeout_key="no_answer"):
+                await self.hub.reset_consumption(self.load)
         except CounterNotReset as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="reset_consumption_refused",
                 translation_placeholders={"property": f"0x{err.pid:04X}"},
-            ) from err
-        except TimeoutError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="no_answer"
-            ) from err
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
             ) from err
 
 

@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable
 from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING, Any
@@ -75,7 +74,8 @@ from .const import (
     RTR_BOOST_READBACK_MARGIN,
     SIGNAL_UPDATE,
 )
-from .coordinator import STATUS_HANDLERS, StatusHandler, register_status_handler
+from .conversions import level_to_temperature, temperature_to_level
+from .dispatch import chain_status_handler
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
@@ -83,6 +83,7 @@ from .entity import (
     node_device_info,
     room_loads,
 )
+from .errors import mesh_errors
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.devices import ALL_THERMOSTATS, Thermostat
@@ -101,6 +102,9 @@ if TYPE_CHECKING:
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+# re-exported: the conversions lived here before `conversions.py`
+__all__ = ["level_to_temperature", "temperature_to_level"]
 
 PARALLEL_UPDATES = 0  # push-based; commands are serialised by the mesh client itself
 
@@ -125,47 +129,13 @@ HVAC_MODE_SPEC = P.PROPERTIES[PROPERTY_HVAC_MODE]
 BOOST_SPEC = P.PROPERTIES[0x120D]  # RtrBoostMode, bool
 AUTOMATIC_SPEC = P.PROPERTIES[0x1246]  # SchedulerEnabled, bool: 1 auto, 0 manual
 AMBIENT_TEMPERATURE_SPEC = P.SIG_PROPERTIES[PROPERTY_AMBIENT_TEMPERATURE]
-LEVEL_MIN, LEVEL_MAX = -32768, 32767
 STATE_GET_TIMEOUT = 3.0  # seconds per attempt of a state Get, as the hub's own refresh
-
-
-def temperature_to_level(temperature: float) -> int:
-    """Map a set-point in °C to the Generic Level the app sends: `pct = round((t - 5) / 25 * 100)`, `level = -32768 + pct / 100 * 65535`."""
-    span = CLIMATE_MAX_TEMP - CLIMATE_MIN_TEMP
-    pct = max(0, min(100, round((temperature - CLIMATE_MIN_TEMP) / span * 100)))
-    return max(LEVEL_MIN, min(LEVEL_MAX, round(LEVEL_MIN + pct / 100 * 65535)))
-
-
-def level_to_temperature(level: int) -> float:
-    """Map a Generic Level back to °C: `pct = round((level + 32768) * 100 / 65535)`, `t = 5 + 25 * pct / 100` (0.25 °C steps)."""
-    pct = max(0, min(100, round((level - LEVEL_MIN) * 100 / 65535)))
-    return CLIMATE_MIN_TEMP + (CLIMATE_MAX_TEMP - CLIMATE_MIN_TEMP) * pct / 100
 
 
 # ----------------------------------------------------------------------------- status handlers
 
 
-def _after(*opcodes: int) -> Callable[[StatusHandler], StatusHandler]:
-    """Register a SIG status handler that runs *after* the one the table already has for the opcode, if any.
-
-    The registry keeps one handler per message type, so a module adding to a type the hub (or another platform)
-    already handles must chain: the earlier handler keeps doing its work, then this one does its own.
-    """
-    earlier = {op: STATUS_HANDLERS.get((None, op)) for op in opcodes}
-
-    def register(handler: StatusHandler) -> StatusHandler:
-        def chained(hub: JungHomeHub, m: AccessMessage, p: bytes) -> None:
-            if (before := earlier[m.opcode]) is not None:
-                before(hub, m, p)
-            handler(hub, m, p)
-
-        register_status_handler(*opcodes)(chained)
-        return handler
-
-    return register
-
-
-@_after(M.SENSOR_STATUS)
+@chain_status_handler(M.SENSOR_STATUS)
 def _on_sensor_status(hub: JungHomeHub, m: AccessMessage, p: bytes) -> None:
     """Cache the Present Ambient Temperature (0x004F) a Sensor Status carries, raw, on the sending element."""
     try:
@@ -536,12 +506,8 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
 
     async def _write(self, spec: P.PropertySpec, value: Any) -> None:
         """Write a vendor property of the primary element; a Set the RTR neither confirms nor reads back fails."""
-        try:
+        with mesh_errors():
             outcome = await self.reader.write(self.primary, spec, value)
-        except (ConnectionError, OSError, TimeoutError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
         check_outcome(outcome, self.entity_id)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:

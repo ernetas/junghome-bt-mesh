@@ -53,6 +53,7 @@ from .const import (
     SIGNAL_UPDATE,
     UPDATE_READ_INTERVAL,
 )
+from .errors import mesh_errors
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
 from .jhmesh.devices import (
@@ -847,18 +848,11 @@ class JungHomeEntity(Entity):
         to be the one that stopped answering, which the message allows for. TimeoutError is an OSError: it is told
         apart first.
         """
-        try:
+        with mesh_errors(
+            timeout_key="device_not_reachable",
+            placeholders=lambda: {"entity": self.entity_id},
+        ):
             await command
-        except TimeoutError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="device_not_reachable",
-                translation_placeholders={"entity": self.entity_id},
-            ) from err
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
 
 
 class JungHomeCentralEntity(JungHomeEntity):

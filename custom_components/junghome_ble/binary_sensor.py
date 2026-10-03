@@ -108,7 +108,8 @@ from .const import (
     SIGNAL_CONNECTION,
     SIGNAL_DETECTOR,
 )
-from .coordinator import STATUS_HANDLERS, JungHomeHub, register_status_handler
+from .coordinator import STATUS_HANDLERS, JungHomeHub
+from .dispatch import chain_status_handler
 from .entity import (
     JungHomeEntity,
     async_setup_platform,
@@ -132,11 +133,13 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .config_entities import ValueTarget
-    from .coordinator import StatusHandler
     from .jhmesh.cdb import Node
     from .jhmesh.client import AccessMessage
 
 _LOGGER = logging.getLogger(__name__)
+
+# re-exported: the chaining helper lived here before `dispatch.py` (its tests reach the table through this module)
+__all__ = ["STATUS_HANDLERS", "chain_status_handler"]
 
 PARALLEL_UPDATES = 0  # push-based
 
@@ -215,37 +218,6 @@ def build_entities(hub: JungHomeHub) -> list[BinarySensorEntity]:
 
 
 # ----------------------------------------------------------------------------- status handlers
-
-
-def chain_status_handler(
-    *opcodes: int,
-) -> Callable[[StatusHandler], StatusHandler]:
-    """Register the decorated handler for the SIG `opcodes` *behind* the handler each opcode already has.
-
-    `register_status_handler` keeps one handler per message type; this keeps the coordinator's (the socket meter
-    reading of a Sensor Status, the rocker event of an OnOff Set) and runs the new one after it. Opcodes that
-    shared a handler share the chained one too.
-    """
-
-    def register(handler: StatusHandler) -> StatusHandler:
-        chained_for: dict[StatusHandler | None, StatusHandler] = {}
-        for opcode in opcodes:
-            previous = STATUS_HANDLERS.get((None, opcode))
-            if previous not in chained_for:
-                chained_for[previous] = _chained(previous, handler)
-            register_status_handler(opcode)(chained_for[previous])
-        return handler
-
-    return register
-
-
-def _chained(previous: StatusHandler | None, handler: StatusHandler) -> StatusHandler:
-    def chained(hub: JungHomeHub, m: AccessMessage, p: bytes) -> None:
-        if previous is not None:
-            previous(hub, m, p)
-        handler(hub, m, p)
-
-    return chained
 
 
 def detector_at(hub: JungHomeHub, addr: int) -> Detector | None:

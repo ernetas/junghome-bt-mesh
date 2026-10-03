@@ -20,12 +20,12 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.components.scene import Scene
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN, SIGNAL_SCENE_RECALLED, SIGNAL_SCENES
 from .entity import JungHomeEntity, async_setup_platform
+from .errors import mesh_errors
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -160,9 +160,5 @@ class JungHomeScene(JungHomeEntity, Scene):
     async def async_activate(self, **kwargs: Any) -> None:
         """Recall the scene on every node; with HA's `transition` (one for every node) once `SCENE_TRANSITIONS`."""
         transition = kwargs.get(ATTR_TRANSITION) if SCENE_TRANSITIONS else None
-        try:
+        with mesh_errors():
             await self.hub.recall_scene(self.scene.number, transition)
-        except (ConnectionError, OSError, TimeoutError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err

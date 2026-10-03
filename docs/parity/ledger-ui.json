@@ -1453,7 +1453,7 @@
    "id": "ui:state:genericlevelcapability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/cover.py::level_to_closedness",
+    "custom_components/junghome_ble/conversions.py::level_to_closedness",
     "custom_components/junghome_ble/cover.py::JungHomeCover.current_cover_position",
     "custom_components/junghome_ble/cover.py::JungHomeCover.is_opening"
    ],
@@ -1737,7 +1737,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeClimate.target_temperature",
-    "custom_components/junghome_ble/climate.py::level_to_temperature"
+    "custom_components/junghome_ble/conversions.py::level_to_temperature"
    ],
    "tests": [
     "tests/test_climate.py::test_temperature_level_mapping_at_the_ends_and_back",
@@ -2676,7 +2676,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeAllThermostats",
-    "custom_components/junghome_ble/climate.py::temperature_to_level"
+    "custom_components/junghome_ble/conversions.py::temperature_to_level"
    ],
    "tests": [
     "tests/test_climate.py::test_all_thermostats_sets_every_set_point_with_one_message"
@@ -3054,7 +3054,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/cover.py::JungHomeCover.async_set_cover_position",
-    "custom_components/junghome_ble/cover.py::closedness_to_level"
+    "custom_components/junghome_ble/conversions.py::closedness_to_level"
    ],
    "tests": [
     "tests/test_cover.py::test_set_position",
@@ -4264,7 +4264,7 @@
    "id": "ui:vm:roomtemperatureviewmodel.updatetargettemperature",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/climate.py::temperature_to_level",
+    "custom_components/junghome_ble/conversions.py::temperature_to_level",
     "custom_components/junghome_ble/climate.py::JungHomeClimate._set_level"
    ],
    "tests": [

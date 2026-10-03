@@ -68,6 +68,7 @@ from .const import (
     REFRESH_RETRIES,
     SIGNAL_UPDATE,
 )
+from .conversions import closedness_to_level, level_to_closedness
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
@@ -90,6 +91,9 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# re-exported: the conversions lived here before `conversions.py`
+__all__ = ["closedness_to_level", "level_to_closedness"]
+
 PARALLEL_UPDATES = 0  # push-based; commands are serialised by the mesh client itself
 
 MODE_SPEC = P.PROPERTIES[COVER_MODE_PROPERTY]
@@ -111,18 +115,6 @@ TILT_FEATURES = (
     | CoverEntityFeature.SET_TILT_POSITION
 )
 SLAT_FEATURES = TILT_FEATURES | CoverEntityFeature.STOP_TILT  # one blind's slats
-
-
-def level_to_closedness(level: int) -> int:
-    """Return the JUNG percent (0 open .. 100 closed) of a Generic Level, the app's rounding (`control-and-state.md` §0)."""
-    return max(0, min(100, round((level + 32768) * 100 / 65535)))
-
-
-def closedness_to_level(pct: int) -> int:
-    """Return the Generic Level of a JUNG percent: -32768 for 0 %, 32767 for 100 %."""
-    return max(
-        COVER_LEVEL_OPEN, min(COVER_LEVEL_CLOSED, round(-32768 + pct / 100 * 65535))
-    )
 
 
 def _to_ha(level: int) -> int:

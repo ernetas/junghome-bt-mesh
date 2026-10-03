@@ -208,7 +208,7 @@
    "regex": "^def _on_sensor_status"
   },
   "cl.t2l": {
-   "file": "custom_components/junghome_ble/climate.py",
+   "file": "custom_components/junghome_ble/conversions.py",
    "regex": "^def temperature_to_level"
   },
   "cli.prop_get": {
@@ -4257,7 +4257,7 @@
    "id": "prod:ui:room_temperature_title",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/climate.py::temperature_to_level",
+    "custom_components/junghome_ble/conversions.py::temperature_to_level",
     "custom_components/junghome_ble/climate.py::JungHomeClimate"
    ],
    "tests": [
