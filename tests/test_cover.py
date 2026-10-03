@@ -92,7 +92,14 @@ from custom_components.junghome_ble.jhmesh.devices import (
 )
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
 
-from .conftest import FIXTURES, FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import (
+    FIXTURES,
+    FakeProxyLink,
+    settle,
+    setup_entry,
+    wait_for_link,
+    wait_until,
+)
 from .helpers import (
     LIGHT_CTL,
     LIGHT_SWITCH,
@@ -110,7 +117,7 @@ from .helpers import (
     onoff_status,
     sensor_replies,
 )
-from .property_helpers import PropertyMesh, vendor_status, wait_until
+from .property_helpers import PropertyMesh, vendor_status
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

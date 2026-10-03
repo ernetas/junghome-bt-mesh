@@ -24,6 +24,7 @@ from .config_flow import (
     certificate_issue_id,
     forget_stored_export,
     infer_source,
+    mesh_proxies_without_match,
     proxy_in_range,
 )
 from .const import (
@@ -56,10 +57,13 @@ from .coordinator import (
     STORAGE_VERSION,
     JungHomeHub,
     async_apply_followed_key_refresh,
+    async_known_mesh,
     async_migrate_legacy_seq_store,
     async_remove_node_versions,
+    forget_known_mesh,
     issue_id,
     load_network,
+    remember_known_mesh,
 )
 from .device_names import async_track_device_names
 from .entity import (
@@ -196,19 +200,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
 
     # a key refresh completed since the export was made: its new key, which the hub followed (review-3 N2b)
     await async_apply_followed_key_refresh(hass, cdb, int(entry.data[CONF_UNICAST], 16))
+    # what discovery recognises this mesh by, even while the entry retries below (review-4 H4-4)
+    remember_known_mesh(
+        hass,
+        entry.entry_id,
+        await async_known_mesh(hass, cdb, int(entry.data[CONF_UNICAST], 16)),
+    )
 
     # Checked before the hub exists: creating its sequence-number state schedules a store write and, after a
     # crash, adds the restart margin — doing that on every not-ready retry would burn 512 sequence numbers each.
     if not proxy_in_range(hass, cdb):
         # no connectable scanner at all is a Home Assistant without Bluetooth, not a mesh out of range: say so
-        # (the app's "Bluetooth is off" screen, `ObserveBluetoothState`)
-        no_bluetooth = bluetooth.async_scanner_count(hass, connectable=True) == 0
-        raise ConfigEntryNotReady(
-            translation_domain=DOMAIN,
-            translation_key="bluetooth_unavailable"
-            if no_bluetooth
-            else "no_proxy_visible",
-        )
+        # (the app's "Bluetooth is off" screen, `ObserveBluetoothState`); nodes of the export advertising another
+        # Network ID are this mesh under keys the export lacks (review-4 H I-6): a key refresh since the export
+        # was made, which only a new export (Reconfigure) fixes
+        if bluetooth.async_scanner_count(hass, connectable=True) == 0:
+            reason = "bluetooth_unavailable"
+        elif mesh_proxies_without_match(hass, cdb):
+            reason = "export_keys_stale"
+        else:
+            reason = "no_proxy_visible"
+        raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key=reason)
 
     hub = await JungHomeHub.async_create(
         hass, entry, cdb, devices, int(entry.data[CONF_UNICAST], 16)
@@ -363,6 +375,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     # a pending retry of a failed upload outlives reloads (`MeshConfigurator._upload_or_retry`), not the entry
     cancel_upload_retry(hass, entry.entry_id)
+    forget_known_mesh(hass, entry.entry_id)
     legacy: Store[dict[str, Any]] = Store(
         hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}"
     )

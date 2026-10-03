@@ -128,6 +128,40 @@ def test_element_and_node_lookups(cdb: CDB):
     assert cdb.node_by_addr(0x7FFF) is None
 
 
+def test_the_address_index_follows_reindex(cdb: CDB):
+    """Review-4 R4-9: lookups are a dictionary built on first use; a change of an element's address shows only after
+    `reindex` (`index_is_current` tells), a node added or taken out without one is caught by the count."""
+    assert cdb.index_is_current()  # nothing built yet
+    first = cdb.element(PROXY_NODE)
+    assert first is not None
+    assert cdb.index_is_current()
+    first.address = 0x0700  # moved in place: the index still has it where it was
+    assert not cdb.index_is_current()
+    assert cdb.element(PROXY_NODE) is first
+    cdb.reindex()
+    assert cdb.element(0x0700) is first
+    assert cdb.element(PROXY_NODE) is None
+    assert cdb.index_is_current()
+    node = first.node
+    node.elements[0] = Element(0x0700, first.location, first.models, node)
+    assert not cdb.index_is_current()  # the same addresses, another element
+    cdb.reindex()
+    assert cdb.element(0x0700) is node.elements[0]
+    extra = Node("00000000-0000-4000-8000-0000000000aa", "extra", 0x0710, bytes(16), 1)
+    extra.elements = [Element(0x0710, 0x0001, [], extra)]
+    cdb.nodes.append(extra)  # no reindex: the node count tells
+    assert cdb.node_by_addr(0x0710) is extra
+    twin = Node("00000000-0000-4000-8000-0000000000bb", "twin", 0x0710, bytes(16), 1)
+    twin.elements = [Element(0x0710, 0x0001, [], twin)]
+    cdb.nodes.append(twin)
+    assert (
+        cdb.node_by_addr(0x0710) is extra
+    )  # two claim the address: the first in `nodes`, as a scan found
+    cdb.nodes.remove(extra)
+    assert cdb.node_by_addr(0x0710) is twin
+    assert cdb.index_is_current()
+
+
 def test_label(cdb: CDB):
     assert cdb.label(GROUP_WC) == "C00F 'WC'"
     assert cdb.label(PROXY_NODE + 1) == "0149 (Push-button 1-gang @0148 el loc 0040)"

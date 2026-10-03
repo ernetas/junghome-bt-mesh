@@ -24,6 +24,7 @@ Invariants (`violations()`):
 from __future__ import annotations
 
 import asyncio
+import itertools
 import random
 from collections import Counter
 from dataclasses import dataclass
@@ -33,7 +34,7 @@ from typing import TYPE_CHECKING, Any
 from jhmesh import config_messages as C
 from jhmesh.cdb import CDB
 from jhmesh.crypto import NetKeyMaterial
-from jhmesh.pdu import NetworkPDU, is_unicast
+from jhmesh.pdu import NetworkPDU, is_unicast, network_decrypt
 
 from .loss import LossModel, Packet
 from .node import Key, Received, SimNode, key_of
@@ -48,6 +49,7 @@ FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 CDB_PATH = FIXTURES / "MeshNetwork.json"
 CLIENT_ADDRESS = 0x0D00  # the unicast the client sends from (as in the library and integration tests)
 PROVISIONER = 0x0001  # the phone that provisioned the fixture network
+OPENED_CACHE = 50_000  # network PDUs `Mesh.open` remembers before it starts over
 
 
 @dataclass
@@ -220,6 +222,12 @@ class Mesh:
         self.undecryptable: list[tuple[int, str, Key | None]] = []
         self._origin_of: dict[bytes, Key] = {}
         self._link_clock: dict[tuple[int, int], float] = {}
+        # the arrivals still on the air, by token: `close` cancels them on a loop that outlives the simulation
+        self._arrivals: dict[int, asyncio.TimerHandle] = {}
+        self._tokens = itertools.count()
+        self._opened: dict[
+            tuple[NetKeyMaterial, int, bytes, bool], NetworkPDU | None
+        ] = {}
         self._watched: list[tuple[ProxyClient, list[int]]] = []
         self.sent: list[SentMessage] = []
         self.client_got: Counter[tuple[int, int, bytes]] = Counter()
@@ -340,6 +348,7 @@ class Mesh:
         loop = asyncio.get_running_loop()
         key = key_of(net)
         self._origin_of.setdefault(raw, key)
+        batches: dict[float, list[SimNode]] = {}
         for copy in range(copies):
             for neighbour in sorted(self.topology.neighbours(sender.addr)):
                 receiver = self.nodes.get(neighbour)
@@ -368,11 +377,46 @@ class Mesh:
                     )
                 for when in arrivals:
                     self.in_flight[key] += 1
-                    loop.call_at(when, self._arrive, receiver, raw, key)
+                    batches.setdefault(when, []).append(receiver)
+        # one timer per arrival time, not per receiver: the neighbours of a sender mostly hear it at the same moment
+        for when, receivers in batches.items():
+            token = next(self._tokens)
+            self._arrivals[token] = loop.call_at(
+                when, self._arrive, receivers, raw, key, token
+            )
 
-    def _arrive(self, receiver: SimNode, raw: bytes, key: Key) -> None:
-        self.in_flight[key] -= 1
-        receiver.receive(raw)
+    def _arrive(
+        self, receivers: list[SimNode], raw: bytes, key: Key, token: int
+    ) -> None:
+        del self._arrivals[token]
+        for receiver in receivers:
+            self.in_flight[key] -= 1
+            receiver.receive(raw)
+
+    def open(
+        self, nk: NetKeyMaterial, iv_index: int, raw: bytes, *, proxy: bool
+    ) -> NetworkPDU | None:
+        """`network_decrypt`, once per transmission: every neighbour of a sender hears the same bytes."""
+        ident = (nk, iv_index, raw, proxy)
+        if ident in self._opened:
+            return self._opened[ident]
+        if len(self._opened) >= OPENED_CACHE:
+            self._opened.clear()
+        net = self._opened[ident] = network_decrypt(nk, iv_index, raw, proxy=proxy)
+        return net
+
+    async def close(self) -> None:
+        """Stop the simulation: nothing left on the air, no node's timer or task, no proxy link or beacon timer.
+
+        A test on a loop of its own (`run`) needs none of it; one on a loop that goes on (Home Assistant's test loop,
+        which fails a test that leaves a timer or a task behind) closes the mesh at teardown. What was still on the
+        air stays counted as in flight, so the invariants hold the same afterwards.
+        """
+        for handle in self._arrivals.values():
+            handle.cancel()
+        self._arrivals.clear()
+        tasks = [task for node in self.nodes.values() for task in node.stop()]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     # ------------------------------------------------------------------ the books
     def violation(self, text: str) -> None:

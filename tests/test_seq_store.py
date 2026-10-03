@@ -470,6 +470,36 @@ async def test_a_burst_is_stored_every_save_interval_without_waiting(
     }
 
 
+async def test_the_restart_point_is_read_once_per_written_record(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-4 R4-9: `reserve_seq` bounds every send by what both copies durably hold; reading a copy's record
+    parses its whole replay list, so it is read once per write that landed, not once per PDU."""
+    state = hub_of(init_integration).state
+    await hass.async_block_till_done()
+    with (
+        patch.object(
+            coordinator, "_usable_record", wraps=coordinator._usable_record
+        ) as read,
+        patch.object(
+            coordinator, "SEQ_SAVE_EVERY", 1000
+        ),  # no immediate write in between
+    ):
+        state.reserve_seq(1)
+        before = read.call_count
+        assert before <= 2  # the store and the backup, at most once each
+        for _ in range(50):
+            state.reserve_seq(1)
+        assert read.call_count == before
+        state.persist_now()
+        await hass.async_block_till_done()  # both copies written anew
+        state.reserve_seq(1)
+        assert read.call_count == before + 2
+        for _ in range(50):
+            state.reserve_seq(1)
+        assert read.call_count == before + 2
+
+
 async def test_seq_store_hands_out_one_object_per_mesh(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
@@ -1360,6 +1390,14 @@ async def test_a_store_that_cannot_be_written_raises_its_own_repair(
     assert state.stalled_for is None
     assert state.last_write_error is None
     assert "Sequence-number store written again after" in caplog.text
+    # the stall is counted in, and so is the share of it the link that came up during it saw (review-4 R I-9)
+    held_back = state.held_back_total
+    assert held_back >= coordinator.SEQ_STALL_ISSUE_AFTER + SEQ_STALL_RETRY
+    freezer.tick(1)
+    assert state.held_back_total == held_back  # over: no longer growing
+    fake_link.drop_link()
+    await settle(hass)
+    assert hub.link_history[-1].held_back >= coordinator.SEQ_STALL_ISSUE_AFTER
 
 
 async def test_a_short_stall_raises_no_repair(

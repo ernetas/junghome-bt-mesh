@@ -40,6 +40,7 @@ asyncio_default_fixture_loop_scope = "function"
 markers = [
     "link_loss_grace: keep the hub's link-loss grace (every other test sees entities go unavailable at once)",
     "slow_ok: exempt from the 5 s per-test budget of `tests/conftest.py` (`CALL_BUDGET`)",
+    "sim: the hub over the simulated mesh on virtual time (`tests/soak`): seconds by default, minutes with SIM_SOAK=long",
 ]
 # pytest-timeout (pinned by pytest-homeassistant-custom-component): a test that hangs (an awaited future nobody
 # resolves, a wait on an executor job that never ends) fails with its stack instead of stalling the run until the CI
@@ -128,6 +129,8 @@ ignore = [
 # Tests (tests/, tests/jhmesh/, tests/helpers.py, the fixture generator): asserts are the point; private-member
 # access is fine; descriptive test names stand in for docstrings.
 "tests/**" = ["S101", "S105", "S106", "SLF001", "INP001", "D", "ANN"]
+# Development scripts run by hand (scripts/bench_mesh.py): a directory of scripts, not a package.
+"scripts/**" = ["INP001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["custom_components"]

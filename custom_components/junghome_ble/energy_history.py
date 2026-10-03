@@ -189,7 +189,6 @@ async def read_chart(
             timeout=const.PROPERTY_READ_TIMEOUT,
             retries=PROPERTY_READ_RETRIES,
             expect_cid=M.JUNG_CID,
-            quiet=True,
             match=lambda m: m.params[:2] == key,
         )
     except TimeoutError:

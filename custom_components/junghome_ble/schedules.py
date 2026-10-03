@@ -304,7 +304,6 @@ class Scheduler:
                 timeout=timeout,
                 retries=1 if write else PROPERTY_READ_RETRIES,
                 expect_cid=M.JUNG_CID,
-                quiet=True,
                 match=lambda m: m.params[:1] == bytes([header]),
             )
         except TimeoutError:

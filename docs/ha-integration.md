@@ -309,7 +309,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Switch-on threshold, Switch-off threshold | `power` | W | No (diagnostic) | Metering sockets only: the power level of the socket's two [thresholds](#actions-thresholds) (LBC Admin `0x5004` / `0x5005`), `unknown` while none is set; attributes `duration` (s), `enabled` and `devices` (the lights and sockets both thresholds switch, from the export's wiring). Read once per link, updated by the actions; not yet tried on a real socket |
 | IP address | – | – | Yes (diagnostic) | On the gateway's node device: the address the gateway node serves over the mesh (`0xC002`, where the app finds the gateway), read once per connection; redacted from the diagnostics |
 | Proxy node | – | – | Yes (diagnostic) | On the *mesh network* device: the JUNG node Home Assistant is currently connected through (known from the node's Bluetooth address the moment the link is up — JUNG nodes advertise from their MAC — and confirmed by the proxy's own Filter Status), `unknown` while disconnected |
-| Link state | `enum` | – | No (diagnostic) | On the *mesh network* device: where the link stands, the JUNG HOME app's connection states and the screens before them — `bluetooth_off` (Home Assistant has no connectable Bluetooth adapter or proxy at all; see the repair issue [No Bluetooth](#repair-issue-no-bluetooth-for-the-jung-home-mesh)), `searching` (no proxy node of the mesh in range), `connecting`, `updating` (connected, the connect-time state refresh running: the app's "the status of your devices is being updated"), `connected`, `failed` (the last attempt failed; the next follows after a back-off, the reason is in the log) and `disconnected` (the link went; the next attempt follows at once) |
+| Link state | `enum` | – | Yes (diagnostic; off on installations that registered it before 1.1.0) | On the *mesh network* device: where the link stands, the mesh's health at a glance, the JUNG HOME app's connection states and the screens before them — `bluetooth_off` (Home Assistant has no connectable Bluetooth adapter or proxy at all; see the repair issue [No Bluetooth](#repair-issue-no-bluetooth-for-the-jung-home-mesh)), `searching` (no proxy node of the mesh in range), `connecting`, `updating` (connected, the connect-time state refresh running: the app's "the status of your devices is being updated"), `connected`, `failed` (the last attempt failed; the next follows after a back-off, the reason is in the log) and `disconnected` (the link went; the next attempt follows at once) |
 
 After (re)connecting the integration asks each metering socket for its measurements once — one `Sensor Get` per
 property (power `0x0081`, voltage `0x005D`, current `0x005C`): the socket's sensor server answers only
@@ -741,13 +741,18 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
 4. Add the integration:
    - **Discovery.** As soon as a Bluetooth Mesh proxy is seen, a *Bluetooth Mesh network &lt;network id&gt;* card appears
      under **Settings → Devices & services → Discovered**. Select **Add** and confirm; you are then asked for the
-     export.
+     export. A mesh that is already set up is not offered again: neither by its Network ID, nor during or after a
+     key refresh (by the new key's Network ID once Home Assistant follows the refresh, and by the MACs of the
+     export's nodes whatever they advertise). When the refresh completes, a card of the new Network ID still
+     pending, or one you ignored, is removed. The key-refresh cases are unverified on air.
    - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME (Bluetooth Mesh)*,
      choose where the export comes from (gateway, upload, or a path on the host) and fill in the
      [configuration parameters](#configuration-parameters). The discovery card leads to the same choice.
 
 The integration checks that the export can be read, that the chosen address is free and that at least one node of
-*that* network is currently visible over Bluetooth before it creates the entry. Each mesh network can be added once.
+*that* network is currently visible over Bluetooth before it creates the entry; nodes of the export visible under
+another Network ID mean a stale export (see the troubleshooting entry *The network's keys were renewed after the
+export was made*). Each mesh network can be added once.
 
 ## Configuration parameters
 
@@ -964,8 +969,9 @@ grows, and a node that loses three links in a row that way is passed over for tw
 in range (a node that is the only one in range is still used); only a link that lasts a minute starts the back-off
 over. A link lost while it is still being set up is a failed attempt too, never shown as connected. (The short-link
 rule, the grace after Home Assistant's own drops and the second send of an interrupted command are unverified on
-air.) If no node of the network is visible at all, it waits for an advertisement and retries at least every 30 s. The *Proxy node* diagnostic
-sensor shows which node is in use, the *Link state* sensor (off by default) where the link stands. The wait for one
+air.) If no node of the network is visible at all, it waits for an advertisement of the network (another network's
+proxies in range do not wake it) and retries at least every 30 s. The *Proxy node* diagnostic
+sensor shows which node is in use, the *Link state* sensor where the link stands. The wait for one
 connection is the Bluetooth stack's own (Home Assistant's `bleak-retry-connector`, two attempts), not the JUNG HOME
 app's 5 s: an ESPHome proxy first waits for a free connection slot and only gives up after its own timeout of at
 least 10 s, so a shorter wait would give up on a slow proxy that was about to connect.
@@ -1498,12 +1504,16 @@ Home Assistant is in the diagnostics (`heartbeats`).
   `bluetooth_proxy: active: true`, and each proxy offers a small number of connection slots (three by default) that all
   Bluetooth integrations share. This integration occupies one slot permanently.
 - **Discovery reacts to any Bluetooth Mesh proxy.** The discovery card is shown for every Bluetooth Mesh network in
-  range, not only JUNG HOME; ignore cards for networks you do not own. The matcher (`manifest.json`) can only key on
-  the Mesh Proxy service `0x1828`: a provisioned node's advertisement carries nothing vendor-specific — the Network ID
-  is a hash of the NetKey and the Node Identity form a hash of the node address, and the JUNG manufacturer-specific
-  structure (company `0x0527`, `docs/android/transport-provisioning.md` §2.3) is only documented for *unprovisioned*
-  devices. `tools/mesh_poc.py scan --adv` prints the local name and manufacturer data of the proxies in range; if a
-  capture shows a JUNG marker on provisioned nodes, the matcher can be narrowed with `manufacturer_id` / `local_name`.
+  range, not only JUNG HOME; ignore cards for networks you do not own. The matcher (`manifest.json`) keys on the Mesh
+  Proxy service `0x1828` alone. The proxy advertisement itself carries nothing vendor-specific (the Network ID is a
+  hash of the NetKey, the Node Identity form a hash of the node address); provisioned JUNG devices send the JUNG
+  manufacturer record (company `0x0527`, 1319) in separate, non-connectable advertisements from the same MAC, which
+  Home Assistant merges into the device's data (`docs/bluetooth-recheck.md` §5; the gateway sends none). Narrowing
+  discovery to JUNG — `"manufacturer_id": 1319` in the matcher, or a `not_jung` abort in the discovery step — is a
+  follow-up held for decision M10: it needs an on-air check that the merged record is already there when Home
+  Assistant matches a JUNG proxy (the gateway's proxy, which sends no record, would no longer be discovered at all),
+  since a too-narrow matcher hides the real mesh. `tools/mesh_poc.py scan --adv` prints the manufacturer data of
+  the proxies in range. Keying the entry on the mesh UUID instead of the Network ID (also M10) is not done either.
 - **Sensor values start unknown.** Power, voltage and current are asked for once after every connection and then
   follow the socket's publications; power-on time after the read that follows the connect-time state refresh (then
   every five minutes).
@@ -1597,7 +1607,8 @@ network key did not match any Bluetooth Mesh proxy advertisement Home Assistant 
 2. If you use an ESPHome Bluetooth proxy, make sure its configuration contains `bluetooth_proxy: active: true`;
    without it the nodes are seen but not connectable and are ignored.
 3. Check that the export is the one of *this* installation: an export from another JUNG HOME project has a different
-   network key.
+   network key. (Nodes of *this* export seen under another Network ID give *The network's keys were renewed after the
+   export was made* instead — a node UUID that is not its MAC cannot be recognised, though.)
 4. Wait a minute after a restart; advertisements have to be received before the check can pass.
 
 ### Entities keep switching between available and unavailable
@@ -1606,7 +1617,7 @@ Every drop of the GATT connection makes all entities unavailable until the integ
 drops mean the link to the chosen node is marginal or the Bluetooth path is overloaded.
 
 1. Look at the *Proxy node* sensor to see which node is used, and enable debug logging (below) to see the connect
-   attempts. The integration prefers the strongest signal, so a flapping node is usually the closest one at the edge of
+   attempts. The [diagnostics download](#diagnostics) lists the last 20 links: how long each lasted and why it ended. The integration prefers the strongest signal, so a flapping node is usually the closest one at the edge of
    range of the adapter.
 2. Move the adapter or add an ESPHome proxy closer to a mains-powered JUNG node.
 3. Check other Bluetooth integrations sharing the same adapter or proxy: an ESPHome proxy with all connection slots in
@@ -1678,6 +1689,16 @@ The unicast address you entered is used by an element of a JUNG node. Pick anoth
 - The file must be either the app's `JungHome.json` (*Share via file*) or the raw CDB JSON with a top-level
   `meshNetwork` object (`MeshNetwork.json` from an iOS backup).
 - Check the file permissions of the file and the directory.
+
+### "The network's keys were renewed after the export was made"
+
+Nodes of the export are visible over Bluetooth, but none advertises a Network ID the export's network key derives:
+the mesh completed a key refresh (a key renewal in the JUNG HOME app) that Home Assistant did not follow — it was
+not running, or the entry did not exist yet. The setup dialog shows this as an error (`export_keys_stale`); an entry
+waiting at setup shows it as its reason and keeps retrying. Export the network again from the JUNG HOME app (or fetch
+it from the gateway again) and use it in the setup dialog, or for an existing entry under **Reconfigure**. The nodes
+are recognised by their MAC (the export's node UUID), so a proxy of another network nearby does not cause it.
+Unverified on air: no key refresh has been made on this installation.
 
 ### "The export belongs to a different mesh network"
 
@@ -1937,20 +1958,35 @@ logger:
 ```
 
 `custom_components.junghome_ble` logs connection attempts and entity-level decisions; `jhmesh` logs every decrypted
-mesh message (addresses, opcodes and values, never keys), sent commands and undecryptable packets.
+mesh message (addresses, opcodes and values, never keys), sent commands and undecryptable packets. Without debug
+logging a device that does not answer leaves one warning when it is marked unavailable ("… did not answer a request
+…") and one line when it is back; each unanswered attempt is a `jhmesh` debug line ("no response from … (attempt
+1/3)").
 
 ### Diagnostics
 
 Open the entry's menu and select **Download diagnostics**. The file contains the address in use (the configured file
 paths and Bluetooth addresses are redacted), a summary of the network (mesh UUID, network ID, number of nodes, groups, scene numbers), Home Assistant's own sequence
 number and IV index (with how long the sequence-number store has held sends back, its last write error and how many
-numbers may go out before the next hold), the link state (connected node, MTU, connection time, visible proxy nodes),
-the derived device list, the last known state of every element, each node's last
+numbers may go out before the next hold; the file path in that error is redacted, the error itself kept), the link
+state (connected node, MTU, connection time, visible proxy nodes) and the last 20 links, newest first — the proxy node
+by its mesh address, how long ago it ended, how long it lasted, why it ended (`the proxy disconnected`, `the proxy
+went silent`, `sequence numbers skipped ahead`, …), how long its connect-time state refresh took (`null`: the link went
+first) and how long sends were held back for the sequence-number store during it —, the entry's options, the open
+repair issues, the derived device list, the last known state of every element, each node's last
 [network audit](#actions-network-audit) result and the followed key refresh (its phase, how far it is proven, and the
 phase each device Home Assistant added confirmed, with the new key's Network ID). Keys are never included. A device's own menu offers **Download diagnostics** as well: the node's elements and
 models, what the node told about itself (`node_info`, the app's node details: software version, hardware revision,
 manufacturer name, secure element and bootloader versions, a room thermostat's STM32 version and the node's time
 role), its devices, the cached state of its elements and its last audit result.
+
+The download works whatever state the entry is in. An entry that is not loaded — waiting for a proxy node
+(*retrying setup*), failed (its export cannot be read), or disabled — has no link to describe; its download shows the
+entry's data and options, its state and the reason (`reason_key`, e.g. `no_proxy_visible`, `bluetooth_unavailable`,
+`cannot_load`; any file path redacted), the number of connectable Bluetooth scanners, every node advertising the Mesh
+Proxy service (its Bluetooth address redacted; whether it advertises a Network ID or a Node Identity, whether that fits
+the export and, for a Node Identity, which node it names), the export's summary (or the kind of error that kept it
+from loading) and the open repair issues. A device's download shows the same while the entry is not loaded.
 
 ## Removal
 
@@ -1990,7 +2026,7 @@ Layout of `custom_components/junghome_ble/`:
 | File | Role |
 |---|---|
 | `__init__.py` | Loads the export (`load_network`), refuses to set up without a visible proxy (`ConfigEntryNotReady`), prunes stale devices, starts the hub, forwards the platforms; the update listener (`_async_entry_updated`) reloads the entry when its options or the data the hub was built from (`HUB_DATA_KEYS`) changed |
-| `config_flow.py` | User, Bluetooth-discovery, reconfigure and reauth steps (reauth renews the gateway token alone; plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible Network IDs (`0x1828` service data type `0x00`); unique ID = Network ID |
+| `config_flow.py` | User, Bluetooth-discovery, reconfigure and reauth steps (reauth renews the gateway token alone; plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible Network IDs (`0x1828` service data type `0x00`; nodes of the export under another one: `export_keys_stale`, `mesh_proxies_without_match`); unique ID = Network ID; discovery also aborts on what `coordinator.KnownMesh` knows a configured mesh by (`async_known_mesh_of`) |
 | `migration.py` | Import from the gateway integration: matches our registry entries against the gateway's identity scheme (`ImportPlan`), moves them with `er.async_update_entity_platform`, copies device area / name / labels, raises the `gateway_import` issue |
 | `coordinator.py` | `JungHomeHub`: connection loop over HA's Bluetooth stack (`bleak_retry_connector.establish_connection`), state cache per element (`ElementState`), the `STATUS_HANDLERS` message table, command helpers, button gesture logic, the repair issues (`key_refresh`, `pdus_dropped` — from the Filter Status watchdog, for a filter request actually written while the store lets sends through, or an unanswered refresh —, `export_stale`); `HAState` persists the sequence numbers through `Store` (`junghome_ble.seq.<mesh uuid>`, one record per address and the mesh's followed key refresh next to them, written at once; 2 s debounce with an immediate write every 64 numbers, on an IV change and after a load; exact counter on a clean close, +512 margin only after a crash), keeps the `.floor` entry of its address up with the counter (every IV change and `SEQ_FLOOR_EVERY` numbers; nothing sent under an index it does not hold yet, nor `SEQ_SKIP_UNKNOWN` past it), starts an address without a record `SEQ_SKIP_AHEAD` in when it may have sent before (`_evidence_of_use`), holds sends back while what a restart would load lags (`SequenceStalled`, retried by `_while_seq_stalls` for `SEQ_STALL_DEADLINE`) and raises `seq_store_unwritable` after `SEQ_STALL_ISSUE_AFTER` of that, and refuses every send while another client is known to use its address (`AddressShared`, the `address_shared` repair) |
 | `entity.py` | Device-registry model (mesh service device → node devices with MAC → load / button devices), `JungHomeEntity` (dispatcher-driven, available while connected) |
@@ -2005,7 +2041,7 @@ Layout of `custom_components/junghome_ble/`:
 | `vault_refresh.py` | `VaultKeyRefresh` (`hub.vault_refresh`): the vault's devices taken through the app's key refresh as far as it is proven (`jhmesh.vaultrefresh`; NetKey Update, Phase Set 2, Phase Set 3), in the background on every move of the followed refresh and every new link; the `vault_key_refresh_lagging` repair; its diagnostics section. Unverified on air |
 | `keep_awake.py` | `KeepAwake` (`hub.keep_awake`): the app's keep-alive for a battery node while a Config plan or a parameter change addresses it — one task per node, reference-counted holds, an `Admin Get 0x5001` once the node was quiet for `KEEP_AWAKE_INTERVAL`, none while there is no link |
 | `gateway_api.py`, `tls.py` | The JUNG HOME Gateway REST client the config flow uses (access request / password registration, project download) and the certificate pinning it relies on (the gateway's certificate is self-signed; the pin comes over the mesh, `0xC003`, or is confirmed in the flow and then checked against `0xC003` by the hub before the gateway is used) |
-| `diagnostics.py` | Entry and device diagnostics; keys, token, paths and Bluetooth addresses redacted |
+| `diagnostics.py` | Entry and device diagnostics, in every entry state (an entry not loaded: its state, reason, visible proxies and export summary); the link history; keys, token, paths (in error texts too) and Bluetooth addresses redacted |
 | `backup.py` | The backup platform: `async_pre_backup` marks every mesh's sequence-number records with a token of the backup (`in_backup`, `HAState.backup_token`) and waits up to `BACKUP_WRITE_TIMEOUT` for both copies to carry it; `async_post_backup` removes it. `JungHomeHub.async_create` skips a record carrying a token this process did not set `SEQ_SKIP_AHEAD` ahead (`_async_skip_restored_record`) |
 | `strings.json`, `translations/en.json`, `icons.json` | Config-flow, entity, exception and issue translations; icons |
 | `quality_scale.yaml` | Rule status for the Integration Quality Scale |
@@ -2030,7 +2066,7 @@ Behaviour worth knowing:
   proxy filter), then `_refresh_all` sends one Get per light and socket (`REFRESH_CHUNK = 5` jobs between 0.5 s
   pauses), one job per metered load's meter element (`Devices.metered`, `jhmesh.devices.meter_element`) that sends
   its property-qualified `Sensor Get`s one after the other (`_get_readings`: `0x0081`, `0x005D`, `0x005C` on a
-  socket, `0x0081` alone on another metered load — `meter_readings`; one attempt each, `quiet`; the meter answers
+  socket, `0x0081` alone on another metered load — `meter_readings`; one attempt each; the meter answers
   only a property-qualified Get — an unqualified `Sensor Get` got no reply on air, ever), plus one `Light CTL
   Temperature Range Get` per CTL light and one `Light CTL Temperature Get` to its temperature element
   (`STATE_GETS["ctl_temperature"]`; `async_refresh_meter` reads one load's readings and counters on demand, for
@@ -2180,7 +2216,10 @@ Behaviour worth knowing:
 - Connection loop constants: `FAILED_PROXY_COOLDOWN` 120 s, `CONNECT_BACKOFF_MIN` 2 s, `CONNECT_BACKOFF_MAX` 60 s,
   `SHORT_LINK` 60 s and `SHORT_LINK_STREAK` 3 (a link lost sooner doubles the back-off, three in a row set the node
   aside for the cooldown), `LINK_LOSS_GRACE` 20 s, two connect attempts per candidate, 30 s wait when nothing is
-  visible (woken early by an advertisement callback). Every end of a link goes through
+  visible (woken early by the advertisement callback, for an advertisement of this network only: `JungHomeHub._ours`,
+  review-4 R4-8). `ProxyClient.classify_service_data` keeps its verdicts by service data (`CLASSIFY_CACHE_SIZE` 256,
+  least recently seen dropped first): a Node Identity costs one AES per node per key. They are dropped whenever the
+  accepted keys change (`_kr.rx_keys`) and in `add_node` / `remove_node`. Every end of a link goes through
   `JungHomeHub._link_ended` (the transport's disconnect, or `_drop_link` for the hub's own drops), which records a
   `LinkEnd` (reason, verdict on the proxy, duration), starts the grace and calls the listeners registered with
   `async_on_link_loss`.
@@ -2188,6 +2227,15 @@ Behaviour worth knowing:
   last complete round ended; a link whose predecessor lasted `SHORT_LINK` skips a step done within
   `CONNECT_STEP_FRESH` (900 s). The heartbeat configuration keeps its own `HEARTBEAT_RECONFIGURE_INTERVAL`; the
   clock, the location, the state refresh and the energy poll run on every link (review-4 R I-5, unverified on air).
+- Per-message hot paths (review-4 R4-9, R I-10): `CDB.element` / `node_by_addr` are a dictionary built on first use.
+  Whatever changes `CDB.nodes` or an element's address calls `CDB.reindex()` (`ProxyClient.add_node` /
+  `remove_node`; the export's edits build a new `CDB`); a list that grew or shrank without it is re-indexed anyway, an
+  element moved in place is not (`CDB.index_is_current()` checks it). `Devices.by_meter` / `by_temperature` are kept
+  by `Devices.add`. `HAState._restart_point` reads a copy's record once per `written` object (a write replaces it,
+  never edits it) instead of parsing the replay list for every sent PDU. `JungHomeEntity._handle_update` compares
+  what it would write (`_async_calculate_state`) with the state machine and writes only a difference — availability
+  is in the state string, so a change of it is always written. `PYTHONPATH=. .venv/bin/python scripts/bench_mesh.py`
+  times these paths against the fixture network grown to 300 nodes.
 - Tests: `tests/` (pytest with `pytest-homeassistant-custom-component`) run against a synthetic export
   (`tests/fixtures/MeshNetwork.json`, generated by `tests/fixtures/make_fixture.py`) and a fake GATT proxy link.
   The fake (`FakeProxyLink` in `tests/conftest.py`) decrypts everything Home Assistant writes as the mesh would, and
@@ -2214,6 +2262,31 @@ Behaviour worth knowing:
   is looked for in every encoding (hex either case, Base64, `list(bytes)`, `repr(bytes)`; `tests/key_scan.py`): in
   every diagnostics download, and, after a followed key refresh, in every file, store, log record and diagnostics
   dump (`tests/test_key_leaks.py`, where only the sequence-number store and its copy may hold the new NetKey).
+- Tests over the simulated mesh: `tests/sim` (Home-Assistant-free, also used by the library's
+  `tests/jhmesh/test_sim_mesh.py`) plays the fixture network node by node — message cache, replay list, relays,
+  segmentation with acknowledgements, the proxy filter, beacons, IV Update — on a radio layout (`FIXTURE_HOP_MATRIX`:
+  0400 is four hops from the proxy 0148). The fixtures `sim_mesh` and `sim_link` in `tests/conftest.py` put the hub
+  on it: `establish_connection` returns a link to the simulated proxy the advert names, the hub's `ProxyClient` is
+  watched, and the teardown closes the mesh (nothing of it left on Home Assistant's loop) and asserts its invariants:
+  no (SRC, IV index, SEQ) twice, nothing replayed or undecryptable, nothing lost that the loss model did not drop
+  (`tests/test_hub_sim.py`). `tests/soak/` runs on virtual time: its conftest has pytest-asyncio build every test's
+  loop as a `VirtualTimeLoop` (`tests/sim/clock.py`; the clock stays virtual although Home Assistant binds
+  `time.monotonic` to the loop, and stands still while an executor job runs, which the loop waits for in place so a
+  run is the same every time). The soak (marker `sim`, `slow_ok`) sets the entry up over a synthetic network
+  (`tests/sim/synthetic.py`: the fixture network grown with clones of its loads on a relay tree, every node within
+  four hops), drops the proxy's link again and again on an air that loses and doubles PDUs, sends a command in each
+  link-loss grace, and checks the grace, the bounds of the property reader's queue and of every container and task
+  of the hub, and the refresh once the link holds; the integration's and Home Assistant's clocks follow the virtual
+  one. By default 80 nodes and six links in a few seconds; `SIM_SOAK=long` runs 300 nodes through 40 links (a minute
+  or two), and `SIM_SOAK_SEED` picks another seed. Seeds 4, 5 and 14 show a command reported done although it never
+  reached the load: its Set was lost on the air while the new link's refresh had a Get out to the same element, and
+  the Get's Status answered the Set (`ProxyClient.request` matches on element and status opcode). The light then
+  shows the load's real state; the soak counts the case (`confirmed, not applied`) without failing on it.
+  `tests/test_fake_conformance.py` drives `FakeProxyLink`, the library's `FakeBleak` and the simulated proxy through
+  one bare GATT client and holds them to the same behaviour: the filter type asked for is the one answered, segments
+  to an element are acknowledged in full and a node's segmented message takes the client's acknowledgement, a
+  replayed or older PDU is dropped (the library's `link` fixture fails a test that replays, as `fake_link` does),
+  and during an IV Update both indexes are taken while the nodes transmit under the old one.
 
 Not done yet:
 

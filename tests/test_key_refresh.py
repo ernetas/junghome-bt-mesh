@@ -9,10 +9,13 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
 
 import pytest
+from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_IGNORE
+from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.junghome_ble import vault_refresh
 from custom_components.junghome_ble.const import (
     CONF_UNICAST,
+    DOMAIN,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
     ISSUE_VAULT_KEY_REFRESH,
@@ -47,6 +50,7 @@ if TYPE_CHECKING:
 NEW_KEY = bytes(range(0x40, 0x50))
 NEW_ID = NetKeyMaterial.derive(NEW_KEY).network_id
 PHONE = 0x0001
+OTHER_ADDRESS = "11:22:33:44:55:66"  # a proxy no node of the export advertises from
 # a device Home Assistant added (`add_device`): in its vault, not in the export, and so not in the app's database
 VAULT_NODE = 0x7FF0
 VAULT_UUID = "00005EFF-FE00-5399-0000-000000000000"
@@ -185,6 +189,80 @@ async def test_the_apps_key_refresh_is_followed_and_survives_a_reload(
     hub = init_integration.runtime_data
     assert hub.proxy.nk.key == NEW_KEY
     assert hub.cdb.net_keys[0].key == NEW_KEY
+
+
+async def test_mid_refresh_a_proxy_of_the_new_key_is_not_offered_as_a_new_mesh(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """Review-4 H4-4: from the first move of a refresh the hub follows on, the new key's Network ID is this mesh
+    for discovery, before the entry's unique id holds it (from an address the export lacks: a new node)."""
+    await app_refresh(hass, fake_link, up_to=1)
+    assert init_integration.unique_id != NEW_ID.hex()
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(NEW_ID, address=OTHER_ADDRESS),
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+@pytest.mark.parametrize("ignore", [False, True], ids=["pending", "ignored"])
+async def test_the_completed_refresh_takes_the_new_network_id_from_a_discovery(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+    caplog: pytest.LogCaptureFixture,
+    ignore: bool,
+) -> None:
+    """H4-4: the new key's proxies were offered as a new mesh before the hub knew the key, and the user left the
+    discovery pending or pressed *Ignore*. At completion the flow is aborted and the ignored entry removed before
+    the unique id moves: no "already in use" error, no core repair."""
+    caplog.set_level(logging.INFO)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(NEW_ID, address=OTHER_ADDRESS),
+    )
+    assert result["type"] is FlowResultType.FORM
+    if ignore:
+        await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_IGNORE},
+            data={"unique_id": NEW_ID.hex(), "title": "ignored"},
+        )
+        await hass.async_block_till_done()
+    ignored = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, NEW_ID.hex())
+    assert (ignored is not None) is ignore
+    await app_refresh(hass, fake_link)
+    await hass.async_block_till_done()
+    assert init_integration.unique_id == NEW_ID.hex()
+    assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
+    assert hass.config_entries.async_entries(DOMAIN) == [init_integration]
+    assert "already in use" not in caplog.text
+    assert ("Removing the ignored discovery" in caplog.text) is ignore
+
+
+async def test_the_new_keys_proxies_are_ours_once_the_refresh_is_followed(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """Review-4 R4-8: the advert verdicts the client keeps do not outlive a key change — a proxy advertising the new
+    Network ID was another network's until the refresh was followed, and is one of ours from then on."""
+    hub = init_integration.runtime_data
+    advert = make_service_info(NEW_ID, address="30:FB:10:00:02:01")
+    mock_bluetooth_env["infos"] = [advert]
+    assert hub.visible_proxies() == []
+    fake_link.inject_from_provisioner(LIGHT_SWITCH, C.netkey_update(NEW_KEY))
+    await settle(hass)
+    assert hub.proxy.key_refresh_phase == 1
+    assert hub.visible_proxies() == [advert]
 
 
 async def test_a_completed_key_refresh_survives_a_new_unicast_address(

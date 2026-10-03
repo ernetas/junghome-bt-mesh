@@ -44,6 +44,7 @@ from custom_components.junghome_ble.jhmesh.client import (
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial, aes_cmac
 from custom_components.junghome_ble.jhmesh.export import raw_model
 from custom_components.junghome_ble.jhmesh.pdu import (
+    FILTER_WHITELIST,
     NONCE_APP,
     NONCE_DEVICE,
     PROXY_BEACON,
@@ -68,6 +69,7 @@ from custom_components.junghome_ble.jhmesh.pdu import (
 
 from .jhmesh.hypothesis_profiles import load as load_hypothesis_profile
 from .jhmesh.hypothesis_profiles import name as hypothesis_profile
+from .sim import Mesh, ProxyNode, SimGattClient
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -443,10 +445,12 @@ class FakeProxyLink:
     access messages as (src, dst, access_pdu), `config_sent` the device-key ones, each once however many
     segments or retransmissions it took (`segments` lists every segment as written). Segments to a unicast
     element are acknowledged as the node would (§3.5.3.3, `ack_segments`); the Set Filter Type request is
-    answered with a Filter Status from `proxy_node` — the node whose MAC the hub connected to (`fake_link`
-    sets it per connection), node 0148 for `PROXY_ADDRESS`. A Config request is answered by `config_reply`
-    when set, else a Heartbeat Publication Set gets its Status (`answer_config` / `config_refuse`). An AppKey
-    request is answered by `app_reply` when that returns a status; else by the nodes' built-in servers below.
+    answered with a Filter Status of the type asked for (`filter_type`, an empty list) from `proxy_node` — the
+    node whose MAC the hub connected to (`fake_link` sets it per connection), node 0148 for `PROXY_ADDRESS`. A
+    Config request is answered by `config_reply` when set, else a Heartbeat Publication Set gets its Status
+    (`answer_config` / `config_refuse`). An AppKey request is answered by `app_reply` when that returns a status;
+    else by the nodes' built-in servers below. `tests/test_fake_conformance.py` holds it, the library's
+    `FakeBleak` and the simulated proxy of `tests/sim` to one behaviour.
 
     `inject*` deliver traffic as the nodes send it, under the IV index the fake's own beacons announced
     (`inject_beacon` moves `iv_index`; while an update is in progress nodes keep transmitting under the old
@@ -467,6 +471,8 @@ class FakeProxyLink:
         self.mtu_size = 247
         self.is_connected = True
         self.beacon_on_subscribe = True
+        # the proxy filter's type: a connection starts on an empty white list (§6.6), Set Filter Type replaces it
+        self.filter_type = FILTER_WHITELIST
         self.iv_index = 0  # what the mesh is at, as the fake's beacons say
         self.iv_update = False  # ... and whether an IV Update is in progress
         self.sent: list[tuple[int, int, bytes]] = []  # (src, dst, access_pdu) decrypted
@@ -584,7 +590,9 @@ class FakeProxyLink:
                 self._undecryptable("proxy-config", payload)
             elif self._replay(n):
                 pass
-            elif n.transport_pdu[0] == 0x00:  # Set Filter Type (§6.5.1)
+            elif n.transport_pdu[0] == 0x00 and len(n.transport_pdu) >= 2:
+                # Set Filter Type (§6.5.1): a new, empty filter of that type (§6.6), confirmed by a Filter Status
+                self.filter_type = n.transport_pdu[1]
                 self._answer_filter_status(n.src)
             return
         if msg_type != PROXY_NETWORK_PDU:
@@ -895,7 +903,7 @@ class FakeProxyLink:
             seq=self._next(),
             src=self.proxy_node,
             dst=0x0000,
-            transport_pdu=b"\x03\x01\x00\x00",
+            transport_pdu=bytes([0x03, self.filter_type, 0, 0]),
             proxy=True,
         )
         self._deliver(PROXY_CONFIG, pdu)
@@ -1066,6 +1074,7 @@ def fake_link(cdb: CDB) -> Generator[FakeProxyLink]:
         # the proxy is the node advertising from that MAC; a MAC the export does not know keeps the last node
         link.proxy_node = link.node_by_mac.get(device.address.upper(), link.proxy_node)
         link._reasm = ProxyReassembler()  # proxy SAR state belongs to the connection
+        link.filter_type = FILTER_WHITELIST  # ... and so does the filter
         link._disconnected_callback = disconnected_callback
         return link
 
@@ -1094,6 +1103,121 @@ def check_link_teardown(link: FakeProxyLink) -> None:
             f"{[(i, layer, len(payload)) for layer, i, payload in link.undecryptable[:5]]}",
             pytrace=False,
         )
+
+
+# ----------------------------------------------------------------------------- the hub over the simulated mesh
+
+
+class SimLinks:
+    """The links `sim_link` handed the hub: GATT connections to the simulated proxy nodes (`tests/sim`).
+
+    The hub connects to the node advertising from the MAC it picked (node 0148 for `PROXY_ADDRESS`; a MAC of no
+    simulated proxy keeps the last one). `connect_errors` are raised one per attempt, as `FakeProxyLink`'s are;
+    `links` lists every link in the order handed out. Each new `ProxyClient` (a reload builds another hub) is
+    watched by the mesh, so the teardown's invariants cover what it handed out and could not decrypt.
+    """
+
+    def __init__(self, mesh: Mesh, cdb: CDB) -> None:
+        self.mesh = mesh
+        self.proxy_node = PROXY_NODE
+        self.node_by_mac: dict[str, int] = {
+            mac: n.unicast for n in cdb.nodes if (mac := mac_from_uuid(n.uuid))
+        }
+        self.connect_errors: list[Exception] = []
+        self.links: list[SimGattClient] = []
+        self.connect_count = 0
+        self._watched: list[Any] = []
+
+    @property
+    def link(self) -> SimGattClient | None:
+        """The link handed out last, None before the first."""
+        return self.links[-1] if self.links else None
+
+    async def establish(
+        self,
+        client_class: Any,
+        device: Any,
+        name: str,
+        disconnected_callback: Any = None,
+        **kwargs: Any,
+    ) -> SimGattClient:
+        self.connect_count += 1
+        if self.connect_errors:
+            raise self.connect_errors.pop(0)
+        unicast = self.node_by_mac.get(device.address.upper(), self.proxy_node)
+        if isinstance(self.mesh.nodes.get(unicast), ProxyNode):
+            self.proxy_node = unicast
+        # the callback is the hub's `ProxyClient.handle_disconnected`: its client is the one to watch
+        client = getattr(disconnected_callback, "__self__", None)
+        if client is not None and not any(c is client for c in self._watched):
+            self._watched.append(client)
+            self.mesh.watch(client)
+        link = self.mesh.proxy(self.proxy_node).connect(mtu=247)
+        link.disconnected_callback = disconnected_callback
+        self.links.append(link)
+        return link
+
+
+@pytest.fixture
+def sim_options() -> dict[str, Any]:
+    """Keyword arguments of the `Mesh` `sim_mesh` builds (a test parametrizes it: quirks, retransmissions, loss)."""
+    return {}
+
+
+@pytest.fixture
+async def sim_mesh(sim_options: dict[str, Any]) -> AsyncGenerator[Mesh]:
+    """The simulated fixture network (`tests/sim`) on Home Assistant's test loop: the default hop matrix (a chain:
+    0400 is four relays from the proxy 0148), no loss, JUNG's quirks — unless `sim_options` says otherwise.
+
+    Its latencies are milliseconds of real time here. The teardown closes the mesh (nothing of it left on the loop,
+    which Home Assistant's fixtures check) and asserts its invariants: no (SRC, IV, SEQ) twice, nothing replayed or
+    undecryptable, nothing lost the loss model did not drop. Whatever drives the hub stops it first (`sim_entry`
+    unloads the entry), so nothing the hub writes reaches a closed mesh.
+    """
+    mesh = Mesh(cdb_path=Path(CDB_PATH), **sim_options)
+    yield mesh
+    await mesh.close()
+    mesh.assert_invariants()
+
+
+@pytest.fixture
+def sim_link(
+    sim_mesh: Mesh, cdb: CDB, mock_bluetooth_env: dict[str, Any]
+) -> Generator[SimLinks]:
+    """`establish_connection` returns a link to the simulated proxy node the advert names, at MTU 247.
+
+    The advert is `mock_bluetooth_env`'s (one proxy node of the fixture network, 0148, through one scanner).
+    """
+    links = SimLinks(sim_mesh, cdb)
+    with patch(
+        "custom_components.junghome_ble.coordinator.establish_connection",
+        side_effect=links.establish,
+    ):
+        yield links
+
+
+@pytest.fixture
+async def sim_entry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    sim_link: SimLinks,
+    fast_sleep: list[float],
+) -> AsyncGenerator[MockConfigEntry]:
+    """The config entry for a test that sets it up over the simulated mesh itself; unloaded before the mesh closes."""
+    yield mock_config_entry
+    if mock_config_entry.state is ConfigEntryState.LOADED:
+        await hass.config_entries.async_unload(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+
+@pytest.fixture
+async def init_sim_integration(
+    hass: HomeAssistant, sim_entry: MockConfigEntry
+) -> MockConfigEntry:
+    """The integration set up over the simulated mesh, the link up (the connect-time refresh may still run)."""
+    await setup_entry(hass, sim_entry)
+    await wait_for_link(hass, sim_entry)
+    return sim_entry
 
 
 @pytest.fixture(autouse=True)

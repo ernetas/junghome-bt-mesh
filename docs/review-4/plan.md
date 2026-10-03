@@ -449,6 +449,15 @@ Dependencies (hard unless marked *soft*):
   for the reset, `set_room` creates a room only with `create`, threshold progress in errors, plans refused for
   unreachable nodes (22); H I-2 the gateway reauthentication flow, `reauthentication-flow: done` (23). Unverified on
   air: most of it; the briefs' reports list the checks.
+- **Wave 6 (briefs 24–27): done.** H4-4 / H I-6 discovery recognises the mesh across a key refresh and a stale
+  export has its own error; JUNG-only discovery and the unique-id move wait for decision M10 (24); H4-6 / H4-7 /
+  H4-8 / H I-5 diagnostics in every entry state with a link history, write-error paths redacted, one warning per
+  silent device, the `unknown_nodes` text translated whole, *Link state* on by default for new installs; M9 left
+  open (25); R4-8 / R4-9 O(1) lookups, a restart-point cache, adverts of other networks no longer wake the loop,
+  unchanged states not written (26); the hub over the simulated mesh, a flapping-link soak and fake conformance (27).
+- **New finding D32 (from brief 27's soak):** a Set lost on air while a Get of the same element is out is confirmed
+  by the Get's Status (`ProxyClient.request` matches on element and status opcode), so the action succeeds though
+  the load never changed. Being fixed as a follow-up of wave 6.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -456,4 +465,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 24–67 are TODO.
+Every other finding, every low item and briefs 28–67 are TODO.

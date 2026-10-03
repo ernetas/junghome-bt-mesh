@@ -454,7 +454,27 @@ class JungHomeEntity(Entity):
 
     @callback
     def _handle_update(self) -> None:
+        """Write the state, unless what the entity shows is what Home Assistant already holds for it.
+
+        One element's status reaches every entity bound to it (a busy one has over twenty), and most show nothing
+        that changed (review-4 R I-10). The comparison is with the state machine itself, not with this entity's
+        last write — a command's own write (an assumed state) counts too — and covers the state string, so a change
+        of availability (`unavailable`) is always written; so is every attribute.
+        """
+        if self._shows_current_state():
+            return
         self.async_write_ha_state()
+
+    def _shows_current_state(self) -> bool:
+        """Whether the state and attributes the entity would write are those the state machine holds now."""
+        current = self.hass.states.get(self.entity_id)
+        if current is None:
+            return False
+        rendered = self._async_calculate_state()
+        return (
+            current.state == rendered.state
+            and current.attributes == rendered.attributes
+        )
 
     async def _send(self, command: Awaitable[None]) -> None:
         """Run a command; report a load that did not answer it, or a link that could not carry it.

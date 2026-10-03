@@ -139,6 +139,12 @@
   Home Assistant saw the node restart, instead of on every link (review-4 R4-5). A read is queued once: several links
   in quick succession used to leave one copy per link in the queue, each read in turn, and a read of a link that is
   gone is dropped for the one the next link queues. Unverified on air.
+- Another network's proxies no longer wake the search for a proxy node (review-4 R4-8): while Home Assistant had no
+  link, every proxy advertisement in range — a neighbour's mesh included — woke the connection loop for a pass over
+  every advertisement Home Assistant holds; only one of this network does now. What an advertisement is (this
+  network's Network ID, one of its nodes' Node Identity, or nobody's) is worked out once per advertisement content
+  (up to 256 kept) rather than once per advertisement: a Node Identity costs one AES per node, about 1.6 ms on a mesh
+  of 300. The kept answers are dropped when a key refresh accepts or retires a key and when a node is added.
 
 ### Fixed — gateway sync and rewiring
 
@@ -199,8 +205,45 @@
   every key: a key linked to the gateway clicks and holds (and their rocker halves), a key wired to a load, a room or
   another group presses, dims and holds, a key wired to a scene recalls. The key mode the device reported (once its
   *Key mode* sensor is enabled) decides first, then the export's connection; a key neither tells about offers all.
+- The configured mesh is no longer offered as a new discovery after a key refresh (review-4 H4-4). Discovery matched
+  only the entry's unique id (the Network ID), which follows a refresh only once it completes: mid refresh, and
+  after one the export does not have, the proxies were offered as a new *Bluetooth Mesh network* card, which could
+  only end at *already set up as another entry*. Discovery now also recognises the Network ID of a refresh Home
+  Assistant follows (from its first step on) and the export's nodes by their MAC, aborts as *already configured*,
+  and retries an entry still waiting for a proxy at once. When the refresh completes, a discovery of the new Network
+  ID still pending is dropped and one you *Ignored* is removed (logged at INFO) before the unique id moves — that used
+  to log *already in use* as an error and raise a core repair; the same in *Reconfigure*. The key-refresh cases are
+  unverified on air. Discovery still offers any Bluetooth Mesh proxy: narrowing it to JUNG proxies (`manufacturer_id`
+  1319) waits for an on-air check (decision M10).
+- A stale export gets its own error (review-4 H I-6): when nodes of the export are visible but advertise another
+  Network ID — the commonest case after the app renewed the network key — the setup dialog says *the network's keys
+  were renewed after the export was made* (`export_keys_stale`), and an entry waiting at setup shows the same reason,
+  pointing at a new export and *Reconfigure*, instead of *no node of this mesh network is visible*. Unverified on
+  air.
+- **Download diagnostics** works while the entry retries or failed (review-4 H4-6): it failed with an error exactly
+  when it would help, a proxy out of range or the Bluetooth adapter gone. Such an entry's download shows its state
+  and why, what Bluetooth sees (proxy nodes, MACs redacted, and whether each fits the export) and the export's
+  summary. Every download now includes the entry's options and the open repair issues; the file path in the
+  sequence-number store's last write error is redacted (it can name the user), the error itself kept.
+- A device that does not answer logs one warning, when it is marked unavailable (review-4 H4-7): the library logged a
+  warning for every unanswered attempt as well, several lines per device at every start. The attempts are debug
+  lines now.
+- The repair *JUNG HOME devices missing from the export* is translated as a whole (review-4 H4-8): an entry set up from
+  the gateway got an English paragraph through a placeholder. It has its own text now, naming the gateway's host.
+- The *Link state* sensor is on by default for new installations (review-4 H I-5): it is the mesh's health at a
+  glance. An installation that registered it disabled keeps it so; enable it on the *mesh network* device.
+- Less work per message on a large mesh (review-4 R4-9, R I-6, R I-10): the device behind an address, a meter's load
+  and a tunable-white light's temperature element are looked up in a table instead of a search of every node or
+  load (tens of microseconds per lookup with 300 nodes, several per message), the sequence-number store's bound on
+  a send is worked out once per write that landed instead of once per sent message (a quarter of a millisecond with
+  600 sources in the replay list), and an entity whose state and attributes a status leaves as they are no longer
+  writes its state (a busy element has over twenty entities listening; their `last_reported` stays put). A change of
+  availability is always written.
 
 ### Added
+
+- The diagnostics list the last 20 links (review-4 R I-9): the proxy node (by mesh address), how long each lasted, why
+  it ended, how long its state refresh took and how long sends were held back during it.
 
 - Re-authentication with the JUNG HOME Gateway (review-4 H I-2, U4-5; the quality scale's `reauthentication-flow`).
   When the gateway rejects Home Assistant's access token — on an export fetch, an upload or a status poll — Home
@@ -224,9 +267,25 @@
   PDUs are header- and replay-checked (`rx_proxy_config_dropped`).
 - The CLI's link waits up to a second for the proxy's beacon before its filter request, as Home Assistant's does
   (review-4 R4-10): after an IV Update the request went out under the stored IV index and the proxy dropped it.
+- `ProxyClient.request` logs each unanswered attempt at DEBUG (review-4 H4-7); its `quiet` argument is gone, the
+  `TimeoutError` after the last attempt is unchanged. The CLI's `-v` output still shows the attempts.
+- `CDB.element` / `node_by_addr` look addresses up in an index built on first use (review-4 R4-9): whoever changes
+  `CDB.nodes` or an element's address calls `CDB.reindex()` (`ProxyClient.add_node` / `remove_node` do;
+  `CDB.index_is_current()` checks it). `Devices.by_meter` is a lookup too, and `Devices.by_temperature` returns the
+  CTL light of a temperature element. `ProxyClient.classify_service_data` keeps its answers by service data
+  (`CLASSIFY_CACHE_SIZE`). `scripts/bench_mesh.py` times these hot paths against a synthetic mesh of 300 nodes.
 - `ProxyClient` bounds the subscription when it attaches and the disconnect when it detaches by `GATT_TIMEOUT`
   (review-4 R4-11): a transport call that never returned held the connection loop, and its connection slot, for
   good. A disconnect that times out is logged as a warning and left behind. Unverified on air.
+- Internal: the integration's hub is tested over the simulated mesh of `tests/sim` as well as over the fake proxy
+  link (review-4 Q4-19): `tests/test_hub_sim.py` sets the entry up through the simulated proxy node, so relays, the
+  proxy filter, the nodes' replay lists and segmentation work as on air, and every test ends on the simulation's
+  invariants. A seeded soak (`tests/soak/`, marker `sim`) runs Home Assistant and the hub on virtual time over a
+  synthetic network of 80 nodes (300 with `SIM_SOAK=long`) whose proxy keeps dropping the link on a lossy air, and
+  checks unique sequence numbers, the link-loss grace, bounded queues and tasks, and a complete refresh once the
+  link holds. `tests/test_fake_conformance.py` holds the three proxy fakes to one behaviour (filter type answers,
+  segmentation and acknowledgements, replay protection, IV Update): the integration's fake now answers the filter
+  type it was asked for, and the library's drops a replayed PDU and fails its test on one.
 
 ## 1.0.0
 

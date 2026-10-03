@@ -37,7 +37,7 @@ from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.number import JungHomePropertyNumber, codec_range
 
 from . import property_helpers as ph
-from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link, wait_until
 from .helpers import (
     LIGHT_SWITCH,
     OUR_ADDRESS,
@@ -51,7 +51,6 @@ from .property_helpers import (
     PropertyMesh,
     fake_hub,
     vendor_status,
-    wait_until,
 )
 
 if TYPE_CHECKING:

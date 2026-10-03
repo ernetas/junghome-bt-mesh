@@ -470,6 +470,65 @@ def test_classify_service_data(proxy: ProxyClient, cdb: CDB):
     assert proxy.classify_service_data(b"\x02" + bytes(16)) is None
 
 
+def test_classify_keeps_its_verdicts(
+    proxy: ProxyClient, cdb: CDB, monkeypatch: pytest.MonkeyPatch
+):
+    """Review-4 R4-8: a verdict is kept by the bytes, least recently seen dropped first — another network's Node
+    Identity (no node matches: one AES per node) is worked out once, not per advert."""
+    hashed: list[int] = []
+    real = NetKeyMaterial.node_identity_hash
+
+    def counting(self: NetKeyMaterial, rnd: bytes, address: int) -> bytes:
+        hashed.append(address)
+        return real(self, rnd, address)
+
+    monkeypatch.setattr(NetKeyMaterial, "node_identity_hash", counting)
+    monkeypatch.setattr(client_mod, "CLASSIFY_CACHE_SIZE", 3)
+    stranger = bytearray(b"\x01" + bytes(16))  # as bleak hands it over: mutable
+    assert proxy.classify_service_data(stranger) is None
+    assert len(hashed) == len(cdb.nodes)
+    assert proxy.classify_service_data(stranger) is None
+    assert len(hashed) == len(cdb.nodes)  # kept
+    others = [b"\x00" + bytes([n]) * 8 for n in range(1, 4)]
+    proxy.classify_service_data(others[0])
+    proxy.classify_service_data(others[1])
+    assert (
+        proxy.classify_service_data(stranger) is None
+    )  # seen again: the most recent now
+    proxy.classify_service_data(others[2])  # one too many: the least recent goes
+    assert proxy.classify_service_data(stranger) is None
+    assert len(hashed) == len(cdb.nodes)
+    for other in others:
+        proxy.classify_service_data(other)
+    assert (
+        proxy.classify_service_data(stranger) is None
+    )  # dropped meanwhile: worked out again
+    assert len(hashed) == 2 * len(cdb.nodes)
+
+
+def test_lookups_and_verdicts_follow_add_node_and_remove_node(
+    proxy: ProxyClient, cdb: CDB
+):
+    """Review-4 R4-9: a node made known or forgotten re-indexes the addresses and drops the advert verdicts (its
+    Node Identity was nobody's before, and is nobody's after)."""
+    unicast = 0x0700
+    rnd = bytes(range(8))
+    identity = b"\x01" + cdb.net_keys[0].node_identity_hash(rnd, unicast) + rnd
+    assert cdb.element(unicast) is None
+    assert proxy.classify_service_data(identity) is None
+    node = Node("00000000-0000-4000-8000-0000000000aa", "new", unicast, bytes(16), 1)
+    node.elements = [Element(unicast + i, 1 + i, [], node) for i in range(2)]
+    proxy.add_node(node)
+    assert cdb.index_is_current()
+    assert cdb.element(unicast + 1) is node.elements[1]
+    assert cdb.node_by_addr(unicast) is node
+    assert proxy.classify_service_data(identity) == ("node-identity", unicast)
+    proxy.remove_node(node)
+    assert cdb.index_is_current()
+    assert cdb.node_by_addr(unicast) is None
+    assert proxy.classify_service_data(identity) is None
+
+
 async def test_detach_disconnects_once(attached: ProxyClient, link: FakeBleak):
     await attached.detach()
     assert link.disconnect_calls == 1
@@ -2053,7 +2112,8 @@ async def test_request_config_segmented_round_trip(
 async def test_request_config_retries_then_times_out(
     attached: ProxyClient, link: FakeBleak, caplog: pytest.LogCaptureFixture
 ):
-    with caplog.at_level(logging.WARNING, logger="jhmesh"):
+    """Each unanswered attempt is a DEBUG line, never a WARNING (review-4 H4-7): the caller reports the TimeoutError."""
+    with caplog.at_level(logging.DEBUG, logger="jhmesh"):
         with pytest.raises(TimeoutError, match="no response from 0148"):
             await attached.request_config(
                 PROXY_NODE,
@@ -2063,7 +2123,11 @@ async def test_request_config_retries_then_times_out(
                 retries=3,
             )
     assert [m[4] for m in link.sent_config()] == [C.node_reset()] * 3
-    assert caplog.text.count("no response from 0148") == 3
+    attempts = [r for r in caplog.records if "no response from 0148" in r.getMessage()]
+    assert [r.getMessage() for r in attempts] == [
+        f"no response from 0148 (attempt {n}/3)" for n in (1, 2, 3)
+    ]
+    assert {r.levelno for r in attempts} == {logging.DEBUG}
     assert attached._waiters == []
 
 
@@ -4157,6 +4221,18 @@ async def test_a_key_refresh_by_the_provisioner_is_followed(
         "network-id",
         None,
     )
+
+
+async def test_advert_verdicts_do_not_outlive_a_key_change(
+    attached: ProxyClient, link: FakeBleak, cdb: CDB
+):
+    """Review-4 R4-8: a kept verdict is for the keys accepted when it was made — the new key's proxies are ours
+    the moment a key refresh accepts it, though their advert was another network's a moment before."""
+    advert = b"\x00" + NetKeyMaterial.derive(NEW_NET_KEY).network_id
+    assert attached.classify_service_data(advert) is None
+    phone_config(link, cdb, PROXY_NODE, C.netkey_update(NEW_NET_KEY))
+    assert attached.key_refresh_phase == 1
+    assert attached.classify_service_data(advert) == ("network-id", None)
 
 
 async def test_a_config_request_under_the_old_key_while_transmitting_with_the_new(

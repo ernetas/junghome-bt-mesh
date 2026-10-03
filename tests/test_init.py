@@ -52,6 +52,7 @@ from custom_components.junghome_ble.const import (
     SEQ_SKIP_AHEAD,
     STORAGE_DIR,
 )
+from custom_components.junghome_ble.coordinator import KNOWN_MESHES
 from custom_components.junghome_ble.entity import mac_from_uuid
 
 from .conftest import (
@@ -149,6 +150,33 @@ async def test_not_ready_without_visible_proxy(
     assert not await hass.config_entries.async_setup(mock_config_entry.entry_id)
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
     assert mock_config_entry.error_reason_translation_key == "no_proxy_visible"
+
+
+async def test_not_ready_with_a_stale_export_says_so(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """Review-4 H I-6: a node of the export advertises another Network ID (a key refresh since the export was
+    made): not "no node visible" but a stale export. The setup still recorded what discovery knows the mesh by
+    (H4-4); the removal of the entry forgets it."""
+    mock_bluetooth_env["infos"] = [make_service_info(b"\x22" * 8)]  # node 0148's MAC
+    mock_config_entry.add_to_hass(hass)
+    assert not await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert mock_config_entry.error_reason_translation_key == "export_keys_stale"
+    known = hass.data[KNOWN_MESHES][mock_config_entry.entry_id]
+    assert known.network_ids == {network_id}
+    assert MAC_LIGHT_SWITCH in known.macs
+    with patch(
+        "custom_components.junghome_ble.bluetooth.async_discovered_service_info",
+        return_value=[],
+    ):
+        await hass.config_entries.async_remove(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+    assert mock_config_entry.entry_id not in hass.data[KNOWN_MESHES]
 
 
 async def test_not_ready_without_bluetooth_says_so(

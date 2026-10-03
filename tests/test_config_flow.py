@@ -27,6 +27,7 @@ from bleak.backends.scanner import AdvertisementData
 from habluetooth.models import BluetoothServiceInfoBleak
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
+    SOURCE_IGNORE,
     SOURCE_USER,
     ConfigEntryState,
 )
@@ -70,7 +71,12 @@ from custom_components.junghome_ble.const import (
     PIN_FROM_USER,
     STORAGE_DIR,
 )
-from custom_components.junghome_ble.coordinator import seq_store_for_uuid
+from custom_components.junghome_ble.coordinator import (
+    KNOWN_MESHES,
+    KnownMesh,
+    remember_known_mesh,
+    seq_store_for_uuid,
+)
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
@@ -84,6 +90,7 @@ from custom_components.junghome_ble.tls import CONF_GATEWAY_FINGERPRINT
 from .conftest import (
     CDB_PATH,
     META_DIR,
+    PROXY_ADDRESS,
     SHARE_EXPORT_PATH,
     make_node_identity_info,
     make_service_info,
@@ -109,6 +116,7 @@ ENTRY_DATA = {
     CONF_SOURCE: "path",
 }  # what the entry records
 OTHER_NETKEY = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+OTHER_ADDRESS = "11:22:33:44:55:66"  # a proxy no node of the export advertises from
 
 HOST = "192.168.1.50"
 API = f"https://{HOST}/api/junghome"
@@ -604,7 +612,9 @@ async def test_user_flow_address_in_use(
 async def test_user_flow_no_proxy_visible(
     hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
 ) -> None:
-    other = make_service_info(b"\x11" * 8)  # a proxy of some other mesh
+    other = make_service_info(
+        b"\x11" * 8, address="AA:BB:CC:DD:EE:04"
+    )  # a proxy of some other mesh
     identity = make_service_info(b"\x33" * 8, address="11:22:33:44:55:66")
     identity.service_data = {
         next(iter(identity.service_data)): b"\x01" + b"\x33" * 16
@@ -621,6 +631,31 @@ async def test_user_flow_no_proxy_visible(
     )
     result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
     assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_user_flow_stale_export(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    """Review-4 H I-6: a node of the export advertising another Network ID is this mesh under keys the export
+    lacks (a key refresh since it was made): `export_keys_stale`, not `no_proxy_visible`. A Node Identity advert
+    from the node's MAC says nothing either way."""
+    identity = make_service_info(b"\x33" * 8)
+    identity.service_data = {next(iter(identity.service_data)): b"\x01" + b"\x33" * 16}
+    mock_bluetooth_env["infos"] = [
+        identity,
+        make_service_info(b"\x11" * 8, address=OTHER_ADDRESS),
+    ]
+    flow_id = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["errors"] == {"base": "no_proxy_visible"}
+
+    mock_bluetooth_env["infos"].append(
+        make_service_info(b"\x22" * 8, address=PROXY_ADDRESS.lower())
+    )
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "export_keys_stale"}
+    assert mock_setup_entry.mock_calls == []
 
 
 async def test_user_flow_metadata_optional(
@@ -1967,6 +2002,77 @@ async def test_bluetooth_flow_already_configured(
     assert result["reason"] == "already_configured"
 
 
+async def test_bluetooth_flow_recognises_a_configured_mesh_under_its_followed_key(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any]
+) -> None:
+    """Review-4 H4-4: a proxy advertising the key of a refresh the hub follows (phase 1 here, stored with the
+    sequence numbers) is the configured mesh, from an address the export lacks too: aborted. The export of an entry
+    that is not loaded is read once for every proxy discovered after it."""
+    await seq_store_for_uuid(hass, MESH_UUID).async_save(
+        {
+            "addresses": {
+                "0D00": {"seq": 100, "key_refresh": {"key": OTHER_NETKEY, "phase": 1}}
+            }
+        }
+    )
+    _entry(MESH_UUID).add_to_hass(hass)
+    new_id = NetKeyMaterial.derive(bytes.fromhex(OTHER_NETKEY)).network_id
+    with patch.object(CDB, "load", wraps=CDB.load) as load:
+        for address in (OTHER_ADDRESS, "AA:BB:CC:DD:EE:05"):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_BLUETOOTH},
+                data=make_service_info(new_id, address=address),
+            )
+            assert result["type"] is FlowResultType.ABORT
+            assert result["reason"] == "already_configured"
+    assert load.call_count == 1
+
+
+async def test_bluetooth_flow_retries_an_entry_waiting_for_its_mesh(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any]
+) -> None:
+    """A discovery of the mesh an entry in SETUP_RETRY is waiting for retries it at once, as Home Assistant does
+    for a unique-id match; the one that set up is left alone."""
+    retrying = _entry(MESH_UUID)
+    retrying.add_to_hass(hass)
+    retrying.mock_state(hass, ConfigEntryState.SETUP_RETRY)
+    remember_known_mesh(
+        hass, retrying.entry_id, KnownMesh(set(), frozenset({PROXY_ADDRESS}))
+    )
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_BLUETOOTH},
+            data=make_service_info(b"\x44" * 8),  # node 0148's MAC, another Network ID
+        )
+        assert result["reason"] == "already_configured"
+        reload.assert_called_once_with(retrying.entry_id)
+        retrying.mock_state(hass, ConfigEntryState.LOADED)
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_BLUETOOTH},
+            data=make_service_info(b"\x44" * 8),
+        )
+        assert result["reason"] == "already_configured"
+        reload.assert_called_once()
+
+
+async def test_bluetooth_flow_offers_a_mesh_beside_an_entry_whose_export_is_unreadable(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], tmp_path: Path
+) -> None:
+    """An entry whose export cannot be read recognises nothing, and nothing is kept: a fixed file counts next time."""
+    entry = _entry(MESH_UUID, cdb_path=str(tmp_path / "missing.json"))
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(b"\x44" * 8, address=OTHER_ADDRESS),
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert entry.entry_id not in hass.data[KNOWN_MESHES]
+
+
 # --------------------------------------------------------------------------- reconfigure
 
 
@@ -2065,9 +2171,17 @@ async def test_reconfigure_flow_after_key_refresh(
     ]  # the proxies already advertise the new Network ID
     entry = _entry(recorded_uuid)
     entry.add_to_hass(hass)
-    # ... which is why Bluetooth discovery has already offered the "new" network
+    # a node of the export is recognised by its MAC whatever it advertises (review-4 H4-4) ...
     discovery = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=make_service_info(new_id)
+    )
+    assert discovery["type"] is FlowResultType.ABORT
+    assert discovery["reason"] == "already_configured"
+    # ... a node the export lacks is not: Bluetooth discovery has offered the "new" network
+    discovery = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(new_id, address=OTHER_ADDRESS),
     )
     assert discovery["type"] is FlowResultType.FORM
 
@@ -2084,10 +2198,45 @@ async def test_reconfigure_flow_after_key_refresh(
     # the stale discovery flow is gone, and the refreshed network is no longer offered as a new one
     assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
     discovery = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=make_service_info(new_id)
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(new_id, address=OTHER_ADDRESS),
     )
     assert discovery["type"] is FlowResultType.ABORT
     assert discovery["reason"] == "already_configured"
+
+
+async def test_reconfigure_after_key_refresh_removes_an_ignored_discovery(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    refreshed_network: tuple[str, bytes],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """H4-4: the user pressed *Ignore* on the discovery of the new Network ID. The reconfigure removes that entry
+    before the unique id moves (no "already in use" error, no core repair) and forgets what discovery knew the
+    mesh by: the next setup records the new export's."""
+    new_path, new_id = refreshed_network
+    mock_bluetooth_env["infos"] = [make_service_info(new_id)]
+    entry = _entry(MESH_UUID)
+    entry.add_to_hass(hass)
+    ignored = MockConfigEntry(
+        domain=DOMAIN, source=SOURCE_IGNORE, unique_id=new_id.hex(), data={}
+    )
+    ignored.add_to_hass(hass)
+    remember_known_mesh(hass, entry.entry_id, KnownMesh(set(), frozenset()))
+    caplog.set_level(logging.INFO)
+    result = await _start_reconfigure(hass, entry, "path")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**FORM_INPUT, CONF_CDB_PATH: new_path}
+    )
+    await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+    assert hass.config_entries.async_get_entry(ignored.entry_id) is None
+    assert entry.unique_id == new_id.hex()
+    assert "already in use" not in caplog.text
+    assert "Removing the ignored discovery of JUNG HOME mesh test's mesh" in caplog.text
+    assert entry.entry_id not in hass.data[KNOWN_MESHES]
 
 
 async def test_reconfigure_applies_the_key_refresh_the_hub_followed(

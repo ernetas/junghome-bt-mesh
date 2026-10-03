@@ -5,14 +5,21 @@ the client work as usual, but nothing waits in real time — when no callback is
 straight to the next scheduled one. A simulated hour of beacons and retransmissions takes as long as the Python it
 runs. `patch_monotonic` makes `time.monotonic()` inside the library read the same clock (the reassembly expiry,
 `last_rx`, message timestamps).
+
+An executor job (`run_in_executor`: Home Assistant's file reads, imports, its storage) runs on its thread while the
+loop waits for it, and its result is ready when the call returns: the clock stands still meanwhile (it would
+otherwise jump to the next timer and fire a timeout the job's result would have beaten), and where the result lands
+among the loop's callbacks is the same on every run. A job that is not through within `EXECUTOR_BLOCK` (one that
+needs the loop itself to finish) is waited for the ordinary way, the clock still standing.
 """
 
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import selectors
 import time
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -20,6 +27,8 @@ if TYPE_CHECKING:
 
 # how long a loop with nothing scheduled waits (in real time) for another thread before calling it a deadlock
 _REAL_IDLE_LIMIT = 0.2
+_EXECUTOR_POLL = 0.05  # real seconds between looks while an executor job runs (its result wakes the loop sooner)
+EXECUTOR_BLOCK = 5.0  # real seconds `run_in_executor` waits for a job in place before it lets the loop run on
 DEFAULT_LIMIT = (
     7 * 24 * 3600.0
 )  # a week of virtual time: far beyond any test, short of hanging on a beacon timer
@@ -42,6 +51,9 @@ class _VirtualSelector(selectors.DefaultSelector):  # type: ignore[misc,valid-ty
         ready = super().select(0)
         if ready:
             return ready  # type: ignore[no-any-return]
+        if self.loop.executor_jobs:
+            # a thread is at work: its result is the next thing to happen, not the next timer
+            return super().select(_EXECUTOR_POLL)  # type: ignore[no-any-return]
         if timeout is None:
             # nothing scheduled: only another thread (an executor job) could still wake the loop
             ready = super().select(_REAL_IDLE_LIMIT)
@@ -61,12 +73,50 @@ class VirtualTimeLoop(asyncio.SelectorEventLoop):
     def __init__(self, limit: float = DEFAULT_LIMIT) -> None:
         self._virtual_now = 0.0
         self.limit = limit
+        self.executor_jobs: set[asyncio.Future[Any]] = set()
         selector = _VirtualSelector()
         selector.loop = self
         super().__init__(selector)
 
-    def time(self) -> float:
+    def run_in_executor(
+        self, executor: Any, func: Any, *args: Any
+    ) -> asyncio.Future[Any]:
+        self._check_closed()
+        if executor is None:
+            executor = self._default_executor
+            if executor is None:
+                executor = self._default_executor = (
+                    concurrent.futures.ThreadPoolExecutor(thread_name_prefix="asyncio")
+                )
+        running = executor.submit(func, *args)
+        concurrent.futures.wait([running], timeout=EXECUTOR_BLOCK)
+        if not running.done():
+            job = asyncio.wrap_future(running, loop=self)
+            self.executor_jobs.add(job)
+            job.add_done_callback(self.executor_jobs.discard)
+            return job
+        job = self.create_future()
+        if (error := running.exception()) is not None:
+            job.set_exception(error)
+        else:
+            job.set_result(running.result())
+        return job
+
+    def _virtual_time(self) -> float:
         return self._virtual_now
+
+    @property
+    def time(self) -> Callable[[], float]:  # type: ignore[override]
+        """The virtual clock, `loop.time()` as on any loop.
+
+        A property so that it stays: Home Assistant binds `time.monotonic` as the `time` of the loop it runs on
+        (`homeassistant.runner.configure_event_loop`, which its test fixtures call for every test's loop).
+        """
+        return self._virtual_time
+
+    @time.setter
+    def time(self, _clock: Callable[[], float]) -> None:
+        pass  # the virtual clock is the point of this loop
 
     def advance(self, seconds: float) -> None:
         self._virtual_now += seconds

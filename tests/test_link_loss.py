@@ -16,6 +16,9 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.junghome_ble import coordinator
 from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.diagnostics import (
+    async_get_config_entry_diagnostics,
+)
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS
 
@@ -370,3 +373,68 @@ async def test_a_detach_that_never_returns_does_not_hold_up_the_drop(
     assert "did not close within" in caplog.text
     monkeypatch.setattr(hub.proxy, "detach", detach)
     await wait_for_link(hass, init_integration)
+
+
+async def test_the_link_history_tells_why_the_last_links_ended(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 R I-9: nothing recorded why a link ended. The last LINK_HISTORY links are kept, oldest first, each
+    with its proxy (by mesh address), length, reason, how long its refresh took and how long sends were held back;
+    the diagnostics show them newest first."""
+    hub = hub_of(init_integration)
+    assert list(hub.link_history) == []
+    assert hub.link_history.maxlen == coordinator.LINK_HISTORY == 20
+    with patch.object(JungHomeHub, "_refresh_all", AsyncMock(return_value=True)):
+        fake_link.drop_link()  # the proxy went away
+        await wait_for_link(hass, init_integration, connected=False)
+        await wait_for_link(hass, init_integration)
+        await wait_until(
+            hass, lambda: hub._link_refresh is not None, what="the second refresh"
+        )
+        await hub.async_skip_ahead()  # we end the second link ourselves
+        await wait_for_link(hass, init_integration)
+    first, second = hub.link_history
+    assert (first.reason, first.penalise) == ("the proxy disconnected", None)
+    assert (second.reason, second.penalise) == ("sequence numbers skipped ahead", False)
+    assert first.proxy_node == second.proxy_node == 0x0148
+    assert second.refresh is not None
+    assert 0 <= second.refresh <= second.lasted
+    assert first.held_back == second.held_back == 0
+    assert first.ended <= second.ended
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, init_integration)
+    history = diagnostics["link"]["history"]
+    assert [(h["reason"], h["penalised"], h["proxy_node"]) for h in history] == [
+        ("sequence numbers skipped ahead", False, "0148"),
+        ("the proxy disconnected", None, "0148"),
+    ]
+    assert set(history[0]) == {
+        "proxy_node",
+        "ended_ago",
+        "lasted",
+        "reason",
+        "penalised",
+        "refresh",
+        "held_back",
+    }
+    assert history[0]["refresh"] is not None
+    assert history[0]["ended_ago"] <= history[1]["ended_ago"]
+
+
+async def test_a_link_lost_before_its_refresh_records_none(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """A link that went before its state refresh got through has no refresh time."""
+    hub = hub_of(init_integration)
+    with patch.object(JungHomeHub, "_refresh_all", AsyncMock(return_value=False)):
+        fake_link.drop_link()
+        await wait_for_link(hass, init_integration, connected=False)
+        await wait_for_link(hass, init_integration)
+        fake_link.drop_link()
+        await wait_for_link(hass, init_integration, connected=False)
+    assert len(hub.link_history) == 2
+    assert hub.link_history[1].refresh is None
