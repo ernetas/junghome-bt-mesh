@@ -548,7 +548,8 @@ without an app name share one device per node.
   the devices publish a *Scene Status* to their group after every recall, and one naming a scene no recall reported in
   the last 5 s fires the event without `source`, with `reported_by` (the device that published it) instead; the statuses that
   follow a recall Home Assistant did hear fire nothing more. The logbook shows both events ("Living room rocker Button
-  A clicked", "All off was recalled by Living room rocker").
+  A clicked", "All off was recalled by Living room rocker"), in the server's language ("… Taste A geklickt", "Alles
+  aus wurde von … abgerufen").
 
 ### Device triggers
 
@@ -885,6 +886,21 @@ image is meant for, the bootloader and secure-element images and the room thermo
 not (the node reports none of them). The gateway gets none: the app has no image for it, it updates itself (its version
 is the *Firmware version* sensor of an entry set up from the gateway). Every node of this installation runs the version
 its app bundles; an *Update available* has not been seen on air.
+
+### Languages
+
+The integration speaks English and German (`translations/de.json`, review-4 U4-1): the setup and options pages, the
+entity names and states, the actions, the repair notices and the error messages follow each user's Home Assistant
+language. The German uses the informal *du*, as Home Assistant's own German does, and the terms of the German JUNG
+HOME app for JUNG things (*Taste* for a key, *Wippe* for a rocker, *Taster* for a push-button, *Einsatz*, *Szene*,
+*Tastenmodus*, *Sperrfunktion*, *Zeitgeber*), Home Assistant's for its own (*Bereich*, *Gerät*, *Entität*, *Aktion*,
+*Reparatur*). The app calls a room a *Bereich*; here it is a *Raum*, so that it stays apart from a Home Assistant
+area. A key a language lacks shows in English; `tests/test_translations.py` keeps every language's keys and
+`{placeholders}` in line with `en.json` and prints how much of each section is translated.
+
+What Home Assistant builds in the backend follows the server's language instead (the language set under *Settings →
+System → General*): the device models (*Taster 1-fach (Schalteinsatz)*, *Schaltbare Leuchte*, …, loaded at setup)
+and the logbook lines of key presses, scene recalls and plans. The diagnostics stay English.
 
 ## Prerequisites
 
@@ -1571,7 +1587,7 @@ that stopped carries the same in its placeholders (`outcome_applied`, `outcome_t
 `outcome_nodes`), and names the device that refused or stayed silent by its name as well as its address.
 
 **Logbook.** Every call that ran a plan leaves a logbook line under the network's name, in the language of the
-server (English for now): *0234 (…) now drives room Kitchen; 8 messages*, *… now in room …*, *Room … deleted*,
+server (English or German, see [Languages](#languages)): *0234 (…) now drives room Kitchen; 8 messages*, *… now in room …*, *Room … deleted*,
 *… removed from the network*, *Scene … deleted*, or *junghome_ble.assign_key stopped after 3 of 8 messages: …* /
 *… was cancelled after …*. The bus event is `junghome_ble_plan` (`entry_id`, `name`, `action`, `outcome`:
 `finished`, `stopped` or `cancelled`, `message`, `placeholders`). The diagnostics keep the last five such calls

@@ -53,7 +53,7 @@ from custom_components.junghome_ble.const import (
     STORAGE_DIR,
 )
 from custom_components.junghome_ble.coordinator import KNOWN_MESHES
-from custom_components.junghome_ble.entity import mac_from_uuid
+from custom_components.junghome_ble.entity import mac_from_uuid, product_name
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 
 from .conftest import (
@@ -639,6 +639,51 @@ async def test_device_registry_layout(
     assert (
         len(dr.async_entries_for_config_entry(devices, entry_id)) == 1 + 6 + 5 + 1 + 3
     )
+
+
+async def test_device_models_follow_the_server_language(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Review-4 U4-16: with the server in German the models are German — product, insert, load, keys, the mesh."""
+    hass.config.language = "de"
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    entry_id = mock_config_entry.entry_id
+    devices = dr.async_get(hass)
+
+    def device(ident: str) -> dr.DeviceEntry:
+        found = devices.async_get_device_by_identifier((DOMAIN, ident), entry_id)
+        assert found is not None
+        return found
+
+    assert device(MESH_ID).model == "Bluetooth-Mesh-Netzwerk"
+    node = device(NODE_0148)
+    assert node.name == "WC mirror - Taster 1-fach"
+    assert node.model == "Taster 1-fach (Schalteinsatz)"
+    assert device(LIGHT_0148).model == "Schaltbare Leuchte"
+    assert device(BUTTONS_0148).model == "Tasten"
+    assert device(SOCKET_0172).model == "Steckdose (mit Energiemessung)"
+    assert (
+        device(f"node:{NODE_ACTUATOR}").model
+        == "Schaltaktor 1-fach, 2 Eingänge, Energiemessung"
+    )
+
+
+def test_product_names_without_a_translation() -> None:
+    """Without labels (the diagnostics, a stand-in hub) the names are English; a product nobody named is numbered."""
+    labels = {"device_model.options.unknown_product": "Produkt {pid}"}
+    assert product_name(0x01) == "Push-button 1-gang"
+    assert (
+        product_name(0x01, labels) == "Push-button 1-gang"
+    )  # a label the language lacks
+    assert product_name(0x99) == "Product 153"
+    assert product_name(0x99, labels) == "Produkt 153"
+    assert product_name(None) == "Product None"
 
 
 def test_mac_from_uuid() -> None:

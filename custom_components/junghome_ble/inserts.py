@@ -40,7 +40,12 @@ from .const import (
     SIGNAL_UPDATE,
     learn_more_url,
 )
-from .entity import product_name, update_buttons_devices, update_node_device
+from .entity import (
+    model_name,
+    product_name,
+    update_buttons_devices,
+    update_node_device,
+)
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid, parse_manufacturer_data
@@ -71,9 +76,10 @@ INSERT_ID, BUTTON_LAYOUT = 0x0002, 0x5001
 INSERT_ITEM, LAYOUT_ITEM = NODE_INFO_INSERT[INSERT_ID], NODE_INFO_INSERT[BUTTON_LAYOUT]
 # the LBC servers the two Gets go to: InsertId on the User server, ButtonLayout on the Admin server
 LBC_USER_SERVER, LBC_ADMIN_SERVER = "05271013", "05271011"
-# the translated names: `selector.insert.options.<ACTUATOR_FUNCTION name>`, `selector.button_layout.options.<...>`
+# the translated names: `selector.insert.options.<ACTUATOR_FUNCTION name>`, `selector.button_layout.options.<...>`,
+# and the device models (`selector.product`, `selector.device_model`: `entity.product_name`, `entity.model_name`)
 LABELS = f"component.{DOMAIN}.selector."
-BUTTONS_MODEL = "Push-buttons"
+LABEL_KINDS = ("insert", "button_layout", "product", "device_model")
 
 
 def _value(info: dict[str, bytes], item: str) -> int | None:
@@ -124,14 +130,17 @@ def apply_reported(
 
 
 async def async_load_labels(hass: HomeAssistant) -> dict[str, str]:
-    """Return the insert and layout names in Home Assistant's language, by `insert.options.<key>` and the like."""
+    """Return the insert, layout and model names in Home Assistant's language, by `insert.options.<key>` and the like.
+
+    Home Assistant fills what its language lacks from English.
+    """
     translations = await async_get_translations(
         hass, hass.config.language, "selector", {DOMAIN}
     )
     return {
         key.removeprefix(LABELS): text
         for key, text in translations.items()
-        if key.startswith((f"{LABELS}insert.", f"{LABELS}button_layout."))
+        if key.startswith(tuple(f"{LABELS}{kind}." for kind in LABEL_KINDS))
     }
 
 
@@ -201,14 +210,15 @@ class NodeInserts:
 
     def node_model(self, node: Node) -> str:
         """Return the node device's model: the product, and a push-button's insert once known (`Push-button 1-gang (DALI insert)`)."""
-        product = product_name(node.pid)
+        product = product_name(node.pid, self.labels)
         insert = self._label("insert", P.ACTUATOR_FUNCTION, self.function(node))
         return f"{product} ({insert})" if insert else product
 
     def buttons_model(self, node: Node) -> str:
         """Return a buttons device's model: push-buttons, and the node's key layout once known (`Push-buttons (Rocker | Button)`)."""
         layout = self._label("button_layout", P.BUTTON_LAYOUT, self.layout(node))
-        return f"{BUTTONS_MODEL} ({layout})" if layout else BUTTONS_MODEL
+        buttons = model_name(self.labels, "push_buttons")
+        return f"{buttons} ({layout})" if layout else buttons
 
     # ------------------------------------------------------------------ learning
     def note_advert(self, node: Node, advert: JungAdvertisement | None) -> None:

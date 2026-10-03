@@ -1528,6 +1528,30 @@
     },
     "plan_cancelled": {
       "message": "{action} was cancelled after {applied} of {total} messages; the mesh export records what was applied"
+    },
+    "logbook_scene_from_key": {
+      "message": "recalled scene {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "no release heard in time"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "link lost"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integration stopped"
+    },
+    "logbook_scene_number": {
+      "message": "Scene {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scene"
+    },
+    "logbook_recalled": {
+      "message": "was recalled"
+    },
+    "logbook_recalled_by": {
+      "message": "was recalled by {device}"
     }
   },
   "issues": {
@@ -2790,6 +2814,41 @@
         "one_left_two_right": "Rocker | Button",
         "two_left_one_right": "Button | Rocker",
         "one_left_one_right": "Rocker | Rocker"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Push-button 1-gang",
+        "push_button_2": "Push-button 2-gang",
+        "socket_metering": "Socket (metering)",
+        "socket": "Socket",
+        "switch_actuator_mini": "Switch actuator 1-gang mini",
+        "blinds_actuator_mini": "Blinds actuator 1-gang mini",
+        "wall_transmitter_1": "Wall transmitter 1-gang",
+        "wall_transmitter_2": "Wall transmitter 2-gang",
+        "motion_detector_1m": "Motion detector 1 m",
+        "motion_detector_2m": "Motion detector 2 m",
+        "presence_detector": "Presence detector",
+        "room_thermostat": "Room thermostat",
+        "gateway": "Gateway",
+        "switch_actuator_1_energy": "Switch actuator 1-gang 2-input energy",
+        "switch_actuator_2": "Switch actuator 2-gang 2-input",
+        "dimmer_actuator": "Dimmer actuator 1-gang 2-input",
+        "blinds_actuator": "Blinds PP2 actuator 1-gang 2-input",
+        "dali_actuator": "DALI actuator 1-gang 2-input",
+        "mini_sensor_mains": "Mini sensor 2-input mains",
+        "mini_sensor_battery": "Mini sensor 2-input battery"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh network",
+        "switch": "Switched light",
+        "dimmer": "Dimmable light",
+        "ctl": "Tunable-white (DALI) light",
+        "blind": "Blind / shutter drive",
+        "push_buttons": "Push-buttons",
+        "unknown_product": "Product {pid}"
       }
     }
   }

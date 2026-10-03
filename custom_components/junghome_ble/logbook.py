@@ -1,14 +1,17 @@
 """Describe the JUNG HOME bus events in the logbook.
 
-The button and scene lines are English on purpose, unlike everything else in this integration: the logbook API has
-no translation hook — a describer is a sync callback returning literal strings, runs in the server's language rather
-than the viewing user's, and `strings.json` has no category hassfest would accept for it. Core's own describers
-(automation, deconz, shelly, zha, …) hard-code English the same way.
+The logbook API has no translation hook: a describer is a sync callback returning literal strings, and it runs in the
+server's language rather than the viewing user's. Every line is still the integration's own text (review-4 U4-16),
+rendered from the translations Home Assistant cached for the server's language when it set the integration up,
+English where that language has none (`cached_text`):
 
-A plan's line (`EVENT_PLAN`, review-4 W I7: "Key 0151 (…) now drives room Kitchen; 6 messages") is worded by the
-action and translated all the same: its text is an `exceptions` message of `strings.json` (the category hassfest
-accepts for a sentence with placeholders), rendered from the translations Home Assistant cached for the server's
-language, English when that has none.
+- what happened to a key is the device trigger's wording (`device_automation.trigger_subtype`, "clicked"), the key
+  the event entity's name (`entity.event.button.name`, "Button A"), the rest `logbook_*` messages of `exceptions`
+  (the category hassfest accepts for a sentence with placeholders);
+- a plan's line (`EVENT_PLAN`, review-4 W I7: "Key 0151 (…) now drives room Kitchen; 6 messages") is worded by the
+  action, a `plan_*` message of `exceptions`.
+
+An event type, hold-end reason or plan line nobody wrote a text for (a newer version's) shows as it is.
 """
 
 from __future__ import annotations
@@ -33,41 +36,44 @@ from .const import (
     EVENT_BUTTON_ACTION,
     EVENT_PLAN,
     EVENT_SCENE_RECALLED,
-    HOLD_END_LINK_LOST,
-    HOLD_END_STOPPED,
-    HOLD_END_TIMEOUT,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# What happened to the key, per event type; the wording mirrors the event entity's state labels (strings.json).
-BUTTON_MESSAGES = {
-    "click": "clicked",
-    "double_click": "double-clicked",
-    "hold_start": "hold started",
-    "hold_end": "hold released",
-    "press_on": "pressed on / up",
-    "press_off": "pressed off / down",
-    "dim": "dimming",
-}  # a `scene` event names the scene number instead
-# Why a hold ended without its release (`const.HOLD_END_REASONS`), appended to "hold released".
-HOLD_END_MESSAGES = {
-    HOLD_END_TIMEOUT: "no release heard in time",
-    HOLD_END_LINK_LOST: "link lost",
-    HOLD_END_STOPPED: "integration stopped",
-}
+
+@callback
+def cached_text(
+    hass: HomeAssistant,
+    category: str,
+    key: str,
+    placeholders: dict[str, str] | None = None,
+) -> str | None:
+    """Return the integration's text `<category>.<key>` in the server's language (English without), filled in.
+
+    None when neither has it: the integration's translations are cached when Home Assistant sets it up, so only a
+    key no version wrote lacks one.
+    """
+    path = f"component.{DOMAIN}.{category}.{key}"
+    for language in (hass.config.language, "en"):
+        text = async_get_cached_translations(hass, language, category, DOMAIN)
+        if path in text:
+            return text[path].format_map(placeholders or {})
+    return None
 
 
 @callback
 def plan_message(hass: HomeAssistant, key: str, placeholders: dict[str, str]) -> str:
     """Return a plan's logbook line in the server's language (English without it); the key when it has no text."""
-    path = f"component.{DOMAIN}.exceptions.{key}.message"
-    for language in (hass.config.language, "en"):
-        text = async_get_cached_translations(hass, language, "exceptions", DOMAIN)
-        if path in text:
-            return text[path].format_map(placeholders)
-    return key
+    return cached_text(hass, "exceptions", f"{key}.message", placeholders) or key
+
+
+@callback
+def logbook_message(
+    hass: HomeAssistant, key: str, placeholders: dict[str, str] | None = None
+) -> str | None:
+    """Return the `logbook_<key>` message of `exceptions` in the server's language (`cached_text`)."""
+    return cached_text(hass, "exceptions", f"logbook_{key}.message", placeholders)
 
 
 @callback
@@ -91,16 +97,25 @@ def async_describe_events(
         if state is not None:
             name = state.name
         else:
-            key = f"Button {data.get(ATTR_KEY, '?')}"
+            letter = str(data.get(ATTR_KEY, "?"))
+            key = (
+                cached_text(hass, "entity", "event.button.name", {"key": letter})
+                or letter
+            )
             device_name = _device_name(data.get(ATTR_DEVICE_ID))
             name = f"{device_name} {key}" if device_name else key
         event_type = str(data.get(CONF_TYPE))
         if event_type == "scene":
-            message = f"recalled scene {data.get(ATTR_SCENE, '?')}"
+            scene = str(data.get(ATTR_SCENE, "?"))
+            message = logbook_message(hass, "scene_from_key", {"scene": scene}) or scene
         else:
-            message = BUTTON_MESSAGES.get(event_type, event_type)
+            message = (
+                cached_text(hass, "device_automation", f"trigger_subtype.{event_type}")
+                or event_type
+            )
         if (reason := data.get(ATTR_REASON)) is not None:
-            message += f" ({HOLD_END_MESSAGES.get(str(reason), str(reason))})"
+            said = logbook_message(hass, f"hold_end_{reason}") or str(reason)
+            message += f" ({said})"
         entry = {LOGBOOK_ENTRY_NAME: name, LOGBOOK_ENTRY_MESSAGE: message}
         if entity_id:
             entry[LOGBOOK_ENTRY_ENTITY_ID] = str(entity_id)
@@ -111,12 +126,18 @@ def async_describe_events(
         """'All off was recalled by Living room rocker', filed under the scene entity when the export has it."""
         data = event.data
         name = data.get(ATTR_NAME) or (
-            f"Scene {data[ATTR_SCENE]}" if ATTR_SCENE in data else "Scene"
+            logbook_message(hass, "scene_number", {"scene": str(data[ATTR_SCENE])})
+            if ATTR_SCENE in data
+            else logbook_message(hass, "scene")
         )
-        message = "was recalled"
         if (device_name := _device_name(data.get(ATTR_DEVICE_ID))) is not None:
-            message += f" by {device_name}"
-        entry = {LOGBOOK_ENTRY_NAME: str(name), LOGBOOK_ENTRY_MESSAGE: message}
+            message = logbook_message(hass, "recalled_by", {"device": device_name})
+        else:
+            message = logbook_message(hass, "recalled")
+        entry = {
+            LOGBOOK_ENTRY_NAME: str(name or ""),
+            LOGBOOK_ENTRY_MESSAGE: message or "",
+        }
         entity_id = data.get(ATTR_ENTITY_ID)
         if entity_id:
             entry[LOGBOOK_ENTRY_ENTITY_ID] = str(entity_id)

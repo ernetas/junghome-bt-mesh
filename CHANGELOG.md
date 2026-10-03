@@ -513,6 +513,13 @@
   A room can be given as the area named like it (`room_area`), a scene as its entity (`scene_entity`); *Store
   scene*'s state fields sit in a collapsed *State to store* section, the schedule actions' in *When* and *What*.
   The response counts are unverified on air.
+- German (review-4 U4-1, U4-16, decision M4): every page, entity, action, repair notice and error of the
+  integration is translated (`translations/de.json`, informal *du* as Home Assistant's German; JUNG terms as the
+  German JUNG HOME app has them — *Taste*, *Wippe*, *Taster*, *Einsatz*, *Szene* —, Home Assistant's own for its
+  concepts, and a JUNG room is a *Raum* so that it stays apart from a Home Assistant *Bereich*). The device models
+  (*Taster 1-fach (Schalteinsatz)*, *Schaltbare Leuchte*, …) and the logbook lines of key presses and scene recalls
+  now follow Home Assistant's language too, from the translations it cached for the server's language; English
+  where a language has no text. A key added in English later shows in English until it is translated.
 
 ### CLI tools and library
 

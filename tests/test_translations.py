@@ -37,6 +37,7 @@ from custom_components.junghome_ble import (
     config_entities,
     config_flow,
     const,
+    entity,
     light,
     mesh_config,
     repairs,
@@ -65,6 +66,8 @@ from custom_components.junghome_ble.select import UNKNOWN_OPTION
 COMPONENT = Path(__file__).parent.parent / "custom_components" / DOMAIN
 STRINGS = COMPONENT / "strings.json"
 EN = COMPONENT / "translations" / "en.json"
+# every other language (review-4 U4-1: `de.json`); a key one lacks falls back to English in Home Assistant
+TRANSLATED = sorted(p for p in EN.parent.glob("*.json") if p != EN)
 ICONS = COMPONENT / "icons.json"
 SERVICES_YAML = COMPONENT / "services.yaml"
 CONFIG_FLOW = COMPONENT / "config_flow.py"
@@ -73,6 +76,9 @@ SOURCES = sorted(COMPONENT.glob("*.py"))
 REFERENCE = re.compile(r"^\[%key:(?P<path>[^%]+)%\]$")
 OWN_REFERENCE_PREFIX = f"component::{DOMAIN}::"
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
+LITERAL = re.compile(
+    r"`[^`]*`"
+)  # an action id, a file name, an option value: the same in every language
 # `translation_key="x"` / `_attr_translation_key = "x"` literals, and the service error helpers' first argument
 LITERAL_KEY = re.compile(r'translation_key\s*=\s*"(?P<key>[a-z0-9_]+)"')
 # `translation_key=ISSUE_X` / `translation_key=ex.SOME_KEY`: a name, not a string (f-strings excluded by the
@@ -80,6 +86,8 @@ LITERAL_KEY = re.compile(r'translation_key\s*=\s*"(?P<key>[a-z0-9_]+)"')
 CONSTANT_KEY = re.compile(r"translation_key\s*=\s*(?P<ref>[A-Za-z_][\w.]*)(?![\w\"'])")
 # the logbook lines of a plan (`services._report_plan`): translation keys of the `exceptions` section
 PLAN_KEY = re.compile(r'"(?P<key>plan_[a-z_]+)"')
+# the logbook's own lines: `logbook_message(hass, "x"` is the `exceptions` key `logbook_x`
+LOGBOOK_KEY = re.compile(r'logbook_message\(\s*hass,\s*"(?P<key>[a-z_]+)"')
 SERVICE_ERROR = re.compile(r'\b_(?:validation|failure)\(\s*"(?P<key>[a-z0-9_]+)"')
 # config flow: `errors["base"] = "x"` / `errors[CONF_X] = "x"` / `{"base": "x"}`, `reason="x"`, `step_id="x"` or
 # `step_id=CONSTANT`, `menu_options=[...]` literal lists, `vol.Required(CONF_X` / `vol.Optional(CONF_X`
@@ -208,7 +216,7 @@ def test_placeholders_preserved(
     assert not mismatched, f"placeholder mismatch: {mismatched}"
 
 
-@pytest.mark.parametrize("path", [STRINGS, EN], ids=lambda p: p.name)
+@pytest.mark.parametrize("path", [STRINGS, EN, *TRANSLATED], ids=lambda p: p.name)
 def test_no_angle_brackets(path: Path) -> None:
     """`<` / `>` in translation text breaks Home Assistant's translation parser."""
     offending = sorted(
@@ -217,6 +225,63 @@ def test_no_angle_brackets(path: Path) -> None:
         if "<" in value or ">" in value
     )
     assert not offending, f"{path.name}: angle brackets in {offending}"
+
+
+# ----------------------------------------------------------------------------- other languages <-> en.json
+
+
+def test_there_is_a_translation() -> None:
+    assert [p.name for p in TRANSLATED] == ["de.json"]
+
+
+@pytest.mark.parametrize("path", TRANSLATED, ids=lambda p: p.name)
+def test_translation_follows_english(path: Path, en_leaves: dict[str, str]) -> None:
+    """Review-4 U4-1: another language holds only keys English has, as text, with the same `{placeholder}` set and
+    `literal` spans, and no `[%key:…%]` reference.
+
+    A key it lacks falls back to English (Home Assistant fills a language from English, and drops a text whose
+    placeholders differ from the English one, with an error in the log), so the translated share per section is
+    printed, not asserted: rerun this after a merge that added English strings.
+    """
+    leaves = _leaves(_load(path))
+    extra = sorted(set(leaves) - set(en_leaves))
+    assert not extra, f"{path.name} has {len(extra)} keys en.json lacks: {extra}"
+    not_text = sorted(
+        key for key, value in leaves.items() if not isinstance(value, str)
+    )
+    assert not not_text, f"{path.name}: not a text: {not_text}"
+    placeholders = {
+        key: (
+            sorted(PLACEHOLDER.findall(value)),
+            sorted(PLACEHOLDER.findall(en_leaves[key])),
+        )
+        for key, value in leaves.items()
+        if set(PLACEHOLDER.findall(value)) != set(PLACEHOLDER.findall(en_leaves[key]))
+    }
+    assert not placeholders, f"{path.name}: placeholder mismatch: {placeholders}"
+    literals = sorted(
+        key
+        for key, value in leaves.items()
+        if sorted(LITERAL.findall(value)) != sorted(LITERAL.findall(en_leaves[key]))
+    )
+    assert not literals, f"{path.name}: `literal` spans differ from English: {literals}"
+    references = sorted(key for key, value in leaves.items() if "[%key:" in value)
+    assert not references, f"{path.name}: references in {references}"
+    for section in sorted({key.split(".")[0] for key in en_leaves}):
+        english = [key for key in en_leaves if key.split(".")[0] == section]
+        done = sum(key in leaves for key in english)
+        share = f"{done}/{len(english)} ({done / len(english):.0%})"
+        print(f"{path.name} {section}: {share}")  # noqa: T201 - a report (`pytest -s`), not a failure
+
+
+def test_model_names_are_the_english_strings(strings: dict[str, Any]) -> None:
+    """Review-4 U4-16: the English device models the code falls back to are the ones `strings.json` translates."""
+    products = strings["selector"]["product"]["options"]
+    assert products == {
+        key: entity.PRODUCT_NAMES[pid] for pid, key in entity.PRODUCT_KEYS.items()
+    }
+    assert set(entity.PRODUCT_KEYS) == set(entity.PRODUCT_NAMES)
+    assert strings["selector"]["device_model"]["options"] == entity.MODEL_NAMES
 
 
 # ----------------------------------------------------------------------------- icons.json
@@ -389,6 +454,16 @@ def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
     assert {"plan_finished", "plan_stopped", "plan_cancelled", "plan_key_room"} <= found
     unknown = sorted(found - set(strings["exceptions"]))
     assert not unknown, f"plan lines without an exception string: {unknown}"
+
+
+def test_logbook_keys_exist(strings: dict[str, Any]) -> None:
+    """Every line the logbook describers word (review-4 U4-16) has its text: `logbook_*`, one per hold-end reason."""
+    source = (COMPONENT / "logbook.py").read_text(encoding="utf-8")
+    found = {f"logbook_{key}" for key in LOGBOOK_KEY.findall(source)}
+    found |= {f"logbook_hold_end_{reason}" for reason in const.HOLD_END_REASONS}
+    assert {"logbook_recalled_by", "logbook_hold_end_timeout"} <= found
+    unknown = sorted(found - set(strings["exceptions"]))
+    assert not unknown, f"logbook lines without an exception string: {unknown}"
 
 
 def test_services_yaml_matches_strings_and_code(

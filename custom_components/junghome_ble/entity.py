@@ -103,16 +103,62 @@ PRODUCT_NAMES = {
     0x15: "Mini sensor 2-input mains",
     0x16: "Mini sensor 2-input battery",
 }
-LIGHT_MODELS = {
+# The translation key of each product name, `selector.product.options.<key>` of `strings.json` (review-4 U4-16):
+# a device's model shows the name in Home Assistant's language, PRODUCT_NAMES (English) where no translation is at
+# hand (diagnostics, a hub without labels). `tests/test_translations.py` keeps the two in step.
+PRODUCT_KEYS = {
+    0x01: "push_button_1",
+    0x02: "push_button_2",
+    0x03: "socket_metering",
+    0x0C: "socket",
+    0x04: "switch_actuator_mini",
+    0x0D: "blinds_actuator_mini",
+    0x05: "wall_transmitter_1",
+    0x06: "wall_transmitter_2",
+    0x07: "motion_detector_1m",
+    0x08: "motion_detector_2m",
+    0x09: "presence_detector",
+    0x0A: "room_thermostat",
+    0x0B: "gateway",
+    0x10: "switch_actuator_1_energy",
+    0x11: "switch_actuator_2",
+    0x12: "dimmer_actuator",
+    0x13: "blinds_actuator",
+    0x14: "dali_actuator",
+    0x15: "mini_sensor_mains",
+    0x16: "mini_sensor_battery",
+}
+# The other device models, English, by `selector.device_model.options.<key>`; a light's kind (`Light.kind`) is its key.
+MODEL_NAMES = {
+    "mesh_network": "Bluetooth Mesh network",
     "switch": "Switched light",
     "dimmer": "Dimmable light",
     "ctl": "Tunable-white (DALI) light",
+    "blind": "Blind / shutter drive",
+    "push_buttons": "Push-buttons",
+    "unknown_product": "Product {pid}",
 }
 
 
-def product_name(pid: int | None) -> str:
-    """Return the product name for a PID, or a generic placeholder."""
-    return PRODUCT_NAMES.get(pid or -1, f"Product {pid}")
+def model_labels(hub: JungHomeHub) -> dict[str, str]:
+    """Return the selector labels the hub loaded in Home Assistant's language (`inserts.async_load_labels`)."""
+    inserts = getattr(
+        hub, "inserts", None
+    )  # a stand-in hub resolving devices alone has none
+    return inserts.labels if inserts is not None else {}
+
+
+def model_name(labels: dict[str, str], key: str) -> str:
+    """Return the device model `key` (`MODEL_NAMES`) in the language of `labels`, English without a translation."""
+    return labels.get(f"device_model.options.{key}", MODEL_NAMES[key])
+
+
+def product_name(pid: int | None, labels: dict[str, str] | None = None) -> str:
+    """Return the product name for a PID, or a generic placeholder; in the language of `labels`, else English."""
+    labels = labels or {}
+    if (key := PRODUCT_KEYS.get(pid or -1)) is None:
+        return model_name(labels, "unknown_product").format(pid=pid)
+    return labels.get(f"product.options.{key}", PRODUCT_NAMES[pid or -1])
 
 
 def mesh_identifier(hub: JungHomeHub) -> str:
@@ -131,7 +177,7 @@ def hub_device_info(hub: JungHomeHub) -> DeviceInfo:
         identifiers={(DOMAIN, mesh_identifier(hub))},
         name=hub.entry.title,
         manufacturer="JUNG",
-        model="Bluetooth Mesh network",
+        model=model_name(model_labels(hub), "mesh_network"),
         entry_type=DeviceEntryType.SERVICE,
     )
 
@@ -301,7 +347,7 @@ def node_device_name(hub: JungHomeHub, node: Node) -> str:
     )
     units = len(loads) if loads else len(node_gangs(hub, node))
     if units == 1 and named:
-        return f"{named[0]} - {product_name(node.pid)}"
+        return f"{named[0]} - {product_name(node.pid, model_labels(hub))}"
     return f"{node.name} {node.unicast:04X}"
 
 
@@ -408,7 +454,7 @@ def light_device_info(hub: JungHomeHub, light: Light) -> DeviceInfo:
         identifiers={(DOMAIN, light.unique_id)},
         name=light.name,
         manufacturer="JUNG",
-        model=LIGHT_MODELS[light.kind],
+        model=model_name(model_labels(hub), light.kind),
     )
     if (via := hub.device_ids.get(node_identifier(light.node))) is not None:
         info["via_device_id"] = via
@@ -425,7 +471,7 @@ def socket_device_info(hub: JungHomeHub, socket: Socket) -> DeviceInfo:
         identifiers={(DOMAIN, socket.unique_id)},
         name=socket.name,
         manufacturer="JUNG",
-        model=product_name(socket.node.pid),
+        model=product_name(socket.node.pid, model_labels(hub)),
     )
     if (via := hub.device_ids.get(node_identifier(socket.node))) is not None:
         info["via_device_id"] = via
@@ -446,7 +492,7 @@ def blind_device_info(hub: JungHomeHub, blind: Blind) -> DeviceInfo:
         identifiers={(DOMAIN, blind.unique_id)},
         name=blind.name,
         manufacturer="JUNG",
-        model="Blind / shutter drive",
+        model=model_name(model_labels(hub), "blind"),
     )
     if (via := hub.device_ids.get(node_identifier(blind.node))) is not None:
         info["via_device_id"] = via

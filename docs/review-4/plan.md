@@ -385,6 +385,29 @@ Dependencies (hard unless marked *soft*):
   delete) or explicit `confirm` only?
 - **M4 — German wording (brief 51).** "du" (HA and the JUNG app) vs "Sie"; *Taster* vs *Wippe* for a key; *Raum* vs
   *Bereich* for a room (the app uses *Bereich* for areas).
+  **Taken:** informal "du", as Home Assistant's own German. JUNG concepts take the German JUNG HOME app's terms, Home
+  Assistant concepts Home Assistant's (*Bereich*, *Gerät*, *Entität*, *Aktion*, *Reparatur*, *Einstellungen → Geräte
+  & Dienste*), and where the two collide Home Assistant keeps its word:
+
+  | Concept | German | Note |
+  |---|---|---|
+  | key of a push-button ("Button A") | *Taste* (*Taste A*) | the app's *Taste* |
+  | rocker | *Wippe* | the app's layouts *Wippe \| Taste* |
+  | push-button (the product) | *Taster* (*Taster 1-fach*) | 1-gang / 2-gang: *1-fach* / *2-fach* |
+  | gang of keys (one device) | *Tastengruppe* | no app term |
+  | JUNG room | *Raum* | the app says *Bereich*; explained once where rooms meet areas |
+  | Home Assistant area | *Bereich* | |
+  | scene, group | *Szene*, *Gruppe* | |
+  | insert | *Einsatz* (*Schalteinsatz*, *Dimmeinsatz*, *Nebenstelleneinsatz*) | |
+  | key mode / key connection | *Tastenmodus* / *Verknüpfung* | modes as the app: *Beleuchtung*, *Schalten*, *Fahren* |
+  | LED, LED colour | *LED*, *LED-Farbe (eingeschaltet / ausgeschaltet)* | the app's parameter names |
+  | lock function, lock-out protection | *Sperrfunktion*, *Aussperrschutz* | |
+  | time keeper, run-on time | *Zeitgeber*, *Nachlaufzeit* | |
+  | continuous on / off | *Dauer-Ein* / *Dauer-Aus* | |
+  | the app's export | *Export*, *Projektdatei*; *Projekt → Projektübergabe* | |
+  | gateway access request | *Zugriffsanfrage*; *Einstellungen → Gateway → Zugriffsberechtigungen → Offene Anfragen* | |
+  | node, proxy node, key refresh | *Knoten*, *Proxy-Knoten*, *Key-Refresh* | mesh terms stay technical |
+  | "unverified on air" | *auf echten Geräten noch nicht überprüft* | the markers keep their meaning |
 - **M5 — Reloads (H4-1, brief 28).** May configuration actions stop reloading the entry (in-place model update, L), or
   only carry states and the reader cache across the reload (interim, M)?
 - **M6 — Skip-ahead policy (briefs 08, 12, 16).** Spend 2^20 numbers automatically on a restored record, on a fresh

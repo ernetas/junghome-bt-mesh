@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 from homeassistant.core import Event
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.translation import async_load_integrations
 from pytest_homeassistant_custom_component.common import async_capture_events
 
+from custom_components.junghome_ble import logbook
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_BUTTON_ACTION,
@@ -38,6 +41,12 @@ if TYPE_CHECKING:
     from .conftest import FakeProxyLink
 
 type Describer = Callable[[Event], dict[str, str]]
+
+
+async def load_translations(hass: HomeAssistant, language: str = "en") -> None:
+    """Cache the integration's translations for `language`, as Home Assistant does when it sets the integration up."""
+    hass.config.language = language
+    await async_load_integrations(hass, {DOMAIN})
 
 
 def describers(hass: HomeAssistant) -> dict[str, Describer]:
@@ -119,6 +128,7 @@ async def test_a_key_with_its_event_entity_disabled_is_still_described(
 
 async def test_a_hold_ended_without_its_release_says_why(hass: HomeAssistant) -> None:
     """Decision M11: a `hold_end` the hub made up (DIM_HOLD_MAX, a lost link, a stop) carries its reason."""
+    await load_translations(hass)
     describe = describers(hass)[EVENT_BUTTON_ACTION]
     for reason, said in (
         ("timeout", "no release heard in time"),
@@ -189,8 +199,9 @@ async def test_scene_recall_from_a_key(
     }
 
 
-def test_scene_recall_fallbacks(hass: HomeAssistant) -> None:
+async def test_scene_recall_fallbacks(hass: HomeAssistant) -> None:
     """Without a name the number stands in, without a device only 'was recalled' is said."""
+    await load_translations(hass)
     describe = describers(hass)[EVENT_SCENE_RECALLED]
     assert describe(Event(EVENT_SCENE_RECALLED, {"scene": 7, "source": "0D00"})) == {
         "name": "Scene 7",
@@ -237,11 +248,73 @@ async def test_plan_lines_are_translated(
         "name": "JUNG HOME mesh test",
         "message": "junghome_ble.set_threshold finished; 2 messages",
     }
-    hass.config.language = "de"  # no German text yet: English
+    hass.config.language = "fr"  # no French text: English
     assert describe(event)["message"] == (
         "junghome_ble.set_threshold finished; 2 messages"
+    )
+    await load_translations(hass, "de")
+    assert describe(event)["message"] == (
+        "junghome_ble.set_threshold abgeschlossen; 2 Nachrichten"
     )
     assert describe(Event(EVENT_PLAN, {"message": "plan_unknown"})) == {
         "name": "junghome_ble",
         "message": "plan_unknown",
     }
+
+
+async def test_lines_follow_the_server_language(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-4 U4-16: with the server in German every line is German — the key, what it did, a hold's end, a
+    scene recalled by a key or without one."""
+    await load_translations(hass, "de")
+    button = describers(hass)[EVENT_BUTTON_ACTION]
+    scene = describers(hass)[EVENT_SCENE_RECALLED]
+    device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=init_integration.entry_id,
+        identifiers={(DOMAIN, "kitchen-buttons")},
+        name="Küche",
+    )
+    assert button(
+        Event(
+            EVENT_BUTTON_ACTION, {"device_id": device.id, "key": "A", "type": "click"}
+        )
+    ) == {"name": "Küche Taste A", "message": "geklickt"}
+    assert button(
+        Event(
+            EVENT_BUTTON_ACTION, {"key": "B", "type": "hold_end", "reason": "link_lost"}
+        )
+    ) == {"name": "Taste B", "message": "Halten beendet (Verbindung verloren)"}
+    assert button(
+        Event(EVENT_BUTTON_ACTION, {"key": "C", "type": "scene", "scene": 4})
+    ) == {
+        "name": "Taste C",
+        "message": "hat Szene 4 abgerufen",
+    }
+    assert scene(
+        Event(
+            EVENT_SCENE_RECALLED,
+            {"scene": 4, "name": "Alles aus", "device_id": device.id},
+        )
+    ) == {"name": "Alles aus", "message": "wurde von Küche abgerufen"}
+    assert scene(Event(EVENT_SCENE_RECALLED, {"scene": 7})) == {
+        "name": "Szene 7",
+        "message": "wurde abgerufen",
+    }
+    assert scene(Event(EVENT_SCENE_RECALLED, {})) == {
+        "name": "Szene",
+        "message": "wurde abgerufen",
+    }
+
+
+def test_without_cached_translations_the_line_shows_what_it_has(
+    hass: HomeAssistant,
+) -> None:
+    """Not reachable in Home Assistant (it caches the translations before the logbook asks): the bare values."""
+    button = describers(hass)[EVENT_BUTTON_ACTION]
+    scene = describers(hass)[EVENT_SCENE_RECALLED]
+    with patch(f"{logbook.__name__}.async_get_cached_translations", return_value={}):
+        assert button(
+            Event(EVENT_BUTTON_ACTION, {"key": "A", "type": "scene", "scene": 2})
+        ) == {"name": "A", "message": "2"}
+        assert scene(Event(EVENT_SCENE_RECALLED, {})) == {"name": "", "message": ""}
