@@ -1516,6 +1516,80 @@ def decode_time_role_status(params: bytes) -> str:
     return TIME_ROLES[params[0]]
 
 
+def time_get() -> bytes:
+    """Time Get (Mesh Model spec §5.2.1.1), no parameters: to a node's Time Server (`1200`), answered by Time Status."""
+    return encode_opcode(TIME_GET)
+
+
+def time_zone_get() -> bytes:
+    """Time Zone Get (§5.2.1.5), no parameters: to a node's Time Server, answered by Time Zone Status."""
+    return encode_opcode(TIME_ZONE_GET)
+
+
+@dataclass(frozen=True)
+class TimeStatus:
+    """A Time Status (§5.2.1.3): the node's clock, in the Time Set layout; TAI seconds 0 = the node has no time."""
+
+    tai_seconds: int
+    subsecond: int = 0  # 1/256 s
+    uncertainty: int = 0  # 10 ms steps
+    authority: bool = False
+    tai_utc_delta: int = 0  # seconds
+    zone_offset: int = 0  # minutes, a multiple of 15
+
+    @property
+    def utc(self) -> datetime | None:
+        """The node's time in UTC; None when it has none, or one past what a datetime holds (a u40 of TAI seconds)."""
+        if self.tai_seconds == 0:
+            return None
+        try:
+            return TAI_EPOCH + timedelta(
+                seconds=self.tai_seconds - self.tai_utc_delta + self.subsecond / 256
+            )
+        except OverflowError:
+            return None
+
+
+def decode_time_status(params: bytes) -> TimeStatus:
+    """Decode Time Status: 10 bytes, or the 5 of TAI seconds 0 alone (§5.2.1.3: the other fields are then omitted)."""
+    if len(params) < 5:
+        raise ValueError(f"not a Time Status: {params.hex() or '(empty)'}")
+    tai_seconds = int.from_bytes(params[:5], "little")
+    if tai_seconds == 0:
+        return TimeStatus(0)
+    if len(params) < 10:
+        raise ValueError(f"truncated Time Status: {params.hex()}")
+    delta_field = int.from_bytes(params[7:9], "little")
+    return TimeStatus(
+        tai_seconds,
+        subsecond=params[5],
+        uncertainty=params[6],
+        authority=bool(delta_field & 1),
+        tai_utc_delta=(delta_field >> 1) - 255,
+        zone_offset=(params[9] - 64) * 15,
+    )
+
+
+@dataclass(frozen=True)
+class TimeZoneStatus:
+    """A Time Zone Status (§5.2.1.7): the zone offset in force, the next one and the TAI second it takes over."""
+
+    current: int  # minutes
+    new: int  # minutes
+    change_tai: int  # TAI seconds of the change, 0 = none known
+
+
+def decode_time_zone_status(params: bytes) -> TimeZoneStatus:
+    """Decode Time Zone Status `[current u8][new u8][TAI of change u40]`, offsets in quarter hours + 64."""
+    if len(params) < 7:
+        raise ValueError(f"not a Time Zone Status: {params.hex() or '(empty)'}")
+    return TimeZoneStatus(
+        (params[0] - 64) * 15,
+        (params[1] - 64) * 15,
+        int.from_bytes(params[2:7], "little"),
+    )
+
+
 # ----------------------------------------------------------------------------- decoders
 
 

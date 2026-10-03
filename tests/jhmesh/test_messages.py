@@ -1477,6 +1477,67 @@ def test_time_role_get_and_status():
             M.decode_time_role_status(bad)
 
 
+def test_time_get_and_time_zone_get():
+    """Both Gets carry no parameters (Mesh Model §5.2.1.1, §5.2.1.5)."""
+    assert M.time_get() == h("8237")
+    assert M.describe(M.time_get()) == "Time Get"
+    assert M.time_zone_get() == h("823b")
+    assert M.describe(M.time_zone_get()) == "Time Zone Get"
+
+
+def test_decode_time_status():
+    """The Time Set layout (§5.2.1.3): the vector of `test_time_set_vector`, answered back as a Status."""
+    status = M.decode_time_status(
+        h("35925a3000") + h("80") + h("05") + h("4802") + h("4c")
+    )
+    assert status == M.TimeStatus(
+        811_242_037,
+        subsecond=128,
+        uncertainty=5,
+        authority=False,
+        tai_utc_delta=37,
+        zone_offset=180,
+    )
+    # 811 242 037 TAI seconds less the 37 of TAI-UTC, and half a second
+    assert status.utc == M.TAI_EPOCH + timedelta(seconds=811_242_000.5)
+    # the authority bit, a zone west of UTC
+    other = M.decode_time_status(
+        h("35925a3000") + h("00") + h("00") + h("4902") + h("29")
+    )
+    assert (other.authority, other.tai_utc_delta, other.zone_offset) == (True, 37, -345)
+    # TAI seconds 0: no time; the 5-byte form, or the fields sent all the same
+    assert M.decode_time_status(h("0000000000")) == M.TimeStatus(0)
+    assert M.decode_time_status(h("0000000000") + bytes(5)).utc is None
+    # a u40 past what a datetime holds
+    assert (
+        M.decode_time_status(h("ffffffffff") + h("0000") + h("4802") + h("40")).utc
+        is None
+    )
+    for bad in (b"", h("35925a30")):
+        with pytest.raises(ValueError, match="not a Time Status"):
+            M.decode_time_status(bad)
+    with pytest.raises(ValueError, match="truncated Time Status"):
+        M.decode_time_status(h("35925a3000") + h("8000"))
+
+
+def test_time_status_reads_back_what_time_set_sends():
+    when = (M.TAI_EPOCH + timedelta(seconds=811_242_000.25)).astimezone(EEST)
+    status = M.decode_time_status(M.time_set(when)[1:])
+    assert status.utc == when
+    assert status.zone_offset == 180
+
+
+def test_decode_time_zone_status():
+    """`[current][new]` in quarter hours + 64, then the TAI second of the change (§5.2.1.7)."""
+    assert M.decode_time_zone_status(h("4c50") + h("0102030405")) == M.TimeZoneStatus(
+        180, 240, 0x0504030201
+    )
+    assert M.decode_time_zone_status(h("4040") + bytes(5)) == M.TimeZoneStatus(0, 0, 0)
+    for bad in (b"", h("4c50010203")):
+        with pytest.raises(ValueError, match="not a Time Zone Status"):
+            M.decode_time_zone_status(bad)
+
+
 def test_health_attention_builders_and_describe():
     assert M.health_attention_set(10) == h("80050a")
     assert M.health_attention_set(0, ack=False) == h("800600")

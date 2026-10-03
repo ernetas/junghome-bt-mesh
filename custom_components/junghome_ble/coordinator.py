@@ -90,6 +90,7 @@ from .const import (
     ISSUE_IV_INDEX_AHEAD,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
+    ISSUE_NODE_CLOCK_WRONG,
     ISSUE_PDUS_DROPPED,
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQ_STORE_UNWRITABLE,
@@ -188,6 +189,7 @@ from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
 from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, Scaled
 from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
+from .node_clocks import NodeClocks
 from .tls import normalize_fingerprint
 from .vault_refresh import VaultKeyRefresh
 
@@ -2261,6 +2263,8 @@ class JungHomeHub:
         )
         # each node's insert and key layout: export, advert, a Get (`inserts.py`, review-4 F4-12)
         self.inserts = NodeInserts(self, issue_id(entry, ISSUE_INSERT_MISMATCH))
+        # each node's clock, zone offset and stored location as it answers them (`node_clocks.py`, review-4 F4-8)
+        self.clocks = NodeClocks(self, issue_id(entry, ISSUE_NODE_CLOCK_WRONG))
         self._lost_at: float | None = (
             None  # monotonic time the last link was lost, while no new one is up
         )
@@ -2602,6 +2606,7 @@ class JungHomeHub:
             ISSUE_BLUETOOTH_UNAVAILABLE,
             ISSUE_VAULT_KEY_REFRESH,
             ISSUE_INSERT_MISMATCH,
+            ISSUE_NODE_CLOCK_WRONG,
         ):
             ir.async_delete_issue(self.hass, DOMAIN, issue_id(self.entry, key))
 
@@ -4228,12 +4233,25 @@ class JungHomeHub:
         else:
             _LOGGER.debug("Sent the home location to all nodes")
 
+    async def async_send_time(self) -> None:
+        """Broadcast Time Set now (the `node_clock_wrong` repair's fix); without a link nothing goes out."""
+        await self._send_time()
+
     @callback
     def _send_time_daily(self, _now: datetime) -> None:
         if self.connected:
             self.entry.async_create_background_task(
-                self.hass, self._send_time(), f"{DOMAIN} time"
+                self.hass, self._send_time_and_read_clocks(), f"{DOMAIN} time"
             )
+
+    async def _send_time_and_read_clocks(self) -> None:
+        """Broadcast Time Set, then ask the mains nodes for their time, zone and location (`NodeClocks.read_all`).
+
+        Once a day and after a change of the local UTC offset, not on every link: the nodes answer the Time Set of
+        each link with their Time Status all the same. Unverified on air.
+        """
+        await self._send_time()
+        await self.clocks.read_all()
 
     def _arm_offset_change(self) -> None:
         """Send Time Set again right after the next change of the local UTC offset (review-3 F17).
@@ -5148,6 +5166,21 @@ class JungHomeHub:
         st = self.element_state(m.src)
         st.faults = status.faults
         self.notify_update(m.src)
+
+    @register_status_handler(M.TIME_STATUS)
+    def _on_time_status(self, m: AccessMessage, p: bytes) -> None:
+        """Keep a node's Time Status (`NodeClocks.note_time`): the answer to Time Set or Time Get, or a published one."""
+        self.clocks.note_time(m.src, p)
+
+    @register_status_handler(M.TIME_ZONE_STATUS)
+    def _on_time_zone_status(self, m: AccessMessage, p: bytes) -> None:
+        """Keep a node's Time Zone Status (`NodeClocks.note_zone`)."""
+        self.clocks.note_zone(m.src, p)
+
+    @register_status_handler(M.GEN_LOCATION_GLOBAL_STATUS)
+    def _on_location_global_status(self, m: AccessMessage, p: bytes) -> None:
+        """Keep the location a node stores for its astro schedules (`NodeClocks.note_location`)."""
+        self.clocks.note_location(m.src, p)
 
     @register_status_handler(M.SENSOR_STATUS)
     def _on_sensor_status(self, m: AccessMessage, p: bytes) -> None:

@@ -106,6 +106,7 @@ pass removed the markers of the checks that passed.
 | [A3](#a3--software-version-once-per-start-property-reads-queued-once) | Software version once per start, reads queued once | any | nothing | — |
 | [A4](#a4--passive-checks-over-every-capture) | Own echoes, proxy configuration checks, bounded disconnect | any | nothing | — |
 | [A5](#a5--inserts-and-key-layouts-from-the-adverts-f4-12) | Inserts and key layouts from the adverts | push-buttons | nothing | — |
+| [A6](#a6--node-clocks-time-zones-and-stored-locations-f4-8) | Node clocks, zones, locations; the clock repair | any | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -216,6 +217,33 @@ says connected and the state refresh is through (a few minutes), then do the lin
   `custom_components/junghome_ble/translations/en.json::issues.insert_mismatch.description`,
   `net:uc:observecontrolswitchkeyassignment`, `prod:insert-type:generic-insert`, `prod:insert-type:no-insert`,
   `prod:insert-type:not-supported`, `prod:insert-type:unknown`, `prop:0x0002`.
+
+### A6 · Node clocks, time zones and stored locations (F4-8)
+
+- **Checks:** review-4 F4-8 — every node answers Home Assistant's *Time Set* broadcast with a *Time Status*, and after
+  the daily Time Set each mains node answers *Time Get*, *Time Zone Get* and *Generic Location Global Get* (five nodes
+  at a time, no battery node); the *Clock offset* sensors, the diagnostics' `clocks` and the absence of the *JUNG HOME
+  devices with a wrong clock* repair follow; the repair's fix.
+- **Needs:** any mains nodes. **Safety:** read-only (Gets; the fix only sends Time Set again).
+- **Do:** first a probe outside Home Assistant: a *Time Get* (`8237`, `messages.time_get()`) to two or three nodes
+  from a short script over `jhmesh` with the CLI's own address, as the probe of `docs/hidden-features.md` §9 did (the
+  CLI has no Time Get command), and compare with the workstation's clock. Then enable the *Clock offset* sensor of a
+  few nodes, restart Home Assistant and wait for the link: the answers to the connect-time Time Set fill them. Leave
+  Home Assistant running over a day for the daily read (it follows the daily Time Set, a day after the start).
+  Optional, to see the repair: the same script sends one node a *Time Set* ten minutes off
+  (`messages.time_set(now + 10 min)`), the next daily read finds it; **Submit** the repair and see it clear.
+- **Capture:** `--src <ha> --grep 'Time|Location'`: the *Time Set* to `FFFF` answered by a *Time Status* from each
+  node (some lost to collisions is expected); after the daily Time Set, *Time Get*, *Time Zone Get* and *Generic
+  Location Global Get* to each mains node, each answered (`5D`, `823D`, `40`). Do not copy the location's parameters.
+- **Pass:** the sensors show a second or less; the diagnostics' `clocks` list every answering node with `has_time:
+  true`, the zone Home Assistant sent and `location: home`; no repair; a node set off raises it naming that node, and
+  **Submit** clears it.
+- **Markers:** `custom_components/junghome_ble/node_clocks.py::<module>`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time_and_read_clocks`,
+  `custom_components/junghome_ble/repairs.py::<module>`,
+  `custom_components/junghome_ble/sensor.py::JungHomeNodeDiagnostic`,
+  `custom_components/junghome_ble/strings.json::issues.node_clock_wrong.fix_flow.step.confirm.description`,
+  `air:access:5d`, `msg:op:5d`, `msg:op:8237`, `msg:op:823b`, `msg:op:40`, `msg:op:8225`.
 
 ## B · Momentary control
 

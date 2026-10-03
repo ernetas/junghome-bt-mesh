@@ -8,6 +8,8 @@ back to the mesh's index (`JungHomeHub.async_rewind_iv_index`) and sets the entr
 client sends from Home Assistant's address) continues past the numbers it was seen with
 (`JungHomeHub.async_skip_past_shared`), which lets Home Assistant send again. `plan_interrupted` (a
 configuration change cut off by a stop or crash, recorded at the next setup) is a notice: confirming it dismisses it.
+`node_clock_wrong` (a node that may run schedules has a wrong clock or zone offset, `node_clocks.py`) sends Time Set
+now and asks those nodes again; their answers clear it. Unverified on air.
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from .const import (
     DOMAIN,
     ISSUE_ADDRESS_SHARED,
     ISSUE_IV_INDEX_MISMATCH,
+    ISSUE_NODE_CLOCK_WRONG,
     ISSUE_PDUS_DROPPED,
     ISSUE_PLAN_INTERRUPTED,
     ISSUE_SEQ_STORE_LOST,
@@ -113,12 +116,54 @@ class SkipAheadFlow(RepairsFlow):
         return self.async_create_entry(data={})
 
 
+class SendTimeFlow(RepairsFlow):
+    """Confirm, then send Time Set now and ask the nodes with a wrong clock again (`NodeClocks.async_fix`)."""
+
+    def __init__(self, data: dict[str, Any]) -> None:
+        """Remember the issue's data (its entry)."""
+        self.issue_data = data
+
+    async def async_step_init(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Show the confirmation."""
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Send the time once confirmed; abort when the entry is gone or has no link.
+
+        The issue stays until the nodes answer with the right time: that is the proof the Time Set reached them.
+        """
+        if user_input is None:
+            issue = ir.async_get(self.hass).async_get_issue(DOMAIN, self.issue_id)
+            return self.async_show_form(
+                step_id="confirm",
+                data_schema=vol.Schema({}),
+                description_placeholders=(
+                    issue.translation_placeholders if issue is not None else None
+                ),
+            )
+        entry = self.hass.config_entries.async_get_entry(
+            str(self.issue_data.get("entry_id"))
+        )
+        hub = None if entry is None else getattr(entry, "runtime_data", None)
+        if hub is None:
+            return self.async_abort(reason="entry_gone")
+        if not await hub.clocks.async_fix():
+            return self.async_abort(reason="not_connected")
+        return self.async_create_entry(data={})
+
+
 async def async_create_fix_flow(
     hass: HomeAssistant, issue_id: str, data: dict[str, Any] | None
 ) -> RepairsFlow:
     """Return the flow fixing `issue_id` (`<ISSUE_*>_<entry id>`)."""
     if issue_id.startswith(f"{ISSUE_PLAN_INTERRUPTED}_"):
         return ConfirmRepairFlow()
+    if issue_id.startswith(f"{ISSUE_NODE_CLOCK_WRONG}_"):
+        return SendTimeFlow(data or {})
     kind = next(
         key
         for key in (

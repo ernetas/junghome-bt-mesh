@@ -404,6 +404,9 @@
       "last_restart": {
         "name": "Last restart"
       },
+      "clock_offset": {
+        "name": "Clock offset"
+      },
       "iv_index": {
         "name": "IV index"
       },
@@ -1336,6 +1339,21 @@
     "insert_mismatch": {
       "title": "JUNG HOME push-buttons with another insert than in the export",
       "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was replaced after that export was made, so Home Assistant and the app may show the wrong kind of load for them. Check the devices in the JUNG HOME app, export the network again and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure); the issue clears once the export names the inserts the devices advertise. Unverified on air."
+    },
+    "node_clock_wrong": {
+      "title": "JUNG HOME devices with a wrong clock",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Send the time now",
+            "description": "{devices}: these devices of the JUNG HOME mesh {title} may run schedules (timed or sunrise / sunset switching), and their clock is wrong: no time, more than a minute off Home Assistant's, or another time zone offset than the one Home Assistant sent them. Their schedules run at the wrong time until they get the time again. Home Assistant sends it after every connection and once a day; confirm to send it now and ask these devices again. The issue clears once they answer with the right time. If it comes back, check Home Assistant's time zone (Settings → System → General) and whether the devices are reachable. Unverified on air."
+          }
+        },
+        "abort": {
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
+          "not_connected": "Home Assistant has no connection to the mesh right now. Try again once it is connected."
+        }
+      }
     },
     "key_refresh": {
       "title": "JUNG HOME mesh keys are changing",

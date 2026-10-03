@@ -1460,15 +1460,18 @@
   },
   {
    "id": "air:access:5d",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_describe",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_message"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_time_status",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks.note_time",
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_time_status"
    ],
-   "tests": [],
-   "missing": "No sender or specific consumer: Time Status has no STATUS_HANDLERS entry and only describe() decodes it; the replies reach _on_message (coordinator.py::JungHomeHub._on_message) only as generic traffic (last_heard / liveness), like every access message. HA never confirms which nodes took its Time Set nor compares their clock with its own; no test feeds a Time Status to the hub. (Was 'partial'; by the ledger's status rules no sender + no specific consumer = gap.) Build: a Time Status handler recording the last Time Status per node (acceptance of HA's Time Set + offset vs HA time) in diagnostics; testable offline with injected statuses. (mgmt:debug:timelocationdebugviewmodel.observetime describes the same storage from the app's debug screen and points here.)",
-   "class": "build",
-   "verify": "offline"
+   "tests": [
+    "tests/test_node_clocks.py::test_a_time_status_gives_the_offset_and_a_wrong_clock_raises_the_repair",
+    "tests/jhmesh/test_messages.py::test_decode_time_status",
+    "tests/test_diagnostics.py::test_diagnostics_show_the_node_clocks_but_not_their_location"
+   ],
+   "note": "Unverified on air (review 4 brief 34): every node should answer Home Assistant's Time Set to all nodes (after each connection, once a day) and its Time Get with a Time Status (5D, 10 bytes) close to Home Assistant's clock; the node's Clock offset sensor and the diagnostics' clocks then show it, and the node_clock_wrong repair stays away."
   },
   {
    "id": "air:access:5e",

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+from homeassistant.util.hass_dict import HassKey
+
+if TYPE_CHECKING:
+    from .schedules import Scheduler
 
 DOMAIN: Final = "junghome_ble"
 
@@ -332,6 +337,17 @@ TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the f
 # a year ahead
 OFFSET_CHANGE_DELAY: Final = 5.0
 OFFSET_SEARCH_DAYS: Final = 400
+# The nodes' clocks (`node_clocks.py`, review-4 F4-8): a node that may run schedules and whose clock is more than
+# CLOCK_OFFSET_MAX seconds off Home Assistant's (or has no time, or another zone offset than the one Time Set carries)
+# raises `node_clock_wrong`. A clock read is a Get per item: CLOCK_READ_PAUSE seconds between two chunks of
+# REFRESH_CHUNK nodes. A stored location within LOCATION_TOLERANCE degrees of the home's counts as the home's
+# (0.01 degree is about a kilometre: sunrise and sunset move by seconds).
+CLOCK_OFFSET_MAX: Final = 60.0
+CLOCK_READ_PAUSE: Final = 0.5
+LOCATION_TOLERANCE: Final = 0.01
+# the JH Scheduler model (`schedules.py`) and the entry's schedulers, here so the clocks can see what they cached
+SCHEDULER_MODEL: Final = "05271016"
+SCHEDULERS: HassKey[dict[str, Scheduler]] = HassKey(f"{DOMAIN}_schedulers")
 # The connection loop's pause after a failed connection doubles from CONNECT_BACKOFF_MIN up to CONNECT_BACKOFF_MAX; a
 # link that lasted SHORT_LINK counts as a working one and starts it over.
 CONNECT_BACKOFF_MIN: Final = 2.0
@@ -498,6 +514,8 @@ ISSUE_UNKNOWN_NODES: Final = (
 ISSUE_UNKNOWN_NODES_GATEWAY: Final = "unknown_nodes_gateway"
 # push-buttons advertising another insert than the one the export cached for them: an insert was swapped (`inserts.py`)
 ISSUE_INSERT_MISMATCH: Final = "insert_mismatch"
+# a node that may run schedules has a wrong clock or zone offset (`node_clocks.py`): fixed by sending Time Set now
+ISSUE_NODE_CLOCK_WRONG: Final = "node_clock_wrong"
 ISSUE_DUPLICATE_MESH: Final = (
     "duplicate_mesh"  # another entry already covers this mesh UUID: their sequence-number
     # records can roll each other back (the config flow refuses this for anything set up

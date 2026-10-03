@@ -133,6 +133,7 @@ from .jhmesh import properties as P
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
 from .jhmesh.properties import parse_version
 from .mesh_config import gateway_sync
+from .node_clocks import time_server
 from .schedules import ScheduleTarget, schedule_targets, scheduler
 from .thresholds import ThresholdTarget, switched_devices, threshold_targets
 
@@ -411,7 +412,7 @@ def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
         for node in hub.cdb.nodes
         if node.pid is not None
         for desc in NODE_DIAGNOSTICS
-        if desc.mains_only is False or node in mains
+        if (desc.mains_only is False or node in mains) and desc.applies(node)
     ]
     entities += [JungHomeMeshDiagnostic(hub, desc) for desc in MESH_DIAGNOSTICS]
     return entities
@@ -1188,8 +1189,9 @@ SCAN_INTERVAL = timedelta(minutes=5)
 class NodeDiagnosticDescription(SensorEntityDescription):
     """A link diagnostic of one node (review-3 F8, F9): what it shows, read off the hub."""
 
-    value: Callable[[JungHomeHub, int], datetime | int | None]
+    value: Callable[[JungHomeHub, int], datetime | float | None]
     mains_only: bool = False  # battery nodes sleep: no heartbeats, no hops
+    applies: Callable[[Node], bool] = lambda _node: True  # the nodes that get it
 
 
 NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
@@ -1230,6 +1232,19 @@ NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
         mains_only=True,
         value=lambda hub, unicast: hub.restarted.get(unicast),
     ),
+    NodeDiagnosticDescription(
+        key="clock_offset",
+        translation_key="clock_offset",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        mains_only=True,
+        applies=lambda node: time_server(node) is not None,
+        value=lambda hub, unicast: hub.clocks.offset(unicast),
+    ),
 )
 
 
@@ -1239,7 +1254,9 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
     *Last seen* is the time of the node's last message, *Signal strength* the RSSI of its last advertisement as
     the Bluetooth scanner heard it, *Hops* the relays its last Heartbeat took to our proxy (heartbeat option), and
     *Last restart* the last time its sequence number jumped into a fresh block (`JungHomeHub._note_seq`) — a
-    mains blip, a breaker, a firmware reset — seen while Home Assistant ran. Pushed at most once a minute.
+    mains blip, a breaker, a firmware reset — seen while Home Assistant ran. Pushed at most once a minute. *Clock
+    offset* is how far the node's clock was off Home Assistant's at its last Time Status (`node_clocks.py`, off by
+    default; a mains node with a Time Server), pushed as each one arrives — that one is unverified on air.
     """
 
     entity_description: NodeDiagnosticDescription
@@ -1264,7 +1281,7 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
         return super().available
 
     @property
-    def native_value(self) -> datetime | int | None:
+    def native_value(self) -> datetime | float | None:
         """The diagnostic's current value; unknown until the node was heard."""
         return self.entity_description.value(self.hub, self.address)
 

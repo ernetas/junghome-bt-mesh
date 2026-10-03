@@ -27,13 +27,14 @@ from datetime import time as dt_time
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.util.hass_dict import HassKey
 
 from . import const
 from .config_entities import EntityTarget
 from .const import (
     DOMAIN,
     PROPERTY_READ_RETRIES,
+    SCHEDULER_MODEL,
+    SCHEDULERS,
 )
 from .cover import closedness_to_level, level_to_closedness
 from .entity import (
@@ -58,7 +59,6 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEDULER_MODEL = "05271016"
 LOCATION_SETUP_MODEL = "100F"
 # trigger -> (type while disabled, type while enabled), `vendor_models.SCHEDULE_TYPES`
 TRIGGERS: dict[str, tuple[int, int]] = {
@@ -82,8 +82,6 @@ ACTION_FIELDS: dict[str, frozenset[str]] = {
     "thermostat": frozenset({"temperature"}),
 }
 ALL_ACTION_FIELDS = frozenset().union(*ACTION_FIELDS.values())
-
-SCHEDULERS: HassKey[dict[str, Scheduler]] = HassKey(f"{DOMAIN}_schedulers")
 
 
 class ActionError(ValueError):

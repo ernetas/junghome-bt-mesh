@@ -466,6 +466,49 @@ async def test_diagnostics_include_the_options_and_the_open_repairs(
     assert result["issues"] == [issue]
 
 
+async def test_diagnostics_show_the_node_clocks_but_not_their_location(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Each node's clock as it last answered (`node_clocks.py`); its stored location only as compared with home."""
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    assert result["clocks"] == {}
+    latitude, longitude = hass.config.latitude, hass.config.longitude
+    fake_link.inject(
+        LIGHT_CTL,
+        OUR_ADDRESS,
+        encode_opcode(M.GEN_LOCATION_GLOBAL_STATUS)
+        + M.generic_location_global_set(latitude, longitude, 12)[1:],
+    )
+    fake_link.inject(LIGHT_CTL, OUR_ADDRESS, encode_opcode(M.TIME_STATUS) + bytes(5))
+    await settle(hass)
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    [clock] = result["clocks"].values()
+    assert list(result["clocks"]) == ["0232"]
+    assert clock["read"] is not None
+    del clock["read"]
+    assert clock == {
+        "offset": None,
+        "has_time": False,  # it answered it has no time
+        "zone_offset": None,
+        "zone_expected": None,
+        "location": "home",
+        "wrong": "no time",
+    }
+    text = json.dumps(result)
+    assert f"{latitude:.3f}" not in text
+    assert f"{longitude:.3f}" not in text
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"node:{NODE_ROCKER.lower()}"), init_integration.entry_id
+    )
+    assert device is not None
+    node = await get_diagnostics_for_device(hass, hass_client, init_integration, device)
+    assert node["clock"]["location"] == "home"
+    assert node["clock"]["wrong"] == "no time"
+
+
 async def test_diagnostics_without_link(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
@@ -540,6 +583,7 @@ async def test_device_diagnostics(
         "stm32_version": "not supported",
         "time_role": "client",
     }
+    assert result["clock"] is None  # no Time Status from it yet
 
     assert_no_secrets(result)
     assert result["identifiers"] == [masked(identifier, "0232")]

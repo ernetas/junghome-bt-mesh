@@ -692,6 +692,7 @@
 # ---
 # name: test_platform_enabled_by_default[sensor]
   dict({
+    'sensor.2_channel_actuator_0400_clock_offset': 'integration',
     'sensor.2_channel_actuator_0400_hops': 'integration',
     'sensor.2_channel_actuator_0400_last_restart': None,
     'sensor.2_channel_actuator_0400_last_seen': 'integration',
@@ -734,18 +735,22 @@
     'sensor.living_room_living_room_dali_switching_cycles': 'integration',
     'sensor.living_room_rocker_key_mode_a': 'integration',
     'sensor.living_room_rocker_key_mode_b': 'integration',
+    'sensor.push_button_1_gang_0148_clock_offset': 'integration',
     'sensor.push_button_1_gang_0148_hops': 'integration',
     'sensor.push_button_1_gang_0148_last_restart': None,
     'sensor.push_button_1_gang_0148_last_seen': 'integration',
     'sensor.push_button_1_gang_0148_signal_strength': 'integration',
+    'sensor.push_button_1_gang_0300_clock_offset': 'integration',
     'sensor.push_button_1_gang_0300_hops': 'integration',
     'sensor.push_button_1_gang_0300_last_restart': None,
     'sensor.push_button_1_gang_0300_last_seen': 'integration',
     'sensor.push_button_1_gang_0300_signal_strength': 'integration',
+    'sensor.push_button_2_gang_0232_clock_offset': 'integration',
     'sensor.push_button_2_gang_0232_hops': 'integration',
     'sensor.push_button_2_gang_0232_last_restart': None,
     'sensor.push_button_2_gang_0232_last_seen': 'integration',
     'sensor.push_button_2_gang_0232_signal_strength': 'integration',
+    'sensor.socket_0172_clock_offset': 'integration',
     'sensor.socket_0172_hops': 'integration',
     'sensor.socket_0172_last_restart': None,
     'sensor.socket_0172_last_seen': 'integration',
@@ -6517,6 +6522,64 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.2_channel_actuator_0400_clock_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'sensor.2_channel_actuator_0400_clock_offset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Clock offset',
+    'options': dict({
+      'sensor': dict({
+        'suggested_display_precision': 1,
+      }),
+    }),
+    'original_device_class': <SensorDeviceClass.DURATION: 'duration'>,
+    'original_icon': None,
+    'original_name': 'Clock offset',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'clock_offset',
+    'unique_id': '00005eff-fe00-5340-0000-000000000000-clock_offset',
+    'unit_of_measurement': <UnitOfTime.SECONDS: 's'>,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.2_channel_actuator_0400_clock_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'duration',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: '2-channel actuator 0400 Clock offset',
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfTime.SECONDS: 's'>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.2_channel_actuator_0400_clock_offset',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.2_channel_actuator_0400_hops-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -8851,6 +8914,64 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.push_button_1_gang_0148_clock_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'sensor.push_button_1_gang_0148_clock_offset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Clock offset',
+    'options': dict({
+      'sensor': dict({
+        'suggested_display_precision': 1,
+      }),
+    }),
+    'original_device_class': <SensorDeviceClass.DURATION: 'duration'>,
+    'original_icon': None,
+    'original_name': 'Clock offset',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'clock_offset',
+    'unique_id': '00005eff-fe00-5314-0000-000000000000-clock_offset',
+    'unit_of_measurement': <UnitOfTime.SECONDS: 's'>,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.push_button_1_gang_0148_clock_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'duration',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 1-gang 0148 Clock offset',
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfTime.SECONDS: 's'>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.push_button_1_gang_0148_clock_offset',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.push_button_1_gang_0148_hops-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -9055,6 +9176,64 @@
     }),
     'context': <ANY>,
     'entity_id': 'sensor.push_button_1_gang_0148_signal_strength',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.push_button_1_gang_0300_clock_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'sensor.push_button_1_gang_0300_clock_offset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Clock offset',
+    'options': dict({
+      'sensor': dict({
+        'suggested_display_precision': 1,
+      }),
+    }),
+    'original_device_class': <SensorDeviceClass.DURATION: 'duration'>,
+    'original_icon': None,
+    'original_name': 'Clock offset',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'clock_offset',
+    'unique_id': '00005eff-fe00-5330-0000-000000000000-clock_offset',
+    'unit_of_measurement': <UnitOfTime.SECONDS: 's'>,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.push_button_1_gang_0300_clock_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'duration',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 1-gang 0300 Clock offset',
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfTime.SECONDS: 's'>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.push_button_1_gang_0300_clock_offset',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -9271,6 +9450,64 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.push_button_2_gang_0232_clock_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'sensor.push_button_2_gang_0232_clock_offset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Clock offset',
+    'options': dict({
+      'sensor': dict({
+        'suggested_display_precision': 1,
+      }),
+    }),
+    'original_device_class': <SensorDeviceClass.DURATION: 'duration'>,
+    'original_icon': None,
+    'original_name': 'Clock offset',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'clock_offset',
+    'unique_id': '00005eff-fe00-5323-0000-000000000000-clock_offset',
+    'unit_of_measurement': <UnitOfTime.SECONDS: 's'>,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.push_button_2_gang_0232_clock_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'duration',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 2-gang 0232 Clock offset',
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfTime.SECONDS: 's'>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.push_button_2_gang_0232_clock_offset',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.push_button_2_gang_0232_hops-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -9475,6 +9712,64 @@
     }),
     'context': <ANY>,
     'entity_id': 'sensor.push_button_2_gang_0232_signal_strength',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.socket_0172_clock_offset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'sensor.socket_0172_clock_offset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Clock offset',
+    'options': dict({
+      'sensor': dict({
+        'suggested_display_precision': 1,
+      }),
+    }),
+    'original_device_class': <SensorDeviceClass.DURATION: 'duration'>,
+    'original_icon': None,
+    'original_name': 'Clock offset',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'clock_offset',
+    'unique_id': '00005eff-fe00-5317-0000-000000000000-clock_offset',
+    'unit_of_measurement': <UnitOfTime.SECONDS: 's'>,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.socket_0172_clock_offset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'duration',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Socket 0172 Clock offset',
+      <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+      <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfTime.SECONDS: 's'>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.socket_0172_clock_offset',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -13079,6 +13374,7 @@
       '00005eff-fe00-5314-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5314-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
@@ -13113,6 +13409,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-voltage sensor key=voltage category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
@@ -13156,6 +13453,7 @@
       '00005eff-fe00-5323-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5323-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
@@ -13189,6 +13487,7 @@
       '00005eff-fe00-5330-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5330-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
@@ -13226,6 +13525,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-switch_blocking_time number key=switch_blocking_time category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
@@ -13316,6 +13616,7 @@
       '00005eff-fe00-5314-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5314-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
@@ -13350,6 +13651,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-voltage sensor key=voltage category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
@@ -13393,6 +13695,7 @@
       '00005eff-fe00-5323-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5323-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
@@ -13426,6 +13729,7 @@
       '00005eff-fe00-5330-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5330-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
@@ -13463,6 +13767,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-switch_blocking_time number key=switch_blocking_time category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
@@ -13562,6 +13867,7 @@
       '00005eff-fe00-5314-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5314-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
@@ -13596,6 +13902,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-voltage sensor key=voltage category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
@@ -13639,6 +13946,7 @@
       '00005eff-fe00-5323-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5323-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
@@ -13672,6 +13980,7 @@
       '00005eff-fe00-5330-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5330-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
@@ -13709,6 +14018,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-switch_blocking_time number key=switch_blocking_time category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
@@ -13747,6 +14057,7 @@
       '00005eff-fe00-5355-0000-000000000000-0041-input_edge_rising select key=input_edge_rising_key category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0040-buttons',
       '00005eff-fe00-5355-0000-000000000000-0041-input_state binary_sensor key=input_state_key category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0040-buttons',
       '00005eff-fe00-5355-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5355-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
@@ -13785,6 +14096,7 @@
       '00005eff-fe00-5360-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0040-buttons',
       '00005eff-fe00-5360-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0040-buttons',
       '00005eff-fe00-5360-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5360-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
@@ -13823,6 +14135,7 @@
       '00005eff-fe00-5370-0000-000000000000-0041-input_edge_rising select key=input_edge_rising_key category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0040-buttons',
       '00005eff-fe00-5370-0000-000000000000-0041-input_state binary_sensor key=input_state_key category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0040-buttons',
       '00005eff-fe00-5370-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5370-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
@@ -13925,6 +14238,7 @@
       '00005eff-fe00-5351-0000-000000000000-0040-repetition_time number key=repetition_time category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
       '00005eff-fe00-5351-0000-000000000000-0040-switch_on_brightness number key=switch_on_brightness category=config disabled_by=None device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
       '00005eff-fe00-5351-0000-000000000000-0040-walking_test switch key=walking_test category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
+      '00005eff-fe00-5351-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
       '00005eff-fe00-5351-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
       '00005eff-fe00-5351-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
       '00005eff-fe00-5351-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5351-0000-000000000000',
@@ -13960,6 +14274,7 @@
       '00005eff-fe00-5352-0000-000000000000-0040-repetition_time number key=repetition_time category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
       '00005eff-fe00-5352-0000-000000000000-0040-switch_on_brightness number key=switch_on_brightness category=config disabled_by=None device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
       '00005eff-fe00-5352-0000-000000000000-0040-walking_test switch key=walking_test category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
+      '00005eff-fe00-5352-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
       '00005eff-fe00-5352-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
       '00005eff-fe00-5352-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
       '00005eff-fe00-5352-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5352-0000-000000000000',
@@ -14063,6 +14378,7 @@
       '00005eff-fe00-5314-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5314-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
@@ -14097,6 +14413,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-voltage sensor key=voltage category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
@@ -14140,6 +14457,7 @@
       '00005eff-fe00-5323-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5323-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
@@ -14173,6 +14491,7 @@
       '00005eff-fe00-5330-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5330-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
@@ -14210,6 +14529,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-switch_blocking_time number key=switch_blocking_time category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
@@ -14250,6 +14570,7 @@
       '00005eff-fe00-5361-0000-000000000000-0041-input_edge_rising select key=input_edge_rising_key category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0040-buttons',
       '00005eff-fe00-5361-0000-000000000000-0041-input_state binary_sensor key=input_state_key category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0040-buttons',
       '00005eff-fe00-5361-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5361-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
@@ -14345,6 +14666,7 @@
       '00005eff-fe00-5314-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
       '00005eff-fe00-5314-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5314-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
@@ -14379,6 +14701,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-voltage sensor key=voltage category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
@@ -14422,6 +14745,7 @@
       '00005eff-fe00-5323-0000-000000000000-0041 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_mode sensor key=key_mode_key category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
       '00005eff-fe00-5323-0000-000000000000-0041-key_status_led switch key=status_led_key category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5323-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
@@ -14455,6 +14779,7 @@
       '00005eff-fe00-5330-0000-000000000000-0040 event key=button category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_mode sensor key=key_mode category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
       '00005eff-fe00-5330-0000-000000000000-0040-key_status_led switch key=status_led category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0040-buttons',
+      '00005eff-fe00-5330-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
@@ -14492,6 +14817,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-switch_blocking_time number key=switch_blocking_time category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-switching_cycles sensor key=switching_cycles category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-timed_on_duration number key=timed_on_duration category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
@@ -14517,6 +14843,7 @@
       '00005eff-fe00-5350-0000-000000000000-0001-sensor_selection select key=sensor_selection category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-0001-touch_sensitivity switch key=touch_sensitivity category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-0001-valve_output select key=valve_output category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
+      '00005eff-fe00-5350-0000-000000000000-clock_offset sensor key=clock_offset category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-hops sensor key=hops category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',

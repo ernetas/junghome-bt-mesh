@@ -320,6 +320,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | IP address | – | – | Yes (diagnostic) | On the gateway's node device: the address the gateway node serves over the mesh (`0xC002`, where the app finds the gateway), read once per connection; redacted from the diagnostics |
 | Proxy node | – | – | Yes (diagnostic) | On the *mesh network* device: the JUNG node Home Assistant is currently connected through (known from the node's Bluetooth address the moment the link is up — JUNG nodes advertise from their MAC — and confirmed by the proxy's own Filter Status), `unknown` while disconnected |
 | Link state | `enum` | – | Yes (diagnostic; off on installations that registered it before 1.1.0) | On the *mesh network* device: where the link stands, the mesh's health at a glance, the JUNG HOME app's connection states and the screens before them — `bluetooth_off` (Home Assistant has no connectable Bluetooth adapter or proxy at all; see the repair issue [No Bluetooth](#repair-issue-no-bluetooth-for-the-jung-home-mesh)), `searching` (no proxy node of the mesh in range), `connecting`, `updating` (connected, the connect-time state refresh running: the app's "the status of your devices is being updated"), `connected`, `failed` (the last attempt failed; the next follows after a back-off, the reason is in the log) and `disconnected` (the link went; the next attempt follows at once) |
+| Clock offset | `duration` | s | No (diagnostic) | Every mains node with a Time Server (`1200`), on the node device: how many seconds its clock was off Home Assistant's at its last Time Status — the answer each node gives the Time Set broadcast after every connection and once a day, or the answer to the Time Get that follows the daily Time Set; `unknown` while it has not answered, or answered that it has no time. See the repair issue [devices with a wrong clock](#repair-issue-jung-home-devices-with-a-wrong-clock). **Unverified on air** |
 
 After (re)connecting the integration asks each metering socket for its measurements once — one `Sensor Get` per
 property (power `0x0081`, voltage `0x005D`, current `0x005C`): the socket's sensor server answers only
@@ -1579,7 +1580,12 @@ Home Assistant is in the diagnostics (`heartbeats`).
   once a day, as the app does at start — the gateway never publishes time, so device timers and astro schedules would
   otherwise drift without a phone nearby. After the time it broadcasts Home Assistant's home location (Generic Location Global Set,
   latitude / longitude / elevation from the general settings), which the nodes compute sunrise and sunset from;
-  the app only sends the phone's position when it creates an astro schedule. Not yet checked on air.
+  the app only sends the phone's position when it creates an astro schedule. Not yet checked on air. Each node answers
+  the Time Set with its Time Status, which Home Assistant keeps; after the daily Time Set it also asks every mains
+  node for its time, time zone and stored location (Time Get, Time Zone Get, Generic Location Global Get; five nodes
+  at a time, battery nodes not at all). The *Clock offset* sensor and the diagnostics show what they answered, and a
+  wrong clock raises the repair [devices with a wrong clock](#repair-issue-jung-home-devices-with-a-wrong-clock).
+  Unverified on air.
 - **ESPHome proxies need active connections.** An ESPHome Bluetooth proxy forwards GATT connections only with
   `bluetooth_proxy: active: true`, and each proxy offers a small number of connection slots (three by default) that all
   Bluetooth integrations share. This integration occupies one slot permanently.
@@ -1855,6 +1861,18 @@ JUNG HOME app, export the network again and update the integration (**Reconfigur
 the device advertises the export's insert again, and is not raised again by an export that names the new insert.
 Unverified on air.
 
+### Repair issue "JUNG HOME devices with a wrong clock"
+
+A mains device that may run schedules — one of its lights, sockets, blinds or thermostats hosts the JH Scheduler and
+its slots are not known to be empty (the *Schedules* sensor or `get_schedules` read them) — answered with no time, a
+clock more than a minute off Home Assistant's, or another time zone offset than the one Home Assistant's Time Set
+carried (the local offset, or UTC where Time Set cannot carry it). Its schedules run at the wrong time. The issue lists
+each device with what is wrong (`+75 s`, `no time`, `UTC+01:00`). **Submit** sends Time Set now and asks those devices
+for their time again; the issue clears once they answer right and stays while one does not answer. If it comes back,
+check Home Assistant's time zone (**Settings → System → General**) and whether the devices are reachable. The stored
+location is shown in the diagnostics (as `home`, `elsewhere` or `not configured`), not in this issue. Unverified on
+air.
+
 ### Repair issue "A JUNG HOME change on … was interrupted"
 
 Home Assistant stopped — a crash, a power cut, a kill — in the middle of a room, key, scene, threshold or removal
@@ -2080,10 +2098,13 @@ went silent`, `sequence numbers skipped ahead`, …), how long its connect-time 
 first) and how long sends were held back for the sequence-number store during it —, the entry's options, the open
 repair issues, the derived device list, the last known state of every element, each node's last
 [network audit](#actions-network-audit) result and the followed key refresh (its phase, how far it is proven, and the
-phase each device Home Assistant added confirmed, with the new key's Network ID). Keys are never included. A device's own menu offers **Download diagnostics** as well: the node's elements and
+phase each device Home Assistant added confirmed, with the new key's Network ID), and under `clocks` each node's
+clock as it last answered: when, its offset in seconds, whether it has a time, its zone offset and the one Time Set
+carried (minutes), whether its stored location is the home's (`home`, `elsewhere`, `not configured` — never the
+coordinates) and what is wrong with it, if anything. Keys are never included. A device's own menu offers **Download diagnostics** as well: the node's elements and
 models, what the node told about itself (`node_info`, the app's node details: software version, hardware revision,
 manufacturer name, secure element and bootloader versions, a room thermostat's STM32 version and the node's time
-role), its devices, the cached state of its elements and its last audit result.
+role), its clock (`clock`, as above), its devices, the cached state of its elements and its last audit result.
 
 The download works whatever state the entry is in. An entry that is not loaded — waiting for a proxy node
 (*retrying setup*), failed (its export cannot be read), or disabled — has no link to describe; its download shows the
@@ -2147,6 +2168,7 @@ Layout of `custom_components/junghome_ble/`:
 | `identity.py` | `VaultKeeper` (`hub.vault`): the mesh's `jhmesh.vault.Vault` in `.storage/junghome_ble.vault.<mesh uuid>` and its `.backup` copy (private, atomic, every write checked through `TrackedStore.written`: `async_save` says whether it landed, a failed one is retried; an unreadable one is set aside under a timestamped name, never overwritten, removed only once that copy landed; `async_recover` takes Home Assistant's entry back from the export when the vault lost it, `jhmesh.vault.recognise`); the configurator merges it into every file it writes or uploads only with `OPTION_PROVISIONER_IDENTITY` (`MeshConfigurator._with_identity`) |
 | `vault_refresh.py` | `VaultKeyRefresh` (`hub.vault_refresh`): the vault's devices taken through the app's key refresh as far as it is proven (`jhmesh.vaultrefresh`; NetKey Update, Phase Set 2, Phase Set 3), in the background on every move of the followed refresh and every new link; the `vault_key_refresh_lagging` repair; its diagnostics section. Unverified on air |
 | `inserts.py` | `NodeInserts` (`hub.inserts`): each node's insert and key layout from the export, its JUNG advertisement (`_adv_seen`) or a read-only Get (a connect-time step); the device models and key positions they give; the `insert_mismatch` repair; `apply_reported` before the devices are registered. Unverified on air |
+| `node_clocks.py` | `NodeClocks` (`hub.clocks`): each node's clock offset, zone offset and stored location from the Time Status, Time Zone Status and Generic Location Global Status it sends (the handlers are in `coordinator.py`); the read after the daily Time Set (`read_all`: mains nodes only, five at a time); the fixable `node_clock_wrong` repair (`async_fix`); the *Clock offset* sensor's value and the diagnostics. Unverified on air |
 | `keep_awake.py` | `KeepAwake` (`hub.keep_awake`): the app's keep-alive for a battery node while a Config plan or a parameter change addresses it — one task per node, reference-counted holds, an `Admin Get 0x5001` once the node was quiet for `KEEP_AWAKE_INTERVAL`, none while there is no link |
 | `gateway_api.py`, `tls.py` | The JUNG HOME Gateway REST client the config flow uses (access request / password registration, project download) and the certificate pinning it relies on (the gateway's certificate is self-signed; the pin comes over the mesh, `0xC003`, or is confirmed in the flow and then checked against `0xC003` by the hub before the gateway is used) |
 | `diagnostics.py` | Entry and device diagnostics, in every entry state (an entry not loaded: its state, reason, visible proxies and export summary); the link history; keys, token, paths (in error texts too) and Bluetooth addresses redacted |

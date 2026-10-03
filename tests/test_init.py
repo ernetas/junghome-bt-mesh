@@ -120,8 +120,9 @@ async def test_setup_and_unload(
         + ["select"] * (11 + 6)
         # 7 socket sensors + Installed + the proxy and link state diagnostics; key mode per key; schedules and scenes
         # per load; 2 thresholds; last seen, signal, hops and last restart per (mains) node; IV index and the two
-        # sequence gauges; two wear counters per light and socket; the gateway's address
-        + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1)
+        # sequence gauges; two wear counters per light and socket; the gateway's address; the clock offset of the
+        # five nodes with a Time Server
+        + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1 + 5)
         # socket, All sockets, the Kitchen's sockets, parameters, Lock, Lock operation and Lock factory reset per
         # device node, night mode, LED colour synchronisation of the 2-gang, previous brightness, sensor values for IoT
         + ["switch"] * (1 + 1 + 1 + 26 + 6 + 5 * 2 + 4 + 1 + 2 + 1)

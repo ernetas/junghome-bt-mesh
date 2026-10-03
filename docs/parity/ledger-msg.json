@@ -153,19 +153,20 @@
   },
   {
    "id": "msg:op:40",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::location_global",
-    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS"
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_location_global_status",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks.note_location",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks._location"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_describe_location_messages",
-    "tests/jhmesh/test_properties_codecs.py::test_location_global_round_trips"
+    "tests/jhmesh/test_properties_codecs.py::test_location_global_round_trips",
+    "tests/test_node_clocks.py::test_the_location_is_compared_with_home_never_shown"
    ],
-   "missing": "Decoder (location_global) and describe() exist and are tested, but no production code ever solicits or consumes a Generic Location Global Status: HA has no reader of a node's stored location (msg:op:8225 is builder-only), whereas the app's LocationMessageBuilder (p234v7/N) reads with Get and waits for 0x40 (expected status 64). HA only pushes the location with Set Unacknowledged. Build: a Get + status handler (e.g. a diagnostic sensor or a location-drift repair) reusing the existing decoder; verify with one read-only Get to a node (every node hosts a Location Server 0x100E).",
-   "class": "build",
-   "verify": "on-air",
-   "review": "adversarial pass: implemented -> partial under this ledger's own status rules (see method, 'Verification pass')"
+   "note": "Unverified on air (review 4 brief 34): each node's Location Server (100E) should answer Home Assistant's Generic Location Global Get with a 10-byte Status holding the home location Home Assistant broadcasts after every connection; the diagnostics then show its location as home (never the coordinates)."
   },
   {
    "id": "msg:op:41",
@@ -389,18 +390,20 @@
   },
   {
    "id": "msg:op:5d",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_tai_time",
-    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_time_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::TimeStatus",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_time_status",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks.note_time"
    ],
    "tests": [
+    "tests/jhmesh/test_messages.py::test_decode_time_status",
+    "tests/jhmesh/test_messages.py::test_time_status_reads_back_what_time_set_sends",
     "tests/jhmesh/test_messages.py::test_describe_time_status_and_get",
-    "tests/jhmesh/test_messages.py::test_describe_time_status_far_future_does_not_raise"
+    "tests/test_node_clocks.py::test_a_time_status_gives_the_offset_and_a_wrong_clock_raises_the_repair"
    ],
-   "class": "build",
-   "verify": "offline",
-   "missing": "Home Assistant sends Time Set (msg:op:5c) after every connection without waiting for the Time Status a node answers, and no status handler takes one: only describe() decodes it (messages._tai_time), where the app waits for it as Time Set's expected status (p234v7/M0). A handler, and the node clocks it would show as diagnostics: review 4 brief 34."
+   "note": "Unverified on air (review 4 brief 34): see air:access:5d; the Time Status every node answers Time Set or Time Get with is kept per node as its clock offset and zone offset."
   },
   {
    "id": "msg:op:5e",
@@ -1408,16 +1411,16 @@
   },
   {
    "id": "msg:op:8225",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_get"
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_get",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks._read"
    ],
    "tests": [
-    "tests/jhmesh/test_messages.py::test_describe_round_trips_every_sig_addition"
+    "tests/jhmesh/test_messages.py::test_describe_round_trips_every_sig_addition",
+    "tests/test_node_clocks.py::test_the_daily_read_asks_every_mains_node_in_chunks"
    ],
-   "missing": "Builder only: nothing reads the node's stored location back (the app's LocationMessageBuilder has a Get read path and resolves 0x40); HA only pushes the home location with Set Unacknowledged. Verify: one read-only Get to any node (every node hosts a Location Server 0x100E).",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air (review 4 brief 34): after the daily Time Set, Home Assistant asks each mains node's Location Server (100E) for its stored location; see msg:op:40."
   },
   {
    "id": "msg:op:822b",
@@ -1527,16 +1530,18 @@
   },
   {
    "id": "msg:op:8237",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+    "custom_components/junghome_ble/jhmesh/messages.py::time_get",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks._read",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time_and_read_clocks"
    ],
    "tests": [
-    "tests/jhmesh/test_messages.py::test_describe_time_status_and_get"
+    "tests/jhmesh/test_messages.py::test_time_get_and_time_zone_get",
+    "tests/test_node_clocks.py::test_the_daily_read_asks_every_mains_node_in_chunks",
+    "tests/test_node_clocks.py::test_a_silent_node_is_asked_nothing_more_and_a_lost_link_stops_the_read"
    ],
-   "missing": "describe() decodes it, but there is no Time Get builder, so HA cannot read a node's clock (the app's TimeMessageBuilder reads with it; nodes answer 0x5D). Verify: read-only Get; every node answers Time Status (0x5D seen from all pids).",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air (review 4 brief 34): after the daily Time Set, each mains node's Time Server (1200) should answer Home Assistant's Time Get with a Time Status (5D); a CLI probe saw 27 nodes answer within a second (docs/hidden-features.md section 9)."
   },
   {
    "id": "msg:op:8238",
@@ -1586,16 +1591,16 @@
   },
   {
    "id": "msg:op:823b",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_GETS"
+    "custom_components/junghome_ble/jhmesh/messages.py::time_zone_get",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks._read"
    ],
    "tests": [
-    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+    "tests/jhmesh/test_messages.py::test_time_get_and_time_zone_get",
+    "tests/test_node_clocks.py::test_the_daily_read_asks_every_mains_node_in_chunks"
    ],
-   "missing": "describe() names it, but there is no Time Zone Get builder. Verify: read-only Get to any node's Time Server 0x1200.",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air (review 4 brief 34): after the daily Time Set, each mains node's Time Server should answer Home Assistant's Time Zone Get with a Time Zone Status (823D) carrying the zone offset Time Set sent."
   },
   {
    "id": "msg:op:823c",
@@ -1609,10 +1614,15 @@
    "id": "msg:op:823d",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_zone"
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_zone",
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_time_zone_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_time_zone_status",
+    "custom_components/junghome_ble/node_clocks.py::NodeClocks.note_zone"
    ],
    "tests": [
-    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses",
+    "tests/jhmesh/test_messages.py::test_decode_time_zone_status",
+    "tests/test_node_clocks.py::test_a_zone_offset_other_than_the_one_sent_raises_the_repair"
    ]
   },
   {

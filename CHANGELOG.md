@@ -313,7 +313,20 @@
   number of devices a node yields: a difference is logged and returned in the response (`missing_devices`).
   Unverified on air.
 
+- Node clocks (review-4 F4-8): schedules on the devices run on their own clock, zone offset and stored location,
+  which Home Assistant broadcasts without confirmation. It now keeps the Time Status each node answers its Time Set
+  with, and after the daily Time Set asks every mains device (battery devices sleep) for its time, time zone and
+  location, five at a time. Each mains device has a *Clock offset* sensor (diagnostic, off by default: seconds off
+  Home Assistant's clock); the diagnostics show offset, zone and whether the stored location is the home's (never the
+  coordinates). A device that may run schedules with no time, a clock more than a minute off or another zone offset
+  than the one sent raises the fixable repair *JUNG HOME devices with a wrong clock*, whose fix sends the time now
+  and asks those devices again. Unverified on air.
+
 ### CLI tools and library
+
+- `jhmesh.messages.time_get()` and `time_zone_get()` build Time Get and Time Zone Get; `decode_time_status()` and
+  `decode_time_zone_status()` return a `TimeStatus` (with its `utc`, None for a node without a time) and a
+  `TimeZoneStatus` (review-4 F4-8).
 
 - Transition times (review-4 F4-1): `messages.encode_transition(seconds)` gives the transition-time byte nearest to a
   time at the finest resolution (never the prohibited 63 steps), `decode_transition(byte)` its seconds, and

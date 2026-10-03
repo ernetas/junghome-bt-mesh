@@ -6,7 +6,8 @@ in the state cache (`config_entities.redacted`). A JUNG node's UUID *is* its MAC
 `30:FB:10:12:34:56`), so wherever a UUID appears — the node, device identifiers, unique ids — its EUI-64 half is
 replaced by the node's unicast address (`redact_node_uuids`): the document stays cross-referenced, the MAC stays out.
 An OS error text names the file it failed on, whose path can carry a user name: the path is redacted, the error kept
-(`redact_paths`).
+(`redact_paths`). The location a node stores for its astro schedules is only compared with Home Assistant's home
+(`node_clocks.NodeClocks.diagnostics`): the coordinates stay out.
 
 The download works in every entry state (review-4 H4-6): an entry that is retrying or failed — exactly when the
 download helps — has no hub, and gets its state, why it is not loaded, what Bluetooth sees and what its export holds
@@ -328,6 +329,12 @@ async def async_get_config_entry_diagnostics(
             "key_refresh": hub.vault_refresh.diagnostics(),
             # nodes that left a full-budget request unanswered and were not heard from since
             "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
+            # each node's clock offset, zone offset and stored location (compared with home, never shown) as it
+            # last answered them (`node_clocks.py`)
+            "clocks": {
+                f"{unicast:04X}": hub.clocks.diagnostics(unicast)
+                for unicast in sorted(hub.clocks.clocks)
+            },
             "issues": _issues(hass),
             "devices": {
                 **_device_summary(hub),
@@ -546,6 +553,7 @@ async def async_get_device_diagnostics(
             },
             "node_info": _node_info(hub, node),
             "insert": _insert(hub, node),
+            "clock": hub.clocks.diagnostics(node.unicast),
             "devices": _device_summary(hub, node),
             "audit": audit.as_dict()
             if (audit := hub.audits.get(node.unicast))

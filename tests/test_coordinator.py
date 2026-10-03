@@ -1993,6 +1993,10 @@ def test_registry_has_one_row_per_built_in_message_type() -> None:
         (None, M.LIGHT_LIGHTNESS_RANGE_STATUS),
         (None, M.LIGHT_LIGHTNESS_DEFAULT_STATUS),
         (None, M.LIGHT_CTL_DEFAULT_STATUS),
+        # the nodes' clocks, zones and stored locations (node_clocks.py)
+        (None, M.TIME_STATUS),
+        (None, M.TIME_ZONE_STATUS),
+        (None, M.GEN_LOCATION_GLOBAL_STATUS),
     }
     assert (
         STATUS_HANDLERS[None, M.GEN_ONOFF_SET]
@@ -2881,10 +2885,14 @@ async def test_time_set_repeats_daily_while_connected(
     hub._unsub_energy = None
     fake_link.sent.clear()
 
-    # day-long jumps would trip the link watchdog (a silent proxy is another test); keep it out of the way
-    with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
-        10 * TIME_SET_INTERVAL,
+    # day-long jumps would trip the link watchdog (a silent proxy is another test); keep it out of the way; the
+    # clock reads that follow the daily Time Set have their own tests (test_node_clocks.py)
+    with (
+        patch(
+            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
+            10 * TIME_SET_INTERVAL,
+        ),
+        patch.object(hub.clocks, "read_all", AsyncMock(return_value=True)) as reads,
     ):
         freezer.tick(TIME_SET_INTERVAL - 60)
         async_fire_time_changed(hass)
@@ -2896,6 +2904,7 @@ async def test_time_set_repeats_daily_while_connected(
         await settle(hass)
         assert len(fake_link.sent) == 1
         assert_time_set(fake_link.sent[0], dt_util.now())
+        reads.assert_awaited_once()  # the nodes' clocks are read after it
 
         # nothing goes out while the link is down, and a failing send is only logged
         fake_link.sent.clear()
