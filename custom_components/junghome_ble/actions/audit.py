@@ -10,18 +10,26 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import issue_registry as ir
 
-from ..const import DOMAIN, ISSUE_GATEWAY_CERTIFICATE, ISSUE_GATEWAY_TOKEN
-from ..coordinator import issue_id
-from ..gateway_api import (
+from custom_components.junghome_ble.const import (
+    DOMAIN,
+    ISSUE_GATEWAY_CERTIFICATE,
+    ISSUE_GATEWAY_TOKEN,
+)
+from custom_components.junghome_ble.coordinator import issue_id
+from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayBusy,
     GatewayCertificateMismatch,
     GatewayError,
     api_for_entry,
 )
-from ..jhmesh.audit import report
-from ..jhmesh.devices import BATTERY_PIDS
-from ..mesh_config import MeshConfigurator, token_rejected_open
+from custom_components.junghome_ble.jhmesh.audit import report
+from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
+from custom_components.junghome_ble.mesh_config import (
+    MeshConfigurator,
+    token_rejected_open,
+)
+
 from .common import (
     _ENTRY_FIELD,
     ATTR_CONFIG_ENTRY,

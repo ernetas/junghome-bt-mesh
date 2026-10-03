@@ -9,13 +9,18 @@ import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from ..climate import temperature_to_level
-from ..const import DEFAULT_UNUSED_SCENES_DRY_RUN, DOMAIN
-from ..entity import load_entity_id
-from ..jhmesh import vendor_models as V
-from ..jhmesh.devices import Blind, Device, Thermostat
-from ..mesh_config import MeshConfigurator, scene_action_for
-from ..schedules import ActionError, schedule_action
+from custom_components.junghome_ble.climate import temperature_to_level
+from custom_components.junghome_ble.const import DEFAULT_UNUSED_SCENES_DRY_RUN, DOMAIN
+from custom_components.junghome_ble.entity import load_entity_id
+from custom_components.junghome_ble.errors import mesh_errors
+from custom_components.junghome_ble.jhmesh import vendor_models as V
+from custom_components.junghome_ble.jhmesh.devices import Blind, Device, Thermostat
+from custom_components.junghome_ble.mesh_config import (
+    MeshConfigurator,
+    scene_action_for,
+)
+from custom_components.junghome_ble.schedules import ActionError, schedule_action
+
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
@@ -47,7 +52,7 @@ from .resolve import (
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
-    from ..coordinator import JungHomeHub
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 
 CREATE_SCENE_SCHEMA = vol.Schema(
@@ -224,7 +229,11 @@ async def _apply_state(
     load's own rounding.
     """
     address = device.address
-    try:
+    # a load that answered none of the Set's attempts is unreachable now; a lost link is a send failure
+    with mesh_errors(
+        timeout_key="device_not_reachable",
+        placeholders=lambda: {"entity": load_entity_id(hass, device)},
+    ):
         if action.code == V.ACTION_SWITCH:
             await hub.set_onoff(address, bool(action.on))
             kind = device.kind
@@ -245,18 +254,6 @@ async def _apply_state(
         else:
             await hub.set_lightness(address, action.lightness or 0)
             kind = "dimmer"
-    except (
-        TimeoutError
-    ) as err:  # the load answered none of the Set's attempts: it is unreachable now
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="device_not_reachable",
-            translation_placeholders={"entity": load_entity_id(hass, device)},
-        ) from err
-    except OSError as err:  # a lost link (ConnectionError)
-        raise HomeAssistantError(
-            translation_domain=DOMAIN, translation_key="send_failed"
-        ) from err
     if not await hub.async_wait_settled(address, kind):
         raise HomeAssistantError(
             translation_domain=DOMAIN,

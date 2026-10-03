@@ -23,8 +23,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # What the nodes of each entry told about themselves (`NODE_INFO`, `NODE_INFO_VENDOR`, the time role), by node
 # unicast, then by item name, raw: kept for the life of `hass` so a reloaded hub starts with them — config-entity
-# setup (`_candidates`) reads the software version before any Get can answer, the device registry shows the
-# identity — and in a store of the entry (`node_versions_store`), so the first setup after a restart has them too.
+# setup (`properties.targets._candidates`) reads the software version before any Get can answer, the device registry
+# shows the identity — and in a store of the entry (`node_versions_store`), so the first setup after a restart has them
+# too.
 NODE_VERSIONS: HassKey[dict[str, dict[int, dict[str, bytes]]]] = HassKey(
     f"{DOMAIN}_node_versions"
 )

@@ -434,7 +434,7 @@ def drop_retired_entities(
 ) -> None:
     """Remove the registry entries of the entities no longer created: (platform, unique id) pairs.
 
-    `config_entities.retired_unique_ids` names them; an enabled one would otherwise linger as *no longer provided*.
+    `properties.targets.retired_unique_ids` names them; an enabled one would otherwise linger as *no longer provided*.
     """
     registry = er.async_get(hass)
     for platform, unique_id in retired:
@@ -448,7 +448,7 @@ def enable_now_default(
     """Enable the entities now on by default that an earlier version registered disabled by the integration.
 
     `enabled_default` only applies when the registry entry is created: *Lock operation* was off by default before
-    its bit was confirmed on air (`config_entities.DEVICE_LOCK_ENABLED`). One the user disabled stays so, and
+    its bit was confirmed on air (`properties.targets.DEVICE_LOCK_ENABLED`). One the user disabled stays so, and
     nothing registers these disabled by the integration any more, so an entry changes once; HA reloads the config
     entry after it, as when the user enables an entity.
     """

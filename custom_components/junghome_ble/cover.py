@@ -186,7 +186,7 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
         raw = st.properties.get(COVER_MODE_PROPERTY) if st else None
         if raw is None:
             return None
-        # one byte, never cached empty (`config_entities._on_vendor_property_status`): always decodes
+        # one byte, never cached empty (`properties.reader._on_vendor_property_status`): always decodes
         mode: str | int = MODE_SPEC.codec.decode(raw)
         return mode
 

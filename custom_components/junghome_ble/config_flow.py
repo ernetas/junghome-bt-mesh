@@ -770,7 +770,7 @@ async def _mesh_uuid_taken(
     The unique id above is the Network ID, which a key refresh changes: without this check, fetching or
     uploading the same mesh's (refreshed) export through "Add integration" instead of the existing entry's
     Reconfigure would create a second entry for it. Two entries sharing a mesh would then also share its
-    sequence-number store (`coordinator.seq_store`, keyed on the mesh UUID) — each holding its own stale
+    sequence-number store (`seq_store.seq_store`, keyed on the mesh UUID) — each holding its own stale
     in-memory copy of the other addresses' records (`HAState._addresses`, loaded once) and overwriting them
     with that stale copy on every save, which can roll a sibling entry's counter backwards on its next load.
     One entry per mesh avoids the race outright; point the user at Reconfigure instead.
@@ -804,9 +804,9 @@ async def _async_forget_replaced_export(
     """Delete the export the integration had stored for `entry` when the reconfigure moved away from it.
 
     A fetched or uploaded export has just replaced whatever was at its path: the merge base kept beside it
-    (`app_copy_path`, the app's upload before this one) is stale, and `MeshConfigurator._carry_over` would
+    (`app_copy_path`, the app's upload before this one) is stale, and `ExportStore._carry_over` would
     take all the app changed since for Home Assistant's own changes. It goes too; the next save keeps the
-    export now on disk as the base (`MeshConfigurator._keep_app_copy`).
+    export now on disk as the base (`ExportStore._keep_app_copy`).
     """
     if data.get(CONF_SOURCE) in (SOURCE_GATEWAY, SOURCE_UPLOAD):
         await hass.async_add_executor_job(_discard, app_copy_path(data[CONF_CDB_PATH]))
@@ -900,7 +900,7 @@ async def async_replace_export(
         forget_known_mesh(hass, entry.entry_id)
         await _async_forget_replaced_export(hass, entry, data)
         if CONF_GATEWAY_SYNCED in data:
-            # fetched from the gateway: both hold this export now (`mesh_config.GatewaySync`, before the reload)
+            # fetched from the gateway: both hold this export now (`configurator.store.GatewaySync`, before the reload)
             await gateway_sync(hass, entry.entry_id).async_seed(
                 entry, data[CONF_GATEWAY_SYNCED]
             )

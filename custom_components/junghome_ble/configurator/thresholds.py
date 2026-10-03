@@ -136,10 +136,10 @@ class Thresholds(Operations):
         On air (the app settings session), once no threshold of the socket is active: every load leaves
         the client's element group (`threshold_wiring`: OnOff server, then `0x0527:1013`), then the client's
         publication is reset — `Publication Set 0x0000` (TTL 0, as the app sends it), then its element group
-        again — even when no load was left to unwire. The steps go out in that order (`_send(as_planned=True)`).
-        A publication the client does not have to its group is left alone. The app also writes KeyMode 5 to the
-        meter element around it, which that element does not hold (`air:access:03-0527:0x5003`): not sent.
-        `applied` words a stop, with what the call wrote before (W4-13).
+        again — even when no load was left to unwire. The steps go out in that order
+        (`PlanExecutor.send(as_planned=True)`). A publication the client does not have to its group is left alone. The
+        app also writes KeyMode 5 to the meter element around it, which that element does not hold
+        (`air:access:03-0527:0x5003`): not sent. `applied` words a stop, with what the call wrote before (W4-13).
         """
         async with self.store.lock:
             pf = await self.store.load()

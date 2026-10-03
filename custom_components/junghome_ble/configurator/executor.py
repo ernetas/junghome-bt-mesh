@@ -66,7 +66,7 @@ class PlanExecutor:
     def __init__(self, store: ExportStore) -> None:
         """Send through `store`'s hub, record into `store`'s export."""
         self.store = store
-        # what the running call's plans did (`services._run` starts a new one per call)
+        # what the running call's plans did (`actions.common._run` starts a new one per call)
         self.outcome = PlanOutcome()
 
     @property
@@ -91,7 +91,7 @@ class PlanExecutor:
         """At setup: record what a plan Home Assistant stopped or crashed in the middle of left on the mesh.
 
         The journal says which plan ran and how many of its steps the nodes had accepted; they are replayed into a
-        fresh read of the export as `_record` does after a stop (idempotent: a crash during this replay replays
+        fresh read of the export as `record` does after a stop (idempotent: a crash during this replay replays
         the same again), and a repair issue names the interrupted action. The record is not handed to the
         gateway here — the link that vouches for it is not up yet — but left to `sync_gateway` or the next
         change. A record that cannot be written keeps the journal for the next start; an unreadable journal is
@@ -167,7 +167,8 @@ class PlanExecutor:
                 keep=True,
             )
         elif (reset := record.cdb.node_by_addr(note["node"])) is not None:
-            # "excluded": the node the plan's `_load` found, read again; a record that has it excluded no longer lists it
+            # "excluded": the node the plan's `ExportStore.load` found, read again; a record that has it
+            # excluded no longer lists it
             record.exclude_node(reset, note["iv_index"])
 
     async def send(
@@ -211,7 +212,7 @@ class PlanExecutor:
         Unverified on air.
 
         The call's `outcome` counts the plan and what was accepted of it (its response, error and logbook line); a
-        dry run ends here with the plan noted, before anything is journaled or sent (`_planned`).
+        dry run ends here with the plan noted, before anything is journaled or sent (`ExportStore.planned`).
         """
         plan, sleepy = self.in_order(steps, as_planned=as_planned)
         if self.store.dry:
@@ -260,7 +261,7 @@ class PlanExecutor:
     def in_order(
         self, steps: Iterable[ConfigStep], *, as_planned: bool = False
     ) -> tuple[list[ConfigStep], set[int]]:
-        """Put the plan in the order `_send` sends it (`ordered`, battery nodes first); return it and those nodes."""
+        """Put the plan in the order `send` sends it (`ordered`, battery nodes first); return it and those nodes."""
         steps = list(steps)
         sleepy = {
             unicast
@@ -276,7 +277,7 @@ class PlanExecutor:
         prepare: Note | None,
         happened: Note | None,
     ) -> HomeAssistantError | None:
-        """`_record` a stopped plan, held to its end; the error (logged) when the record could not be written."""
+        """`record` a stopped plan, held to its end; the error (logged) when the record could not be written."""
         try:
             await run_to_end(
                 self.record(accepted, plan, prepare=prepare, happened=happened)
@@ -323,7 +324,7 @@ class PlanExecutor:
         a re-provisioned node, without a reload) has no device key here: `ProxyClient._dev_key` raises
         `ValueError`, reported as the export being newer than what is loaded. A battery node that stays silent is
         reported as asleep (`_silence`), asking for a key press and a new run instead of the no-reply error. The
-        errors name the node with its device's name (`_node_name`), not by its address alone.
+        errors name the node with its device's name (`ExportStore.node_name`), not by its address alone.
         """
         what = step.what
         node = self.store.node_name(step.node)
@@ -379,7 +380,7 @@ class PlanExecutor:
 
         `happened` (what the mesh holds from before the plan) goes in first, and alone is reason enough to write.
         A key's room-link row is dropped only once every step of `plan` tagged `unlinks=key` was accepted: while
-        any of them is still pending, the row is what makes the next run's `_unlink_room_steps` unsubscribe the
+        any of them is still pending, the row is what makes the next run's `unlink_room_steps` unsubscribe the
         loads that never got there this time. `prepare` runs next — after that drop, so a new room link's row it
         records is not taken for the old one's — and before the replay, so a step that subscribes to a room the
         plan itself creates has something to subscribe to in this fresh copy too. Every part of it is idempotent,
@@ -392,7 +393,7 @@ class PlanExecutor:
             )  # the mesh holds nothing new: nothing to record, now or after a crash
             return
         record = await self.store.read()
-        # as `_load` planned it: with the provisioner identity on, the nodes only the vault had are in it too
+        # as `ExportStore.load` planned it: with the provisioner identity on, the nodes only the vault had are in it too
         await self.store.with_identity(record)
         if happened is not None:
             self._bookkeeping(record, happened)

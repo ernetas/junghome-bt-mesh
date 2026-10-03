@@ -405,7 +405,7 @@ class Scenes(Operations):
     async def delete_scene(self, scene: str | int, *, force: bool = False) -> list[str]:
         """Delete a scene: every element that stored it forgets it (every channel's action too), then the CDB / `meta` entries go.
 
-        The keys of the members that recall the scene are cleared first (`_scene_key_steps`, as the app's
+        The keys of the members that recall the scene are cleared first (`scene_key_steps`, as the app's
         *remove device from scene* does for every member). A member that cannot be reached, or refuses, stops the
         deletion with what was done recorded — unless `force`, the app's *Delete anyway*
         (`removeScene(scene, force)`): then that member is skipped, keeps the scene in its register, and the scene

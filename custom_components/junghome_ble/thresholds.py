@@ -9,10 +9,11 @@ share that list. Once neither is active (disabled or deleted) the app unwires th
 client's publication (`MeshConfigurator.unwire_threshold`).
 
 The *Switch-on threshold* / *Switch-off threshold* sensors (diagnostic, off by default) show each, read once per
-link; the `set_threshold` / `delete_threshold` actions (`services.py`) write them. Formats and wiring are the app's,
-the message sequences as captured on air; HA's own have not been tried on a device yet. Only the metering socket has them, not every metered load: the app gives
-the energy puck's output (`MeasureLampDevice`) the consumption page but no thresholds (`docs/android/properties.md`
-§4, `docs/gap-analysis/device-settings.md` §5.3), and the properties name the socket alone (`SOCKET_METERING`).
+link; the `set_threshold` / `delete_threshold` actions (`actions/thresholds.py`) write them. Formats and wiring are the
+app's, the message sequences as captured on air; HA's own have not been tried on a device yet. Only the metering socket
+has them, not every metered load: the app gives the energy puck's output (`MeasureLampDevice`) the consumption page but
+no thresholds (`docs/android/properties.md` §4, `docs/gap-analysis/device-settings.md` §5.3), and the properties name
+the socket alone (`SOCKET_METERING`).
 """
 
 from __future__ import annotations

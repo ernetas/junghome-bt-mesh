@@ -75,8 +75,8 @@ class ConfigStep:
 
         A node answers every request it receives, so a reply that came late — after the attempt timed out and
         the PDU was re-sent — arrives twice; matched on node + opcode alone the duplicate would acknowledge the
-        next same-opcode step and mask its refusal. A Status that does not decode is left to `_request`, which
-        counts it as a refusal (it cannot be told apart from anyone's).
+        next same-opcode step and mask its refusal. A Status that does not decode is left to `PlanExecutor._request`,
+        which counts it as a refusal (it cannot be told apart from anyone's).
         """
         try:
             status = C.decode_config(message.opcode, message.params)
@@ -317,7 +317,7 @@ def applied_unused_deleted(deleted: dict[str, list[int]]) -> str:
     )
 
 
-# A plan's bookkeeping that is no Config step, as data (`MeshConfigurator._bookkeeping` applies it): it goes into the
+# A plan's bookkeeping that is no Config step, as data (`PlanExecutor._bookkeeping` applies it): it goes into the
 # plan journal, so a record made after a crash can apply it too. `{"kind": "room", "name", "address"}` — a room the
 # plan creates; `{"kind": "room_link", "key", "room", "publish", "function"}` — a room link's `meta` row;
 # `{"kind": "excluded", "node", "iv_index"}` — a node that confirmed its reset.
@@ -329,7 +329,7 @@ class KeyPlan:
     """A planned key connection: the Config messages and the KeyMode to write once they are accepted.
 
     `prepare` is the plan's bookkeeping that is no Config step (a room link's `meta` row), for the record of a
-    plan that stops (`MeshConfigurator._send`).
+    plan that stops (`PlanExecutor.send`).
     """
 
     steps: list[ConfigStep]

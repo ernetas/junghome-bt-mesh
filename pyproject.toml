@@ -132,9 +132,6 @@ ignore = [
 "tests/**" = ["S101", "S105", "S106", "SLF001", "INP001", "D", "ANN"]
 # Development scripts run by hand (scripts/bench_mesh.py): a directory of scripts, not a package.
 "scripts/**" = ["INP001"]
-# The action modules (custom_components/junghome_ble/actions/) import the integration's own modules from their
-# parent package (`from .. import schedules`), as the integration's modules import each other: relative to it.
-"custom_components/junghome_ble/actions/**" = ["TID252"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["custom_components"]

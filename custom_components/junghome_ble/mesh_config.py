@@ -24,8 +24,8 @@ one at a time per hub:
 5. save the file atomically (`NewerExportError` becomes a translated error asking for a fresh export);
 6. when the entry knows a gateway (host, token, pinned certificate), hand the export to it the way the app does
    after every change (`POST config {"data": {"project_file": …}}`, roadmap step 14) so the gateway sees the same
-   installation (the app never downloads it: its next upload lacks HA's changes, which `_carry_over` puts back
-   before that upload is adopted — review-3 W1); a failed upload raises the `gateway_sync_failed` repair issue
+   installation (the app never downloads it: its next upload lacks HA's changes, which `ExportStore._carry_over` puts
+   back before that upload is adopted — review-3 W1); a failed upload raises the `gateway_sync_failed` repair issue
    and is retried like the app retries it (twice, 15 s apart, `GATEWAY_UPLOAD_RETRIES`), and `sync_gateway()`
    retries it on demand — each time after checking, by content digest against what HA last synced, that the
    gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
@@ -35,7 +35,7 @@ A dry run (`MeshConfigurator.dry_run`, review-4 W I3) goes through step 2 on the
 step 3 or 5 would begin, answering the plan's messages and how the export would change; nothing is sent, written or
 adopted. What a call's plans did is counted per call (`PlanOutcome`) for its answer, its error and the logbook.
 
-The caller (`services.py`) then has the running hub take the new export over in place (`model_update`, review-4
+The caller (`actions.common._run`) then has the running hub take the new export over in place (`model_update`, review-4
 D23), which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
 devices — follows it; a change it cannot follow in place reloads the config entry, as every change did before.
 
@@ -55,7 +55,8 @@ KeySetPropertyMode reset goes out only once every Config step was accepted — a
 was in property mode exactly as it was. A metering socket's thresholds (`set_threshold_devices`) are wired like a
 room link from the socket's side: its OnOff Client (on the meter element) subscribes to — and publishes to — that
 element's own group, and the loads it should switch subscribe their JUNG User Property and OnOff servers there;
-`unwire_threshold` undoes it the app's way, with a publication reset sent in the app's order (`_send(as_planned=True)`).
+`unwire_threshold` undoes it the app's way, with a publication reset sent in the app's order
+(`PlanExecutor.send(as_planned=True)`).
 
 No key material is logged or put into error messages.
 
@@ -280,7 +281,7 @@ class MeshConfigurator:
 
     @property
     def outcome(self) -> PlanOutcome:
-        """What the running call's plans did (`PlanExecutor.outcome`; `services._run` starts a new one per call)."""
+        """What the running call's plans did (`PlanExecutor.outcome`; `actions.common._run` starts one per call)."""
         return self.executor.outcome
 
     @outcome.setter

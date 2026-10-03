@@ -655,6 +655,12 @@
   registered handlers for what keys send stay in `coordinator.py`, so the detectors still chain behind them;
   `add_event_listener`, `fire_button` and `click_delay` stay on the hub. The events and their order are unchanged;
   the log line of an unknown key code now comes from the `…hub_gestures` logger.
+- Internal: follow-ups of the module splits (review-4 A4-4, A4-5, A4-6, A4-8): `errors.mesh_errors` also maps the
+  transport errors of the config entities' reads and writes, `locate_node`, the Sets `store_scene` applies and the JH
+  Scheduler's requests to the same translated errors as before (`audit_network` still maps only a lost link);
+  comments and docstrings name the moved code where it lives now; the action modules import the integration's
+  modules absolutely, as `configurator/` and `properties/` do, so `actions/` no longer needs its `TID252` exemption.
+  No behaviour changes.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick

@@ -340,7 +340,7 @@ def app_copy_path(cdb_path: str | Path) -> Path:
     """Where the app's last upload is kept beside an export set up from a gateway (`<export>.app`).
 
     It is the base of the three-way merge that carries Home Assistant's changes over onto the app's next upload
-    (`MeshConfigurator._carry_over`): the app never downloads the project, so its uploads lack them.
+    (`ExportStore._carry_over`): the app never downloads the project, so its uploads lack them.
     """
     path = Path(cdb_path)
     return path.with_name(path.name + ".app")
@@ -593,7 +593,7 @@ def record_room_link(
 
     It replaces the key's earlier rows, unless `keep`: the record of a stopped plan keeps them beside the new
     one, since the old link's loads may still listen to the key — its rows are what makes the next clear
-    unwire them — and `_record` drops them once every step tearing the old link down was accepted. A key no
+    unwire them — and `PlanExecutor.record` drops them once every step tearing the old link down was accepted. A key no
     device entry covers gets one named as `metadata` (the hub's device model) names it.
     """
     entry = device_entry(pf, key.node, key.location)
@@ -697,8 +697,8 @@ def plan_device_link(
     every one of its elements — a mini actuator's inputs E1 / E2 included — publish to their element groups and
     the key's clients subscribe there. Unverified on air for a mini actuator (none was wired from here).
 
-    `target_element` picks another element of the target (`TARGET_ELEMENTS`, `_target_element`); `mode: lock`
-    is the app's locking function (`SetLockingFunctionConnection`, `_write_lock_function`). Both unverified on air.
+    `target_element` picks another element of the target (`TARGET_ELEMENTS`, `pick_target_element`); `mode: lock`
+    is the app's locking function (`SetLockingFunctionConnection`, `Keys._write_lock_function`). Both unverified on air.
     """
     target = find_element(pf, address)
     clients: tuple[str, ...] | None = None
@@ -815,8 +815,8 @@ def plan_scene_link(
 
     The key's connections are cleared (`RemoveConnectionForAddress.AllConnections`) and its Scene Client
     publishes to `0xFFFF` (publish only: `assign_key` adds no subscription for it); once that is accepted the
-    key gets the scene number (`_write_scene_config`), the app's `keyModeSceneConfigExports` row
-    (`_record_scene_link`) and KeyMode 2. The target is a scene, so `mode` must be left out.
+    key gets the scene number (`Keys._write_scene_config`), the app's `keyModeSceneConfigExports` row
+    (`record_scene_link`) and KeyMode 2. The target is a scene, so `mode` must be left out.
     """
     number = find_scene(pf, scene)
     if mode is not None:

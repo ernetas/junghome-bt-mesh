@@ -948,8 +948,8 @@ async def test_node_versions_survive_a_restart_and_go_with_the_entry(
     hass_storage: dict[str, Any],
 ) -> None:
     """A4: the versions are on disk too, so the first setup after a Home Assistant restart applies the firmware
-    gates (`_candidates` runs before any Get can answer), not only the setup after a reload; removing the entry
-    removes them."""
+    gates (`properties.targets._candidates` runs before any Get can answer), not only the setup after a reload; removing
+    the entry removes them."""
     key = f"{DOMAIN}.{init_detectors.entry_id}.node_versions"
     hub = init_detectors.runtime_data
     # the link-up read of the nodes' information is through (its last Get: the time role), and saved

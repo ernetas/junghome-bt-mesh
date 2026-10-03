@@ -7,10 +7,11 @@ off by default): the status every `GATEWAY_STATUS_INTERVAL` (30 s — Home Assis
 it is open), the error log every `GATEWAY_HEALTH_INTERVAL` (5 min). Firmware version and build, serial number, the
 access requests waiting for approval in the app (the app's permissions indicator counts them), the approved API
 clients, the Network / Bluetooth Mesh / Cloud indicators, the non-debug entries of the error log. The time of the
-last upload of Home Assistant's export (the app's `gateway_last_sync`) is in the entry's `mesh_config.GatewaySync` record.
+last upload of Home Assistant's export (the app's `gateway_last_sync`) is in the entry's
+`configurator.store.GatewaySync` record.
 
-The gateway is asked under the same rules as the export's fetch and upload (`mesh_config.py`): only with a pin the
-gateway node vouched for (`JungHomeHub.gateway_vouched`; the vouching itself runs on every link), a rejected token
+The gateway is asked under the same rules as the export's fetch and upload (`configurator/store.py`): only with a pin
+the gateway node vouched for (`JungHomeHub.gateway_vouched`; the vouching itself runs on every link), a rejected token
 raises the `gateway_token_rejected` repair and starts the reauth flow (the polls stop asking while the repair is
 open), another certificate the `gateway_certificate_changed` one. Like the app, a gateway that stops answering is
 looked for again over the mesh (`JungHomeHub.async_follow_gateway`: its `0xC002` address and `0xC003` certificate) —

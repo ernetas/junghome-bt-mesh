@@ -242,7 +242,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     register_parent_devices(hass, hub)
     # registered first: whatever `async_start` got going before a failure is stopped with the failed setup
     entry.async_on_unload(hub.async_stop)
-    # what the entry last exchanged with its gateway (`mesh_config.GatewaySync`), before anything compares with it
+    # what the entry last exchanged with its gateway (`configurator.store.GatewaySync`), before anything compares
+    # with it
     await gateway_sync(hass, entry.entry_id).async_load(entry)
     # before the start: the adverts the start replays can already name unknown nodes, whose export refresh
     # adopts through the configurator (review-3 C1)
@@ -333,14 +334,14 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     A fetched or uploaded export goes with its backups and the copies the services keep beside it
     (`forget_stored_export`), and so does any orphaned `.incoming-*` file no flow claims.
-    The sequence-number store is not the entry's: it belongs to the mesh (`coordinator.seq_store`, one record per
+    The sequence-number store is not the entry's: it belongs to the mesh (`seq_store.seq_store`, one record per
     address ever used) and is kept on purpose, so an entry re-created for the same mesh continues its counters
     instead of reusing nonces the nodes have already seen. An entry whose setup never reached
     `JungHomeHub.async_create` (SETUP_RETRY, SETUP_ERROR) never migrated its own 0.2 per-entry store into the
     mesh's, so that has to happen here too — before the export is deleted below, since a gateway/upload entry's
     CDB file is the fallback this uses to find the mesh UUID (HAC-06).
     """
-    # a pending retry of a failed upload outlives reloads (`MeshConfigurator._upload_or_retry`), not the entry
+    # a pending retry of a failed upload outlives reloads (`ExportStore._upload_or_retry`), not the entry
     cancel_upload_retry(hass, entry.entry_id)
     forget_known_mesh(hass, entry.entry_id)
     legacy: Store[dict[str, Any]] = Store(

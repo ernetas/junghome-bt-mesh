@@ -15,9 +15,9 @@ approves the one named (review-4 F4-15, F4-17). The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
 for administrators only (review-4 W4-9). The rewiring actions answer what their plans applied, or with `dry_run` only
-what they would send and change (`_execute`, `MeshConfigurator.dry_run`); every call that ran a plan is logged in
-the logbook and the diagnostics (`_report_plan`); what cannot be undone needs `confirm` (review-4 W I3, W I6, W I7,
-W I9).
+what they would send and change (`actions.common._execute`, `MeshConfigurator.dry_run`); every call that ran a plan is
+logged in the logbook and the diagnostics (`actions.common._report_plan`); what cannot be undone needs `confirm`
+(review-4 W I3, W I6, W I7, W I9).
 
 Calls for one entry are serialised (`coordinator.ENTRY_LOCKS`, kept across reloads, taken by the unknown-node
 refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options

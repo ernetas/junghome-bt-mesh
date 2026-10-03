@@ -3036,7 +3036,7 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
 
     async def recorded_then_waits(configurator: Any) -> bool:
         configurator.recorded = True
-        # one of the plan's four messages accepted (`_send` counts them)
+        # one of the plan's four messages accepted (`PlanExecutor.send` counts them)
         configurator.outcome.action = "junghome_ble.set_room"
         configurator.outcome.applied, configurator.outcome.total = 1, 4
         reached.set()

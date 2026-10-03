@@ -731,7 +731,7 @@ async def test_user_flow_refuses_a_second_entry_for_an_already_configured_mesh(
 ) -> None:
     """A NetKey refresh gives an already-configured mesh a *new* Network ID, so the unique-id de-duplication above
     cannot catch a second "Add integration" of its (freshly fetched/uploaded) export — only its unchanged mesh
-    UUID can. Two entries sharing one mesh would also share its sequence-number store (`coordinator.seq_store`,
+    UUID can. Two entries sharing one mesh would also share its sequence-number store (`seq_store.seq_store`,
     keyed on the mesh UUID) without coordinating their writes to it (each holds its own stale copy of the other
     addresses' records and can roll the other's counter backwards on its next load) — refuse instead and point at
     the existing entry's Reconfigure, exactly as it is documented."""
@@ -2992,7 +2992,7 @@ async def test_reconfigure_replacing_the_export_drops_the_stale_merge_base(
     option: str,
 ) -> None:
     """The export fetched or uploaded again lands at the same path; the app's upload kept beside it as the merge
-    base (`app_copy_path`) is an older one. `MeshConfigurator._carry_over` would take all the app changed in
+    base (`app_copy_path`) is an older one. `ExportStore._carry_over` would take all the app changed in
     between for Home Assistant's own changes, and put it back onto the app's next upload."""
     aioclient_mock.get(f"{API}/project/junghome", json=_share_export())
     entry = _gateway_entry(hass)

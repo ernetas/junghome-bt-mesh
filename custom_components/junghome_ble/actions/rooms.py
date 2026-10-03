@@ -10,7 +10,8 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 
-from ..areas import area_name_for
+from custom_components.junghome_ble.areas import area_name_for
+
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
@@ -27,7 +28,7 @@ from .common import (
 from .resolve import Load, _entry_for_hub_services, _resolve_loads, _room_of
 
 if TYPE_CHECKING:
-    from ..mesh_config import MeshConfigurator
+    from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 
 ATTR_CREATE = "create"

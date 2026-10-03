@@ -2,7 +2,7 @@
 
 Keys are never included; the export paths (they describe the host), the gateway's host and API token and the
 Bluetooth MAC addresses are redacted, and so are the gateway's address and any secret property should one ever sit
-in the state cache (`config_entities.redacted`). A JUNG node's UUID *is* its MAC (`jhmesh.advert.mac_from_uuid`: `30fb10ff-fe12-3456-…` is
+in the state cache (`properties.reader.redacted`). A JUNG node's UUID *is* its MAC (`jhmesh.advert.mac_from_uuid`: `30fb10ff-fe12-3456-…` is
 `30:FB:10:12:34:56`), so wherever a UUID appears — the node, device identifiers, unique ids — its EUI-64 half is
 replaced by the node's unicast address (`redact_node_uuids`): the document stays cross-referenced, the MAC stays out.
 An OS error text names the file it failed on, whose path can carry a user name: the path is redacted, the error kept

@@ -58,7 +58,7 @@ on for the mesh as a whole; *Unreachable devices* (`sensor.py`) tells which devi
 
 **Scheduler function** (`JungHomeRtrSchedulerStatus`, room thermostats, diagnostic, off by default): the read-only
 0x1249 (`RtrSchedulerFunctionStatus`), which the app takes as its automatic operation (0x1246) whenever one is
-reported (`config_entities.PROPERTY_SCHEDULER_STATUS`); **unverified on air**.
+reported (`properties.reader.PROPERTY_SCHEDULER_STATUS`); **unverified on air**.
 """
 
 from __future__ import annotations

@@ -1940,7 +1940,7 @@ async def test_unrelated_messages_are_ignored(
         LIGHT_SWITCH,
         OUR_ADDRESS,
         encode_opcode(0x11, M.JUNG_CID) + b"\x12\x50",
-    )  # vendor property status without the access byte and value (config_entities.py handles complete ones)
+    )  # vendor property status without the access byte and value (properties/reader.py handles complete ones)
     fake_link.inject(
         LIGHT_SWITCH, OUR_ADDRESS, encode_opcode(0x10, M.JUNG_CID) + b"\x03\x50\x01"
     )  # another vendor property
@@ -1954,7 +1954,7 @@ async def test_unrelated_messages_are_ignored(
         LIGHT_DIMMER,
         0xC044,
         encode_opcode(M.LIGHT_LIGHTNESS_RANGE_STATUS) + b"\x00\x01",
-    )  # truncated setup status (config_entities.py handles complete ones)
+    )  # truncated setup status (properties/reader.py handles complete ones)
     fake_link.inject(
         ROCKER_A, 0xC044, encode_opcode(M.GEN_ONOFF_SET_UNACK)
     )  # a set without parameters
@@ -1998,14 +1998,14 @@ def test_registry_has_one_row_per_built_in_message_type() -> None:
         *((None, op) for op in SIG_PROPERTY_STATUS_OPCODES),
         (M.JUNG_CID, 0x10),
         (None, M.GEN_LEVEL_STATUS),  # the climate platform's handler (climate.py)
-        # the config entities' handler for the three vendor property Status opcodes (config_entities.py)
+        # the config entities' handler for the three vendor property Status opcodes (properties/reader.py)
         *((M.JUNG_CID, op) for op in M.VENDOR_PROPERTY_STATUS_OPCODES.values()),
         # the battery sensors' handler (sensor.py); the detector handlers of binary_sensor.py chain behind the
         # Sensor Status and OnOff Set rows above instead of adding rows
         (None, M.GEN_BATTERY_STATUS),
         # the fault register (binary_sensor.py's fault entities)
         (None, M.HEALTH_FAULT_STATUS),
-        # the config entities' SIG setup states (config_entities.SETUP_STATES)
+        # the config entities' SIG setup states (properties.targets.SETUP_STATES)
         (None, M.GEN_ONPOWERUP_STATUS),
         (None, M.LIGHT_LIGHTNESS_RANGE_STATUS),
         (None, M.LIGHT_LIGHTNESS_DEFAULT_STATUS),
@@ -2739,7 +2739,7 @@ async def test_iv_update_beacon_through_the_hub_persists_the_restart(
 ) -> None:
     """The same sequence as `test_iv_update_beacon_changes_local_state`, but delivered as the fake proxy's own
     beacons through the hub (not called on `LocalState` directly): the transmit IV index follows and the
-    sequence restart reaches the mesh's store (`coordinator.seq_store`), not just the in-memory state — an IV
+    sequence restart reaches the mesh's store (`seq_store.seq_store`), not just the in-memory state — an IV
     change is written at once, unlike the debounced sequence-number saves (`HAState.persist`)."""
     clock = wall_clock(monkeypatch)
     hub = hub_of(init_integration)

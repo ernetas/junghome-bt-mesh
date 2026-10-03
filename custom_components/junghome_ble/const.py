@@ -38,9 +38,9 @@ PIN_FROM_USER: Final = "user"
 CONF_GATEWAY_TOKEN: Final = "gateway_token"  # noqa: S105 - the gateway's API token: it hands out the export with every mesh key, so it is redacted like the keys
 CONF_GATEWAY_PASSWORD: Final = "gateway_password"  # noqa: S105 - form field only, never stored
 CONF_EXPORT_FILE: Final = "export_file"  # form field only: the id of the uploaded file
-# the digest of the export a new gateway entry was fetched with: the first `mesh_config.GatewaySync` record of the entry
-# (review-4 H I-10: every sync rewrote it in `entry.data` up to 1.0.0; the record took it over, the key is left in
-# place for a downgrade). Not in HUB_DATA_KEYS: a reconfigure writing it never reloads by itself
+# the digest of the export a new gateway entry was fetched with: the first `configurator.store.GatewaySync` record of
+# the entry (review-4 H I-10: every sync rewrote it in `entry.data` up to 1.0.0; the record took it over, the key is
+# left in place for a downgrade). Not in HUB_DATA_KEYS: a reconfigure writing it never reloads by itself
 CONF_GATEWAY_SYNCED: Final = "gateway_synced_digest"
 # when Home Assistant last handed its export to the gateway (ISO 8601, UTC), the app's `gateway_last_sync`: in
 # `entry.data` up to 1.0.0, taken over by the `GatewaySync` record like `CONF_GATEWAY_SYNCED`
@@ -105,13 +105,13 @@ HEARTBEAT_RECONFIGURE_INTERVAL: Final = 6 * 3600.0
 HEARTBEAT_REPROBE_INTERVAL: Final = 120.0  # a node marked dead is asked again for heartbeats this often: a rebooted node lost its publication
 
 # SIG Device Software Revision (Generic Manufacturer Property 0x001A, ASCII digit pairs): the firmware gates
-# (`config_entities.node_version`) read it from the node's primary element in the state cache.
+# (`properties.targets.node_version`) read it from the node's primary element in the state cache.
 SIG_SOFTWARE_VERSION: Final = 0x001A
 SIG_HARDWARE_REVISION: Final = 0x0010  # ASCII, NUL-padded: b"10000000" on air
 SIG_MANUFACTURER_NAME: Final = (
     0x0011  # UTF-8, NUL-padded: "Albrecht Jung GmbH & Co.KG" on air
 )
-# What a node tells about itself and the hub keeps (`coordinator.NODE_VERSIONS`), under the property catalogue's
+# What a node tells about itself and the hub keeps (`node_info.NODE_VERSIONS`), under the property catalogue's
 # names: the SIG identity block (read on each opening of a device page in the app, `RequestManufacturerInfos`), the
 # LBC version blocks of its node details (Manufacturer server; the STM32 one on a room thermostat only) and the role
 # of its Time Setup Server.
@@ -207,7 +207,8 @@ SIGNAL_SCENE_RECALLED: Final = (
 )
 SIGNAL_DETECTOR: Final = f"{DOMAIN}_detector_{{}}_{{}}"  # per entry id and detector sensor element: (event, value) from binary_sensor.py
 SIGNAL_BATTERY: Final = f"{DOMAIN}_battery_{{}}_{{}}"  # per entry id and primary element: the decoded Generic Battery Status (sensor.py)
-# per entry id: an upload to the gateway went through (`mesh_config.GatewaySync`); the *Last export upload* sensor
+# per entry id: an upload to the gateway went through (`configurator.store.GatewaySync`); the *Last export
+# upload* sensor
 SIGNAL_GATEWAY_SYNCED: Final = f"{DOMAIN}_gateway_synced_{{}}"
 
 # Detectors (binary_sensor.py / sensor.py; `docs/gap-analysis/control-and-state.md` §2.8, unverified on hardware).
@@ -317,7 +318,8 @@ REFRESH_RETRIES: Final = (
     REQUEST_ATTEMPTS  # attempts per state Get before the element counts as unanswered
 )
 # The Configuration Server audit (`junghome_ble.audit_network`): per Get, the wait for its status and the attempts
-# before it counts as unanswered — the budget of a configuration change's messages (`mesh_config.CONFIG_TIMEOUT`)
+# before it counts as unanswered — the budget of a configuration change's messages
+# (`configurator.executor.CONFIG_TIMEOUT`)
 AUDIT_TIMEOUT: Final = 3.0
 AUDIT_RETRIES: Final = 2
 ENERGY_POLL_INTERVAL: Final = 300.0  # seconds between reads of the metered loads' counters, which nothing publishes
@@ -541,8 +543,10 @@ ISSUE_PENDING_DEVICE: Final = "pending_device"  # a device Home Assistant provis
 ISSUE_VAULT_UNWRITABLE: Final = "vault_unwritable"
 # devices Home Assistant added that did not confirm the end of the app's key refresh (vault_refresh.py)
 ISSUE_VAULT_KEY_REFRESH: Final = "vault_key_refresh_lagging"
-ISSUE_CARRY_OVER_CONFLICT: Final = "carry_over_conflict"  # an adopted app export overrode what HA had changed (mesh_config.py)
-ISSUE_SCENE_HELD: Final = "scene_held"  # a forced delete_scene skipped devices that still hold the scene (mesh_config.py)
+# an adopted app export overrode what HA had changed (configurator/store.py)
+ISSUE_CARRY_OVER_CONFLICT: Final = "carry_over_conflict"
+# a forced delete_scene skipped devices that still hold the scene (configurator/scenes.py)
+ISSUE_SCENE_HELD: Final = "scene_held"
 ISSUE_GATEWAY_TOKEN: Final = "gateway_token_rejected"  # noqa: S105 - an issue id: the gateway no longer accepts the entry's token
 ISSUE_GATEWAY_CERTIFICATE: Final = "gateway_certificate_changed"  # the gateway, or its node over the mesh, contradicts the pin
 ISSUE_UNKNOWN_NODES: Final = (

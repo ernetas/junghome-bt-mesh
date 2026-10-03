@@ -215,7 +215,7 @@ class Rooms(Operations):
 
         `create` makes a missing room to join (its creation is the plan's `prepare` note, so a stopped plan
         records it); leaving a room needs one the export has. `force`: leave even where a key's room link drives
-        the load (`_room_keys`).
+        the load (`room_keys`).
         """
         async with self.store.lock:
             pf = await self.store.load()

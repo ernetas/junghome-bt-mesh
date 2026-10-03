@@ -13,10 +13,11 @@ import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from .. import schedules
-from ..const import DOMAIN
-from ..entity import load_entity_id
-from ..jhmesh import vendor_models as V
+from custom_components.junghome_ble import schedules
+from custom_components.junghome_ble.const import DOMAIN
+from custom_components.junghome_ble.entity import load_entity_id
+from custom_components.junghome_ble.jhmesh import vendor_models as V
+
 from .common import (
     _STATE_FIELDS,
     SCHEDULE_LOAD_TYPES,
@@ -30,7 +31,7 @@ from .resolve import _resolve_loads
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
-    from ..mesh_config import MeshConfigurator
+    from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 
 ATTR_SLOT = "slot"

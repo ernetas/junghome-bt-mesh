@@ -1,8 +1,8 @@
 """The export a configurator plans on: its file, the provisioner identity, the plan journal, the gateway's copy.
 
 `ExportStore` (review-4 brief 55) is the part of `MeshConfigurator` that reads and writes: the export the config
-entry points at (read fresh for every change, written atomically, `recorded` / `adopted` for `services._run`), Home
-Assistant's provisioner entry merged into it, the plan journal a crash leaves, dry runs, and the gateway's copy —
+entry points at (read fresh for every change, written atomically, `recorded` / `adopted` for `actions.common._run`),
+Home Assistant's provisioner entry merged into it, the plan journal a crash leaves, dry runs, and the gateway's copy —
 adopted when only the app changed it, uploaded after every change and retried as the app retries it. The translated
 service errors of the configurator are raised from here (`_validation`, `_failure`, `translated`).
 """
@@ -175,7 +175,7 @@ PLAN_JOURNALS: HassKey[dict[str, Store[dict[str, Any]]]] = HassKey(
 def plan_journal(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
     """Return the entry's plan journal (`.storage/junghome_ble.<entry id>.plan_journal`), one instance per entry.
 
-    `{"action", "steps", "accepted", "prepare", "happened"}` of the plan being sent (`MeshConfigurator._send`);
+    `{"action", "steps", "accepted", "prepare", "happened"}` of the plan being sent (`PlanExecutor.send`);
     gone when no plan's outcome is left unrecorded. It holds Config PDUs and addresses, no key material.
     """
     journals = hass.data.setdefault(PLAN_JOURNALS, {})
@@ -297,9 +297,9 @@ async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
 
 @dataclass
 class PlanOutcome:
-    """What the running call's plans did on the mesh (`MeshConfigurator._send`): its response, its error, the logbook.
+    """What the running call's plans did on the mesh (`PlanExecutor.send`): its response, its error, the logbook.
 
-    `services._run` starts a new one per call; a call can run several plans (`set_threshold` socket by socket, a
+    `actions.common._run` starts a new one per call; a call can run several plans (`set_threshold` socket by socket, a
     scene's keys before its members), which add up. `steps` are the messages of every plan (node, description: no
     key material), `nodes` the nodes that accepted one, `summary` the logbook line of a call that finished (a
     translation key of the `exceptions` section, `plan_*`, and its placeholders).
@@ -320,7 +320,7 @@ PLAN_HISTORIES: HassKey[dict[str, deque[dict[str, Any]]]] = HassKey(
 
 
 def plan_history(hass: HomeAssistant, entry_id: str) -> deque[dict[str, Any]]:
-    """Return the entry's last calls that ran a plan, oldest first (`services._report_plan`; memory only).
+    """Return the entry's last calls that ran a plan, oldest first (`actions.common._report_plan`; memory only).
 
     `{"action", "outcome", "applied", "total", "steps", "error"}`: step texts and an error key, no key material.
     """
@@ -355,7 +355,7 @@ class ExportStore:
         """Bind to `hub`; nothing is loaded until an operation runs."""
         self.hub = hub
         self.lock = asyncio.Lock()
-        # whether the running operation wrote the export: `services._run` has the model follow it after a stopped
+        # whether the running operation wrote the export: `actions.common._run` has the model follow it after a stopped
         # plan that recorded what the mesh accepted, as after a finished one (the device model must follow the file)
         self.recorded = False
         # whether it adopted the gateway's export first: the device model changed even when the change itself
@@ -374,11 +374,11 @@ class ExportStore:
     ) -> dict[str, Any]:
         """Run `operation` as far as its plan; answer `{"dry_run", "steps", "diff"}` and send, write, adopt nothing.
 
-        The export is read from disk (`_load`): the gateway is not asked, so nothing of it is adopted, and Home
+        The export is read from disk (`load`): the gateway is not asked, so nothing of it is adopted, and Home
         Assistant's provisioner entry is merged into the read copy from a copy of the vault, which is not saved
-        either. Where the real run would send its plan or write the export (`_send`, `_save`; a removal's reset and
-        a key link's vendor writes before that), the plan is noted — its messages in the order they would go out,
-        each with the device it goes to — with how the export would change (`diff_documents`, keys never shown),
+        either. Where the real run would send its plan or write the export (`PlanExecutor.send`, `save`; a removal's
+        reset and a key link's vendor writes before that), the plan is noted — its messages in the order they would go
+        out, each with the device it goes to — with how the export would change (`diff_documents`, keys never shown),
         and the operation is unwound. Its checks run as they would: a call the real run refuses is refused. An
         operation with nothing to do answers no steps and no change. With a gateway, the real run plans on the
         gateway's export when the app changed the installation since, which this one does not look at.
@@ -427,7 +427,7 @@ class ExportStore:
         raise _Planned
 
     async def _load_read_only(self, dry: DryRun) -> ProjectFile:
-        """`_load` for a dry run: the export on disk, with the provisioner identity merged from a copy of the vault."""
+        """`load` for a dry run: the export on disk, with the provisioner identity merged from a copy of the vault."""
         pf = await self.read()
         vault = self.hub.vault.vault
         if self.identity_enabled and vault is not None:
@@ -435,7 +435,7 @@ class ExportStore:
                 await self.hub.hass.async_add_executor_job(
                     copy.deepcopy(vault).merge_into, pf, self.hub.proxy.state.src
                 )
-            # the real run says why (`_with_identity`); the dry run plans without the entry
+            # the real run says why (`with_identity`); the dry run plans without the entry
             except Exception as err:
                 _LOGGER.debug(
                     "Dry run without the provisioner entry: %s", type(err).__name__
@@ -470,7 +470,7 @@ class ExportStore:
         """Read the export a mutation plans against: the gateway's when that is newer, else the copy on disk.
 
         Every mutation starts here, under the lock. `recorded` and `adopted` are not reset here but per call
-        (`services._run`): one call can run several mutations (`set_threshold` wires socket by socket), and a
+        (`actions.common._run`): one call can run several mutations (`set_threshold` wires socket by socket), and a
         later one that fails must not hide the export an earlier one wrote. `fresh`: a gateway entry whose gateway
         did not answer is refused instead of planning on the copy on disk, which may lack what the app made since
         (review-4 W4-3: what judges by what the export *lacks* must not fall back silently). A dry run reads the
@@ -519,7 +519,7 @@ class ExportStore:
         ahead of it; once written, the plan journal is done with. The upload is not held to its end: cancelled,
         skipped while Home Assistant stops (it would hold the shutdown up for a gateway that may not answer) or
         not asked for (`upload=False`), it is left to `sync_gateway` or the next change, which uploads the export
-        as it is on disk then. A dry run ends here, before anything is written (`_planned`).
+        as it is on disk then. A dry run ends here, before anything is written (`planned`).
         """
         if self.dry:
             self.planned()
@@ -645,7 +645,7 @@ class ExportStore:
         return result.changed
 
     async def _identity_text(self, text: str) -> tuple[str, int]:
-        """`_with_identity` on an export's text (an adopted gateway export): (the text, 1 when it changed, else 0)."""
+        """`with_identity` on an export's text (an adopted gateway export): (the text, 1 when it changed, else 0)."""
         try:
             pf = await self.hub.hass.async_add_executor_job(
                 ProjectFile.loads, text.encode()
@@ -682,7 +682,7 @@ class ExportStore:
     def _keep_app_copy(self) -> None:
         """Blocking: copy the export on disk to `app_copy_path` unless one is kept already.
 
-        Called right before a save, after `_load` read the file: it exists.
+        Called right before a save, after `load` read the file: it exists.
         """
         target = app_copy_path(self.path)
         if not target.exists():
@@ -760,7 +760,7 @@ class ExportStore:
         token — the repairs say what to do. A later change, or `sync_gateway`, supersedes a pending retry.
 
         The retry is Home Assistant's task, not the entry's, and kept in `hass.data` by entry id: a change the hub
-        cannot follow in place reloads the entry right after (`services._run`), which replaces the hub and this
+        cannot follow in place reloads the entry right after (`actions.common._run`), which replaces the hub and this
         configurator while the retry waits, and would cancel a task of the entry's.
         """
         self.cancel_upload_retry()
@@ -962,7 +962,7 @@ class ExportStore:
                 self._digest_on_disk
             )
         except OSError:
-            return None  # unreadable file: not a judgeable "changed" — `_read` explains it, next
+            return None  # unreadable file: not a judgeable "changed" — `read` explains it, next
         if gateway_digest is not None and self._sync.synced is None:
             try:
                 on_disk_stamp = await self.hub.hass.async_add_executor_job(
@@ -1370,8 +1370,8 @@ class ExportStore:
     async def async_current_export(self) -> ProjectFile:
         """Return the export as a change would plan on it now, for a plan made outside the configurator (`add_device`).
 
-        What `_load` reads, under the lock: the gateway's export when only it changed since Home Assistant last
-        synced (adopted — `recorded` / `adopted` then tell `services._run` to follow it even if the call fails
+        What `load` reads, under the lock: the gateway's export when only it changed since Home Assistant last
+        synced (adopted — `recorded` / `adopted` then tell `actions.common._run` to follow it even if the call fails
         later), refused when both sides changed, else the copy on disk; with the provisioner identity on, the vault's
         nodes merged in. The running hub's CDB is the export as the hub last took it over, which misses what the app
         added since.
@@ -1413,7 +1413,7 @@ class ExportStore:
             return False
 
 
-# the pending retry of each entry's failed automatic upload (`MeshConfigurator._upload_or_retry`), by entry id
+# the pending retry of each entry's failed automatic upload (`ExportStore._upload_or_retry`), by entry id
 UPLOAD_RETRIES: HassKey[dict[str, asyncio.Task[None]]] = HassKey(
     f"{DOMAIN}_upload_retry"
 )

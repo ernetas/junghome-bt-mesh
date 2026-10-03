@@ -8,15 +8,17 @@ import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from .. import onboard
-from ..const import (
+from custom_components.junghome_ble import onboard
+from custom_components.junghome_ble.const import (
     DEFAULT_ALLOW_PROVISIONING,
     DOMAIN,
     LOCATE_MIN_SECONDS,
     LOCATE_SECONDS,
     OPTION_ALLOW_PROVISIONING,
 )
-from ..jhmesh import config_messages as C
+from custom_components.junghome_ble.errors import mesh_errors
+from custom_components.junghome_ble.jhmesh import config_messages as C
+
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
@@ -36,8 +38,8 @@ from .resolve import _entry_for_hub_services, _resolve_node
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
-    from ..identity import VaultKeeper
-    from ..mesh_config import MeshConfigurator
+    from custom_components.junghome_ble.identity import VaultKeeper
+    from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 
 ATTR_ADDRESS = "address"
@@ -246,18 +248,10 @@ async def _locate_node(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
         hub = configurator.hub
         node = hub.cdb.node_by_addr(unicast)
         assert node is not None  # `_resolve_node` found it in this export
-        try:
+        with mesh_errors(
+            timeout_key="locate_no_answer", placeholders={"node": f"{unicast:04X}"}
+        ):
             status = await hub.async_locate(node, seconds)
-        except TimeoutError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="locate_no_answer",
-                translation_placeholders={"node": f"{unicast:04X}"},
-            ) from err
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
         if not status.ok:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

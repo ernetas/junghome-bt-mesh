@@ -18,15 +18,32 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util.hass_dict import HassKey
 
-from ..const import ATTR_ENTRY_ID, ATTR_SCENE, DOMAIN, EVENT_PLAN, SERVICE_LINK_WAIT
-from ..coordinator import ENTRY_LOCKS, entry_lock
-from ..jhmesh.devices import Blind, Device, Light, Socket, Thermostat
-from ..mesh_config import MeshConfigurator, PlanOutcome, plan_history, run_to_end
-from ..model_update import async_follow_export
+from custom_components.junghome_ble.const import (
+    ATTR_ENTRY_ID,
+    ATTR_SCENE,
+    DOMAIN,
+    EVENT_PLAN,
+    SERVICE_LINK_WAIT,
+)
+from custom_components.junghome_ble.coordinator import ENTRY_LOCKS, entry_lock
+from custom_components.junghome_ble.jhmesh.devices import (
+    Blind,
+    Device,
+    Light,
+    Socket,
+    Thermostat,
+)
+from custom_components.junghome_ble.mesh_config import (
+    MeshConfigurator,
+    PlanOutcome,
+    plan_history,
+    run_to_end,
+)
+from custom_components.junghome_ble.model_update import async_follow_export
 
 if TYPE_CHECKING:
-    from .. import JungHomeConfigEntry
-    from ..coordinator import JungHomeHub
+    from custom_components.junghome_ble import JungHomeConfigEntry
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 
 ATTR_ROOM = "room"

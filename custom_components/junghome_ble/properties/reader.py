@@ -386,11 +386,11 @@ class PropertyReader:
     def schedule_version(self, node: Node) -> None:
         """Queue a read of what the node tells about itself (`_read_version`), once per hub and node.
 
-        The firmware gates (`node_version`: illuminance scaling, `_candidates`, the thermostat's property set)
-        need the software version and nothing else asks for it. The hub keeps what it learns across the entry's
-        reloads and on disk (`coordinator.NODE_VERSIONS`), so `_candidates` — which runs at setup, before any read,
-        and again whenever the hub follows a changed export in place (`model_update`) — applies it from then on, a
-        restart's included.
+        The firmware gates (`targets.node_version`: illuminance scaling, `targets._candidates`, the thermostat's
+        property set) need the software version and nothing else asks for it. The hub keeps what it learns across the
+        entry's reloads and on disk (`node_info.NODE_VERSIONS`), so `targets._candidates` — which runs at setup, before
+        any read, and again whenever the hub follows a changed export in place (`model_update`) — applies it from then
+        on, a restart's included.
 
         A read that got every answer is not repeated until the hub sees the node restart (`hub.restarted`: a
         firmware update restarts it; review-4 R4-5) — asked on every link, it cost a Get per node at every link-up

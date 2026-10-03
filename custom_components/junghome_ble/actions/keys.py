@@ -7,10 +7,15 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
-from ..const import ATTR_KEY, ATTR_SCENE
-from ..entity import node_identifier
-from ..jhmesh.devices import GATEWAY_PID, Button, Detector
-from ..mesh_config import LOCK_SECONDS_MAX, MODES, TARGET_ELEMENTS
+from custom_components.junghome_ble.const import ATTR_KEY, ATTR_SCENE
+from custom_components.junghome_ble.entity import node_identifier
+from custom_components.junghome_ble.jhmesh.devices import GATEWAY_PID, Button, Detector
+from custom_components.junghome_ble.mesh_config import (
+    LOCK_SECONDS_MAX,
+    MODES,
+    TARGET_ELEMENTS,
+)
+
 from .common import (
     _DRY_RUN_FIELD,
     _ROOM_FIELDS,

@@ -314,8 +314,8 @@ class FakeEntry:
 
 
 class FakeConfigEntries:
-    """Only `async_update_entry`'s `data` replacement, which `_mark_synced` uses, and the bench's entry for a
-    retried upload (`store_mod._retry_upload`)."""
+    """Only `async_update_entry`'s `data` replacement, which `ExportStore._mark_synced` uses, and the bench's entry for
+    a retried upload (`store_mod._retry_upload`)."""
 
     def __init__(self) -> None:
         self.entries: dict[str, FakeEntry] = {}
@@ -334,7 +334,7 @@ class FakeHass:
         self.jobs: list[str] = []
         self.config_entries = FakeConfigEntries()
         self.data: dict[Any, Any] = {}
-        self.is_stopping = False  # `MeshConfigurator._save` skips the gateway upload while Home Assistant stops
+        self.is_stopping = False  # `ExportStore.save` skips the gateway upload while Home Assistant stops
 
     def verify_event_loop_thread(self, what: str) -> None:
         """`async_dispatcher_send` checks the thread; the bench runs in the loop."""
@@ -342,7 +342,7 @@ class FakeHass:
     def async_create_background_task(
         self, target: Coroutine[Any, Any, None], name: str
     ) -> asyncio.Task[None]:
-        """The retry of a failed upload (`MeshConfigurator._upload_or_retry`)."""
+        """The retry of a failed upload (`ExportStore._upload_or_retry`)."""
         return asyncio.get_running_loop().create_task(target, name=name)
 
     async def async_add_executor_job(self, fn: Callable[..., Any], *args: Any) -> Any:
@@ -362,7 +362,7 @@ class FakeHub:
     certificate_issues: int = 0
     # the battery nodes' keep-alive (`keep_awake.py`); nothing here tracks traffic, so no node was ever heard from
     last_heard: dict[int, float] = field(default_factory=dict)
-    # the device model, for the names a repair gives (`MeshConfigurator._member_name`)
+    # the device model, for the names a repair gives (`ExportStore.member_name`)
     devices: SimpleNamespace = field(
         default_factory=lambda: SimpleNamespace(by_address={})
     )
@@ -488,11 +488,11 @@ async def make_bench(
     )
     hub.entry.runtime_data = hub
     hub.hass.config_entries.entries[hub.entry.entry_id] = hub.entry
-    # the plan journal (`mesh_config.plan_journal`) in memory
+    # the plan journal (`configurator.store.plan_journal`) in memory
     hub.hass.data[mc.PLAN_JOURNALS] = {hub.entry.entry_id: MemoryStore()}
-    # ... and the held scene numbers (`mesh_config.held_scenes`)
+    # ... and the held scene numbers (`configurator.scenes.held_scenes`)
     hub.hass.data[mc.HELD_SCENES] = {hub.entry.entry_id: MemoryStore()}
-    # ... and the gateway sync record (`mesh_config.gateway_sync`)
+    # ... and the gateway sync record (`configurator.store.gateway_sync`)
     hub.hass.data[mc.GATEWAY_SYNCS] = {
         hub.entry.entry_id: mc.GatewaySync(hub.hass, hub.entry.entry_id, MemoryStore())  # type: ignore[arg-type]
     }
@@ -2123,8 +2123,8 @@ async def test_a_stopped_room_relink_keeps_the_old_links_row_beside_the_new_one(
 
 async def test_a_stopped_plan_into_a_new_room_records_the_room(bench: Bench) -> None:
     """`set_rooms` creates a missing room in the planned copy only; a stop must not record subscriptions to a
-    group `_record`'s fresh read of the file has never heard of (CFG-02) — the next room HA or the app creates
-    would otherwise take that same address and silently inherit these loads."""
+    group `PlanExecutor.record`'s fresh read of the file has never heard of (CFG-02) — the next room HA or the app
+    creates would otherwise take that same address and silently inherit these loads."""
     group = wiring_mod.load_project(str(bench.path), None).free_group_address()
     silent = sub_add(DIMMER_LOAD, group, "1000")
     bench.config.silent.add(silent)
@@ -2154,7 +2154,7 @@ async def test_a_stopped_clear_keeps_the_room_link_until_every_load_is_unwired(
 ) -> None:
     """Clearing the WC-linked dimmer key: the first unsubscribe is taken, the second refused. 0300 still listens
     to the key's group, so the record keeps the link row instead of dropping it — otherwise a rerun would never
-    unwire it (`_unlink_room_steps` only runs for a key that still has a row)."""
+    unwire it (`unlink_room_steps` only runs for a key that still has a row)."""
     refused = sub_del(DIMMER_LOAD, DIMMER_KEY_GROUP, "1000")
     bench.config.refuse[refused] = 0x05  # Insufficient Resources
     with pytest.raises(HomeAssistantError) as exc:
@@ -2181,7 +2181,7 @@ async def test_a_stopped_clear_keeps_the_room_link_until_every_load_is_unwired(
 async def test_record_drops_a_keys_link_row_once_every_tagged_step_of_the_plan_is_done(
     bench: Bench,
 ) -> None:
-    """`_record`'s own bookkeeping, exercised directly: `ordered()` always puts a key's tagged (destructive)
+    """`PlanExecutor.record`'s own bookkeeping, exercised directly: `ordered()` always puts a key's tagged (destructive)
     steps last, so through `assign_key`/`clear_key` a stopped plan never has all of a key's tagged steps done
     with something else still pending — `finished` is always empty there. A future caller mixing more than one
     key's tagged steps in one plan would not be; this keeps that branch covered against it."""
@@ -3259,7 +3259,7 @@ def test_config_step_matches_the_status_that_echoes_it() -> None:
     assert not step.matches(other_address)
     assert step.matches(
         status(0x801F, b"\x00")
-    )  # malformed: judged by `_request`, not ignored
+    )  # malformed: judged by `PlanExecutor._request`, not ignored
     # a publication step compares the publish address; a clear echoes 0000
     clear = mc.ConfigStep(
         DALI_NODE,
@@ -3353,7 +3353,7 @@ def test_replay_applies_every_kind_of_step_idempotently() -> None:
         ),
     )
     assert pub(pf, ROCKER_A, "1001") == DIMMER_GROUP
-    # `replay` no longer drops the row itself: `unlinks` only tags the step for `_record`'s own bookkeeping
+    # `replay` no longer drops the row itself: `unlinks` only tags the step for `PlanExecutor.record`'s own bookkeeping
     assert [r["elementAddress"] for r in link_rows(pf)] == [DIMMER_KEY]
 
 
@@ -3922,7 +3922,7 @@ async def test_a_newer_gateway_export_is_adopted_and_an_unreadable_file_is_not_c
     rooms = list(bench.reload().user_groups().values())
     assert rooms[-2:] == ["From the app", "Attic"]
     assert len(with_gateway.uploads) == 1
-    # the file on disk unreadable: no comparison, `_read` reports it
+    # the file on disk unreadable: no comparison, `ExportStore.read` reports it
     bench.path.unlink()
     with_gateway.doc = gateway_doc(ANDROID_PATH, room="Elsewhere")
     with pytest.raises(HomeAssistantError) as exc:
@@ -4104,7 +4104,7 @@ async def test_a_change_planned_while_the_gateway_was_busy_is_not_uploaded_over_
     bench: Bench, with_gateway: FakeGateway, caplog: pytest.LogCaptureFixture
 ) -> None:
     """A fetch that fails leaves the pre-plan check unable to compare (CFG-04/05): the change still goes ahead
-    on the copy on disk, but `_upload`'s own check — run again, right before the POST — refuses to hand a
+    on the copy on disk, but `ExportStore.upload`'s own check — run again, right before the POST — refuses to hand a
     change the app might have added to since blindly to the gateway."""
     calls = 0
 
@@ -4475,7 +4475,7 @@ async def test_a_change_that_is_already_so_still_reports_an_adopted_gateway_expo
         lambda: bench.configurator.rename_scene(1, "WC off"),
     ]
     for n, no_op in enumerate(no_ops):
-        # a new call: its flags start over, as `services._run` resets them
+        # a new call: its flags start over, as `actions.common._run` resets them
         bench.configurator.recorded = bench.configurator.adopted = False
         assert await no_op() is False  # in sync with the gateway: nothing to do
         assert bench.configurator.recorded is False
@@ -5864,7 +5864,7 @@ async def test_a_dry_run_sends_writes_and_journals_nothing_and_answers_the_real_
     is how the real run changes the export."""
     if prepare is not None:
         await prepare(bench.configurator)
-        bench.configurator.recorded = False  # per call, as `services._run` does
+        bench.configurator.recorded = False  # per call, as `actions.common._run` does
     before = Before.of(bench)
     snapshot = bench.reload().snapshot()
     dry = await bench.configurator.dry_run(operation)

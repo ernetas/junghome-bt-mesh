@@ -7,7 +7,7 @@ Assistant sends it (`coordinator._send_time`); nothing about them is in the expo
 
 `Scheduler` (one per hub, `scheduler`) reads and changes an element's slots and keeps what it last read; the
 *Schedules* sensor shows that (read once per link) and the `get_schedules` … `delete_schedule` actions
-(`services.py`; `update_schedule` rewrites a slot in place, review-4 F4-6) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
+(`actions/schedules.py`; `update_schedule` rewrites a slot in place, review-4 F4-6) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
 sends the phone's: a `Generic Location Global Set Unacknowledged` to the node's Location Setup Server (the hub
 also broadcasts it after every connection, `coordinator._send_location`).
 
@@ -43,6 +43,7 @@ from .entity import (
     node_device_info,
     socket_device_info,
 )
+from .errors import mesh_errors
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
@@ -294,20 +295,19 @@ class Scheduler:
         a lost link is a send failure.
         """
         timeout = const.PROPERTY_WRITE_TIMEOUT if write else const.PROPERTY_READ_TIMEOUT
-        try:
-            return await self.hub.proxy.request(
-                address,
-                pdu,
-                V.JH_SCHEDULER_STATUS,
-                timeout=timeout,
-                retries=1 if write else PROPERTY_READ_RETRIES,
-                expect_cid=M.JUNG_CID,
-                match=lambda m: m.params[:1] == bytes([header]),
-            )
-        except TimeoutError:
-            return None
-        except (ConnectionError, OSError) as err:
-            raise _error("send_failed") from err
+        with mesh_errors():
+            try:  # silence is caught here, as None: `mesh_errors` would call it send_failed
+                return await self.hub.proxy.request(
+                    address,
+                    pdu,
+                    V.JH_SCHEDULER_STATUS,
+                    timeout=timeout,
+                    retries=1 if write else PROPERTY_READ_RETRIES,
+                    expect_cid=M.JUNG_CID,
+                    match=lambda m: m.params[:1] == bytes([header]),
+                )
+            except TimeoutError:
+                return None
 
     async def _get(self, address: int, index: int, sub: int) -> V.SchedulerStatus:
         header = (sub << 4) | (0 if sub == V.SUB_LIST else index)
@@ -429,15 +429,13 @@ class Scheduler:
             )
             return
         config = self.hub.hass.config
-        try:
+        with mesh_errors():
             await self.hub.proxy.send_access(
                 server.address,
                 M.generic_location_global_set(
                     config.latitude, config.longitude, int(config.elevation)
                 ),
             )
-        except (ConnectionError, OSError) as err:
-            raise _error("send_failed") from err
 
     async def create(
         self, address: int, data: Mapping[str, Any], action: V.Action

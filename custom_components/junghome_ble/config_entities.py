@@ -35,6 +35,7 @@ from .const import (
     SIGNAL_UPDATE,
 )
 from .entity import JungHomeEntity
+from .errors import mesh_errors
 from .jhmesh import properties as P
 from .jhmesh.devices import BATTERY_PIDS
 from .properties.reader import (
@@ -439,12 +440,8 @@ class PropertyEntity(ConfigEntity):
         `since`: ask unless the element answered after that moment (`PropertyReader.read`), for
         `homeassistant.update_entity` — by default a value read within PROPERTY_READ_FRESH is taken as it is.
         """
-        try:
+        with mesh_errors():
             answered = await self.reader.fetch(self.address, spec, since=since)
-        except (ConnectionError, OSError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
         if not answered and self._battery:
             raise self.asleep()
 
@@ -482,20 +479,17 @@ class PropertyEntity(ConfigEntity):
             and self.target.description.write == "status"
         )
         try:
-            async with self.hub.keep_awake.hold([self.address]):
-                if by_status:
-                    await self.reader.write_status(self.address, spec, value)
-                    return
-                outcome = await self.reader.write(self.address, spec, value)
+            with mesh_errors():
+                async with self.hub.keep_awake.hold([self.address]):
+                    if by_status:
+                        await self.reader.write_status(self.address, spec, value)
+                        return
+                    outcome = await self.reader.write(self.address, spec, value)
         except ValueError as err:  # the value does not fit the codec
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="value_rejected",
                 translation_placeholders={"entity": self.entity_id, "error": str(err)},
-            ) from err
-        except (ConnectionError, OSError, TimeoutError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
             ) from err
         if outcome == "no_answer" and self._battery:
             raise self.asleep()
@@ -953,12 +947,8 @@ class SetupStateEntity(ConfigEntity):
                 translation_key="value_rejected",
                 translation_placeholders={"entity": self.entity_id, "error": str(err)},
             ) from err
-        try:
+        with mesh_errors():
             outcome = await self.reader.write_setup(
                 self.address, self.target.state, pdu
             )
-        except (ConnectionError, OSError, TimeoutError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="send_failed"
-            ) from err
         check_outcome(outcome, self.entity_id)

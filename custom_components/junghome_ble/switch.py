@@ -419,7 +419,7 @@ class JungHomeDeviceLockFlag(FlagEntity, SwitchEntity):
     corroborates (`docs/android/properties.md` §1.2 and §5 q. 1, `docs/gap-analysis/device-settings.md` §1.3) and the
     app's own Sets confirmed on air (the settings session: *Lock operation* wrote 0x0004, *Lock factory reset*
     0x0002). *Lock operation* is therefore enabled by default, as in the app's normal list; the thermostat's bits 3
-    and 4 have not been seen on air (`config_entities.DEVICE_LOCK_ENABLED`).
+    and 4 have not been seen on air (`properties.targets.DEVICE_LOCK_ENABLED`).
 
     A change is a read-modify-write of the whole word, as the app does it (`PROV/S.java`): the current word is read
     first when not known, never guessed, and the bits without a name are sent back as read; the other flags'
@@ -733,7 +733,7 @@ class JungHomeTimeKeeper(JungHomeEntity, SwitchEntity):
     the `time_keeper_missing` repair while none is (`JungHomeHub._report_time_keeper`). On: the node's Time Server
     publishes to `FEFF` (`MeshConfigurator.set_time_keeper`), then Time Role Set 2 (relay) to its Time Setup
     Server; off: the publication removed, then Time Role Set 3 (client). Shows the time role the node last
-    answered (the connect-time Time Role Get, `config_entities.PropertyReader`, or the answer to the Set): on for
+    answered (the connect-time Time Role Get, `properties.reader.PropertyReader`, or the answer to the Set): on for
     relay, unknown until it answered. Several keepers are not refused: each relays the same time.
     """
 

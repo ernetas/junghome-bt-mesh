@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 OUR_ADDRESS = 0x0D00
 MESH_UUID = "1baf3ade-0000-4000-8000-000000000001"
-SEQ_STORE_KEY = f"{DOMAIN}.seq.{MESH_UUID}"  # the mesh's sequence-number store (`coordinator.seq_store`)
+SEQ_STORE_KEY = f"{DOMAIN}.seq.{MESH_UUID}"  # the mesh's sequence-number store (`seq_store.seq_store`)
 
 # Node identities of the synthetic exports (tests/fixtures/make_fixture.py): EUI-64 UUIDs over MACs from the IANA
 # documentation block 00:00:5E:00:53:xx (RFC 7042 §2.1.2), never a real device. Lower-cased, as the registries and

@@ -53,7 +53,7 @@ VAULT_KEEPERS: HassKey[dict[str, VaultKeeper]] = HassKey(f"{DOMAIN}_vaults")
 
 
 class TrackedStore(Store[dict[str, Any]]):
-    """A `Store` that remembers the last payload it actually wrote to disk (`written`), as `coordinator.SeqStore`.
+    """A `Store` that remembers the last payload it actually wrote to disk (`written`), as `seq_store.SeqStore`.
 
     `Store._async_handle_write_data` catches a `WriteError` with only a log line, so nothing else notices a write
     that never landed. `write_error` keeps the text of the last write's `WriteError` (None once a write lands).

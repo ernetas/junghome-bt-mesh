@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
-from ..entity import load_entity_id
-from ..jhmesh.devices import Socket
-from ..thresholds import (
+from custom_components.junghome_ble.entity import load_entity_id
+from custom_components.junghome_ble.jhmesh.devices import Socket
+from custom_components.junghome_ble.thresholds import (
     CLEARED,
     OTHER_THRESHOLD,
     THRESHOLD_PROPERTIES,
@@ -20,15 +20,16 @@ from ..thresholds import (
     planned_threshold,
     write_threshold,
 )
+
 from .common import ONOFF_LOAD_TYPES, TARGETS_SCHEMA, _answer, _hub, _run, _validation
 from .resolve import _device_of_entity, _resolve_loads
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
-    from ..coordinator import JungHomeHub
-    from ..jhmesh.properties import Threshold
-    from ..mesh_config import MeshConfigurator
+    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.jhmesh.properties import Threshold
+    from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 
 ATTR_THRESHOLD = "threshold"

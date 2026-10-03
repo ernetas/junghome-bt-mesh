@@ -21,8 +21,14 @@ from homeassistant.helpers.target import (
     async_extract_referenced_entity_ids,
 )
 
-from ..const import ATTR_SCENE, DOMAIN
-from ..entity import button_gang, buttons_device_id, mesh_identifier, node_identifier
+from custom_components.junghome_ble.const import ATTR_SCENE, DOMAIN
+from custom_components.junghome_ble.entity import (
+    button_gang,
+    buttons_device_id,
+    mesh_identifier,
+    node_identifier,
+)
+
 from .common import (
     ATTR_CONFIG_ENTRY,
     ATTR_ROOM,
@@ -36,8 +42,8 @@ from .common import (
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
 
-    from ..coordinator import JungHomeHub
-    from ..jhmesh.devices import Device
+    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.jhmesh.devices import Device
 
 
 @dataclass(frozen=True)

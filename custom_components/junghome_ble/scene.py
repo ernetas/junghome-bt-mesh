@@ -4,7 +4,7 @@ A scene entity carries what the export knows (`scene_number`, the member loads) 
 members after a connection, what each of them does when the scene is recalled (`members`: load name → "switch on",
 "lightness 100% 2000K", …, read from the JUNG Scene Action Setup servers; loads sharing a name are told apart
 by their mesh address). Scenes are edited with the `store_scene` / `remove_from_scene` / `create_scene` /
-`rename_scene` / `delete_scene` actions (`services.py`).
+`rename_scene` / `delete_scene` actions (`actions/scenes.py`).
 
 The scenes the app makes for its SIG timers (`TimerScene …`, `devices.SceneDef.timer`) are left out, as the app's
 scene list leaves them out. A recall heard on the mesh — a key's, the app's, the gateway's, or one only the members'

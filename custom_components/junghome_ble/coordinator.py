@@ -467,7 +467,7 @@ def register_status_handler[H: StatusHandler](
 
 
 # One lock per entry, kept across reloads, around everything that works on a hub and may replace it: the service
-# calls (`services._run`) and the unknown-node refresh's reload (`JungHomeHub._reload_for_export`).
+# calls (`actions.common._run`) and the unknown-node refresh's reload (`JungHomeHub._reload_for_export`).
 ENTRY_LOCKS: HassKey[dict[str, asyncio.Lock]] = HassKey(f"{DOMAIN}_service_locks")
 
 
