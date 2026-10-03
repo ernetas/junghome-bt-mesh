@@ -494,6 +494,13 @@ Dependencies (hard unless marked *soft*):
   change is written at once). Follow-ups: a *device offline* blueprint over *Unreachable devices*; `start_dim` is
   still called untried in the reference, the guide and the action strings while sweep section G says review 3 saw it
   work.
+- **Wave 13 (briefs 47–49): done.** U4-2 rooms to areas: a *Rooms and areas* step matching areas by name and alias,
+  keys and node devices placed, node devices named `<unit> - <product>`, `sync_areas` off by default (47); U4-6
+  following the app (decision M12 taken): gateway entries fetch after the phone went quiet and every six hours, file
+  entries get the `app_changed` repair (48); W I3/I6/I7/I9, U4-13 dry runs, optional responses, logbook lines,
+  `confirm: true` for `remove_device` and a forced `delete_scene`, sectioned action forms (49). Merging renumbered the
+  sweep's duplicate C8 / D11 items (C9, D12) and changed the node-name format from `<unit> (<product>)`, which nested
+  parentheses for the metering socket. Open choice: a dry run does not read the gateway's newer export (documented).
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -501,4 +508,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 47–67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 50–67 are TODO; the on-air sweep is the maintainer's.
