@@ -14,6 +14,7 @@ scripts/package_ha.sh                    builds dist/junghome_ble.zip for unzipp
 blueprints/automation/junghome_ble/      automation blueprints for keys, presence and appliances (not in the zip; tests/test_blueprints.py)
 tools/mesh_poc.py                        CLI: scan / listen (sniffer) / get / set / blink / lightness / ctl / scene / scene-actions / sched / health / prop / config / devices
 tools/mesh_sniff.py                      passive capture with a Nordic nRF Sniffer dongle (key-free) + offline/live decoding
+tools/trace_to_fixture.py                turns a decoded capture into a replay trace of the fixture network (tests/traces/), see testing.md
 tools/mesh_report.py                     renders docs/network-topology.md from the iOS dump
 tools/on_air.py                          lists every "unverified on air" marker with the symbol holding it
 tools/parity.py                          keeps the parity ledger (docs/parity/) closed

@@ -88,6 +88,73 @@ unicast address only.
   replayed or older PDU is dropped (the library's `link` fixture fails a test that replays, as `fake_link` does),
   and during an IV Update both indexes are taken while the nodes transmit under the old one.
 
+## Replayed traces
+
+`tests/traces/*.ndjson` are on-air traffic turned into traffic of the fixture network, one message per line:
+`delay` (seconds since the previous message, rounded to 10 ms), `src`, `dst`, `ttl`, `access` (the access PDU) and
+`pdus` (the same message as network PDUs under the fixture's keys and IV index). `tests/test_traces.py` (marker
+`trace`) replays each one through `FakeProxyLink.inject` on a frozen clock that moves by the delays and snapshots
+every state change and every `junghome_ble_*` event (`tests/snapshots/test_traces.ambr`; after an intended change,
+`pytest tests/test_traces.py --snapshot-update` and review the diff). It also holds every trace to what a public
+repository may carry: only those fields, only fixture addresses or the converter's pool addresses, no MAC, no
+Config or key-carrying message, network PDUs that decode under the fixture's keys to exactly the line's access PDU,
+and none of the stand-in installation's keys or identities.
+
+To make one from the installation, on the capture host (where the export lives; only the output may leave it):
+
+1. capture and decode as in [`docs/sniffer.md`](../sniffer.md):
+   `.venv/bin/python tools/mesh_sniff.py decode --export JungHome.json cap.ndjson --json decoded.ndjson`;
+2. convert: `.venv/bin/python tools/trace_to_fixture.py decoded.ndjson --export JungHome.json --map 0148=0148
+   --map C061=C061 --keep 0148 --keep C061 -o light.ndjson` — `--map IN=OUT` puts each device and group of the
+   capture onto the fixture's device of the same class (a light on the fixture's light, its group on that light's
+   group), `--keep` cuts the capture down to them; every other address gets a pool address (unicast from 7000, group
+   from C800). Only access messages under an AppKey are kept. The converter drops relay copies, segments, control
+   messages, beacons, device-key messages, withheld parameters, virtual destinations and every message whose
+   parameters hold the bytes of an address of the installation (counted on stderr). It refuses to write anything
+   (exit status 2) when the output would still hold a key of the export (with every derived key and the Network ID,
+   in hex, Base64 or a Python form), a UUID or MAC of the export, an advertising MAC of the capture, or an address
+   of the installation that was not mapped to itself on purpose;
+3. read the trace line by line before it leaves the host, copy it to `tests/traces/`, run
+   `pytest tests/test_traces.py --snapshot-update` and review the snapshot.
+
+The one trace so far, `synthetic.ndjson`, is made the same way from a stand-in installation:
+`tests/traces/make_traces.py` takes the fixture network with other keys, UUIDs, MACs and addresses, plays
+documented on-air behaviour on it (an acknowledged Set that changes a light, published twice with no unicast reply; a
+gateway Set to a light already on, with the unicast reply; a socket's meter values published once each; a
+tunable-white status published twice; a rocker's double press published twice and a hold), decodes it as
+`mesh_sniff.py decode --json` would and converts it. `tests/test_trace_converter.py` checks that the converter's
+output holds no key, MAC, UUID or address of that stand-in, that the mapping does not depend on the order of the
+capture, that the output decodes to the very access PDUs of the input (segmented ones too), every refusal, and that
+`make_traces.py` regenerates the committed trace byte for byte. Traces of the verified device classes (switched
+light, socket, DALI tunable white, rocker) need the maintainer's captures: none is committed yet.
+
+## Upgrade fixtures
+
+`tests/upgrade/v<version>.json` is what a released version stored on the fixture network: its config entry
+(version, minor version, data, options; the fixture directory written as `{fixtures}`) and every `junghome_ble.*`
+document of `.storage`. `v1.0.0.json` was dumped by the v1.0.0 tag's own test harness (`init_integration` with an
+answering mesh, a light switched on and off, the entry unloaded). `tests/upgrade/test_upgrade.py` sets the entry up
+from it with the current code and checks the entry's and the sequence-number store's migration to the current
+versions, that the first sequence number sent is above the stored one and that the stored replay list still drops a
+PDU the release had already seen. Add a file per release the same way, from its tag.
+
+## Nightly
+
+`.github/workflows/nightly.yml` runs once a day and on demand (never on a push or a pull request), with the same
+pinned actions and read-only permissions as `ci.yml`:
+
+- `thorough`: every test file that imports Hypothesis, with `HYPOTHESIS_PROFILE=thorough`
+  (`tests/jhmesh/hypothesis_profiles.py`); the example database is restored from and saved to the Actions cache
+  whatever the outcome, so a failing example is retried first every night until it is fixed;
+- `mutation`: mutmut (`requirements-mutation.txt`, configured in `pyproject.toml` `[tool.mutmut]`) over
+  `jhmesh/crypto.py`, `pdu.py`, `client.py`, `state.py` and the integration's `seq_store.py`, each mutant against
+  the library tests and the sequence-store tests that reach it; the job summary counts killed and surviving mutants
+  per module and shows the diff of the first surviving ones. Survivors do not fail the job: each one is a test to
+  write or an equivalent mutant to accept. By hand: `.venv/bin/pip install -r requirements-mutation.txt`, then
+  `.venv/bin/mutmut run`, `mutmut results`, `mutmut show <name>` (it works in `mutants/`, git-ignored);
+- `newest-home-assistant`: the whole suite against the newest `pytest-homeassistant-custom-component`, non-blocking
+  (`continue-on-error`): the warning before Renovate's next test-stack PR.
+
 ## Documentation checks
 
 - `tests/test_docs.py`: every relative link and `#anchor` in `README.md`, the other top-level Markdown files and

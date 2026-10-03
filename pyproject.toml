@@ -41,6 +41,7 @@ markers = [
     "link_loss_grace: keep the hub's link-loss grace (every other test sees entities go unavailable at once)",
     "slow_ok: exempt from the 5 s per-test budget of `tests/conftest.py` (`CALL_BUDGET`)",
     "sim: the hub over the simulated mesh on virtual time (`tests/soak`): seconds by default, minutes with SIM_SOAK=long",
+    "trace: replays a trace of on-air traffic converted to the fixture network (`tests/traces`, `tools/trace_to_fixture.py`)",
     "unavailable_ok: the test reloads or unloads the entry, or drops the link, on purpose; every other `tests/test_services.py` test checks no entity passes through unavailable / unknown",
 ]
 # pytest-timeout (pinned by pytest-homeassistant-custom-component): a test that hangs (an awaited future nobody
@@ -144,3 +145,27 @@ keep-runtime-typing = true
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[tool.mutmut]
+# nightly.yml `mutation` (requirements-mutation.txt; by hand: `.venv/bin/mutmut run`, then `mutmut results` and
+# `mutmut show <name>`, docs/dev/testing.md). Mutated: jhmesh's crypto, PDUs, client (SAR, the replay list, the IV
+# index) and local state (the sequence numbers), and the integration's sequence-number store — the modules where a
+# wrong line reuses a nonce or accepts a replay. `jhmesh` is the root symlink the library tests import the package
+# by (mutants named `jhmesh.…`); the integration is copied whole for seq_store.py, whose tests need Home Assistant.
+# mutmut copies everything below into `mutants/` (git-ignored) and runs each mutant against the tests that reach it.
+source_paths = ["jhmesh", "custom_components/junghome_ble"]
+only_mutate = [
+    "jhmesh/crypto.py",
+    "jhmesh/pdu.py",
+    "jhmesh/client.py",
+    "jhmesh/state.py",
+    "custom_components/junghome_ble/seq_store.py",
+]
+pytest_add_cli_args_test_selection = [
+    "tests/jhmesh",
+    "tests/test_seq_store.py",
+    "tests/test_properties_seq_store.py",
+]
+pytest_add_cli_args = ["-p", "no:cacheprovider"]
+also_copy = ["docs"] # tests/jhmesh/test_sim_mesh.py reads docs/hop-matrix.md
+use_git_change_detection = false # every run starts from a fresh checkout: mutate everything, every time

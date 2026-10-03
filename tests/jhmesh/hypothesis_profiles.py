@@ -8,7 +8,9 @@ sets it), `dev` otherwise:
   (nothing written into the checkout), with the reproduction blob printed on a failure;
 - `dev`: the same budget, with the example database in `.hypothesis/` (git-ignored), so a failure found once
   is tried first on every later run;
-- `thorough`: many more examples, for a run by hand after a change to the transport or the sequence store.
+- `thorough`: many more examples, with the reproduction blob printed on a failure: what the nightly workflow runs
+  (`.github/workflows/nightly.yml` `thorough`, its example database kept in the Actions cache from one run to the
+  next), and what to run by hand after a change to the transport or the sequence store.
 
 No deadline anywhere: the examples do AES-CCM, JSON round trips of a whole export or a state machine's worth of
 file writes, and a slow runner must not turn that into a flaky "deadline exceeded".
@@ -30,7 +32,7 @@ settings.register_profile(
     "ci", max_examples=60, database=None, print_blob=True, **_COMMON
 )
 settings.register_profile("dev", max_examples=60, **_COMMON)
-settings.register_profile("thorough", max_examples=2000, **_COMMON)
+settings.register_profile("thorough", max_examples=2000, print_blob=True, **_COMMON)
 
 
 def name() -> str:

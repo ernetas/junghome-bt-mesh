@@ -1,0 +1,4 @@
+# The mutation tester of nightly.yml `mutation` (configured in pyproject.toml `[tool.mutmut]`), installed next to
+# requirements-test.txt there and nowhere else: a development venv needs it only to run `mutmut run` by hand
+# (`.venv/bin/pip install -r requirements-mutation.txt`, docs/dev/testing.md). Renovate moves the pin.
+mutmut==3.8.0

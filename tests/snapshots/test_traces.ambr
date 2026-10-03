@@ -1,0 +1,351 @@
+# serializer version: 1
+# name: test_replay[synthetic]
+  list([
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.ONOFF: 'onoff'>,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC mirror',
+        'lock_until': None,
+        'locked': None,
+        'mesh_address': '0148',
+        'rooms': list([
+          'WC',
+        ]),
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.ONOFF: 'onoff'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+      }),
+      'entity_id': 'light.wc_wc_mirror',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: None,
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.BRIGHTNESS: 'brightness'>,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All lights',
+        'members': list([
+          'WC mirror',
+          'Living room DALI',
+          'WC ceiling',
+          'Kitchen ceiling',
+          '2-channel actuator 0400 out 2',
+        ]),
+        'mesh_address': 'FEF5',
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.BRIGHTNESS: 'brightness'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+      }),
+      'entity_id': 'light.jung_home_mesh_test_all_lights',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: None,
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.BRIGHTNESS: 'brightness'>,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All lights in WC',
+        'members': list([
+          'WC mirror',
+          'WC ceiling',
+        ]),
+        'mesh_address': 'C00F',
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.BRIGHTNESS: 'brightness'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+      }),
+      'entity_id': 'light.jung_home_mesh_test_all_lights_in_wc',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'outlet',
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Boiler',
+        'lock_until': None,
+        'locked': None,
+        'mesh_address': '0172',
+        'rooms': list([
+          'Kitchen',
+        ]),
+      }),
+      'entity_id': 'switch.kitchen_boiler',
+      'state': 'off',
+    }),
+    dict({
+      'attributes': dict({
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'outlet',
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All sockets',
+        'members': list([
+          'Boiler',
+        ]),
+        'mesh_address': 'FEF8',
+      }),
+      'entity_id': 'switch.jung_home_mesh_test_all_sockets',
+      'state': 'off',
+    }),
+    dict({
+      'attributes': dict({
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'outlet',
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All sockets in Kitchen',
+        'members': list([
+          'Boiler',
+        ]),
+        'mesh_address': 'C011',
+      }),
+      'entity_id': 'switch.jung_home_mesh_test_all_sockets_in_kitchen',
+      'state': 'off',
+    }),
+    dict({
+      'attributes': dict({
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'power',
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Boiler Power',
+        <SensorEntityCapabilityAttribute.STATE_CLASS: 'state_class'>: <SensorStateClass.MEASUREMENT: 'measurement'>,
+        <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfPower.WATT: 'W'>,
+      }),
+      'entity_id': 'sensor.kitchen_boiler_power',
+      'state': '123.4',
+    }),
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: 117,
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.COLOR_TEMP: 'color_temp'>,
+        <LightEntityStateAttribute.COLOR_TEMP_KELVIN: 'color_temp_kelvin'>: 4000,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room DALI',
+        <LightEntityStateAttribute.HS_COLOR: 'hs_color'>: tuple(
+          26.812,
+          34.87,
+        ),
+        'lock_until': None,
+        'locked': None,
+        <LightEntityCapabilityAttribute.MAX_COLOR_TEMP_KELVIN: 'max_color_temp_kelvin'>: 6000,
+        'mesh_address': '0232',
+        <LightEntityCapabilityAttribute.MIN_COLOR_TEMP_KELVIN: 'min_color_temp_kelvin'>: 2000,
+        <LightEntityStateAttribute.RGB_COLOR: 'rgb_color'>: tuple(
+          255,
+          206,
+          166,
+        ),
+        'rooms': list([
+          'Living room',
+        ]),
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.COLOR_TEMP: 'color_temp'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+        <LightEntityStateAttribute.XY_COLOR: 'xy_color'>: tuple(
+          0.42,
+          0.365,
+        ),
+      }),
+      'entity_id': 'light.living_room_living_room_dali',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: 117,
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.BRIGHTNESS: 'brightness'>,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All lights',
+        'members': list([
+          'WC mirror',
+          'Living room DALI',
+          'WC ceiling',
+          'Kitchen ceiling',
+          '2-channel actuator 0400 out 2',
+        ]),
+        'mesh_address': 'FEF5',
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.BRIGHTNESS: 'brightness'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+      }),
+      'entity_id': 'light.jung_home_mesh_test_all_lights',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: 117,
+        <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: <ColorMode.BRIGHTNESS: 'brightness'>,
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test All lights in Living room',
+        'members': list([
+          'Living room DALI',
+        ]),
+        'mesh_address': 'C010',
+        <LightEntityCapabilityAttribute.SUPPORTED_COLOR_MODES: 'supported_color_modes'>: list([
+          <ColorMode.BRIGHTNESS: 'brightness'>,
+        ]),
+        <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <LightEntityFeature: 0>,
+      }),
+      'entity_id': 'light.jung_home_mesh_test_all_lights_in_living_room',
+      'state': 'on',
+    }),
+    dict({
+      'attributes': dict({
+        'connection': 'device',
+        'connection_address': '0232',
+        'connection_name': 'Living room DALI',
+        'counter': 22,
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'button',
+        <EventEntityStateAttribute.EVENT_TYPE: 'event_type'>: 'click',
+        <EventEntityCapabilityAttribute.EVENT_TYPES: 'event_types'>: list([
+          'click',
+          'double_click',
+          'hold_start',
+          'hold_end',
+          'press_on',
+          'press_off',
+          'scene',
+          'dim',
+        ]),
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room rocker Button A',
+        'location': '0040',
+        'mesh_address': '0234',
+        'side': 'up',
+      }),
+      'entity_id': 'event.living_room_living_room_rocker_button_a',
+      'state': '2020-01-01T00:00:19.500+00:00',
+    }),
+    dict({
+      'data': dict({
+        'counter': 22,
+        'device': list([
+          tuple(
+            'junghome_ble',
+            '00005eff-fe00-5323-0000-000000000000-0040-buttons',
+          ),
+        ]),
+        'entity_id': 'event.living_room_living_room_rocker_button_a',
+        'key': 'A',
+        'side': 'up',
+        'type': 'click',
+      }),
+      'event': 'junghome_ble_button_action',
+    }),
+    dict({
+      'attributes': dict({
+        'connection': 'device',
+        'connection_address': '0232',
+        'connection_name': 'Living room DALI',
+        'counter': 23,
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'button',
+        <EventEntityStateAttribute.EVENT_TYPE: 'event_type'>: 'double_click',
+        <EventEntityCapabilityAttribute.EVENT_TYPES: 'event_types'>: list([
+          'click',
+          'double_click',
+          'hold_start',
+          'hold_end',
+          'press_on',
+          'press_off',
+          'scene',
+          'dim',
+        ]),
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room rocker Button A',
+        'location': '0040',
+        'mesh_address': '0234',
+        'side': 'up',
+      }),
+      'entity_id': 'event.living_room_living_room_rocker_button_a',
+      'state': '2020-01-01T00:00:19.800+00:00',
+    }),
+    dict({
+      'data': dict({
+        'counter': 23,
+        'device': list([
+          tuple(
+            'junghome_ble',
+            '00005eff-fe00-5323-0000-000000000000-0040-buttons',
+          ),
+        ]),
+        'entity_id': 'event.living_room_living_room_rocker_button_a',
+        'key': 'A',
+        'side': 'up',
+        'type': 'double_click',
+      }),
+      'event': 'junghome_ble_button_action',
+    }),
+    dict({
+      'attributes': dict({
+        'connection': 'device',
+        'connection_address': '0232',
+        'connection_name': 'Living room DALI',
+        'counter': 24,
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'button',
+        <EventEntityStateAttribute.EVENT_TYPE: 'event_type'>: 'hold_start',
+        <EventEntityCapabilityAttribute.EVENT_TYPES: 'event_types'>: list([
+          'click',
+          'double_click',
+          'hold_start',
+          'hold_end',
+          'press_on',
+          'press_off',
+          'scene',
+          'dim',
+        ]),
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room rocker Button A',
+        'location': '0040',
+        'mesh_address': '0234',
+        'side': 'down',
+      }),
+      'entity_id': 'event.living_room_living_room_rocker_button_a',
+      'state': '2020-01-01T00:00:23.500+00:00',
+    }),
+    dict({
+      'data': dict({
+        'counter': 24,
+        'device': list([
+          tuple(
+            'junghome_ble',
+            '00005eff-fe00-5323-0000-000000000000-0040-buttons',
+          ),
+        ]),
+        'entity_id': 'event.living_room_living_room_rocker_button_a',
+        'key': 'A',
+        'side': 'down',
+        'type': 'hold_start',
+      }),
+      'event': 'junghome_ble_button_action',
+    }),
+    dict({
+      'attributes': dict({
+        'connection': 'device',
+        'connection_address': '0232',
+        'connection_name': 'Living room DALI',
+        'counter': 25,
+        <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'button',
+        <EventEntityStateAttribute.EVENT_TYPE: 'event_type'>: 'hold_end',
+        <EventEntityCapabilityAttribute.EVENT_TYPES: 'event_types'>: list([
+          'click',
+          'double_click',
+          'hold_start',
+          'hold_end',
+          'press_on',
+          'press_off',
+          'scene',
+          'dim',
+        ]),
+        <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room rocker Button A',
+        'location': '0040',
+        'mesh_address': '0234',
+        'side': 'down',
+      }),
+      'entity_id': 'event.living_room_living_room_rocker_button_a',
+      'state': '2020-01-01T00:00:25.000+00:00',
+    }),
+    dict({
+      'data': dict({
+        'counter': 25,
+        'device': list([
+          tuple(
+            'junghome_ble',
+            '00005eff-fe00-5323-0000-000000000000-0040-buttons',
+          ),
+        ]),
+        'entity_id': 'event.living_room_living_room_rocker_button_a',
+        'key': 'A',
+        'side': 'down',
+        'type': 'hold_end',
+      }),
+      'event': 'junghome_ble_button_action',
+    }),
+  ])
+# ---

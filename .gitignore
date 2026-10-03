@@ -34,3 +34,7 @@ tools/..jhmesh_*
 *.pcapng
 capture-*.log
 .hypothesis/
+# replay traces (tests/traces/, tools/trace_to_fixture.py): synthetic or converted and reviewed by hand
+!/tests/traces/*.ndjson
+# mutmut's working copy (pyproject.toml `[tool.mutmut]`, nightly.yml `mutation`)
+/mutants/

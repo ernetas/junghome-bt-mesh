@@ -661,6 +661,19 @@
   comments and docstrings name the moved code where it lives now; the action modules import the integration's
   modules absolutely, as `configurator/` and `properties/` do, so `actions/` no longer needs its `TID252` exemption.
   No behaviour changes.
+- Internal (review-4 brief 59: Q4 T2, T3, T5, T7, C4): a nightly workflow (`.github/workflows/nightly.yml`, scheduled
+  and on demand, never on a push or a pull request) runs every property test with the `thorough` Hypothesis profile,
+  its example database kept in the Actions cache; mutation tests (mutmut, `pyproject.toml` `[tool.mutmut]`) of
+  `jhmesh`'s crypto, PDUs, client and local state and of `seq_store.py`, with the surviving mutants listed in the job
+  summary; and the suite against the newest Home Assistant test stack, non-blocking. `tools/trace_to_fixture.py`
+  turns a decoded capture into a trace of the fixture network (addresses mapped, MACs, RSSI and the capture's clock
+  dropped, every message re-encrypted under the fixture's keys) and writes nothing when the result would still hold a
+  key, UUID, MAC or address of the installation; `tests/test_traces.py` (marker `trace`) replays every trace of
+  `tests/traces/` through the fake proxy, snapshots the states and events, and holds each trace to fixture material.
+  One synthetic trace so far, made from a stand-in installation (`tests/traces/make_traces.py`); traces captured on
+  air follow once the maintainer has made them. `tests/upgrade/` loads what v1.0.0 stored (its config entry and its
+  sequence-number store, dumped by the tag's own test harness) into the current code and checks the migration, that
+  the sequence number carries on and that the stored replay list holds.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick

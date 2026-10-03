@@ -1,0 +1,88 @@
+{
+  "entry": {
+    "data": {
+      "cdb_path": "{fixtures}/MeshNetwork.json",
+      "metadata_dir": "{fixtures}/Application Support",
+      "source": "path",
+      "unicast": "0D00"
+    },
+    "minor_version": 2,
+    "options": {},
+    "title": "JUNG HOME mesh test",
+    "unique_id": "1fbd2c61a4b6e5a4",
+    "version": 1
+  },
+  "storage": {
+    "junghome_ble.seq.1baf3ade-0000-4000-8000-000000000001": {
+      "data": {
+        "addresses": {
+          "0D00": {
+            "clean": true,
+            "iv_index": 0,
+            "iv_known": true,
+            "iv_update_active": false,
+            "rpl": {
+              "00DC": [
+                0,
+                1104901
+              ],
+              "0148": [
+                0,
+                1132553
+              ],
+              "0172": [
+                0,
+                1143303
+              ],
+              "0232": [
+                0,
+                1192456
+              ],
+              "0233": [
+                0,
+                1192705
+              ],
+              "0300": [
+                0,
+                1245185
+              ],
+              "0400": [
+                0,
+                1310721
+              ],
+              "0401": [
+                0,
+                1310977
+              ]
+            },
+            "seq": 36,
+            "seq_peak": 0,
+            "seq_peak_from": 0
+          }
+        }
+      },
+      "key": "junghome_ble.seq.1baf3ade-0000-4000-8000-000000000001",
+      "minor_version": 3,
+      "version": 1
+    },
+    "junghome_ble.seq.1baf3ade-0000-4000-8000-000000000001.backup": {
+      "data": {
+        "addresses": {
+          "0D00": {
+            "clean": false,
+            "iv_index": 0,
+            "iv_known": false,
+            "iv_update_active": false,
+            "rpl": {},
+            "seq": 0,
+            "seq_peak": 0,
+            "seq_peak_from": 0
+          }
+        }
+      },
+      "key": "junghome_ble.seq.1baf3ade-0000-4000-8000-000000000001.backup",
+      "minor_version": 3,
+      "version": 1
+    }
+  }
+}
