@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Dodaj urządzenie (eksperymentalne)",
-      "description": "Dodaje nowe urządzenie JUNG do sieci tak jak aplikacja: prowizjonuje je najsilniejszą metodą, jaką urządzenie oferuje (Static OOB, gdy je oferuje i podano jego wartość, z algorytmem HMAC-SHA256, w przeciwnym razie No OOB jak aplikacja — bez uwierzytelniania ktoś w zasięgu Bluetooth mógłby w trakcie przechwycić klucze sieci), konfiguruje je według reguł aplikacji na podstawie tego, co zgłasza urządzenie (odrzucane, gdy nie zgadza się to z tym, co ma urządzenie tego samego produktu już obecne w sieci), i zapisuje je w eksporcie (przekazywanym do bramki). Urządzenie, którego konfiguracja się nie powiedzie, zostaje zresetowane, jak w aplikacji. Jego grupy elementów otrzymują najwyższe wolne adresy grup z zakresu aplikacji (aplikacja nie widzi urządzenia, dopóki nie zaimportuje pliku). Odpowiedź wymienia wykonane kroki. Wymaga opcji wpisu *Zezwól Home Assistant na dodawanie urządzeń*. Tylko dla administratorów. Metody uwierzytelnione, reguły konfiguracji i reset są jeszcze niesprawdzone na prawdziwych urządzeniach.",
+      "description": "Dodaje nowe urządzenie JUNG do sieci tak jak aplikacja: prowizjonuje je najsilniejszą metodą, jaką urządzenie oferuje (Static OOB, gdy je oferuje i podano jego wartość, z algorytmem HMAC-SHA256, w przeciwnym razie No OOB jak aplikacja — bez uwierzytelniania ktoś w zasięgu Bluetooth mógłby w trakcie przechwycić klucze sieci), konfiguruje je według reguł aplikacji na podstawie tego, co zgłasza urządzenie (odrzucane, gdy nie zgadza się to z tym, co ma urządzenie tego samego produktu już obecne w sieci), i zapisuje je w eksporcie (przekazywanym do bramki). Urządzenie, którego konfiguracja się nie powiedzie, zostaje zresetowane, jak w aplikacji. Jego grupy elementów otrzymują najwyższe wolne adresy grup z zakresu aplikacji (aplikacja nie widzi urządzenia, dopóki nie zaimportuje pliku). Odpowiedź wymienia wykonane kroki. Wymaga opcji wpisu *Zezwól Home Assistant na dodawanie i usuwanie urządzeń*. Tylko dla administratorów. Metody uwierzytelnione, reguły konfiguracji i reset są jeszcze niesprawdzone na prawdziwych urządzeniach.",
       "fields": {
         "address": {
           "name": "Adres Bluetooth",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Zresetuj oczekujące urządzenie (eksperymentalne)",
-      "description": "Resetuje urządzenie JUNG, które `add_device` sprowizjonowało, ale nie zdołało skonfigurować ani zapisać (wymienia je problem *Urządzenie dodane przez Home Assistant nie jest zapisane* w Naprawach): wysyła do niego Config Node Reset z kluczem urządzenia, który zna tylko Home Assistant, dzięki czemu znów staje się nowym urządzeniem, i zwalnia jego adresy. Jeszcze nie wypróbowane na prawdziwym urządzeniu. Wymaga opcji wpisu *Zezwól Home Assistant na dodawanie urządzeń*. Tylko dla administratorów.",
+      "description": "Resetuje urządzenie JUNG, które `add_device` sprowizjonowało, ale nie zdołało skonfigurować ani zapisać (wymienia je problem *Urządzenie dodane przez Home Assistant nie jest zapisane* w Naprawach): wysyła do niego Config Node Reset z kluczem urządzenia, który zna tylko Home Assistant, dzięki czemu znów staje się nowym urządzeniem, i zwalnia jego adresy. Jeszcze nie wypróbowane na prawdziwym urządzeniu. Wymaga opcji wpisu *Zezwól Home Assistant na dodawanie i usuwanie urządzeń*. Tylko dla administratorów.",
       "fields": {
         "uuid": {
           "name": "UUID urządzenia",

@@ -889,13 +889,18 @@ its app bundles; an *Update available* has not been seen on air.
 
 ### Languages
 
-The integration speaks English and German (`translations/de.json`, review-4 U4-1): the setup and options pages, the
-entity names and states, the actions, the repair notices and the error messages follow each user's Home Assistant
-language. The German uses the informal *du*, as Home Assistant's own German does, and the terms of the German JUNG
+The integration speaks English, German (`translations/de.json`, review-4 U4-1) and the 24 further languages of the
+JUNG HOME gateway integration (brief 68): Catalan, Czech, Danish, Greek, Spanish, Finnish, French, Hungarian,
+Italian, Japanese, Korean, Lithuanian, Norwegian Bokmål, Dutch, Polish, Brazilian Portuguese, Romanian, Russian,
+Slovak, Slovenian, Swedish, Turkish, Ukrainian and Simplified Chinese. The setup and options pages, the entity names
+and states, the actions, the repair notices and the error messages follow each user's Home Assistant language. The German uses the informal *du*, as Home Assistant's own German does, and the terms of the German JUNG
 HOME app for JUNG things (*Taste* for a key, *Wippe* for a rocker, *Taster* for a push-button, *Einsatz*, *Szene*,
 *Tastenmodus*, *Sperrfunktion*, *Zeitgeber*), Home Assistant's for its own (*Bereich*, *Gerät*, *Entität*, *Aktion*,
 *Reparatur*). The app calls a room a *Bereich*; here it is a *Raum*, so that it stays apart from a Home Assistant
-area. A key a language lacks shows in English; `tests/test_translations.py` keeps every language's keys and
+area. The other languages take JUNG terms from the gateway integration's translation of the same language and
+Home Assistant's wording for its own concepts, and keep a JUNG room apart from a Home Assistant area the same way;
+they are machine translations nobody fluent has read yet, so corrections are welcome. A key a language lacks shows in
+English; `tests/test_translations.py` keeps every language's keys and
 `{placeholders}` in line with `en.json` and prints how much of each section is translated.
 
 What Home Assistant builds in the backend follows the server's language instead (the language set under *Settings →

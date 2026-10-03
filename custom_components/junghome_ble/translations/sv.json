@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Lägg till enhet (experimentellt)",
-      "description": "Lägger till en ny JUNG-enhet i nätverket som appen skulle göra: driftsätter den med den starkaste metod som enheten erbjuder (Static OOB när den erbjuder det och dess värde har angetts, HMAC-SHA256-algoritmen, annars No OOB som appen — utan autentisering kan någon inom Bluetooth-räckhåll fånga upp nätverkets nycklar medan det pågår), konfigurerar den enligt appens regler utifrån vad enheten rapporterar (avvisas när det inte är vad en enhet av samma produkt som redan finns i nätverket har) och registrerar den i exporten (överlämnad till gatewayen). En enhet vars konfiguration misslyckas återställs, som appen gör. Dess elementgrupper tar de högsta lediga gruppadresserna i appens intervall (appen ser inte enheten förrän den importerar en fil). Svaret listar de utförda stegen. Kräver postens alternativ *Tillåt Home Assistant att lägga till enheter*. Endast för administratörer. De autentiserade metoderna, konfigurationsreglerna och återställningen är ännu inte verifierade på riktiga enheter.",
+      "description": "Lägger till en ny JUNG-enhet i nätverket som appen skulle göra: driftsätter den med den starkaste metod som enheten erbjuder (Static OOB när den erbjuder det och dess värde har angetts, HMAC-SHA256-algoritmen, annars No OOB som appen — utan autentisering kan någon inom Bluetooth-räckhåll fånga upp nätverkets nycklar medan det pågår), konfigurerar den enligt appens regler utifrån vad enheten rapporterar (avvisas när det inte är vad en enhet av samma produkt som redan finns i nätverket har) och registrerar den i exporten (överlämnad till gatewayen). En enhet vars konfiguration misslyckas återställs, som appen gör. Dess elementgrupper tar de högsta lediga gruppadresserna i appens intervall (appen ser inte enheten förrän den importerar en fil). Svaret listar de utförda stegen. Kräver postens alternativ *Tillåt Home Assistant att lägga till och ta bort enheter*. Endast för administratörer. De autentiserade metoderna, konfigurationsreglerna och återställningen är ännu inte verifierade på riktiga enheter.",
       "fields": {
         "address": {
           "name": "Bluetooth-adress",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Återställ väntande enhet (experimentellt)",
-      "description": "Återställer en JUNG-enhet som `add_device` driftsatte men inte kunde konfigurera eller registrera (reparationen *En enhet som Home Assistant har lagt till är inte registrerad* listar dem): skickar en Config Node Reset till den med den enhetsnyckel som bara Home Assistant har, så att den blir en ny enhet igen, och frigör dess adresser. Ännu inte provat på en riktig enhet. Kräver postens alternativ *Tillåt Home Assistant att lägga till enheter*. Endast för administratörer.",
+      "description": "Återställer en JUNG-enhet som `add_device` driftsatte men inte kunde konfigurera eller registrera (reparationen *En enhet som Home Assistant har lagt till är inte registrerad* listar dem): skickar en Config Node Reset till den med den enhetsnyckel som bara Home Assistant har, så att den blir en ny enhet igen, och frigör dess adresser. Ännu inte provat på en riktig enhet. Kräver postens alternativ *Tillåt Home Assistant att lägga till och ta bort enheter*. Endast för administratörer.",
       "fields": {
         "uuid": {
           "name": "Enhets-UUID",

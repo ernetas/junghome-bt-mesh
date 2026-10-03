@@ -232,9 +232,33 @@ def test_no_angle_brackets(path: Path) -> None:
 
 # Every language the JUNG HOME gateway integration (`ernetas/junghome`) ships (review-4 brief 68): an owner who uses
 # both finds this one in their language too
-GATEWAY_INTEGRATION_LANGUAGES = (
-    "ca cs da de el es fi fr hu it ja ko lt nb nl pl pt-BR ro ru sk sl sv tr uk zh-Hans"
-).split()
+GATEWAY_INTEGRATION_LANGUAGES = [
+    "ca",
+    "cs",
+    "da",
+    "de",
+    "el",
+    "es",
+    "fi",
+    "fr",
+    "hu",
+    "it",
+    "ja",
+    "ko",
+    "lt",
+    "nb",
+    "nl",
+    "pl",
+    "pt-BR",
+    "ro",
+    "ru",
+    "sk",
+    "sl",
+    "sv",
+    "tr",
+    "uk",
+    "zh-Hans",
+]
 
 
 def test_every_language_of_the_gateway_integration() -> None:

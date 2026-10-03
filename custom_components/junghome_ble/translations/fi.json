@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Lisää laite (kokeellinen)",
-      "description": "Lisää uuden JUNG-laitteen verkkoon kuten sovellus: ottaa sen käyttöön verkossa vahvimmalla laitteen tarjoamalla menetelmällä (Static OOB, kun laite tarjoaa sitä ja sen arvo on annettu, HMAC-SHA256-algoritmilla, muuten No OOB kuten sovellus — ilman todennusta joku Bluetooth-kantaman sisällä voisi toimenpiteen aikana siepata verkon avaimet), määrittää sen sovelluksen sääntöjen mukaan laitteen ilmoittamien tietojen perusteella (hylätään, jos ne eivät vastaa sitä, mitä saman tuotteen laitteella verkossa jo on) ja kirjaa sen vientiin (joka luovutetaan yhdyskäytävälle). Laite, jonka määritys epäonnistuu, palautetaan tehdasasetuksiin kuten sovelluksessa. Sen elementtiryhmät saavat sovelluksen alueen suurimmat vapaat ryhmäosoitteet (sovellus ei näe laitetta ennen kuin se tuo tiedoston). Vastaus luettelee tehdyt vaiheet. Vaatii merkinnän *Salli Home Assistantin lisätä laitteita* -asetuksen. Vain järjestelmänvalvojille. Todennetut menetelmät, määrityssäännöt ja palautus ovat vielä varmistamatta oikeilla laitteilla.",
+      "description": "Lisää uuden JUNG-laitteen verkkoon kuten sovellus: ottaa sen käyttöön verkossa vahvimmalla laitteen tarjoamalla menetelmällä (Static OOB, kun laite tarjoaa sitä ja sen arvo on annettu, HMAC-SHA256-algoritmilla, muuten No OOB kuten sovellus — ilman todennusta joku Bluetooth-kantaman sisällä voisi toimenpiteen aikana siepata verkon avaimet), määrittää sen sovelluksen sääntöjen mukaan laitteen ilmoittamien tietojen perusteella (hylätään, jos ne eivät vastaa sitä, mitä saman tuotteen laitteella verkossa jo on) ja kirjaa sen vientiin (joka luovutetaan yhdyskäytävälle). Laite, jonka määritys epäonnistuu, palautetaan tehdasasetuksiin kuten sovelluksessa. Sen elementtiryhmät saavat sovelluksen alueen suurimmat vapaat ryhmäosoitteet (sovellus ei näe laitetta ennen kuin se tuo tiedoston). Vastaus luettelee tehdyt vaiheet. Vaatii merkinnän *Salli Home Assistantin lisätä ja poistaa laitteita* -asetuksen. Vain järjestelmänvalvojille. Todennetut menetelmät, määrityssäännöt ja palautus ovat vielä varmistamatta oikeilla laitteilla.",
       "fields": {
         "address": {
           "name": "Bluetooth-osoite",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Palauta odottava laite (kokeellinen)",
-      "description": "Palauttaa tehdasasetuksiin JUNG-laitteen, jonka `add_device` otti käyttöön verkossa mutta ei pystynyt määrittämään tai kirjaamaan (korjausilmoitus *Home Assistantin lisäämää laitetta ei ole kirjattu* luettelee ne): lähettää sille Config Node Reset -viestin laiteavaimella, joka on vain Home Assistantilla, jotta siitä tulee taas uusi laite, ja vapauttaa sen osoitteet. Ei vielä kokeiltu oikealla laitteella. Vaatii merkinnän *Salli Home Assistantin lisätä laitteita* -asetuksen. Vain järjestelmänvalvojille.",
+      "description": "Palauttaa tehdasasetuksiin JUNG-laitteen, jonka `add_device` otti käyttöön verkossa mutta ei pystynyt määrittämään tai kirjaamaan (korjausilmoitus *Home Assistantin lisäämää laitetta ei ole kirjattu* luettelee ne): lähettää sille Config Node Reset -viestin laiteavaimella, joka on vain Home Assistantilla, jotta siitä tulee taas uusi laite, ja vapauttaa sen osoitteet. Ei vielä kokeiltu oikealla laitteella. Vaatii merkinnän *Salli Home Assistantin lisätä ja poistaa laitteita* -asetuksen. Vain järjestelmänvalvojille.",
       "fields": {
         "uuid": {
           "name": "Laitteen UUID",

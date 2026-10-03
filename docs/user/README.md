@@ -25,10 +25,11 @@ you do not need it to use the integration.
 - [FAQ](faq.md) — the gateway, the app, Bluetooth hardware, safety of the export, and more.
 - [Entity reference](entities.md) — every entity the integration can create, generated from the code.
 
-Auf Deutsch: [Schnellstart](../de/schnellstart.md). The integration itself speaks English and German: with Home
-Assistant set to German, its pages, entities, actions and repair notices use the German JUNG HOME app's words
-(*Taste*, *Wippe*, *Taster*, *Szene*), and a JUNG room is a *Raum* so it is not mixed up with a Home Assistant area
-(*Bereich*). This guide quotes the English names ([Languages](../ha-integration.md#languages)).
+Auf Deutsch: [Schnellstart](../de/schnellstart.md). The integration itself speaks English, German and the 24 further
+languages of the JUNG HOME gateway integration. With Home Assistant set to German, its pages, entities, actions and
+repair notices use the German JUNG HOME app's words (*Taste*, *Wippe*, *Taster*, *Szene*), and a JUNG room is a
+*Raum* so it is not mixed up with a Home Assistant area (*Bereich*). This guide quotes the English names
+([Languages](../ha-integration.md#languages)).
 
 ## A word on "unverified"
 

@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Dodaj napravo (preizkusno)",
-      "description": "Novo napravo JUNG doda v omrežje, kot bi to storila aplikacija: pripravi jo (provisioning) z najmočnejšo metodo, ki jo naprava ponuja (Static OOB, če jo ponuja in je vrednost podana, z algoritmom HMAC-SHA256, sicer kot aplikacija No OOB — brez overjanja bi lahko nekdo v dosegu Bluetootha med postopkom prestregel ključe omrežja), jo konfigurira po pravilih aplikacije glede na to, kar naprava sporoča (zavrnjeno, če to ne ustreza temu, kar ima naprava istega izdelka, ki je že v omrežju), in jo zabeleži v izvoz (ki se preda prehodu). Naprava, katere konfiguracija ne uspe, se ponastavi, kot to stori aplikacija. Njene skupine elementov dobijo najvišje proste skupinske naslove iz obsega aplikacije (aplikacija naprave ne vidi, dokler ne uvozi datoteke). Odgovor navede opravljene korake. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje naprav*. Samo za skrbnike. Overjene metode, pravila konfiguracije in ponastavitev še niso preverjeni na resničnih napravah.",
+      "description": "Novo napravo JUNG doda v omrežje, kot bi to storila aplikacija: pripravi jo (provisioning) z najmočnejšo metodo, ki jo naprava ponuja (Static OOB, če jo ponuja in je vrednost podana, z algoritmom HMAC-SHA256, sicer kot aplikacija No OOB — brez overjanja bi lahko nekdo v dosegu Bluetootha med postopkom prestregel ključe omrežja), jo konfigurira po pravilih aplikacije glede na to, kar naprava sporoča (zavrnjeno, če to ne ustreza temu, kar ima naprava istega izdelka, ki je že v omrežju), in jo zabeleži v izvoz (ki se preda prehodu). Naprava, katere konfiguracija ne uspe, se ponastavi, kot to stori aplikacija. Njene skupine elementov dobijo najvišje proste skupinske naslove iz obsega aplikacije (aplikacija naprave ne vidi, dokler ne uvozi datoteke). Odgovor navede opravljene korake. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje in odstranjevanje naprav*. Samo za skrbnike. Overjene metode, pravila konfiguracije in ponastavitev še niso preverjeni na resničnih napravah.",
       "fields": {
         "address": {
           "name": "Naslov Bluetooth",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Ponastavi čakajočo napravo (preizkusno)",
-      "description": "Ponastavi napravo JUNG, ki jo je `add_device` pripravil (provisioning), a je ni mogel konfigurirati ali zabeležiti (navaja jih težava v popravilih *Naprava, ki jo je dodal Home Assistant, ni zabeležena*): pošlje ji Config Node Reset s ključem naprave, ki ga ima le Home Assistant, da znova postane nova naprava, in sprosti njene naslove. Na resnični napravi še ni preizkušeno. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje naprav*. Samo za skrbnike.",
+      "description": "Ponastavi napravo JUNG, ki jo je `add_device` pripravil (provisioning), a je ni mogel konfigurirati ali zabeležiti (navaja jih težava v popravilih *Naprava, ki jo je dodal Home Assistant, ni zabeležena*): pošlje ji Config Node Reset s ključem naprave, ki ga ima le Home Assistant, da znova postane nova naprava, in sprosti njene naslove. Na resnični napravi še ni preizkušeno. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje in odstranjevanje naprav*. Samo za skrbnike.",
       "fields": {
         "uuid": {
           "name": "UUID naprave",

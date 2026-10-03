@@ -526,6 +526,12 @@
   (*Taster 1-fach (Schalteinsatz)*, *Schaltbare Leuchte*, …) and the logbook lines of key presses and scene recalls
   now follow Home Assistant's language too, from the translations it cached for the server's language; English
   where a language has no text. A key added in English later shows in English until it is translated.
+- 24 more languages (review-4 brief 68), every one the JUNG HOME gateway integration ships: Catalan, Czech, Danish,
+  Greek, Spanish, Finnish, French, Hungarian, Italian, Japanese, Korean, Lithuanian, Norwegian Bokmål, Dutch,
+  Polish, Brazilian Portuguese, Romanian, Russian, Slovak, Slovenian, Swedish, Turkish, Ukrainian and Simplified
+  Chinese, each complete. JUNG terms follow the gateway integration's translation of that language, Home
+  Assistant's own concepts its wording, and a JUNG room stays apart from a Home Assistant area. These are machine
+  translations nobody fluent has read yet: corrections are welcome.
 
 - The JUNG HOME Gateway is discovered (review-4 U4-8): its mDNS announcement (`_junghome._tcp`) shows a card *JUNG
   HOME Gateway …* under *Discovered*; confirming it opens the gateway form with the announced address filled in, and

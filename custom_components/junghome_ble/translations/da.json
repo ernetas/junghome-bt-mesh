@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Tilføj enhed (eksperimentelt)",
-      "description": "Tilføjer en ny JUNG-enhed til netværket, som appen ville: klargør den med den stærkeste metode, enheden tilbyder (Static OOB, når den tilbyder det og dens værdi er angivet, HMAC-SHA256-algoritmen, ellers No OOB som appen — uden godkendelse kan nogen inden for Bluetooth-rækkevidde opsnappe netværkets nøgler, mens det kører), konfigurerer den efter appens regler ud fra det, enheden rapporterer (afvises, hvis det ikke er det, en enhed af samme produkt, der allerede er i netværket, har), og registrerer den i eksporten (overdraget til gatewayen). En enhed, hvis konfiguration mislykkes, nulstilles, som appen gør. Dens elementgrupper får de højeste ledige gruppeadresser i appens interval (appen ser ikke enheden, før den importerer en fil). Svaret viser de udførte trin. Kræver postens indstilling *Tillad Home Assistant at tilføje enheder*. Kun for administratorer. De godkendte metoder, konfigurationsreglerne og nulstillingen er endnu ikke afprøvet på rigtige enheder.",
+      "description": "Tilføjer en ny JUNG-enhed til netværket, som appen ville: klargør den med den stærkeste metode, enheden tilbyder (Static OOB, når den tilbyder det og dens værdi er angivet, HMAC-SHA256-algoritmen, ellers No OOB som appen — uden godkendelse kan nogen inden for Bluetooth-rækkevidde opsnappe netværkets nøgler, mens det kører), konfigurerer den efter appens regler ud fra det, enheden rapporterer (afvises, hvis det ikke er det, en enhed af samme produkt, der allerede er i netværket, har), og registrerer den i eksporten (overdraget til gatewayen). En enhed, hvis konfiguration mislykkes, nulstilles, som appen gør. Dens elementgrupper får de højeste ledige gruppeadresser i appens interval (appen ser ikke enheden, før den importerer en fil). Svaret viser de udførte trin. Kræver postens indstilling *Tillad Home Assistant at tilføje og fjerne enheder*. Kun for administratorer. De godkendte metoder, konfigurationsreglerne og nulstillingen er endnu ikke afprøvet på rigtige enheder.",
       "fields": {
         "address": {
           "name": "Bluetooth-adresse",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Nulstil afventende enhed (eksperimentelt)",
-      "description": "Nulstiller en JUNG-enhed, som `add_device` klargjorde, men ikke kunne konfigurere eller registrere (reparationen *En enhed, som Home Assistant har tilføjet, er ikke registreret* viser dem): sender den en Config Node Reset med den enhedsnøgle, kun Home Assistant har, så den bliver en ny enhed igen, og frigør dens adresser. Endnu ikke afprøvet på en rigtig enhed. Kræver postens indstilling *Tillad Home Assistant at tilføje enheder*. Kun for administratorer.",
+      "description": "Nulstiller en JUNG-enhed, som `add_device` klargjorde, men ikke kunne konfigurere eller registrere (reparationen *En enhed, som Home Assistant har tilføjet, er ikke registreret* viser dem): sender den en Config Node Reset med den enhedsnøgle, kun Home Assistant har, så den bliver en ny enhed igen, og frigør dens adresser. Endnu ikke afprøvet på en rigtig enhed. Kræver postens indstilling *Tillad Home Assistant at tilføje og fjerne enheder*. Kun for administratorer.",
       "fields": {
         "uuid": {
           "name": "Enheds-UUID",

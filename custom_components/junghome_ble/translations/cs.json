@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Přidat zařízení (experimentální)",
-      "description": "Přidá nové zařízení JUNG do sítě jako aplikace: provede provisioning nejsilnější metodou, kterou zařízení nabízí (Static OOB, pokud ji nabízí a je zadána její hodnota, algoritmus HMAC-SHA256, jinak No OOB jako aplikace — bez ověření by někdo v dosahu Bluetooth mohl během průběhu zachytit klíče sítě), nakonfiguruje je podle pravidel aplikace na základě toho, co zařízení hlásí (odmítnuto, pokud to neodpovídá zařízení stejného produktu, které už v síti je), a zaznamená je do exportu (předaného bráně). Zařízení, jehož konfigurace selže, se resetuje, stejně jako v aplikaci. Skupiny jeho prvků dostanou nejvyšší volné skupinové adresy z rozsahu aplikace (aplikace zařízení neuvidí, dokud neimportuje soubor). Odpověď uvádí provedené kroky. Vyžaduje možnost záznamu *Povolit Home Assistantu přidávat zařízení*. Pouze pro správce. Ověřené metody, konfigurační pravidla a reset zatím nejsou ověřeny na skutečných zařízeních.",
+      "description": "Přidá nové zařízení JUNG do sítě jako aplikace: provede provisioning nejsilnější metodou, kterou zařízení nabízí (Static OOB, pokud ji nabízí a je zadána její hodnota, algoritmus HMAC-SHA256, jinak No OOB jako aplikace — bez ověření by někdo v dosahu Bluetooth mohl během průběhu zachytit klíče sítě), nakonfiguruje je podle pravidel aplikace na základě toho, co zařízení hlásí (odmítnuto, pokud to neodpovídá zařízení stejného produktu, které už v síti je), a zaznamená je do exportu (předaného bráně). Zařízení, jehož konfigurace selže, se resetuje, stejně jako v aplikaci. Skupiny jeho prvků dostanou nejvyšší volné skupinové adresy z rozsahu aplikace (aplikace zařízení neuvidí, dokud neimportuje soubor). Odpověď uvádí provedené kroky. Vyžaduje možnost záznamu *Povolit Home Assistantu přidávat a odebírat zařízení*. Pouze pro správce. Ověřené metody, konfigurační pravidla a reset zatím nejsou ověřeny na skutečných zařízeních.",
       "fields": {
         "address": {
           "name": "Adresa Bluetooth",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Resetovat čekající zařízení (experimentální)",
-      "description": "Resetuje zařízení JUNG, u kterého `add_device` provedl provisioning, ale nemohl je nakonfigurovat ani zaznamenat (uvádí je problém *Zařízení přidané Home Assistantem není zaznamenáno*): pošle mu Config Node Reset s klíčem zařízení, který má pouze Home Assistant, takže se stane opět novým zařízením, a uvolní jeho adresy. Zatím nevyzkoušeno na skutečném zařízení. Vyžaduje možnost záznamu *Povolit Home Assistantu přidávat zařízení*. Pouze pro správce.",
+      "description": "Resetuje zařízení JUNG, u kterého `add_device` provedl provisioning, ale nemohl je nakonfigurovat ani zaznamenat (uvádí je problém *Zařízení přidané Home Assistantem není zaznamenáno*): pošle mu Config Node Reset s klíčem zařízení, který má pouze Home Assistant, takže se stane opět novým zařízením, a uvolní jeho adresy. Zatím nevyzkoušeno na skutečném zařízení. Vyžaduje možnost záznamu *Povolit Home Assistantu přidávat a odebírat zařízení*. Pouze pro správce.",
       "fields": {
         "uuid": {
           "name": "UUID zařízení",

@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Cihaz ekle (deneysel)",
-      "description": "Uygulamanın yapacağı gibi ağa yeni bir JUNG cihazı ekler: cihazı, sunduğu en güçlü yöntemle ağa katar (cihaz Static OOB sunuyorsa ve değeri verilmişse HMAC-SHA256 algoritmasıyla Static OOB, aksi halde uygulama gibi No OOB — kimlik doğrulama olmadan, işlem sürerken Bluetooth menzilindeki biri ağın anahtarlarını ele geçirebilir), cihazın bildirdiklerine göre uygulamanın kurallarıyla yapılandırır (bu, ağda zaten bulunan aynı ürüne ait bir cihazınkiyle uyuşmuyorsa reddedilir) ve dışa aktarıma kaydeder (dışa aktarım ağ geçidine iletilir). Yapılandırması başarısız olan bir cihaz, uygulamadaki gibi sıfırlanır. Cihazın öğe grupları uygulamanın aralığındaki en yüksek boş grup adreslerini alır (uygulama, bir dosyayı içe aktarana kadar cihazı görmez). Yanıt, tamamlanan adımları listeler. Girişin *Home Assistant'ın cihaz eklemesine izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için. Kimlik doğrulamalı yöntemler, yapılandırma kuralları ve sıfırlama gerçek cihazlarda henüz doğrulanmadı.",
+      "description": "Uygulamanın yapacağı gibi ağa yeni bir JUNG cihazı ekler: cihazı, sunduğu en güçlü yöntemle ağa katar (cihaz Static OOB sunuyorsa ve değeri verilmişse HMAC-SHA256 algoritmasıyla Static OOB, aksi halde uygulama gibi No OOB — kimlik doğrulama olmadan, işlem sürerken Bluetooth menzilindeki biri ağın anahtarlarını ele geçirebilir), cihazın bildirdiklerine göre uygulamanın kurallarıyla yapılandırır (bu, ağda zaten bulunan aynı ürüne ait bir cihazınkiyle uyuşmuyorsa reddedilir) ve dışa aktarıma kaydeder (dışa aktarım ağ geçidine iletilir). Yapılandırması başarısız olan bir cihaz, uygulamadaki gibi sıfırlanır. Cihazın öğe grupları uygulamanın aralığındaki en yüksek boş grup adreslerini alır (uygulama, bir dosyayı içe aktarana kadar cihazı görmez). Yanıt, tamamlanan adımları listeler. Girişin *Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için. Kimlik doğrulamalı yöntemler, yapılandırma kuralları ve sıfırlama gerçek cihazlarda henüz doğrulanmadı.",
       "fields": {
         "address": {
           "name": "Bluetooth adresi",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Bekleyen cihazı sıfırla (deneysel)",
-      "description": "`add_device` eyleminin ağa kattığı ancak yapılandıramadığı veya kaydedemediği bir JUNG cihazını sıfırlar (*Home Assistant'ın eklediği bir cihaz kaydedilmedi* onarım sorunu bunları listeler): cihaza, yalnızca Home Assistant'ın tuttuğu cihaz anahtarıyla bir Config Node Reset gönderir; böylece cihaz yeniden yeni bir cihaz olur ve adresleri serbest bırakılır. Henüz gerçek bir cihazda denenmedi. Girişin *Home Assistant'ın cihaz eklemesine izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için.",
+      "description": "`add_device` eyleminin ağa kattığı ancak yapılandıramadığı veya kaydedemediği bir JUNG cihazını sıfırlar (*Home Assistant'ın eklediği bir cihaz kaydedilmedi* onarım sorunu bunları listeler): cihaza, yalnızca Home Assistant'ın tuttuğu cihaz anahtarıyla bir Config Node Reset gönderir; böylece cihaz yeniden yeni bir cihaz olur ve adresleri serbest bırakılır. Henüz gerçek bir cihazda denenmedi. Girişin *Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için.",
       "fields": {
         "uuid": {
           "name": "Cihaz UUID'si",
