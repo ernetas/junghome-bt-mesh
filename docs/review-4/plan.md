@@ -467,6 +467,11 @@ Dependencies (hard unless marked *soft*):
   lists any "unverified on air" marker the checklist misses (30); transitions built and off until the probe in the
   checklist's B8 (31); `update_entity` reads the device, config values re-read per link (32); inserts and key layouts
   from the adverts, also kept when the export is followed in place (33).
+- **Wave 9 (briefs 34–37): done.** F4-8 node clocks, zones and stored locations as diagnostics, a fixable
+  `node_clock_wrong` repair (34); F4-2 lock awareness on lights and sockets: `locked` / `lock_until`, commands refused
+  while locked, a locked load not marked unreachable (35); firmware-only properties held back until the supervised
+  probe (on-air sweep A7 / C6), *Switches off at* from a reported remaining time (36); several rooms per load,
+  `add_to_room` / `remove_from_room` (37). All unverified on air; the sweep has the checks.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -474,4 +479,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 34–67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 38–67 are TODO; the on-air sweep is the maintainer's.
