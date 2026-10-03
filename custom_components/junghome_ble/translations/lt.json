@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME per Bluetooth",
+        "description": "Home Assistant prisijungia prie jūsų „JUNG HOME“ tinklo tiesiogiai per Bluetooth. Tam reikia „JUNG HOME“ programėlės tinklo eksporto, kuriame yra tinklo raktai. Pasirinkite, iš kur gauti eksportą.",
+        "menu_options": {
+          "gateway": "Gauti iš „JUNG HOME“ sietuvo",
+          "upload": "Įkelti programėlės eksporto failą",
+          "path": "Naudoti failą Home Assistant serveryje"
+        },
+        "data": {
+          "cdb_path": "Tinklo eksporto failas",
+          "metadata_dir": "Programėlės metaduomenų katalogas",
+          "unicast": "Mūsų unicast adresas"
+        },
+        "data_description": {
+          "cdb_path": "Absoliutusis kelias Home Assistant serveryje, pvz., `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neprivaloma, tik `MeshNetwork.json` iš iOS atsarginės kopijos: programėlės aplankas `Application Support` su `device_metadata.json` ir `scene_metadata.json`, kad objektai gautų programėlėje jiems suteiktus pavadinimus. `JungHome.json` pavadinimus jau turi.",
+          "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Ar tai jūsų „JUNG HOME“ sistema?",
+        "description": "Pasiekiamas tinklo {network_id} Bluetooth Mesh tarpinis mazgas. Home Assistant siūlo kiekvieną matomą Bluetooth Mesh tinklą, taip pat ir kitų gamintojų, pavyzdžiui, kaimyno šviestuvus. Tęskite tik tada, jei tai jūsų „JUNG HOME“ sistema; tada būsite paprašyti programėlės tinklo eksporto."
+      },
+      "zeroconf_confirm": {
+        "title": "Rastas „JUNG HOME“ sietuvas",
+        "description": "Adresu {host} skelbiasi „JUNG HOME“ sietuvas. Tęskite, kad gautumėte iš jo „JUNG HOME“ programėlės tinklo eksportą: tada įvesite sietuvo tinklo rakto slaptažodį arba patvirtinsite prieigos užklausą programėlėje. Kaip ir ranka įvesto adreso atveju, sietuvo sertifikatas prisegamas užmezgus pirmąjį ryšį, dar prieš ką nors siunčiant. Nustatymas iš aptikto sietuvo dar nepatikrintas su tikrais įrenginiais."
+      },
+      "gateway": {
+        "title": "Gauti eksportą iš „JUNG HOME“ sietuvo",
+        "description": "Sietuve saugoma programėlės tinklo eksporto kopija. Įveskite sietuvo adresą ir tinklo rakto slaptažodį (jį rasite „JUNG HOME“ programėlėje), kad prieiga būtų suteikta iš karto, arba palikite slaptažodžio lauką tuščią ir, kai tęsite, patvirtinkite prieigos užklausą programėlėje (Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos, per tris minutes; ji rodoma kaip „{user_name}“). Eksportas saugomas Home Assistant konfigūracijos katalogo aplanke `junghome_ble/`. Jame, kaip ir telefono eksporte, yra visi tinklo raktai, todėl šio katalogo atsargines kopijas saugokite nuo pašalinių.",
+        "data": {
+          "gateway_host": "Sietuvo adresas",
+          "gateway_password": "Tinklo rakto slaptažodis"
+        },
+        "data_description": {
+          "gateway_host": "„JUNG HOME“ sietuvo IP adresas arba serverio vardas. Jei Home Assistant rado sietuvą tinkle, adresas jau įrašytas. Kitu atveju daugelyje tinklų veikia numatytasis `junghome.local`, arba įveskite sietuvo IP adresą (jį rasite programėlėje: Nustatymai → Sietuvas).",
+          "gateway_password": "Neprivaloma. Įvedus slaptažodį, sietuvas prieigą suteikia iš karto; be jo užklausą reikia patvirtinti programėlėje."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Išplėstiniai nustatymai",
+            "description": "Palikite numatytąją reikšmę, nebent prie šios sistemos jungiasi ir antrasis Home Assistant arba repozitorijos komandinės eilutės įrankiai: kiekvienam reikia atskiro adreso.",
+            "data": {
+              "unicast": "Mūsų unicast adresas"
+            },
+            "data_description": {
+              "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Laukiama patvirtinimo „JUNG HOME“ programėlėje"
+      },
+      "gateway_refetch": {
+        "title": "Gauti eksportą dar kartą",
+        "description": "Dabartinis tinklo eksportas gaunamas iš sietuvo {host} naudojant išsaugotą prieigą. Jei sietuvas jos nebepriima, būsite paprašyti programėlėje patvirtinti naują prieigos užklausą.",
+        "sections": {
+          "advanced": {
+            "name": "Išplėstiniai nustatymai",
+            "description": "Palikite numatytąją reikšmę, nebent prie šios sistemos jungiasi ir antrasis Home Assistant arba repozitorijos komandinės eilutės įrankiai: kiekvienam reikia atskiro adreso.",
+            "data": {
+              "unicast": "Mūsų unicast adresas"
+            },
+            "data_description": {
+              "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Įkelti programėlės eksporto failą",
+        "description": "„JUNG HOME“ programėlėje atidarykite Projektas → Bendrinti failu, nusiųskite sau sukurtą `JungHome.json` ir įkelkite jį čia. Failas saugomas Home Assistant konfigūracijos katalogo aplanke `junghome_ble/`. Jame yra visi tinklo raktai, todėl šio katalogo atsargines kopijas saugokite nuo pašalinių.",
+        "data": {
+          "export_file": "Tinklo eksporto failas"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Išplėstiniai nustatymai",
+            "description": "Palikite numatytąją reikšmę, nebent prie šios sistemos jungiasi ir antrasis Home Assistant arba repozitorijos komandinės eilutės įrankiai: kiekvienam reikia atskiro adreso.",
+            "data": {
+              "unicast": "Mūsų unicast adresas"
+            },
+            "data_description": {
+              "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Naudoti failą Home Assistant serveryje",
+        "description": "Pirmiausia nukopijuokite programėlės `JungHome.json` (Projektas → Bendrinti failu; jame yra ir jūsų įrenginių pavadinimai) arba `MeshNetwork.json` (iOS atsarginė kopija) į Home Assistant serverį ir įveskite failo kelią.",
+        "data": {
+          "cdb_path": "Tinklo eksporto failas",
+          "metadata_dir": "Programėlės metaduomenų katalogas"
+        },
+        "data_description": {
+          "cdb_path": "Absoliutusis kelias Home Assistant serveryje, pvz., `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neprivaloma, tik `MeshNetwork.json` iš iOS atsarginės kopijos: programėlės aplankas `Application Support` su `device_metadata.json` ir `scene_metadata.json`, kad objektai gautų programėlėje jiems suteiktus pavadinimus. `JungHome.json` pavadinimus jau turi."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Išplėstiniai nustatymai",
+            "description": "Palikite numatytąją reikšmę, nebent prie šios sistemos jungiasi ir antrasis Home Assistant arba repozitorijos komandinės eilutės įrankiai: kiekvienam reikia atskiro adreso.",
+            "data": {
+              "unicast": "Mūsų unicast adresas"
+            },
+            "data_description": {
+              "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Atnaujinti „JUNG HOME“ tinklo eksportą",
+        "description": "Naudokite tai, kai „JUNG HOME“ programėlėje iš naujo įtraukėte įrenginius į tinklą ar pakeitėte jų laidų jungimą, arba po raktų atnaujinimo: pateikite naują to paties tinklo eksportą. Iš eksporto dingę įrenginiai pašalinami. Kartu galima pakeisti ir paties Home Assistant tinklo adresą.",
+        "menu_options": {
+          "gateway_refetch": "Dar kartą gauti iš sietuvo {host}",
+          "gateway": "Gauti iš „JUNG HOME“ sietuvo",
+          "upload": "Įkelti programėlės eksporto failą",
+          "path": "Naudoti failą Home Assistant serveryje",
+          "import_gateway": "Importuoti „JUNG HOME Gateway“ integracijos objektus",
+          "areas": "Pakeisti, kuriai sričiai priskiriami kiekvienos patalpos įrenginiai"
+        },
+        "data": {
+          "cdb_path": "Tinklo eksporto failas",
+          "metadata_dir": "Programėlės metaduomenų katalogas",
+          "unicast": "Mūsų unicast adresas"
+        },
+        "data_description": {
+          "cdb_path": "Absoliutusis kelias Home Assistant serveryje, pvz., `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neprivaloma, tik `MeshNetwork.json` iš iOS atsarginės kopijos: programėlės aplankas `Application Support` su `device_metadata.json` ir `scene_metadata.json`, kad objektai gautų programėlėje jiems suteiktus pavadinimus. `JungHome.json` pavadinimus jau turi.",
+          "unicast": "Šešioliktainis tinklo adresas, kurį Home Assistant naudos kaip mazgas (0001–7FFF). Jo negali naudoti kitas mazgas; numatytasis adresas nepatenka į programėlės naudojamą intervalą."
+        }
+      },
+      "import_gateway": {
+        "title": "Importuoti iš „JUNG HOME Gateway“ integracijos",
+        "description": "Šalia šios integracijos nustatyta „JUNG HOME Gateway“ integracija (`junghome`). Jos objektus galima perimti čia, kad jų objektų ID, pavadinimai, sritys, etiketės ir istorija tęstųsi Bluetooth Mesh integracijoje. Objektai suporuojami pagal įrenginio pavadinimą (pavadinimą iš „JUNG HOME“ programėlės) ir objekto tipą; pakeičiami tik tie šios integracijos objektai, kurių dar nepervadinote ir nepritaikėte.\n\n**Perkeliami objektai: {count}** (sietuvo objektas → pakeičiamas objektas):\n{matched}\n\n**Paliekami kaip yra** (čia jau pritaikyti; sietuvo objektas lieka savo vietoje):\n{customised}\n\n**Neturi atitikmens sietuve** (paliekami kaip yra):\n{unmatched}\n\n**Sietuvo objektai be atitikmens čia** (lieka sietuvo įraše):\n{gateway_only}\n\nPateikus abi integracijos iškeliamos, objektai perkeliami, kiekvieno suporuoto sietuvo įrenginio sritis, pasirinktas pavadinimas ir etiketės nukopijuojamos į atitinkamą įrenginį čia, sietuvo įrašas išjungiamas, o šis įrašas įkeliamas iš naujo. Po to sietuvo įrašą ištrinkite."
+      },
+      "gateway_certificate": {
+        "title": "Sietuvo sertifikatas pasikeitė",
+        "description": "„JUNG HOME“ sietuvas adresu {host} dabar pateikia sertifikatą {observed}, o įraše išsaugotas {expected}. Tęskite tik tada, jei sietuvą ar jo sertifikatą pakeitėte patys, – kitu atveju sietuvo vardu atsako kitas jūsų tinklo įrenginys."
+      },
+      "reauth_confirm": {
+        "title": "Vėl suteikti Home Assistant prieigą prie sietuvo",
+        "description": "„JUNG HOME“ sietuvas adresu {host} nebepriima prieigos, kurią Home Assistant užregistravo tinklui {title} (tikriausiai ji buvo pašalinta „JUNG HOME“ programėlėje, skiltyje Nustatymai → Sietuvas → Prieigos teisės). Įrenginiai ir toliau veikia per Bluetooth; sustojo tik Home Assistant pakeitimų perdavimas sietuvui. Įveskite sietuvo tinklo rakto slaptažodį (jį rasite „JUNG HOME“ programėlėje), kad prieiga būtų suteikta iš karto, arba palikite lauką tuščią ir, kai tęsite, patvirtinkite prieigos užklausą programėlėje (Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos, per tris minutes; ji rodoma kaip „{user_name}“). Atnaujinama tik prieiga: eksportas iš naujo negaunamas.",
+        "data": {
+          "gateway_password": "Tinklo rakto slaptažodis"
+        },
+        "data_description": {
+          "gateway_password": "Neprivaloma. Įvedus slaptažodį, sietuvas prieigą suteikia iš karto; be jo užklausą reikia patvirtinti programėlėje. Slaptažodis neišsaugomas."
+        }
+      },
+      "areas": {
+        "title": "Patalpos ir sritys",
+        "description": "Kiekvienai „JUNG HOME“ programėlės patalpai pasirinkite Home Assistant sritį. Iš anksto parenkama tokio paties pavadinimo sritis arba sritis, kurios slapyvardis sutampa su patalpos pavadinimu. Jei patalpos lauką paliksite tuščią, įrenginiai pateks į sritį, pavadintą kaip patalpa (jei tokios nėra, ji bus sukurta). Savos patalpos neturintys įrenginiai taip pat ją gauna: mygtukinio jungiklio mygtukai – šalia esančio valdomo įrenginio patalpą, sieninio siųstuvo mygtukai – patalpą, kurią jie perjungia. Iš meniu „Perkonfigūruoti“ perkeliami tie įrenginiai, kurie vis dar yra ankstesnio pasirinkimo jiems priskirtoje srityje; įrenginys, kurį patys perkėlėte į kitą sritį, niekada neperkeliamas.",
+        "data": {
+          "assign_areas": "Priskirti „JUNG HOME“ įrenginius sritims"
+        },
+        "data_description": {
+          "assign_areas": "Išjungus naujiems įrenginiams sritis nepriskiriama, o toliau nurodytų patalpų nepaisoma."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Atidarykite „JUNG HOME“ programėlę ir patvirtinkite prieigos užklausą „{user_name}“ skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos. Sietuvas {host} laukia iki trijų minučių."
+    },
+    "error": {
+      "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o jei nurodėte kelią – ar kelias teisingas).",
+      "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+      "invalid_metadata": "Metaduomenų kataloge nėra programėlės failų device_metadata.json ir scene_metadata.json tinkamu formatu.",
+      "invalid_address": "Adresas turi būti šešioliktainis, nuo 0001 iki 7FFF.",
+      "address_in_use": "Šis adresas priklauso tinklo mazgui; pasirinkite nenaudojamą.",
+      "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli bent vieno iš elektros tinklo maitinamo JUNG įrenginio.",
+      "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, tačiau nė vienas neskelbia šiame eksporte esančio tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau po eksporto sukūrimo. Iš naujo eksportuokite tinklą „JUNG HOME“ programėlėje arba dar kartą gaukite jį iš sietuvo ir naudokite naują failą.",
+      "network_mismatch": "Eksportas priklauso kitam tinklui nei aptiktasis.",
+      "mesh_already_configured": "Šis tinklas jau nustatytas kaip kitas įrašas (tikriausiai jo tinklo raktas buvo atnaujintas po to, kai Home Assistant jį matė paskutinį kartą). Užuot pridėję naują įrašą, naudokite to įrašo meniu „Perkonfigūruoti“.",
+      "invalid_host": "Įveskite sietuvo IP adresą arba serverio vardą.",
+      "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+      "invalid_auth": "Sietuvas atmetė tinklo rakto slaptažodį.",
+      "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+      "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+      "no_project": "Sietuve nėra tinklo eksporto. Kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (projektas įkeliamas automatiškai), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 arba naujesnė.",
+      "gateway_error": "Sietuvas grąžino klaidą. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+      "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+      "upload_failed": "Nepavyko apdoroti įkelto failo. Bandykite įkelti jį dar kartą.",
+      "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+      "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0."
+    },
+    "abort": {
+      "already_configured": "Šis tinklas jau sukonfigūruotas.",
+      "already_in_progress": "Šio tinklo nustatymas jau vyksta.",
+      "not_supported": "Šis Bluetooth įrenginys nėra Bluetooth Mesh tarpinis mazgas.",
+      "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+      "mesh_already_configured": "Šis tinklas jau nustatytas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite.",
+      "reconfigure_successful": "Tinklo eksportas atnaujintas.",
+      "no_gateway_entry": "„JUNG HOME Gateway“ integracija nenustatyta, todėl nėra ko importuoti.",
+      "nothing_to_import": "Neliko nė vieno sietuvo objekto, kurį būtų galima perimti. Šios integracijos objektai be atitikmens:\n{unmatched}\n\nSietuvo objektai be atitikmens čia:\n{gateway_only}",
+      "import_successful": "Iš „JUNG HOME Gateway“ integracijos perimti objektai ({count}):\n{matched}\n\nPalikti kaip buvo (čia jau pritaikyti):\n{customised}\n\nBe atitikmens sietuve:\n{unmatched}\n\nVis dar sietuvo įraše:\n{gateway_only}\n\nSietuvo įrašas išjungtas; kai įsitikinsite, kad viskas gerai, ištrinkite jį skiltyje Nustatymai → Įrenginiai ir paslaugos → JUNG HOME.",
+      "certificate_vouched_by_mesh": "„JUNG HOME“ sietuvas adresu {host} pateikia sertifikatą {observed}, tačiau sietuvo mazgas per tinklą patvirtino {expected}. Šiuo adresu nieko nesiųsta: tikriausiai sietuvo vardu atsako kitas jūsų tinklo įrenginys. Jei sietuvą ar jo sertifikatą pakeitėte patys, perkonfigūruokite dar kartą, kai Home Assistant prisijungęs prie tinklo: tada sietuvo mazgas praneš apie naują sertifikatą.",
+      "import_unload_failed": "Nepavyko iškelti įrašo {title}, todėl nieko neimportuota; visi importo metu iškelti įrašai vėl įkeliami. Peržiūrėkite žurnalą ir bandykite importuoti dar kartą.",
+      "reauth_successful": "„JUNG HOME“ sietuvas vėl priima Home Assistant. Tuo metu Home Assistant atlikti pakeitimai jį pasieks kartu su kitu pakeitimu arba iš karto, jei paleisite veiksmą „Sinchronizuoti sietuvą“.",
+      "areas_updated": "Patalpų sritys išsaugotos; į naują savo patalpos sritį perkelta įrenginių: {count}.",
+      "not_loaded": "Integracija neveikia: pirmiausia ją vėl nustatykite.",
+      "not_junghome_gateway": "Šis įrenginys nesiskelbia kaip „JUNG HOME“ sietuvas (gamintojas nėra JUNG arba nėra serijos numerio).",
+      "not_ipv4_address": "Sietuvas nepaskelbė IPv4 adreso. Pridėkite integraciją rankiniu būdu ir įveskite sietuvo adresą."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME (Bluetooth Mesh) parinktys",
+        "data": {
+          "click_delay": "Pranešti apie spustelėjimą tik įsitikinus, kad tai ne dvigubas spustelėjimas",
+          "heartbeats": "Mazgų gyvybingumo signalai (tylintį įrenginį žymėti kaip nepasiekiamą)",
+          "allow_provisioning": "Leisti Home Assistant pridėti ir pašalinti įrenginius (eksperimentinė funkcija)",
+          "provisioner_identity": "Įrašyti Home Assistant į tinklo failą kaip įtraukėją (eksperimentinė funkcija, su programėle nepatikrinta)",
+          "follow_app": "Sekti „JUNG HOME“ programėlėje atliktus pakeitimus",
+          "gateway_check": "Kas šešias valandas tikrinti sietuvo eksportą",
+          "sync_areas": "Perkelti įrenginius, kai pasikeičia jų JUNG patalpa"
+        },
+        "data_description": {
+          "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`.",
+          "heartbeats": "Kiekvieno iš elektros tinklo maitinamo įrenginio prašoma kas 64 sekundes siųsti Home Assistant gyvybingumo signalą (tai standartinis Bluetooth Mesh nustatymas, kurio JUNG programėlė neįjungia). Jei įrenginys apie tris su puse minutės nieko nesiunčia, jo objektai pažymimi kaip nepasiekiami, kol jis vėl atsilieps. Išjungus šią parinktį, įrenginiams nurodoma signalų nebesiųsti (jei visiems iš karto pranešti nepavyko, tai pakartojama kito prisijungimo metu); išjunkite ją prieš šalindami integraciją, nes vėliau įrenginiams to nurodyti nebus galima.",
+          "allow_provisioning": "Leidžia veiksmui `junghome_ble.add_device` įtraukti naują JUNG įrenginį į tinklą ir sukonfigūruoti jį taip, kaip tai darytų programėlė, pagal tinkle jau esantį to paties gaminio įrenginį, o veiksmui `junghome_ble.remove_device` – atkurti įrenginio gamyklinius nustatymus ir pašalinti jį iš tinklo. Su tikrais įrenginiais dar neišbandyta: pirmiausia išbandykite su atsarginiu įrenginiu. Pridedant įrenginiui perduodami tinklo raktai; pašalinimo atšaukti neįmanoma.",
+          "provisioner_identity": "Į kiekvieną failą, kurį Home Assistant įrašo arba perduoda sietuvui, įtraukiamas Home Assistant įtraukėjo įrašas su atskirais, programėlės intervalų nekertančiais adresų intervalais, į kuriuos patenka ir Home Assistant adresas, o Home Assistant pridėti įrenginiai, kurių programėlės faile nėra, į jį grąžinami. Tada Home Assistant kuriamos patalpos, scenos ir įrenginiai adresus gauna iš šių intervalų. Nė viena JUNG programėlė tokio failo dar nėra importavusi: prieš jį pamatant jūsų programėlei ar sietuvui, išbandykite jį su atskirai įdiegta programėle (importuokite failą iš `junghome_ble.export_network`). Išjungus failai įrašomi lygiai taip pat kaip be šios parinkties.",
+          "follow_app": "Kai tinkle išgirstamas telefonas su „JUNG HOME“ programėle, iš sietuvo nustatytas įrašas po kelių minučių nuo to, kai telefonas nutyla (ne dažniau kaip kas 15 minučių), gauna sietuvo eksportą ir, jei šis pasikeitė, jį perima: programėlėje pakeisti įrenginiai, patalpos, scenos ir mygtukų susiejimai pasiekia Home Assistant nenaudojant „Perkonfigūruoti“. Iš failo nustatytas įrašas vietoj to parodo taisymo pranešimą, kai pastebima, kad programėlė pakeitė įrenginio konfigūraciją. Tam tinkle nieko nesiunčiama. Dar nepatikrinta su tikrais įrenginiais.",
+          "gateway_check": "Iš sietuvo nustatytas įrašas kas šešias valandas paprašo sietuvo eksporto ir, jei šis pasikeitė, jį perima – taip užfiksuojami programėlėje atlikti pakeitimai, kurių metu Home Assistant negirdėjo telefono. Sietuvui siunčiama viena užklausa; tinkle nieko nesiunčiama. Iš failo nustatytam įrašui poveikio neturi.",
+          "sync_areas": "Kai įrenginys perkeliamas į kitą patalpą programėlėje (kai tik Home Assistant perima naują eksportą) arba patalpos veiksmu, jis perkeliamas ir į naujos patalpos sritį, nebent sritį jam priskyrėte patys. Išjungus įrenginys lieka pradinėje srityje. Dar nepatikrinta su tikrais įrenginiais."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Bluetooth Mesh ryšys"
+      },
+      "motion": {
+        "name": "Judesys"
+      },
+      "occupancy": {
+        "name": "Buvimas"
+      },
+      "fault": {
+        "name": "Gedimas"
+      },
+      "wind_alarm": {
+        "name": "Vėjo pavojaus signalas"
+      },
+      "reference_run_active": {
+        "name": "Atskaitos eiga"
+      },
+      "gateway_api_available": {
+        "name": "API pasiekiama"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Klientas laukia patvirtinimo"
+      },
+      "gateway_network_problem": {
+        "name": "Tinklo problema"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth Mesh tinklo problema"
+      },
+      "gateway_cloud_problem": {
+        "name": "Debesijos problema"
+      },
+      "gateway_cloud_connected": {
+        "name": "Ryšys su debesija"
+      },
+      "window_open": {
+        "name": "Atidarytas langas"
+      },
+      "input_state": {
+        "name": "Įėjimo būsena"
+      },
+      "input_state_key": {
+        "name": "Įėjimo {key} būsena"
+      },
+      "scheduler_function_status": {
+        "name": "Tvarkaraščio funkcija"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Mygtukas {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Spustelėjimas",
+              "double_click": "Dvigubas spustelėjimas",
+              "hold_start": "Laikymo pradžia",
+              "hold_end": "Laikymo pabaiga",
+              "press_on": "Paspaudimas: įjungti / aukštyn",
+              "press_off": "Paspaudimas: išjungti / žemyn",
+              "scene": "Iškviesta scena",
+              "dim": "Šviesumo reguliavimas"
+            }
+          },
+          "connection": {
+            "name": "Susiejimas",
+            "state": {
+              "device": "Įrenginys",
+              "room": "Patalpa",
+              "scene": "Scena",
+              "gateway": "Sietuvas",
+              "group": "Grupė",
+              "none": "Nėra"
+            }
+          },
+          "reason": {
+            "name": "Laikymo pabaigos priežastis",
+            "state": {
+              "timeout": "Atleidimas laiku neužfiksuotas",
+              "link_lost": "Ryšys nutrūko",
+              "stopped": "Integracija sustabdyta"
+            }
+          },
+          "position": {
+            "name": "Padėtis",
+            "state": {
+              "top": "Viršus",
+              "bottom": "Apačia",
+              "rocker": "Klavišas",
+              "left_top": "Kairė, viršus",
+              "left_bottom": "Kairė, apačia",
+              "right_top": "Dešinė, viršus",
+              "right_bottom": "Dešinė, apačia",
+              "left_rocker": "Kairysis klavišas",
+              "right_rocker": "Dešinysis klavišas"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Įėjimas {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Spustelėjimas",
+              "double_click": "Dvigubas spustelėjimas",
+              "hold_start": "Laikymo pradžia",
+              "hold_end": "Laikymo pabaiga",
+              "press_on": "Paspaudimas: įjungti / aukštyn",
+              "press_off": "Paspaudimas: išjungti / žemyn",
+              "scene": "Iškviesta scena",
+              "dim": "Šviesumo reguliavimas"
+            }
+          },
+          "connection": {
+            "name": "Susiejimas",
+            "state": {
+              "device": "Įrenginys",
+              "room": "Patalpa",
+              "scene": "Scena",
+              "gateway": "Sietuvas",
+              "group": "Grupė",
+              "none": "Nėra"
+            }
+          },
+          "reason": {
+            "name": "Laikymo pabaigos priežastis",
+            "state": {
+              "timeout": "Atleidimas laiku neužfiksuotas",
+              "link_lost": "Ryšys nutrūko",
+              "stopped": "Integracija sustabdyta"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Galia"
+      },
+      "voltage": {
+        "name": "Įtampa"
+      },
+      "current": {
+        "name": "Srovė"
+      },
+      "energy": {
+        "name": "Energija"
+      },
+      "energy_resettable": {
+        "name": "Energija nuo nunulinimo"
+      },
+      "energy_since_on": {
+        "name": "Energija nuo įjungimo"
+      },
+      "power_on_time": {
+        "name": "Įjungimo trukmė"
+      },
+      "proxy_node": {
+        "name": "Tarpinis mazgas"
+      },
+      "link_state": {
+        "name": "Ryšio būsena",
+        "state": {
+          "bluetooth_off": "Nėra Bluetooth",
+          "searching": "Ieškoma tarpinio mazgo",
+          "connecting": "Jungiamasi",
+          "updating": "Prisijungta, atnaujinamos įrenginių būsenos",
+          "connected": "Prisijungta",
+          "failed": "Prisijungti nepavyko",
+          "disconnected": "Atsijungta"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Nepasiekiami įrenginiai",
+        "state_attributes": {
+          "devices": {
+            "name": "Įrenginiai"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Tinklo apžvalga",
+        "state_attributes": {
+          "nodes": {
+            "name": "Mazgai"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Apšvieta"
+      },
+      "battery": {
+        "name": "Baterija"
+      },
+      "installed": {
+        "name": "Įrengta"
+      },
+      "key_mode": {
+        "name": "Mygtuko režimas",
+        "state": {
+          "light": "Apšvietimas",
+          "move": "Žaliuzės",
+          "scene": "Scena",
+          "property": "Ypatybė",
+          "rtr": "Temperatūra",
+          "switch": "Jungimas",
+          "gateway": "Sietuvas"
+        }
+      },
+      "key_mode_key": {
+        "name": "Mygtuko {key} režimas",
+        "state": {
+          "light": "Apšvietimas",
+          "move": "Žaliuzės",
+          "scene": "Scena",
+          "property": "Ypatybė",
+          "rtr": "Temperatūra",
+          "switch": "Jungimas",
+          "gateway": "Sietuvas"
+        }
+      },
+      "schedules": {
+        "name": "Tvarkaraščiai"
+      },
+      "scenes": {
+        "name": "Scenos"
+      },
+      "switch_off_at": {
+        "name": "Išsijungimo laikas"
+      },
+      "switch_on_threshold": {
+        "name": "Įjungimo slenkstis"
+      },
+      "switch_off_threshold": {
+        "name": "Išjungimo slenkstis"
+      },
+      "last_seen": {
+        "name": "Paskutinį kartą matytas"
+      },
+      "rssi": {
+        "name": "Signalo stiprumas"
+      },
+      "hops": {
+        "name": "Šuoliai"
+      },
+      "last_restart": {
+        "name": "Paskutinis paleidimas iš naujo"
+      },
+      "clock_offset": {
+        "name": "Laikrodžio nuokrypis"
+      },
+      "iv_index": {
+        "name": "IV indeksas"
+      },
+      "sequence_used": {
+        "name": "Panaudoti sekos numeriai"
+      },
+      "mesh_sequence_used": {
+        "name": "Panaudoti tinklo sekos numeriai"
+      },
+      "switching_cycles": {
+        "name": "Perjungimo ciklai"
+      },
+      "power_on_cycles": {
+        "name": "Įjungimo ciklai"
+      },
+      "gateway_ip": {
+        "name": "IP adresas"
+      },
+      "gateway_firmware": {
+        "name": "Programinės aparatinės įrangos versija"
+      },
+      "gateway_firmware_build": {
+        "name": "Programinės aparatinės įrangos kompiliacija"
+      },
+      "gateway_serial": {
+        "name": "Serijos numeris"
+      },
+      "gateway_access_requests": {
+        "name": "Prieigos užklausos",
+        "state_attributes": {
+          "clients": {
+            "name": "Klientai"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API klientai",
+        "state_attributes": {
+          "clients": {
+            "name": "Klientai"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Klaidų žurnalas",
+        "state_attributes": {
+          "entries": {
+            "name": "Įrašai"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Paskutinis eksporto įkėlimas"
+      },
+      "forced_off": {
+        "name": "Nuolat įjungta / išjungta",
+        "state": {
+          "inactive": "Neaktyvu",
+          "off": "Nuolat išjungta",
+          "on": "Nuolat įjungta"
+        }
+      },
+      "sleep_mode": {
+        "name": "Miego režimas",
+        "state": {
+          "awake": "Budi",
+          "asleep": "Miega"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Paleisti atskaitos eigą"
+      },
+      "identify": {
+        "name": "Identifikuoti"
+      },
+      "clear_faults": {
+        "name": "Išvalyti gedimus"
+      },
+      "reset_consumption": {
+        "name": "Nunulinti suvartojimą"
+      },
+      "fetch_gateway_export": {
+        "name": "Gauti eksportą iš sietuvo"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Žaliuzių padėtis atsiradus įtampai"
+      },
+      "blind_ventilation_position": {
+        "name": "Vėdinimo padėtis"
+      },
+      "color_temp_max": {
+        "name": "Didžiausia spalvinė temperatūra"
+      },
+      "color_temp_min": {
+        "name": "Mažiausia spalvinė temperatūra"
+      },
+      "comfort_temperature": {
+        "name": "Komforto temperatūra"
+      },
+      "default_color_temp": {
+        "name": "Spalvinė temperatūra įjungus"
+      },
+      "default_lightness": {
+        "name": "Šviesumas įjungus"
+      },
+      "eco_temperature": {
+        "name": "ECO temperatūra"
+      },
+      "frost_protection_temperature": {
+        "name": "Apsaugos nuo užšalimo temperatūra"
+      },
+      "lightness_max": {
+        "name": "Didžiausias šviesumas"
+      },
+      "lightness_min": {
+        "name": "Mažiausias šviesumas"
+      },
+      "lock_time_limit": {
+        "name": "Blokavimo trukmės riba"
+      },
+      "motor_reversal_time": {
+        "name": "Mažiausias variklio reversavimo laikas"
+      },
+      "off_delay": {
+        "name": "Išjungimo delsa"
+      },
+      "on_delay": {
+        "name": "Įjungimo delsa"
+      },
+      "pir_sensor_a": {
+        "name": "Aktyvavimo zona A"
+      },
+      "pir_sensor_b": {
+        "name": "Aktyvavimo zona B"
+      },
+      "pir_sensor_c": {
+        "name": "Aktyvavimo zona C"
+      },
+      "repetition_time": {
+        "name": "Kartojimo laikas"
+      },
+      "running_time": {
+        "name": "Eigos trukmė"
+      },
+      "sensor_offset": {
+        "name": "Temperatūros jutiklio poslinkis"
+      },
+      "slat_position_on_power": {
+        "name": "Lamelių padėtis atsiradus įtampai"
+      },
+      "slat_ventilation_position": {
+        "name": "Lamelių vėdinimo padėtis"
+      },
+      "slats_move_time": {
+        "name": "Lamelių pasukimo laikas"
+      },
+      "switch_blocking_time": {
+        "name": "Mažiausias pakartotinio perjungimo intervalas"
+      },
+      "switch_on_brightness": {
+        "name": "Šviesumo slenkstis"
+      },
+      "timed_on_duration": {
+        "name": "Išlaikymo laikas"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Veikimo režimas",
+        "state": {
+          "blinds": "Žaliuzės (su lamelėmis)",
+          "shutter": "Ritininės žaliuzės (be lamelių)",
+          "awning": "Markizė"
+        }
+      },
+      "controller_type": {
+        "name": "Reguliatoriaus išėjimas",
+        "state": {
+          "pi_control": "Impulsų pločio moduliacija (PWM)",
+          "two_point_control": "Dviejų padėčių reguliavimas"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Veikimo režimas",
+        "state": {
+          "guard": "Montavimo vieta",
+          "presence": "Patalpos šviesumas"
+        }
+      },
+      "dim_mode": {
+        "name": "Šviesumo reguliavimo principas",
+        "state": {
+          "leading_edge": "Priekinis frontas (RL)",
+          "trailing_edge": "Galinis frontas (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Veikimo režimas",
+        "state": {
+          "none": "Nėra",
+          "comfort": "Komfortas",
+          "eco": "ECO",
+          "frost": "Apsauga nuo užšalimo"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Krintantis frontas",
+        "state": {
+          "no_reaction": "Nereaguoti",
+          "on": "Įjungti",
+          "off": "Išjungti",
+          "toggle": "Perjungti"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Krintantis frontas {key}",
+        "state": {
+          "no_reaction": "Nereaguoti",
+          "on": "Įjungti",
+          "off": "Išjungti",
+          "toggle": "Perjungti"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Kylantis frontas",
+        "state": {
+          "no_reaction": "Nereaguoti",
+          "on": "Įjungti",
+          "off": "Išjungti",
+          "toggle": "Perjungti"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Kylantis frontas {key}",
+        "state": {
+          "no_reaction": "Nereaguoti",
+          "on": "Įjungti",
+          "off": "Išjungti",
+          "toggle": "Perjungti"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED spalva (išjungus)",
+        "state": {
+          "red": "Raudona",
+          "green": "Žalia",
+          "white": "Balta",
+          "blue": "Mėlyna",
+          "violet": "Violetinė",
+          "orange": "Oranžinė",
+          "yellow": "Geltona",
+          "cyan": "Žydra",
+          "no_color": "Be spalvos"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED spalva (išjungus) {key}",
+        "state": {
+          "red": "Raudona",
+          "green": "Žalia",
+          "white": "Balta",
+          "blue": "Mėlyna",
+          "violet": "Violetinė",
+          "orange": "Oranžinė",
+          "yellow": "Geltona",
+          "cyan": "Žydra",
+          "no_color": "Be spalvos"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED spalva (įjungus)",
+        "state": {
+          "red": "Raudona",
+          "green": "Žalia",
+          "white": "Balta",
+          "blue": "Mėlyna",
+          "violet": "Violetinė",
+          "orange": "Oranžinė",
+          "yellow": "Geltona",
+          "cyan": "Žydra",
+          "no_color": "Be spalvos"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED spalva (įjungus) {key}",
+        "state": {
+          "red": "Raudona",
+          "green": "Žalia",
+          "white": "Balta",
+          "blue": "Mėlyna",
+          "violet": "Violetinė",
+          "orange": "Oranžinė",
+          "yellow": "Geltona",
+          "cyan": "Žydra",
+          "no_color": "Be spalvos"
+        }
+      },
+      "main_page": {
+        "name": "Ekrano rodinys",
+        "state": {
+          "target_temperature": "Nustatytoji temperatūra",
+          "current_temperature": "Esama temperatūra",
+          "clock": "Laikas"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Elgsena atsiradus tinklo įtampai",
+        "state": {
+          "no_reaction": "Nereaguoti",
+          "move_up": "Pakelti iki 0 %",
+          "move_down": "Nuleisti iki 100 %",
+          "stop": "Sustabdyti",
+          "move_to_stored_position": "Įsiminta padėtis",
+          "position_for_network_failure": "Padėtis dingus įtampai"
+        }
+      },
+      "operation_site": {
+        "name": "Naudojimo vieta",
+        "state": {
+          "indoor": "Patalpoje",
+          "outdoor": "Lauke"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Elgsena atsiradus įtampai",
+        "state": {
+          "off": "Išjungta",
+          "on": "Įjungta",
+          "restore": "Ankstesnė būsena"
+        }
+      },
+      "sensor_selection": {
+        "name": "Temperatūros jutiklis",
+        "state": {
+          "internal": "Patalpa",
+          "external": "Grindys",
+          "internal_and_external": "Patalpa ir grindys"
+        }
+      },
+      "valve_output": {
+        "name": "Vožtuvo nustatymas",
+        "state": {
+          "normally_closed": "NC - normaliai uždarytas",
+          "normally_open": "NO - normaliai atidarytas"
+        }
+      },
+      "lock_function": {
+        "name": "Blokavimo funkcija",
+        "state": {
+          "unlocked": "Atblokuota",
+          "keep_state": "Užblokuota (išlaikyti padėtį)",
+          "lockout_protection": "Apsauga nuo užrakinimo lauke",
+          "wind_alarm": "Vėjo pavojaus signalas"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Visi lizdai"
+      },
+      "room_sockets": {
+        "name": "Visi lizdai patalpoje {room}"
+      },
+      "automatic_dst": {
+        "name": "Automatinis vasaros laiko keitimas"
+      },
+      "backlight_auto_off": {
+        "name": "Automatiškai išjungti ekraną"
+      },
+      "blinds_invert_output": {
+        "name": "Atvirkštinis valdymas"
+      },
+      "boost_mode": {
+        "name": "Intensyvusis režimas"
+      },
+      "day_mode": {
+        "name": "Dienos režimas"
+      },
+      "dim_to_warm": {
+        "name": "Šiltasis pritemdymas"
+      },
+      "input_edge_mode": {
+        "name": "Frontų vertinimas"
+      },
+      "input_edge_mode_key": {
+        "name": "Frontų vertinimas {key}"
+      },
+      "invert_output": {
+        "name": "Invertuoti jungimo išėjimą"
+      },
+      "led_colour_sync": {
+        "name": "Sinchronizuoti LED spalvas"
+      },
+      "led_night_mode": {
+        "name": "LED naktinis režimas"
+      },
+      "lock": {
+        "name": "Blokavimas",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Blokavimo režimas",
+            "state": {
+              "keep_state": "Išlaikyti esamą būseną",
+              "lockout_protection": "Apsauga nuo užrakinimo lauke",
+              "wind_alarm": "Vėjo pavojaus signalas",
+              "enforced_value": "Priverstinė būsena"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Blokavimo trukmės riba"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Rankinis išjungimas išlaikymo metu"
+      },
+      "prewarning": {
+        "name": "Įspėjimas prieš išjungiant"
+      },
+      "scheduler_enabled": {
+        "name": "Automatinis režimas"
+      },
+      "status_led": {
+        "name": "Būsenos LED"
+      },
+      "status_led_key": {
+        "name": "Būsenos LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Sumažintas lietimo jautrumas"
+      },
+      "use_last_lightness": {
+        "name": "Naudoti ankstesnį šviesumą"
+      },
+      "sensor_publication": {
+        "name": "Jutiklių vertės IoT sistemoms"
+      },
+      "local_devices_lock": {
+        "name": "Valdymo blokavimas"
+      },
+      "factory_reset_time_limit": {
+        "name": "Gamyklinių nustatymų atkūrimo blokavimas"
+      },
+      "key_lock": {
+        "name": "Mygtukų blokavimas"
+      },
+      "configuration_lock": {
+        "name": "Konfigūravimo blokavimas įrenginyje"
+      },
+      "walking_test": {
+        "name": "Ėjimo testas"
+      },
+      "time_keeper": {
+        "name": "Laiko šaltinis"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Veikimo režimas",
+            "state": {
+              "blinds": "Žaliuzės (su lamelėmis)",
+              "shutter": "Ritininės žaliuzės",
+              "awning": "Markizė",
+              "unknown": "Nežinomas"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Visos žaliuzės"
+      },
+      "room_blinds": {
+        "name": "Visos žaliuzės patalpoje {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Apsauga nuo užšalimo"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Visi termostatai"
+      },
+      "room_thermostats": {
+        "name": "Visi termostatai patalpoje {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Visi šviestuvai"
+      },
+      "room_lights": {
+        "name": "Visi šviestuvai patalpoje {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Programinė aparatinė įranga"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Mygtukas A {subtype}",
+      "b": "Mygtukas B {subtype}",
+      "c": "Mygtukas C {subtype}",
+      "d": "Mygtukas D {subtype}",
+      "e1": "Įėjimas E1 {subtype}",
+      "e2": "Įėjimas E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "spustelėtas",
+      "double_click": "dukart spustelėtas",
+      "hold_start": "pradėtas laikyti",
+      "hold_end": "atleistas po laikymo",
+      "press_on": "paspaustas: įjungti / aukštyn",
+      "press_off": "paspaustas: išjungti / žemyn",
+      "scene": "iškvietė sceną",
+      "dim": "reguliuoja šviesumą",
+      "click_up": "spustelėtas (viršutinė pusė)",
+      "click_down": "spustelėtas (apatinė pusė)",
+      "double_click_up": "dukart spustelėtas (viršutinė pusė)",
+      "double_click_down": "dukart spustelėtas (apatinė pusė)",
+      "hold_start_up": "pradėtas laikyti (viršutinė pusė)",
+      "hold_start_down": "pradėtas laikyti (apatinė pusė)",
+      "hold_end_up": "atleistas po laikymo (viršutinė pusė)",
+      "hold_end_down": "atleistas po laikymo (apatinė pusė)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Komandos nepavyko išsiųsti į JUNG tinklą: neprisijungta prie jokio tarpinio mazgo."
+    },
+    "no_answer": {
+      "message": "JUNG įrenginys neatsakė; komanda vis tiek galėjo būti įvykdyta – tai bus dar kartą patikrinta kito prisijungimo metu."
+    },
+    "device_not_reachable": {
+      "message": "{entity} neatsakė į komandą (3 bandymai per 9 s); ji galėjo būti neįvykdyta. Jei kiti tinklo įrenginiai vis dar atsako, šis įrenginys rodomas kaip nepasiekiamas, kol vėl atsilieps: patikrinkite, ar jis maitinamas."
+    },
+    "cannot_load": {
+      "message": "Nepavyko nuskaityti tinklo eksporto {path}."
+    },
+    "no_proxy_visible": {
+      "message": "Per Bluetooth dar nematyti nė vieno JUNG tinklo mazgo."
+    },
+    "export_keys_stale": {
+      "message": "JUNG tinklo įrenginiai matomi per Bluetooth, tačiau nė vienas neskelbia eksporte esančio tinklo rakto: raktai buvo atnaujinti jau po eksporto sukūrimo. Iš naujo eksportuokite tinklą „JUNG HOME“ programėlėje ir pateikite jį per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant neturi Bluetooth adapterio ar tarpinio serverio, per kurį būtų galima prisijungti, todėl JUNG tinklas nepasiekiamas."
+    },
+    "duplicate_mesh": {
+      "message": "Šį „JUNG HOME“ tinklą jau naudoja {others}; vienam tinklui gali būti įkeltas tik vienas įrašas. Pašalinkite vieną iš dviejų įrašų."
+    },
+    "seq_store_not_written": {
+      "message": "Nepavyko perkelti senesnės versijos sekos numerių įrašo į tinklo saugyklą (`.storage/junghome_ble.seq.*`); patikrinkite, ar į konfigūracijos katalogą galima rašyti."
+    },
+    "seq_floor_not_written": {
+      "message": "Sekos numerių įrašas atkurtas iš atsarginės kopijos, tačiau prieš peršokant į priekį nepavyko įrašyti jo apatinės ribos (`.storage/junghome_ble.seq.*.floor`); patikrinkite, ar į konfigūracijos katalogą galima rašyti."
+    },
+    "service_entry_not_loaded": {
+      "message": "„JUNG HOME“ tinklo integracija neįkelta (arba įkeliama iš naujo); netrukus bandykite dar kartą."
+    },
+    "service_not_connected": {
+      "message": "„JUNG HOME“ tinklas neprisijungęs; bandykite dar kartą, kai pasiekiamas bus tarpinis mazgas."
+    },
+    "service_entry_ambiguous": {
+      "message": "Sukonfigūruotas daugiau nei vienas „JUNG HOME“ tinklas; nurodykite tinklą (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} nėra „JUNG HOME“ tinklo įrenginys ar objektas."
+    },
+    "service_not_a_load": {
+      "message": "{name} nėra „JUNG HOME“ įrenginys, kuriam taikomas šis veiksmas."
+    },
+    "service_not_a_key": {
+      "message": "{name} nėra „JUNG HOME“ mygtukinio jungiklio mygtukas."
+    },
+    "service_key_required": {
+      "message": "{name} turi mygtukus {keys}; nurodykite mygtuko raidę, kad pasirinktumėte vieną."
+    },
+    "service_unknown_key": {
+      "message": "{name} neturi mygtuko {letter} (turi {keys})."
+    },
+    "service_no_loads": {
+      "message": "Tiksle nenurodytas joks „JUNG HOME“ šviestuvas ar elektros lizdas."
+    },
+    "service_target_other_network": {
+      "message": "Mygtukas ir jo tikslas priklauso skirtingiems tinklams."
+    },
+    "service_unknown_element": {
+      "message": "Elemento {address} tinklo eksporte nėra."
+    },
+    "service_no_room": {
+      "message": "Tinklo eksporte nėra patalpos pavadinimu {room}."
+    },
+    "service_room_exists": {
+      "message": "Patalpa pavadinimu {room} jau yra."
+    },
+    "service_room_key_drives_load": {
+      "message": "Iš patalpos {room} nepašalinta: {device} perjungiamas mygtuku {button} per to mygtuko susiejimą su patalpa, o pašalinus iš patalpos būtų nutrauktas ir ryšys su mygtuku. Paleiskite veiksmą dar kartą su „Net jei jį valdo mygtukas“ arba pirmiausia priskirkite mygtukui kitą funkciją."
+    },
+    "service_invalid_room_name": {
+      "message": "Patalpai reikia pavadinimo."
+    },
+    "service_no_mode": {
+      "message": "Elementui {address} netinka nė vienas mygtuko režimas; nurodykite režimą."
+    },
+    "service_invalid_mode": {
+      "message": "Režimo {mode} negalima naudoti su tikslu {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Mygtukas {address} neturi kliento modelio režimui {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Tikslinis elementas taikomas tik mygtukui, susietam su įrenginiu, o ne su patalpa ar scena."
+    },
+    "service_target_element_missing": {
+      "message": "Tikslas {target} neturi elemento {target_element}, kurį galėtų valdyti mygtukas."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Blokavimo trukmė taikoma tik režimui lock, nuo 0 iki 65535 sekundžių."
+    },
+    "service_lock_unsupported": {
+      "message": "Mygtukas negali užblokuoti tikslo {target}: mygtuku galima užblokuoti tik šviestuvą arba elektros lizdą."
+    },
+    "service_no_element_group": {
+      "message": "Elementas {address} neturi elementų grupės: „JUNG HOME“ programėlė jo niekada nesusiejo. Pirmiausia vieną kartą susiekite jį programėlėje."
+    },
+    "service_one_target": {
+      "message": "Nurodykite lygiai vieną tikslą: įrenginį, objektą, patalpą arba sceną."
+    },
+    "service_config_refused": {
+      "message": "Mazgas {node} atmetė {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Mazgas {node} neatsakė į {message}; ar jis maitinamas ir pasiekiamas? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Neišsiųsta: {nodes} neatsakė į paskutinę Home Assistant užklausą ir laikomi nepasiekiamais (jų objektai nepasiekiami), todėl planas sustotų ties pirmuoju jiems skirtu pranešimu. Patikrinkite, ar jie maitinami ir pasiekiami, ir paleiskite veiksmą dar kartą, kai jie atsilieps. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Mazgas {node} maitinamas baterija ir neatsakė į {message}: jis miega. Paspauskite vieną jo mygtuką, kad jį pažadintumėte, ir iš karto paleiskite veiksmą dar kartą. Jei jis nereaguoja ir į mygtuko paspaudimą, greičiausiai išsikrovė baterija: pakeiskite ją. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Mygtukas {address} nepriėmė mygtuko režimo {mode}; jo susiejimai sukonfigūruoti ir įrašyti į tinklo eksportą – paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad būtų nustatytas režimas."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Mygtukas {address} nepriėmė scenos {scene}; jis siunčia scenų iškvietimus visiems įrenginiams, ir tai įrašyta į tinklo eksportą – paleiskite veiksmą dar kartą su ta pačia scena, kad ji būtų nustatyta."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Mygtukas {address} nepriėmė blokavimo funkcijos (ypatybė {property}); jo susiejimai sukonfigūruoti ir įrašyti į tinklo eksportą – paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad ji būtų nustatyta."
+    },
+    "service_export_newer": {
+      "message": "Tinklo eksportas {path} buvo pakeistas ne per Home Assistant („JUNG HOME“ programėlėje arba rankiniu būdu) po to, kai Home Assistant jį įkėlė. Iš naujo eksportuokite projektą programėlėje, pakeiskite failą (Perkonfigūruoti) ir bandykite dar kartą."
+    },
+    "service_export_load_failed": {
+      "message": "Nepavyko nuskaityti tinklo eksporto {path}: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Nepavyko įrašyti tinklo eksporto {path}: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} negali priimti šios reikšmės: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostatas dar nepranešė savo temperatūros {preset}; netrukus bandykite dar kartą."
+    },
+    "led_colour_unknown": {
+      "message": "Objekto {entity} LED spalvos dar nežinomos; įrenginys neatsakė į nuskaitymo užklausą."
+    },
+    "service_room_name_reserved": {
+      "message": "Pavadinimą „{name}“ tinklas rezervuoja vidinėms grupėms; pasirinkite kitą patalpos pavadinimą."
+    },
+    "service_name_blank": {
+      "message": "Pavadinimas negali būti tuščias."
+    },
+    "service_name_too_long": {
+      "message": "„JUNG HOME“ programėlė negali pervadinti į „{name}“: pervadinant leidžiama ne daugiau kaip {max_length} simbolių."
+    },
+    "service_name_not_allowed": {
+      "message": "„JUNG HOME“ programėlė nepriima pavadinimo „{name}“: ženklą % ji laiko vietos rezervavimo ženklo pradžia (leidžiami tik %% ir %n)."
+    },
+    "service_room_range_full": {
+      "message": "Programėlės intervale neliko laisvų grupių adresų; pirmiausia „JUNG HOME“ programėlėje ištrinkite nenaudojamą patalpą."
+    },
+    "gateway_certificate_changed": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} pateikia kitą sertifikatą nei įrašytasis ({expected}, o pateiktas {observed}). Jei sietuvas ar jo sertifikatas pakeistas sąmoningai, perkonfigūruokite įrašą."
+    },
+    "service_ambiguous_scene": {
+      "message": "„{scene}“ yra ir scenos numeris, ir kitos scenos pavadinimas; pervadinkite tą sceną, kad jas būtų galima atskirti."
+    },
+    "service_unknown_scene": {
+      "message": "Scenos „{scene}“ tinklo eksporte nėra; nurodykite scenos pavadinimą taip, kaip jį rodo „JUNG HOME“ programėlė, arba jos numerį."
+    },
+    "service_scene_exists": {
+      "message": "Scena pavadinimu „{scene}“ jau yra."
+    },
+    "service_scene_range_full": {
+      "message": "Programėlės intervale neliko laisvų scenų numerių; pirmiausia ištrinkite nenaudojamą sceną."
+    },
+    "service_room_range_crowded": {
+      "message": "Naujoms patalpoms Home Assistant skiria aukščiausius laisvus programėlės intervalo grupių adresus, kad tokių pačių negautų kitos programėlėje kuriamos patalpos; žemiau artimiausio užimto adreso liko tik laisvų adresų: {free}, ir programėlė netrukus jį pasiektų. Ištrinkite nenaudojamas patalpas arba įjunkite parinktį „Įrašyti Home Assistant į tinklo failą kaip įtraukėją“, kuri suteikia Home Assistant atskirą intervalą."
+    },
+    "service_scene_range_crowded": {
+      "message": "Naujoms scenoms Home Assistant skiria aukščiausius laisvus programėlės intervalo scenų numerius, kad tokių pačių negautų kitos programėlėje kuriamos scenos; žemiau artimiausio užimto numerio liko tik laisvų numerių: {free}, ir programėlė netrukus jį pasiektų. Ištrinkite nenaudojamas scenas arba įjunkite parinktį „Įrašyti Home Assistant į tinklo failą kaip įtraukėją“, kuri suteikia Home Assistant atskirą intervalą."
+    },
+    "add_device_groups_crowded": {
+      "message": "Naujo įrenginio elementų grupės užimtų aukščiausius laisvus programėlės intervalo grupių adresus, tačiau žemiau jų liko tik laisvų adresų: {free}, ir kitos programėlėje kuriamos patalpos netrukus juos pasiektų. Ištrinkite nenaudojamas patalpas arba įjunkite parinktį „Įrašyti Home Assistant į tinklo failą kaip įtraukėją“, kuri suteikia Home Assistant atskirą intervalą."
+    },
+    "service_not_a_scene_element": {
+      "message": "Elementas {address} negali saugoti scenų (jis neturi Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Įrenginys {address} neišsaugojo scenos {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Įrenginyje {address} nėra vietos scenai {scene}: jame jau išsaugota scenų (įskaitant laikmačio scenas): {capacity}. Pirmiausia pašalinkite jį iš kitos scenos. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Įrenginyje {address} po ištrynimo vis dar yra scena {scene} ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "„JUNG HOME“ sietuvas neperdavė savo eksporto, o šiam veiksmui jo reikia: Home Assistant saugomoje kopijoje gali trūkti to, kas nuo tada pakeista „JUNG HOME“ programėlėje. Bandykite dar kartą, kai sietuvas atsakys (priežastis nurodyta žurnale)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Šis tinklas nustatytas iš failo, kuriame gali trūkti scenų, sukurtų „JUNG HOME“ programėlėje po eksporto; ištrynus failui nežinomus scenų numerius, tos scenos būtų ištrintos iš visų įrenginių. Pirmiausia atlikite bandomąjį vykdymą ir palyginkite jo pateiktus numerius su programėle, tada trinkite įjungę „Tinklo eksportas yra naujausias“ arba nurodykite trintinus numerius."
+    },
+    "service_unused_scenes_known": {
+      "message": "Scenų numeriai {numbers} yra tinklo eksporto scenos; jas ištrinkite veiksmu „Ištrinti sceną“."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Įrenginys {address} išsaugojo sceną {scene}, bet nepriėmė scenos aprašo (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Įrenginio {address} būsena nežinoma, todėl scena {scene} būtų išsaugota be scenos aprašo, o pašalinus iš scenos kitą to įrenginio kanalą, iš jos iškristų ir šis. Nurodykite išsaugotiną būseną (arba vieną kartą perjunkite įrenginį) ir bandykite dar kartą. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Šis tinklas nustatytas ne iš „JUNG HOME“ sietuvo (įraše nėra sietuvo adreso ir prieigos rakto); kad galėtumėte jį sinchronizuoti, perkonfigūruokite įrašą iš sietuvo."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Sietuvas {host} nepriėmė eksporto: {error}."
+    },
+    "service_send_failed": {
+      "message": "Ryšys su JUNG tinklu nutrūko siunčiant {message} mazgui {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Mazgas {node} yra tinklo eksporte {path}, bet jo nėra tinkle, kurį Home Assistant anksčiau iš jo įkėlė; įkelkite integraciją iš naujo (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Įkelti iš naujo), kad ji atitiktų eksportą, ir bandykite dar kartą. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "„JUNG HOME“ sietuve adresu {host} yra naujesnis eksportas ({gateway}) nei failas, kurį Home Assistant įkeltų ({file}); jį įkėlus būtų ištrinta tai, kas nuo tada pakeista „JUNG HOME“ programėlėje. Kitas Home Assistant atliktas pakeitimas perims sietuvo eksportą ir perkels į jį Home Assistant pakeitimus. Jei ši klaida kartojasi (įrašas be paskutinio programėlės įkėlimo kopijos negali jų atskirti), dar kartą gaukite sietuvo eksportą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti; pakeistas failas išsaugomas šalia kaip `.pre-reconfigure`), tada pakartokite Home Assistant atliktą pakeitimą."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} grąžino tik pliką įrenginių duomenų bazę (be įrenginių pavadinimų ir patalpų susiejimų); ją perėmus, šie duomenys būtų ištrinti iš Home Assistant saugomo failo. Bandykite dar kartą, kai sietuvas nebebus užimtas, arba dar kartą gaukite programėlės eksportą."
+    },
+    "identify_no_answer": {
+      "message": "JUNG įrenginys neatsakė į identifikavimo užklausą; ar jis maitinamas ir pasiekiamas?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} nėra „JUNG HOME“ tinklas; nurodykite vieno iš jų config_entry_id (arba jo nenurodykite, jei sukonfigūruotas tik vienas)."
+    },
+    "service_all_not_supported": {
+      "message": "Šis veiksmas nepriima entity_id: all; nurodykite šviestuvus, elektros lizdus, įrenginius, sritis arba etiketes, kuriems jis taikomas."
+    },
+    "edge_detection_unknown": {
+      "message": "Objekto {entity} frontų vertinimas dar nežinomas; įėjimas neatsakė į nuskaitymo užklausą."
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG elektros lizdas nenunulino skaitiklio {property}; jis vis dar praneša kitą nei 0 reikšmę."
+    },
+    "setup_state_unknown": {
+      "message": "Dabartinis objekto {entity} nustatymas dar nežinomas; įrenginys neatsakė į nuskaitymo užklausą."
+    },
+    "setting_no_answer": {
+      "message": "JUNG įrenginys neatsakė nei į objekto {entity} pakeitimą, nei į pakartotinį nuskaitymą; naują reikšmę jis vis tiek galėjo priimti. Ar jis maitinamas ir pasiekiamas?"
+    },
+    "setting_asleep": {
+      "message": "Baterijomis maitinamas objekto {entity} įrenginys neatsakė: jis miega. Paspauskite vieną jo mygtuką, kad jį pažadintumėte, ir iš karto atlikite pakeitimą dar kartą. Jei jis nereaguoja ir į mygtuko paspaudimą, greičiausiai išsikrovė baterija: pakeiskite ją."
+    },
+    "setting_not_applied": {
+      "message": "JUNG įrenginys nepriėmė naujos objekto {entity} reikšmės; jis vis dar praneša kitą."
+    },
+    "setting_not_supported": {
+      "message": "JUNG įrenginys neturi objekto {entity} nustatymo: į pakeitimą jis atsakė be reikšmės."
+    },
+    "schedule_no_reply": {
+      "message": "JUNG įrenginys {address} neatsakė apie savo tvarkaraščius."
+    },
+    "schedule_not_applied": {
+      "message": "JUNG įrenginys {address} nepriėmė tvarkaraščio vietos {slot} pakeitimo."
+    },
+    "schedule_slots_full": {
+      "message": "Užimtos visos 16 JUNG įrenginio {address} tvarkaraščių vietų; pirmiausia ištrinkite vieną."
+    },
+    "schedule_empty_slot": {
+      "message": "JUNG įrenginio {address} tvarkaraščio vietoje {slot} nėra tvarkaraščio."
+    },
+    "schedule_not_supported": {
+      "message": "{name} neturi savų tvarkaraščių."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Tvarkaraštis jau įrašytas į {created}: prieš kviesdami dar kartą, ištrinkite jį ten, kitaip tie įrenginiai jį vykdys du kartus."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Tvarkaraštis netinka įrenginiui {name}: {fields} jam netaikoma."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Tvarkaraštis netinka įrenginiui {name}: termostatui reikia temperatūros."
+    },
+    "schedule_action_needs_position": {
+      "message": "Tvarkaraštis netinka įrenginiui {name}: žaliuzėms reikia padėties."
+    },
+    "schedule_action_needs_action": {
+      "message": "Tvarkaraštis netinka įrenginiui {name}: reikia veiksmo (įjungti arba išjungti)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Tvarkaraštis netinka įrenginiui {name}: šviesumas nurodomas tik su veiksmu „įjungti“."
+    },
+    "threshold_not_supported": {
+      "message": "{name} nėra „JUNG HOME“ elektros lizdas su matavimu ir slenksčiais."
+    },
+    "threshold_incomplete": {
+      "message": "{name} neturi keistino slenksčio (arba neatsakė): nurodykite ir galią, ir trukmę."
+    },
+    "threshold_not_applied": {
+      "message": "JUNG elektros lizdas {address} nepriėmė slenksčio {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Slenksčio {which} nepavyko išsiųsti JUNG elektros lizdui {address}: neprisijungta prie jokio tarpinio mazgo. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Elektros lizdas ir įrenginiai, kuriuos turėtų perjungti jo slenksčiai, priklauso skirtingiems tinklams."
+    },
+    "scene_state_not_applicable": {
+      "message": "Būsena netinka įrenginiui {name}: {fields} jam netaikoma."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Būsena netinka įrenginiui {name}: termostatui reikia temperatūros."
+    },
+    "scene_state_needs_position": {
+      "message": "Būsena netinka įrenginiui {name}: žaliuzėms reikia padėties."
+    },
+    "scene_state_needs_action": {
+      "message": "Būsena netinka įrenginiui {name}: reikia veiksmo (įjungti arba išjungti)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Būsena netinka įrenginiui {name}: šviesumas nurodomas tik su veiksmu „įjungti“."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} laiku nepranešė naujos būsenos; scena neišsaugota."
+    },
+    "service_gateway_token_rejected": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} nebepriima Home Assistant prieigos, todėl eksportas jam neperduotas. Vėl suteikite prieigą per Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada paleiskite tai dar kartą."
+    },
+    "seq_store_lost": {
+      "message": "Adreso {unicast} sekos numerių įrašas prarastas; Home Assistant nenaudos pakartotinai numerių, kuriuos tinklas jau matė. Atidarykite problemą skiltyje Taisymai, kad būtų galima juos peršokti."
+    },
+    "address_in_use": {
+      "message": "Home Assistant adresą {unicast} užima tinklo mazgas; perkonfigūruokite integraciją, nurodydami laisvą adresą (pvz., {suggestion})."
+    },
+    "add_device_not_allowed": {
+      "message": "Šiame tinkle įrenginių pridėjimas ir šalinimas išjungtas: pirmiausia integracijos parinktyse įjunkite *Leisti Home Assistant pridėti ir pašalinti įrenginius*."
+    },
+    "add_device_not_found": {
+      "message": "Adresu {address} nesiskelbia joks naujas JUNG įrenginys; paleiskite `find_new_devices` ir naudokite jo pateiktą adresą."
+    },
+    "add_device_not_jung": {
+      "message": "Įrenginys adresu {address} nesiskelbia kaip JUNG įrenginys."
+    },
+    "add_device_no_template": {
+      "message": "Tinkle dar nėra nė vieno gaminio {product} įrenginio: pirmąjį pridėkite „JUNG HOME“ programėle, o Home Assistant nukopijuos jo konfigūraciją."
+    },
+    "add_device_no_address": {
+      "message": "Už įtraukėjų intervalų ribų naujam įrenginiui neliko laisvo adresų intervalo."
+    },
+    "provisioner_identity_failed": {
+      "message": "Home Assistant įtraukėjo įrašo nepavyko sujungti su eksportu ({error}); niekas nepakeista. Žr. žurnalą."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Šiame tinkle Home Assistant negali turėti atskirų adresų intervalų: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Nepavyko prisijungti prie naujo įrenginio: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Nepavyko įtraukti naujo įrenginio į tinklą: {error}. Jis vis dar naujas; bandykite dar kartą."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Naujo įrenginio įtraukimas į tinklą adresu {unicast} nepatvirtintas ({error}). Įrenginys galėjo gauti tinklo raktus, todėl Home Assistant jį laiko laukiančiu: atkurkite jo gamyklinius nustatymus veiksmu `junghome_ble.reset_pending_device` (unicast {unicast}; jei jis neatsako, pridėkite `force`, nes raktų negavęs įrenginys atsakyti negali), tada pridėkite jį iš naujo. Iki tol jo adresai lieka rezervuoti."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Naujo įrenginio rakto nepavyko išsaugoti Home Assistant saugykloje ({error}), todėl įtraukimas į tinklą sustabdytas, kol įrenginys dar nieko negavo: jis vis dar naujas, ir adresu {unicast} jam nieko nerezervuota. Atlaisvinkite vietos arba sutvarkykite saugyklą, tada bandykite dar kartą."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Įrenginys įtrauktas į tinklą adresu {unicast}, bet jo konfigūravimas nepavyko ties žingsniu {step} ({error}), o gamyklinių nustatymų atkūrimo jis nepatvirtino. Programėlė apie jį nežino: atkurkite jo gamyklinius nustatymus veiksmu `junghome_ble.reset_pending_device` (unicast {unicast}), tada pridėkite jį iš naujo. Iki tol jo adresai lieka rezervuoti."
+    },
+    "add_device_record_failed": {
+      "message": "Įrenginys sukonfigūruotas, bet adresu {unicast} neįrašytas ({error}). Programėlė apie jį nežino: atkurkite jo gamyklinius nustatymus veiksmu `junghome_ble.reset_pending_device` (unicast {unicast}), tada pridėkite jį iš naujo. Iki tol jo adresai lieka rezervuoti."
+    },
+    "add_device_no_beacon": {
+      "message": "Tinklo IV indeksas dabartiniame Bluetooth ryšyje dar nepatvirtintas (per jį dar negautas tinklo švyturys), todėl naujas įrenginys išsaugotų neteisingą. Palaukite kito prisijungimo prie JUNG įrenginio ir bandykite dar kartą."
+    },
+    "add_device_key_refresh": {
+      "message": "„JUNG HOME“ programėlė atnaujina tinklo raktą (raktų atnaujinimo 1 fazė): dabar pridėtas įrenginys gautų keičiamą raktą. Užbaikite raktų atnaujinimą programėlėje (Home Assistant jį seka), tada bandykite dar kartą."
+    },
+    "add_device_name_too_long": {
+      "message": "Pavadinimas „{name}“ ilgesnis, nei „JUNG HOME“ programėlė leidžia įrenginiui: ne daugiau kaip {max_length} simbolių."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Nėra žinomo įrenginio {device}, kurį Home Assistant būtų įtraukęs į tinklą, bet neįrašęs; tokių įrenginių adresai išvardyti problemoje *Home Assistant pridėtas įrenginys neįrašytas*."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Adresu {unicast} dabar yra kitas tinklo įrenginys, todėl gamyklinių nustatymų atkūrimo komanda neišsiųsta ir niekas nepakeista. Naudokite `force`, kad laukiantis įrenginys šiuo adresu būtų pamirštas (jei jis vis dar yra, atkurkite jo gamyklinius nustatymus rankiniu būdu)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Įrenginys adresu {unicast} nepatvirtino gamyklinių nustatymų atkūrimo; niekas nepakeista. Naudokite `force`, jei įrenginio nustatymai atkurti rankiniu būdu arba jo nebėra visam laikui."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Nepavyko išsiųsti gamyklinių nustatymų atkūrimo komandos įrenginiui adresu {unicast} ({error}); niekas nepakeista."
+    },
+    "remove_device_gateway": {
+      "message": "Sietuvo šiuo būdu pašalinti negalima."
+    },
+    "remove_device_mesh": {
+      "message": "Nurodykite JUNG įrenginį, o ne tinklą."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Įrenginys {address} nepatvirtino gamyklinių nustatymų atkūrimo ir vėliau nebuvo matyti besiskelbiantis kaip naujas įrenginys. Jo nustatymai vis tiek galėjo būti atkurti (patvirtinimas gali dingti, o jo ryšio zonoje gali nebūti jokio Bluetooth skaitytuvo) arba jis komandos negavo; tinklo eksportas nepakeistas. Paleiskite veiksmą dar kartą arba naudokite `force`, jei įrenginio nebėra visam laikui."
+    },
+    "remove_device_proxy": {
+      "message": "Įrenginys {address} yra tarpinis mazgas, per kurį prisijungęs Home Assistant: atkūrus jo gamyklinius nustatymus nutrūktų ryšys, kuriuo grįžta patvirtinimas. Palaukite, kol Home Assistant prisijungs per kitą įrenginį (žr. jutiklį „Tarpinis mazgas“), arba naudokite `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Objekto {entity} įrenginio blokavimo būsena dar nežinoma; įrenginys neatsakė į nuskaitymo užklausą."
+    },
+    "cover_locked": {
+      "message": "Objektas {entity} užblokuotas ir nepaiso komandų, kol nebus atblokuotas (jungikliu „Blokavimas“ arba „Blokavimo funkcija“)."
+    },
+    "cover_wind_alarm": {
+      "message": "Objektas {entity} sulaikytas dėl vėjo pavojaus signalo; jis nepaiso komandų, kol signalas nebus išjungtas („Blokavimo funkcija“ arba jungikliu „Blokavimas“)."
+    },
+    "load_locked": {
+      "message": "Objektas {entity} užblokuotas („JUNG HOME“ programėlėje, mygtuku arba jungikliu „Blokavimas“) ir išlaiko savo būseną, kol nebus atblokuotas."
+    },
+    "dim_not_dimmable": {
+      "message": "Objektas {entity} nėra „JUNG HOME“ šviesos reguliatorius: šiuo būdu galima reguliuoti tik šviesos reguliatorių ir DALI reguliuojamos spalvinės temperatūros kanalų šviesumą."
+    },
+    "locate_no_answer": {
+      "message": "JUNG įrenginys {node} neatsakė į užklausą skelbti savo tapatybę; ar jis maitinamas ir pasiekiamas? Baterijomis maitinamas įrenginys miega ir atsako tik pabudęs."
+    },
+    "locate_refused": {
+      "message": "JUNG įrenginys {node} atsisakė skelbti savo tapatybę: {status}."
+    },
+    "locate_not_supported": {
+      "message": "JUNG įrenginys {node} negali skelbti savo tapatybės (Node Identity nepalaikoma)."
+    },
+    "approve_no_gateway": {
+      "message": "Šis tinklas nustatytas ne iš „JUNG HOME“ sietuvo (įraše nėra sietuvo adreso ir prieigos rakto): nėra sietuvo, kuriame būtų galima patvirtinti klientus."
+    },
+    "approve_gateway_distrusted": {
+      "message": "„JUNG HOME“ sietuvo adresu {host} neužklausta: {error}. Niekas nepatvirtinta."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} nebepriima Home Assistant prieigos, todėl niekas nepatvirtinta. Vėl suteikite prieigą per Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada paleiskite tai dar kartą."
+    },
+    "approve_client_not_waiting": {
+      "message": "Sietuve nėra prieigos laukiančio API kliento „{client}“ (laukia: {waiting}). Niekas nepatvirtinta."
+    },
+    "approve_gateway_busy": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} užimtas kita konfigūravimo užklausa; bandykite dar kartą po minutės. Niekas nepatvirtinta."
+    },
+    "approve_gateway_failed": {
+      "message": "„JUNG HOME“ sietuvas adresu {host} neįvykdė užklausos: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant neatnaujina JUNG programinės aparatinės įrangos: atnaujinkite įrenginį „JUNG HOME“ programėle."
+    },
+    "add_device_node_not_configured": {
+      "message": "Naujo įrenginio adresu {unicast} nepavyko sukonfigūruoti ties žingsniu {step} ({error}). Home Assistant atkūrė jo gamyklinius nustatymus, kaip tai daro „JUNG HOME“ programėlė, ir įrenginys tai patvirtino: jis vėl naujas, ir jam nieko nerezervuota. Taip atmetamas įrenginys, kuris nėra tas gaminys ar mechanizmas, kuriuo skelbiasi; kitu atveju pridėkite jį dar kartą."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Naujo įrenginio įtraukimas į tinklą adresu {unicast} nepatvirtintas ({error}). Home Assistant atkūrė jo gamyklinius nustatymus, ir įrenginys tai patvirtino: jis vėl naujas, ir jam nieko nerezervuota. Bandykite dar kartą."
+    },
+    "time_keeper_role_failed": {
+      "message": "Įrenginys adresu {address} nepriėmė laiko vaidmens ({error}). Jo Time Server publikavimas jau pakeistas: kai įrenginys atsilieps, dar kartą perjunkite „Laiko šaltinis“."
+    },
+    "load_thermostat_controlled": {
+      "message": "Objektą {entity} perjungia patalpos termostatas {thermostats} (susietas „JUNG HOME“ programėlėje), todėl, kaip ir programėlėje, jo negalima perjungti rankiniu būdu."
+    },
+    "load_forced_short": {
+      "message": "Objekto {entity} jutiklis laiko jį įjungtą arba išjungtą (nuolat įjungta / nuolat išjungta): kad tai nutrauktumėte, perjunkite jutiklio automatinio režimo jungiklį į vidurinę padėtį."
+    },
+    "load_forced_on_button": {
+      "message": "Objekto {entity} jutiklis laiko jį įjungtą (nuolat įjungta): kad tai nutrauktumėte, paspauskite jutiklio mygtuką ON."
+    },
+    "load_forced_off_button": {
+      "message": "Objekto {entity} jutiklis laiko jį išjungtą (nuolat išjungta): kad tai nutrauktumėte, paspauskite jutiklio mygtuką OFF."
+    },
+    "load_forced_on_presence": {
+      "message": "Objekto {entity} jutiklis laiko jį įjungtą (nuolat įjungta): tai nutraukiama jutiklio programavimo mygtuku."
+    },
+    "load_forced_off_presence": {
+      "message": "Objekto {entity} jutiklis laiko jį išjungtą (nuolat išjungta): tai nutraukiama jutiklio programavimo mygtuku."
+    },
+    "cover_slats_open": {
+      "message": "Objektas {entity} visiškai atidarytas: kaip ir „JUNG HOME“ programėlėje, lamelių negalima pasukti, kol žaliuzės nenuleistos."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} veikia intensyviuoju režimu: kaip ir „JUNG HOME“ programėlėje, prieš nustatydami temperatūrą pasirinkite kitą išankstinį nustatymą, kad intensyvusis režimas būtų išjungtas."
+    },
+    "service_detector_device_only": {
+      "message": "Jutiklis {address} gali valdyti tik vieną įrenginį: nurodykite tikslinį šviestuvą, elektros lizdą ar įrenginį, o ne patalpą ar sceną."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Jutiklis {address} negali valdyti tikslo režimu {mode}: jutiklis neturi mygtuko režimo, todėl jis tik perjungia šviestuvą, elektros lizdą ar žaliuzes tikslo nulemtu režimu – be blokavimo funkcijos, patalpos termostato, sietuvo ar tikslinio elemento."
+    },
+    "gateway_fetch_refused": {
+      "message": "Eksportas iš „JUNG HOME“ sietuvo adresu {host} negautas: {error}. Niekas nepasikeitė; ką daryti, nurodyta pranešimuose skiltyje Taisymai."
+    },
+    "service_unknown_area": {
+      "message": "Srities, kurios ID {id}, nėra."
+    },
+    "service_not_a_scene": {
+      "message": "{name} nėra „JUNG HOME“ tinklo scena."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Įrenginio pašalinimo atšaukti neįmanoma: kad jį įvykdytumėte, pridėkite prie iškvietimo „confirm: true“ (arba „dry_run: true“, kad pamatytumėte, kas būtų padaryta)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Ištrynus sceną net tada, kai įrenginys neatsako, tas įrenginys ją išsaugos: kad tai įvykdytumėte, pridėkite prie iškvietimo „confirm: true“ (arba „dry_run: true“, kad pamatytumėte, kas būtų padaryta)."
+    },
+    "plan_key_device": {
+      "message": "{key} dabar valdo {target}; pranešimų: {messages}"
+    },
+    "plan_key_room": {
+      "message": "{key} dabar valdo patalpą {room}; pranešimų: {messages}"
+    },
+    "plan_key_scene": {
+      "message": "{key} dabar iškviečia sceną {scene}; pranešimų: {messages}"
+    },
+    "plan_key_cleared": {
+      "message": "{key} dabar neturi funkcijos; pranešimų: {messages}"
+    },
+    "plan_room_joined": {
+      "message": "Į patalpą {room} įtraukta: {devices}; pranešimų: {messages}"
+    },
+    "plan_room_left": {
+      "message": "Iš patalpos {room} pašalinta: {devices}; pranešimų: {messages}"
+    },
+    "plan_room_deleted": {
+      "message": "Patalpa {room} ištrinta; pranešimų: {messages}"
+    },
+    "plan_device_removed": {
+      "message": "Įrenginys {device} pašalintas iš tinklo; pranešimų kitiems įrenginiams: {messages}"
+    },
+    "plan_scene_deleted": {
+      "message": "Scena {scene} ištrinta; pranešimų: {messages}"
+    },
+    "plan_finished": {
+      "message": "Veiksmas {action} baigtas; pranešimų: {messages}"
+    },
+    "plan_stopped": {
+      "message": "Veiksmas {action} sustabdytas po {applied} iš {total} pranešimų: {error}"
+    },
+    "plan_cancelled": {
+      "message": "Veiksmas {action} atšauktas po {applied} iš {total} pranešimų; tai, kas pritaikyta, įrašyta į tinklo eksportą"
+    },
+    "logbook_scene_from_key": {
+      "message": "iškvietė sceną {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "atleidimas laiku neužfiksuotas"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "ryšys nutrūko"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integracija sustabdyta"
+    },
+    "logbook_scene_number": {
+      "message": "Scena {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scena"
+    },
+    "logbook_recalled": {
+      "message": "iškviesta"
+    },
+    "logbook_recalled_by": {
+      "message": "iškvietė {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "„JUNG HOME“ įrenginių trūksta eksporte",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dar kartą gauti eksportą iš sietuvo",
+            "description": "Įrenginiai, kurie „JUNG HOME“ tinkle {title} skelbiasi per Bluetooth, bet kurių nėra Home Assistant įkeltame eksporte (iš viso {count}): {devices}. Jie pridėti prie sistemos (arba iš naujo įtraukti į tinklą) jau sukūrus tą eksportą, todėl Home Assistant neturi jų objektų. Patvirtinkite, kad Home Assistant su jau turima prieiga gautų dabartinį eksportą iš „JUNG HOME“ sietuvo {host}, jį patikrintų ir pagal jį iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Dar kartą gauti iš sietuvo; pakeičiamas eksportas išsaugomas kaip kopija (`.pre-reconfigure`). Problema išnyks, kai jie bus naujajame eksporte. Dar nepatikrinta su tikrais įrenginiais."
+          },
+          "upload": {
+            "title": "Įkelti naują eksportą",
+            "description": "Įrenginiai, kurie „JUNG HOME“ tinkle {title} skelbiasi per Bluetooth, bet kurių nėra Home Assistant įkeltame eksporte (iš viso {count}): {devices}. Jie pridėti prie sistemos (arba iš naujo įtraukti į tinklą) jau sukūrus tą eksportą, todėl Home Assistant neturi jų objektų. Eksportuokite tinklą iš „JUNG HOME“ programėlės (Projektas → Bendrinti failu) ir įkelkite failą čia: Home Assistant jį patikrina, išsaugo savo konfigūracijos kataloge, aplanke `junghome_ble/` (jame yra visi tinklo raktai), ir pagal jį iš naujo nustato integraciją; pakeičiamas eksportas išsaugomas kaip kopija. Įrašas, kuris eksportą skaitė iš kelio serveryje, nuo tada naudos įkeltą kopiją – jei norite išlaikyti kelią, verčiau nukopijuokite naują failą ten ir pasirinkite Perkonfigūruoti. Problema išnyks, kai jie bus naujajame eksporte. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "export_file": "Tinklo eksporto failas"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+          "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
+          "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+          "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, bet nė vienas neskelbia šio eksporto tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau sukūrus eksportą. Dar kartą eksportuokite tinklą iš „JUNG HOME“ programėlės arba vėl gaukite jį iš sietuvo ir naudokite tą failą.",
+          "gateway_error": "Sietuvas atsakė klaida. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+          "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+          "invalid_address": "Adresas turi būti šešioliktainis skaičius nuo 0001 iki 7FFF.",
+          "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0.",
+          "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
+          "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
+          "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+          "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+          "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+          "upload_failed": "Nepavyko apdoroti įkelto failo. Pabandykite įkelti jį dar kartą."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
+          "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+          "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "„JUNG HOME“ įrenginių trūksta eksporte",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dar kartą gauti eksportą iš sietuvo",
+            "description": "Įrenginiai, kurie „JUNG HOME“ tinkle {title} skelbiasi per Bluetooth, bet kurių nėra Home Assistant įkeltame eksporte (iš viso {count}): {devices}. Jie pridėti prie sistemos (arba iš naujo įtraukti į tinklą) jau sukūrus tą eksportą, todėl Home Assistant dar neturi jų objektų. Home Assistant paprašo sietuvo dabartinio eksporto ir pats jį perima, kai jame tie įrenginiai atsiranda. Patvirtinkite, kad Home Assistant su jau turima prieiga gautų dabartinį eksportą iš „JUNG HOME“ sietuvo {host}, jį patikrintų ir pagal jį iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Dar kartą gauti iš sietuvo; pakeičiamas eksportas išsaugomas kaip kopija (`.pre-reconfigure`). Jei problema neišnyksta, jų nežino ir sietuvo eksportas: bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji įkelia savo projektą), tada taisykite dar kartą. Dar nepatikrinta su tikrais įrenginiais."
+          },
+          "upload": {
+            "title": "Įkelti naują eksportą",
+            "description": "Įrenginiai, kurie „JUNG HOME“ tinkle {title} skelbiasi per Bluetooth, bet kurių nėra Home Assistant įkeltame eksporte (iš viso {count}): {devices}. Jie pridėti prie sistemos (arba iš naujo įtraukti į tinklą) jau sukūrus tą eksportą, todėl Home Assistant dar neturi jų objektų. Home Assistant paprašo sietuvo dabartinio eksporto ir pats jį perima, kai jame tie įrenginiai atsiranda. Eksportuokite tinklą iš „JUNG HOME“ programėlės (Projektas → Bendrinti failu) ir įkelkite failą čia: Home Assistant jį patikrina, išsaugo savo konfigūracijos kataloge, aplanke `junghome_ble/` (jame yra visi tinklo raktai), ir pagal jį iš naujo nustato integraciją; pakeičiamas eksportas išsaugomas kaip kopija. Įrašas, kuris eksportą skaitė iš kelio serveryje, nuo tada naudos įkeltą kopiją – jei norite išlaikyti kelią, verčiau nukopijuokite naują failą ten ir pasirinkite Perkonfigūruoti. Jei problema neišnyksta, jų nežino ir sietuvo eksportas: bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji įkelia savo projektą), tada taisykite dar kartą. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "export_file": "Tinklo eksporto failas"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+          "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
+          "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+          "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, bet nė vienas neskelbia šio eksporto tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau sukūrus eksportą. Dar kartą eksportuokite tinklą iš „JUNG HOME“ programėlės arba vėl gaukite jį iš sietuvo ir naudokite tą failą.",
+          "gateway_error": "Sietuvas atsakė klaida. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+          "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+          "invalid_address": "Adresas turi būti šešioliktainis skaičius nuo 0001 iki 7FFF.",
+          "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0.",
+          "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
+          "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
+          "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+          "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+          "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+          "upload_failed": "Nepavyko apdoroti įkelto failo. Pabandykite įkelti jį dar kartą."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
+          "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+          "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "„JUNG HOME“ programėlė pakeitė sistemą",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dar kartą gauti eksportą iš sietuvo",
+            "description": "Pastebėta, kad „JUNG HOME“ programėlė keitė tinklo {title} įrenginio konfigūraciją (mygtuko susiejimą, patalpą, sceną ar įrenginio nustatymą), todėl Home Assistant įkeltas eksportas gali nebeatitikti sistemos: programėlėje padarytų pakeitimų Home Assistant dar neturi. Patvirtinkite, kad Home Assistant su jau turima prieiga gautų dabartinį eksportą iš „JUNG HOME“ sietuvo {host}, jį patikrintų ir pagal jį iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Dar kartą gauti iš sietuvo; pakeičiamas eksportas išsaugomas kaip kopija (`.pre-reconfigure`). Dar nepatikrinta su tikrais įrenginiais."
+          },
+          "upload": {
+            "title": "Įkelti naują eksportą",
+            "description": "Pastebėta, kad „JUNG HOME“ programėlė keitė tinklo {title} įrenginio konfigūraciją (mygtuko susiejimą, patalpą, sceną ar įrenginio nustatymą), todėl Home Assistant įkeltas eksportas gali nebeatitikti sistemos: programėlėje padarytų pakeitimų Home Assistant dar neturi. Baigę darbą programėlėje, eksportuokite iš jos tinklą (Projektas → Bendrinti failu) ir įkelkite failą čia: Home Assistant jį patikrina, išsaugo savo konfigūracijos kataloge, aplanke `junghome_ble/` (jame yra visi tinklo raktai), ir pagal jį iš naujo nustato integraciją; pakeičiamas eksportas išsaugomas kaip kopija. Įrašas, kuris eksportą skaitė iš kelio serveryje, nuo tada naudos įkeltą kopiją – jei norite išlaikyti kelią, verčiau nukopijuokite naują failą ten ir pasirinkite Perkonfigūruoti; tai taip pat panaikins šį pranešimą. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "export_file": "Tinklo eksporto failas"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+          "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
+          "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+          "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, bet nė vienas neskelbia šio eksporto tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau sukūrus eksportą. Dar kartą eksportuokite tinklą iš „JUNG HOME“ programėlės arba vėl gaukite jį iš sietuvo ir naudokite tą failą.",
+          "gateway_error": "Sietuvas atsakė klaida. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+          "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+          "invalid_address": "Adresas turi būti šešioliktainis skaičius nuo 0001 iki 7FFF.",
+          "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0.",
+          "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
+          "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
+          "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+          "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+          "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+          "upload_failed": "Nepavyko apdoroti įkelto failo. Pabandykite įkelti jį dar kartą."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
+          "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+          "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "„JUNG HOME“ mygtukiniai jungikliai su kitu mechanizmu nei eksporte",
+      "description": "{devices}: šie „JUNG HOME“ tinklo {title} mygtukiniai jungikliai skelbia kitą mechanizmą nei nurodytas Home Assistant įkeltame eksporte (eksportas → įrenginys). Mechanizmas pakeistas jau sukūrus tą eksportą, todėl Home Assistant ir programėlė gali rodyti netinkamą jų valdomo įrenginio tipą. Patikrinkite įrenginius „JUNG HOME“ programėlėje, dar kartą eksportuokite tinklą ir atnaujinkite šią integraciją (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti); problema išnyks, kai eksporte bus nurodyti įrenginių skelbiami mechanizmai. Dar nepatikrinta su tikrais įrenginiais."
+    },
+    "node_clock_wrong": {
+      "title": "„JUNG HOME“ įrenginiai, kurių laikrodis rodo netikslų laiką",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Išsiųsti laiką dabar",
+            "description": "{devices}: šie „JUNG HOME“ tinklo {title} įrenginiai gali vykdyti tvarkaraščius (perjungimą nustatytu laiku arba saulėtekio / saulėlydžio metu), o jų laikrodis rodo netinkamą laiką: laiko nėra, jis daugiau nei minute skiriasi nuo Home Assistant laiko arba laiko juostos poslinkis kitoks nei Home Assistant jiems išsiųstas. Kol jie vėl negaus laiko, jų tvarkaraščiai vykdomi ne tuo metu. Home Assistant laiką siunčia po kiekvieno prisijungimo ir kartą per parą; patvirtinkite, kad jis būtų išsiųstas dabar ir šie įrenginiai būtų apklausti iš naujo. Problema išnyks, kai jie atsakys teisingu laiku. Jei ji vėl atsiranda, patikrinkite Home Assistant laiko juostą (Nustatymai → Sistema → Bendrieji) ir ar įrenginiai pasiekiami. Dar nepatikrinta su tikrais įrenginiais."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "not_connected": "Home Assistant šiuo metu neprisijungęs prie tinklo. Bandykite dar kartą, kai ryšys bus užmegztas."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Keičiasi „JUNG HOME“ tinklo raktai",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dar kartą gauti eksportą iš sietuvo",
+            "description": "Tinklas {title} paskelbė raktų atnaujinimą, bet Home Assistant negirdėjo, kaip buvo išdalytas naujasis tinklo raktas (raktų atnaujinimas, kurį jis mato nuo pradžios, sekamas ir jokios problemos nesukelia). Jam pasibaigus, Home Assistant naudojamo eksporto raktai nebegalios ir valdymas nutrūks. Pirmiausia leiskite raktų atnaujinimui baigtis „JUNG HOME“ programėlėje. Patvirtinkite, kad Home Assistant su jau turima prieiga gautų dabartinį eksportą iš „JUNG HOME“ sietuvo {host}, jį patikrintų ir pagal jį iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Dar kartą gauti iš sietuvo; pakeičiamas eksportas išsaugomas kaip kopija (`.pre-reconfigure`). Dar nepatikrinta su tikrais įrenginiais."
+          },
+          "upload": {
+            "title": "Įkelti naują eksportą",
+            "description": "Tinklas {title} paskelbė raktų atnaujinimą, bet Home Assistant negirdėjo, kaip buvo išdalytas naujasis tinklo raktas (raktų atnaujinimas, kurį jis mato nuo pradžios, sekamas ir jokios problemos nesukelia). Jam pasibaigus, Home Assistant naudojamo eksporto raktai nebegalios ir valdymas nutrūks. Pirmiausia leiskite raktų atnaujinimui baigtis „JUNG HOME“ programėlėje. Eksportuokite tinklą iš „JUNG HOME“ programėlės (Projektas → Bendrinti failu) ir įkelkite failą čia: Home Assistant jį patikrina, išsaugo savo konfigūracijos kataloge, aplanke `junghome_ble/` (jame yra visi tinklo raktai), ir pagal jį iš naujo nustato integraciją; pakeičiamas eksportas išsaugomas kaip kopija. Įrašas, kuris eksportą skaitė iš kelio serveryje, nuo tada naudos įkeltą kopiją – jei norite išlaikyti kelią, verčiau nukopijuokite naują failą ten ir pasirinkite Perkonfigūruoti. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "export_file": "Tinklo eksporto failas"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+          "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
+          "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+          "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, bet nė vienas neskelbia šio eksporto tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau sukūrus eksportą. Dar kartą eksportuokite tinklą iš „JUNG HOME“ programėlės arba vėl gaukite jį iš sietuvo ir naudokite tą failą.",
+          "gateway_error": "Sietuvas atsakė klaida. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+          "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+          "invalid_address": "Adresas turi būti šešioliktainis skaičius nuo 0001 iki 7FFF.",
+          "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0.",
+          "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
+          "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
+          "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+          "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+          "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+          "upload_failed": "Nepavyko apdoroti įkelto failo. Pabandykite įkelti jį dar kartą."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
+          "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+          "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "„JUNG HOME“ įrenginiai nepaiso Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Peršokti įrenginiams žinomus numerius",
+            "description": "Home Assistant girdi „JUNG HOME“ tinklą {title} per savo tarpinį mazgą, bet nė vienas įrenginys neatsakė į jo būsenos užklausas. Mazgai atmeta Home Assistant pranešimus kaip pakartotinius (replay). Tikėtinos dvi priežastys: šios integracijos sekos numerių saugykla (`.storage/junghome_ble.*`) prarasta arba atkurta iš senesnės atsarginės kopijos, todėl Home Assistant dabar siunčia mazgų jau matytus sekos numerius; arba kitas tinklo klientas (pavyzdžiui, įrankis `mesh_poc.py`) siunčia tuo pačiu unicast adresu {unicast}. Arba suteikite Home Assistant naują, nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas ir įsitikinkite, kad jo nenaudoja joks kitas klientas), arba, jei saugykla buvo prarasta ar atkurta (ir adreso nenaudoja joks kitas klientas), patvirtinkite, kad Home Assistant peršoktų savo sekos numeriais 1 048 576 į priekį ir prisijungtų iš naujo. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos: senesnė kopija tik kartoja įrenginių jau matytus numerius. Problema išnyks savaime, kai tik kuris nors įrenginys vėl atsakys Home Assistant."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Kitas klientas naudoja Home Assistant „JUNG HOME“ adresą",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Peršokti kito kliento sekos numerius",
+            "description": "Home Assistant gavo „JUNG HOME“ tinklo {title} pranešimą, išsiųstą iš jo paties unicast adreso {unicast} su sekos numeriu, kurio jis niekada nenaudojo: tuo pačiu adresu siunčia kitas tinklo klientas – antra Home Assistant sistema, šiuo adresu sukonfigūruotas įrankis `mesh_poc.py` arba kitur paleista šios sistemos kopija. Du siuntėjai vienu adresu pakartotinai naudoja vienas kito sekos numerius, o įrenginiai atmeta viską, kas mažiau už kito kliento numerius, todėl Home Assistant nieko nesiunčia į tinklą, kol tai nebus pataisyta (komandos nepavyksta, būsenos neatnaujinamos). Sustabdykite kitą klientą arba suteikite jam ar Home Assistant kitą nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas). Tada patvirtinkite, kad Home Assistant tęstų savo sekos numerius nuo didesnių nei pastebėti kito kliento ir vėl siųstų. Jei kitas klientas toliau siunčia šiuo adresu, problema grįš. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Kitas klientas vis dar naudoja Home Assistant „JUNG HOME“ adresą",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Dar kartą peršokti kito kliento sekos numerius",
+            "description": "Home Assistant peršoko kito tinklo kliento sekos numerius savo adresu {unicast} „JUNG HOME“ tinkle {title}, tačiau kitas klientas nuo to laiko vėl siuntė šiuo adresu: jis vis dar veikia. Kol jis veikia, peršokimas nepadeda. Suteikite Home Assistant naują, nenaudojamą unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas) arba sustabdykite kitą klientą ar perkelkite jį kitu adresu. Iki tol Home Assistant nieko nesiunčia į tinklą. Patvirtinkite tik tada, kai kitas klientas nebenaudos šio adreso: tada Home Assistant vėl peršoks jo numerius ir atnaujins siuntimą. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "„JUNG HOME“ tinklui nėra Bluetooth",
+      "description": "„JUNG HOME“ tinklas {title} pasiekiamas per Bluetooth, bet Home Assistant nebeturi nė vieno Bluetooth adapterio ar tarpinio serverio, prie kurio galima prisijungti: adapteris išjungtas, atjungtas ar sugedęs arba visi ESPHome Bluetooth tarpiniai serveriai su aktyviais ryšiais atsijungę. Kol bent vienas vėl neveiks, visi tinklo įrenginiai nepasiekiami. Patikrinkite Nustatymai → Įrenginiai ir paslaugos → Bluetooth. Problema išnyks, kai tik vėl bus pasiekiamas Bluetooth adapteris ar tarpinis serveris."
+    },
+    "duplicate_mesh": {
+      "title": "Du įrašai skirti tam pačiam „JUNG HOME“ tinklui",
+      "description": "{title} ir {others} abu sukonfigūruoti tam pačiam „JUNG HOME“ tinklui. Jie dalijasi jo sekos numerių skaitikliais (`.storage/junghome_ble.seq.*`), todėl veikti gali tik vienas iš jų: {others} veikia, o {title} nepaleistas. Pašalinkite vieną iš šių įrašų (Nustatymai → Įrenginiai ir paslaugos); jei pašalinsite {others}, po to iš naujo įkelkite {title}."
+    },
+    "gateway_import": {
+      "title": "Perimti „JUNG HOME Gateway“ integracijos objektus",
+      "description": "Šalia Bluetooth Mesh integracijos {title} sukonfigūruota ir „JUNG HOME Gateway“ integracija, todėl kiekvienas šviestuvas, lizdas, mygtukas ir scena yra po du kartus. Perkelkite sietuvo objektus čia – jie išlaikys savo objektų ID, pavadinimus, sritis ir istoriją – per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME (Bluetooth Mesh) → Perkonfigūruoti → Importuoti „JUNG HOME Gateway“ integracijos objektus, tada ištrinkite sietuvo įrašą. Jei norite palikti abi integracijas, šios problemos nepaisykite."
+    },
+    "export_stale": {
+      "title": "„JUNG HOME“ tinklo raktai pasikeitė",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dar kartą gauti eksportą iš sietuvo",
+            "description": "Home Assistant prisijungęs prie „JUNG HOME“ tinklo {title} mazgo, bet nieko, ką jis girdi, nepavyksta iššifruoti eksporto raktais: kiekvieno tinklo pranešimo ir mazgo švyturio (beacon) autentifikavimas nepavyksta. Jau sukūrus tą eksportą, tinkle buvo atliktas raktų atnaujinimas („JUNG HOME“ programėlėje – „key renewal“), todėl failas pasenęs. Patvirtinkite, kad Home Assistant su jau turima prieiga gautų dabartinį eksportą iš „JUNG HOME“ sietuvo {host}, jį patikrintų ir pagal jį iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Dar kartą gauti iš sietuvo; pakeičiamas eksportas išsaugomas kaip kopija (`.pre-reconfigure`). Problema išnyks, kai tik pranešimą vėl pavyks iššifruoti. Dar nepatikrinta su tikrais įrenginiais."
+          },
+          "upload": {
+            "title": "Įkelti naują eksportą",
+            "description": "Home Assistant prisijungęs prie „JUNG HOME“ tinklo {title} mazgo, bet nieko, ką jis girdi, nepavyksta iššifruoti eksporto raktais: kiekvieno tinklo pranešimo ir mazgo švyturio (beacon) autentifikavimas nepavyksta. Jau sukūrus tą eksportą, tinkle buvo atliktas raktų atnaujinimas („JUNG HOME“ programėlėje – „key renewal“), todėl failas pasenęs. Eksportuokite tinklą iš „JUNG HOME“ programėlės (Projektas → Bendrinti failu) ir įkelkite failą čia: Home Assistant jį patikrina, išsaugo savo konfigūracijos kataloge, aplanke `junghome_ble/` (jame yra visi tinklo raktai), ir pagal jį iš naujo nustato integraciją; pakeičiamas eksportas išsaugomas kaip kopija. Įrašas, kuris eksportą skaitė iš kelio serveryje, nuo tada naudos įkeltą kopiją – jei norite išlaikyti kelią, verčiau nukopijuokite naują failą ten ir pasirinkite Perkonfigūruoti. Problema išnyks, kai tik pranešimą vėl pavyks iššifruoti. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "export_file": "Tinklo eksporto failas"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iš programėlės (Bendrinti failu) arba `MeshNetwork.json` iš iOS atsarginės kopijos."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
+          "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
+          "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
+          "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, bet nė vienas neskelbia šio eksporto tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau sukūrus eksportą. Dar kartą eksportuokite tinklą iš „JUNG HOME“ programėlės arba vėl gaukite jį iš sietuvo ir naudokite tą failą.",
+          "gateway_error": "Sietuvas atsakė klaida. Patikrinkite jo būseną „JUNG HOME“ programėlėje ir bandykite dar kartą.",
+          "gateway_busy": "Sietuvas užimtas kita konfigūravimo užklausa. Bandykite dar kartą po minutės.",
+          "invalid_address": "Adresas turi būti šešioliktainis skaičius nuo 0001 iki 7FFF.",
+          "invalid_export": "Failas nėra „JUNG HOME“ tinklo eksportas (arba jis sugadintas): jame turi būti tinklas su raktais, mazgais ir vienu tinklo raktu, kurio indeksas 0.",
+          "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
+          "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
+          "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "not_a_directory": "Metaduomenų kelias nėra katalogas.",
+          "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
+          "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
+          "upload_failed": "Nepavyko apdoroti įkelto failo. Pabandykite įkelti jį dar kartą."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
+          "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
+          "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Pasikeitė „JUNG HOME“ sietuvo sertifikatas",
+      "description": "„JUNG HOME“ sietuvas {host} nebeatitinka TLS sertifikato, kurį jam prisegė Home Assistant: serveris pateikia kitą sertifikatą arba sietuvo mazgas per tinklą praneša apie kitą. Home Assistant nustojo naudoti sietuvą (ten nesiunčiamas nei prieigos raktas, nei eksportas); įrenginiai ir toliau veikia per Bluetooth. Jei pakeitėte sietuvą ar jo sertifikatą, atidarykite Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti ir dar kartą gaukite eksportą iš sietuvo; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys – patikrinkite savo tinklą."
+    },
+    "gateway_sync_failed": {
+      "title": "„JUNG HOME“ eksportas neperduotas sietuvui",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Perduoti eksportą sietuvui",
+            "description": "Home Assistant pakeitė „JUNG HOME“ sistemą (patalpą, mygtuko susiejimą ar sceną) ir perrašė savo tinklo eksportą, bet „JUNG HOME“ sietuvas {host} naujo eksporto nepriėmė: {error}. Kol jis jo nepriims, sietuvas ir programėlė rodo seną būseną, o kitas programėlės pakeitimas perrašytų Home Assistant pakeitimus. Home Assistant dar du kartus bando iš naujo kas 15 sekundžių, kaip ir programėlė. Patikrinkite, ar sietuvas pasiekiamas, tada patvirtinkite, kad eksportas būtų perduotas dabar, kaip tai daro veiksmas „Sinchronizuoti sietuvą“ (`junghome_ble.sync_gateway`): jis atsisako, jei sietuve yra Home Assistant nematytų pakeitimų, kuriuos įkėlimas ištrintų. Problema išnyks, kai įkėlimas pavyks. Dar nepatikrinta su tikrais įrenginiais."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "not_loaded": "„JUNG HOME“ įrašas, kuriam priklauso ši problema, šiuo metu neveikia. Bandykite dar kartą, kai jis bus paleistas.",
+          "sync_failed": "Eksportas neperduotas sietuvui: {error} Problema lieka; pataisykite ją dar kartą, kai priežasties nebeliks."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "„JUNG HOME“ pakeitimas tinkle {title} nutrūko",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "„JUNG HOME“ pakeitimas nutrūko",
+            "description": "Home Assistant sustojo vykdydamas {action}: įrenginius pasiekė {accepted} iš {total} konfigūravimo pranešimų. Jie dabar įrašyti į tinklo eksportą, todėl eksportas atitinka tai, ką turi įrenginiai. Kad užbaigtumėte, dar kartą paleiskite veiksmą su tuo pačiu tikslu. Jei naudojamas „JUNG HOME“ sietuvas, įrašytas eksportas jam bus perduotas kito pakeitimo metu arba veiksmu `junghome_ble.sync_gateway`. Patvirtinkite, kad šis pranešimas būtų uždarytas."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Įrenginio pavadinimas neperduotas „JUNG HOME“ programėlei",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Pervadinti įrenginį",
+            "description": "{device} Home Assistant buvo pervadintas į „{name}“ – „JUNG HOME“ programėlė tokio pavadinimo nepriima: pavadinimas negali būti tuščias ar ilgesnis nei 30 simbolių, o ženklą % programėlė laiko vietos rezervavimo ženklo pradžia (leidžiami tik %% ir %n). Tinklo eksportas ir programėlė išlaiko seną įrenginio pavadinimą. Įveskite programėlės priimamą pavadinimą: Home Assistant juo pavadins įrenginį ir, kaip ir pervadinant bet kada, perduos jį į eksportą (o jei naudojamas sietuvas – ir programėlei). Problema išnyks, kai pavadinimas bus perduotas. Dar nepatikrinta su tikrais įrenginiais.",
+            "data": {
+              "name": "Pavadinimas"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Pavadinimas negali būti tuščias.",
+          "name_not_allowed": "Ženklą % programėlė laiko vietos rezervavimo ženklo pradžia: leidžiami tik %% ir %n.",
+          "name_too_long": "Programėlė priima ne ilgesnius nei 30 simbolių pavadinimus."
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "not_loaded": "„JUNG HOME“ įrašas, kuriam priklauso ši problema, šiuo metu neveikia. Bandykite dar kartą, kai jis bus paleistas.",
+          "device_gone": "Šioje problemoje nurodyto įrenginio Home Assistant nebėra."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Home Assistant pridėti įrenginiai negavo naujojo tinklo rakto",
+      "description": "„JUNG HOME“ programėlė atnaujino tinklo {title} tinklo raktą, o Home Assistant atnaujinimą sekė iki galo. Programėlė nežino Home Assistant pridėtų įrenginių, todėl Home Assistant naująjį raktą jiems perduoda pats, tačiau įrenginiai adresais {addresses} jo nepatvirtino. Įsitikinkite, kad jie maitinami ir pasiekiami: Home Assistant bando dar kartą su kiekvienu nauju Bluetooth ryšiu. Naujojo rakto negavusio įrenginio nebebus galima pasiekti: atkurkite jo gamyklinius nustatymus ir pridėkite jį iš naujo (prieš tai pašalinkite jį iš Home Assistant veiksmu `junghome_ble.remove_device` arba `junghome_ble.reset_pending_device` su `force`). Su tikru įrenginiu dar neišbandyta. Problema išnyks, kai visi tokie įrenginiai patvirtins raktą."
+    },
+    "pending_device": {
+      "title": "Home Assistant pridėtas įrenginys neįrašytas",
+      "description": "Home Assistant veiksmu `junghome_ble.add_device` įtraukė tinklo {title} JUNG įrenginį, bet nepavyko jo sukonfigūruoti ar įrašyti į eksportą: įrenginys adresu {addresses} turi tinklo raktus, „JUNG HOME“ programėlė ir eksportas jo nežino, o jo adresai ir elementų grupės lieka rezervuoti, kad jų negautų kitas įrenginys. Atkurkite jo gamyklinius nustatymus veiksmu `junghome_ble.reset_pending_device` (nurodydami jo unicast adresą) ir pridėkite jį iš naujo; jei įrenginio nustatymus jau atkūrėte rankiniu būdu arba jo nebeliko, naudokite `force`. Su tikru įrenginiu dar neišbandyta. Problema išnyks, kai tokių įrenginių nebeliks."
+    },
+    "vault_unwritable": {
+      "title": "Nepavyksta išsaugoti „JUNG HOME“ įrenginių raktų",
+      "description": "Pridėdamas įrenginį adresu {address}, Home Assistant negalėjo įrašyti tinklo {title} raktų saugyklos ({path}; paskutinė klaida: {error}). Saugykloje laikomi Home Assistant pridedamų įrenginių raktai, kurių niekas kitas neturi, kol jų neįrašo eksportas, todėl įrenginys nebuvo įtrauktas į tinklą: jis nieko negavo ir tebėra naujas. Paprastai tai reiškia, kad diskas pilnas arba jo failų sistema iš naujo prijungta tik skaitymui – dažnai dėl gendančios SD kortelės. Atlaisvinkite vietos arba sutvarkykite saugojimo įrenginį (failų sistemai, prijungtai tik skaitymui, paprastai reikia paleisti serverį iš naujo), tada pridėkite įrenginį dar kartą; saugyklos failų neredaguokite, netrinkite ir nekeiskite. Su tikru įrenginiu dar neišbandyta. Problema išnyks savaime, kai tik saugyklą pavyks įrašyti."
+    },
+    "carry_over_conflict": {
+      "title": "„JUNG HOME“ programėlė perrašė Home Assistant pakeitimą tinkle {title}",
+      "description": "Home Assistant perėmė eksportą, kurį „JUNG HOME“ programėlė paskutinį kartą perdavė sietuvui, ir perkėlė į jį savo pakeitimus, tačiau programėlė tuo metu buvo pakeitusi tuos pačius įrašus. Išlaikyta programėlės versija: {paths}. Įrenginiuose dar gali būti tai, ką įrašė Home Assistant: {held}. Patikrinkite tas patalpas, scenas ir susiejimus programėlėje ir Home Assistant ir nustatykite juos iš naujo vienoje pusėje. Programėlė nemato to, ką prideda Home Assistant, kol neimportuoja failo. Problema išnyks, kai kitą kartą bus perimtas sietuvo eksportas be tokio konflikto."
+    },
+    "scene_held": {
+      "title": "Įrenginiai tinkle {title} vis dar turi ištrintą „JUNG HOME“ sceną",
+      "description": "Scena buvo ištrinta su parinktimi „Net jei įrenginys neatsako“, kai kai kurie jos įrenginiai buvo nepasiekiami arba atsisakė; jie ją tebeturi ir iškviečia su bet kuria to paties numerio scena. Scenos numeris: įrenginiai – {members}. Home Assistant šių numerių naujoms scenoms nesuteikia. Kai įrenginiai vėl bus pasiekiami, paleiskite veiksmą „Ištrinti nenaudojamas scenas“ išjungę parinktį „Bandomasis vykdymas“: jis ištrins iš jų tuos numerius, ir problema išnyks."
+    },
+    "gateway_token_rejected": {
+      "title": "„JUNG HOME“ sietuvas nebepriima Home Assistant",
+      "description": "„JUNG HOME“ sietuvas {host} atmeta prieigą, kurią Home Assistant užregistravo tinklui {title} (tikriausiai ji pašalinta „JUNG HOME“ programėlėje skiltyje Nustatymai → Sietuvas → Prieigos teisės). Home Assistant ir toliau keičia patalpas, mygtukų susiejimus ir scenas savo eksporte, bet nebeperduoda jo sietuvui, todėl programėlė tų pakeitimų nemato; įrenginiai ir toliau veikia. Home Assistant vėl prašo prieigos: vykdykite jo prašymą iš naujo nustatyti JUNG HOME tapatybę (Nustatymai → Įrenginiai ir paslaugos; Taisymuose tai taip pat rodoma kaip pasibaigęs autentifikavimas) ir įveskite sietuvo tinklo rakto slaptažodį arba patvirtinkite naują prieigos užklausą programėlėje. Problema išnyks, kai sietuvas vėl priims Home Assistant; tada veiksmas „Sinchronizuoti sietuvą“ perduos nuo to laiko padarytus pakeitimus."
+    },
+    "seq_store_lost": {
+      "title": "Prarasti „JUNG HOME“ tinklo {title} sekos numeriai",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Tęsti nuo jau išsiųstų numerių",
+            "description": "Šios integracijos sekos numerių saugykloje (`.storage/junghome_ble.seq.*`) nėra tinkamo įrašo Home Assistant adresui {unicast}, nors šiuo adresu jau buvo siųsta. Pradėjus vėl nuo 0, būtų pakartotinai naudojami įrenginių jau matyti sekos numeriai: jie nepaisytų Home Assistant, o kiekvienas pakartotas numeris silpnina tinklo šifravimą. Saugyklos atkūrimas iš atsarginės kopijos sukelia tą patį – senesnė kopija kartoja visus nuo jos sukūrimo išsiųstus numerius, – todėl failų `junghome_ble.seq.*` neatkurkite. Patvirtinkite, kad Home Assistant tęstų 1 048 576 numeriais toliau nuo paskutinės dar nuskaitomos reikšmės (4 194 304 numeriais toliau nuo apatinės ribos, kurią jis kartu su skaitikliu saugo faile `junghome_ble.seq.*.floor`, arba nuo 0, jei nieko neliko) ir iš naujo nustatytų integraciją."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "floor_not_written": "Nepavyko įrašyti sekos numerių apatinės ribos (`.storage/junghome_ble.seq.*.floor`): niekas nepakeista, o integracija lieka sustabdyta. Patikrinkite diską, kuriame yra Home Assistant konfigūracija, tada dar kartą taisykite problemą."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Nepavyksta išsaugoti „JUNG HOME“ sekos numerių",
+      "description": "Home Assistant jau ilgiau nei minutę negali įrašyti tinklo {title} sekos numerių saugyklos ({path}; paskutinė klaida: {error}). Kiekvienas pranešimas įrenginiams turi naują sekos numerį, o Home Assistant siunčia tik išsaugotus numerius, kad paleidus iš naujo nė vienas nepasikartotų: kol įrašyti nepavyks, jis nieko nesiunčia į tinklą – komandos nepavyksta, būsena neatnaujinama. Paprastai tai reiškia, kad diskas pilnas arba jo failų sistema iš naujo prijungta tik skaitymui – dažnai dėl gendančios SD kortelės. Atlaisvinkite vietos arba sutvarkykite saugojimo įrenginį (failų sistemai, prijungtai tik skaitymui, paprastai reikia paleisti serverį iš naujo); saugyklos failų neredaguokite, netrinkite ir nekeiskite. Problema išnyks savaime, kai tik įrašyti pavyks ir siuntimas atsinaujins."
+    },
+    "address_in_use": {
+      "title": "„JUNG HOME“ adresas, kurį naudoja Home Assistant, užimtas",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Perkelti Home Assistant į {suggestion}",
+            "description": "Tinklo {title} eksporte mazgas užima unicast adresą {unicast}, kuriuo siunčia Home Assistant. Abu būtų laikomi vienu siuntėju: įrenginiai vieno iš jų pranešimus atmeta kaip pakartotinius, o atsakymai pasiekia ne tą, kurį reikia. Patvirtinkite, kad Home Assistant gautų laisvą adresą {suggestion} ir iš naujo nustatytų integraciją, kaip tai daro Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas. Įsitikinkite, kad adresu {suggestion} nesiunčia joks kitas tinklo klientas (šios integracijos komandinės eilutės įrankiai, kita Home Assistant sistema). Sekos numeriai saugomi kiekvienam adresui atskirai: naujasis tęsia savo įrašą arba, jei Home Assistant jo neturi, pradeda pakankamai toli, kad nė vienas numeris nebūtų išsiųstas du kartus. Dar nepatikrinta su tikrais įrenginiais."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "cannot_load": "Nepavyko nuskaityti įrašo eksporto, todėl laisvo adreso nustatyti neįmanoma: niekas nepakeista. Įkelkite naują eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti.",
+          "no_free_address": "Eksporte nėra laisvo adreso Home Assistant: niekas nepakeista. Patikrinkite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti.",
+          "address_taken": "{suggestion} eksporte nebėra laisvas (eksportas tuo metu pasikeitė): niekas nepakeista. Dar kartą taisykite problemą, kad gautumėte naują pasiūlymą."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "„JUNG HOME“ adresas, kurį naudoja Home Assistant, gali būti suteiktas kitam",
+      "description": "Unicast adresas {unicast}, kuriuo Home Assistant siunčia tinkle {title}, patenka į vieno iš programėlės įtraukėjų (provisioner) adresų intervalą arba jį naudojo pašalintas mazgas. Jis veiks, kol programėlė tuo adresu neįtrauks mazgo; iki tol perkelkite Home Assistant į laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas; {suggestion} yra laisvas)."
+    },
+    "sequence_space_low": {
+      "title": "Baigiasi „JUNG HOME“ tinklo sekos numeriai",
+      "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Kiekvienas siuntėjas sustoja pasiekęs šios srities galą, kol tinklas pereis prie kito IV indekso (IV Update), kurį „JUNG HOME“ sietuvas pradeda pats; Home Assistant jį seka, bet pats nepradeda. Laikykite sietuvą įjungtą ir prisijungusį prie tinklo; be sietuvo tinklas sustoja, kai tik kuriam nors siuntėjui pritrūksta numerių. Problema išnyks savaime po atnaujinimo."
+    },
+    "iv_index_mismatch": {
+      "title": "„JUNG HOME“ tinklo IV indeksas kitas",
+      "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}: skirtumas per didelis, kad Home Assistant galėtų jį sekti (jis seka tinklą iki 42 į priekį, ne dažniau nei kas 192 valandas ir niekada atgal). Iki tol įrenginiai Home Assistant nepaiso. Taip nutinka, kai Home Assistant neveikė per daug IV atnaujinimų, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Suteikite Home Assistant naują unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas): juo jis pradeda nuo tinklo IV indekso. Saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus sekos numerius, o rankinį pakeitimą kitas paleidimas vis tiek perrašo. Problema išnyks savaime, kai gaus švyturį, kurio IV indeksą galima pasiekti."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant lenkia „JUNG HOME“ tinklo IV indeksą",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Grįžti prie tinklo IV indekso",
+            "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}, t. y. didesnis, nors tinklas niekada nebūna atsilikęs: įrenginiai Home Assistant nepaiso, o jis negali sekti tinklo, kuris yra už jo. Taip nutinka, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Patvirtinkite, kad Home Assistant grįžtų prie tinklo IV indekso ir iš naujo nustatytų integraciją: jo sekos numeriai tęsis virš visų numerių, kuriuos jis išsiuntė nuo to indekso, todėl nė vienas nebus panaudotas du kartus. Užuot taip darę, saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus numerius. Kitas būdas grįžti – naujas Home Assistant unicast adresas (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti). Dar nepatikrinta su tikrais įrenginiais: tinklą lenkiantis IV indeksas tikrame tinkle dar nepastebėtas."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "iv_index_not_ahead": "Home Assistant nebelenkia tinklo tiek, kad jo nepasiektų, arba jo IV būsena pasikeitė nuo tada, kai problema buvo užregistruota: niekas nepakeista. Jei problema vėl atsiras, taisykite ją dar kartą.",
+          "seq_store_not_written": "Nepavyko įrašyti sekos numerių apatinės ribos (`.storage/junghome_ble.seq.*.floor`): niekas nepakeista. Patikrinkite diską, kuriame yra Home Assistant konfigūracija, tada dar kartą taisykite problemą."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "„JUNG HOME“ mini aktoriai neturi laiko šaltinio",
+      "description": "Tinkle {title} yra senesnio tipo JUNG mini aktorių ({pucks}): laiką jie gauna iš laiko šaltinio – iš elektros tinklo maitinamo įrenginio, kuris jiems perduoda laiką. Tinkle nėra nė vieno tokio įrenginio, todėl mini aktorių laikmačiai vėluoja ar skuba. Įjunkite jungiklį *Laiko šaltinis* (konfigūracijos objektas, pagal numatytuosius nustatymus išjungtas) viename visada maitinamame įrenginyje, pavyzdžiui, lizde ar mini aktoriuje; „JUNG HOME“ programėlė, konfigūruodama mini aktorių, tokį įrenginį parenka pati. Dar nepatikrinta su tikrais įrenginiais. Problema išnyks, kai kuris nors įrenginys taps laiko šaltiniu."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Nustatyti patalpą",
+      "description": "Priskiria „JUNG HOME“ šviestuvus ir lizdus tinklo patalpai (programėlėje – „Area“). Dar nesančią patalpą sukuria tik įjungus parinktį „Sukurti patalpą“, todėl su klaida įvestas pavadinimas atmetamas. Įrenginys pašalinamas iš visų kitų patalpų; su patalpa jau susieti mygtukai pradeda valdyti ir jį. Tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo. Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "room": {
+          "name": "Patalpa",
+          "description": "Patalpos pavadinimas „JUNG HOME“ programėlėje."
+        },
+        "create": {
+          "name": "Sukurti patalpą",
+          "description": "Sukurti patalpą, jei tinkle tokiu pavadinimu jos nėra. Išjungus nežinomas pavadinimas atmetamas."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Įtraukti į patalpą",
+      "description": "Papildomai priskiria „JUNG HOME“ šviestuvus, lizdus ir žaliuzes tinklo patalpai: jie lieka ir savo dabartinėse patalpose, nes programėlė leidžia įrenginiui būti keliose patalpose. Dar nesančią patalpą sukuria tik įjungus parinktį „Sukurti patalpą“. Su patalpa jau susieti mygtukai pradeda valdyti ir juos. Tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo. Dar nepatikrinta su tikrais įrenginiais. Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "room": {
+          "name": "Patalpa",
+          "description": "Patalpos pavadinimas „JUNG HOME“ programėlėje."
+        },
+        "create": {
+          "name": "Sukurti patalpą",
+          "description": "Sukurti patalpą, jei tinkle tokiu pavadinimu jos nėra. Išjungus nežinomas pavadinimas atmetamas."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Pašalinti iš patalpos",
+      "description": "Pašalina „JUNG HOME“ šviestuvus, lizdus ir žaliuzes iš tinklo patalpos; kitose patalpose jie lieka, o įrenginys gali likti ir be jokios patalpos. Įrenginys, kurį per susiejimą su patalpa valdo mygtukas, atmetamas, nebent įjungta parinktis „Net jei jį valdo mygtukas“: palikęs patalpą, įrenginys atsiejamas ir nuo to mygtuko. Tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo. Dar nepatikrinta su tikrais įrenginiais. Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "room": {
+          "name": "Patalpa",
+          "description": "Patalpos pavadinimas „JUNG HOME“ programėlėje."
+        },
+        "force": {
+          "name": "Net jei jį valdo mygtukas",
+          "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Sukurti patalpą",
+      "description": "Sukuria tuščią patalpą tinklo eksporte (įrenginiams nieko nesiunčiama). Home Assistant jai suteikia didžiausią laisvą grupės adresą iš programėlės intervalo: programėlė jos nemato, kol neimportuoja failo, o savo kitai patalpai suteikia mažiausią laisvą adresą. Paprašius grąžina patalpos grupės adresą. Tik administratoriams.",
+      "fields": {
+        "name": {
+          "name": "Pavadinimas",
+          "description": "Naujos patalpos pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Pervadinti patalpą",
+      "description": "Pervadina patalpą tinklo eksporte (įrenginiams nieko nesiunčiama). Tik administratoriams.",
+      "fields": {
+        "room": {
+          "name": "Patalpa",
+          "description": "Dabartinis patalpos pavadinimas."
+        },
+        "new_name": {
+          "name": "Naujas pavadinimas",
+          "description": "Naujas pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Ištrinti patalpą",
+      "description": "Ištrina patalpą: jos įrenginiai iš jos pašalinami, su patalpa susieti mygtukai netenka savo funkcijos, o patalpa pašalinama iš tinklo eksporto. Patys įrenginiai ir toliau veikia. Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "room": {
+          "name": "Patalpa",
+          "description": "Trinamos patalpos pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Priskirti mygtuką",
+      "description": "Susieja mygtukinio jungiklio mygtuką ar jutiklį su šviestuvu, lizdu, žaliuzėmis, patalpos termostatu, sietuvu, patalpa ar scena – lygiai taip, kaip mygtuko susiejimas „JUNG HOME“ programėlėje: ankstesnis mygtuko susiejimas pašalinamas, mygtukas susiejamas su tikslu ir nustatomas jo režimas (jutiklis režimo neturi ir valdo tik vieną įrenginį). Tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo. Jutiklis kaip šaltinis ir temperatūros režimas dar nepatikrinti su tikrais įrenginiais. Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "key_entity": {
+          "name": "Mygtukas",
+          "description": "Mygtuko įvykio objektas arba jutiklio objektas."
+        },
+        "key_device": {
+          "name": "Mygtuko įrenginys",
+          "description": "Mygtukinis jungiklis, kuriam priklauso mygtukas (jei jis turi kelis mygtukus, nurodykite ir mygtuko raidę), arba jutiklis."
+        },
+        "key": {
+          "name": "Mygtuko raidė",
+          "description": "Kuris įrenginio mygtukas: A, B, C ar D; E1 ar E2 – mini aktoriaus įėjimui."
+        },
+        "target_entity": {
+          "name": "Tikslinis objektas",
+          "description": "Šviestuvas, lizdas, žaliuzės ar patalpos termostatas, kurį turi valdyti mygtukas."
+        },
+        "target_device": {
+          "name": "Tikslinis įrenginys",
+          "description": "Įrenginys, kurį turi valdyti mygtukas: šviestuvas, lizdas arba sietuvas (tada mygtukas praneša Home Assistant apie spustelėjimus, dvigubus spustelėjimus ir laikymus)."
+        },
+        "room": {
+          "name": "Tikslinė patalpa",
+          "description": "Patalpa, kurios šviestuvus ar lizdus turi valdyti mygtukas."
+        },
+        "scene": {
+          "name": "Tikslinė scena",
+          "description": "Scena, kurią mygtukas turi iškviesti visuose įrenginiuose, pagal numerį arba pavadinimą (mygtuko režimas scene; laukelį „Režimas“ palikite tuščią). Su tikru įrenginiu dar neišbandyta."
+        },
+        "mode": {
+          "name": "Režimas",
+          "description": "Ką daro mygtukas: light (įjungia / išjungia ir reguliuoja šviesumą), switch (įjungia / išjungia), move (žaliuzės; neišbandyta), gateway (praneša apie įvykius), lock (viršutinė / įjungimo pusė užblokuoja šviestuvą ar lizdą dabartinėje būsenoje, apatinė / išjungimo pusė atblokuoja; dar nepatikrinta su tikrais įrenginiais), temperature (patalpos termostato nustatytoji temperatūra; dar nepatikrinta su tikrais įrenginiais) arba patalpoms light_and_switch (šviestuvai ir lizdai kartu). Palikus tuščią, režimas parenkamas pagal tikslą."
+        },
+        "target_element": {
+          "name": "Tikslinis elementas",
+          "description": "Tik kai tikslas – įrenginys: vien mygtuko šviesumo reguliavimo klientu valdyti kitą tikslo dalį – color_temperature (derinamos baltos šviesos šviestuvo spalvinę temperatūrą, režimas light) arba slat (žaliuzių lameles, režimas move). Dar nepatikrinta su tikrais įrenginiais."
+        },
+        "lock_seconds": {
+          "name": "Blokavimo trukmė",
+          "description": "Tik režimui lock: kiek sekundžių galioja mygtuku įjungtas blokavimas (0 arba tuščia – kol mygtukas jį atšauks). Dar nepatikrinta su tikrais įrenginiais."
+        },
+        "room_area": {
+          "name": "Patalpa pagal sritį",
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+        },
+        "scene_entity": {
+          "name": "Scenos objektas",
+          "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Atsieti mygtuką",
+      "description": "Palieka mygtukinio jungiklio mygtuką be funkcijos: pašalinamas jo susiejimas su įrenginiu, sietuvu ar patalpa (programėlėje – „No function“). Grąžina, kiek jo pranešimų įrenginiai pritaikė, ar tinklo eksportas įrašytas ir kurie įrenginiai pasikeitė; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "key_entity": {
+          "name": "Mygtukas",
+          "description": "Mygtuko įvykio objektas."
+        },
+        "key_device": {
+          "name": "Mygtuko įrenginys",
+          "description": "Mygtukinis jungiklis, kuriam priklauso mygtukas (jei jis turi kelis mygtukus, nurodykite ir mygtuko raidę)."
+        },
+        "key": {
+          "name": "Mygtuko raidė",
+          "description": "Kuris įrenginio mygtukas: A, B, C ar D; E1 ar E2 – mini aktoriaus įėjimui."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Sukurti sceną",
+      "description": "Sukuria tuščią sceną tinklo eksporte (įrenginiams nieko nesiunčiama). Įrenginius į ją įrašykite veiksmu „Įrašyti sceną“. Home Assistant jai suteikia didžiausią laisvą scenos numerį iš programėlės intervalo: programėlė jos nemato, kol neimportuoja failo, o savo kitai scenai suteikia mažiausią laisvą numerį. Paprašius grąžina scenos numerį. Tik administratoriams.",
+      "fields": {
+        "name": {
+          "name": "Pavadinimas",
+          "description": "Naujos scenos pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Pervadinti sceną",
+      "description": "Pervadina sceną tinklo eksporte (įrenginiams nieko nesiunčiama). Tik administratoriams.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Dabartinis scenos pavadinimas arba numeris."
+        },
+        "new_name": {
+          "name": "Naujas pavadinimas",
+          "description": "Naujas pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "scene_entity": {
+          "name": "Scenos objektas",
+          "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Įrašyti sceną",
+      "description": "Įrašo dabartinę „JUNG HOME“ šviestuvų, lizdų, žaliuzių ir termostatų būseną į sceną, kaip programėlės funkcija „save device into scene“: pirmiausia nustatykite įrenginius taip, kaip juos turi palikti scena, tada iškvieskite šį veiksmą. Kiekvienas įrenginys įsimena savo būseną scenoje (Scene Store) kartu su JUNG aprašu, o tinklo eksportas įrašo narį. Home Assistant tai perima neįkeldamas integracijos iš naujo. Nurodžius būseną (veiksmą, šviesumą, spalvinę temperatūrą, temperatūrą), kiekvienas įrenginys pirmiausia į ją perjungiamas ir laukiama, kol ją pasieks; žaliuzės, kurioms nurodyta padėtis, nejudinamos – scena tiesiog įsimena tą padėtį. Tik administratoriams.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Scenos pavadinimas arba numeris (sukurta veiksmu „Sukurti sceną“ arba programėlėje)."
+        },
+        "action": {
+          "name": "Veiksmas",
+          "description": "Prieš įrašant įjungti arba išjungti šviestuvus ir lizdus."
+        },
+        "brightness_pct": {
+          "name": "Šviesumas",
+          "description": "Prieš įrašant nustatyti šviestuvams šį šviesumą (veiksmas tada – įjungti)."
+        },
+        "color_temp_kelvin": {
+          "name": "Spalvinė temperatūra",
+          "description": "Prieš įrašant nustatyti derinamos baltos šviesos šviestuvams šią spalvinę temperatūrą."
+        },
+        "position": {
+          "name": "Padėtis",
+          "description": "Padėtis, į kurią scena nuleidžia ar pakelia žaliuzes: 0 – uždarytos, 100 – atidarytos."
+        },
+        "tilt_position": {
+          "name": "Lamelių padėtis",
+          "description": "Lamelių padėtis, į kurią scena nustato žaliuzes; nenurodžius – žaliuzių padėtis."
+        },
+        "temperature": {
+          "name": "Temperatūra",
+          "description": "Prieš įrašant nustatyti termostatams šią temperatūrą."
+        },
+        "scene_entity": {
+          "name": "Scenos objektas",
+          "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Įrašoma būsena",
+          "description": "Pirmiausia nustatyti įrenginiams šią būseną; palikus tuščią, įrašoma dabartinė jų būsena."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Pašalinti iš scenos",
+      "description": "Pašalina „JUNG HOME“ šviestuvus, lizdus, žaliuzes ir termostatus iš scenos: kiekvienas įrenginys pamiršta sceną (Scene Delete), o tinklo eksportas pašalina narį. Home Assistant tai perima neįkeldamas integracijos iš naujo. Tik administratoriams.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Scenos pavadinimas arba numeris."
+        },
+        "scene_entity": {
+          "name": "Scenos objektas",
+          "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Ištrinti sceną",
+      "description": "Ištrina sceną: kiekvienas ją įsiminęs įrenginys ją pamiršta, tų įrenginių mygtukai, kurie ją iškviečia, netenka susiejimų, o scena pašalinama iš tinklo eksporto. Home Assistant tai perima neįkeldamas integracijos iš naujo. Paprašius grąžina įrenginius, praleistus dėl parinkties „Net jei įrenginys neatsako“ (jai reikia „Patvirtinti“), ir ką pritaikė mygtukams siųsti pranešimai; įjungus parinktį „Bandomasis vykdymas“ – ką išsiųstų ir pakeistų. Tik administratoriams.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Trinamos scenos pavadinimas arba numeris."
+        },
+        "force": {
+          "name": "Net jei įrenginys neatsako",
+          "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        },
+        "scene_entity": {
+          "name": "Scenos objektas",
+          "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        },
+        "confirm": {
+          "name": "Patvirtinti",
+          "description": "Būtina kartu su parinktimi „Net jei įrenginys neatsako“: sceną išsaugojusio įrenginio iš čia nepavyks priversti jos pamiršti. Bandomajam vykdymui nereikia."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Ištrinti nenaudojamas scenas",
+      "description": "Nuskaito kiekvieno įrenginio scenų registrą ir išvardija arba ištrina scenas, kurių nežino tinklo eksportas (nei programėlės scenos, nei jos laikmačio scenos), kaip programėlė daro atidarius laikmačių sąrašą. Jei nenurodyta kitaip, vykdoma bandomuoju režimu. Su sietuvu veikia tik su dabartiniu sietuvo eksportu; iš failo sukonfigūruotame tinkle trinti galima tik įjungus parinktį „Tinklo eksportas yra naujausias“ arba nurodžius trinamus numerius. Grąžina numerius pagal įrenginius. Tik administratoriams.",
+      "fields": {
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik išvardyti numerius, kurie būtų ištrinti; nieko netrinama. Numatytoji reikšmė – įjungta."
+        },
+        "numbers": {
+          "name": "Scenų numeriai",
+          "description": "Ištrinti tik šiuos scenų numerius (nė vienas jų negali būti tinklo eksporto scena)."
+        },
+        "confirm_stale_export": {
+          "name": "Tinklo eksportas yra naujausias",
+          "description": "Iš failo sukonfigūruotam tinklui: faile yra visos programėlės scenos, įskaitant sukurtas po eksportavimo. Neįjungus ištrinami tik nurodyti numeriai."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Sinchronizuoti sietuvą",
+      "description": "Perduoda „JUNG HOME“ sietuvui Home Assistant naudojamą tinklo eksportą, kaip programėlė daro po kiekvieno pakeitimo. Vykdoma automatiškai po kiekvieno eksportą perrašančio veiksmo; iškvieskite, kad bandytumėte dar kartą po taisymo „eksportas neperduotas sietuvui“ arba patys pataisę failą. Tik administratoriams.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Gauti tvarkaraščius",
+      "description": "Nuskaito tvarkaraščius, kuriuos „JUNG HOME“ įrenginiai vykdo patys (programėlės puslapis „Automation“): iki 16 vietų kiekviename įrenginyje, kiekviena su paleidikliu pagal laiką, saulėtekį ar saulėlydį tam tikromis savaitės dienomis ir tuo, ką įrenginys tada daro. Grąžina kiekvieno objekto užimtas vietas tais laukais, kuriuos priima veiksmas „Sukurti tvarkaraštį“."
+    },
+    "create_schedule": {
+      "name": "Sukurti tvarkaraštį",
+      "description": "Įrašo tvarkaraštį į pirmą laisvą kiekvieno pasirinkto „JUNG HOME“ įrenginio vietą; įrenginys jį vykdo pats, be Home Assistant. Prieš saulėtekio ar saulėlydžio tvarkaraštį mazgui išsiunčiama Home Assistant namų vieta. Grąžina kiekvieno objekto panaudotą vietą. Su įrenginiu neišbandyta. Tik administratoriams.",
+      "fields": {
+        "trigger": {
+          "name": "Paleidiklis",
+          "description": "Kada tvarkaraštis suveikia: nurodytu paros laiku, saulėtekio ar saulėlydžio metu."
+        },
+        "time": {
+          "name": "Laikas",
+          "description": "Laiko tvarkaraščio paros laikas."
+        },
+        "not_before": {
+          "name": "Ne anksčiau nei",
+          "description": "Saulėtekio ar saulėlydžio tvarkaraštis suveikia ne anksčiau nei šiuo laiku (nenurodžius – neribojama)."
+        },
+        "not_after": {
+          "name": "Ne vėliau nei",
+          "description": "Saulėtekio ar saulėlydžio tvarkaraštis suveikia ne vėliau nei šiuo laiku (nenurodžius – neribojama)."
+        },
+        "offset": {
+          "name": "Poslinkis",
+          "description": "Minutės prieš (neigiamas skaičius) arba po saulėtekio ar saulėlydžio."
+        },
+        "weekdays": {
+          "name": "Savaitės dienos",
+          "description": "Dienos, kuriomis tvarkaraštis suveikia; nenurodžius – kasdien."
+        },
+        "enabled": {
+          "name": "Įjungta",
+          "description": "Ar tvarkaraštis suveikia; išjungtas laukia veiksmo „Įjungti tvarkaraštį“."
+        },
+        "action": {
+          "name": "Veiksmas",
+          "description": "Įjungti arba išjungti šviestuvą ar lizdą."
+        },
+        "brightness_pct": {
+          "name": "Šviesumas",
+          "description": "Šviesumas, kuriuo įsijungia šviesos reguliatorius (veiksmas tada – įjungti)."
+        },
+        "color_temp_kelvin": {
+          "name": "Spalvinė temperatūra",
+          "description": "Derinamos baltos šviesos šviestuvo spalvinė temperatūra, 100 K žingsniais."
+        },
+        "position": {
+          "name": "Padėtis",
+          "description": "Padėtis, į kurią juda žaliuzės: 0 – uždarytos, 100 – atidarytos."
+        },
+        "tilt_position": {
+          "name": "Lamelių padėtis",
+          "description": "Žaliuzių lamelių padėtis; nenurodžius – žaliuzių padėtis."
+        },
+        "temperature": {
+          "name": "Temperatūra",
+          "description": "Patalpos termostato tikslinė temperatūra."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kada",
+          "description": "Kada tvarkaraštis suveikia."
+        },
+        "what": {
+          "name": "Ką daryti",
+          "description": "Kokia būsena įrenginiui nustatoma, kai tvarkaraštis suveikia."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Atnaujinti tvarkaraštį",
+      "description": "Perrašo užimtą kiekvieno pasirinkto „JUNG HOME“ įrenginio tvarkaraščio vietą, kaip programėlės redagavimas, tais pačiais laukais, kuriuos priima veiksmas „Sukurti tvarkaraštį“: nurodykite juos visus iš naujo – kas nenurodyta, iš vietos neišsaugoma. Prieš saulėtekio ar saulėlydžio tvarkaraštį mazgui išsiunčiama Home Assistant namų vieta; nepavykus įrašyti, į vietą grąžinamas senasis tvarkaraštis. Dar nepatikrinta su tikrais įrenginiais. Tik administratoriams.",
+      "fields": {
+        "slot": {
+          "name": "Vieta",
+          "description": "Perrašomos tvarkaraščio vietos numeris (0–15), kaip jį pateikia veiksmas „Gauti tvarkaraščius“ ir jutiklis „Tvarkaraščiai“."
+        },
+        "trigger": {
+          "name": "Paleidiklis",
+          "description": "Kada tvarkaraštis suveikia: nurodytu paros laiku, saulėtekio ar saulėlydžio metu."
+        },
+        "time": {
+          "name": "Laikas",
+          "description": "Laiko tvarkaraščio paros laikas."
+        },
+        "not_before": {
+          "name": "Ne anksčiau nei",
+          "description": "Saulėtekio ar saulėlydžio tvarkaraštis suveikia ne anksčiau nei šiuo laiku (nenurodžius – neribojama)."
+        },
+        "not_after": {
+          "name": "Ne vėliau nei",
+          "description": "Saulėtekio ar saulėlydžio tvarkaraštis suveikia ne vėliau nei šiuo laiku (nenurodžius – neribojama)."
+        },
+        "offset": {
+          "name": "Poslinkis",
+          "description": "Minutės prieš (neigiamas skaičius) arba po saulėtekio ar saulėlydžio."
+        },
+        "weekdays": {
+          "name": "Savaitės dienos",
+          "description": "Dienos, kuriomis tvarkaraštis suveikia; nenurodžius – kasdien."
+        },
+        "enabled": {
+          "name": "Įjungta",
+          "description": "Ar tvarkaraštis suveikia; išjungtas laukia veiksmo „Įjungti tvarkaraštį“."
+        },
+        "action": {
+          "name": "Veiksmas",
+          "description": "Įjungti arba išjungti šviestuvą ar lizdą."
+        },
+        "brightness_pct": {
+          "name": "Šviesumas",
+          "description": "Šviesumas, kuriuo įsijungia šviesos reguliatorius (veiksmas tada – įjungti)."
+        },
+        "color_temp_kelvin": {
+          "name": "Spalvinė temperatūra",
+          "description": "Derinamos baltos šviesos šviestuvo spalvinė temperatūra, 100 K žingsniais."
+        },
+        "position": {
+          "name": "Padėtis",
+          "description": "Padėtis, į kurią juda žaliuzės: 0 – uždarytos, 100 – atidarytos."
+        },
+        "tilt_position": {
+          "name": "Lamelių padėtis",
+          "description": "Žaliuzių lamelių padėtis; nenurodžius – žaliuzių padėtis."
+        },
+        "temperature": {
+          "name": "Temperatūra",
+          "description": "Patalpos termostato tikslinė temperatūra."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kada",
+          "description": "Kada tvarkaraštis suveikia."
+        },
+        "what": {
+          "name": "Ką daryti",
+          "description": "Kokia būsena įrenginiui nustatoma, kai tvarkaraštis suveikia."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Įjungti tvarkaraštį",
+      "description": "Leidžia „JUNG HOME“ įrenginių tvarkaraščio vietai vėl suveikti. Tik administratoriams.",
+      "fields": {
+        "slot": {
+          "name": "Vieta",
+          "description": "Tvarkaraščio vietos numeris (0–15), kaip jį pateikia veiksmas „Gauti tvarkaraščius“ ir jutiklis „Tvarkaraščiai“."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Išjungti tvarkaraštį",
+      "description": "Neleidžia „JUNG HOME“ įrenginių tvarkaraščio vietai suveikti, jos neištrindamas. Tik administratoriams.",
+      "fields": {
+        "slot": {
+          "name": "Vieta",
+          "description": "Tvarkaraščio vietos numeris (0–15), kaip jį pateikia veiksmas „Gauti tvarkaraščius“ ir jutiklis „Tvarkaraščiai“."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Ištrinti tvarkaraštį",
+      "description": "Atlaisvina „JUNG HOME“ įrenginių tvarkaraščio vietą. Tik administratoriams.",
+      "fields": {
+        "slot": {
+          "name": "Vieta",
+          "description": "Tvarkaraščio vietos numeris (0–15), kaip jį pateikia veiksmas „Gauti tvarkaraščius“ ir jutiklis „Tvarkaraščiai“."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Nustatyti slenkstį",
+      "description": "Nustato „JUNG HOME“ lizdo su energijos matavimu slenkstį – programėlės automatinį profilį: kai lizdo galia nurodytą laiką išlieka ties nustatytu lygiu, lizdas pats, be Home Assistant, įjungia (įjungimo slenkstis) arba išjungia (išjungimo slenkstis) pasirinktus šviestuvus ir lizdus. Su įrenginiu neišbandyta. Paprašius grąžina, kiek susiejimo pranešimų įrenginiai pritaikė. Tik administratoriams.",
+      "fields": {
+        "threshold": {
+          "name": "Slenkstis",
+          "description": "Kurį iš dviejų lizdo slenksčių nustatyti."
+        },
+        "power": {
+          "name": "Galia",
+          "description": "Galios lygis vatais (0,1 W žingsniais); nenurodžius – dabartinis lizdo lygis."
+        },
+        "duration": {
+          "name": "Trukmė",
+          "description": "Kiek sekundžių galia turi išlikti ties šiuo lygiu; nenurodžius – dabartinė lizdo trukmė."
+        },
+        "enabled": {
+          "name": "Įjungta",
+          "description": "Ar slenkstis perjungia; išjungtas išsaugo savo lygį ir trukmę. Nenurodžius slenksčio būsena nesikeičia (naujas slenkstis įjungiamas). Išjungus, kai kitas slenkstis irgi neaktyvus, šviestuvai ir lizdai atsiejami, kaip programėlėje: įjungdami slenkstį, įrenginius nurodykite iš naujo."
+        },
+        "devices": {
+          "name": "Įrenginiai",
+          "description": "Šviestuvai ir lizdai, kuriuos perjungia abu slenksčiai; pakeičia dabartinį sąrašą, o nenurodžius sąrašas lieka. Jam pasikeitus, tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Ištrinti slenksčius",
+      "description": "Išvalo abu „JUNG HOME“ lizdo su energijos matavimu slenksčius ir atsieja jų perjungtus šviestuvus bei lizdus, kaip programėlės trynimas. Jei įrenginiai buvo atsieti, Home Assistant perima perrašytą tinklo eksportą neįkeldamas integracijos iš naujo. Paprašius grąžina, kiek susiejimo pranešimų įrenginiai pritaikė. Tik administratoriams."
+    },
+    "audit_network": {
+      "name": "Patikrinti tinklą",
+      "description": "Nieko nekeisdamas nuskaito, kas įrašyta „JUNG HOME“ įrenginių tinklo konfigūracijoje – relay, network transmit, default TTL, beacon, GATT proxy ir friend, kiekvieno įrenginio tinklo ir programos raktai (pagal indeksą, niekada ne patys raktai), o kiekvienam modeliui – jo publikavimas, prenumeratos ir susieti programos raktai – ir palygina su tinklo eksportu. Grąžina kiekvieno įrenginio nustatymus ir visus rastus skirtumus bei išvardija neatsakiusius įrenginius. Visų įrenginių patikra trunka kelias minutes; baterijomis maitinami įrenginiai miega ir praleidžiami, nebent nurodyti atskirai.",
+      "fields": {
+        "device": {
+          "name": "Įrenginys",
+          "description": "Tikrinti tik už šio įrenginio esantį tinklo mazgą (šviestuvą, mygtuką, lizdą ar patį mazgą). Palikus tuščią, tikrinami visi iš elektros tinklo maitinami mazgai."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Eksportuoti tinklą",
+      "description": "Grąžina Home Assistant naudojamą eksportą – su jo pakeistomis patalpomis, mygtukais, susiejimais ir scenomis – kaip „JUNG HOME“ programėlės bendrinimo failą arba kaip tinklo duomenų bazę, atsarginei kopijai ar importui į programėlę. Tik administratoriams: jame yra visi tinklo raktai.",
+      "fields": {
+        "flavour": {
+          "name": "Formatas",
+          "description": "Programėlės bendrinimo failas (JungHome.json) arba tinklo duomenų bazė (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Eksportuojamas „JUNG HOME“ tinklas; reikia tik tada, kai jų yra keli."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Rasti naujus įrenginius",
+      "description": "Išvardija netoliese esančius JUNG įrenginius, kurie dar nepriklauso jokiam tinklui, su Bluetooth adresu, kurio reikia veiksmui `add_device`."
+    },
+    "add_device": {
+      "name": "Pridėti įrenginį (eksperimentinis)",
+      "description": "Prideda naują JUNG įrenginį prie tinklo taip, kaip tai darytų programėlė: įtraukia jį į tinklą saugiausiu įrenginio siūlomu būdu (Static OOB, jei įrenginys jį siūlo ir nurodyta jo reikšmė, su algoritmu HMAC-SHA256, kitaip – No OOB, kaip programėlė; be autentifikavimo kas nors Bluetooth ryšio zonoje proceso metu galėtų perimti tinklo raktus), sukonfigūruoja jį pagal programėlės taisykles remdamasis tuo, ką praneša įrenginys (atmetama, jei tai nesutampa su tuo, ką turi tinkle jau esantis to paties produkto įrenginys), ir įrašo jį į eksportą (perduodamą sietuvui). Įrenginio, kurio nepavyko sukonfigūruoti, gamykliniai nustatymai atkuriami, kaip daro programėlė. Jo elementų grupės gauna didžiausius laisvus grupių adresus iš programėlės intervalo (programėlė įrenginio nemato, kol neimportuoja failo). Atsakyme išvardijami atlikti žingsniai. Reikia įjungti įrašo parinktį *Leisti Home Assistant pridėti įrenginius*. Tik administratoriams. Autentifikuoti būdai, konfigūravimo taisyklės ir gamyklinių nustatymų atkūrimas dar nepatikrinti su tikrais įrenginiais.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth adresas",
+          "description": "Adresas, kurį šiam įrenginiui pateikia veiksmas `find_new_devices`."
+        },
+        "name": {
+          "name": "Pavadinimas",
+          "description": "Naujojo įrenginio pavadinimas."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "„JUNG HOME“ tinklas, į kurį pridėti; reikia tik tada, kai jų yra keli."
+        },
+        "static_oob": {
+          "name": "Static OOB reikšmė",
+          "description": "Tik įrenginiui, siūlančiam Static OOB autentifikavimą: jo 16 arba 32 baitų reikšmė šešioliktainiu formatu, kaip nurodo gamintojas (nežinoma, kad kuris nors JUNG įrenginys tai siūlytų). Niekada neįrašoma į žurnalą. Įrenginys, priimantis tik autentifikuotą įtraukimą į tinklą, be jos atmetamas, o jo nesiūlantis įrenginys atmetamas su ja."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Pašalinti įrenginį (eksperimentinis)",
+      "description": "Atkuria JUNG įrenginio gamyklinius nustatymus (jis pamiršta tinklą ir vėl tampa nauju įrenginiu) ir pašalina jį iš tinklo, kaip daro programėlė: kitų įrenginių susiejimai su juo pašalinami, eksporte jis pažymimas kaip pašalintas, o eksportas perduodamas sietuvui. Atšaukti negalima. Reikia įjungti įrašo parinktį *Leisti Home Assistant pridėti ir pašalinti įrenginius*. Reikia „Patvirtinti“; įjungus parinktį „Bandomasis vykdymas“ grąžina, ką išsiųstų ir pakeistų, ir patvirtinimo nereikia. Tik administratoriams.",
+      "fields": {
+        "device": {
+          "name": "Įrenginys",
+          "description": "Šalinamas JUNG įrenginys (bet kuris jo įrenginys Home Assistant)."
+        },
+        "force": {
+          "name": "Net jei neatsako",
+          "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį."
+        },
+        "confirm": {
+          "name": "Patvirtinti",
+          "description": "Būtina, kad veiksmas būtų įvykdytas: įrenginio pašalinimo atšaukti negalima. Bandomajam vykdymui nereikia."
+        },
+        "dry_run": {
+          "name": "Bandomasis vykdymas",
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Atkurti neužregistruoto įrenginio nustatymus (eksperimentinis)",
+      "description": "Atkuria gamyklinius nustatymus JUNG įrenginiui, kurį `add_device` įtraukė į tinklą, bet nepajėgė sukonfigūruoti ar įrašyti (juos išvardija taisymų pranešimas *Home Assistant pridėtas įrenginys neįrašytas*): nusiunčia jam Config Node Reset su įrenginio raktu, kurį turi tik Home Assistant, kad jis vėl taptų nauju įrenginiu, ir atlaisvina jo adresus. Su tikru įrenginiu dar neišbandyta. Reikia įjungti įrašo parinktį *Leisti Home Assistant pridėti įrenginius*. Tik administratoriams.",
+      "fields": {
+        "uuid": {
+          "name": "Įrenginio UUID",
+          "description": "Įrenginio UUID, kaip jį pateikė `add_device` arba `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Unicast adresas",
+          "description": "Pagrindinis įrenginio unicast adresas (šešioliktainis, kaip jį nurodo taisymų pranešimas); nurodžius kartu su UUID, abu turi sutapti."
+        },
+        "force": {
+          "name": "Net jei neatsako",
+          "description": "Pamiršti įrenginį, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (nustatymai atkurti rankiniu būdu arba įrenginio nebeliko visam laikui)."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "„JUNG HOME“ tinklas, į kurį įrenginys buvo pridėtas; reikia tik tada, kai jų yra keli."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Rasti įrenginį",
+      "description": "Liepia JUNG įrenginiui iki minutės transliuoti savo Node Identity – Bluetooth skelbimą, kurį su įrenginiu susieti gali tik šio tinklo raktai, – ir tada liautis, kad Bluetooth skeneris galėtų nustatyti, kuris radijo siųstuvas yra tas įrenginys. Nieko daugiau nekeičia; įrenginys bet kuriuo atveju po minutės liaujasi pats. Tik administratoriams. Dar nepatikrinta su tikrais įrenginiais.",
+      "fields": {
+        "device": {
+          "name": "Įrenginys",
+          "description": "Ieškomas JUNG įrenginys (bet kuris jo įrenginys Home Assistant)."
+        },
+        "duration": {
+          "name": "Trukmė",
+          "description": "Transliavimo trukmė sekundėmis, nuo 5 iki 60 (po 60 įrenginys liaujasi pats)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Patvirtinti sietuvo klientą",
+      "description": "Išvardija API klientus, laukiančius prieigos prie „JUNG HOME“ sietuvo (kita integracija, scenarijus), ir patvirtina nurodytąjį, kaip programėlės Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos. Patvirtintas klientas gauna visą sietuvo API ir tinklo eksportą su visais tinklo raktais: tvirtinkite tik patys paleistą klientą. Nenurodžius kliento pavadinimo, tik išvardija klientus (įjunkite atsakymą). Prieigą atšaukti galima tik programėlėje. Tik administratoriams ir tik iš sietuvo sukonfigūruotam tinklui. Dar nepatikrinta su tikrais įrenginiais.",
+      "fields": {
+        "client": {
+          "name": "Klientas",
+          "description": "Pavadinimas, kuriuo klientas prašo prieigos, tiksliai toks, koks nurodytas sąraše `waiting`. Palikus tuščią, nieko netvirtinama."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Pradėti šviesumo reguliavimą",
+      "description": "Pradeda didinti arba mažinti „JUNG HOME“ šviesos reguliatoriaus šviesumą, kaip laikant nuspaustą klavišą, kol iškviečiamas veiksmas „Sustabdyti šviesumo reguliavimą“ (arba pasiekiama diapazono riba). Su tikru įrenginiu dar neišbandyta.",
+      "fields": {
+        "direction": {
+          "name": "Kryptis",
+          "description": "Šviesiau (didinti) arba tamsiau (mažinti)."
+        },
+        "speed": {
+          "name": "Greitis",
+          "description": "Kaip greitai – procentais šviesumo diapazono per sekundę (numatytoji reikšmė 20: nuo išjungto iki visiško šviesumo per 5 sekundes)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Sustabdyti šviesumo reguliavimą",
+      "description": "Sustabdo „JUNG HOME“ šviesos reguliatorių, kurio šviesumą keisti pradėjo veiksmas „Pradėti šviesumo reguliavimą“, ties dabartiniu šviesumu. Su tikru įrenginiu dar neišbandyta."
+    },
+    "step_dim": {
+      "name": "Pakeisti šviesumą žingsniu",
+      "description": "Padidina arba sumažina „JUNG HOME“ šviesos reguliatoriaus šviesumą vienu žingsniu. Su tikru įrenginiu dar neišbandyta.",
+      "fields": {
+        "step": {
+          "name": "Žingsnis",
+          "description": "Procentai šviesumo diapazono: teigiamas – šviesiau, neigiamas – tamsiau."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Apšvietimas (įjungimas / išjungimas, šviesumo reguliavimas)",
+        "switch": "Jungimas (įjungimas / išjungimas)",
+        "move": "Žaliuzės (neišbandyta)",
+        "gateway": "Sietuvas (pranešti apie įvykius)",
+        "light_and_switch": "Šviestuvai ir lizdai (tik patalpos)",
+        "lock": "Užblokuoti ir atblokuoti (dar nepatikrinta su tikrais įrenginiais)",
+        "temperature": "Temperatūra (patalpos termostatas, neišbandyta)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Spalvinė temperatūra (dar nepatikrinta su tikrais įrenginiais)",
+        "slat": "Lamelės (dar nepatikrinta su tikrais įrenginiais)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Paros laikas",
+        "sunrise": "Saulėtekis",
+        "sunset": "Saulėlydis"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Įjungti",
+        "off": "Išjungti"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Pirmadienis",
+        "tue": "Antradienis",
+        "wed": "Trečiadienis",
+        "thu": "Ketvirtadienis",
+        "fri": "Penktadienis",
+        "sat": "Šeštadienis",
+        "sun": "Sekmadienis"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Įjungimo slenkstis",
+        "switch_off": "Išjungimo slenkstis"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Programėlės bendrinimo failas (JungHome.json)",
+        "cdb": "Tinklo duomenų bazė (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Šviesiau",
+        "down": "Tamsiau"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Jungiklio mechanizmas",
+        "two_gang_switch": "Dvigubas jungiklio mechanizmas",
+        "dimming": "Šviesos reguliatoriaus mechanizmas",
+        "two_gang_dimming": "Dvigubas šviesos reguliatoriaus mechanizmas",
+        "tw_dimming": "DALI mechanizmas",
+        "blind": "Žaliuzių mechanizmas",
+        "extension": "Papildomo valdymo taško mechanizmas",
+        "not_available": "Be mechanizmo"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Mygtukas viršuje / apačioje",
+        "one_rocker": "Klavišas",
+        "two_left_two_right": "Mygtukas | Mygtukas",
+        "one_left_two_right": "Klavišas | Mygtukas",
+        "two_left_one_right": "Mygtukas | Klavišas",
+        "one_left_one_right": "Klavišas | Klavišas"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Mygtukinis jungiklis, vienvietis",
+        "push_button_2": "Mygtukinis jungiklis, dvivietis",
+        "socket_metering": "Elektros lizdas (su matavimu)",
+        "socket": "Elektros lizdas",
+        "switch_actuator_mini": "Jungimo aktorius, 1 kanalo, mini",
+        "blinds_actuator_mini": "Žaliuzių aktorius, 1 kanalo, mini",
+        "wall_transmitter_1": "Sieninis siųstuvas, vienvietis",
+        "wall_transmitter_2": "Sieninis siųstuvas, dvivietis",
+        "motion_detector_1m": "Judesio jutiklis, 1 m",
+        "motion_detector_2m": "Judesio jutiklis, 2 m",
+        "presence_detector": "Buvimo jutiklis",
+        "room_thermostat": "Patalpos termostatas",
+        "gateway": "Sietuvas",
+        "switch_actuator_1_energy": "Jungimo aktorius, 1 kanalo, 2 įėjimų, su energijos matavimu",
+        "switch_actuator_2": "Jungimo aktorius, 2 kanalų, 2 įėjimų",
+        "dimmer_actuator": "Šviesos reguliavimo aktorius, 1 kanalo, 2 įėjimų",
+        "blinds_actuator": "Žaliuzių aktorius PP2, 1 kanalo, 2 įėjimų",
+        "dali_actuator": "DALI aktorius, 1 kanalo, 2 įėjimų",
+        "mini_sensor_mains": "Mini jutiklis, 2 įėjimų, maitinamas iš tinklo",
+        "mini_sensor_battery": "Mini jutiklis, 2 įėjimų, su baterija"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh tinklas",
+        "switch": "Jungiamas šviestuvas",
+        "dimmer": "Reguliuojamo šviesumo šviestuvas",
+        "ctl": "Reguliuojamos spalvinės temperatūros (DALI) šviestuvas",
+        "blind": "Žaliuzių / ritininių žaliuzių pavara",
+        "push_buttons": "Mygtukai",
+        "unknown_product": "Gaminys {pid}"
+      }
+    }
+  }
+}
