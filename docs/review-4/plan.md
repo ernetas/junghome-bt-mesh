@@ -529,6 +529,14 @@ Dependencies (hard unless marked *soft*):
   *Advanced* section, an icon for every action, `gateway_busy` (50); U4-1, U4-16 German translation, device models and
   logbook lines in the server's language, the parity test over every translation (51, decision M4 taken). Brief 68
   added: the 24 further languages of the JUNG HOME gateway integration.
+- **Wave 14b (brief 68): done.** U4-1 for every language the JUNG HOME gateway integration ships: 26 translation
+  files, each complete; machine translations, said so in the CHANGELOG and the *Languages* section.
+- **Wave 15 (briefs 52–57): done.** The large modules split without behaviour changes: A4-1 sequence-number
+  persistence into `seq_store.py`, node information into `node_info.py` (52); A4-2, A4-6, A4-7 one dispatch helper,
+  `errors.mesh_errors`, `conversions.py` (53); A4-4 `config_entities.py` into `properties/` (54); A4-5
+  `MeshConfigurator` a facade over the `configurator/` package (55); A4-8 the actions into `actions/`, one module per
+  domain (56); A4-9 `jhmesh` states its public API in `__all__`, `LocalState` in `jhmesh/state.py` (57). Follow-ups:
+  `mesh_errors` at the remaining `send_failed` sites, stale comment references to the old private names.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -536,4 +544,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 52–68 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 58–64 and 67 are TODO; the on-air sweep is the maintainer's.
