@@ -18,6 +18,7 @@ from jhmesh.vault import (
     GROUP_CEILING,
     RangeError,
     Ranges,
+    RefreshProgress,
     Vault,
     VaultError,
     choose_ranges,
@@ -297,6 +298,27 @@ def edited(path: tuple[Any, ...], value: Any) -> dict[str, Any]:
         (edited(("nodes", 0, "devices"), [1]), "devices is not a list"),
         (edited(("nodes", 0, "devices"), {}), "devices is not a list"),
         (edited(("nodes", 0, "deviceKey"), "00"), r"nodes\[0\] deviceKey"),
+        (edited(("nodes", 0, "keyRefresh"), []), r"nodes\[0\] keyRefresh is not an"),
+        (
+            edited(("nodes", 0, "keyRefresh"), {"networkId": "00", "phase": 1}),
+            "keyRefresh networkId is not an 8-byte",
+        ),
+        (
+            edited(("nodes", 0, "keyRefresh"), {"networkId": "zz" * 8, "phase": 1}),
+            "keyRefresh networkId is not an 8-byte",
+        ),
+        (
+            edited(("nodes", 0, "keyRefresh"), {"networkId": 5, "phase": 1}),
+            "keyRefresh networkId is not an 8-byte",
+        ),
+        (
+            edited(("nodes", 0, "keyRefresh"), {"networkId": "00" * 8, "phase": 4}),
+            "keyRefresh phase is not 0, 1, 2 or 3",
+        ),
+        (
+            edited(("nodes", 0, "keyRefresh"), {"networkId": "00" * 8, "phase": True}),
+            "keyRefresh phase is not 0, 1, 2 or 3",
+        ),
     ],
 )
 def test_a_vault_that_does_not_read_back(data: Any, message: str) -> None:
@@ -774,3 +796,42 @@ def test_no_block_overlaps_any_pending_node(
     assert block is not None
     taken = {a for n in vault.nodes.values() for a in n.addresses()}
     assert not set(range(block, block + count)) & taken
+
+
+def test_key_refresh_progress_is_kept_and_survives_the_recording() -> None:
+    """Review-4 D11: how far a node came through a key refresh — named by the new key's Network ID, never the key —
+    round-trips, is left out while there is none (the vault keeps its shape), and stays with the node when it is
+    recorded."""
+    pf = project()
+    dimmer = pf.cdb.node_by_addr(DIMMER)
+    assert dimmer is not None
+    vault = Vault.create(seeded)
+    assert "keyRefresh" not in json.dumps(vault.to_dict())
+    progress = RefreshProgress(bytes(range(8)), 2)
+    vault.remember_provisioned(dimmer.uuid, DIMMER, 2, dimmer.dev_key, (), progress)
+    data = json.loads(json.dumps(vault.to_dict()))
+    assert data["nodes"][0]["keyRefresh"] == {
+        "networkId": "0001020304050607",
+        "phase": 2,
+    }
+    back = Vault.from_dict(data)
+    assert back == vault
+    assert back.nodes[dimmer.uuid].key_refresh == progress
+    assert back.remember_recorded(pf, dimmer.uuid).key_refresh == progress
+    assert vault.remember_recorded(pf, dimmer.uuid).key_refresh == progress
+    fresh = Vault.create(seeded)
+    assert fresh.remember_recorded(pf, dimmer.uuid).key_refresh is None
+
+
+def test_a_vault_node_as_the_client_addresses_it() -> None:
+    vault = Vault.create(seeded)
+    kept = vault.remember_provisioned(NEW_UUID, 0x0D10, 2, NEW_KEY)
+    node = kept.as_node()
+    assert (node.uuid, node.unicast, node.dev_key, node.pid) == (
+        NEW_UUID,
+        0x0D10,
+        NEW_KEY,
+        None,
+    )  # no product: never taken for a JUNG device's evidence of a key refresh
+    assert [e.address for e in node.elements] == [0x0D10, 0x0D11]
+    assert all(e.node is node for e in node.elements)

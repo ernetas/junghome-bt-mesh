@@ -1053,6 +1053,15 @@
     "service_scene_not_deleted": {
       "message": "Device {address} still holds scene {scene} after the delete ({status}). {applied}"
     },
+    "service_gateway_export_unavailable": {
+      "message": "The JUNG HOME Gateway did not hand out its export, and this action needs it: the copy Home Assistant keeps may lack what the JUNG HOME app changed since. Try again when the gateway answers (the log says why it did not)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "This network was set up from a file, which may lack scenes made in the JUNG HOME app since it was exported; deleting the scene numbers the file does not know would delete those scenes from every device. Run a dry run first and check the numbers it lists against the app, then delete with \"The mesh export is current\" on, or name the numbers to delete."
+    },
+    "service_unused_scenes_known": {
+      "message": "Scene numbers {numbers} are scenes of the mesh export; delete those with Delete scene."
+    },
     "service_scene_action_not_applied": {
       "message": "Device {address} stored scene {scene} but did not take the scene description (Scene Action Setup). {applied}"
     },
@@ -1215,6 +1224,9 @@
     "add_device_no_beacon": {
       "message": "The network's IV index is not confirmed on the current Bluetooth connection yet (no network beacon arrived on it), and the new device would keep a wrong one. Wait for the next connection to a JUNG device and try again."
     },
+    "add_device_key_refresh": {
+      "message": "The JUNG HOME app is renewing the network key (key refresh phase 1): a device added now would get the key being retired. Finish the key renewal in the app (Home Assistant follows it), then try again."
+    },
     "add_device_name_too_long": {
       "message": "The name \"{name}\" is longer than the JUNG HOME app takes for a device: {max_length} characters at most."
     },
@@ -1314,6 +1326,10 @@
       "title": "Device name not passed on to the JUNG HOME app",
       "description": "{device} was renamed in Home Assistant to \"{name}\", a name the JUNG HOME app refuses: a name cannot be blank or longer than 30 characters, and the app takes a % sign for the start of a placeholder (only %% and %n pass). The mesh export and the app keep the device's old name. Rename the device again; the issue clears when a name is passed on."
     },
+    "vault_key_refresh_lagging": {
+      "title": "Devices Home Assistant added missed the new network key",
+      "description": "The JUNG HOME app renewed the network key of the mesh {title}, and Home Assistant followed the renewal to its end. The app does not know the devices Home Assistant added, so Home Assistant hands them the new key itself, but the device(s) at {addresses} did not confirm it. Make sure they are powered and in range: Home Assistant tries again with every new Bluetooth connection. A device that never received the new key cannot be reached any more: factory-reset it, then add it again (remove it from Home Assistant first with `junghome_ble.remove_device` or `junghome_ble.reset_pending_device`, with `force`). Not yet tried on a real device. The issue clears when every such device confirmed."
+    },
     "pending_device": {
       "title": "A device Home Assistant added is not recorded",
       "description": "Home Assistant provisioned a JUNG device of the mesh {title} with `junghome_ble.add_device`, but its configuration or its recording in the export failed: the device at {addresses} has the network's keys, the JUNG HOME app and the export do not know it, and its addresses and element groups stay reserved so no other device gets them. Reset it with the action `junghome_ble.reset_pending_device` (its unicast address) and add it again; for a device you already reset by hand, or one that is gone, use `force`. Not yet tried on a real device. The issue clears when no such device is left."
@@ -1321,6 +1337,10 @@
     "carry_over_conflict": {
       "title": "The JUNG HOME app overrode a change Home Assistant made on {title}",
       "description": "Home Assistant took over the export the JUNG HOME app last handed to the gateway and carried its own changes onto it, but the app had changed the same entries meanwhile. The app's version is kept for: {paths}. The devices may still hold what Home Assistant had written: {held}. Check those rooms, scenes and connections in the app and in Home Assistant, and set them again from one side. The app does not see what Home Assistant adds until it imports a file. The issue clears with the next takeover of the gateway's export that has no such conflict."
+    },
+    "scene_held": {
+      "title": "Devices still hold a deleted JUNG HOME scene on {title}",
+      "description": "A scene was deleted with \"Even if a device does not answer\" while some of its devices could not be reached or refused; they still hold it and recall it with any scene of that number. Scene number: devices — {members}. Home Assistant gives no new scene these numbers. When the devices are reachable again, run the action Delete unused scenes with \"Dry run\" off: it deletes those numbers from them and the issue clears."
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway no longer accepts Home Assistant",
@@ -1339,6 +1359,10 @@
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up."
         }
       }
+    },
+    "seq_store_unwritable": {
+      "title": "JUNG HOME sequence numbers cannot be saved",
+      "description": "Home Assistant has not been able to write the sequence-number store of the mesh {title} for over a minute ({path}; last error: {error}). Every message to the devices carries a new sequence number, and Home Assistant only sends numbers it has saved, so that a restart never repeats one: until a write succeeds it sends nothing to the mesh — commands fail and the state is not refreshed. This usually means the disk is full or its filesystem was remounted read-only, often a failing SD card. Free up space or repair the storage (a filesystem remounted read-only usually needs the host restarted); do not edit, delete or replace the store's files. The issue clears itself as soon as a write lands and sending resumes."
     },
     "address_in_use": {
       "title": "Home Assistant's JUNG HOME address is taken",
@@ -1376,7 +1400,7 @@
   "services": {
     "set_room": {
       "name": "Set room",
-      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"), creating the room if it does not exist yet. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and the integration reloads.",
+      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"), creating the room if it does not exist yet. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and the integration reloads. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1386,7 +1410,7 @@
     },
     "create_room": {
       "name": "Create room",
-      "description": "Creates an empty room in the mesh export (nothing is sent to the devices). Home Assistant gives it the highest free group address of the app's range: the app does not see it until it imports a file, and gives its own next room the lowest free one.",
+      "description": "Creates an empty room in the mesh export (nothing is sent to the devices). Home Assistant gives it the highest free group address of the app's range: the app does not see it until it imports a file, and gives its own next room the lowest free one. Administrators only.",
       "fields": {
         "name": {
           "name": "Name",
@@ -1400,7 +1424,7 @@
     },
     "rename_room": {
       "name": "Rename room",
-      "description": "Renames a room in the mesh export (nothing is sent to the devices).",
+      "description": "Renames a room in the mesh export (nothing is sent to the devices). Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1418,7 +1442,7 @@
     },
     "delete_room": {
       "name": "Delete room",
-      "description": "Deletes a room: its devices leave it, keys linked to the room lose their function, and the room is removed from the mesh export. The devices themselves stay operable.",
+      "description": "Deletes a room: its devices leave it, keys linked to the room lose their function, and the room is removed from the mesh export. The devices themselves stay operable. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1432,7 +1456,7 @@
     },
     "assign_key": {
       "name": "Assign key",
-      "description": "Connects a push-button key to a light, a socket, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set. The mesh export is rewritten and the integration reloads.",
+      "description": "Connects a push-button key to a light, a socket, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set. The mesh export is rewritten and the integration reloads. Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
@@ -1470,7 +1494,7 @@
     },
     "clear_key": {
       "name": "Clear key",
-      "description": "Gives a push-button key no function: its connection to a device, the gateway or a room is removed (the app's \"No function\").",
+      "description": "Gives a push-button key no function: its connection to a device, the gateway or a room is removed (the app's \"No function\"). Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
@@ -1488,7 +1512,7 @@
     },
     "create_scene": {
       "name": "Create scene",
-      "description": "Creates an empty scene in the mesh export (nothing is sent to the devices). Store devices into it with Store scene. Home Assistant gives it the highest free scene number of the app's range: the app does not see it until it imports a file, and gives its own next scene the lowest free one. Responds with the scene number when asked to.",
+      "description": "Creates an empty scene in the mesh export (nothing is sent to the devices). Store devices into it with Store scene. Home Assistant gives it the highest free scene number of the app's range: the app does not see it until it imports a file, and gives its own next scene the lowest free one. Responds with the scene number when asked to. Administrators only.",
       "fields": {
         "name": {
           "name": "Name",
@@ -1502,7 +1526,7 @@
     },
     "rename_scene": {
       "name": "Rename scene",
-      "description": "Renames a scene in the mesh export (nothing is sent to the devices).",
+      "description": "Renames a scene in the mesh export (nothing is sent to the devices). Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1520,7 +1544,7 @@
     },
     "store_scene": {
       "name": "Store scene",
-      "description": "Saves the present state of JUNG HOME lights, sockets, blinds and thermostats into a scene, as the app's \"save device into scene\" does: set the devices the way the scene should leave them first, then call this. Each device stores its state under the scene (Scene Store) together with the JUNG description of it, and the mesh export records the member. The integration reloads. With a state given (action, brightness, colour temperature, temperature), each device is first set to it and waited for until it arrives; a blind given a position is not moved, the scene stores that position for it.",
+      "description": "Saves the present state of JUNG HOME lights, sockets, blinds and thermostats into a scene, as the app's \"save device into scene\" does: set the devices the way the scene should leave them first, then call this. Each device stores its state under the scene (Scene Store) together with the JUNG description of it, and the mesh export records the member. The integration reloads. With a state given (action, brightness, colour temperature, temperature), each device is first set to it and waited for until it arrives; a blind given a position is not moved, the scene stores that position for it. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1554,7 +1578,7 @@
     },
     "remove_from_scene": {
       "name": "Remove from scene",
-      "description": "Takes JUNG HOME lights, sockets, blinds and thermostats out of a scene: each device forgets the scene (Scene Delete) and the mesh export drops the member. The integration reloads.",
+      "description": "Takes JUNG HOME lights, sockets, blinds and thermostats out of a scene: each device forgets the scene (Scene Delete) and the mesh export drops the member. The integration reloads. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1564,7 +1588,7 @@
     },
     "delete_scene": {
       "name": "Delete scene",
-      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. The integration reloads.",
+      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. The integration reloads. Answers the devices skipped with \"Even if a device does not answer\" when asked to. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1572,7 +1596,7 @@
         },
         "force": {
           "name": "Even if a device does not answer",
-          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until it is cleaned up."
+          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until Delete unused scenes removes it; a repair issue names it, and no new scene gets its number meanwhile."
         },
         "config_entry_id": {
           "name": "Mesh network",
@@ -1582,8 +1606,20 @@
     },
     "delete_unused_scenes": {
       "name": "Delete unused scenes",
-      "description": "Reads every device's scene register and deletes the scenes the mesh export does not know (neither a scene nor a timer's scene of the app), as the app does when its timer list opens. Answers what was deleted, per device.",
+      "description": "Reads every device's scene register and lists, or deletes, the scenes the mesh export does not know (neither a scene nor a timer's scene of the app), as the app does when its timer list opens. A dry run unless told otherwise. With a gateway, it works only on the gateway's current export; on a network set up from a file, deleting needs \"The mesh export is current\" or the numbers to delete. Answers the numbers per device. Administrators only.",
       "fields": {
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only list the numbers that would be deleted; nothing is deleted. On by default."
+        },
+        "numbers": {
+          "name": "Scene numbers",
+          "description": "Delete only these scene numbers (none of them a scene of the mesh export)."
+        },
+        "confirm_stale_export": {
+          "name": "The mesh export is current",
+          "description": "For a network set up from a file: the file holds every scene of the app, including those made since it was exported. Without it, only the numbers named are deleted."
+        },
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
@@ -1592,7 +1628,7 @@
     },
     "sync_gateway": {
       "name": "Sync gateway",
-      "description": "Hands the mesh export Home Assistant uses to the JUNG HOME Gateway, as the app does after every change. Runs automatically after every action that rewrites the export; call it to retry after the \"export not handed to the gateway\" repair, or after editing the file yourself.",
+      "description": "Hands the mesh export Home Assistant uses to the JUNG HOME Gateway, as the app does after every change. Runs automatically after every action that rewrites the export; call it to retry after the \"export not handed to the gateway\" repair, or after editing the file yourself. Administrators only.",
       "fields": {
         "config_entry_id": {
           "name": "Mesh network",
@@ -1606,7 +1642,7 @@
     },
     "create_schedule": {
       "name": "Create schedule",
-      "description": "Writes a schedule into the first free slot of each targeted JUNG HOME load, which then runs it on its own, without Home Assistant. A sunrise or sunset schedule first sends the node Home Assistant's home location. Answers per entity with the slot used. Untested on a device.",
+      "description": "Writes a schedule into the first free slot of each targeted JUNG HOME load, which then runs it on its own, without Home Assistant. A sunrise or sunset schedule first sends the node Home Assistant's home location. Answers per entity with the slot used. Untested on a device. Administrators only.",
       "fields": {
         "trigger": {
           "name": "Trigger",
@@ -1664,7 +1700,7 @@
     },
     "enable_schedule": {
       "name": "Enable schedule",
-      "description": "Lets a schedule slot of JUNG HOME loads fire again.",
+      "description": "Lets a schedule slot of JUNG HOME loads fire again. Administrators only.",
       "fields": {
         "slot": {
           "name": "Slot",
@@ -1674,7 +1710,7 @@
     },
     "disable_schedule": {
       "name": "Disable schedule",
-      "description": "Keeps a schedule slot of JUNG HOME loads from firing, without deleting it.",
+      "description": "Keeps a schedule slot of JUNG HOME loads from firing, without deleting it. Administrators only.",
       "fields": {
         "slot": {
           "name": "Slot",
@@ -1684,7 +1720,7 @@
     },
     "delete_schedule": {
       "name": "Delete schedule",
-      "description": "Frees a schedule slot of JUNG HOME loads.",
+      "description": "Frees a schedule slot of JUNG HOME loads. Administrators only.",
       "fields": {
         "slot": {
           "name": "Slot",
@@ -1694,7 +1730,7 @@
     },
     "set_threshold": {
       "name": "Set threshold",
-      "description": "Sets a threshold of a JUNG HOME metering socket, the app's Automatic profile: when the socket's power stays at the level for the duration, it switches the chosen lights and sockets on (switch-on threshold) or off (switch-off threshold) by itself, without Home Assistant. Untested on a device.",
+      "description": "Sets a threshold of a JUNG HOME metering socket, the app's Automatic profile: when the socket's power stays at the level for the duration, it switches the chosen lights and sockets on (switch-on threshold) or off (switch-off threshold) by itself, without Home Assistant. Untested on a device. Administrators only.",
       "fields": {
         "threshold": {
           "name": "Threshold",
@@ -1720,7 +1756,7 @@
     },
     "delete_threshold": {
       "name": "Delete threshold",
-      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. The integration reloads when devices were unwired."
+      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. The integration reloads when devices were unwired. Administrators only."
     },
     "audit_network": {
       "name": "Audit network",

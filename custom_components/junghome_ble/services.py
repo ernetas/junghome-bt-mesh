@@ -10,7 +10,8 @@ the loads' own JH Scheduler (`schedules.py`) and reload nothing; a socket thresh
 (`thresholds.py`), and reloads only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
 what the nodes' Configuration Servers hold against the export and changes nothing. The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
-command to a dimmer and write nothing.
+command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
+for administrators only (review-4 W4-9).
 
 Calls for one entry are serialised (`coordinator.ENTRY_LOCKS`, kept across reloads, taken by the unknown-node
 refresh's reload too) so a call never runs against a hub that is being torn down by the reload of the previous
@@ -57,6 +58,7 @@ from .const import (
     ATTR_KEY,
     ATTR_SCENE,
     DEFAULT_ALLOW_PROVISIONING,
+    DEFAULT_UNUSED_SCENES_DRY_RUN,
     DIM_DEFAULT_SPEED,
     DOMAIN,
     OPTION_ALLOW_PROVISIONING,
@@ -152,6 +154,7 @@ SERVICE_STEP_DIM = "step_dim"
 # the services that answer, and whether they must be asked to
 RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_CREATE_SCENE: SupportsResponse.OPTIONAL,
+    SERVICE_DELETE_SCENE: SupportsResponse.OPTIONAL,
     SERVICE_DELETE_UNUSED_SCENES: SupportsResponse.OPTIONAL,
     SERVICE_GET_SCHEDULES: SupportsResponse.ONLY,
     SERVICE_CREATE_SCHEDULE: SupportsResponse.OPTIONAL,
@@ -161,6 +164,11 @@ RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_ADD_DEVICE: SupportsResponse.OPTIONAL,
     SERVICE_RESET_PENDING_DEVICE: SupportsResponse.OPTIONAL,
 }
+# Review-4 W4-9 (decision M8): every other action rewires, deletes or writes the export and the devices, and is for
+# administrators only (`async_register_admin_service`); these only read. Moving a name here opens it to every user.
+USER_SERVICES = frozenset(
+    {SERVICE_GET_SCHEDULES, SERVICE_AUDIT_NETWORK, SERVICE_FIND_NEW_DEVICES}
+)
 
 ATTR_ROOM = "room"
 ATTR_NAME = "name"
@@ -310,7 +318,21 @@ DELETE_SCENE_SCHEMA = vol.Schema(
         **_ENTRY_FIELD,
     }
 )
-DELETE_UNUSED_SCENES_SCHEMA = vol.Schema(_ENTRY_FIELD)
+ATTR_DRY_RUN = "dry_run"
+ATTR_NUMBERS = "numbers"
+ATTR_CONFIRM_STALE_EXPORT = "confirm_stale_export"
+DELETE_UNUSED_SCENES_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_DRY_RUN, default=DEFAULT_UNUSED_SCENES_DRY_RUN): cv.boolean,
+        vol.Optional(ATTR_NUMBERS): vol.All(
+            cv.ensure_list,
+            vol.Length(min=1),
+            [vol.All(vol.Coerce(int), vol.Range(min=1, max=0xFFFF))],
+        ),
+        vol.Optional(ATTR_CONFIRM_STALE_EXPORT, default=False): cv.boolean,
+        **_ENTRY_FIELD,
+    }
+)
 SYNC_GATEWAY_SCHEMA = vol.Schema(_ENTRY_FIELD)
 ATTR_FLAVOUR = "flavour"
 EXPORT_FLAVOURS = ("share", "cdb")  # the app's share file, the mesh database
@@ -513,53 +535,34 @@ def async_setup_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_THRESHOLD, _set_threshold, SET_THRESHOLD_SCHEMA),
         (SERVICE_DELETE_THRESHOLD, _delete_threshold, DELETE_THRESHOLD_SCHEMA),
         (SERVICE_AUDIT_NETWORK, _audit_network, AUDIT_NETWORK_SCHEMA),
+        (SERVICE_EXPORT_NETWORK, _export_network, EXPORT_NETWORK_SCHEMA),
+        (SERVICE_FIND_NEW_DEVICES, _find_new_devices, FIND_NEW_DEVICES_SCHEMA),
+        (SERVICE_REMOVE_DEVICE, _remove_device, REMOVE_DEVICE_SCHEMA),
+        (SERVICE_ADD_DEVICE, _add_device, ADD_DEVICE_SCHEMA),
+        (
+            SERVICE_RESET_PENDING_DEVICE,
+            _reset_pending_device,
+            RESET_PENDING_DEVICE_SCHEMA,
+        ),
     ]
     for name, handler, schema in handlers:
-        hass.services.async_register(
-            DOMAIN,
-            name,
-            _bound(hass, handler),
-            schema=schema,
-            supports_response=RESPONSES.get(name, SupportsResponse.NONE),
-        )
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_EXPORT_NETWORK,
-        _bound(hass, _export_network),
-        schema=EXPORT_NETWORK_SCHEMA,
-        supports_response=SupportsResponse.ONLY,
-    )
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_FIND_NEW_DEVICES,
-        _bound(hass, _find_new_devices),
-        schema=FIND_NEW_DEVICES_SCHEMA,
-        supports_response=SupportsResponse.ONLY,
-    )
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_REMOVE_DEVICE,
-        _bound(hass, _remove_device),
-        schema=REMOVE_DEVICE_SCHEMA,
-    )
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_ADD_DEVICE,
-        _bound(hass, _add_device),
-        schema=ADD_DEVICE_SCHEMA,
-        supports_response=SupportsResponse.OPTIONAL,
-    )
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_RESET_PENDING_DEVICE,
-        _bound(hass, _reset_pending_device),
-        schema=RESET_PENDING_DEVICE_SCHEMA,
-        supports_response=SupportsResponse.OPTIONAL,
-    )
+        if name in USER_SERVICES:
+            hass.services.async_register(
+                DOMAIN,
+                name,
+                _bound(hass, handler),
+                schema=schema,
+                supports_response=RESPONSES.get(name, SupportsResponse.NONE),
+            )
+        else:
+            async_register_admin_service(
+                hass,
+                DOMAIN,
+                name,
+                _bound(hass, handler),
+                schema=schema,
+                supports_response=RESPONSES.get(name, SupportsResponse.NONE),
+            )
     for name, func, entity_schema in (
         (SERVICE_START_DIM, async_start_dim, START_DIM_SCHEMA),
         (SERVICE_STOP_DIM, async_stop_dim, STOP_DIM_SCHEMA),
@@ -1207,13 +1210,25 @@ async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceR
 
 
 async def _delete_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Delete a scene from its members and the export; answers `{"skipped": ["0232"]}` when a response is asked for.
+
+    `skipped`: the members `force` passed over, which still hold the scene (the `scene_held` repair names them).
+    """
     entry_id = _entry_for_hub_services(hass, call.data)
-    await _run(
-        hass,
-        entry_id,
-        lambda c: c.delete_scene(call.data[ATTR_SCENE], force=call.data[ATTR_FORCE]),
+    skipped: list[str] = []
+
+    async def operation(configurator: MeshConfigurator) -> bool:
+        skipped.extend(
+            await configurator.delete_scene(
+                call.data[ATTR_SCENE], force=call.data[ATTR_FORCE]
+            )
+        )
+        return True
+
+    await _run(hass, entry_id, operation)
+    return (
+        cast("ServiceResponse", {"skipped": skipped}) if call.return_response else None
     )
-    return None
 
 
 async def _delete_unused_scenes(
@@ -1221,14 +1236,20 @@ async def _delete_unused_scenes(
 ) -> ServiceResponse:
     """Delete the scene numbers the export does not know from every node's register (the app's `DeleteUnusedScenes`).
 
-    Answers `{"<register element>": [deleted numbers], "unanswered": [elements]}` when a response is asked for;
-    nothing in the export changes, so nothing reloads.
+    Answers `{"<register element>": [numbers], "unanswered": [elements]}` when a response is asked for: what was
+    deleted, or with `dry_run` (the default) what would be; nothing in the export changes, so nothing reloads.
     """
     entry_id = _entry_for_hub_services(hass, call.data)
     result: dict[str, Any] = {}
 
     async def operation(configurator: MeshConfigurator) -> bool:
-        result.update(await configurator.delete_unused_scenes())
+        result.update(
+            await configurator.delete_unused_scenes(
+                dry_run=call.data[ATTR_DRY_RUN],
+                numbers=call.data.get(ATTR_NUMBERS),
+                confirm_stale_export=call.data[ATTR_CONFIRM_STALE_EXPORT],
+            )
+        )
         return False
 
     await _run(hass, entry_id, operation)

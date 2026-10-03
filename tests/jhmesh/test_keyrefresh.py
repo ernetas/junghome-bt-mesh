@@ -119,6 +119,14 @@ def test_the_proof_is_described_without_the_key() -> None:
         == "Key Refresh Phase Status from the proxy node 0148"
     )
     assert describe_proof(Moved(1, NEW)) == "none"
+    assert (
+        describe_proof(Moved(1, NEW, PROOF_STATUSES, (B, A)))
+        == "the new key confirmed by nodes 0172, 0232"
+    )
+    assert (
+        describe_proof(Moved(1, NEW, PROOF_PROXY, (PROXY,)))
+        == "the new key confirmed by the proxy node 0148"
+    )
 
 
 # ============================================================================= the rules
@@ -301,7 +309,9 @@ def test_resume_an_export_written_mid_refresh(phase: int) -> None:
     assert f.tx_key == (NEW if phase == 2 else EXPORT)
     record = f.record()
     assert record is not None
-    assert record.proof == (PROOF_EXPORT if phase == 2 else None)
+    # review-4 D11: the export's own refresh is the provisioner's at phase 1 too, so it may be handed out
+    assert record.proof == PROOF_EXPORT
+    assert f.distribution == (phase, NEW)
     # statuses of nodes no Update was seen to count for the export's own refresh
     f.requested(A, 3)
     f.requested(B, 3)
@@ -349,6 +359,90 @@ def test_resume_the_export_refresh_and_another_stored_key() -> None:
     assert (f.phase, f.tx_key, f.rx_keys) == (2, NEW, (EXPORT, NEW, OTHER))
 
 
+# ============================================================================= proven Phase 1 (review-4 D11)
+
+
+def test_phase_one_is_proven_by_two_nodes_holding_the_key() -> None:
+    """What may be handed to the nodes only Home Assistant knows: never a key one node's word gave."""
+    f = KeyRefreshFollower(EXPORT)
+    f.learn(NEW, A)
+    f.learn(NEW, B)
+    assert f.distribution is None
+    assert f.netkey_status(A, ok=True) is None  # one node
+    assert f.netkey_status(B, ok=False) is None  # refused: no confirmation
+    assert f.netkey_status(C, ok=True) is None  # no Update seen to it
+    assert f.distribution is None
+    moved = f.phase_status(
+        B, 1, None
+    )  # a Phase Status reporting phase 1 says it holds the key too
+    assert moved == Moved(1, NEW, PROOF_STATUSES, (B, A))
+    assert f.distribution == (1, NEW)
+    assert f.netkey_status(B, ok=True) is None  # proven already
+    assert (f.phase, f.tx_key) == (
+        1,
+        EXPORT,
+    )  # the proof hands the key out; it moves nothing here
+    assert f.record() == KeyRefreshRecord(
+        NEW, 1, PROOF_STATUSES, frozenset({A, B}), {1: frozenset({A, B})}
+    )
+    # a restart keeps it handed out
+    again, _ = KeyRefreshFollower.resume(EXPORT, None, f.record())
+    assert again.distribution == (1, NEW)
+    # Phase 2, then the completion: further each time
+    f.phase_status(A, 2, None)
+    f.phase_status(B, 2, None)
+    assert f.distribution == (2, NEW)
+    f.requested(A, 3)
+    f.requested(B, 3)
+    f.phase_status(A, 0, None)
+    f.phase_status(B, 0, None)
+    assert f.distribution == (3, NEW)
+    done, _ = KeyRefreshFollower.resume(EXPORT, None, f.record())
+    assert done.distribution == (3, NEW)
+    # once the export holds the new key, there is nothing left to hand out
+    caught_up, _ = KeyRefreshFollower.resume(NEW, None, f.record())
+    assert caught_up.distribution is None
+
+
+def test_the_proxys_netkey_status_proves_phase_one() -> None:
+    f = KeyRefreshFollower(EXPORT)
+    f.learn(NEW, PROXY)
+    assert f.netkey_status(PROXY, ok=True, proxy=PROXY) == Moved(
+        1, NEW, PROOF_PROXY, (PROXY,)
+    )
+    assert f.distribution == (1, NEW)
+
+
+def test_a_forged_key_is_never_handed_out() -> None:
+    """One node seals NetKey Update with a key of its choice and confirms every phase itself."""
+    f = KeyRefreshFollower(EXPORT)
+    f.learn(OTHER, A)
+    f.requested(A, 3)
+    f.netkey_status(A, ok=True)
+    for phase in (1, 2, 0):
+        f.phase_status(A, phase, None)
+    assert f.distribution is None
+    record = f.record()
+    assert record is not None
+    assert (record.key, record.phase, record.proof) == (OTHER, 1, None)
+    # nor next to a proven one: the proven key, not the most recent
+    f.learn(NEW, B)
+    f.learn(NEW, C)
+    f.netkey_status(B, ok=True)
+    f.netkey_status(C, ok=True)
+    assert f.distribution == (1, NEW)
+
+
+def test_a_proven_phase_two_proves_phase_one() -> None:
+    f = KeyRefreshFollower(EXPORT)
+    f.learn(NEW, PROXY)
+    assert f.phase_status(PROXY, 2, PROXY) == Moved(2, NEW, PROOF_PROXY, (PROXY,))
+    assert f.distribution == (2, NEW)
+    # a stored Phase 2 that a restart takes up: handed out too
+    again, _ = KeyRefreshFollower.resume(EXPORT, None, f.record())
+    assert again.distribution == (2, NEW)
+
+
 # ============================================================================= the state machine
 
 NODES = (A, B, C, PROXY)
@@ -368,6 +462,10 @@ class FollowerMachine(RuleBasedStateMachine):
         self.beacon_phase3 = False  # ... with the Key Refresh flag clear
         self.status2: set[int] = set()  # nodes that claimed phase 2 (or 0: past it)
         self.status0: set[int] = set()  # nodes that claimed phase 0
+        self.held: set[int] = (
+            set()
+        )  # nodes that confirmed holding a key (any successful status)
+        self.proxy_spoke = False  # ... the proxy among them, known as the proxy
         self.switched: set[bytes] = (
             set()
         )  # keys transmitted with since the last completion
@@ -392,9 +490,11 @@ class FollowerMachine(RuleBasedStateMachine):
     def requested(self, node: int, transition: int) -> None:
         self.f.requested(node, transition)
 
-    @rule(node=st.sampled_from(NODES), ok=st.booleans())
-    def netkey_status(self, node: int, ok: bool) -> None:
-        self.f.netkey_status(node, ok)
+    @rule(node=st.sampled_from(NODES), ok=st.booleans(), proxy_known=st.booleans())
+    def netkey_status(self, node: int, ok: bool, proxy_known: bool) -> None:
+        if ok:
+            self._held(node, proxy_known)
+        self._moved(self.f.netkey_status(node, ok, PROXY if proxy_known else None))
 
     @rule(
         node=st.sampled_from(NODES),
@@ -402,6 +502,7 @@ class FollowerMachine(RuleBasedStateMachine):
         proxy_known=st.booleans(),
     )
     def phase_status(self, node: int, phase: int, proxy_known: bool) -> None:
+        self._held(node, proxy_known)
         if phase in (0, 2):
             self.status2.add(node)
         if phase == 0:
@@ -427,6 +528,10 @@ class FollowerMachine(RuleBasedStateMachine):
         self.f, _ = KeyRefreshFollower.resume(EXPORT, self.exported, record)
         self.switched = {self.f.tx_key} - {EXPORT}
 
+    def _held(self, node: int, proxy_known: bool) -> None:
+        self.held.add(node)
+        self.proxy_spoke = self.proxy_spoke or (node == PROXY and proxy_known)
+
     def _moved(self, moved: Moved | None) -> None:
         if moved is None:
             return
@@ -451,6 +556,17 @@ class FollowerMachine(RuleBasedStateMachine):
     @invariant()
     def a_key_transmitted_with_stays_accepted_until_a_proven_phase_three(self) -> None:
         assert self.switched <= set(self.f.rx_keys)
+
+    @invariant()
+    def nothing_is_handed_out_without_proof(self) -> None:
+        """Review-4 D11: what the nodes only Home Assistant knows get is the export's refresh or a proven key."""
+        assert (
+            self.f.distribution is None
+            or self.exported is not None
+            or self.beacon_phase2
+            or self.proxy_spoke
+            or len(self.held) >= 2
+        )
 
     @invariant()
     def candidates_stay_bounded(self) -> None:

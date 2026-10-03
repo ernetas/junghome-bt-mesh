@@ -59,6 +59,9 @@ DEFAULT_ALLOW_PROVISIONING: Final = False
 # back the nodes it provisioned (review-3 N1, experimental: no app has imported such a file yet — `identity.py`)
 OPTION_PROVISIONER_IDENTITY: Final = "provisioner_identity"
 DEFAULT_PROVISIONER_IDENTITY: Final = False
+# `delete_unused_scenes` lists what it would delete unless told `dry_run: false` (review-4 W4-3, decision M3): a call
+# without fields, as an automation made it before, must not delete the app's scenes from a stale export
+DEFAULT_UNUSED_SCENES_DRY_RUN: Final = True
 # seconds a freshly provisioned node is given to restart as a mesh node before its configuration starts
 NODE_BOOT_DELAY: Final = 5.0
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
@@ -322,6 +325,9 @@ PROPERTY_READ_CHUNK: Final = (
     5  # initial property reads in flight at once before a pause (like REFRESH_CHUNK)
 )
 PROPERTY_READ_PAUSE: Final = 0.5  # seconds between two chunks of initial reads
+# A background sender with no link (the property reads, a battery node's keep-alive) waits for one instead of sending
+# into "not connected"; this long per wait (`JungHomeHub.async_wait_connected`) before it looks again.
+LINK_WAIT_STEP: Final = 60.0
 # The two property timeouts are read as `const.PROPERTY_READ_TIMEOUT` / `const.PROPERTY_WRITE_TIMEOUT` when a Get or
 # Set is sent (not imported by name), so one patch here reaches every module that sends one (`tests/property_helpers`).
 PROPERTY_READ_TIMEOUT: Final = (
@@ -400,6 +406,8 @@ ISSUE_IV_INDEX_AHEAD: Final = "iv_index_ahead"
 # a source of the mesh (a node, the app, Home Assistant) used most of the sequence space of the current IV index
 ISSUE_SEQUENCE_SPACE_LOW: Final = "sequence_space_low"
 ISSUE_SEQ_STORE_LOST: Final = "seq_store_lost"  # our address has history, but neither copy of its sequence-number record is usable
+# the sequence-number store has refused every write for a while: sends are held back until one lands
+ISSUE_SEQ_STORE_UNWRITABLE: Final = "seq_store_unwritable"
 # How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`):
 # past what the nodes may remember from the best record left, or — nothing left at all — this far from 0. A year of
 # a busy link (polls, refreshes, keep-alives) is well under the first; the 24-bit space holds 16 of them.
@@ -427,7 +435,10 @@ ISSUE_PLAN_INTERRUPTED: Final = (
 )
 ISSUE_DEVICE_NAME: Final = "device_name_rejected"  # a device renamed in HA to a name the app refuses (device_names.py)
 ISSUE_PENDING_DEVICE: Final = "pending_device"  # a device Home Assistant provisioned was never recorded (onboard.py)
+# devices Home Assistant added that did not confirm the end of the app's key refresh (vault_refresh.py)
+ISSUE_VAULT_KEY_REFRESH: Final = "vault_key_refresh_lagging"
 ISSUE_CARRY_OVER_CONFLICT: Final = "carry_over_conflict"  # an adopted app export overrode what HA had changed (mesh_config.py)
+ISSUE_SCENE_HELD: Final = "scene_held"  # a forced delete_scene skipped devices that still hold the scene (mesh_config.py)
 ISSUE_GATEWAY_TOKEN: Final = "gateway_token_rejected"  # noqa: S105 - an issue id: the gateway no longer accepts the entry's token
 ISSUE_GATEWAY_CERTIFICATE: Final = "gateway_certificate_changed"  # the gateway, or its node over the mesh, contradicts the pin
 ISSUE_UNKNOWN_NODES: Final = (

@@ -17,7 +17,9 @@ what the app does when a device is added:
    confirmed on the current link), refusing a device whose element count differs from the template's before it
    learns an address; its device key and planned element groups go into the vault (`identity.py`) the moment
    provisioning completes, before anything else can fail, and the replay list forgets the new addresses (they are
-   Home Assistant's to give, so whatever it remembers for them is a reset node's);
+   Home Assistant's to give, so whatever it remembers for them is a reset node's). Not during the Phase 1 of a key
+   refresh: the device would get the key being retired (review-4 D11). In a proven Phase 2 it gets the new key with
+   the Key Refresh flag, and the vault records it there, so `vault_refresh.py` takes it on to Phase 3;
 4. sends the app's post-provisioning Config sequence through the proxy link (`commission.plan`,
    `onboarding.commission`), then reads the node's configuration back (`jhmesh.audit`);
 5. records the node in the export — entry, element groups, app device rows — through the configurator, which
@@ -51,7 +53,8 @@ from .coordinator import issue_id
 from .jhmesh import commission
 from .jhmesh import config_messages as C
 from .jhmesh.advert import parse_manufacturer_data
-from .jhmesh.cdb import Element, Node, canonical_uuid
+from .jhmesh.cdb import canonical_uuid
+from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.export import (
     RENAME_MAX_LENGTH,
     AllocationCrowded,
@@ -74,6 +77,7 @@ from .jhmesh.provisioning import (
     parse_provisioning_service_data,
     provision,
 )
+from .jhmesh.vault import RefreshProgress
 
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -83,7 +87,7 @@ if TYPE_CHECKING:
     from .coordinator import JungHomeHub
     from .identity import VaultKeeper
     from .jhmesh.advert import JungAdvertisement
-    from .jhmesh.cdb import CDB
+    from .jhmesh.cdb import CDB, Node
     from .jhmesh.export import ProjectFile
     from .jhmesh.vault import Vault, VaultNode
     from .mesh_config import MeshConfigurator
@@ -241,6 +245,26 @@ def _require_iv_state(hub: JungHomeHub) -> None:
         raise _validation("add_device_no_beacon")
 
 
+def _refresh_progress(data: ProvisioningData) -> RefreshProgress | None:
+    """Where a device provisioned with `data` stands in the key refresh: Phase 2 of it with the Key Refresh flag."""
+    if not data.key_refresh:
+        return None
+    return RefreshProgress(NetKeyMaterial.derive(data.net_key).network_id, 2)
+
+
+def _checked_request(hub: JungHomeHub, name: str) -> str:
+    """Return the name as the app takes it (`_checked_name`); refuse while a key refresh is in Phase 1 (review-4 D11).
+
+    The device would get the key being retired: the app's NetKey Update, already sent to its own devices, never
+    reaches a device it does not know, and nothing proven may be handed to it yet. Phase 2 hands out the new key
+    with the Key Refresh flag; phase 0 the only key there is. Both are checked first: before anything is read or
+    goes on air.
+    """
+    if hub.proxy.key_refresh_phase == 1:
+        raise _validation("add_device_key_refresh")
+    return _checked_name(name)
+
+
 async def _keep_key(
     hub: JungHomeHub,
     uuid: str,
@@ -248,14 +272,17 @@ async def _keep_key(
     count: int,
     dev_key: bytes,
     groups: list[tuple[int, str]],
+    key_refresh: RefreshProgress | None = None,
 ) -> None:
     """Keep a just-provisioned node's device key and planned element groups in the vault until it is recorded.
 
     The key: the only copy until the node is recorded. A vault that cannot be written does not stop the device
     from being added: the key is still in memory, and the export gets it once the node is recorded. Logged (never
-    the key) and carried on.
+    the key) and carried on. `key_refresh`: where a node provisioned in Phase 2 of a key refresh starts.
     """
-    hub.vault.identity().remember_provisioned(uuid, unicast, count, dev_key, groups)
+    hub.vault.identity().remember_provisioned(
+        uuid, unicast, count, dev_key, groups, key_refresh
+    )
     try:
         await hub.vault.async_save()
     except Exception as err:
@@ -275,7 +302,7 @@ async def async_add_device(
     name: str,
 ) -> dict[str, Any]:
     """Add the unprovisioned JUNG device at Bluetooth `address` to the mesh as `name`; return where it went."""
-    name = _checked_name(name)
+    name = _checked_request(hub, name)
     info, uuid, advert = _new_device(hass, address)
     # the export as it is now — the gateway's, adopted, when the app added a device or a room since the last
     # reload: the addresses go out to the device long before `record_node` reads the export again
@@ -350,6 +377,7 @@ async def async_add_device(
         count,
         result.device_key,
         [(g.address, g.name) for g in plan.groups],
+        _refresh_progress(data),
     )
     # Home Assistant just gave these addresses out: what the replay list holds for them is a reset node's, and
     # would drop the new node's replies (it starts at SEQ 0) until it passed those numbers
@@ -409,13 +437,6 @@ def _pending(vault: Vault | None, uuid: str | None, unicast: int | None) -> Vaul
     return node
 
 
-def _reachable(pending: VaultNode) -> Node:
-    """Return a node the proxy client can address a pending vault node as (its device key, its elements)."""
-    node = Node(pending.uuid, "pending", pending.unicast, pending.dev_key, None)
-    node.elements = [Element(a, 0, [], node) for a in pending.addresses()]
-    return node
-
-
 async def async_reset_pending_device(
     hub: JungHomeHub, *, uuid: str | None, unicast: int | None, force: bool
 ) -> dict[str, Any]:
@@ -451,7 +472,7 @@ async def async_reset_pending_device(
             address,
         )
     else:
-        temporary = None if same else _reachable(pending)
+        temporary = None if same else pending.as_node()
         if temporary is not None:
             proxy.add_node(temporary)
         try:

@@ -12,6 +12,7 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.util.file import WriteError
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -30,6 +31,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_PDUS_DROPPED,
     ISSUE_SEQ_STORE_LOST,
+    ISSUE_SEQ_STORE_UNWRITABLE,
     SEQ_SKIP_AHEAD,
     SEQ_SKIP_UNKNOWN,
 )
@@ -50,6 +52,7 @@ from custom_components.junghome_ble.jhmesh.client import (
     SEQ_GUARD_FIRST_BEACON,
     SEQ_TX_LIMIT,
     SequenceExhausted,
+    SequenceStalled,
 )
 
 from .conftest import (
@@ -971,6 +974,233 @@ async def test_reserve_seq_refuses_while_the_backup_is_on_another_transmit_index
     assert state._limit() == (state.tx_iv_index, 0)
     with pytest.raises(SequenceExhausted):
         state.next_seq()
+
+
+READ_ONLY = "OSError: [Errno 30] Read-only file system"
+
+
+def run_into_the_stall(state: HAState) -> None:
+    """Reserve until the store holds sends back (its writes fail)."""
+    for _ in range(SEQ_RESTART_MARGIN + SEQ_SAVE_EVERY + 1):
+        try:
+            state.next_seq()
+        except SequenceStalled:
+            return
+    pytest.fail("the store never held sends back")
+
+
+async def test_a_store_that_cannot_be_written_raises_its_own_repair(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 D9 (R4-2): review 3 listed "repair when the seq store refuses for minutes" as done, but nothing raised
+    one: the user got `pdus_dropped` once the next link's filter request went unanswered — a request the store had
+    held back, never sent — and its skip-ahead could not be written either. Now a minute of refusals raises
+    `seq_store_unwritable`, naming the file and the error; the filter watchdog stays quiet about a request that
+    never went out; and the first number handed out once a write lands clears the repair."""
+    hub = hub_of(init_integration)
+    state = hub.state
+    await hass.async_block_till_done()
+    with patch(
+        "homeassistant.helpers.storage.Store._async_write_data",
+        side_effect=WriteError(READ_ONLY),
+    ):
+        run_into_the_stall(state)
+        await hass.async_block_till_done()
+        assert state.last_write_error == READ_ONLY
+        # the link drops and comes back while the store refuses: the new link's filter request is held back
+        fake_link.drop_link()
+        await settle(hass)
+        assert hub.connected
+        assert hub.proxy.filter_writes == 0
+        freezer.tick(coordinator.SEQ_STALL_ISSUE_AFTER)
+        async_fire_time_changed(hass)
+        await settle(hass)
+        issue = find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE)
+        assert issue is not None
+        assert issue.severity is ir.IssueSeverity.ERROR
+        assert not issue.is_fixable
+        assert issue.translation_placeholders == {
+            "title": init_integration.title,
+            "path": state._store.path,
+            "error": READ_ONLY,
+        }
+        assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
+        assert "has not been written for 60 s" in caplog.text
+        stalled_for = state.stalled_for
+        assert stalled_for is not None
+        assert stalled_for >= coordinator.SEQ_STALL_ISSUE_AFTER
+        assert state.durable_headroom == 0
+
+    # writable again: the next refusal's forced save lands, and the number after it clears the repair
+    freezer.tick(SEQ_STALL_RETRY)
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    await hass.async_block_till_done()
+    state.next_seq()
+    assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
+    assert state.stalled_for is None
+    assert state.last_write_error is None
+    assert "Sequence-number store written again after" in caplog.text
+
+
+async def test_a_short_stall_raises_no_repair(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+) -> None:
+    """The repair is for a store that stays unwritable: a stall that ended — by a number handed out, or by a write
+    that landed with nothing sent since — raises nothing, and a new stall gets a full minute of its own."""
+    hub = hub_of(init_integration)
+    state = hub.state
+    await hass.async_block_till_done()
+    failing = patch(
+        "homeassistant.helpers.storage.Store._async_write_data",
+        side_effect=WriteError(READ_ONLY),
+    )
+    with failing:
+        run_into_the_stall(state)
+    freezer.tick(SEQ_STALL_RETRY)
+    with pytest.raises(SequenceStalled):
+        state.next_seq()  # forces the save that lands
+    await hass.async_block_till_done()
+    state.next_seq()  # the first stall is over
+    with failing:
+        run_into_the_stall(
+            state
+        )  # a second one, SEQ_STALL_RETRY into the first one's minute
+        await hass.async_block_till_done()
+    # the store catches up by itself, and nothing is sent until the second stall's minute is up
+    state._saved = None
+    state.persist()
+    await hass.async_block_till_done()
+    for _ in range(2):  # the first stall's minute, then the second's
+        freezer.tick(coordinator.SEQ_STALL_ISSUE_AFTER - SEQ_STALL_RETRY)
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
+    assert state.stalled_for is None
+
+
+async def test_the_unwritable_repair_names_the_copy_that_failed(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """`HAState.report_unwritable` without a hub: the `.backup` copy's failure is named when it is the one that
+    failed; with no entry to raise the repair for (or none known) it is only logged; nothing at all while sends go
+    through, and nothing from a superseded `HAState` (HAC-02)."""
+    entry = MockConfigEntry(domain=DOMAIN, title="mesh", data=ENTRY_DATA)
+    entry.add_to_hass(hass)
+    key = f"{DOMAIN}.seq.test-unwritable"
+    store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
+    backup = SeqStore(hass, STORAGE_VERSION, f"{key}.backup", atomic_writes=True)
+    state = HAState(store, None, 0x0D00, "test-unwritable", backup, entry.entry_id)
+    await hass.async_block_till_done()
+    state.report_unwritable()  # not stalled
+    assert state.last_write_error is None
+    store.written = None  # nothing durable: held back
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    # the saves that refusal forced land at once here (the storage is in memory): undo them
+    store.written = None
+    backup.write_error = "disk full"
+    assert state._stall_cause() == (backup.path, "disk full")
+    state.report_unwritable()
+    issue = find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE)
+    assert issue is not None
+    assert issue.translation_placeholders == {
+        "title": "mesh",
+        "path": backup.path,
+        "error": "disk full",
+    }
+    ir.async_delete_issue(hass, DOMAIN, issue.issue_id)
+    backup.write_error = None
+    for entry_id in (None, "no-such-entry"):
+        state.entry_id = entry_id
+        caplog.clear()
+        state.report_unwritable()
+        assert "(no error reported)" in caplog.text
+        assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
+    state.entry_id = entry.entry_id
+    state.report_unwritable()
+    issue = find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE)
+    assert issue is not None
+    assert issue.translation_placeholders is not None
+    assert issue.translation_placeholders["error"] == "none reported"
+    successor = HAState(store, None, 0x0D00, "test-unwritable", backup, entry.entry_id)
+    ir.async_delete_issue(hass, DOMAIN, issue.issue_id)
+    state.report_unwritable()  # superseded: its successor has the store
+    assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
+    await hass.async_block_till_done()
+    assert successor.stalled_for is None
+
+
+async def test_a_store_that_caught_up_ends_the_stall_without_a_send(
+    hass: HomeAssistant,
+) -> None:
+    """A minute into a stall the store holds nothing back any more (the forced save landed) although nothing was
+    sent since: the stall is over and no repair is raised."""
+    store = SeqStore(
+        hass, STORAGE_VERSION, f"{DOMAIN}.seq.test-caught-up", atomic_writes=True
+    )
+    state = HAState(store, None, 0x0D00, "test-caught-up")
+    await hass.async_block_till_done()
+    store.written = None
+    with pytest.raises(SequenceStalled):
+        state.next_seq()  # forces the save
+    await hass.async_block_till_done()
+    assert state.stalled_for is not None
+    assert state.last_write_error is None
+    state.report_unwritable()
+    assert state.stalled_for is None
+    assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
+
+
+async def test_no_filter_request_written_is_no_dropped_pdus(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """The Filter Status watchdog raises `pdus_dropped` only for a request that went out on this link while the
+    store lets sends through: one never written (every attempt held back), or a store holding sends back right now,
+    says nothing about the proxy discarding anything."""
+    hub = hub_of(init_integration)
+    hub.proxy.proxy_addr = None  # the status "never came"
+    hub._beacon_authenticated = True
+    hub.proxy.filter_writes = 0
+    hub._filter_status_overdue(dt_util.utcnow())
+    assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
+    hub.proxy.filter_writes = 1
+    hub.state._stalled_since = 0.0
+    hub._filter_status_overdue(dt_util.utcnow())
+    assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
+    hub.state._stalled_since = None
+    hub._filter_status_overdue(dt_util.utcnow())
+    assert find_issue(hass, ISSUE_PDUS_DROPPED) is not None
+
+
+async def test_a_send_without_a_link_leaves_the_counter_and_its_clean_mark(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+) -> None:
+    """Review-4 R4-4, the reviewer's repro: ten sends with no link used ten numbers, and one after `async_stop` (the
+    property reader, a keep-alive still running) cleared the clean-close mark the stop had just written — the next
+    start then added the restart margin for nothing. Refused before a number is taken, they change neither."""
+    hub = hub_of(init_integration)
+    state = hub.state
+    await hub.async_stop()
+    await hass.async_block_till_done()
+    seq = state.seq
+    assert state._closed
+    assert stored_addresses(hass_storage)["0D00"]["clean"] is True
+    for _ in range(10):
+        with pytest.raises(ConnectionError, match="not connected to a proxy"):
+            await hub.proxy.send_access(0x0300, bytes.fromhex("8201"))
+    await hass.async_block_till_done()
+    assert state.seq == seq
+    assert state._closed
+    assert stored_addresses(hass_storage)["0D00"]["clean"] is True
 
 
 def test_store_record_helpers_assume_the_worst_of_garbage() -> None:

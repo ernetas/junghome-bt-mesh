@@ -1121,14 +1121,16 @@
    "id": "mgmt:builder:netkeyupdatemessagebuilder",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_update"
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_update",
+    "custom_components/junghome_ble/jhmesh/vaultrefresh.py::carry"
    ],
    "tests": [
-    "tests/jhmesh/test_config_messages.py::test_key_management_builders"
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_vaultrefresh.py::test_the_whole_way_with_a_node_the_client_does_not_know"
    ],
    "class": "dup",
    "dup_of": "msg:op:8045",
-   "reason": "a builder whose only effect is Config NetKey Update, judged (declined) under msg:op:8045; the flow that would send it, mgmt:flow:keyrenewal, is declined too"
+   "reason": "a builder whose only effect is Config NetKey Update, judged under msg:op:8045 (implemented since review-4 D11: sent to the devices Home Assistant added, once the app's key refresh is proven); the flow that would start a refresh, mgmt:flow:keyrenewal, stays declined"
   },
   {
    "id": "mgmt:builder:proxyfiltermessagebuilder",
@@ -1268,14 +1270,16 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_get",
-    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_set"
+    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_set",
+    "custom_components/junghome_ble/jhmesh/vaultrefresh.py::carry"
    ],
    "tests": [
-    "tests/jhmesh/test_config_messages.py::test_key_management_builders"
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_vaultrefresh.py::test_the_whole_way_with_a_node_the_client_does_not_know"
    ],
    "class": "dup",
    "dup_of": "msg:op:8016",
-   "reason": "a builder whose only effect is Config Key Refresh Phase Get / Set, judged (declined) under msg:op:8016; Home Assistant follows a key refresh the app drives, it never drives one (mgmt:flow:keyrenewal)"
+   "reason": "a builder whose only effect is Config Key Refresh Phase Get / Set, judged under msg:op:8016 (Phase Set implemented since review-4 D11: sent to the devices Home Assistant added, each phase once the app's key refresh proved it); Home Assistant follows a key refresh the app drives, it never starts one (mgmt:flow:keyrenewal)"
   },
   {
    "id": "mgmt:cfgop:00",
@@ -4921,11 +4925,12 @@
    "id": "mgmt:flow:keyrenewal",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._follow_key_refresh"
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._follow_key_refresh",
+    "custom_components/junghome_ble/jhmesh/vaultrefresh.py::carry"
    ],
    "tests": [],
    "class": "declined",
-   "reason": "Declined: an HA-driven NetKey refresh is review-3 N6 (docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\", risk \"high: can split the network\"). docs/review-3/plan.md, '## Status' (Phase 4): \"Not started: N6, N8 (little gain next to the link-loss grace, costs a proxy connection slot), N9, N10, N11, N13.\"; '## Suggested order', item 4: \"N6 / N9 / N10 / N11 / N13 only after N3 is proven.\" docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" Following the app's refresh (N2b) is implemented."
+   "reason": "Declined: an HA-driven NetKey refresh is review-3 N6 (docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\", risk \"high: can split the network\"). docs/review-3/plan.md, '## Status' (Phase 4): \"Not started: N6, N8 (little gain next to the link-loss grace, costs a proxy connection slot), N9, N10, N11, N13.\"; '## Suggested order', item 4: \"N6 / N9 / N10 / N11 / N13 only after N3 is proven.\" docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" Following the app's refresh (N2b) is implemented. Carrying the devices Home Assistant added through the app's refresh, once it is proven (review-4 D11, jhmesh/vaultrefresh.py), is implemented; starting a refresh is not."
   },
   {
    "id": "mgmt:flow:loadinitialdevicestate",

@@ -14,7 +14,7 @@ import logging
 import os
 import time
 from collections.abc import Callable, Coroutine, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, cast
@@ -900,6 +900,8 @@ class _TxKey:
     akf: bool
     aid: int
     label: str  # 'app0' | 'dev:<addr>', as in AccessMessage.key
+    # the NetKey the network layer is sealed with; None = the one we transmit with when it is written (`nk`)
+    net: NetKeyMaterial | None = field(default=None, repr=False)
 
     @property
     def devkey(self) -> bool:
@@ -955,6 +957,9 @@ class ProxyClient:
         self.connected_at: float | None = None
         self.last_rx = 0.0  # monotonic time the proxy last delivered anything (`StandaloneLink` silence watchdog)
         self.rx_undecryptable = 0  # since attach(): network PDUs that failed NID / MIC / upper-transport decryption
+        # on the current link: Set Filter Type requests actually written — none means the proxy was never
+        # asked, so a missing Filter Status says nothing about it discarding our PDUs (the HA hub's watchdog)
+        self.filter_writes = 0
         self._reasm = ProxyReassembler()
         self._segments: dict[tuple[int, int], dict[str, Any]] = {}
         # source -> (IV index, SeqAuth) of its last segmented message delivered: a retransmission of it (fresh
@@ -1045,6 +1050,15 @@ class ProxyClient:
     def rx_net_keys(self) -> tuple[NetKeyMaterial, ...]:
         """The NetKeys we accept: the export's (its old one mid key refresh), and during a refresh the new ones too."""
         return tuple(self._net_key(k) for k in self._kr.rx_keys)
+
+    @property
+    def key_refresh_target(self) -> tuple[int, bytes] | None:
+        """The phase (1, 2 or 3) of the followed key refresh that is proven, with its new key; None when none is.
+
+        What Home Assistant may take the nodes only it knows to (`KeyRefreshFollower.distribution`, review-4 D11):
+        never a key one node's word alone gave.
+        """
+        return self._kr.distribution
 
     def add_node(self, node: Node) -> None:
         """Know a node the export does not have yet (one just provisioned): its device key, its elements."""
@@ -1285,6 +1299,7 @@ class ProxyClient:
         self.connected_at = None
         self.proxy_addr = None
         self._filter_type = None
+        self.filter_writes = 0  # the next link starts with none
         self._cancel_tasks()
         for _, fut in self._waiters:
             if not fut.done():
@@ -1322,9 +1337,11 @@ class ProxyClient:
 
         Reserved and written under `_send_lock` like any send: a segmented round writes the numbers it reserved
         one segment at a time, and a request that took its number meanwhile would reach the air between them.
+        Without a link it fails before taking a number (`_refuse_unlinked`).
         """
         while True:
             async with self._send_lock:
+                self._refuse_unlinked()
                 iv = self.state.tx_iv_index
                 pdu = network_encrypt(
                     self.nk,
@@ -1339,6 +1356,7 @@ class ProxyClient:
                 )
                 self._filter_acked.clear()
                 await self._write(PROXY_CONFIG, pdu)
+                self.filter_writes += 1
             self._filter_type = filter_type
             if self.state.tx_iv_index == iv:
                 break
@@ -1416,6 +1434,17 @@ class ProxyClient:
                 )
                 return
             sent += 1
+
+    def _refuse_unlinked(self) -> None:
+        """Fail a send that has no link before it takes a sequence number; called under `_send_lock`.
+
+        `next_seq` / `reserve_seq` persist what they hand out, and `_write` only finds the missing link after
+        that: every send while unlinked (a background reader, a keep-alive) used a number for nothing, and one
+        after the application closed its store reopened it (a subclass's clean-close mark). The check sits under
+        the lock, right before the reservation, so the order of reserving and writing stays as it was.
+        """
+        if self.client is None:
+            raise ConnectionError("not connected to a proxy")
 
     async def _write(self, msg_type: int, payload: bytes) -> None:
         """Write one proxy PDU, all of its SAR frames on the one link that was current when the write lock came.
@@ -1550,6 +1579,7 @@ class ProxyClient:
             async with self._sar_lock(dst):
                 return await self._send_segmented(dst, access_pdu, ttl, key, on_locked)
         async with self._send_lock:
+            self._refuse_unlinked()
             if on_locked is not None:
                 on_locked()
             # the transmit IV index is read under the lock: a beacon may complete an IV Update while we queue
@@ -1559,7 +1589,7 @@ class ProxyClient:
                 key.key, key.nonce, iv, seq, self.state.src, dst, access_pdu
             )
             net = network_encrypt(
-                self.nk,
+                self.nk if key.net is None else key.net,
                 iv,
                 False,
                 ttl,
@@ -1644,6 +1674,7 @@ class ProxyClient:
         # released by `_segment_rounds` once the first round is written
         await self._send_lock.acquire()
         try:
+            self._refuse_unlinked()
             if on_locked is not None:
                 on_locked()
             iv = self.state.tx_iv_index
@@ -1671,7 +1702,7 @@ class ProxyClient:
             n_segments,
             _Lazy(partial(describe, access_pdu, devkey=key.devkey)),
         )
-        return await self._segment_rounds(dst, ttl, segments, link, iv, seq0)
+        return await self._segment_rounds(dst, ttl, segments, link, iv, seq0, key.net)
 
     async def _segment_rounds(
         self,
@@ -1681,6 +1712,7 @@ class ProxyClient:
         link: Any,
         iv: int,
         seq0: int,
+        net: NetKeyMaterial | None = None,
     ) -> int | None:
         """Run the rounds of `_send_segments_once`; entered holding `_send_lock`, released after the first writes."""
         seq_zero = seq0 & 0x1FFF
@@ -1710,7 +1742,7 @@ class ProxyClient:
                         first = self.state.reserve_seq(len(order))
                         seqs = [first + k for k in range(len(order))]
                     acked.event.clear()  # before the writes: an ack may land while the last one is in flight
-                    await self._write_segments(dst, ttl, iv, segments, order, seqs)
+                    await self._write_segments(dst, ttl, iv, segments, order, seqs, net)
                 finally:
                     self._send_lock.release()
                 if not is_unicast(dst):
@@ -1743,11 +1775,19 @@ class ProxyClient:
         segments: list[bytes],
         order: list[int],
         seqs: list[int],
+        net_key: NetKeyMaterial | None = None,
     ) -> None:
-        """Write the segments `order` names, each with its sequence number from `seqs`."""
+        """Write the segments `order` names, each with its sequence number from `seqs` (under `net_key`, else `nk`)."""
         for i, seq in zip(order, seqs, strict=True):
             net = network_encrypt(
-                self.nk, iv, False, ttl, seq, self.state.src, dst, segments[i]
+                self.nk if net_key is None else net_key,
+                iv,
+                False,
+                ttl,
+                seq,
+                self.state.src,
+                dst,
+                segments[i],
             )
             await self._write(PROXY_NETWORK_PDU, net)
 
@@ -1816,6 +1856,7 @@ class ProxyClient:
         timeout: float = 3.0,
         retries: int = 3,
         match: Callable[[AccessMessage], bool] | None = None,
+        old_net_key: bool = False,
     ) -> AccessMessage:
         """Send a Config message to a node (device key, `send_config`) and wait for its Config status.
 
@@ -1823,8 +1864,15 @@ class ProxyClient:
         been decrypted with that node's device key (`AccessMessage.key == 'dev:<addr>'`). `match` narrows it
         further — the element / address / model the status echoes, so a retransmitted duplicate of the
         previous step's status cannot pass for this one's.
+
+        `old_net_key` seals the network layer with the key every node holds until a key refresh completes (the
+        export's, `KeyRefreshFollower.current`) rather than the one we transmit with — they differ in a proven
+        Phase 2 only: a node still waiting for its NetKey Update accepts nothing else (review-4 D11; relayed in
+        Phase 2 under the key it came with, §3.10.4.1 — unverified on air).
         """
         key = self._dev_key(node_unicast)
+        if old_net_key:
+            key = replace(key, net=self._net_key(self._kr.current))
         extra = match
 
         def match_status(m: AccessMessage) -> bool:
@@ -2073,7 +2121,7 @@ class ProxyClient:
             ):
                 return
             if msg.opcode == CONFIG_NETKEY_STATUS:
-                self._kr.netkey_status(msg.src, p[0] == 0)
+                moved = self._kr.netkey_status(msg.src, p[0] == 0, self.proxy_addr)
             elif len(p) >= 4 and p[0] == 0:
                 moved = self._kr.phase_status(msg.src, p[3], self.proxy_addr)
         else:
@@ -2089,10 +2137,15 @@ class ProxyClient:
         if moved is None:
             return
         new = self._net_key(moved.key)
-        if moved.phase == 1:
+        if moved.phase == 1 and moved.proof is None:
             log.warning(
                 "the provisioner is refreshing the network key: following it (phase 1): the new key is accepted, "
                 "not used until the mesh proves it moved"
+            )
+        elif moved.phase == 1:
+            log.warning(
+                "key refresh phase 1 proven (proof: %s): the new key is the provisioner's",
+                describe_proof(moved),
             )
         else:
             log.warning(
@@ -2306,10 +2359,11 @@ class ProxyClient:
         reserved before its first segment is written: the ack reached the air ahead of the round's remaining
         segments with a higher number, and the nodes' replay protection dropped those.
         """
-        if not is_unicast(dst) or self.client is None:
+        if not is_unicast(dst):
             return
         try:
             async with self._send_lock:
+                self._refuse_unlinked()
                 pdu = network_encrypt(
                     self.nk,
                     self.state.tx_iv_index,

@@ -259,6 +259,20 @@ delete_scene:
 
 delete_unused_scenes:
   fields:
+    dry_run:
+      default: true
+      selector:
+        boolean:
+    numbers:
+      example: "[5, 7]"
+      selector:
+        text:
+          type: number
+          multiple: true
+    confirm_stale_export:
+      default: false
+      selector:
+        boolean:
     config_entry_id:
       selector:
         config_entry:

@@ -19,6 +19,7 @@ from custom_components.junghome_ble.const import (
     KEEP_AWAKE_INTERVAL,
     KEEP_AWAKE_RETRY,
     KEEP_AWAKE_TIMEOUT,
+    LINK_WAIT_STEP,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
@@ -95,13 +96,24 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
 
 @pytest.fixture
 def hub(clock: Clock) -> Any:
-    return SimpleNamespace(
+    """The hub's side: a link that is up unless a test says otherwise; each wait for one is recorded (`waits`)."""
+    stand_in = SimpleNamespace(
         cdb=CDB.load(DETECTORS),
         proxy=Proxy(clock),
         last_heard={},
         hass=None,
         entry=SimpleNamespace(async_create_background_task=_task),
+        connected=True,
+        waits=[],
     )
+
+    async def async_wait_connected(timeout: float) -> bool:
+        stand_in.waits.append(timeout)
+        await _real_sleep(0)
+        return bool(stand_in.connected)
+
+    stand_in.async_wait_connected = async_wait_connected
+    return stand_in
 
 
 async def _until(predicate: Callable[[], bool]) -> None:
@@ -165,6 +177,24 @@ async def test_the_keep_alive_follows_the_apps_cadence(hub: Any, clock: Clock) -
     for _ in range(20):
         await _real_sleep(0)
     assert len(proxy.calls) == 7
+
+
+async def test_without_a_link_the_keep_alive_waits_for_one(
+    hub: Any, clock: Clock
+) -> None:
+    """Review-4 R4-4: with no link the keep-alive used to send into "not connected" every `KEEP_AWAKE_RETRY`
+    (each send taking a sequence number before failing); it waits for the link instead, then keeps its cadence."""
+    proxy: Proxy = hub.proxy
+    proxy.outcomes = [None]
+    hub.connected = False
+    keep = ka.KeepAwake(hub)
+    async with keep.hold([KEY_1G]):
+        await _until(lambda: len(hub.waits) >= 5)
+        assert proxy.calls == []
+        assert set(hub.waits) == {LINK_WAIT_STEP}
+        hub.connected = True
+        await _until(lambda: len(proxy.calls) == 2)
+    assert [t for t, *_ in proxy.calls] == [6, 12]  # quiet since the hold began
 
 
 async def test_two_battery_nodes_get_a_task_each(hub: Any) -> None:

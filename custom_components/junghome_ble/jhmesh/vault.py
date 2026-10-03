@@ -18,7 +18,9 @@ Two things the network's file (the Mesh CDB the app exports) does not keep for H
   CDB entry, element groups and app device rows as recorded, and `merge_into` puts back whatever a file lacks.
   Every vault node's addresses, and the element groups planned for a pending one, stay reserved
   (`reserved_unicasts`, `reserved_groups`): a node the file lacks still sends from its addresses and still holds
-  its groups, so the next node Home Assistant adds must not get them (review-4 D2).
+  its groups, so the next node Home Assistant adds must not get them (review-4 D2). The app never hands such a node
+  a new NetKey either: how far each came through the app's key refresh, which Home Assistant carries it through
+  (`vaultrefresh`, review-4 D11), is kept with it (`RefreshProgress`: the new key's Network ID, never the key).
 
 The vault is the caller's to persist (`to_dict` / `from_dict`); the dict holds key material, so it belongs where
 the export itself is kept. Nothing here logs, and no `repr()` or error message carries a key.
@@ -36,7 +38,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from .cdb import CDB, canonical_uuid, parse_address
+from .cdb import CDB, Element, Node, canonical_uuid, parse_address
 from .devices import DEVICE_TYPE_GROUPS, element_group_address, meta_list
 from .export import _ordered_like, hexaddr
 
@@ -53,6 +55,7 @@ GROUP_CEILING = DEVICE_TYPE_GROUPS[0] - 1
 RANGE_SIZE = 0x0100
 DEFAULT_NAME = "Home Assistant"
 KEY_LENGTH = 16
+NETWORK_ID_LENGTH = 8
 
 Range = tuple[int, int]
 
@@ -206,6 +209,42 @@ def choose_ranges(
     return Ranges(unicast, group, scene)
 
 
+@dataclass(frozen=True)
+class RefreshProgress:
+    """How far a vault node came through one key refresh (review-4 D11, `vaultrefresh`).
+
+    The refresh is named by its new NetKey's Network ID (public: every beacon of the new key carries it), never by
+    the key. `phase` is what the node confirmed: 0 nothing yet, 1 it holds the new key (NetKey Status), 2 it
+    transmits with it (Phase Status 2), 3 it dropped the old one (Phase Status 0 after Phase Set 3).
+    """
+
+    network_id: bytes
+    phase: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the JSON form."""
+        return {"networkId": self.network_id.hex().upper(), "phase": self.phase}
+
+    @classmethod
+    def from_dict(cls, data: Any, what: str) -> RefreshProgress:
+        """Read back `to_dict`'s form; `VaultError` naming `what` when it is not one."""
+        if not isinstance(data, dict):
+            msg = f"{what} is not an object"
+            raise VaultError(msg)
+        raw, phase = data.get("networkId"), data.get("phase")
+        try:
+            network_id = bytes.fromhex(raw) if isinstance(raw, str) else b""
+        except ValueError:
+            network_id = b""
+        if len(network_id) != NETWORK_ID_LENGTH:
+            msg = f"{what} networkId is not an 8-byte hexadecimal Network ID"
+            raise VaultError(msg)
+        if isinstance(phase, bool) or phase not in (0, 1, 2, 3):
+            msg = f"{what} phase is not 0, 1, 2 or 3"
+            raise VaultError(msg)
+        return cls(network_id, phase)
+
+
 @dataclass
 class VaultNode:
     """A node Home Assistant provisioned: its device key, and once recorded, what the file got for it."""
@@ -221,6 +260,8 @@ class VaultNode:
     devices: list[dict[str, Any]] = field(default_factory=list, repr=False)  # app rows
     # False for a pending node of a vault written before planned groups were kept: which groups it holds is unknown
     groups_known: bool = True
+    # how far it came through the last key refresh Home Assistant carried it through; None: none so far
+    key_refresh: RefreshProgress | None = None
 
     @property
     def recorded(self) -> bool:
@@ -230,6 +271,17 @@ class VaultNode:
     def addresses(self) -> range:
         """Return the node's element addresses."""
         return range(self.unicast, self.unicast + self.elements)
+
+    def as_node(self) -> Node:
+        """Return a CDB node the proxy client can address this one as: its device key and elements, no product.
+
+        For a node the client does not know (a pending one, or one the file lost): made known for a Config
+        exchange and forgotten again (`ProxyClient.add_node` / `remove_node`). Without a product id it never counts
+        as a JUNG device, so its statuses are no evidence of a key refresh (`ProxyClient._follow_key_refresh`).
+        """
+        node = Node(self.uuid, "pending", self.unicast, self.dev_key, None)
+        node.elements = [Element(a, 0, [], node) for a in self.addresses()]
+        return node
 
 
 @dataclass
@@ -331,6 +383,12 @@ class Vault:
                     "groups": [{"address": hexaddr(a), "name": g} for a, g in n.groups],
                     "devices": copy.deepcopy(n.devices),
                     "groupsKnown": n.groups_known,
+                    # only once there is some: a vault that never carried a node through a refresh keeps its shape
+                    **(
+                        {}
+                        if n.key_refresh is None
+                        else {"keyRefresh": n.key_refresh.to_dict()}
+                    ),
                 }
                 for n in self.nodes.values()
             ],
@@ -400,6 +458,7 @@ class Vault:
             if not isinstance(known, bool):
                 msg = f"{what} groupsKnown is not a boolean"
                 raise VaultError(msg)
+            progress = row.get("keyRefresh")
             node = VaultNode(
                 _uuid(row.get("uuid"), f"{what} uuid"),
                 _hex(row.get("unicast"), f"{what} unicast", UNICAST_BOUNDS),
@@ -412,6 +471,9 @@ class Vault:
                 ],
                 devices,
                 known,
+                None
+                if progress is None
+                else RefreshProgress.from_dict(progress, f"{what} keyRefresh"),
             )
             vault.nodes[node.uuid] = node
         return vault
@@ -429,14 +491,21 @@ class Vault:
         elements: int,
         dev_key: bytes,
         groups: Iterable[tuple[int, str]] = (),
+        key_refresh: RefreshProgress | None = None,
     ) -> VaultNode:
         """Keep a node's device key the moment provisioning completed: pending until `remember_recorded`.
 
         `groups`: the element groups its commissioning plan allocated, `(address, name)` — reserved with the node
-        (`reserved_groups`) whether or not the commissioning got as far as wiring them.
+        (`reserved_groups`) whether or not the commissioning got as far as wiring them. `key_refresh`: where a node
+        provisioned during a key refresh starts (Phase 2 hands out the new key with the Key Refresh flag set).
         """
         node = VaultNode(
-            canonical_uuid(uuid), unicast, elements, dev_key, groups=list(groups)
+            canonical_uuid(uuid),
+            unicast,
+            elements,
+            dev_key,
+            groups=list(groups),
+            key_refresh=key_refresh,
         )
         self.nodes[node.uuid] = node
         return node
@@ -467,6 +536,7 @@ class Vault:
             if canonical_uuid(str(n.get("UUID", ""))) == wanted
         )
         own = {e.address for e in node.elements}
+        before = self.nodes.get(wanted)
         kept = VaultNode(
             wanted,
             node.unicast,
@@ -479,6 +549,7 @@ class Vault:
                 if element_group_address(name) in own
             ],
             [copy.deepcopy(row) for row in _device_rows(pf.meta, wanted)],
+            key_refresh=None if before is None else before.key_refresh,
         )
         self.nodes[wanted] = kept
         return kept

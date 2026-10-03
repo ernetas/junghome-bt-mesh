@@ -964,6 +964,46 @@ async def test_read_cut_by_a_lost_link_is_retried_on_the_next_link(
     assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == b"\0\0\0\0"
 
 
+async def test_reads_wait_for_a_link_instead_of_failing_without_one(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Review-4 R4-4: with no proxy in range the reader worked its whole queue into "not connected" (each Get taking
+    a sequence number before failing). It waits for the link instead and reads once there is one."""
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass, 200)
+    hub: JungHomeHub = mock_config_entry.runtime_data
+    reader = hass.data[C.READERS][mock_config_entry.entry_id]
+    infos = mock_bluetooth_env["infos"]
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()
+    await settle(hass)
+    assert not hub.connected
+    ran: list[bool] = []
+
+    async def job() -> None:
+        ran.append(hub.connected)
+
+    reader.schedule(LIGHT_SWITCH, job)
+    await settle(hass)
+    assert ran == []  # held while there is no link
+    assert (
+        LIGHT_SWITCH,
+        job,
+    ) in reader._jobs  # with the reads the lost link queued again
+
+    PropertyMesh(fake_link)  # the queued reads are answered
+    mock_bluetooth_env["infos"] = infos
+    mock_bluetooth_env["callbacks"][0](infos[0], BluetoothChange.ADVERTISEMENT)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass, 200)
+    assert ran == [True]
+
+
 async def test_battery_node_is_read_when_a_key_wakes_it_not_at_link_up(
     hass: HomeAssistant,
     mock_bluetooth_env: dict[str, Any],
