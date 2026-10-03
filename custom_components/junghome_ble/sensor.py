@@ -1458,9 +1458,10 @@ class JungHomeMeshOverview(JungHomeEntity, SensorEntity):
     """Every node at a glance (review-4 U4-7): the reachable mains nodes, and a row per node for a dashboard table.
 
     The rows (`nodes`, `mesh_overview`) grow with the mesh and change with every message heard, so they are kept out
-    of the recorder and written at most once per NODE_DIAGNOSTICS_INTERVAL: a change of the link or of a node's
-    reachability is shown at once unless the last write was less than that ago, then when it is over; the time and
-    signal of the nodes heard meanwhile on the next tick. Always available: without a link it shows no node
+    of the recorder and written at most once per NODE_DIAGNOSTICS_INTERVAL: a change of a node's reachability is
+    shown at once unless the last write was less than that ago, then when it is over; the time and signal of the
+    nodes heard meanwhile on the next tick. A change of the link is shown at once, always: held back, the overview
+    would show no node reachable for up to a minute after any write while the link was still connecting. Always available: without a link it shows no node
     reachable, and when each was last heard. Unverified on air, the `scanner` of each row in particular (which
     adapter or proxy Home Assistant's Bluetooth stack names for a JUNG node).
     """
@@ -1496,14 +1497,20 @@ class JungHomeMeshOverview(JungHomeEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Follow the link and the nodes' reachability, and look at the rest once per interval."""
-        for signal in (SIGNAL_CONNECTION, SIGNAL_REACHABILITY):
-            self.async_on_remove(
-                async_dispatcher_connect(
-                    self.hass,
-                    signal.format(self.hub.entry.entry_id),
-                    self._schedule_write,
-                )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_CONNECTION.format(self.hub.entry.entry_id),
+                self._link_changed,
             )
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_REACHABILITY.format(self.hub.entry.entry_id),
+                self._schedule_write,
+            )
+        )
         self.async_on_remove(
             async_track_time_interval(
                 self.hass,
@@ -1516,6 +1523,12 @@ class JungHomeMeshOverview(JungHomeEntity, SensorEntity):
     @callback
     def _tick(self, _now: datetime) -> None:
         self._schedule_write()
+
+    @callback
+    def _link_changed(self) -> None:
+        """Write now, with whatever was held back: the link decides whether any node is reachable at all."""
+        self._cancel_pending()
+        self._write()
 
     @callback
     def _schedule_write(self) -> None:

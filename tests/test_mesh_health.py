@@ -135,10 +135,16 @@ def overview_writes(hass: HomeAssistant) -> Generator[list[str]]:
 async def test_mesh_connection_follows_the_link(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
-    """On while the link is up; off — not unavailable — without one, when *Unreachable devices* has nothing to say."""
+    """On while the link is up; off — not unavailable — without one, when *Unreachable devices* has nothing to say.
+
+    The overview follows the link at once too, however recent its last write: no rate limit holds back a link change.
+    """
     hub = hub_of(init_integration)
     connection = entity_id(hass, "binary_sensor", UID_CONNECTION)
     unreachable = entity_id(hass, "sensor", UID_UNREACHABLE)
+    overview = entity_id(hass, "sensor", UID_OVERVIEW)
+    reachable = hass.states.get(overview).state
+    assert reachable != "0"
     state = hass.states.get(connection)
     assert state.state == STATE_ON
     assert state.attributes[ATTR_DEVICE_CLASS] == BinarySensorDeviceClass.CONNECTIVITY
@@ -156,11 +162,13 @@ async def test_mesh_connection_follows_the_link(
         assert not hub.link_available
         assert hass.states.get(connection).state == STATE_OFF
         assert hass.states.get(unreachable).state == STATE_UNAVAILABLE
+        assert hass.states.get(overview).state == "0"
     hub._link_lost.set()  # a proxy advertises again
     await wait_for_link(hass, init_integration)
     await settle(hass)
     assert hass.states.get(connection).state == STATE_ON
     assert hass.states.get(unreachable).state == "0"
+    assert hass.states.get(overview).state == reachable
 
 
 async def test_a_node_that_does_not_answer_counts_until_heard(
