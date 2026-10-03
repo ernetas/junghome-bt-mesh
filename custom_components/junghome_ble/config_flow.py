@@ -120,7 +120,7 @@ from .gateway_api import (
 )
 from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB, UUID_PATTERN, InvalidExport
-from .jhmesh.client import MESH_PROXY_SERVICE
+from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
 from .jhmesh.devices import InvalidMetadata, Metadata
 from .jhmesh.export import write_private
 from .jhmesh.fileio import PRIVATE_MODE, backup_paths, copy_private, fsync_dir
@@ -396,24 +396,18 @@ def proxy_in_range(hass: HomeAssistant, cdb: CDB) -> bool:
 
     The hub connects to either kind (`ProxyClient.classify_service_data`), so setup must accept either: a node
     right after provisioning, or with the app's identify on, advertises Node Identity only (Mesh Profile §7.2.2.2.3).
-    Mid key refresh a proxy advertises with either key (`CDB.rx_net_keys`).
+    Mid key refresh a proxy advertises with either key (`CDB.rx_net_keys`). A proxy with Mesh Protocol 1.1 Proxy
+    Privacy on advertises the private forms of both instead (`classify_proxy_advert`; unverified on air).
     """
     keys = cdb.rx_net_keys(0)
-    for info in bluetooth.async_discovered_service_info(hass, connectable=True):
-        sd = info.service_data.get(MESH_PROXY_SERVICE)
-        if not sd:
-            continue
-        if sd[0] == 0x00 and any(bytes(sd[1:9]) == nk.network_id for nk in keys):
-            return True
-        if sd[0] == 0x01 and len(sd) >= 17:
-            h, rnd = bytes(sd[1:9]), bytes(sd[9:17])
-            if any(
-                nk.node_identity_hash(rnd, n.unicast) == h
-                for nk in keys
-                for n in cdb.nodes
-            ):
-                return True
-    return False
+    unicasts = [n.unicast for n in cdb.nodes]
+    return any(
+        classify_proxy_advert(
+            bytes(info.service_data.get(MESH_PROXY_SERVICE, b"")), keys, unicasts
+        )
+        is not None
+        for info in bluetooth.async_discovered_service_info(hass, connectable=True)
+    )
 
 
 def mesh_proxies_without_match(hass: HomeAssistant, cdb: CDB) -> bool:

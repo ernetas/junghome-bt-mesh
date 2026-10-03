@@ -255,7 +255,25 @@
   the gateway* still works too. The question is asked once per outage and again after a reload while the repair is
   open; a repair raised before a restart no longer keeps the gateway status polls silent after it. Unverified on air.
 
+- Proxy nodes with Mesh Protocol 1.1 privacy on are followed (review-4 P I-4, P I-5): such a node advertises a
+  Private Network Identity or Private Node Identity instead of the Network ID, and sends Mesh Private beacons instead
+  of Secure Network beacons. Setup now counts it as in range and the hub connects to it; a Mesh Private beacon moves
+  the IV index and proves a key refresh step like a Secure Network beacon; the diagnostics name the private kinds. A
+  firmware update turning privacy on used to leave Home Assistant with no proxy to connect to, and without the IV
+  index and key-refresh news. Discovery still needs a proxy advertising its Network ID, which a private advertisement
+  hides. Unverified on air: the installation's devices do not use privacy.
+
 ### CLI tools and library
+
+- `jhmesh.client.classify_proxy_advert(service_data, keys, unicasts)` is the one classifier of Mesh Proxy service
+  data (review-4 P I-4): `ProxyClient.classify_service_data` (so the CLI's scan), the setup check and the diagnostics
+  use it, and it knows the private kinds `private-network-id` and `private-node-identity`, whose hashes
+  `NetKeyMaterial.private_network_identity(random)` and `private_node_identity(random, address)` compute.
+  `ProxyClient` opens Mesh Private beacons with every key it accepts (`SecureNetworkBeacon.private`, logged as
+  `private beacon: …`); a key refresh proven by one logs "the proxy's beacon under the new key", as one proven by a
+  Secure Network beacon now does. The private beacon is pinned to the specification's sample data (Mesh Protocol 1.1
+  §8.4.6) in both directions instead of a test that built it with the code under test; the private identity hashes
+  are tested against their formula only, the specification's sample values (§8.6) not being at hand.
 
 - `tools/mesh_poc.py --ha-storage <config>/.storage` refuses every address Home Assistant's sequence store of the
   mesh holds a counter for (review-4 S4-11), as `--source` and as `provision --unicast`: only the integration's

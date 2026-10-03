@@ -108,7 +108,7 @@ def test_a_record_that_is_not_one_is_refused(
 def test_the_proof_is_described_without_the_key() -> None:
     assert (
         describe_proof(Moved(2, NEW, PROOF_BEACON))
-        == "the proxy's Secure Network beacon under the new key"
+        == "the proxy's beacon under the new key"
     )
     assert (
         describe_proof(Moved(2, NEW, PROOF_STATUSES, (B, A)))

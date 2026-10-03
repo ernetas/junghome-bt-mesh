@@ -835,6 +835,12 @@ async def test_diagnostics_of_an_unloaded_entry_check_the_proxies_against_the_ex
         advert("00:00:5E:00:53:22", -60, b"\x01" + bytes(8) + rnd),
         advert("00:00:5E:00:53:23", -80, b"\x02" + bytes(16)),
         advert(
+            "00:00:5E:00:53:25",
+            -70,
+            b"\x03" + netkey.private_node_identity(rnd, 0x0232) + rnd,
+        ),
+        advert("00:00:5E:00:53:26", -85, b"\x04" + bytes(16)),
+        advert(
             "00:00:5E:00:53:24", -90, b""
         ),  # no proxy service data at all: not listed
     ]
@@ -845,7 +851,9 @@ async def test_diagnostics_of_an_unloaded_entry_check_the_proxies_against_the_ex
         {"address": REDACTED, "rssi": -40, "kind": "node_identity", "matches_export": True, "node": "0232"},
         {"address": REDACTED, "rssi": -50, "kind": "network_id", "matches_export": True, "node": None},
         {"address": REDACTED, "rssi": -60, "kind": "node_identity", "matches_export": False, "node": None},
-        {"address": REDACTED, "rssi": -80, "kind": "type 02", "matches_export": False, "node": None},
+        {"address": REDACTED, "rssi": -70, "kind": "private_node_identity", "matches_export": True, "node": "0232"},
+        {"address": REDACTED, "rssi": -80, "kind": "private_network_identity", "matches_export": False, "node": None},
+        {"address": REDACTED, "rssi": -85, "kind": "type 04", "matches_export": False, "node": None},
     ]  # fmt: skip
     assert "00:00:5e:00:53:2" not in json.dumps(result).lower()
     assert (

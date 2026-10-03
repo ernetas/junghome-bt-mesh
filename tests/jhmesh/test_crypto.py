@@ -1,9 +1,10 @@
-"""jhmesh.crypto against the Mesh Profile 1.0.1 sample data (§8.1, §8.4.3, §8.6.2)."""
+"""jhmesh.crypto against the Mesh Profile 1.0.1 sample data (§8.1, §8.4.3, §8.6.2) and the Mesh Protocol 1.1 privacy."""
 
 from __future__ import annotations
 
 import pytest
 from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from jhmesh.crypto import (
     ZERO16,
@@ -91,6 +92,49 @@ def test_node_identity_hash_sample():
     assert nk.node_identity_hash(h("34ae608fbbc1f2c6"), 0x1201) == h("00861765aefcc57b")
     assert nk.node_identity_hash(h("34ae608fbbc1f2c6"), 0x1202) != h("00861765aefcc57b")
     assert len(nk.node_identity_hash(bytes(8), 1)) == 8
+
+
+def _aes(key: bytes, block: bytes) -> bytes:
+    """One AES-128 block straight from `cryptography`, not through `jhmesh.crypto`."""
+    enc = Cipher(algorithms.AES(key), modes.ECB()).encryptor()  # noqa: S305  # the spec's e(k, p)
+    return enc.update(block) + enc.finalize()
+
+
+# The §8.6 sample's IdentityKey and Network ID (`test_netkey_material_sample`), with its Node Identity Random and address
+SAMPLE_IDENTITY_KEY = h("84396c435ac48560b5965385253e210c")
+SAMPLE_NETWORK_ID = h("3ecaff672f673370")
+SAMPLE_RANDOM = h("34ae608fbbc1f2c6")
+
+
+def test_private_network_identity_hash():
+    """Mesh Protocol 1.1 §7.2.2.2.4: Hash = e(IdentityKey, Network ID ‖ Random) mod 2^64.
+
+    The specification's Private Network Identity sample data (§8.6) was not available offline when this was written,
+    so the expected Hash is the formula worked out with a raw AES block on the §8.6 inputs, not a sample value: pin it
+    to the specification's Hash once that is to hand.
+    """
+    nk = NetKeyMaterial.derive(SAMPLE_NETKEY)
+    want = _aes(SAMPLE_IDENTITY_KEY, SAMPLE_NETWORK_ID + SAMPLE_RANDOM)[8:]
+    assert nk.private_network_identity(SAMPLE_RANDOM) == want
+    assert nk.private_network_identity(bytes(8)) != want
+    assert (
+        NetKeyMaterial.derive(bytes(16)).private_network_identity(SAMPLE_RANDOM) != want
+    )
+
+
+def test_private_node_identity_hash():
+    """Mesh Protocol 1.1 §7.2.2.2.5: Hash = e(IdentityKey, 0x0000000000 ‖ 0x03 ‖ Random ‖ Address) mod 2^64.
+
+    Not the specification's sample Hash either (§8.6, not available offline): the formula on the §8.6 inputs. The
+    0x03 keeps it apart from the Node Identity hash of the same Random and address (`test_node_identity_hash_sample`).
+    """
+    nk = NetKeyMaterial.derive(SAMPLE_NETKEY)
+    block = bytes(5) + b"\x03" + SAMPLE_RANDOM + (0x1201).to_bytes(2, "big")
+    want = _aes(SAMPLE_IDENTITY_KEY, block)[8:]
+    assert nk.private_node_identity(SAMPLE_RANDOM, 0x1201) == want
+    assert nk.private_node_identity(SAMPLE_RANDOM, 0x1202) != want
+    assert want != nk.node_identity_hash(SAMPLE_RANDOM, 0x1201)
+    assert len(nk.private_node_identity(bytes(8), 1)) == 8
 
 
 def test_beacon_authentication_sample():

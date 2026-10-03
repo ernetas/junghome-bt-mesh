@@ -897,6 +897,47 @@ def test_parse_beacon_compares_the_authentication_value_in_constant_time(
     assert b.authenticated is False
 
 
+# Mesh Protocol 1.1 §8.4.6 sample data, Mesh Private beacon with IV Update in progress: NetKey, Random, Flags 0x02 and
+# IV Index 0x1010abcd in, the beacon out (the bytes `test_sniffer.py` decodes too)
+PRIVATE_SAMPLE_NETKEY = h("f7a2a44f8e8a8029064f173ddc1e2b00")
+PRIVATE_SAMPLE_RANDOM = h("435f18f85cf78a3121f58478a5")
+PRIVATE_SAMPLE_BEACON = h(
+    "02" + "435f18f85cf78a3121f58478a5" + "61e488e7cb" + "f3174f022a514741"
+)
+
+
+def test_parse_private_beacon_spec_vector():
+    nk = NetKeyMaterial.derive(PRIVATE_SAMPLE_NETKEY)
+    assert parse_private_beacon(nk, PRIVATE_SAMPLE_BEACON) == SecureNetworkBeacon(
+        key_refresh=False,
+        iv_update=True,
+        network_id=nk.network_id,
+        iv_index=0x1010ABCD,
+        authenticated=True,
+        private=True,
+    )
+    # only the key it was made with opens it: another key, or a bit changed anywhere, is no beacon at all
+    assert parse_private_beacon(NK, PRIVATE_SAMPLE_BEACON) is None
+    for i in range(1, len(PRIVATE_SAMPLE_BEACON)):
+        bad = bytearray(PRIVATE_SAMPLE_BEACON)
+        bad[i] ^= 0x01
+        assert parse_private_beacon(nk, bytes(bad)) is None
+    assert parse_private_beacon(nk, PRIVATE_SAMPLE_BEACON[1:]) is None  # wrong type
+    assert (
+        parse_beacon(nk, PRIVATE_SAMPLE_BEACON) is None
+    )  # not a Secure Network beacon
+
+
+def test_private_beacon_construction_matches_the_spec_vector():
+    """§3.10.4.1's obfuscation and Authentication Tag are AES-CCM with the Random as nonce and an 8-octet tag: sealing
+    the sample's Flags ‖ IV Index that way gives the sample's beacon octet for octet."""
+    nk = NetKeyMaterial.derive(PRIVATE_SAMPLE_NETKEY)
+    sealed = ccm_encrypt(
+        nk.private_beacon_key, PRIVATE_SAMPLE_RANDOM, h("02" + "1010abcd"), 8
+    )
+    assert b"\x02" + PRIVATE_SAMPLE_RANDOM + sealed == PRIVATE_SAMPLE_BEACON
+
+
 # ----------------------------------------------------------------------------- prefix fuzz
 
 

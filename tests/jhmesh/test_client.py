@@ -31,6 +31,7 @@ from jhmesh.client import (
     SequenceStalled,
     _AckState,
     _TxKey,
+    classify_proxy_advert,
 )
 from jhmesh.crypto import AppKeyMaterial, NetKeyMaterial
 from jhmesh.keyrefresh import (
@@ -468,6 +469,68 @@ def test_classify_service_data(proxy: ProxyClient, cdb: CDB):
         is None
     )
     assert proxy.classify_service_data(b"\x02" + bytes(16)) is None
+    assert proxy.classify_service_data(b"\x04" + bytes(16)) is None  # an unknown type
+
+
+def test_classify_private_identities(proxy: ProxyClient, cdb: CDB):
+    """Review-4 P I-4: a proxy with Proxy Privacy on advertises Private Network / Node Identity (Mesh Protocol 1.1)."""
+    nk = cdb.net_keys[0]
+    other = NetKeyMaterial.derive(bytes(16))
+    rnd = bytes(range(8, 16))
+    net = nk.private_network_identity(rnd)
+    assert proxy.classify_service_data(b"\x02" + net + rnd) == (
+        "private-network-id",
+        None,
+    )
+    assert proxy.classify_service_data(b"\x02" + net + rnd[:7]) is None  # truncated
+    assert (
+        proxy.classify_service_data(b"\x02" + net + bytes(8)) is None
+    )  # another Random: another hash
+    assert (
+        proxy.classify_service_data(b"\x02" + other.private_network_identity(rnd) + rnd)
+        is None
+    )  # another network
+    assert proxy.classify_service_data(
+        b"\x03" + nk.private_node_identity(rnd, LIGHT_2G) + rnd
+    ) == ("private-node-identity", LIGHT_2G)
+    assert (
+        proxy.classify_service_data(
+            b"\x03" + nk.private_node_identity(rnd, 0x0999) + rnd
+        )
+        is None
+    )  # not one of our nodes
+    assert (
+        proxy.classify_service_data(
+            b"\x03" + other.private_node_identity(rnd, LIGHT_2G) + rnd
+        )
+        is None
+    )
+    # neither hash passes for the other kind, nor for the public Node Identity
+    assert (
+        proxy.classify_service_data(
+            b"\x01" + nk.private_node_identity(rnd, LIGHT_2G) + rnd
+        )
+        is None
+    )
+    assert (
+        proxy.classify_service_data(
+            b"\x03" + nk.node_identity_hash(rnd, LIGHT_2G) + rnd
+        )
+        is None
+    )
+
+
+def test_classify_proxy_advert_without_a_proxy_object(cdb: CDB):
+    """The classifier the setup check and the diagnostics share: any keys, any node addresses, any service data."""
+    nk, rnd = cdb.net_keys[0], bytes(range(8))
+    assert classify_proxy_advert(b"", (nk,), [LIGHT_2G]) is None
+    assert classify_proxy_advert(b"\x00" + nk.network_id, (), [LIGHT_2G]) is None
+    sd = b"\x03" + nk.private_node_identity(rnd, LIGHT_2G) + rnd
+    assert classify_proxy_advert(sd, (nk,), []) is None  # no node of the export
+    assert classify_proxy_advert(sd, (nk,), iter([PHONE, LIGHT_2G])) == (
+        "private-node-identity",
+        LIGHT_2G,
+    )
 
 
 def test_classify_keeps_its_verdicts(
@@ -1512,6 +1575,41 @@ async def test_beacon_key_refresh_is_reported(
         in caplog.text
     )
     assert recorder.beacons[-1].key_refresh is True
+
+
+async def test_private_beacon_moves_the_iv_state_like_a_secure_one(
+    attached: ProxyClient,
+    link: FakeBleak,
+    recorder: Recorder,
+    state: LocalState,
+    caplog: pytest.LogCaptureFixture,
+):
+    """Review-4 P I-4: a proxy with Mesh Protocol 1.1 privacy on sends Mesh Private beacons, not Secure Network ones."""
+    with caplog.at_level(logging.DEBUG, logger="jhmesh"):
+        link.send_private_beacon(iv_index=1, iv_update=True)
+    assert (state.iv_index, state.iv_update_active, state.tx_iv_index) == (1, True, 0)
+    b = recorder.beacons[-1]
+    assert (b.private, b.authenticated, b.iv_update, b.network_id) == (
+        True,
+        True,
+        True,
+        link.nk.network_id,
+    )
+    assert "private beacon: iv_index=1 iv_update=True" in caplog.text
+    link.send_private_beacon(iv_index=1)  # the update completes
+    assert (state.iv_index, state.iv_update_active, state.tx_iv_index) == (1, False, 1)
+    assert len(recorder.beacons) == 2
+    # another network's (or one changed on the way, or cut short): nothing in it is readable, nothing is reported
+    ours = link.private_beacon_payload(iv_index=2)
+    link.nk = NetKeyMaterial.derive(bytes(16))
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG, logger="jhmesh"):
+        link.send_private_beacon(iv_index=5, iv_update=True)
+        link.deliver(PROXY_BEACON, ours[:5] + bytes([ours[5] ^ 1]) + ours[6:])
+        link.deliver(PROXY_BEACON, ours[:26])
+    assert len(recorder.beacons) == 2
+    assert state.iv_index == 1
+    assert caplog.text.count("Mesh Private beacon that no key of ours opens") == 3
 
 
 # ============================================================================= ProxyClient: control / proxy PDUs
@@ -4196,7 +4294,7 @@ async def test_a_key_refresh_by_the_provisioner_is_followed(
     with caplog.at_level(logging.WARNING, logger="jhmesh"):
         link.send_beacon(iv_index=0, key_refresh=False)
     assert (
-        "key refresh complete (proof: the proxy's Secure Network beacon under the new key)"
+        "key refresh complete (proof: the proxy's beacon under the new key)"
         in caplog.text
     )
     assert attached.key_refresh_phase == 0
@@ -4331,6 +4429,30 @@ async def test_a_key_refresh_beacon_moves_to_phase_two_and_messages_that_are_not
         NEW_NET_KEY,
         OTHER_NET_KEY,
     ]
+
+
+async def test_a_private_beacon_under_the_new_key_proves_the_key_refresh(
+    attached: ProxyClient, link: FakeBleak, cdb: CDB, state: LocalState
+):
+    """Review-4 P I-4: a proxy with privacy on proves Phase 2 and 3 with Mesh Private beacons under the new key."""
+    old = attached.nk
+    phone_config(link, cdb, PROXY_NODE, C.netkey_update(NEW_NET_KEY))
+    assert attached.key_refresh_phase == 1
+    link.send_private_beacon(key_refresh=True)  # the old key's: no proof
+    assert attached.key_refresh_phase == 1
+    link.nk = NetKeyMaterial.derive(NEW_NET_KEY)
+    link.send_private_beacon(
+        key_refresh=True
+    )  # the old key does not open it, the new one does
+    assert attached.key_refresh_phase == 2
+    assert attached.nk.key == NEW_NET_KEY
+    assert state.key_refresh is not None
+    assert (state.key_refresh.phase, state.key_refresh.proof) == (2, PROOF_BEACON)
+    link.send_private_beacon(key_refresh=False)  # phase 3: the old key is revoked
+    assert attached.key_refresh_phase == 0
+    assert attached.rx_net_keys == (attached.nk,)
+    assert old not in attached.rx_net_keys
+    assert (state.key_refresh.phase, state.key_refresh.proof) == (3, PROOF_BEACON)
 
 
 async def test_a_forged_key_refresh_from_one_node_is_not_followed(

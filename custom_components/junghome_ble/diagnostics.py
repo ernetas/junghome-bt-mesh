@@ -51,7 +51,7 @@ from .entity import (
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
-from .jhmesh.client import MESH_PROXY_SERVICE
+from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -83,7 +83,12 @@ UUID_MAC_PART = (
 # a bare absolute path
 _PATH = re.compile(r"""'[^']*'|"[^"]*"|(?<![\w.:/~])~?/[^\s'",;)]*""")
 # the first byte of Mesh Proxy service data (Mesh Profile §7.2.2.2.2-3; 2 and 3 are the Mesh 1.1 private kinds)
-PROXY_KINDS = {0: "network_id", 1: "node_identity"}
+PROXY_KINDS = {
+    0: "network_id",
+    1: "node_identity",
+    2: "private_network_identity",  # Mesh Protocol 1.1 Proxy Privacy
+    3: "private_node_identity",
+}
 
 
 def redact_paths(text: str | None) -> str | None:
@@ -392,10 +397,12 @@ def _visible_proxies(hass: HomeAssistant, cdb: CDB | None) -> list[dict[str, Any
     """Every connectable node advertising Mesh Proxy service data, strongest first, checked against the export.
 
     `matches_export` (None without an export) says whether a Network ID is the export's, or a Node Identity
-    resolves to one of its nodes (`node`) — the check the setup makes (`config_flow.proxy_in_range`), mid key
-    refresh with either key. Another mesh's proxies are listed too, by kind only.
+    resolves to one of its nodes (`node`), or their Mesh Protocol 1.1 private forms do — the check the setup makes
+    (`config_flow.proxy_in_range`), mid key refresh with either key. Another mesh's proxies are listed too, by kind
+    only.
     """
     keys = () if cdb is None else cdb.rx_net_keys(0)
+    unicasts = [] if cdb is None else [n.unicast for n in cdb.nodes]
     out = []
     for info in bluetooth.async_discovered_service_info(hass, connectable=True):
         sd = info.service_data.get(MESH_PROXY_SERVICE)
@@ -405,23 +412,9 @@ def _visible_proxies(hass: HomeAssistant, cdb: CDB | None) -> list[dict[str, Any
         node: int | None = None
         matches: bool | None = None
         if cdb is not None:
-            if data[0] == 0x00:
-                matches = any(data[1:9] == nk.network_id for nk in keys)
-            elif data[0] == 0x01 and len(data) >= 17:
-                h, rnd = data[1:9], data[9:17]
-                node = next(
-                    (
-                        n.unicast
-                        for n in cdb.nodes
-                        if any(
-                            nk.node_identity_hash(rnd, n.unicast) == h for nk in keys
-                        )
-                    ),
-                    None,
-                )
-                matches = node is not None
-            else:
-                matches = False
+            verdict = classify_proxy_advert(data, keys, unicasts)
+            matches = verdict is not None
+            node = None if verdict is None else verdict[1]
         out.append(
             {
                 "address": info.address,

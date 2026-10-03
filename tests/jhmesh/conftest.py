@@ -395,6 +395,20 @@ class FakeBleak:
     def send_beacon(self, **kw: Any) -> None:
         self.deliver(PROXY_BEACON, self.beacon_payload(**kw))
 
+    def private_beacon_payload(
+        self, iv_index: int = 0, iv_update: bool = False, key_refresh: bool = False
+    ) -> bytes:
+        """A Mesh Private beacon (Mesh Protocol 1.1 §3.10.4) under the fake's NetKey: Random ‖ AES-CCM(Flags ‖ IV)."""
+        flags = (1 if key_refresh else 0) | (2 if iv_update else 0)
+        random = bytes(range(13))
+        data = bytes([flags]) + iv_index.to_bytes(4, "big")
+        return (
+            b"\x02" + random + ccm_encrypt(self.nk.private_beacon_key, random, data, 8)
+        )
+
+    def send_private_beacon(self, **kw: Any) -> None:
+        self.deliver(PROXY_BEACON, self.private_beacon_payload(**kw))
+
     # ---------------------------------------------------------------- helpers: inspecting what the client sent
     def sent_access(self) -> list[tuple[int, int, int, int, bytes]]:
         """All AppKey access messages we received from the client as (src, dst, ttl, seq_auth, access_pdu).

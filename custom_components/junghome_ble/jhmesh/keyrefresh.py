@@ -18,8 +18,8 @@ decoded and persists `record()`):
 - **confirmations**: a NetKey Status (success) or Key Refresh Phase Status (success) a node sealed with its own
   device key counts for the key that node was sent — a Phase Status reporting phase 2 for Phase 2; one reporting
   phase 0 after a Phase Set 3 to that node, from a node that confirmed holding the key, for Phase 3.
-- **proof** moves the refresh on, never a request: a Secure Network beacon authenticated under the candidate
-  (`PROOF_BEACON`; Key Refresh flag set = Phase 2, clear = Phase 3, §3.10.4.1), Phase Status confirmations from at
+- **proof** moves the refresh on, never a request: a Secure Network beacon authenticated under the candidate, or a
+  Mesh Private beacon it opens (`PROOF_BEACON`; Key Refresh flag set = Phase 2, clear = Phase 3, §3.10.4.1), Phase Status confirmations from at
   least two distinct nodes (`PROOF_STATUSES`) or from the proxy node itself (`PROOF_PROXY`). An export written mid
   key refresh is its own proof (`PROOF_EXPORT`).
 - Phase 1 is **proven** the same way (review-4 D11): the candidate confirmed held — a NetKey Status or a Phase Status
@@ -42,9 +42,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-PROOF_BEACON = (
-    "beacon"  # a Secure Network beacon from the proxy, authenticated under the new key
-)
+# a Secure Network beacon from the proxy authenticated under the new key, or a Mesh Private beacon the new key opens
+PROOF_BEACON = "beacon"
 PROOF_STATUSES = "statuses"  # Key Refresh Phase Status from two distinct nodes, each under its own device key
 PROOF_PROXY = "proxy"  # Key Refresh Phase Status from the proxy node Home Assistant is connected to
 PROOF_EXPORT = (
@@ -165,7 +164,7 @@ def describe_proof(moved: Moved) -> str:
     if moved.phase == 1 and moved.proof == PROOF_PROXY:
         return f"the new key confirmed by the proxy node {nodes}"
     if moved.proof == PROOF_BEACON:
-        return "the proxy's Secure Network beacon under the new key"
+        return "the proxy's beacon under the new key"
     if moved.proof == PROOF_STATUSES:
         return f"Key Refresh Phase Status from nodes {nodes}"
     if moved.proof == PROOF_PROXY:
@@ -331,7 +330,11 @@ class KeyRefreshFollower:
         return self._check(key, proxy)
 
     def beacon(self, key: bytes, key_refresh: bool) -> Moved | None:
-        """Take a Secure Network beacon authenticated under candidate `key` as proof: Phase 2, or 3 with the flag clear."""
+        """Take a beacon authenticated under candidate `key` as proof: Phase 2, or 3 with the flag clear.
+
+        A Secure Network beacon whose MAC verified under `key`, or a Mesh Private beacon `key` opened (Mesh Protocol
+        1.1 §3.10.4, unverified on air): both carry the same Key Refresh flag, and only the key's holder makes either.
+        """
         if key not in self._candidates:
             return None
         if not key_refresh:

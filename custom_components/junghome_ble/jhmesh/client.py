@@ -14,7 +14,7 @@ import logging
 import os
 import time
 from collections import OrderedDict
-from collections.abc import Callable, Coroutine, Iterable
+from collections.abc import Callable, Coroutine, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from functools import partial
 from pathlib import Path
@@ -37,6 +37,7 @@ from .fileio import PRIVATE_MODE, atomic_write
 from .keyrefresh import KeyRefreshFollower, KeyRefreshRecord, Moved, describe_proof
 from .messages import describe
 from .pdu import (
+    BEACON_PRIVATE,
     FILTER_BLACKLIST,
     NONCE_APP,
     NONCE_DEVICE,
@@ -55,6 +56,7 @@ from .pdu import (
     network_encrypt,
     parse_beacon,
     parse_lower,
+    parse_private_beacon,
     proxy_config_set_filter,
     proxy_frame,
     segment_ack,
@@ -127,13 +129,47 @@ class ProxyCandidate:
 
     address: str  # BLE address / CoreBluetooth UUID
     rssi: int
-    kind: str  # 'network-id' | 'node-identity'
+    kind: str  # 'network-id' | 'node-identity' | 'private-network-id' | 'private-node-identity'
     node_addr: int | None = None
     name: str | None = None
     device: Any = None  # backend BLEDevice, if available
     adv: Any = (
         None  # backend AdvertisementData (local name, manufacturer data), if available
     )
+
+
+def classify_proxy_advert(
+    sd: bytes, keys: Sequence[NetKeyMaterial], nodes: Iterable[int]
+) -> tuple[str, int | None] | None:
+    """Whose Mesh Proxy service data (0x1828) `sd` is: (kind, node address) under one of `keys`, or None.
+
+    Identification types (§7.2.2.2): 0x00 Network ID (`network-id`, in the clear), 0x01 Node Identity
+    (`node-identity`, a hash of one of the unicast `nodes`); Mesh Protocol 1.1 Proxy Privacy adds 0x02 Private Network
+    Identity (`private-network-id`) and 0x03 Private Node Identity (`private-node-identity`), Hash ‖ Random with
+    nothing in the clear — those two are unverified on air. A Node Identity costs one AES per node per key.
+    """
+    if not sd:
+        return None
+    if sd[0] == 0x00:
+        ours = any(sd[1:9] == k.network_id for k in keys)
+        return ("network-id", None) if ours else None
+    if len(sd) < 17 or sd[0] not in (0x01, 0x02, 0x03):
+        return None
+    h, rnd = sd[1:9], sd[9:17]
+    if sd[0] == 0x02:
+        ours = any(k.private_network_identity(rnd) == h for k in keys)
+        return ("private-network-id", None) if ours else None
+    private = sd[0] == 0x03
+    for a in nodes:
+        for k in keys:
+            mine = (
+                k.private_node_identity(rnd, a)
+                if private
+                else k.node_identity_hash(rnd, a)
+            )
+            if mine == h:
+                return ("private-node-identity" if private else "node-identity"), a
+    return None
 
 
 def _now() -> float:
@@ -1176,17 +1212,10 @@ class ProxyClient:
 
     def _classify(self, sd: bytes) -> tuple[str, int | None] | None:
         """`classify_service_data` without the cache."""
-        keys = (
-            self.rx_net_keys
-        )  # during a key refresh, proxies advertise either key's identity
-        if sd[0] == 0x00 and any(sd[1:9] == k.network_id for k in keys):
-            return "network-id", None
-        if sd[0] == 0x01 and len(sd) >= 17:
-            h, rnd = sd[1:9], sd[9:17]
-            for n in self.cdb.nodes:
-                if any(k.node_identity_hash(rnd, n.unicast) == h for k in keys):
-                    return "node-identity", n.unicast
-        return None
+        # during a key refresh, proxies advertise either key's identity
+        return classify_proxy_advert(
+            sd, self.rx_net_keys, (n.unicast for n in self.cdb.nodes)
+        )
 
     # ------------------------------------------------------------------ link management
     @property
@@ -2062,7 +2091,8 @@ class ProxyClient:
                 b = self._parse_beacon(payload)
                 if b:
                     log.info(
-                        "beacon: iv_index=%d iv_update=%s key_refresh=%s auth=%s",
+                        "%sbeacon: iv_index=%d iv_update=%s key_refresh=%s auth=%s",
+                        "private " if b.private else "",
                         b.iv_index,
                         b.iv_update,
                         b.key_refresh,
@@ -2164,22 +2194,33 @@ class ProxyClient:
         return None
 
     def _parse_beacon(self, payload: bytes) -> SecureNetworkBeacon | None:
-        """Parse a Secure Network Beacon with every key we accept; the first that authenticates it wins.
+        """Parse a Secure Network or Mesh Private beacon with every key we accept; the first that authenticates it wins.
 
         A beacon secured with a new key moves a key refresh on (§3.10.4.1): Key Refresh flag set = Phase 2,
         clear = Phase 3 (the old key is revoked). It comes from the proxy node itself, which beacons with the keys
         it uses: proof that the mesh moved (`KeyRefreshFollower.beacon`).
+
+        A proxy with Mesh Protocol 1.1 privacy on sends Mesh Private beacons instead (§3.10.4; unverified on air): the
+        same flags and IV index, sealed with the private beacon key, so they move the IV state and prove a key
+        refresh alike. Only the key it was made with opens one: a private beacon none of ours opens is None, not an
+        unauthenticated beacon.
         """
+        private = payload[:1] == bytes([BEACON_PRIVATE])
+        parse = parse_private_beacon if private else parse_beacon
         first: SecureNetworkBeacon | None = None
         for key in self.rx_net_keys:
-            b = parse_beacon(key, payload)
+            b = parse(key, payload)
             if b is None:
+                if private:
+                    continue  # not this key's: perhaps the next one's
                 return None
             if b.authenticated:
                 if key.key != self._kr.current:
                     self._key_refresh_moved(self._kr.beacon(key.key, b.key_refresh))
                 return b
             first = first or b
+        if private:
+            log.debug("Mesh Private beacon that no key of ours opens dropped")
         return first
 
     def _follow_key_refresh(self, msg: AccessMessage) -> None:

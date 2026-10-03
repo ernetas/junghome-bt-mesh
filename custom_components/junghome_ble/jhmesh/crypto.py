@@ -1,4 +1,4 @@
-"""Bluetooth Mesh security functions (Mesh Profile 1.0.1 §3.8) — pure Python on `cryptography`."""
+"""Bluetooth Mesh security functions (Mesh Profile 1.0.1 §3.8, Mesh Protocol 1.1 privacy) — pure Python on `cryptography`."""
 
 from __future__ import annotations
 
@@ -106,6 +106,24 @@ class NetKeyMaterial:
         return aes_ecb(
             self.identity_key, bytes(6) + random8 + address.to_bytes(2, "big")
         )[8:]
+
+    def private_network_identity(self, random8: bytes) -> bytes:
+        """Hash used in the Private Network Identity proxy advertisement (Mesh Protocol 1.1 §7.2.2.2.4).
+
+        e(IdentityKey, Network ID ‖ Random) mod 2^64: the Network ID is no longer in the clear, so only a holder of
+        the NetKey can tell which network a proxy with Proxy Privacy on belongs to.
+        """
+        return aes_ecb(self.identity_key, self.network_id + random8)[8:]
+
+    def private_node_identity(self, random8: bytes, address: int) -> bytes:
+        """Hash used in the Private Node Identity proxy advertisement (Mesh Protocol 1.1 §7.2.2.2.5).
+
+        e(IdentityKey, Padding ‖ 0x03 ‖ Random ‖ Address) mod 2^64 with 5 octets of zero padding: the Node Identity
+        block (`node_identity_hash`) with the identification type in its last padding octet, so neither hash can be
+        passed off as the other.
+        """
+        block = bytes(5) + b"\x03" + random8 + address.to_bytes(2, "big")
+        return aes_ecb(self.identity_key, block)[8:]
 
 
 @dataclass(frozen=True)

@@ -1409,7 +1409,8 @@ Home Assistant is in the diagnostics (`heartbeats`).
   and not sent from a device, and from then on accepts both keys. It moves on only on **proof that the mesh moved**,
   never on the requests themselves (a device can seal those with its own device key, and the app aborts a refresh
   when a device lags): it transmits with the new key from Phase 2 and drops the old one at Phase 3 once the proxy
-  node's Secure Network beacon is secured with the new key (Key Refresh flag set: Phase 2, clear: Phase 3), or once
+  node's Secure Network beacon is secured with the new key — or its Mesh Private beacon opens with it, see *Mesh
+  Protocol 1.1 privacy* below — (Key Refresh flag set: Phase 2, clear: Phase 3), or once
   *Key Refresh Phase Status* answers from two distinct devices — or from the proxy node itself — each sealed with
   the device's own key, report the phase. A status counts for the key that device was sent, so a device sending
   itself a key of its choice moves nothing but its own vote. The log names the proof of every step (never the key).
@@ -1514,6 +1515,16 @@ Home Assistant is in the diagnostics (`heartbeats`).
   Assistant matches a JUNG proxy (the gateway's proxy, which sends no record, would no longer be discovered at all),
   since a too-narrow matcher hides the real mesh. `tools/mesh_poc.py scan --adv` prints the manufacturer data of
   the proxies in range. Keying the entry on the mesh UUID instead of the Network ID (also M10) is not done either.
+- **Mesh Protocol 1.1 privacy is followed, unverified on air.** A proxy node with Proxy Privacy on advertises a
+  Private Network Identity or a Private Node Identity (a hash of the Network ID or of the node address under the
+  network key, with a random value) instead of the Network ID, and sends Mesh Private beacons instead of Secure
+  Network beacons. Setup counts such a proxy as in range, the hub connects to it (`jhmesh.client.classify_proxy_advert`),
+  and a Mesh Private beacon moves the IV index and proves a key refresh step exactly like a Secure Network beacon. The
+  installation's devices do not use privacy as far as known, so none of this has been seen on air. Discovery still
+  needs a proxy that advertises its Network ID — a private advertisement hides it — and the *keys were renewed after
+  the export* check recognises a stale export only from Network IDs. The private beacon is tested against the
+  specification's sample data; the two private identity hashes only against their formula (the specification's
+  sample values were not at hand).
 - **Sensor values start unknown.** Power, voltage and current are asked for once after every connection and then
   follow the socket's publications; power-on time after the read that follows the connect-time state refresh (then
   every five minutes).
@@ -1984,8 +1995,9 @@ The download works whatever state the entry is in. An entry that is not loaded �
 (*retrying setup*), failed (its export cannot be read), or disabled — has no link to describe; its download shows the
 entry's data and options, its state and the reason (`reason_key`, e.g. `no_proxy_visible`, `bluetooth_unavailable`,
 `cannot_load`; any file path redacted), the number of connectable Bluetooth scanners, every node advertising the Mesh
-Proxy service (its Bluetooth address redacted; whether it advertises a Network ID or a Node Identity, whether that fits
-the export and, for a Node Identity, which node it names), the export's summary (or the kind of error that kept it
+Proxy service (its Bluetooth address redacted; whether it advertises a Network ID or a Node Identity — or, with Mesh
+Protocol 1.1 privacy on, a Private Network or Node Identity — whether that fits the export and, for a node identity,
+which node it names), the export's summary (or the kind of error that kept it
 from loading) and the open repair issues. A device's download shows the same while the entry is not loaded.
 
 ## Removal
@@ -2026,7 +2038,7 @@ Layout of `custom_components/junghome_ble/`:
 | File | Role |
 |---|---|
 | `__init__.py` | Loads the export (`load_network`), refuses to set up without a visible proxy (`ConfigEntryNotReady`), prunes stale devices, starts the hub, forwards the platforms; the update listener (`_async_entry_updated`) reloads the entry when its options or the data the hub was built from (`HUB_DATA_KEYS`) changed |
-| `config_flow.py` | User, Bluetooth-discovery, reconfigure and reauth steps (reauth renews the gateway token alone; plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible Network IDs (`0x1828` service data type `0x00`; nodes of the export under another one: `export_keys_stale`, `mesh_proxies_without_match`); unique ID = Network ID; discovery also aborts on what `coordinator.KnownMesh` knows a configured mesh by (`async_known_mesh_of`) |
+| `config_flow.py` | User, Bluetooth-discovery, reconfigure and reauth steps (reauth renews the gateway token alone; plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible proxies of the mesh (`0x1828` service data, `jhmesh.client.classify_proxy_advert`: Network ID, Node Identity and their Mesh Protocol 1.1 private forms; nodes of the export under another Network ID: `export_keys_stale`, `mesh_proxies_without_match`); unique ID = Network ID; discovery also aborts on what `coordinator.KnownMesh` knows a configured mesh by (`async_known_mesh_of`) |
 | `migration.py` | Import from the gateway integration: matches our registry entries against the gateway's identity scheme (`ImportPlan`), moves them with `er.async_update_entity_platform`, copies device area / name / labels, raises the `gateway_import` issue |
 | `coordinator.py` | `JungHomeHub`: connection loop over HA's Bluetooth stack (`bleak_retry_connector.establish_connection`), state cache per element (`ElementState`), the `STATUS_HANDLERS` message table, command helpers, button gesture logic, the repair issues (`key_refresh`, `pdus_dropped` — from the Filter Status watchdog, for a filter request actually written while the store lets sends through, or an unanswered refresh —, `export_stale`); `HAState` persists the sequence numbers through `Store` (`junghome_ble.seq.<mesh uuid>`, one record per address and the mesh's followed key refresh next to them, written at once; 2 s debounce with an immediate write every 64 numbers, on an IV change and after a load; exact counter on a clean close, +512 margin only after a crash), keeps the `.floor` entry of its address up with the counter (every IV change and `SEQ_FLOOR_EVERY` numbers; nothing sent under an index it does not hold yet, nor `SEQ_SKIP_UNKNOWN` past it), starts an address without a record `SEQ_SKIP_AHEAD` in when it may have sent before (`_evidence_of_use`), holds sends back while what a restart would load lags (`SequenceStalled`, retried by `_while_seq_stalls` for `SEQ_STALL_DEADLINE`) and raises `seq_store_unwritable` after `SEQ_STALL_ISSUE_AFTER` of that, and refuses every send while another client is known to use its address (`AddressShared`, the `address_shared` repair) |
 | `entity.py` | Device-registry model (mesh service device → node devices with MAC → load / button devices), `JungHomeEntity` (dispatcher-driven, available while connected) |

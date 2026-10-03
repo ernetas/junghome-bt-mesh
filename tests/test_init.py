@@ -54,6 +54,7 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.coordinator import KNOWN_MESHES
 from custom_components.junghome_ble.entity import mac_from_uuid
+from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 
 from .conftest import (
     CDB_PATH,
@@ -390,6 +391,36 @@ async def test_setup_accepts_a_proxy_advertising_node_identity(
     await wait_for_link(hass, mock_config_entry)
     assert mock_config_entry.runtime_data.connected
     assert mock_config_entry.runtime_data.proxy_node == 0x0148
+
+
+@pytest.mark.parametrize("private_type", [0x02, 0x03])
+async def test_setup_connects_to_a_proxy_with_privacy_on(
+    hass: HomeAssistant,
+    cdb: CDB,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    private_type: int,
+) -> None:
+    """Review-4 P I-4: a proxy with Mesh Protocol 1.1 Proxy Privacy on advertises a Private Network or Node Identity
+    only; setup counts it as in range and the hub connects to it. Unverified on air."""
+    nk, rnd = cdb.net_keys[0], bytes(range(8))
+    info = make_node_identity_info(cdb, 0x0148)
+    info.service_data[MESH_PROXY_SERVICE] = (
+        bytes([private_type])
+        + (
+            nk.private_network_identity(rnd)
+            if private_type == 0x02
+            else nk.private_node_identity(rnd, 0x0148)
+        )
+        + rnd
+    )
+    mock_bluetooth_env["infos"] = [info]
+    await setup_entry(hass, mock_config_entry)
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    await wait_for_link(hass, mock_config_entry)
+    assert mock_config_entry.runtime_data.connected
 
 
 async def test_setup_without_metadata(

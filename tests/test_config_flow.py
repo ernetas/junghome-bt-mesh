@@ -548,6 +548,24 @@ def test_proxy_in_range_accepts_either_key_of_an_export_written_mid_key_refresh(
     assert proxy_in_range(hass, refreshing)
 
 
+def test_proxy_in_range_accepts_the_private_identities(
+    hass: HomeAssistant, cdb: CDB, mock_bluetooth_env: dict[str, Any]
+) -> None:
+    """Review-4 P I-4: a proxy with Mesh Protocol 1.1 Proxy Privacy on advertises a Private Network or Node Identity
+    — Hash ‖ Random, no Network ID in the clear — and the entry still sets up; another network's does not count."""
+    nk, rnd = cdb.net_keys[0], bytes(range(8))
+    info = make_service_info(bytes(8))
+    mock_bluetooth_env["infos"] = [info]
+    for sd, ours in (
+        (b"\x02" + nk.private_network_identity(rnd) + rnd, True),
+        (b"\x03" + nk.private_node_identity(rnd, 0x0148) + rnd, True),
+        (b"\x02" + bytes(16), False),
+        (b"\x03" + nk.private_node_identity(rnd, 0x0999) + rnd, False),
+    ):
+        info.service_data[MESH_PROXY_SERVICE] = sd
+        assert proxy_in_range(hass, cdb) is ours
+
+
 async def test_user_flow_accepts_a_proxy_advertising_node_identity(
     hass: HomeAssistant,
     cdb: CDB,
