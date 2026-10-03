@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.components.scene import Scene
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
@@ -35,6 +36,11 @@ if TYPE_CHECKING:
     from .jhmesh.devices import SceneDef
 
 PARALLEL_UPDATES = 0  # push-based
+# Whether a Scene Recall carries HA's `transition` (review-4 F4-1). Neither the app nor the gateway sends one, and
+# whether JUNG firmware fades a recall — or ignores a Recall that carries a transition — is up to the on-air probe
+# (`docs/hidden-features.md` §11): off until it ran (unverified on air), and a `transition` is ignored, the Recall
+# keeping the bytes it always had.
+SCENE_TRANSITIONS = False
 
 
 async def async_setup_entry(
@@ -152,9 +158,10 @@ class JungHomeScene(JungHomeEntity, Scene):
         }
 
     async def async_activate(self, **kwargs: Any) -> None:
-        """Recall the scene on every node."""
+        """Recall the scene on every node; with HA's `transition` (one for every node) once `SCENE_TRANSITIONS`."""
+        transition = kwargs.get(ATTR_TRANSITION) if SCENE_TRANSITIONS else None
         try:
-            await self.hub.recall_scene(self.scene.number)
+            await self.hub.recall_scene(self.scene.number, transition)
         except (ConnectionError, OSError, TimeoutError) as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="send_failed"

@@ -9,6 +9,8 @@ import sys
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from jhmesh import messages as M
 from jhmesh import properties
@@ -171,6 +173,162 @@ def test_scene_builders():
     assert M.scene_get() == h("8241")
     assert M.scene_recall(1, tid=7) == h("8242010007")
     assert M.scene_recall(0x0102, ack=False, tid=7) == h("8243020107")
+
+
+# ----------------------------------------------------------------------------- transitions (review-4 F4-1)
+
+
+def test_lightness_and_scene_builders_carry_a_transition():
+    """Lightness Set and Scene Recall take the optional `[transition][delay]` pair as the other Sets do; without a
+    transition their bytes are the ones they always were (the light's Default Transition Time applies)."""
+    assert M.light_lightness_set(0x8000, tid=5) == h("824c008005")
+    assert M.light_lightness_set(0x8000, tid=5, transition=0x1E) == h("824c0080051e00")
+    assert M.light_lightness_set(
+        0xFFFF, ack=False, tid=0, transition=0x41, delay=4
+    ) == h("824dffff004104")
+    assert M.scene_recall(3, tid=7, transition=0x1E) == h("82420300071e00")
+    assert M.scene_recall(0x0102, ack=False, tid=7, transition=0x0A, delay=1) == h(
+        "82430201070a01"
+    )
+    assert M.light_ctl_set(0x8000, 3000, tid=2, transition=0x1E) == h(
+        "825e" + "0080" + "b80b" + "0000" + "02" + "1e00"
+    )
+    assert M.generic_onoff_set(True, tid=1, transition=M.encode_transition(3)) == h(
+        "820201011e00"
+    )
+    # what `listen` shows of them (the probe's)
+    assert M.describe(M.light_lightness_set(0x8000, tid=5, transition=0x1E)) == (
+        "Light Lightness Set 32768 tid=5 transition=30x100ms delay=0ms"
+    )
+    assert M.describe(M.light_ctl_set(0x8000, 3000, tid=2, transition=0x43)) == (
+        "Light CTL Set l=32768 t=3000K tid=2 transition=3x1s delay=0ms"
+    )
+    assert M.describe(M.scene_recall(3, ack=False, tid=7, transition=0x1E)) == (
+        "Scene Recall Unack scene=3 tid=7 transition=30x100ms delay=0ms"
+    )
+    assert M.describe(M.scene_recall(3, tid=7)) == "Scene Recall scene=3 tid=7"
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: M.light_lightness_set(1, transition=0x3F),
+        lambda: M.light_lightness_set(1, transition=0xBF),
+        lambda: M.scene_recall(1, transition=0x7F),
+        lambda: M.scene_recall(1, ack=False, transition=0xFF),
+    ],
+)
+def test_the_new_transitions_refuse_63_steps(build):
+    """Steps 0x3F (unknown) is a Status's value, prohibited in a Set (§3.1.3), at every resolution."""
+    with pytest.raises(ValueError, match="prohibited in a Set"):
+        build()
+
+
+@pytest.mark.parametrize(
+    ("seconds", "byte"),
+    [
+        (0, 0x00),
+        (0.04, 0x00),  # under half a step: no transition
+        (0.05, 0x01),  # half up
+        (0.1, 0x01),
+        (1, 0x0A),  # the finest resolution: 10 x 100 ms, not 1 x 1 s
+        (3, 0x1E),
+        (6.2, 0x3E),
+        (6.3, 0x3E),  # 62 x 100 ms is nearer than 6 x 1 s
+        (6.8, 0x47),  # 7 x 1 s
+        (62, 0x7E),
+        (66, 0x7E),  # 62 s and 70 s tie: the finer resolution
+        (67, 0x87),  # 7 x 10 s
+        (620, 0xBE),
+        (621, 0xBE),
+        (3600, 0xC6),  # an hour: 6 x 10 min
+        (M.TRANSITION_MAX_SECONDS, 0xFE),
+    ],
+)
+def test_encode_transition_picks_the_nearest_finest_step(seconds: float, byte: int):
+    assert M.encode_transition(seconds) == byte
+
+
+@pytest.mark.parametrize(
+    "seconds", [-0.1, M.TRANSITION_MAX_SECONDS + 1, math.inf, math.nan]
+)
+def test_encode_transition_refuses_what_no_byte_carries(seconds: float):
+    with pytest.raises(ValueError, match=r"is not 0\.\.37200 s"):
+        M.encode_transition(seconds)
+
+
+def test_decode_transition():
+    assert M.decode_transition(0x00) == 0
+    assert M.decode_transition(0x1E) == 3.0
+    assert M.decode_transition(0x47) == 7.0
+    assert M.decode_transition(0x86) == 60.0
+    assert M.decode_transition(0xFE) == M.TRANSITION_MAX_SECONDS
+    for unknown in (0x3F, 0x7F, 0xBF, 0xFF):
+        assert M.decode_transition(unknown) is None
+
+
+@given(st.integers(0, 0xFF).filter(lambda b: b & 0x3F != M.TRANSITION_UNKNOWN))
+def test_transition_byte_round_trip(byte: int):
+    """Every time a byte stands for encodes to a byte standing for the same time (the finest of its spellings)."""
+    seconds = M.decode_transition(byte)
+    assert seconds is not None
+    again = M.encode_transition(seconds)
+    assert M.decode_transition(again) == seconds
+    assert again >> 6 <= byte >> 6  # never a coarser resolution than needed
+
+
+@given(st.floats(0, M.TRANSITION_MAX_SECONDS, allow_nan=False))
+def test_encode_transition_is_within_half_a_step(seconds: float):
+    """Never steps 63, and within half a step of the first resolution whose 62 steps reach the time."""
+    byte = M.encode_transition(seconds)
+    assert byte & 0x3F <= M.TRANSITION_MAX_STEPS
+    reach = next(
+        step
+        for step in M.TRANSITION_STEP_MS
+        if seconds * 1000 <= M.TRANSITION_MAX_STEPS * step
+    )
+    decoded = M.decode_transition(byte)
+    assert decoded is not None
+    assert abs(decoded - seconds) * 1000 <= reach / 2 + 1e-6
+
+
+@pytest.mark.parametrize(
+    ("opcode", "params", "seconds"),
+    [
+        (M.GEN_ONOFF_STATUS, h("00" + "01" + "1e"), 3.0),
+        (M.GEN_ONOFF_STATUS, h("01"), None),  # at rest
+        (M.LIGHT_LIGHTNESS_STATUS, h("0010" + "0080" + "41"), 1.0),
+        (M.LIGHT_LIGHTNESS_STATUS, h("0080"), None),
+        (M.LIGHT_LIGHTNESS_STATUS, h("0010" + "0080" + "3f"), None),  # unknown
+        (M.LIGHT_CTL_STATUS, h("0010b80b" + "0080b80b" + "0a"), 1.0),
+        (M.LIGHT_CTL_TEMP_STATUS, h("b80b0000" + "a00f0000" + "86"), 60.0),
+        (M.GEN_LEVEL_STATUS, h("0000" + "ff7f" + "02"), 0.2),
+        (M.SCENE_STATUS, h("00" + "0000" + "0300" + "14"), 2.0),
+        (M.SCENE_STATUS, h("00" + "0300"), None),
+        (M.SENSOR_STATUS, h("4200" + "1e"), None),  # not a load's status
+    ],
+)
+def test_remaining_time(opcode: int, params: bytes, seconds: float | None):
+    assert M.remaining_time(opcode, params) == seconds
+
+
+def test_a_set_with_a_transition_is_shown_by_its_target():
+    """review-4 D32 with a transition: the Status answering the Set shows the old present state, the requested one
+    as its target and the remaining time — the Set took effect; the old state at rest does not show it."""
+    dim = M.set_shown_by(M.light_lightness_set(0x8000, transition=0x1E))
+    assert dim is not None
+    assert dim(h("0010" + "0080" + "1e"))
+    assert not dim(h("0010"))
+    ctl = M.set_shown_by(M.light_ctl_set(0x8000, 3000, transition=0x1E))
+    assert ctl is not None
+    assert ctl(h("0010a00f" + "0080b80b" + "1e"))
+    assert not ctl(h("0010a00f"))
+    warm = M.set_shown_by(M.light_ctl_temperature_set(3000, transition=0x1E))
+    assert warm is not None
+    assert warm(h("a00f0000" + "b80b0000" + "1e"))
+    on = M.set_shown_by(M.generic_onoff_set(False, transition=0x1E))
+    assert on is not None
+    assert on(h("01" + "00" + "1e"))  # switching off: on until the fade ends
 
 
 def test_vendor_property_get_builders():

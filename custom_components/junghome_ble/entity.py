@@ -669,13 +669,19 @@ class JungHomeCentralEntity(JungHomeEntity):
         ]
         return any(known) if known else None
 
-    async def _switch(self, on: bool, lightness: int | None = None) -> None:
-        """Switch every member, the dimmable ones to `lightness` first when given."""
+    async def _switch(
+        self, on: bool, lightness: int | None = None, transition: float | None = None
+    ) -> None:
+        """Switch every member, the dimmable ones to `lightness` first when given, over `transition` s when given."""
         if self.room is None:
-            await self._send(self.hub.central_command(self.address, on, lightness))
+            await self._send(
+                self.hub.central_command(self.address, on, lightness, transition)
+            )
         else:
             addresses = [m.address for m in self.members]
-            await self._send(self.hub.room_command(self.room, addresses, on, lightness))
+            await self._send(
+                self.hub.room_command(self.room, addresses, on, lightness, transition)
+            )
 
     async def _level(self, group: int, addresses: list[int], level: int) -> None:
         """Set a Generic Level: once to the device-type `group` home-wide, on each of `addresses` in a room."""

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
+from homeassistant.components.light import ATTR_TRANSITION
 from homeassistant.components.scene import DOMAIN as SCENE_DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -18,6 +19,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from pytest_homeassistant_custom_component.common import async_capture_events
 
+from custom_components.junghome_ble import scene as scene_platform
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_SCENE_RECALLED,
@@ -83,6 +85,49 @@ async def test_activate(
     assert (
         hass.states.get("scene.all_off").state != STATE_UNKNOWN
     )  # the activation time
+
+
+async def test_a_transition_is_ignored_until_the_probe(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """F4-1: until the on-air probe showed JUNG nodes fade a recall (`SCENE_TRANSITIONS`), a `transition` is
+    dropped silently: the Recall keeps its bytes, nothing raises."""
+    fake_link.sent.clear()
+    await hass.services.async_call(
+        SCENE_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: "scene.all_off", ATTR_TRANSITION: 3},
+        blocking=True,
+    )
+    ((_, dst, pdu),) = fake_link.sent
+    assert dst == ALL_NODES
+    assert pdu == M.scene_recall(2, ack=False, tid=pdu[4])
+
+
+async def test_activate_with_a_transition(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """F4-1: once recalls fade, HA's `transition` goes into the one Recall every node takes; without one the
+    Recall is as before."""
+    monkeypatch.setattr(scene_platform, "SCENE_TRANSITIONS", True)
+    fake_link.sent.clear()
+    await hass.services.async_call(
+        SCENE_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: "scene.all_off", ATTR_TRANSITION: 3},
+        blocking=True,
+    )
+    await hass.services.async_call(
+        SCENE_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: "scene.wc_off"}, blocking=True
+    )
+    (_, dst, faded), (_, _, plain) = fake_link.sent
+    assert dst == ALL_NODES
+    assert faded == M.scene_recall(2, ack=False, tid=faded[4], transition=0x1E)
+    assert faded[5:] == bytes([0x1E, 0])  # 30 x 100 ms, no delay
+    assert plain == M.scene_recall(1, ack=False, tid=plain[4])
 
 
 async def test_send_failure_raises(

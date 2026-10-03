@@ -549,6 +549,9 @@ class FakeProxyLink:
         self.levels: dict[
             int, int
         ] = {}  # element -> its Generic Level after the Sets it answered
+        # element -> (its present state, a remaining-time byte): it answers a state Set mid-transition, with the
+        # status's long form `[present][target][remaining]`, the Set's state as the target (Mesh Model §3.2.1.4)
+        self.fading: dict[int, tuple[bytes, int]] = {}
         # answer the connect-time refresh's state Gets (`STATE_GET_REPLIES`, unicast) as a healthy mesh does; off by
         # default, where a test drives every status itself (`answering_mesh`)
         self.answer_state_gets = False
@@ -834,6 +837,9 @@ class FakeProxyLink:
         value = params(p, self.levels.get(dst, 0))
         if status == M.GEN_LEVEL_STATUS:
             self.levels[dst] = int.from_bytes(value, "little", signed=True)
+        if dst in self.fading:
+            present, remaining = self.fading[dst]
+            value = present + value + bytes([remaining])
         self.inject(dst, ELEMENT_GROUP, encode_opcode(status) + value)
 
     def _answer_scheduler(self, src: int, dst: int, access: bytes) -> None:

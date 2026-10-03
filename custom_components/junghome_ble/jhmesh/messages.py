@@ -258,6 +258,61 @@ def generic_onoff_get() -> bytes:
 
 
 TRANSITION_UNKNOWN = 0x3F  # transition-time steps "unknown" (§3.1.3): legal in a Status, prohibited in a Set
+# Transition-time byte (Mesh Model spec §3.1.3): bits 7-6 the step resolution, bits 5-0 the number of steps 0..62
+TRANSITION_STEP_MS = (100, 1_000, 10_000, 600_000)
+TRANSITION_MAX_STEPS = 62
+TRANSITION_MAX_SECONDS = TRANSITION_MAX_STEPS * TRANSITION_STEP_MS[-1] // 1000
+
+
+def encode_transition(seconds: float) -> int:
+    """Return the transition-time byte nearest to `seconds`, at the finest resolution on a tie (§3.1.3).
+
+    Each resolution's step count is rounded (half up) and capped at 62: 6.3 s is 62 x 100 ms, nearer than 6 x 1 s,
+    and 1 s is 10 x 100 ms rather than 1 x 1 s. Never the prohibited 63 steps; ValueError for a negative, non-finite
+    or longer time than 62 x 10 min (`TRANSITION_MAX_SECONDS`).
+    """
+    if not math.isfinite(seconds) or not 0 <= seconds <= TRANSITION_MAX_SECONDS:
+        raise ValueError(f"transition {seconds} s is not 0..{TRANSITION_MAX_SECONDS} s")
+    ms = seconds * 1000
+    # (error, resolution, steps) per resolution: the smallest error wins, then the finer resolution
+    _, resolution, steps = min(
+        (abs(steps * step - ms), resolution, steps)
+        for resolution, step in enumerate(TRANSITION_STEP_MS)
+        for steps in (min(TRANSITION_MAX_STEPS, math.floor(ms / step + 0.5)),)
+    )
+    return resolution << 6 | steps
+
+
+def decode_transition(byte: int) -> float | None:
+    """Seconds of a transition-time byte; None for steps 0x3F, "unknown" (a Status's: still moving, no estimate)."""
+    steps = byte & 0x3F
+    if steps == TRANSITION_UNKNOWN:
+        return None
+    return steps * TRANSITION_STEP_MS[(byte >> 6) & 3] / 1000
+
+
+# load Status → the length that carries the optional `[target][remaining]` tail and the remaining-time byte's offset
+# (Mesh Model spec §3.2.1.4, §3.2.2.5, §5.2.2.6, §6.3.1.4, §6.3.2.4, §6.3.2.8)
+_REMAINING_AT: dict[int, int] = {
+    GEN_ONOFF_STATUS: 2,  # `[present][target][remaining]`
+    GEN_LEVEL_STATUS: 4,
+    LIGHT_LIGHTNESS_STATUS: 4,
+    LIGHT_CTL_STATUS: 8,  # `[l][t][target l][target t][remaining]`
+    LIGHT_CTL_TEMP_STATUS: 8,  # `[t][uv][target t][target uv][remaining]`
+    SCENE_STATUS: 5,  # `[status][current][target][remaining]`
+}
+
+
+def remaining_time(opcode: int, params: bytes) -> float | None:
+    """Seconds a transition still runs by a load or Scene Status's remaining-time field; None when it has none.
+
+    A Status carries it only while the element is in a transition (the form with a target); "unknown" (0x3F) is
+    None too, as is any other message.
+    """
+    at = _REMAINING_AT.get(opcode)
+    if at is None or len(params) <= at:
+        return None
+    return decode_transition(params[at])
 
 
 def _field(value: int, size: int, name: str, *, signed: bool = False) -> bytes:
@@ -311,13 +366,20 @@ def light_lightness_get() -> bytes:
 
 
 def light_lightness_set(
-    lightness: int, ack: bool = True, tid: int | None = None
+    lightness: int,
+    ack: bool = True,
+    tid: int | None = None,
+    transition: int | None = None,
+    delay: int = 0,
 ) -> bytes:
-    """Build Light Lightness Set (Unacknowledged unless `ack`)."""
+    """Build Light Lightness Set (Unacknowledged unless `ack`): `[lightness u16][tid](+transition,delay)`.
+
+    Transition/delay only when a transition is given: without them the light takes its Default Transition Time.
+    """
     return (
         encode_opcode(LIGHT_LIGHTNESS_SET if ack else LIGHT_LIGHTNESS_SET_UNACK)
         + _field(lightness, 2, "lightness")
-        + _tid_transition(tid, None, 0)
+        + _tid_transition(tid, transition, delay)
     )
 
 
@@ -377,12 +439,21 @@ def light_ctl_temperature_set(
     )
 
 
-def scene_recall(scene: int, ack: bool = True, tid: int | None = None) -> bytes:
-    """Build Scene Recall (Unacknowledged unless `ack`); scene 0 is prohibited (§5.1.3.1), as in Store / Delete."""
+def scene_recall(
+    scene: int,
+    ack: bool = True,
+    tid: int | None = None,
+    transition: int | None = None,
+    delay: int = 0,
+) -> bytes:
+    """Build Scene Recall (Unacknowledged unless `ack`): `[scene u16][tid](+transition,delay)`.
+
+    Scene 0 is prohibited (§5.1.3.1), as in Store / Delete; transition/delay only when a transition is given.
+    """
     return (
         encode_opcode(SCENE_RECALL if ack else SCENE_RECALL_UNACK)
         + _scene_number(scene)
-        + _tid_transition(tid, None, 0)
+        + _tid_transition(tid, transition, delay)
     )
 
 
@@ -1560,11 +1631,11 @@ def _describe(access_pdu: bytes, devkey: bool) -> str:  # noqa: C901, PLR0911, P
             + (f" transition={_time(p[2])} delay={p[3] * 5}ms" if len(p) >= 4 else "")
         )
     if op in (LIGHT_LIGHTNESS_SET, LIGHT_LIGHTNESS_SET_UNACK):
-        return f"Light Lightness Set{'' if op == LIGHT_LIGHTNESS_SET else ' Unack'} {int.from_bytes(p[:2], 'little')} tid={p[2]}"
+        return f"Light Lightness Set{'' if op == LIGHT_LIGHTNESS_SET else ' Unack'} {int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
     if op in (LIGHT_CTL_SET, LIGHT_CTL_SET_UNACK):
-        return f"Light CTL Set{'' if op == LIGHT_CTL_SET else ' Unack'} l={int.from_bytes(p[:2], 'little')} t={int.from_bytes(p[2:4], 'little')}K tid={p[6]}"
+        return f"Light CTL Set{'' if op == LIGHT_CTL_SET else ' Unack'} l={int.from_bytes(p[:2], 'little')} t={int.from_bytes(p[2:4], 'little')}K{_set_tail(p, 6)}"
     if op in (SCENE_RECALL, SCENE_RECALL_UNACK):
-        return f"Scene Recall{'' if op == SCENE_RECALL else ' Unack'} scene={int.from_bytes(p[:2], 'little')} tid={p[2]}"
+        return f"Scene Recall{'' if op == SCENE_RECALL else ' Unack'} scene={int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
     if op == GEN_ONOFF_GET:
         return "Generic OnOff Get"
     if op == LIGHT_LIGHTNESS_GET:

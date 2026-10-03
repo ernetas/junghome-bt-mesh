@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
+from unittest.mock import PropertyMock, patch
 
 import pytest
 from homeassistant.components.bluetooth import BluetoothChange
@@ -13,13 +15,16 @@ from homeassistant.components.light import (
     ATTR_MAX_COLOR_TEMP_KELVIN,
     ATTR_MIN_COLOR_TEMP_KELVIN,
     ATTR_SUPPORTED_COLOR_MODES,
+    ATTR_TRANSITION,
     ColorMode,
+    LightEntityFeature,
 )
 from homeassistant.components.light import (
     DOMAIN as LIGHT_DOMAIN,
 )
 from homeassistant.const import (
     ATTR_ENTITY_ID,
+    ATTR_SUPPORTED_FEATURES,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
     STATE_OFF,
@@ -28,11 +33,13 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from voluptuous import Invalid
 
+from custom_components.junghome_ble import light as light_platform
 from custom_components.junghome_ble.const import DIM_MOVE_TRANSITION, DOMAIN
 from custom_components.junghome_ble.jhmesh import messages as M
-from custom_components.junghome_ble.jhmesh.devices import Light
+from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS, Light
 
 from .conftest import FakeProxyLink, load_sets, settle, wait_for_link
 from .helpers import (
@@ -54,6 +61,7 @@ from .helpers import (
 )
 
 if TYPE_CHECKING:
+    from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -545,3 +553,257 @@ async def test_dim_send_failure_raises(
         with pytest.raises(HomeAssistantError) as exc:
             await dim(hass, service, eid, **data)
         assert exc.value.translation_key == "send_failed"
+
+
+# ----------------------------------------------------------------------------- transitions (review-4 F4-1)
+
+FADING = frozenset({"switch", "dimmer", "ctl"})
+ALL_LIGHTS_UID = f"{MESH_UUID}-central-fef5"
+ROOM_WC_LIGHTS_UID = f"{MESH_UUID}-room-c00f-lights"
+ROOM_WC = 0xC00F
+
+
+@pytest.fixture
+def fading_kinds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every light kind fades, as the probe may find (`TRANSITION_KINDS`); list it before `init_integration`."""
+    monkeypatch.setattr(light_platform, "TRANSITION_KINDS", FADING)
+
+
+@pytest.fixture
+def dimmers_fade(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only the dimmable kinds fade; list it before `init_integration`."""
+    monkeypatch.setattr(
+        light_platform, "TRANSITION_KINDS", frozenset({"dimmer", "ctl"})
+    )
+
+
+def features(hass: HomeAssistant, uid: str) -> int:
+    return hass.states.get(entity_id(hass, "light", uid)).attributes[
+        ATTR_SUPPORTED_FEATURES
+    ]
+
+
+def gets_to(link: FakeProxyLink, addr: int, get: bytes) -> int:
+    return sum(1 for _, dst, a in link.sent if dst == addr and a == get)
+
+
+async def light_call(hass: HomeAssistant, service: str, eid: str, **data: Any) -> None:
+    await hass.services.async_call(
+        LIGHT_DOMAIN, service, {ATTR_ENTITY_ID: eid, **data}, blocking=True
+    )
+
+
+async def tick(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await settle(hass)
+
+
+async def test_no_light_takes_a_transition_until_the_probe(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """F4-1: `TRANSITION_KINDS` is empty until the on-air probe ran, so no light and no *All lights* declares the
+    feature, and a `transition` changes no byte of any Set — HA drops it, and a light ignores one anyway."""
+    for uid in (UID_LIGHT_SWITCH, UID_LIGHT_DIMMER, UID_LIGHT_CTL, ALL_LIGHTS_UID):
+        assert features(hass, uid) == 0
+    fake_link.sent.clear()
+    await turn_on(
+        hass, entity_id(hass, "light", UID_LIGHT_DIMMER), brightness=128, transition=3
+    )
+    await light_call(
+        hass, SERVICE_TURN_OFF, entity_id(hass, "light", UID_LIGHT_SWITCH), transition=3
+    )
+    (_, dim), (_, off) = load_sets(fake_link)
+    assert dim == M.light_lightness_set(32896, tid=dim[4])
+    assert off == M.generic_onoff_set(False, tid=off[3], transition=0)
+    assert light_platform._transition("dimmer", {ATTR_TRANSITION: 3}) is None
+
+
+async def test_a_fading_light_sends_the_transition_and_reads_the_state_after_it(
+    hass: HomeAssistant,
+    fading_kinds: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """F4-1: a light of a fading kind declares the feature and puts HA's `transition` into its Set (the nearest
+    transition-time byte, delay 0). The Status answering it mid-fade — old level, the requested one as target, the
+    time still to run — confirms the Set (D32: its target shows the state), the entity shows the present level, and
+    the light is read again once the fade is over plus a second; a newer Set replaces the pending read."""
+    hub = init_integration.runtime_data
+    for uid in (UID_LIGHT_SWITCH, UID_LIGHT_DIMMER, UID_LIGHT_CTL):
+        assert features(hass, uid) == LightEntityFeature.TRANSITION
+    eid = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    fake_link.fading[LIGHT_DIMMER] = ((0x1000).to_bytes(2, "little"), 0x1E)  # 3 s left
+    fake_link.sent.clear()
+
+    await turn_on(hass, eid, brightness=128, transition=3)
+    ((dst, pdu),) = load_sets(fake_link)  # confirmed at the first attempt
+    assert dst == LIGHT_DIMMER
+    assert pdu == M.light_lightness_set(32896, tid=pdu[4], transition=0x1E)
+    assert pdu[5:] == bytes([0x1E, 0])
+    assert hass.states.get(eid).attributes[ATTR_BRIGHTNESS] == 16  # the present level
+    assert hub.states[LIGHT_DIMMER].target_lightness == 32896
+
+    await tick(hass, freezer, 2)
+    # a second Set within the fade: its read replaces the first one's
+    await turn_on(hass, eid, brightness=255, transition=3)
+    await tick(hass, freezer, 2.5)  # the first Set's read would be due now
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    await tick(hass, freezer, 2)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
+    await tick(hass, freezer, 10)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
+    assert not hub._transition_reread
+
+    # a Status at rest (the load did not fade, or was done at once) leaves nothing to read
+    del fake_link.fading[LIGHT_DIMMER]
+    await light_call(hass, SERVICE_TURN_OFF, eid, transition=1.5)
+    _, pdu = load_sets(fake_link)[-1]
+    assert pdu == M.generic_onoff_set(False, tid=pdu[3], transition=0x0F)
+    assert not hub._transition_reread
+
+    # a switched light: OnOff with the transition
+    switch = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    fake_link.fading[LIGHT_SWITCH] = (b"\x00", 0x14)
+    await turn_on(hass, switch, transition=2)
+    _, pdu = load_sets(fake_link)[-1]
+    assert pdu == M.generic_onoff_set(True, tid=pdu[3], transition=0x14)
+    await tick(hass, freezer, 3.5)
+    assert gets_to(fake_link, LIGHT_SWITCH, M.generic_onoff_get()) == 1
+
+
+async def test_a_tunable_white_light_fades_its_colour_temperature(
+    hass: HomeAssistant,
+    fading_kinds: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """F4-1: the CTL Set and the CTL Temperature Set carry the transition; the temperature element's Status
+    mid-fade schedules the read of the light (its CTL Get), not of the temperature element."""
+    eid = entity_id(hass, "light", UID_LIGHT_CTL)
+    fake_link.inject(LIGHT_CTL, 0xC044, ctl_status(30000, 5000))
+    await hass.async_block_till_done()
+    fake_link.sent.clear()
+
+    await turn_on(hass, eid, brightness=255, color_temp_kelvin=3000, transition=0.5)
+    dst, pdu = load_sets(fake_link)[-1]
+    assert (dst, pdu) == (
+        LIGHT_CTL,
+        M.light_ctl_set(65535, 3000, tid=pdu[8], transition=0x05),
+    )
+
+    fake_link.fading[LIGHT_CTL_TEMPERATURE] = (
+        (3000).to_bytes(2, "little") + bytes(2),
+        0x41,  # 1 s left
+    )
+    await turn_on(hass, eid, color_temp_kelvin=4000, transition=20)
+    dst, pdu = load_sets(fake_link)[-1]
+    assert (dst, pdu) == (
+        LIGHT_CTL_TEMPERATURE,
+        M.light_ctl_temperature_set(4000, tid=pdu[6], transition=0x54),  # 20 x 1 s
+    )
+    await tick(hass, freezer, 2.5)
+    assert gets_to(fake_link, LIGHT_CTL, M.light_ctl_get()) == 1
+    assert gets_to(fake_link, LIGHT_CTL_TEMPERATURE, M.light_ctl_temperature_get()) == 0
+
+
+async def test_the_read_after_a_transition_waits_for_a_link(
+    hass: HomeAssistant,
+    fading_kinds: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A read due while the link is down is left to the next link's refresh; one pending at unload is cancelled."""
+    hub = init_integration.runtime_data
+    eid = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    fake_link.fading[LIGHT_DIMMER] = (bytes(2), 0x0A)  # 1 s left
+    fake_link.sent.clear()
+    await turn_on(hass, eid, brightness=128, transition=1)
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await tick(hass, freezer, 2.5)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert not hub._transition_reread
+
+    await turn_on(hass, eid, brightness=64, transition=1)
+    assert hub._transition_reread
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert not hub._transition_reread
+
+
+async def test_all_lights_fade_only_when_every_member_does(
+    hass: HomeAssistant,
+    dimmers_fade: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+) -> None:
+    """A dimmer fades, a switched light does not; *All lights*, with switched members, declares no transition:
+    a member that does not take one is never sent one in the group's Unacknowledged Sets."""
+    assert features(hass, UID_LIGHT_DIMMER) == LightEntityFeature.TRANSITION
+    assert features(hass, UID_LIGHT_SWITCH) == 0
+    assert features(hass, ALL_LIGHTS_UID) == 0
+    assert features(hass, ROOM_WC_LIGHTS_UID) == 0
+
+
+async def test_all_lights_pass_the_transition_on(
+    hass: HomeAssistant,
+    fading_kinds: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """With every member fading, *All lights* (and a room's) put the transition into each Unacknowledged Set."""
+    assert features(hass, ALL_LIGHTS_UID) == LightEntityFeature.TRANSITION
+    eid = entity_id(hass, "light", ALL_LIGHTS_UID)
+    fake_link.sent.clear()
+    await turn_on(hass, eid, brightness=51, transition=2)
+    await light_call(hass, SERVICE_TURN_OFF, eid, transition=2)
+    sent = [(dst, a) for _, dst, a in fake_link.sent]
+    tids = [M.decode_opcode(a)[2] for _, a in sent]
+    assert sent == [
+        (
+            ALL_LIGHTS,
+            M.light_lightness_set(13107, ack=False, tid=tids[0][2], transition=0x14),
+        ),
+        (
+            ALL_LIGHTS,
+            M.generic_onoff_set(True, ack=False, tid=tids[1][1], transition=0x14),
+        ),
+        (
+            ALL_LIGHTS,
+            M.generic_onoff_set(False, ack=False, tid=tids[2][1], transition=0x14),
+        ),
+    ]
+
+    fake_link.sent.clear()
+    await turn_on(
+        hass, entity_id(hass, "light", ROOM_WC_LIGHTS_UID), brightness=51, transition=2
+    )
+    sent = [(dst, a) for _, dst, a in fake_link.sent]
+    tids = [M.decode_opcode(a)[2] for _, a in sent]
+    assert sent == [
+        (
+            ROOM_WC,
+            M.light_lightness_set(13107, ack=False, tid=tids[0][2], transition=0x14),
+        ),
+        (
+            LIGHT_SWITCH,
+            M.generic_onoff_set(True, ack=False, tid=tids[1][1], transition=0x14),
+        ),
+        (
+            LIGHT_DIMMER,
+            M.generic_onoff_set(True, ack=False, tid=tids[2][1], transition=0x14),
+        ),
+    ]

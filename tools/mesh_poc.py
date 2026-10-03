@@ -4,12 +4,13 @@
     .venv/bin/python tools/mesh_poc.py scan [--adv]                 # proxies of our network (+ advertisement details)
     .venv/bin/python tools/mesh_poc.py listen --seconds 60 [--src 0293] [--dst C005]
     .venv/bin/python tools/mesh_poc.py get  <addr|group name>
-    .venv/bin/python tools/mesh_poc.py set  <addr|group name> on|off          # also true/false, 1/0
+    .venv/bin/python tools/mesh_poc.py set  <addr|group name> on|off [--transition S]  # also true/false, 1/0
     .venv/bin/python tools/mesh_poc.py blink <addr>            # get → toggle → restore
-    .venv/bin/python tools/mesh_poc.py lightness <addr> [0-65535]
-    .venv/bin/python tools/mesh_poc.py ctl <addr> <lightness> <kelvin>
+    .venv/bin/python tools/mesh_poc.py lightness <addr> [0-65535] [--transition S]
+    .venv/bin/python tools/mesh_poc.py ctl <addr> <lightness> <kelvin> [--transition S]
+    .venv/bin/python tools/mesh_poc.py delta <addr> <delta> [--transition S]  # Generic Delta Set (level server)
     .venv/bin/python tools/mesh_poc.py ctlrange <addr>         # Light CTL Temperature Range Get (0x8262)
-    .venv/bin/python tools/mesh_poc.py scene <addr|group> <number>
+    .venv/bin/python tools/mesh_poc.py scene <addr|group> <number> [--transition S]
     .venv/bin/python tools/mesh_poc.py prop get  <addr> <name|ID> [--server admin|manufacturer|user|sig_admin|...]
     .venv/bin/python tools/mesh_poc.py prop set  <addr> <name|ID> <value> [--unack] [--access N] [--server ...]
                                                                    # a group target also needs --yes
@@ -337,8 +338,15 @@ async def cmd_listen(args: argparse.Namespace) -> None:
 
 
 def _onoff_report(cdb: CDB, msgs: list[AccessMessage]) -> None:
+    """One line per OnOff Status; with the target and the remaining time while a transition runs (the probe's)."""
     for m in msgs:
-        print(f"  {cdb.label(m.src)}: {'ON' if m.params[0] else 'OFF'}")
+        line = f"  {cdb.label(m.src)}: {'ON' if m.params[0] else 'OFF'}"
+        if len(m.params) >= 3:
+            remaining = M.remaining_time(m.opcode, m.params)
+            line += f" target={'ON' if m.params[1] else 'OFF'} remaining=" + (
+                "unknown" if remaining is None else f"{remaining:g} s"
+            )
+        print(line)
 
 
 async def cmd_get(args: argparse.Namespace) -> None:
@@ -363,7 +371,7 @@ async def cmd_set(args: argparse.Namespace) -> None:
         dst = cdb.resolve(args.target)
         on = args.value in ("on", "true", "1")  # the parser admits ONOFF_VALUES only
         pdu = M.generic_onoff_set(
-            on, ack=not args.unack, transition=0 if args.t0 else None
+            on, ack=not args.unack, transition=0 if args.t0 else args.transition
         )
         if args.unack:
             await client.send_access(dst, pdu)
@@ -427,8 +435,27 @@ async def cmd_lightness(args: argparse.Namespace) -> None:
             )
         else:
             m = await client.request(
-                dst, M.light_lightness_set(args.value), M.LIGHT_LIGHTNESS_STATUS
+                dst,
+                M.light_lightness_set(args.value, transition=args.transition),
+                M.LIGHT_LIGHTNESS_STATUS,
             )
+        print(f"  {cdb.label(m.src)}: {M.describe(m.access_pdu)}")
+
+    if args.value is None and args.transition is not None:
+        sys.exit("--transition needs a lightness to set")
+    await with_client(args, run)
+
+
+async def cmd_delta(args: argparse.Namespace) -> None:
+    """Generic Delta Set to a level server, acknowledged: the fallback probe for a light ignoring a Lightness transition."""
+    try:
+        pdu = M.generic_delta_set(args.delta, transition=args.transition)
+    except ValueError as err:  # a delta outside s32: an error line, not a traceback
+        sys.exit(str(err))
+
+    async def run(client: ProxyClient, cdb: CDB) -> None:
+        dst = cdb.resolve(args.target)
+        m = await client.request(dst, pdu, M.GEN_LEVEL_STATUS)
         print(f"  {cdb.label(m.src)}: {M.describe(m.access_pdu)}")
 
     await with_client(args, run)
@@ -436,7 +463,7 @@ async def cmd_lightness(args: argparse.Namespace) -> None:
 
 async def cmd_ctl(args: argparse.Namespace) -> None:
     try:
-        pdu = M.light_ctl_set(args.lightness, args.kelvin)
+        pdu = M.light_ctl_set(args.lightness, args.kelvin, transition=args.transition)
     except (
         ValueError
     ) as err:  # the codec's range (800..20000 K): an error line, not a traceback
@@ -470,13 +497,14 @@ async def cmd_ctlrange(args: argparse.Namespace) -> None:
 async def cmd_scene(args: argparse.Namespace) -> None:
     async def run(client: ProxyClient, cdb: CDB) -> None:
         dst = cdb.resolve(args.target)
+        pdu = M.scene_recall(args.number, transition=args.transition)
         if is_unicast(dst):
-            m = await client.request(dst, M.scene_recall(args.number), M.SCENE_STATUS)
+            m = await client.request(dst, pdu, M.SCENE_STATUS)
             print(f"  {cdb.label(m.src)}: {M.describe(m.access_pdu)}")
         else:
             for m in await client.collect(
                 dst,
-                M.scene_recall(args.number),
+                pdu,
                 M.SCENE_STATUS,
                 window=args.window,
             ):
@@ -1105,6 +1133,14 @@ async def cmd_provision(args: argparse.Namespace) -> None:
 # ----------------------------------------------------------------------------- argument parser
 
 
+# `--transition SECONDS` of the Sets: the transition-time byte (`ops.parse_transition`)
+TRANSITION_OPTION: dict[str, Any] = {
+    "type": ops.parse_transition,
+    "metavar": "SECONDS",
+    "help": "transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s or 10 min)",
+}
+
+
 def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat listing of every sub-command
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1157,11 +1193,13 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat list
         choices=ONOFF_VALUES,
         help="on|off (true/false, 1/0); a typo is an error, not OFF",
     )
-    p.add_argument(
+    fade = p.add_mutually_exclusive_group()
+    fade.add_argument(
         "--t0",
         action="store_true",
         help="send explicit transition time 0 (like the gateway does)",
     )
+    fade.add_argument("--transition", **TRANSITION_OPTION)
     p.add_argument("--unack", action="store_true", help="use Set Unacknowledged")
     p = sub.add_parser("blink")
     p.add_argument("target")
@@ -1171,17 +1209,28 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat list
     p.add_argument(
         "value", nargs="?", type=ops.parse_uint16, help="0..65535; omitted = Get"
     )
+    p.add_argument("--transition", **TRANSITION_OPTION)
     p = sub.add_parser("ctl")
     p.add_argument("target")
     p.add_argument("lightness", type=ops.parse_uint16, help="0..65535")
     p.add_argument(
         "kelvin", type=ops.parse_uint16, help="colour temperature, 800..20000 K"
     )
+    p.add_argument("--transition", **TRANSITION_OPTION)
+    p = sub.add_parser(
+        "delta", help="Generic Delta Set to a level server (acknowledged)"
+    )
+    p.add_argument("target")
+    p.add_argument(
+        "delta", type=int, help="signed level change (the lightness range is 65535)"
+    )
+    p.add_argument("--transition", **TRANSITION_OPTION)
     p = sub.add_parser("ctlrange")
     p.add_argument("target")
     p = sub.add_parser("scene")
     p.add_argument("target")
     p.add_argument("number", type=ops.parse_scene_number)
+    p.add_argument("--transition", **TRANSITION_OPTION)
     p = sub.add_parser(
         "scene-actions", help="what an element does in its scenes (Scene Action Setup)"
     )
@@ -1425,6 +1474,7 @@ def main(argv: list[str] | None = None) -> int:
         "blink": cmd_blink,
         "lightness": cmd_lightness,
         "ctl": cmd_ctl,
+        "delta": cmd_delta,
         "ctlrange": cmd_ctlrange,
         "scene": cmd_scene,
         "scene-actions": cmd_scene_actions,

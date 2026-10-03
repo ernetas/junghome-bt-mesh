@@ -137,6 +137,17 @@ def parse_uint16(text: str) -> int:
     return value
 
 
+def parse_transition(text: str) -> int:
+    """`--transition SECONDS` as the transition-time byte (`messages.encode_transition`: the nearest, finest step).
+
+    An argparse error for anything but 0..37200 s (62 steps of 10 minutes), never the prohibited 63 steps.
+    """
+    try:
+        return M.encode_transition(float(text))
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"{text!r}: {err}") from None
+
+
 def parse_model(text: str) -> int | str:
     """A model id as the CDB writes it (`1000`, `05271013`) or with `0x`; validated by `config_messages.model_id`."""
     try:

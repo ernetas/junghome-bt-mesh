@@ -279,7 +279,24 @@
   index and key-refresh news. Discovery still needs a proxy advertising its Network ID, which a private advertisement
   hides. Unverified on air: the installation's devices do not use privacy.
 
+- Transitions are prepared for lights, *All lights* and scenes (review-4 F4-1), switched off until an on-air probe
+  shows which JUNG loads fade: neither the app nor the gateway ever sends a transition time, so a load might ignore
+  it or ignore the whole Set. Once a light kind is listed in `light.TRANSITION_KINDS`, its lights declare the
+  `transition` feature and HA's `transition` goes into the OnOff, Lightness, CTL or CTL Temperature Set (and into
+  *All lights*' Unacknowledged Sets when every member fades); the light is read again a second after the remaining
+  time its status announced. `scene.SCENE_TRANSITIONS` does the same for a scene's recall. Until then nothing
+  changes on air: no light declares the feature and every Set keeps the bytes it had. Unverified on air.
+
 ### CLI tools and library
+
+- Transition times (review-4 F4-1): `messages.encode_transition(seconds)` gives the transition-time byte nearest to a
+  time at the finest resolution (never the prohibited 63 steps), `decode_transition(byte)` its seconds, and
+  `remaining_time(opcode, params)` the time a load's or a Scene Status still announces. `light_lightness_set` and
+  `scene_recall` take `transition` / `delay` like the other Sets (without them, the bytes are unchanged), and
+  `describe` shows the transition of a Lightness, CTL or Scene Recall Set. `tools/mesh_poc.py set`, `lightness`,
+  `ctl` and `scene` take `--transition SECONDS`, a new `delta <addr> <delta>` sends an acknowledged Generic Delta Set
+  (also with `--transition`), and `set` shows an OnOff Status's target and remaining time: the probe of
+  `docs/hidden-features.md` §11.
 
 - `jhmesh.client.classify_proxy_advert(service_data, keys, unicasts)` is the one classifier of Mesh Proxy service
   data (review-4 P I-4): `ProxyClient.classify_service_data` (so the CLI's scan), the setup check and the diagnostics

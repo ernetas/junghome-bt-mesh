@@ -5128,8 +5128,29 @@ async def test_a_lost_set_passed_over_is_sent_again(
             M.LIGHT_CTL_TEMP_STATUS,
             h("a00f0500"),
         ),
+        # a Set with a transition time (review-4 F4-1): the light still at its old level, fading to the target
+        (
+            M.light_lightness_set(0x8000, transition=M.encode_transition(3)),
+            M.light_lightness_get(),
+            M.LIGHT_LIGHTNESS_STATUS,
+            h("0010" + "0080" + "1e"),
+        ),
+        (
+            M.light_ctl_set(0x8000, 3000, transition=M.encode_transition(3)),
+            M.light_ctl_get(),
+            M.LIGHT_CTL_STATUS,
+            h("0010a00f" + "0080b80b" + "1e"),
+        ),
     ],
-    ids=["target", "step", "level", "ctl", "ctl-temperature"],  # a Set's TID is random
+    ids=[
+        "target",
+        "step",
+        "level",
+        "ctl",
+        "ctl-temperature",
+        "lightness-transition",
+        "ctl-transition",
+    ],  # a Set's TID is random
 )
 async def test_a_status_that_shows_a_sets_state_answers_the_older_set(
     attached: ProxyClient,

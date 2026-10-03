@@ -217,6 +217,9 @@ SETTLE_TIMEOUT = 15.0
 # ... and how far a reported value may lie from the one asked for (`_took_effect`): a load keeps to its own steps,
 # the app's percent of the 16-bit range for a lightness or level, and a colour temperature to a light's own
 SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
+# A Set with a transition time: the load's state is read again this long after the remaining time its Status gave,
+# as its last publication may come before the fade ends (`_reread_after_transition`)
+TRANSITION_REREAD_SLACK = 1.0
 
 STORAGE_VERSION = 1
 # The sequence-number store's minor version: 2 adds an address record's optional `seq_guard` (`LocalState.seq_guard`,
@@ -2297,6 +2300,8 @@ class JungHomeHub:
         self._recheck: dict[
             int, CALLBACK_TYPE
         ] = {}  # node unicast → its pending re-ask
+        # load element → the pending read of its state after a transition (`_reread_after_transition`)
+        self._transition_reread: dict[int, CALLBACK_TYPE] = {}
         self._heartbeats_configured_at: float | None = None
         self._rebuilding = (
             False  # `async_begin_rebuild` ran: a reload replaces this hub
@@ -2544,9 +2549,10 @@ class JungHomeHub:
         self._cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
         # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
-        for cancel in self._recheck.values():
+        for cancel in (*self._recheck.values(), *self._transition_reread.values()):
             cancel()
         self._recheck.clear()
+        self._transition_reread.clear()
         for addr in list(self._delayed_clicks):
             self._cancel_delayed_click(addr)
         self._end_holds(HOLD_END_STOPPED)
@@ -4922,8 +4928,10 @@ class JungHomeHub:
     # `[present]` alone otherwise. The entities show the *present* field, as the JUNG HOME app does
     # (`docs/gap-analysis/control-and-state.md` §1.2): it is what the light is doing now, and a rocker hold fading a
     # dimmer reports present ≠ target for seconds (the target being the end of the fade), which HA would otherwise
-    # render as an instant jump. Our own commands carry no transition and JUNG's firmware confirms them by publishing
-    # the final state, so nothing is lost by not showing the target; it is kept in `ElementState.target_*`.
+    # render as an instant jump. Our own commands carry no transition unless one is asked for, and JUNG's firmware
+    # confirms them by publishing the final state, so nothing is lost by not showing the target; it is kept in
+    # `ElementState.target_*`. After a Set with a transition the state is read again when it is over
+    # (`_reread_after_transition`).
 
     @register_status_handler(M.GEN_ONOFF_STATUS)
     def _on_onoff_status(self, m: AccessMessage, p: bytes) -> None:
@@ -5875,7 +5883,7 @@ class JungHomeHub:
         kind: str,
         *,
         load: int | None = None,
-    ) -> None:
+    ) -> AccessMessage:
         """Send a load's acknowledged Set and wait for its status, the app's way (`CommunicateWithDevice` UPDATE).
 
         Up to REQUEST_ATTEMPTS attempts of REQUEST_TIMEOUT, each the same PDU (same TID: the load applies it once and
@@ -5891,14 +5899,15 @@ class JungHomeHub:
 
         A link that ended or changed while the command was out (review-4 R I-11) says nothing about the load: the
         command is sent once more, on the next link (`_wait_for_link`) — same PDU, same TID, so a load that did
-        apply it only answers. Unverified on air.
+        apply it only answers. Unverified on air. Returns the status that confirmed the Set.
         """
-        for retry in (False, True):
+        retry = False
+        while True:
             await self._wait_for_link()
             link = self.link_count if self.connected else None
             asked = time.monotonic()
             try:
-                await self.proxy.request(
+                return await self.proxy.request(
                     dst,
                     access_pdu,
                     status,
@@ -5911,6 +5920,7 @@ class JungHomeHub:
                         "The link changed during a command to %04X; sending it again on the next one",
                         dst,
                     )
+                    retry = True
                     continue
                 if isinstance(err, TimeoutError) and same_link:
                     # else the link went meanwhile: the new link's refresh asks the node again
@@ -5919,14 +5929,66 @@ class JungHomeHub:
                     )
                     self._probe_link.set()
                 raise
-            return
 
-    async def set_onoff(self, addr: int, on: bool) -> None:
-        """Switch the element at `addr` on or off."""
-        self._note_request(addr, on=on)
-        await self._load_command(
-            addr, M.generic_onoff_set(on, transition=0), M.GEN_ONOFF_STATUS, "switch"
+    @staticmethod
+    def _transition_byte(seconds: float | None) -> int | None:
+        """Return the transition-time byte for `seconds` (HA's `transition`), clamped to what one carries; None for none."""
+        if seconds is None:
+            return None
+        return M.encode_transition(
+            max(0.0, min(float(seconds), M.TRANSITION_MAX_SECONDS))
         )
+
+    def _reread_after_transition(self, load: int, reply: AccessMessage) -> None:
+        """Ask `load` for its state once the transition its Set's status announced is over, plus a second.
+
+        A status answering a Set with a transition time carries the present state, the target and the time still to
+        run; the entity shows the present one (see the status handlers), which a load that publishes nothing at the
+        end of its fade would leave behind. Nothing is scheduled for a status at rest or one whose remaining time is
+        unknown; a newer Set replaces the pending read. Unverified on air: no JUNG firmware was seen taking a
+        transition time (`docs/hidden-features.md` §11).
+        """
+        remaining = M.remaining_time(reply.opcode, reply.params)
+        if not remaining:
+            return
+        if (cancel := self._transition_reread.pop(load, None)) is not None:
+            cancel()
+        kind = getattr(self.devices.by_address.get(load), "kind", "switch")
+        self._transition_reread[load] = async_call_later(
+            self.hass,
+            remaining + TRANSITION_REREAD_SLACK,
+            partial(self._transition_over, load, kind),
+        )
+
+    @callback
+    def _transition_over(self, load: int, kind: str, _now: datetime) -> None:
+        """Read the load's state after its transition, unless the link is down (the next one's refresh reads it)."""
+        del self._transition_reread[load]
+        if not self.connected:
+            return
+        self.entry.async_create_background_task(
+            self.hass,
+            self.async_refresh_element(load, kind),
+            f"{DOMAIN} transition {load:04X}",
+        )
+
+    async def set_onoff(
+        self, addr: int, on: bool, transition: float | None = None
+    ) -> None:
+        """Switch the element at `addr` on or off, over `transition` seconds when given (else transition time 0).
+
+        A transition is unverified on air (`_reread_after_transition`).
+        """
+        self._note_request(addr, on=on)
+        byte = self._transition_byte(transition)
+        reply = await self._load_command(
+            addr,
+            M.generic_onoff_set(on, transition=0 if byte is None else byte),
+            M.GEN_ONOFF_STATUS,
+            "switch",
+        )
+        if byte is not None:
+            self._reread_after_transition(addr, reply)
 
     async def identify(self, node: Node, seconds: int = IDENTIFY_SECONDS) -> None:
         """Make `node` draw attention to itself (Health Attention Set to its primary element; its LED blinks)."""
@@ -5951,19 +6013,30 @@ class JungHomeHub:
         )
 
     async def central_command(
-        self, group: int, on: bool, lightness: int | None = None
+        self,
+        group: int,
+        on: bool,
+        lightness: int | None = None,
+        transition: float | None = None,
     ) -> None:
         """Switch every load listening to a device-type group at once, as the app's central functions do.
 
         Unacknowledged Sets (an acknowledged one would have every member answer at the same moment): a lightness
         first, which only the dimmable members take, then OnOff, which switches the others and leaves a dimmer that
-        is already on where the lightness put it.
+        is already on where the lightness put it. Both carry `transition` seconds when given (unverified on air).
         """
+        byte = self._transition_byte(transition)
         if lightness is not None:
             await self._command(
-                group, M.light_lightness_set(max(1, min(65535, lightness)), ack=False)
+                group,
+                M.light_lightness_set(
+                    max(1, min(65535, lightness)), ack=False, transition=byte
+                ),
             )
-        await self._command(group, M.generic_onoff_set(on, ack=False, transition=0))
+        await self._command(
+            group,
+            M.generic_onoff_set(on, ack=False, transition=0 if byte is None else byte),
+        )
 
     async def central_level(self, group: int, level: int) -> None:
         """Send every member of a device-type group one Unacknowledged Generic Level Set: blinds, slats, set-points."""
@@ -5979,7 +6052,12 @@ class JungHomeHub:
         await self._command(group, M.generic_delta_set(0, ack=False))
 
     async def room_command(
-        self, room: int, members: Sequence[int], on: bool, lightness: int | None = None
+        self,
+        room: int,
+        members: Sequence[int],
+        on: bool,
+        lightness: int | None = None,
+        transition: float | None = None,
     ) -> None:
         """Switch a room's lights or sockets as the app's area sheet does: a dim level to the room, on / off per load.
 
@@ -5987,14 +6065,21 @@ class JungHomeHub:
         the dimmable members (the Lightness server shares the room subscription of the OnOff / Level servers it
         extends). On / off never goes to the room address, where the lights and the sockets both listen: every
         member gets an Unacknowledged OnOff Set of its own (`CommunicateWithDevice` not waiting for a status), after
-        the lightness, as `central_command` orders them.
+        the lightness, as `central_command` orders them, and with its `transition`.
         """
+        byte = self._transition_byte(transition)
         if lightness is not None:
             await self._command(
-                room, M.light_lightness_set(max(1, min(65535, lightness)), ack=False)
+                room,
+                M.light_lightness_set(
+                    max(1, min(65535, lightness)), ack=False, transition=byte
+                ),
             )
+        onoff = M.generic_onoff_set(
+            on, ack=False, transition=0 if byte is None else byte
+        )
         for addr in members:
-            await self._command(addr, M.generic_onoff_set(on, ack=False, transition=0))
+            await self._command(addr, onoff)
 
     async def room_level(self, addresses: Sequence[int], level: int) -> None:
         """One Unacknowledged Generic Level Set per element: a room's blind positions, slats or set-points.
@@ -6006,40 +6091,65 @@ class JungHomeHub:
         for addr in addresses:
             await self._command(addr, M.generic_level_set(level, ack=False))
 
-    async def set_lightness(self, addr: int, lightness: int) -> None:
-        """Set the lightness (0-65535) of the element at `addr`."""
+    async def set_lightness(
+        self, addr: int, lightness: int, transition: float | None = None
+    ) -> None:
+        """Set the lightness (0-65535) of the element at `addr`, over `transition` seconds when given.
+
+        Without a transition the Set carries none (the light's Default Transition Time, 0 on every JUNG load seen).
+        """
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness)
-        await self._load_command(
-            addr, M.light_lightness_set(lightness), M.LIGHT_LIGHTNESS_STATUS, "dimmer"
+        byte = self._transition_byte(transition)
+        reply = await self._load_command(
+            addr,
+            M.light_lightness_set(lightness, transition=byte),
+            M.LIGHT_LIGHTNESS_STATUS,
+            "dimmer",
         )
+        if byte is not None:
+            self._reread_after_transition(addr, reply)
 
-    async def set_ctl(self, addr: int, lightness: int, kelvin: int) -> None:
-        """Set lightness (0-65535) and colour temperature (Kelvin) of the element at `addr`."""
+    async def set_ctl(
+        self, addr: int, lightness: int, kelvin: int, transition: float | None = None
+    ) -> None:
+        """Set lightness (0-65535) and colour temperature (Kelvin) of the element at `addr`, over `transition` s."""
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness, kelvin=kelvin)
-        await self._load_command(
-            addr, M.light_ctl_set(lightness, kelvin), M.LIGHT_CTL_STATUS, "ctl"
+        byte = self._transition_byte(transition)
+        reply = await self._load_command(
+            addr,
+            M.light_ctl_set(lightness, kelvin, transition=byte),
+            M.LIGHT_CTL_STATUS,
+            "ctl",
         )
+        if byte is not None:
+            self._reread_after_transition(addr, reply)
 
-    async def set_ctl_temperature(self, light: Light, kelvin: int) -> None:
+    async def set_ctl_temperature(
+        self, light: Light, kelvin: int, transition: float | None = None
+    ) -> None:
         """Set the colour temperature (Kelvin) of a CTL light alone: Light CTL Temperature Set to its temperature element.
 
         A full CTL Set would have to carry a lightness, and the cached one lags behind a light that is dimming or
         was dimmed elsewhere without a status reaching us: the light jumped back to it. The temperature element
         answers with a Light CTL Temperature Status, which lands on the light (`_ctl_light_of`); the Set is noted
         on the light too, whose Light CTL Get `async_wait_settled` reads. The Set is the gateway's 7-byte form,
-        transition 0 and delay 0: without them the light would fall back to its Default Transition Time.
+        transition 0 and delay 0: without them the light would fall back to its Default Transition Time — or with
+        `transition` seconds when given (unverified on air).
         """
         assert light.temperature_address is not None  # the caller checks it has one
         self._note_request(light.address, kelvin=kelvin)
-        await self._load_command(
+        byte = self._transition_byte(transition)
+        reply = await self._load_command(
             light.temperature_address,
-            M.light_ctl_temperature_set(kelvin, transition=0),
+            M.light_ctl_temperature_set(kelvin, transition=0 if byte is None else byte),
             M.LIGHT_CTL_TEMP_STATUS,
             "ctl",
             load=light.address,
         )
+        if byte is not None:
+            self._reread_after_transition(light.address, reply)
 
     async def set_level(self, addr: int, level: int) -> None:
         """Set the Generic Level (-32768..32767) of the element at `addr`: a blind's position or slat target."""
@@ -6061,9 +6171,17 @@ class JungHomeHub:
         """
         await self._command(addr, M.generic_move_set(delta, transition=transition))
 
-    async def recall_scene(self, number: int) -> None:
-        """Recall a scene on every node (unacknowledged); the proxy never echoes our own PDU, so the bus event is ours to fire."""
-        await self._command(ALL_NODES, M.scene_recall(number, ack=False))
+    async def recall_scene(self, number: int, transition: float | None = None) -> None:
+        """Recall a scene on every node (unacknowledged); the proxy never echoes our own PDU, so the bus event is ours to fire.
+
+        `transition` seconds go into the Recall when given (one for every node; unverified on air).
+        """
+        await self._command(
+            ALL_NODES,
+            M.scene_recall(
+                number, ack=False, transition=self._transition_byte(transition)
+            ),
+        )
         # event.py imports this module, hence the late import
         from .event import fire_scene_recalled  # noqa: PLC0415
 

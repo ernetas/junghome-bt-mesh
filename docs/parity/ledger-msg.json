@@ -1215,12 +1215,17 @@
    "id": "msg:op:8202",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_set"
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff",
+    "tools/mesh_poc.py::cmd_set.run"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_onoff_builders",
-    "tests/jhmesh/test_messages.py::test_describe_set_messages"
-   ]
+    "tests/jhmesh/test_messages.py::test_describe_set_messages",
+    "tests/test_light.py::test_a_fading_light_sends_the_transition_and_reads_the_state_after_it",
+    "tests/test_cli.py::test_the_transition_option_of_the_sets"
+   ],
+   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
   },
   {
    "id": "msg:op:8203",
@@ -1634,8 +1639,11 @@
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_scene_builders",
-    "tests/jhmesh/test_properties_codecs.py::test_scene_builders_carry_the_scene_number"
-   ]
+    "tests/jhmesh/test_properties_codecs.py::test_scene_builders_carry_the_scene_number",
+    "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
+    "tests/test_cli.py::test_the_transition_option_of_the_sets"
+   ],
+   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only once custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS is set from the probe of docs/hidden-features.md section 11 (review 4 brief 31); the CLI's scene --transition is the probe."
   },
   {
    "id": "msg:op:8243",
@@ -1646,8 +1654,11 @@
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_scene_builders",
-    "tests/test_scene.py::test_activate"
-   ]
+    "tests/test_scene.py::test_activate",
+    "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
+    "tests/test_scene.py::test_activate_with_a_transition"
+   ],
+   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only once custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS is set from the probe of docs/hidden-features.md section 11 (review 4 brief 31); the CLI's scene --transition is the probe."
   },
   {
    "id": "msg:op:8244",
@@ -1737,12 +1748,18 @@
    "id": "msg:op:824c",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_set"
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_lightness",
+    "tools/mesh_poc.py::cmd_lightness.run"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_lightness_builders",
-    "tests/jhmesh/test_messages.py::test_describe_set_messages"
-   ]
+    "tests/jhmesh/test_messages.py::test_describe_set_messages",
+    "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
+    "tests/test_light.py::test_a_fading_light_sends_the_transition_and_reads_the_state_after_it",
+    "tests/test_cli.py::test_the_transition_option_of_the_sets"
+   ],
+   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
   },
   {
    "id": "msg:op:824d",
@@ -1858,12 +1875,18 @@
    "id": "msg:op:825e",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_set"
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl",
+    "tools/mesh_poc.py::cmd_ctl"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_builders",
-    "tests/test_light.py::test_tunable_white"
-   ]
+    "tests/test_light.py::test_tunable_white",
+    "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
+    "tests/test_light.py::test_a_tunable_white_light_fades_its_colour_temperature",
+    "tests/test_cli.py::test_the_transition_option_of_the_sets"
+   ],
+   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
   },
   {
    "id": "msg:op:825f",
@@ -1933,8 +1956,10 @@
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_builders",
-    "tests/test_light.py::test_tunable_white_temperature_alone"
-   ]
+    "tests/test_light.py::test_tunable_white_temperature_alone",
+    "tests/test_light.py::test_a_tunable_white_light_fades_its_colour_temperature"
+   ],
+   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
   },
   {
    "id": "msg:op:8266",

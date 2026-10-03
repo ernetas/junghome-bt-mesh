@@ -364,3 +364,31 @@ each element's sequence number moved to the next `0x010000` block on its own (`0
 
 **Left open from the list**: the vendor GATT channel `2f98a382` / `a0dc3a44` (writes only with a device to spare),
 and everything about devices this installation lacks.
+
+## 11. Transitions on a Set (probe pending)
+
+Neither the app nor the gateway ever sends a transition time: the gateway's OnOff and CTL Temperature Sets carry
+transition 0, every other Set none, and the nodes' Default Transition Time is 0 (§3; the DALI insert ignores a DTT
+Set, §7.3). Whether a JUNG load fades a Set that carries one (Mesh Model §3.1.3: bits 7-6 the step of 100 ms, 1 s,
+10 s or 10 min, bits 5-0 the steps 0..62), ignores the transition, or ignores the whole Set is **not known yet**
+(review-4 F4-1). Home Assistant is ready for it and sends none until this probe says which kinds fade
+(`light.TRANSITION_KINDS`, `scene.SCENE_TRANSITIONS`, both empty / off).
+
+The probe, with someone watching the light and `tools/mesh_poc.py listen` (or the sniffer) running alongside, on the
+DALI tunable-white insert, a dimmer insert and a switch insert:
+
+    tools/mesh_poc.py lightness <element> 6553 --transition 3      # dim down over 3 s
+    tools/mesh_poc.py lightness <element> 65535 --transition 3     # and back up
+    tools/mesh_poc.py ctl <element> 65535 2700 --transition 3      # the tunable-white light
+    tools/mesh_poc.py set <element> off --transition 3             # the switch insert; then on again
+    tools/mesh_poc.py scene FFFF <scene> --transition 3            # a scene with these loads in it
+    tools/mesh_poc.py delta <element> -16384 --transition 3        # only if a Lightness transition was ignored
+
+For each: does the light fade, does the Status answering the Set carry the target and a remaining time (the CLI
+prints `target=… remaining=…`), and does a final Status follow at the end of the fade? A Set that gets no answer at
+all means the load ignores a Set with a transition: that kind must stay out of `TRANSITION_KINDS`. The results go
+here, and into `TRANSITION_KINDS` / `SCENE_TRANSITIONS`.
+
+A key in scene mode carries a transition of its own (KeyModeSceneConfig `0x5002`, `[scene u16][transition u32 ms]`;
+the app writes 0, `mesh_config.py` too): writing one from `assign_key` waits for this probe to show that a recalled
+scene fades, and for the key-scene check of the on-air sweep (review-4 brief 30).

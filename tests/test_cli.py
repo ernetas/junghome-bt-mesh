@@ -1260,6 +1260,97 @@ def test_lightness_and_ctl_values_are_range_checked(
     assert "Light CTL Status" in out
 
 
+# ----------------------------------------------------------------------------- --transition (review-4 F4-1)
+
+
+class _FadingClient(_StatusClient):
+    """`_StatusClient` whose group requests collect the same reply from one element."""
+
+    async def collect(self, dst, pdu, expect_opcode, **_kw):
+        return [await self.request(dst, pdu, expect_opcode)]
+
+
+def test_parse_transition():
+    """Seconds to the transition-time byte (the nearest, finest step); anything no byte carries is an argparse error."""
+    assert ops.parse_transition("3") == 0x1E
+    assert ops.parse_transition("0") == 0
+    assert ops.parse_transition("20") == 0x54
+    assert ops.parse_transition("3600") == 0xC6
+    for bad in ("-1", "37201", "nan", "inf", "slow", ""):
+        with pytest.raises(argparse.ArgumentTypeError):
+            ops.parse_transition(bad)
+
+
+def test_the_transition_option_of_the_sets(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """`--transition SECONDS` on `set`, `lightness`, `ctl`, `delta` and `scene` (the probe's): the Set carries the
+    byte and delay 0, an OnOff Status mid-transition shows its target and remaining time; `set` takes `--t0` or
+    `--transition`, not both; a Get takes none."""
+    ap = mesh_poc.build_parser()
+    for argv in (
+        ["set", "0148", "on", "--transition", "3"],
+        ["lightness", "0148", "6553", "--transition", "3"],
+        ["ctl", "0148", "100", "2700", "--transition", "3"],
+        ["delta", "0148", "-6553", "--transition", "3"],
+        ["scene", "FFFF", "2", "--transition", "3"],
+    ):
+        assert ap.parse_args(argv).transition == 0x1E
+    assert ap.parse_args(["lightness", "0148", "1"]).transition is None
+    for bad in (
+        ["set", "0148", "on", "--t0", "--transition", "3"],
+        ["lightness", "0148", "1", "--transition", "-3"],
+        ["scene", "FFFF", "2", "--transition", "99999"],
+    ):
+        with pytest.raises(SystemExit):
+            ap.parse_args(bad)
+    with pytest.raises(SystemExit, match="--transition needs a lightness to set"):
+        mesh_poc.main(["lightness", "0148", "--transition", "3"])
+    with pytest.raises(SystemExit, match="delta 2147483648 is not"):
+        mesh_poc.main(["delta", "0148", str(1 << 31)])
+
+    client = _FadingClient(
+        {
+            M.GEN_ONOFF_STATUS: h("00011e"),  # off, fading on, 3 s left
+            M.LIGHT_LIGHTNESS_STATUS: h("ffff" + "9919" + "1e"),
+            M.LIGHT_CTL_STATUS: h("0010a00f" + "6400b80a" + "1e"),
+            M.GEN_LEVEL_STATUS: h("0000" + "6766" + "1e"),
+            M.SCENE_STATUS: h("00" + "0100" + "0200" + "1e"),
+        }
+    )
+    _patch_client(monkeypatch, client, CDB.load(CDB_PATH))
+    for argv in (
+        ["set", "0148", "on", "--transition", "3"],
+        ["set", "0148", "off", "--t0"],
+        ["lightness", "0148", "6553", "--transition", "3"],
+        ["ctl", "0148", "100", "2700", "--transition", "3"],
+        ["delta", "0148", "-6553", "--transition", "3"],
+        ["scene", "FFFF", "2", "--transition", "3"],
+        ["scene", "0148", "2"],
+    ):
+        assert mesh_poc.main(argv) == 0
+    sent = [pdu for _, pdu in client.requests]
+    tids = [decode_opcode(pdu)[2] for pdu in sent]
+    assert sent == [
+        M.generic_onoff_set(True, tid=tids[0][1], transition=0x1E),
+        M.generic_onoff_set(False, tid=tids[1][1], transition=0),
+        M.light_lightness_set(6553, tid=tids[2][2], transition=0x1E),
+        M.light_ctl_set(100, 2700, tid=tids[3][6], transition=0x1E),
+        M.generic_delta_set(-6553, tid=tids[4][4], transition=0x1E),
+        M.scene_recall(2, tid=tids[5][2], transition=0x1E),
+        M.scene_recall(2, tid=tids[6][2]),
+    ]
+    out = capsys.readouterr().out.splitlines()
+    assert out[0].endswith(": OFF target=ON remaining=3 s")
+    assert "target=6553 remaining=30x100ms" in out[2]
+    assert "Generic Level Status" in out[4]
+    assert "Scene Status" in out[5]
+
+    client.replies[M.GEN_ONOFF_STATUS] = h("01003f")  # fading off, no estimate
+    assert mesh_poc.main(["set", "0148", "off", "--transition", "1"]) == 0
+    assert capsys.readouterr().out.endswith(": ON target=OFF remaining=unknown\n")
+
+
 # ----------------------------------------------------------------------------- config --dry-run (H P3)
 
 

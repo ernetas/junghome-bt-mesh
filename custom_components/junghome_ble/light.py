@@ -7,6 +7,12 @@ at a speed until a Move Set 0 stops it, and a Generic Delta Set moves it by a st
 already sends a blind (`JungHomeHub.move_level` / `delta_level`). The app itself never dims this way (it sends
 Lightness Sets); unverified on air. The light's state is asked for after a stop or a step, as its Level Status
 does not carry the lightness the entity shows.
+
+**Transitions** (review-4 F4-1): HA's `transition` goes into the Set (`JungHomeHub.set_lightness` and the other
+setters) only for a kind in `TRANSITION_KINDS`, the only lights that declare the feature. Neither the app nor the
+gateway ever sends a transition, so which JUNG loads fade is up to the on-air probe (`docs/hidden-features.md` §11);
+until it ran the table is empty, HA drops a `transition` before it reaches a light, and every Set keeps the bytes it
+always had. Unverified on air.
 """
 
 from __future__ import annotations
@@ -16,9 +22,10 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_COLOR_TEMP_KELVIN,
+    ATTR_TRANSITION,
     LightEntity,
 )
-from homeassistant.components.light.const import ColorMode
+from homeassistant.components.light.const import ColorMode, LightEntityFeature
 from homeassistant.exceptions import ServiceValidationError
 
 from .const import (
@@ -52,6 +59,14 @@ ATTR_DIRECTION, ATTR_SPEED, ATTR_STEP = "direction", "speed", "step"
 DIM_DIRECTIONS = ("up", "down")
 LEVEL_SERVER = "1002"  # Generic Level server: what the dimming messages go to
 LIGHTNESS_RANGE = 65535  # the full Generic Level range, bottom to top
+# The light kinds (`Light.kind`) whose firmware fades a Set with a transition time, from the probe of
+# `docs/hidden-features.md` §11; empty until it ran (unverified on air): no light declares the feature.
+TRANSITION_KINDS: frozenset[str] = frozenset()
+
+
+def _transition(kind: str, kwargs: dict[str, Any]) -> float | None:
+    """HA's `transition` for a light of `kind`; None (the Set as without one) for a kind not known to fade."""
+    return kwargs.get(ATTR_TRANSITION) if kind in TRANSITION_KINDS else None
 
 
 async def async_setup_entry(
@@ -101,6 +116,8 @@ class JungHomeLight(JungHomeEntity, LightEntity):
         else:
             self._attr_supported_color_modes = {ColorMode.ONOFF}
             self._attr_color_mode = ColorMode.ONOFF
+        if light.kind in TRANSITION_KINDS:
+            self._attr_supported_features = LightEntityFeature.TRANSITION
         self._attr_extra_state_attributes = {
             "mesh_address": f"{light.address:04X}",
             "rooms": light.rooms,
@@ -151,14 +168,18 @@ class JungHomeLight(JungHomeEntity, LightEntity):
         leaves the lightness where it is (a CTL Set would resend the cached one, stale while the light dims). A
         colour temperature with a brightness, or to switch the light on: CTL Set (brightness-only writes never guess
         a temperature). Lightness Set for a brightness, OnOff Set otherwise. The temperature is clamped to the
-        light's range (HA does not do that for us).
+        light's range (HA does not do that for us). A `transition` goes with it for a kind in `TRANSITION_KINDS`.
         """
         brightness = kwargs.get(ATTR_BRIGHTNESS)
         kelvin = kwargs.get(ATTR_COLOR_TEMP_KELVIN)
         lightness = round(brightness * 65535 / 255) if brightness is not None else None
-        await self._send(self._turn_on(lightness, kelvin))
+        await self._send(
+            self._turn_on(lightness, kelvin, _transition(self.light.kind, kwargs))
+        )
 
-    async def _turn_on(self, lightness: int | None, kelvin: Any) -> None:
+    async def _turn_on(
+        self, lightness: int | None, kelvin: Any, transition: float | None
+    ) -> None:
         """Send what `async_turn_on` asks for: a colour temperature alone, CTL, a lightness, or OnOff."""
         if self.light.kind == "ctl" and kelvin is not None:
             kelvin = max(
@@ -172,21 +193,25 @@ class JungHomeLight(JungHomeEntity, LightEntity):
                 and st.on
                 and self.light.temperature_address is not None
             ):
-                await self.hub.set_ctl_temperature(self.light, kelvin)
+                await self.hub.set_ctl_temperature(self.light, kelvin, transition)
                 return
             if (
                 lightness is None
             ):  # keep the current level; full on when it is not known (or off)
                 lightness = st.lightness if st and st.lightness else 65535
-            await self.hub.set_ctl(self.address, lightness, kelvin)
+            await self.hub.set_ctl(self.address, lightness, kelvin, transition)
         elif self.light.kind != "switch" and lightness is not None:
-            await self.hub.set_lightness(self.address, lightness)
+            await self.hub.set_lightness(self.address, lightness, transition)
         else:
-            await self.hub.set_onoff(self.address, True)
+            await self.hub.set_onoff(self.address, True, transition)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Send Generic OnOff Set off."""
-        await self._send(self.hub.set_onoff(self.address, False))
+        """Send Generic OnOff Set off (with a `transition` for a kind in `TRANSITION_KINDS`)."""
+        await self._send(
+            self.hub.set_onoff(
+                self.address, False, _transition(self.light.kind, kwargs)
+            )
+        )
 
     @property
     def dimmable(self) -> bool:
@@ -259,7 +284,8 @@ class JungHomeAllLights(JungHomeCentralEntity, LightEntity):
     Dimmable when any member is; the brightness is the mean of the dimmable members that are on. A brightness goes
     to the dimmers only (the switched loads just switch on), as the app's "dim all" does. The lights of a room: the
     brightness as one Lightness Set to the room address (`Dim.Group`), on / off per light
-    (`JungHomeHub.room_command`).
+    (`JungHomeHub.room_command`). A transition goes into those Unacknowledged Sets only when every member is of a
+    kind in `TRANSITION_KINDS`: a member that does not take one is never sent one.
     """
 
     def __init__(
@@ -273,6 +299,11 @@ class JungHomeAllLights(JungHomeCentralEntity, LightEntity):
         mode = ColorMode.BRIGHTNESS if self._dimmable else ColorMode.ONOFF
         self._attr_supported_color_modes = {mode}
         self._attr_color_mode = mode
+        self._fades = all(
+            isinstance(m, Light) and m.kind in TRANSITION_KINDS for m in members
+        )
+        if self._fades:
+            self._attr_supported_features = LightEntityFeature.TRANSITION
 
     @property
     def brightness(self) -> int | None:
@@ -295,8 +326,12 @@ class JungHomeAllLights(JungHomeCentralEntity, LightEntity):
         """Switch every lamp on, the dimmers at the brightness given."""
         brightness = kwargs.get(ATTR_BRIGHTNESS)
         lightness = None if brightness is None else round(brightness * 65535 / 255)
-        await self._switch(True, lightness)
+        await self._switch(True, lightness, self._transition(kwargs))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Switch every lamp off."""
-        await self._switch(False)
+        await self._switch(False, transition=self._transition(kwargs))
+
+    def _transition(self, kwargs: dict[str, Any]) -> float | None:
+        """HA's `transition` when every member takes one; None otherwise."""
+        return kwargs.get(ATTR_TRANSITION) if self._fades else None

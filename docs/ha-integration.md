@@ -80,6 +80,13 @@ One `light` entity per output. The entity is the device, so its name is the name
   sent, so a stale cached one cannot make the light jump);
   with a colour temperature and a brightness, or to switch it on, a *Light CTL Set* carrying the brightness (the last
   known one, full brightness when none is known or the light is off); with neither, a *Generic OnOff Set*.
+- **Transitions** are not offered yet: neither the app nor the gateway ever sends a transition time, and whether a
+  JUNG dimmer, DALI light or switch insert fades a Set that carries one — or ignores the Set altogether — is still to
+  be probed on air (`docs/hidden-features.md` §11). The support is built and switched off: once a kind of light is
+  known to fade, its lights offer `transition`, which goes into the Set as the nearest transition time (100 ms steps
+  up to 6.2 s, then 1 s, 10 s and 10 min steps), *All lights* passes it on when all its lights fade, and the light is
+  asked for its state a second after the fade it announced ends. Until then a `transition` (from a light profile, say)
+  is ignored and the commands are sent exactly as before. **Unverified on air.**
 - A colour temperature changed elsewhere is followed from the light's *Light CTL Status* and also from a *Light CTL
   Temperature Status* of its temperature element (whether JUNG lights publish the latter is not observed yet).
 - The second output of a two-output insert is a separate light; without app metadata it is named `<node> out 2`.
@@ -493,7 +500,10 @@ on the same terms as the actions, then from the *Scene Status* the devices publi
 reports no current scene). A recall from a key, the app or the gateway counts as an activation like one from Home
 Assistant: the entity's state is the time of the last one. The scenes the app makes for its timers (named
 `TimerScene …`) get no entity, as the app's scene list leaves them out. Scenes are created, filled and removed with
-the [scene actions](#actions-scenes) — or in the app, after which the export must be loaded again.
+the [scene actions](#actions-scenes) — or in the app, after which the export must be loaded again. A `transition`
+given to `scene.turn_on` is ignored for now: whether the devices fade a recall that carries one is still to be probed
+on air (`docs/hidden-features.md` §11); once it is known, the one recall carries it for every device (**unverified on
+air**).
 
 Every load a scene can be stored on also has a diagnostic **Scenes** sensor (off by default): how many of the app's
 scenes it is in, with their names as the `scenes` attribute — the export's members, narrowed on a channel of a
@@ -2104,7 +2114,13 @@ Behaviour worth knowing:
   `Light CTL Temperature Set` to the element after a tunable-white light's, which hosts its `1306` server, in the
   gateway's 7-byte form with transition 0 and delay 0) but
   never waits for the reply: JUNG firmware answers a state change only by publishing the status to the element's group,
-  which is what updates the entity. Scene recall is one `Scene Recall Unacknowledged` to `0xFFFF`.
+  which is what updates the entity. Scene recall is one `Scene Recall Unacknowledged` to `0xFFFF`. The setters take
+  a `transition` in seconds (`JungHomeHub.set_lightness` and the others, `recall_scene`, `central_command`,
+  `room_command`): it becomes the Set's transition-time byte (`jhmesh.messages.encode_transition`, delay 0), and a
+  status announcing a remaining time schedules a state Get that much later plus a second
+  (`_reread_after_transition`). The entities pass one only for a kind in `light.TRANSITION_KINDS` and when
+  `scene.SCENE_TRANSITIONS` is set, both empty / off until the probe of `docs/hidden-features.md` §11 (unverified on
+  air).
 - After every connect `_after_connect` broadcasts Time Set and the location first (unacknowledged, right after the
   proxy filter), then `_refresh_all` sends one Get per light and socket (`REFRESH_CHUNK = 5` jobs between 0.5 s
   pauses), one job per metered load's meter element (`Devices.metered`, `jhmesh.devices.meter_element`) that sends
