@@ -5879,7 +5879,7 @@
    "id": "mgmt:ivindex:local",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon",
     "custom_components/junghome_ble/jhmesh/cdb.py::CDB.from_network",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node"
    ],
@@ -6254,7 +6254,7 @@
    "id": "mgmt:nordic:ivindex.gettransmitivindex",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.tx_iv_index"
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.tx_iv_index"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_config_traffic_follows_the_transmit_iv_index",
@@ -6320,7 +6320,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon",
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._purge_rpl"
    ],
    "tests": [
@@ -6386,8 +6386,8 @@
    "id": "mgmt:nordic:provisionedmeshnode.incrementsequencenumber",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.next_seq",
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.reserve_seq",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.next_seq",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.reserve_seq",
     "custom_components/junghome_ble/seq_store.py::HAState.reserve_seq"
    ],
    "tests": [
@@ -6401,7 +6401,7 @@
    "id": "mgmt:nordic:securenetworkbeacon.canoverwrite",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon"
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_apply_beacon_ignores_lower_or_far_ahead_indexes",
@@ -6432,10 +6432,10 @@
    "id": "mgmt:nordic:securenetworkbeacon.isminimumtimerequirementcompleted",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon",
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState._too_early",
-    "custom_components/junghome_ble/jhmesh/client.py::IV_UPDATE_MIN_STATE",
-    "custom_components/junghome_ble/jhmesh/client.py::IV_RECOVERY_MIN_INTERVAL"
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState._too_early",
+    "custom_components/junghome_ble/jhmesh/state.py::IV_UPDATE_MIN_STATE",
+    "custom_components/junghome_ble/jhmesh/state.py::IV_RECOVERY_MIN_INTERVAL"
    ],
    "tests": [
     "tests/jhmesh/test_iv_timing.py::test_repeated_beacons_42_ahead_cannot_ratchet_the_iv_index",
@@ -9483,7 +9483,7 @@
    "id": "mgmt:const:basemeshnetwork.iv_update_active",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon"
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_apply_beacon_iv_update_procedure",
@@ -9495,7 +9495,7 @@
    "id": "mgmt:const:basemeshnetwork.normal_operation",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::LocalState.apply_beacon"
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.apply_beacon"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_apply_beacon_iv_update_procedure",

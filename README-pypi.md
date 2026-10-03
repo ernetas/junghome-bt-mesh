@@ -18,13 +18,18 @@ pip install jhmesh
 The public surface is the package's modules: `jhmesh.cdb` (parse an export, the keys and the node list),
 `jhmesh.devices` (what each node is: light, socket, blind, thermostat, detector, button), `jhmesh.messages` /
 `jhmesh.config_messages` / `jhmesh.vendor_models` (build and decode access messages), `jhmesh.client` (`ProxyClient`:
-connect through any node's GATT proxy, send, receive, request/response with acks), `jhmesh.standalone` (the same
-over a plain `bleak` scanner for scripts outside Home Assistant), `jhmesh.provisioning` (provision a new node over
-PB-GATT with P-256: No OOB, or Static OOB and the HMAC-SHA256 algorithm when the device offers them) with
-`jhmesh.commission` (the JUNG app's post-provisioning configuration, planned as data) and `jhmesh.onboarding`
-(adding a node end to end: addresses clear of every provisioner, commissioning over the proxy link, read-back and
-recording in the export), `jhmesh.vault` (a provisioner entry of your own, with ranges clear of the app's, and the
-device keys of the nodes you provisioned) and `jhmesh.sniffer` (decode passive nRF Sniffer captures with the
-export's keys). The typed API ships `py.typed`.
+connect through any node's GATT proxy, send, receive, request/response with acks), `jhmesh.state` (`LocalState`: our
+unicast address, sequence numbers, IV index and replay list, kept in a locked file; `jhmesh.client` exports it too),
+`jhmesh.standalone` (the same over a plain `bleak` scanner for scripts outside Home Assistant), `jhmesh.provisioning`
+(provision a new node over PB-GATT with P-256: No OOB, or Static OOB and the HMAC-SHA256 algorithm when the device
+offers them) with `jhmesh.commission` (the JUNG app's post-provisioning configuration, planned as data) and
+`jhmesh.onboarding` (adding a node end to end: addresses clear of every provisioner, commissioning over the proxy
+link, read-back and recording in the export), `jhmesh.vault` (a provisioner entry of your own, with ranges clear of
+the app's, and the device keys of the nodes you provisioned) and `jhmesh.sniffer` (decode passive nRF Sniffer
+captures with the export's keys). The typed API ships `py.typed`.
+
+The API is what each module's `__all__` lists; a name starting with an underscore is private, as is anything else
+`__all__` leaves out, and may change in any release. `import jhmesh` itself imports none of the modules (no `bleak` or
+`cryptography` work): import the ones you use by name, `from jhmesh.client import ProxyClient`.
 
 Python 3.13 or newer. Requires `cryptography` and `bleak`.

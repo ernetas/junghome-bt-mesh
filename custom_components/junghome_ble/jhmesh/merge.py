@@ -25,6 +25,18 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
+__all__ = [
+    "IDENTITY",
+    "IGNORED",
+    "MISSING",
+    "Change",
+    "Key",
+    "Row",
+    "Step",
+    "apply_changes",
+    "diff_documents",
+]
+
 
 class _Missing:
     """The value of a key or entry that is not there (a singleton that survives `copy.deepcopy`)."""

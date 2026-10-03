@@ -17,7 +17,7 @@ import pytest
 from hypothesis import strategies as st
 from hypothesis.stateful import invariant, precondition, rule
 
-from jhmesh import client as client_mod
+from jhmesh import state as state_mod
 from jhmesh.client import (
     IV_INDEX_MAX,
     IV_RECOVERY_MIN_INTERVAL,
@@ -145,7 +145,7 @@ def test_a_clock_that_jumped_back_delays_the_next_step_by_one_period_at_most() -
 
 def test_the_wall_clock_is_the_default(monkeypatch: pytest.MonkeyPatch) -> None:
     now = [T0]
-    monkeypatch.setattr(client_mod, "_wall_now", lambda: now[0])
+    monkeypatch.setattr(state_mod, "_wall_now", lambda: now[0])
     state = known(5, at=T0 - IV_UPDATE_MIN_STATE)
     assert state.apply_beacon(6, True)
     assert state.iv_changed_at == T0

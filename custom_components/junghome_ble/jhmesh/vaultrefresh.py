@@ -44,6 +44,14 @@ if TYPE_CHECKING:
     from .client import AccessMessage, ProxyClient
     from .vault import VaultNode
 
+__all__ = [
+    "NET_KEY_INDEX",
+    "Target",
+    "carry",
+    "target_of",
+    "wanted",
+]
+
 log = logging.getLogger(__name__)
 
 NET_KEY_INDEX = 0  # the only subnet a JUNG network has

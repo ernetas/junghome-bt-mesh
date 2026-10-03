@@ -73,6 +73,7 @@ from custom_components.junghome_ble.const import (
     REFRESH_CHUNK,
 )
 from custom_components.junghome_ble.jhmesh import client as client_mod
+from custom_components.junghome_ble.jhmesh import state as state_mod
 from tests.conftest import META_DIR, setup_entry
 from tests.helpers import LIGHT_OUT1, NODE_ACTUATOR, UID_LIGHT_SWITCH, entity_id
 from tests.sim import LossModel, patch_monotonic
@@ -112,6 +113,7 @@ TIMED = (
     integration,
     keep_awake,
     sensor,
+    state_mod,
     switch,
 )
 

@@ -112,6 +112,7 @@ from custom_components.junghome_ble.gateway_api import (
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.jhmesh import state as state_mod
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.advert import JUNG_COMPANY_ID
 from custom_components.junghome_ble.jhmesh.client import AccessMessage, ProxyClient
@@ -2683,7 +2684,7 @@ async def test_unanswered_refresh_after_an_authenticated_beacon_is_reported(
 def wall_clock(monkeypatch: pytest.MonkeyPatch) -> list[float]:
     """The wall clock the IV Update timing reads (`LocalState.apply_beacon`), moved by the test: `clock[0] += …`."""
     clock = [1_000_000.0]
-    monkeypatch.setattr(client_mod, "_wall_now", lambda: clock[0])
+    monkeypatch.setattr(state_mod, "_wall_now", lambda: clock[0])
     return clock
 
 

@@ -28,6 +28,17 @@ from .provisioning import (
     provision,
 )
 
+__all__ = [
+    "BEACON_WAIT",
+    "FAILED_COOLDOWN",
+    "SILENCE_TIMEOUT",
+    "StandaloneLink",
+    "connect",
+    "provision_device",
+    "scan_for_proxies",
+    "scan_unprovisioned",
+]
+
 log = logging.getLogger("jhmesh.standalone")
 
 FAILED_COOLDOWN = 60.0  # seconds a proxy that dropped or refused the link is passed over when another is in range

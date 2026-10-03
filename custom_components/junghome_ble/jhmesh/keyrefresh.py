@@ -42,6 +42,19 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+__all__ = [
+    "MAX_CANDIDATES",
+    "PROOFS",
+    "PROOF_BEACON",
+    "PROOF_EXPORT",
+    "PROOF_PROXY",
+    "PROOF_STATUSES",
+    "KeyRefreshFollower",
+    "KeyRefreshRecord",
+    "Moved",
+    "describe_proof",
+]
+
 # a Secure Network beacon from the proxy authenticated under the new key, or a Mesh Private beacon the new key opens
 PROOF_BEACON = "beacon"
 PROOF_STATUSES = "statuses"  # Key Refresh Phase Status from two distinct nodes, each under its own device key

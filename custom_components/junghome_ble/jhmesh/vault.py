@@ -45,6 +45,28 @@ from .export import _ordered_like, hexaddr
 if TYPE_CHECKING:
     from .export import ProjectFile
 
+__all__ = [
+    "DEFAULT_NAME",
+    "GROUP_BOUNDS",
+    "GROUP_CEILING",
+    "KEY_LENGTH",
+    "NETWORK_ID_LENGTH",
+    "RANGE_SIZE",
+    "SCENE_BOUNDS",
+    "UNICAST_BOUNDS",
+    "VAULT_VERSION",
+    "MergeResult",
+    "Range",
+    "RangeError",
+    "Ranges",
+    "RefreshProgress",
+    "Vault",
+    "VaultError",
+    "VaultNode",
+    "choose_ranges",
+    "recognise",
+]
+
 VAULT_VERSION = 1
 UNICAST_BOUNDS = (0x0001, 0x7FFF)  # Mesh CDB schema: allocatedUnicastRange
 GROUP_BOUNDS = (0xC000, 0xFEFF)  # allocatedGroupRange

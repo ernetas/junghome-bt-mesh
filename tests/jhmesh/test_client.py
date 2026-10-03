@@ -18,6 +18,7 @@ import pytest
 from jhmesh import client as client_mod
 from jhmesh import config_messages as C
 from jhmesh import messages as M
+from jhmesh import state as state_mod
 from jhmesh.cdb import CDB, Element, Node
 from jhmesh.client import (
     IV_RECOVERY_MIN_INTERVAL,
@@ -3040,7 +3041,7 @@ async def test_segmented_send_starts_over_a_bounded_number_of_times(
     still completes normally when the index finally holds still."""
     # every beacon an IV Index Recovery, each one the spec's 192 h after the one before
     monkeypatch.setattr(
-        client_mod,
+        state_mod,
         "_wall_now",
         itertools.count(0, IV_RECOVERY_MIN_INTERVAL).__next__,
     )

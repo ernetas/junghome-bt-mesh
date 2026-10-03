@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from jhmesh import client as client_mod
+from jhmesh import state as state_mod
 from jhmesh.client import LocalState, ProxyClient, StateInUse
 from jhmesh.keyrefresh import KeyRefreshRecord
 
@@ -81,7 +82,7 @@ def test_lock_held_by_another_process_is_reported_without_a_pid_when_it_left_non
 def test_without_fcntl_the_state_warns_once_and_carries_on(
     state_file: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
-    monkeypatch.setattr(client_mod, "fcntl", None)
+    monkeypatch.setattr(state_mod, "fcntl", None)
     with caplog.at_level(logging.WARNING, logger="jhmesh"):
         s = LocalState(state_file, OUR_SRC)
     assert "cannot lock" in caplog.text

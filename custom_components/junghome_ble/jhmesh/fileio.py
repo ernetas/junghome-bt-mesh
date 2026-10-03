@@ -1,6 +1,6 @@
 """Atomic, owner-only file writes: the one writer for every file of `jhmesh` that can hold mesh key material.
 
-An export holds every mesh key; the CLI's state file (`client.LocalState`) holds a new NetKey while it follows a
+An export holds every mesh key; the CLI's state file (`state.LocalState`) holds a new NetKey while it follows a
 key refresh. Both used to be written by hand-rolled temp-file-and-rename code, one of them with the umask's mode,
 so the state file and its `.bak` came out world-readable on a default umask. Everything now goes through
 `atomic_write`. Kept apart from `export` so `client` can use it without loading the project-file model.
@@ -13,6 +13,17 @@ import shutil
 import stat
 import threading
 from pathlib import Path
+
+__all__ = [
+    "BACKUP_GENERATIONS",
+    "PRIVATE_MODE",
+    "atomic_write",
+    "backup_paths",
+    "copy_private",
+    "fsync_dir",
+    "keep_backup",
+    "temp_path",
+]
 
 PRIVATE_MODE = (
     0o600  # owner read/write only: the mode of every private file written here

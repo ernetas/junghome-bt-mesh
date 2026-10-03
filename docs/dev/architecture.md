@@ -81,12 +81,16 @@ Layout of `custom_components/junghome_ble/`:
 The public modules, as `README-pypi.md` lists them for the PyPI page: `cdb` (parse an export, the keys and the
 node list), `devices` (what each node is), `messages` / `config_messages` / `vendor_models` (build and decode access
 messages), `client` (`ProxyClient`: connect through a node's GATT proxy, send, receive, request / response with
-acks), `standalone` (the same over a plain `bleak` scanner, for scripts), `provisioning` (PB-GATT), `commission`
-(the JUNG app's post-provisioning configuration, planned as data), `onboarding` (adding a node end to end: its
-addresses, commissioning, read-back and recording in the export), `vault` (a provisioner entry of your own and the
-device keys of the nodes you provisioned) and `sniffer` (decode passive nRF Sniffer captures). The rest
+acks), `state` (`LocalState`: our address, sequence numbers, IV index state and replay list, persisted to a locked file
+or, subclassed, to Home Assistant's store — `HAState`; `client` re-exports it), `standalone` (the same over a plain
+`bleak` scanner, for scripts), `provisioning` (PB-GATT), `commission` (the JUNG app's post-provisioning
+configuration, planned as data), `onboarding` (adding a node end to end: its addresses, commissioning, read-back and
+recording in the export), `vault` (a provisioner entry of your own and the device keys of the nodes you provisioned)
+and `sniffer` (decode passive nRF Sniffer captures). The rest
 (`crypto`, `pdu`, `properties`, `export`, `merge`, `audit`, `advert`, `keyrefresh`, `vaultrefresh`, `fileio`) serves
-those and the integration.
+those and the integration. Every module's `__all__` is its public API, pinned by `tests/jhmesh/test_api_surface.py`
+(a change to it is a change to the published package); underscore names are private, and `jhmesh/__init__.py` imports
+nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
 
 ## Behaviour worth knowing
 
