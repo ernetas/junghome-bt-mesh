@@ -649,6 +649,12 @@
   `properties/targets.py`, the property reader, its cache and the status handlers to `properties/reader.py`;
   `config_entities.py` keeps the entity bases and re-exports what the platforms import, and still registers the
   handlers when it is imported. Nothing changes for an installation: the same entities, unique ids and names.
+- Internal: the hub's first component (review-4 A4-3): the button gestures (clicks held back for `click_delay`,
+  double clicks, gateway-mode and dimming holds with their end timers, repeat suppression, the event listeners)
+  moved verbatim out of `JungHomeHub` into `hub_gestures.ButtonGestures` (`hub.gestures`), as `KeepAwake` is. The
+  registered handlers for what keys send stay in `coordinator.py`, so the detectors still chain behind them;
+  `add_event_listener`, `fire_button` and `click_delay` stay on the hub. The events and their order are unchanged;
+  the log line of an unknown key code now comes from the `…hub_gestures` logger.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick

@@ -247,7 +247,7 @@ async def test_trigger_fires_on_its_key_and_event_only(
     await hass.async_block_till_done()
     assert len(fired) == 1
 
-    init_integration.runtime_data._button_last_click.clear()  # as if the window had passed
+    init_integration.runtime_data.gestures._button_last_click.clear()  # as if the window had passed
     fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(4, BUTTON_CLICK))
     await hass.async_block_till_done()
     assert len(fired) == 2
@@ -265,7 +265,7 @@ async def test_side_subtype_fires_on_its_half_only(
     )  # pushed down: the lower half
     await hass.async_block_till_done()
     assert len(fired) == 0
-    init_integration.runtime_data._button_last_click.clear()  # as if the window had passed
+    init_integration.runtime_data.gestures._button_last_click.clear()  # as if the window had passed
     fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(2, 0x01))  # pushed up
     await hass.async_block_till_done()
     assert len(fired) == 1

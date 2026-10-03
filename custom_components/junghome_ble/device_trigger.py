@@ -82,8 +82,8 @@ SIDE_SUBTYPES: dict[str, tuple[str, str]] = {
 TRIGGER_SUBTYPES = (*EVENT_TYPES, *SIDE_SUBTYPES)
 
 # What a key produces, by how it is wired: a gateway-mode key its vendor gestures, per rocker half too; a key wired to
-# a load, a room or another group its On / Off and Level messages, and the holds derived from them (`_dim_hold`); a
-# key wired to a scene its recalls.
+# a load, a room or another group its On / Off and Level messages, and the holds derived from them
+# (`ButtonGestures.dim_hold`); a key wired to a scene its recalls.
 GATEWAY_SUBTYPES = (*SIDED_TYPES, *SIDE_SUBTYPES)
 LOAD_SUBTYPES = ("press_on", "press_off", "dim", "hold_start", "hold_end")
 SCENE_SUBTYPES = ("scene",)

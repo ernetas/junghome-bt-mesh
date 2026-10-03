@@ -488,15 +488,15 @@ async def test_holds_are_derived_from_a_keys_move_and_delta_sets(
     got.clear()
     fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(-500, 5))
     await hass.async_block_till_done()
-    first_end = hub._dim_holds[BUTTON_DIMMER].quiet
+    first_end = hub.gestures._dim_holds[BUTTON_DIMMER].quiet
     fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(-1000, 5))
     await hass.async_block_till_done()
     assert got == [("hold_start", down)]
-    assert hub._dim_holds[BUTTON_DIMMER].quiet not in (None, first_end)
+    assert hub.gestures._dim_holds[BUTTON_DIMMER].quiet not in (None, first_end)
     _later(hass, freezer, DIM_HOLD_QUIET)
     await hass.async_block_till_done()
     assert got == [("hold_start", down), ("hold_end", down)]
-    assert BUTTON_DIMMER not in hub._dim_holds
+    assert BUTTON_DIMMER not in hub.gestures._dim_holds
 
     # a Delta 0 ends a Delta hold at once, and its timer with it
     got.clear()
@@ -551,8 +551,8 @@ async def test_holds_end_with_the_hub(
     _later(hass, freezer, DIM_HOLD_MAX * 2)
     await hass.async_block_till_done()
     assert len(got) == 3
-    assert hub._dim_holds == {}
-    assert hub._key_holds == {}
+    assert hub.gestures._dim_holds == {}
+    assert hub.gestures._key_holds == {}
 
 
 async def test_every_hold_ends_after_the_maximum(
@@ -597,11 +597,11 @@ async def test_every_hold_ends_after_the_maximum(
     # the maximum here) ends at DIM_HOLD_MAX, its quiet timer with it
     got.clear()
     with patch(
-        "custom_components.junghome_ble.coordinator.DIM_HOLD_QUIET", DIM_HOLD_MAX * 2
+        "custom_components.junghome_ble.hub_gestures.DIM_HOLD_QUIET", DIM_HOLD_MAX * 2
     ):
         fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(500, 4))
         await hass.async_block_till_done()
-    hold = hub._dim_holds[BUTTON_DIMMER]
+    hold = hub.gestures._dim_holds[BUTTON_DIMMER]
     assert hold.quiet is not None
     _later(hass, freezer, DIM_HOLD_MAX)
     await hass.async_block_till_done()
@@ -628,7 +628,7 @@ async def test_a_new_hold_ends_a_gateway_hold_whose_release_was_lost(
         ("hold_end", {"side": "down"}),
         ("hold_start", {"counter": 2, "side": "up"}),
     ]
-    hub._key_holds[ROCKER_A].ended = True  # as if DIM_HOLD_MAX had ended it
+    hub.gestures._key_holds[ROCKER_A].ended = True  # as if DIM_HOLD_MAX had ended it
     fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(3, BUTTON_HOLD_START))
     await hass.async_block_till_done()
     assert got[3:] == [("hold_start", {"counter": 3})]
@@ -655,12 +655,12 @@ async def test_a_link_loss_ends_every_hold(
         _device_of(hass, entity_id(hass, "event", UID_BUTTON_DIMMER)),
         _device_of(hass, entity_id(hass, "event", UID_BUTTON_WC)),
     ]
-    assert hub._dim_holds == {}
-    assert hub._key_holds[BUTTON_WC].ended
-    hub._button_event(BUTTON_WC, 2, BUTTON_HOLD_END)
+    assert hub.gestures._dim_holds == {}
+    assert hub.gestures._key_holds[BUTTON_WC].ended
+    hub.gestures.button_event(BUTTON_WC, 2, BUTTON_HOLD_END)
     await hass.async_block_till_done()
     assert len(actions) == 2
-    assert BUTTON_WC not in hub._key_holds
+    assert BUTTON_WC not in hub.gestures._key_holds
 
 
 async def test_availability_follows_the_link(
@@ -686,10 +686,10 @@ async def test_listener_is_removed_with_the_entity(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
     hub = init_integration.runtime_data
-    assert len(hub._event_listeners[BUTTON_WC]) == 1
+    assert len(hub.gestures._event_listeners[BUTTON_WC]) == 1
     assert await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
-    assert hub._event_listeners[BUTTON_WC] == []
+    assert hub.gestures._event_listeners[BUTTON_WC] == []
 
 
 def _device_of(hass: HomeAssistant, eid: str) -> str:

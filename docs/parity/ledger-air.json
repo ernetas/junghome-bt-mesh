@@ -1129,7 +1129,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_vendor_property_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._button_event",
+    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.button_event",
     "custom_components/junghome_ble/jhmesh/properties.py::KeyEvent"
    ],
    "tests": [
@@ -1709,7 +1709,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._from_button"
+    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.from_button"
    ],
    "tests": [
     "tests/test_coordinator.py::test_sig_button_messages",
@@ -1774,7 +1774,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.move_level",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_move_set",
     "custom_components/junghome_ble/light.py::JungHomeLight.async_start_dim",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._dim_hold"
+    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.dim_hold"
    ],
    "tests": [
     "tests/test_light.py::test_dim_actions_move_and_step_the_level_server",
@@ -1967,7 +1967,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_recall",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._from_button",
+    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.from_button",
     "custom_components/junghome_ble/logbook.py::async_describe_events"
    ],
    "tests": [

@@ -17,7 +17,7 @@ from itertools import pairwise
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
-from unittest.mock import ANY, AsyncMock, PropertyMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from bleak.exc import BleakError
@@ -2024,6 +2024,28 @@ def test_registry_has_one_row_per_built_in_message_type() -> None:
         M.GEN_ADMIN_PROP_STATUS,
         M.GEN_MANU_PROP_STATUS,
     )
+
+
+def test_onoff_set_reaches_the_key_gestures_before_the_detectors() -> None:
+    """The coordinator's OnOff Set handler (the rocker's `press_on` / `press_off`) runs before the detector's.
+
+    binary_sensor.py chains its handler behind the one the table holds when it is imported, so the coordinator's
+    (which hands the message to `ButtonGestures`) must be registered by then (review-4 A4-3).
+    """
+    from custom_components.junghome_ble import binary_sensor  # noqa: PLC0415
+
+    order: list[str] = []
+    hub = MagicMock()
+    hub.gestures.from_button.side_effect = lambda m, p: order.append("keys")
+    m = MagicMock(src=0x0100, dst=0xC000)
+    with patch.object(
+        binary_sensor,
+        "detector_at",
+        side_effect=lambda hub, src: order.append("detectors"),
+    ):
+        for opcode in (M.GEN_ONOFF_SET, M.GEN_ONOFF_SET_UNACK):
+            STATUS_HANDLERS[None, opcode](hub, m, b"\x01\x07")
+    assert order == ["keys", "detectors"] * 2
 
 
 async def test_element_signals_are_scoped_to_the_entry(

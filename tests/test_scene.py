@@ -287,7 +287,7 @@ async def test_a_keys_recall_is_published_without_its_event_entity(
     with the key as the source, and the members' Scene Status that follows adds nothing."""
     hub = init_integration.runtime_data
     events = async_capture_events(hass, EVENT_SCENE_RECALLED)
-    with patch.dict(hub._event_listeners, {ROCKER_B: []}):
+    with patch.dict(hub.gestures._event_listeners, {ROCKER_B: []}):
         fake_link.inject(ROCKER_B, ALL_NODES, M.scene_recall(1, ack=False, tid=4))
         fake_link.inject(LIGHT_SWITCH, MEMBER_GROUP, scene_status(1))
         await hass.async_block_till_done()
