@@ -50,6 +50,10 @@ gateway's REST API (`GET config`, `gateway_status.py`; off by default).
 The app declares the same state under 0x1212 and reads one byte, but never shows it; what the byte holds beyond zero /
 non-zero is not documented, and the property is **unverified on air**. Read once per link like a config entity, and
 taken from any Status the thermostat publishes.
+
+**Scheduler function** (`JungHomeRtrSchedulerStatus`, room thermostats, diagnostic, off by default): the read-only
+0x1249 (`RtrSchedulerFunctionStatus`), which the app takes as its automatic operation (0x1246) whenever one is
+reported (`config_entities.PROPERTY_SCHEDULER_STATUS`); **unverified on air**.
 """
 
 from __future__ import annotations
@@ -78,6 +82,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .config_entities import (
     PROPERTY_LOCK,
     PROPERTY_REFERENCE_RUN,
+    PROPERTY_SCHEDULER_STATUS,
     FlagEntity,
     LockFunctionEntity,
     PropertyEntity,
@@ -165,6 +170,12 @@ def build_entities(hub: JungHomeHub) -> list[BinarySensorEntity]:
     entities += [
         JungHomeRtrWindow(hub, target)
         for target in property_id_targets(hub, PROPERTY_WINDOW_OPEN, "window_open")
+    ]
+    entities += [
+        JungHomeRtrSchedulerStatus(hub, target)
+        for target in property_id_targets(
+            hub, PROPERTY_SCHEDULER_STATUS, "scheduler_function_status"
+        )
     ]
     entities += [
         JungHomeInputState(hub, button)
@@ -662,6 +673,23 @@ class JungHomeRtrWindow(PropertyEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Whether the thermostat reports an open window; None until read."""
+        value = self.property_value
+        return value if isinstance(value, bool) else None
+
+
+class JungHomeRtrSchedulerStatus(PropertyEntity, BinarySensorEntity):
+    """A room thermostat's scheduler-function status (0x1249): on while it runs its own comfort / eco profile.
+
+    A reported one also moves the thermostat's automatic operation (the climate entity's `auto`), as in the app;
+    read once per link like a config entity. Unverified on air.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    target: ValueTarget
+
+    @property
+    def is_on(self) -> bool | None:
+        """Whether the thermostat reports its scheduler running; None until read."""
         value = self.property_value
         return value if isinstance(value, bool) else None
 

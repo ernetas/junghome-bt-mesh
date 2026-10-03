@@ -362,19 +362,22 @@
   },
   {
    "id": "prop:0x1103",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/config_entities.py::describe",
-    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/number.py::MODE_MINIMUMS",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
-    "tests/test_config_entities.py::test_blind_targets_follow_the_property_products"
+    "tests/test_config_entities.py::test_blind_targets_follow_the_property_products",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "the number accepts 0..10000 ms in every mode: the app's >= 300 ms floor in BLINDS mode and its per-operation-mode defaults (BLINDS 2000, SHUTTER 0, AWNING 300 ms, p056e8/m) written when the operation mode 0x1104 changes are not applied",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): the >= 300 ms floor in BLINDS mode and the SHUTTER gate as prod:param:blind:slat-reversal-time; the per-mode defaults the setup assistant writes with 0x1104 are deliberately not written there (docs/ha-integration.md '### Cover')."
   },
   {
    "id": "prop:0x1104",
@@ -726,16 +729,20 @@
   },
   {
    "id": "prop:0x1249",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::PROPERTY_SCHEDULER_STATUS",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/binary_sensor.py::JungHomeRtrSchedulerStatus"
    ],
    "tests": [
-    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
+    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes",
+    "tests/test_climate.py::test_scheduler_function_status_is_the_automatic_operation",
+    "tests/test_climate.py::test_scheduler_function_sensor_reads_the_thermostat"
    ],
-   "missing": "catalogued read-only bool only: the app's resolver C1952s1 feeds a reported 0x1249 status into the same SchedulerEnabled capability as 0x1246 (the auto/manual state); climate.py reads only 0x1246, so an unsolicited 0x1249 status does not update the thermostat's automatic/manual state; no test of the 0x1249 status path",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): a reported 0x1249 is cached as 0x1246 too (the app's resolver C1952s1), so the climate entity and the Automatic operation switch follow it; also a Scheduler function binary sensor (diagnostic, disabled by default)."
   },
   {
    "id": "prop:0x5001",

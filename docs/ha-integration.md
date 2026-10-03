@@ -107,6 +107,18 @@ One `light` entity per output. The entity is the device, so its name is the name
   unacknowledged and are not refused: a locked member ignores them, as in the app. A toggle of a light whose state is
   unknown turns it on (Home Assistant's default; the app sends off), deliberately. **Unverified on air**: what a
   locked load answers to a Set is still to be probed (`docs/hidden-features.md` §12).
+- **Loads a room thermostat switches, and detector relays** (review-4 F4-16). The app disables a load's controls in
+  two more cases, and so does Home Assistant. A light or socket a room thermostat switches — the app's thermostat
+  link: the load's *Generic OnOff* server listens to the element group the thermostat's OnOff client publishes to —
+  has the attribute `controlled_by` (the thermostats' names) and refuses on and off with *… is switched by the room
+  thermostat …*: the thermostat would switch it back. Its *Run-on time*, *Manual switch-off*, *Switch-on / -off
+  delay*, *Minimum switching repeat time* and *Switch-off warning* are unavailable meanwhile, as the app disables
+  them. A detector's relay has the attribute `continuous_on_off` (`inactive`, `on`, `off`; empty until read): the
+  detector's own *continuous on / off*, read once per connection with the lock. While it is `on` or `off` the relay
+  refuses commands with the detector's instruction to end it — the switch for automatic operation into the middle
+  position (motion detector 1 m), the ON / OFF button (motion detector 2 m), the programming button (presence
+  detector), as the app's banner says; the state is read again first. Other lights have neither attribute.
+  **Unverified on air**: there is no room thermostat or detector here.
 - **All lights**, on the mesh device, is the app's central "all luminaires" function: one unacknowledged message to
   the lamps' device-type group `FEF5`, which every lamp listens to since it was added in the app, switches them all
   at the same moment (rather than one message per light). With a brightness, the dimmers go to it and the switched
@@ -134,8 +146,9 @@ One `light` entity per output. The entity is the device, so its name is the name
 
 One `switch` entity per socket with device class `outlet`. The entity is the device, so its name is the socket's name
 in the app. Attributes: `mesh_address`, `rooms`, `locked`, `lock_until`: a locked socket shows it and refuses to
-switch, exactly as a light does (*Locked loads* under [Light](#light); **unverified on air**). **All sockets** (mesh
-device) does the same for the sockets'
+switch, exactly as a light does (*Locked loads* under [Light](#light); **unverified on air**); a socket a room
+thermostat switches has `controlled_by` and refuses too (see [Light](#light), **unverified on air**). **All sockets**
+(mesh device) does the same for the sockets'
 group `FEF8` as *All lights* does for the lamps. Neither exists when no load listens to its group. **All sockets in
 &lt;room&gt;** (mesh device, one per room with sockets) switches each socket of the room with an unacknowledged
 *Generic OnOff Set* of its own, as the app's area control does.
@@ -253,6 +266,12 @@ the slat drive.
   whether the device publishes its position after a stop is unknown. Stopping the slats sends the same stop to the
   slat element: no JUNG client does that (the app has a slat slider only), it is the plain Bluetooth Mesh meaning of
   the message.
+- **End positions** (review-4 F4-16), as the app's arrows: *open* sends nothing at all while the blind reports itself
+  fully open (0 % closed), *close* nothing while fully closed; the slats (*open / close tilt*, a tilt position) are
+  refused while the blind is fully open, where the app disables its slat slider (*… is fully open: its slats cannot
+  be moved until it is lowered*). A position not known yet skips and refuses nothing; the app also disables the
+  slat slider then, but the cover offers tilt only once the mode is known and reads the position at every
+  connection. **Unverified on air.**
 - **Locks.** A blind held by its lock function (`0x0009`: a lock, lock-out protection or a wind alarm) ignores
   commands, and the app disables its controls meanwhile. The cover refuses them with an error that names the
   reason ("is locked", "a wind alarm holds …") when the lock state is known — the *Wind alarm* sensor reads it once
@@ -265,7 +284,16 @@ the slat drive.
   positions on power-up, invert direction, ventilation positions, and *Reference run* as a button) are configuration
   entities of the blind device (see [Device parameters](#device-parameters-number-select-switch-button)); the
   ventilation positions and *Time change active* are enabled by default, the rest are expert parameters. So are the
-  *Lock* switch and the *Lock function* select (lock, lock-out protection, wind alarm; disabled by default).
+  *Lock* switch and the *Lock function* select (lock, lock-out protection, wind alarm; disabled by default). As in
+  the app's Parameters tab, the slat cells follow the operation mode: *Ventilation position slats* and *Slat
+  position after mains return* only for *blinds*, *Slat change-over time* not for a shutter (from 300 ms for
+  blinds, from 0 ms as an awning's reversal time), and the two positions after mains return only while the
+  behaviour after mains return is *Stored position*; otherwise they are unavailable. *Behaviour after mains
+  voltage return* offers the app's four options (no reaction, up, down, stored position; a *stop* or *position for
+  network failure* set elsewhere shows as unknown). Choosing the operation mode writes `0x1104` alone, as the app's
+  Parameters tab does; the per-mode slat time the app's setup assistant writes with it (2000 ms blinds, 0 ms
+  shutter, 300 ms awning) stays with the app's setup assistant — set *Slat change-over time* yourself after a change
+  of mode. **Unverified on air.**
 - Two binary sensors on the blind device, read once per connection: **Wind alarm** (`safety`) and **Reference run**
   (`running`, diagnostic) — see [Binary sensor](#binary-sensor).
 - **All blinds**, on the mesh device, is the app's central "all blinds": one unacknowledged message moves every blind
@@ -293,7 +321,7 @@ sends.
 | Target temperature | 5–30 °C in 0.5 °C steps, the app's slider; shown to 0.5 °C, like the room temperature (the level itself has 0.25 °C resolution: the level range maps to percent) | *Generic Level* of the set-point element: `pct = (°C − 5) / 25 · 100` mapped to −32768..32767; *Generic Level Set* (acknowledged) to change it |
 | Current temperature | The room temperature the thermostat measures, 0.5 °C resolution; `unknown` until reported (or while the device says "unknown") | *Sensor Status* property `0x004F` (Present Ambient Temperature) of the thermostat's sensor element |
 | Current action (`hvac_action`) | `heating` while the thermostat's heating output is on, `idle` while off — the regulator's PWM output, so it cycles every few minutes; not shown until the device answered | The thermostat's own *Generic OnOff* server (the state the JUNG HOME Gateway exposes as the thermostat's "switch") |
-| Presets | `comfort`, `eco`, `frost` (frost protection), `boost` and `none`. Selecting one of the first three sends the matching preset temperature as the target (every firmware) and, on firmware 2.2.0.0 or newer, the thermostat's own mode property as the app does. `boost` heats at full power for five minutes; the thermostat ends it by itself and tells no one, so the entity reads it back five minutes after it started (and every five minutes while it still reads on). While boosting, any other preset ends the boost first, as the app offers nothing else meanwhile. `none` is what is shown when the target matches no preset temperature; selecting it ends a boost and otherwise sends nothing (there is no mode to command). The preset shown is `boost` while boosting, else the mode property when the thermostat reports one, otherwise the preset whose temperature equals the target | Preset temperatures `0x1203` / `0x1204` / `0x1205`, mode `0x120B` and boost `0x120D` — the same vendor properties the *Comfort / ECO / Frost protection temperature*, *Operating mode* and *Boost* configuration entities expose (disabled by default) |
+| Presets | `comfort`, `eco`, `frost` (frost protection), `boost` and `none`. Selecting one of the first three sends the matching preset temperature as the target (every firmware) and, on firmware 2.2.0.0 or newer, the thermostat's own mode property as the app does. `boost` heats at full power for five minutes; the thermostat ends it by itself and tells no one, so the entity reads it back five minutes after it started (and every five minutes while it still reads on). While boosting, any other preset ends the boost first, as the app offers nothing else meanwhile. `none` is what is shown when the target matches no preset temperature; selecting it ends a boost and otherwise sends nothing (there is no mode to command). While boosting a target temperature is refused (*… is boosting: choose another preset to end the boost first*), as the app disables its slider and +/- (unverified on air). The preset shown is `boost` while boosting, else the mode property when the thermostat reports one, otherwise the preset whose temperature equals the target | Preset temperatures `0x1203` / `0x1204` / `0x1205`, mode `0x120B` and boost `0x120D` — the same vendor properties the *Comfort / ECO / Frost protection temperature*, *Operating mode* and *Boost* configuration entities expose (disabled by default) |
 
 After every (re)connection the entity asks the thermostat for its set-point, heating output and room temperature
 (*Generic Level Get*, *Generic OnOff Get*, *Sensor Get 0x004F*, a few seconds after the link is up so that the hub's
@@ -302,10 +330,17 @@ configuration entities read theirs (the mode only on firmware that has it, when 
 relies on the thermostat publishing its changes (the set-point element and the sensor publish to the element group by
 the app's standard wiring — whether a wheel turn or a local mode change actually produces such a publication is one
 of the open questions). `homeassistant.update_entity` runs the same reads at once, boost included, so an automation
-can see a boost started on the thermostat itself (unverified on air). A preset temperature the thermostat has not reported is read when the preset is selected; if it still does
+can see a boost started on the thermostat itself (unverified on air). Boost is also read every minute while the link
+is up and no boost is known to run (review-4 F4-16; the app reads it every 5 s, but only while its thermostat page is
+open), so such a boost shows within a minute; a read another entity made within the last 10 s counts. **Unverified on
+air.** A preset temperature the thermostat has not reported is read when the preset is selected; if it still does
 not answer, the selection fails. *Boost* and *Automatic operation* are also the `boost_mode` / `scheduler_enabled`
 configuration switches of the node device (disabled by default; they share the values the climate entity shows).
-Attributes: `mesh_address`, `rooms`.
+A reported *scheduler function status* (`0x1249`) moves the automatic operation like `0x1246` does, as the app's
+resolver takes it; it is also a **Scheduler function** `binary_sensor` (diagnostic, disabled by default) on the node
+device, read once per connection (unverified on air).
+Attributes: `mesh_address`, `rooms`, `controlled_loads` (the lights and sockets the thermostat switches through the
+app's thermostat link, read from the export; see [Light](#light); unverified on air).
 
 An **Open window** `binary_sensor` (device class `window`, disabled by default) on the node device shows the
 thermostat's window-open detection: firmware property `0x1225` (`RTR_DROP_OF_TEMP_STATE`, "drop of temperature"), read
@@ -343,6 +378,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Illuminance | `illuminance` | lx | Yes | Detectors only, on the node device — **unverified on hardware**: the Present Illuminance (SIG `0x0055`) of the detector's `Sensor Status`, published like the presence value (see [Binary sensor](#binary-sensor)) and asked for once after every connection; the device reports 0.01 lx steps (whole lux on device software up to 1.4.0.0, when the version is known), shown as whole lux. While the detector has delivered no such value (or reports all ones), the detector's own *Current brightness* instead (vendor property `0x6004`, whole lux, what the app's parameter page shows), read every minute while the link is up; attribute `source` (`present_illuminance` / `brightness`) says which. `homeassistant.update_entity` asks for the Present Illuminance at once, and for the brightness when the answer carries no reading |
 | Continuous on/off | `enum` | – | No (diagnostic) | Detectors only, on the node device — **unverified on hardware**: `inactive`, `off` or `on`, whether the detector holds its load off or on through its own slider or keys (vendor property `0x6016`). The app only shows it (on the load's page), so it is read once per link and never written |
 | Battery | `battery` | % | Yes (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device — **unverified on hardware**: read with `Generic Battery Get` right after one of the node's keys reported an event (the node sleeps otherwise and would not answer), never polled; the level from before a restart until then; while the node reports no level (0xFF) the level its battery indicator stands for (good 50 %, low 15 %, critically low 5 %) |
+| Sleep mode | `enum` | – | No (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device (review-4 F4-16) — **unverified on air**: the app's *Power saving mode*: `awake` while the node was heard from (a key event, an answer, the keep-alive of a change) within the last 6 s — the app's keep-alive period — `asleep` after, `unknown` until it was heard since the start. How long a node really stays awake is not known |
 | Schedules | – | – | No (diagnostic) | Every light, socket, blind and room thermostat whose element hosts the JH Scheduler (all current products): how many of the 16 schedule slots the device holds; attribute `schedules` lists them in the fields [`create_schedule`](#actions-schedules) takes (not recorded in the history). Read once per link, updated by the schedule actions; not yet tried on a real device |
 | Switches off at | `timestamp` | – | No | Every light and socket: the moment the load will be off, when its last `Generic OnOff Status` said it is on, heading off, with a known remaining time (a run-on time running out, a fade to off); `unknown` otherwise. **Unverified on air**: whether a JUNG load with a *Run-on time* reports the time left this way is not known (the app ignores the field), so the sensor may stay `unknown` for good. Read-only; `homeassistant.update_entity` asks the load for its state |
 | Switch-on threshold, Switch-off threshold | `power` | W | No (diagnostic) | Metering sockets only: the power level of the socket's two [thresholds](#actions-thresholds) (LBC Admin `0x5004` / `0x5005`), `unknown` while none is set; attributes `duration` (s), `enabled` and `devices` (the lights and sockets both thresholds switch, from the export's wiring). Read once per link, updated by the actions; not yet tried on a real socket |
@@ -584,7 +620,8 @@ read (the app ignores it too). An entity stays *unknown* when its device does no
 press one of its keys, then change the setting right away. While the change runs the integration keeps the device
 awake the way the app does (an `Admin Get` of its button layout, `0x5001`, whenever it was quiet for 6 s); a device
 that answers neither the read of the current value nor the change fails with *it is asleep — press one of its keys
-to wake it, then make the change again* (unverified on air: how long a transmitter stays awake is not known). Attributes: `mesh_address`, `property_id`. Room thermostats get theirs (the
+to wake it, then make the change again*, adding the app's hint that a device reacting to no key press either usually
+has an empty battery (unverified on air: how long a transmitter stays awake is not known). Attributes: `mesh_address`, `property_id`. Room thermostats get theirs (the
 *Comfort / ECO / Frost protection temperature*, *Operating mode*, *Boost*, *Automatic operation*, sensor selection and
 offset, valve output, display settings) on the thermostat's node device next to the `climate` entity; blinds get
 theirs (see [Cover](#cover)) on the blind device; detector parameters sit on the detector's node device next to its
@@ -595,6 +632,18 @@ the presence control (`0x6003`) as the app does, asks for the PIR zones (`0x6005
 after five minutes, like the app; a test found running (started in the app) is ended five minutes after it was seen.
 The firmware's constant-light and night-light properties (`0x6018`–`0x6020`) are not exposed: their layout is not
 documented. Key connections and thresholds are [actions](#actions-rooms-and-key-connections).
+
+Like the app's cells, some parameters follow another value of the device (review-4 F4-16; **unverified on air**,
+no blind, detector or room thermostat here): a blind's slat cells and positions after mains return follow its
+operation mode and behaviour after mains return (see [Cover](#cover)); a detector's *Brightness threshold* is
+unavailable while *Daytime operation* is on, as the app disables it; a load a room thermostat switches has its
+run-on time, manual switch-off, delays, switching repeat time and switch-off warning unavailable (see
+[Light](#light)). While the other value has not been read, or holds a value the integration cannot name, the
+parameter stays available; the other value's own entity reads it (the cover reads the operation mode at every
+connection, the *Behaviour after mains voltage return* select once enabled). A detector's *Activation area* numbers take the app's detents, 0 / 25 / 50 / 75 / 100 % (a value between
+two is written as the nearer one), and its *Brightness threshold* the app's 5 lx steps; *Activation area C* exists
+on the presence detector only — the motion detectors have two areas, and an *Activation area C* an earlier version
+created on one is removed at start.
 
 The JUNG firmware lists more properties than the app uses (`docs/hidden-features.md` §2): *transmission settings*
 (`0x0F00`, on keys and the socket's meter), the runtime statistics (`0x0F01` / `0x0F02`), *key toggle enable*
@@ -1249,21 +1298,33 @@ hand), the action refuses with *"export from the app again"* — export, replace
   device — its Scene Client publishes to all nodes, the key is told the scene (`0x5002`) and gets key mode *scene*,
   and the export records the app's `keyModeSceneConfigExports` row so the app shows it; leave `mode` empty; **not
   yet tried on a real device**); `mode` optional (`light` = on/off + dimming, `switch` = on/off, `move` = blinds —
-  untested, `gateway`, `lock`; rooms also `light_and_switch`). Leave `mode` empty to get what the app would pick.
+  untested, `gateway`, `lock`, `temperature` = a room thermostat's set-point up / down, key mode 4, the app's
+  *Temperature* category — **unverified on air**; rooms also `light_and_switch`). Leave `mode` empty to get what the
+  app would pick (`temperature` for a room thermostat, whose `climate` entity or device is a valid target; a mode
+  other than `temperature` is refused for a thermostat, and `temperature` for anything else).
   Device targets also take, **unverified on air** (written from the app's code; `docs/on-air-sweep.md` D9 captures
   the app making them):
   - `target_element` — `color_temperature`: the key's Level client alone publishes to a tunable-white light's
     temperature element (the app's *light temperature* connection, key mode *light*); `slat`: to a blind's slat
-    element (key mode *move*). A light without a temperature element, or a blind without slats, is refused.
+    element (key mode *move*). A light without a temperature element, a blind without slats, or a room thermostat is
+    refused.
   - `mode: lock` — the app's locking function on a light or socket: the key's LBC User Property client alone
     publishes to the load's element group, the key gets *KeySetPropertyMode* `0x5006` = (`0x0009` lock function,
     stateful), up / on `0x5007` = lock the current state (`02 01 <s>`), down / off `0x5008` = unlock (`00 01 00 00`),
     each confirmed, then key mode *property* (3); the load is then asked for its lock. `lock_seconds` (0–65535, empty
-    or 0 = until unlocked) is the lock's time limit. Blinds (lock-out protection, wind alarm) and rooms are refused.
-    The app keeps no `meta` row for such a link; the key itself holds it.
+    or 0 = until unlocked) is the lock's time limit. Blinds (lock-out protection, wind alarm), room thermostats and
+    rooms are refused. The app keeps no `meta` row for such a link; the key itself holds it.
   A socket or mini-actuator target also gets the app's *property user* wiring: the User Property servers of all its
   elements (a mini actuator's inputs included) publish to their element groups and the key's clients listen there
   (unverified on air for a mini actuator).
+  A **detector** is a source too, as in the app's "What should the detector control?" (review-4 F4-16, **unverified
+  on air**): give one of its entities (its motion / occupancy sensor) as `key_entity` or its device as
+  `key_device`, and a device target; the detector's on/off client then publishes to that device as a key's would.
+  A detector has no key mode, so none is written (nor is its property mode reset), and it cannot drive a room or a
+  scene (*Detector … can only drive one device*). For the same reason it only drives a light, a socket or a blind in
+  the mode the target gives (`light`, `switch`, `move`): `lock`, `temperature` (a room thermostat), `gateway` and a
+  `target_element` live in a key's key mode or property mode and are refused for a detector (*Detector … cannot
+  drive a target in mode …*).
 - **`clear_key`** — the app's *No function*.
 
 A key of a **battery device** (wall transmitter, battery binary-input puck) only answers while its device is awake:

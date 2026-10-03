@@ -71,14 +71,14 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTime,
 )
-from homeassistant.core import callback
+from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import (
     async_dispatcher_connect,
     async_dispatcher_send,
 )
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .config_entities import (
@@ -100,6 +100,7 @@ from .const import (
     DETECTOR_ILLUMINANCE_RAW_LUX_MAX_VERSION,
     DETECTOR_PROPERTY_ILLUMINANCE,
     DOMAIN,
+    KEEP_AWAKE_INTERVAL,
     LINK_STATES,
     REFRESH_RETRIES,
     SIGNAL_BATTERY,
@@ -393,6 +394,9 @@ def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
     ]
     entities += [
         JungHomeBatterySensor(hub, node, keys) for node, keys in battery_nodes(hub)
+    ]
+    entities += [
+        JungHomeSleepMode(hub, node, keys) for node, keys in battery_nodes(hub)
     ]
     entities += [JungHomeKeyMode(hub, target) for target in key_mode_targets(hub)]
     entities += [JungHomeSchedules(hub, target) for target in schedule_targets(hub)]
@@ -1019,6 +1023,85 @@ class JungHomeForcedOff(PropertyEntity, SensorEntity):
         """The state; None until read, or for a value the app does not name."""
         value = self.property_value
         return value if value in self._attr_options else None
+
+
+class JungHomeSleepMode(JungHomeEntity, SensorEntity):
+    """Whether a battery node is awake now: the app's *Power saving mode* banner (`SleepMode`) as a diagnostic sensor.
+
+    The app keeps the state only while a battery device's page is open: its keep-alive answered (`DeviceAwake`) or
+    not (`DeviceNotAwake`, "press the button to wake it", `docs/gap-analysis/control-and-state.md` §2.9). Here the
+    node is `awake` while it was heard from — a key event, an answer, the keep-alive of a change
+    (`keep_awake.py`) — within KEEP_AWAKE_INTERVAL, the app's keep-alive period, and `asleep` after; unknown until
+    it was heard since the start. Off by default: it changes with every key press. How long a node really stays
+    awake is unverified on air (no battery node here).
+    """
+
+    _attr_translation_key = "sleep_mode"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["awake", "asleep"]
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, hub: JungHomeHub, node: Node, keys: list[Button]) -> None:
+        """Bind to the node's primary element, whose keep-alive answers land there, on the node device."""
+        super().__init__(
+            hub,
+            node.unicast,
+            f"{node.uuid.lower()}-sleep_mode",
+            node_device_info(hub, node),
+        )
+        self.node = node
+        self.keys = keys
+        self._asleep_at: CALLBACK_TYPE | None = None  # the pending switch to `asleep`
+
+    @property
+    def native_value(self) -> str | None:
+        """`awake` within KEEP_AWAKE_INTERVAL of the last message from the node, `asleep` after; None until heard."""
+        heard = self.hub.last_heard.get(self.node.unicast)
+        if heard is None:
+            return None
+        return "awake" if time.monotonic() - heard < KEEP_AWAKE_INTERVAL else "asleep"
+
+    async def async_added_to_hass(self) -> None:
+        """Listen to the node's keys too: an event of theirs means it is awake."""
+        await super().async_added_to_hass()
+        for address in self.listened:
+            self.async_on_remove(
+                self.hub.add_event_listener(address, self._on_key_event)
+            )
+        self.async_on_remove(self._cancel)
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """The node's keys."""
+        return tuple(key.address for key in self.keys)
+
+    @callback
+    def _on_key_event(self, event: str, attrs: dict[str, Any]) -> None:
+        self._handle_update()
+
+    @callback
+    def _handle_update(self) -> None:
+        """Write the state, and have it turn `asleep` once the node stayed quiet for KEEP_AWAKE_INTERVAL."""
+        self._cancel()
+        heard = self.hub.last_heard.get(self.node.unicast)
+        if (
+            heard is not None
+            and (left := heard + KEEP_AWAKE_INTERVAL - time.monotonic()) > 0
+        ):
+            self._asleep_at = async_call_later(self.hass, left, self._fell_asleep)
+        super()._handle_update()
+
+    @callback
+    def _fell_asleep(self, _now: datetime) -> None:
+        self._asleep_at = None
+        self._handle_update()
+
+    @callback
+    def _cancel(self) -> None:
+        if self._asleep_at is not None:
+            self._asleep_at()
+            self._asleep_at = None
 
 
 class JungHomeBatterySensor(JungHomeEntity, RestoreSensor):

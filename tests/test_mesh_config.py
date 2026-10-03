@@ -967,6 +967,179 @@ async def test_a_lost_link_before_the_lock_read_still_wires_the_key(
     assert bench.keys.modes[ROCKER_A] == b"\x03"
 
 
+# ----------------------------------------------------------------------------- RTR and detector links (F4-16)
+
+RTR_KEY, RTR_SETPOINT, RTR_GROUP = 0x0149, 0x0500, 0xC090  # `MeshNetwork-rtr.json`
+DETECTOR_MOTION_ELEMENT, PRESENCE_RELAY, PRESENCE_RELAY_GROUP = 0x0501, 0x0510, 0xC0A2
+
+
+async def test_a_key_drives_a_room_thermostats_set_point_in_key_mode_4(
+    tmp_path: Path, fast: FastAsyncio, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The app's *Temperature* category (`KeyMode` RTR 4): the key's Generic Level client publishes to the set-point
+    element's group, the mode the app derives for a thermostat target. Unverified on air."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
+    rtr = bench.reload().cdb.element(RTR_SETPOINT)
+    assert rtr is not None
+    assert mc.derive_mode(rtr) == "temperature"
+    await bench.configurator.assign_key(RTR_KEY, element=RTR_SETPOINT)
+    assert "never been tried" in caplog.text
+    pf = bench.reload()
+    assert pub(pf, RTR_KEY, "1003") == RTR_GROUP
+    assert subs(pf, RTR_KEY, "1003") == [RTR_GROUP]
+    assert pub(pf, RTR_KEY, "1001") in (None, 0)  # not a client of the mode: cleared
+    assert bench.keys.modes == {RTR_KEY: b"\x04"}
+    # the mode names a thermostat target only
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(RTR_KEY, element=0x0172, mode="temperature")
+    assert exc.value.translation_key == "service_invalid_mode"
+
+
+async def test_a_detector_drives_a_device_without_a_key_mode(
+    tmp_path: Path, fast: FastAsyncio
+) -> None:
+    """The app's `ConnectionSource.Detector`: `SetDeviceConnection` with the mode the target gives, and no KeyMode
+    nor property-mode reset (no `KeyModeCapability` on a detector). Unverified on air."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-detectors.json")
+    for target in ({"room": "Living room"}, {"scene": "1"}):
+        with pytest.raises(ServiceValidationError) as exc:
+            await bench.configurator.assign_key(DETECTOR_MOTION_ELEMENT, **target)
+        assert exc.value.translation_key == "service_detector_device_only"
+        assert exc.value.translation_placeholders == {"address": "0501"}
+    assert bench.file_unchanged()
+    assert await bench.configurator.assign_key(
+        DETECTOR_MOTION_ELEMENT, element=PRESENCE_RELAY
+    )
+    pf = bench.reload()
+    for model in ("1001", "05271015"):
+        assert pub(pf, DETECTOR_MOTION_ELEMENT, model) == PRESENCE_RELAY_GROUP
+    assert bench.app_pdus() == []  # no KeyMode, no property-mode reset
+    assert bench.keys.modes == {}
+
+
+# Brief 38 (target elements, lock links) meets brief 42 (temperature mode, detector sources): a thermostat takes the
+# temperature mode alone, and a detector — no KeyMode, no property mode — only a load's own mode.
+
+RTR_SOCKET, RTR_TW_LIGHT = 0x0172, 0x0232  # `MeshNetwork-rtr.json`
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "key"),
+    [
+        ({"element": RTR_SETPOINT, "mode": "lock"}, "service_invalid_mode"),
+        ({"element": RTR_SETPOINT, "mode": "light"}, "service_invalid_mode"),
+        ({"element": RTR_SETPOINT, "mode": "switch"}, "service_invalid_mode"),
+        ({"element": RTR_SETPOINT, "target_element": "color_temperature"}, "service_target_element_missing"),
+        ({"element": RTR_SETPOINT, "target_element": "slat"}, "service_target_element_missing"),
+        ({"element": RTR_SETPOINT, "mode": "temperature", "lock_seconds": 60}, "service_lock_seconds_needs_lock"),
+        ({"element": RTR_SOCKET, "mode": "temperature"}, "service_invalid_mode"),
+        ({"element": RTR_TW_LIGHT, "target_element": "color_temperature", "mode": "temperature"},
+         "service_invalid_mode"),
+        ({"room": "Living room", "mode": "temperature"}, "service_invalid_mode"),
+        ({"scene": "1", "mode": "temperature"}, "service_invalid_mode"),
+    ],
+)  # fmt: skip
+async def test_a_thermostat_takes_the_temperature_mode_alone(
+    tmp_path: Path, fast: FastAsyncio, kwargs: dict[str, Any], key: str
+) -> None:
+    """A room thermostat is no lock target nor has a target element, and takes no other mode than `temperature`;
+    `temperature` names a thermostat only, never a load's element, a room or a scene. Nothing is sent or written."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(RTR_KEY, **kwargs)
+    assert exc.value.translation_key == key
+    assert bench.config_pdus() == []
+    assert bench.app_pdus() == []
+    assert bench.file_unchanged()
+
+
+async def test_a_lock_key_moved_to_a_thermostat_loses_its_lock_function(
+    tmp_path: Path, fast: FastAsyncio
+) -> None:
+    """A key that locked a socket, then wired to a thermostat's set-point: the lock function in its 0x5006 to 0x5008 is
+    reset before KeyMode 4, its vendor client stops publishing and the Level client alone publishes to the
+    set-point; back to a lock, the Level client is cleared again and the lock function written anew."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
+    await bench.configurator.assign_key(RTR_KEY, element=RTR_SOCKET, mode="lock")
+    assert bench.keys.modes[RTR_KEY] == b"\x03"
+    assert bench.keys.values[RTR_KEY, 0x5006] == LOCK_MODE
+    sent = len(bench.app_pdus())
+    await bench.configurator.assign_key(RTR_KEY, element=RTR_SETPOINT)
+    assert bench.app_pdus()[sent:] == [(RTR_KEY, p) for p in RESET_PROPERTY_MODE] + [
+        (RTR_KEY, admin_set(0x5003, b"\x04"))
+    ]
+    pf = bench.reload()
+    assert pub(pf, RTR_KEY, "1003") == RTR_GROUP
+    assert pub(pf, RTR_KEY, "05271015") in (None, 0)
+    sent = len(bench.app_pdus())
+    await bench.configurator.assign_key(
+        RTR_KEY, element=RTR_SOCKET, mode="lock", lock_seconds=30
+    )
+    assert bench.app_pdus()[sent:] == [
+        (RTR_KEY, admin_set(0x5006, LOCK_MODE)),
+        (RTR_KEY, admin_set(0x5007, lock_up(30))),
+        (RTR_KEY, admin_set(0x5008, UNLOCK)),
+        (RTR_KEY, admin_set(0x5003, b"\x03")),
+        (RTR_SOCKET, M.vendor_property_get("admin", 0x0009)),
+    ]
+    pf = bench.reload()
+    assert pub(pf, RTR_KEY, "1003") in (None, 0)
+    assert pub(pf, RTR_KEY, "05271015") == 0xC000
+
+
+async def test_a_detector_drives_no_gateway(tmp_path: Path, fast: FastAsyncio) -> None:
+    """The gateway's mode (KeyMode 6) is a key's: a detector cannot report to the gateway."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-detectors.json")
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(DETECTOR_MOTION_ELEMENT, element=GATEWAY)
+    assert exc.value.translation_key == "service_detector_mode_unsupported"
+    assert exc.value.translation_placeholders == {"address": "0501", "mode": "gateway"}
+    assert bench.config_pdus() == []
+    assert bench.file_unchanged()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "mode"),
+    [
+        ({"element": RTR_SETPOINT}, "temperature"),
+        ({"element": RTR_SETPOINT, "mode": "temperature"}, "temperature"),
+        ({"element": RTR_SOCKET, "mode": "lock"}, "lock"),
+        ({"element": RTR_TW_LIGHT, "target_element": "color_temperature"}, "light (color_temperature)"),
+    ],
+)  # fmt: skip
+async def test_a_detector_takes_no_key_only_mode(
+    tmp_path: Path,
+    fast: FastAsyncio,
+    monkeypatch: pytest.MonkeyPatch,
+    kwargs: dict[str, Any],
+    mode: str,
+) -> None:
+    """No fixture has a detector next to a thermostat or a lockable load: the RTR network's push-button stands in for
+    one. A thermostat's set-point, a lock and a target element live in a key's KeyMode / property mode, which a
+    detector does not have: refused before anything is sent, the derived `temperature` too."""
+    monkeypatch.setattr(mc, "DETECTOR_PIDS", frozenset({0x0001}))
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.assign_key(RTR_KEY, **kwargs)
+    assert exc.value.translation_key == "service_detector_mode_unsupported"
+    assert exc.value.translation_placeholders == {"address": "0149", "mode": mode}
+    assert bench.config_pdus() == []
+    assert bench.app_pdus() == []
+    assert bench.file_unchanged()
+
+
+async def test_a_stand_in_detector_drives_a_light_without_a_key_mode(
+    tmp_path: Path, fast: FastAsyncio, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same stand-in in the mode the light gives: wired as a key, with no vendor write at all."""
+    monkeypatch.setattr(mc, "DETECTOR_PIDS", frozenset({0x0001}))
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
+    assert await bench.configurator.assign_key(RTR_KEY, element=RTR_TW_LIGHT)
+    assert pub(bench.reload(), RTR_KEY, "1003") == 0xC044
+    assert bench.app_pdus() == []
+    assert RTR_KEY not in bench.keys.modes
+
+
 # ----------------------------------------------------------------------------- key -> scene (review-3 F15)
 
 

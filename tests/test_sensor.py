@@ -31,6 +31,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import State
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
@@ -42,12 +43,17 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.junghome_ble import coordinator as hub_module
 from custom_components.junghome_ble import sensor
 from custom_components.junghome_ble.binary_sensor import JungHomeDetectorOccupancy
-from custom_components.junghome_ble.config_entities import SIG_SOFTWARE_VERSION
+from custom_components.junghome_ble.config_entities import (
+    SIG_SOFTWARE_VERSION,
+    property_reader,
+    retired_unique_ids,
+)
 from custom_components.junghome_ble.const import (
     BATTERY_READ_INTERVAL,
     DETECTOR_BRIGHTNESS_POLL,
     DETECTOR_PROPERTY_ILLUMINANCE,
     DOMAIN,
+    KEEP_AWAKE_INTERVAL,
 )
 from custom_components.junghome_ble.coordinator import (
     NODE_VERSION_STORES,
@@ -796,7 +802,8 @@ UID_FORCED_OFF = f"{UUID_MOTION.lower()}-0040-forced_off"
 async def test_forced_off_is_a_read_only_sensor_off_by_default(
     hass: HomeAssistant, detectors_with_mesh: tuple[MockConfigEntry, PropertyMesh]
 ) -> None:
-    """Continuous on / off is set on the detector itself: shown, never written, and not read while disabled."""
+    """Continuous on / off is set on the detector itself: shown, never written, and not read by the disabled sensor;
+    the detector's relay light reads it once per link (`LoadLock`, review-4 F4-16)."""
     _, mesh = detectors_with_mesh
     registry = er.async_get(hass)
     entry = registry.async_get(entity_id(hass, "sensor", UID_FORCED_OFF))
@@ -806,7 +813,9 @@ async def test_forced_off_is_a_read_only_sensor_off_by_default(
     assert (
         registry.async_get_entity_id("select", "junghome_ble", UID_FORCED_OFF) is None
     )
-    assert (DETECTOR_MOTION, PID_FORCED_OFF) not in mesh.gets
+    await wait_until(hass, lambda: (DETECTOR_MOTION, PID_FORCED_OFF) in mesh.gets)
+    await settle(hass)
+    assert mesh.gets.count((DETECTOR_MOTION, PID_FORCED_OFF)) == 1
 
 
 async def test_forced_off_sensor_reads_the_detector(
@@ -1272,3 +1281,209 @@ async def test_battery_level_is_restored_until_the_node_reports(
     state = hass.states.get(eid)
     assert state.state == STATE_UNKNOWN
     assert state.attributes["level_source"] is None
+
+
+# --------------------------------------------------------------------------- the app's rules (review-4 F4-16)
+
+
+async def test_sleep_mode_follows_what_the_node_was_last_heard_saying(
+    hass: HomeAssistant,
+    entity_registry_enabled_by_default: None,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """The app's *Power saving mode* (`SleepMode`): awake within the keep-alive period of the node's last message,
+    asleep after it; unknown until it was heard. Off by default."""
+    entry = await start_detectors(hass, make_detectors_entry(), fake_link)
+    hub = entry.runtime_data
+    uid = f"{UUID_1G.lower()}-sleep_mode"
+    eid = entity_id(hass, "sensor", uid)
+    registry_entry = er.async_get(hass).async_get(eid)
+    assert registry_entry is not None
+    assert registry_entry.entity_category is EntityCategory.DIAGNOSTIC
+    assert hass.states.get(eid).state == STATE_UNKNOWN
+    assert hass.states.get(eid).attributes["options"] == ["awake", "asleep"]
+    fake_link.inject(KEY_1G, GROUP_GATEWAY, vendor_button_event(1, BUTTON_CLICK))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == "awake"
+    # quiet for the keep-alive period: asleep
+    hub.last_heard[TRANSMITTER_1G] -= KEEP_AWAKE_INTERVAL
+    async_fire_time_changed(
+        hass, dt_util.utcnow() + timedelta(seconds=KEEP_AWAKE_INTERVAL + 1)
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == "asleep"
+    # an answer to the keep-alive (a property Status of its primary element) wakes it too
+    fake_link.inject(
+        TRANSMITTER_1G, OUR_ADDRESS, ph.vendor_status(0x05, 0x5001, b"\x01\x00")
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == "awake"
+    # the pending switch is dropped with the entity
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+
+RELAY_PRESENCE_UID = f"{UUID_PRESENCE.lower()}-0001"
+
+
+@pytest.fixture
+async def answering_detectors(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    fast_timeouts: None,
+) -> AsyncGenerator[tuple[MockConfigEntry, PropertyMesh]]:
+    """`detectors_with_mesh`, the relays also answering their connect-time OnOff Gets (a command waits for them)."""
+    mesh = ph.PropertyMesh(fake_link)
+    inner = fake_link.write_gatt_char
+
+    async def write(char: str, data: bytes, response: bool | None = None) -> None:
+        before = len(fake_link.sent)
+        await inner(char, data, response)
+        for src, dst, access in fake_link.sent[before:]:
+            if access == M.generic_onoff_get():
+                fake_link.inject(dst, src, onoff_status(False))
+
+    fake_link.write_gatt_char = write  # type: ignore[method-assign]
+    with patch.object(JungHomeDetectorOccupancy, "_maybe_refresh"):
+        entry = await start_detectors(hass, make_detectors_entry(), fake_link)
+        await settle(hass)
+        yield entry, mesh
+
+
+async def test_a_detector_relay_follows_the_detectors_continuous_on_off(
+    hass: HomeAssistant,
+    answering_detectors: tuple[MockConfigEntry, PropertyMesh],
+    fake_link: FakeProxyLink,
+) -> None:
+    """The app disables a detector relay's controls while the detector holds it (`ForcedOffMode`), with the
+    product's instruction; the relay reads the state once per link and again before refusing."""
+    entry, mesh = answering_detectors
+    hub = entry.runtime_data
+    reader = property_reader(hass, hub)
+    light = entity_id(hass, "light", f"{UUID_MOTION.lower()}-0001")
+    presence = entity_id(hass, "light", RELAY_PRESENCE_UID)
+    await wait_until(
+        hass,
+        lambda: hass.states.get(light).attributes["continuous_on_off"] == "inactive",
+    )
+    assert "controlled_by" not in hass.states.get(light).attributes
+
+    async def turn_on(eid: str) -> None:
+        await hass.services.async_call(
+            "light", "turn_on", {ATTR_ENTITY_ID: eid}, blocking=True
+        )
+
+    mesh.values[DETECTOR_MOTION, PID_FORCED_OFF] = b"\x03"
+    fake_link.inject(
+        DETECTOR_MOTION, OUR_ADDRESS, ph.vendor_status(0x05, PID_FORCED_OFF, b"\x03")
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(light).attributes["continuous_on_off"] == "on"
+    reader._read_at.pop((DETECTOR_MOTION, PID_FORCED_OFF), None)
+    gets = mesh.gets.count((DETECTOR_MOTION, PID_FORCED_OFF))
+    with pytest.raises(ServiceValidationError) as exc:
+        await turn_on(light)
+    assert (
+        exc.value.translation_key == "load_forced_short"
+    )  # the motion detector 0x0007: its slide switch
+    assert exc.value.translation_placeholders == {"entity": light}
+    assert (
+        mesh.gets.count((DETECTOR_MOTION, PID_FORCED_OFF)) == gets + 1
+    )  # asked again first
+    # 0x0008 ends it with its ON / OFF button
+    hub.cdb.node_by_addr(RELAY_MOTION).pid = 0x08
+    with pytest.raises(ServiceValidationError) as exc:
+        await turn_on(light)
+    assert exc.value.translation_key == "load_forced_on_button"
+    hub.cdb.node_by_addr(RELAY_MOTION).pid = 0x07
+    # ended on the detector: the fresh read says so and the command goes out
+    mesh.values[DETECTOR_MOTION, PID_FORCED_OFF] = b"\x00"
+    reader._read_at.pop((DETECTOR_MOTION, PID_FORCED_OFF), None)
+    fake_link.sent.clear()
+    await turn_on(light)
+    assert [dst for _, dst, _ in fake_link.sent][-1] == RELAY_MOTION
+    assert hass.states.get(light).attributes["continuous_on_off"] == "inactive"
+
+    # the presence detector 0x0009: its programming button
+    fake_link.inject(
+        DETECTOR_PRESENCE,
+        OUR_ADDRESS,
+        ph.vendor_status(0x05, PID_FORCED_OFF, b"\x02"),
+    )
+    await hass.async_block_till_done()
+    mesh.values[DETECTOR_PRESENCE, PID_FORCED_OFF] = b"\x02"
+    with pytest.raises(ServiceValidationError) as exc:
+        await turn_on(presence)
+    assert exc.value.translation_key == "load_forced_off_presence"
+    # a value the app does not name is no hold
+    fake_link.inject(
+        DETECTOR_PRESENCE,
+        OUR_ADDRESS,
+        ph.vendor_status(0x05, PID_FORCED_OFF, b"\x01"),
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(presence).attributes["continuous_on_off"] is None
+    await turn_on(presence)
+
+
+async def test_detector_numbers_take_the_apps_steps(
+    hass: HomeAssistant,
+    entity_registry_enabled_by_default: None,
+    detectors_with_mesh: tuple[MockConfigEntry, PropertyMesh],
+    fake_link: FakeProxyLink,
+) -> None:
+    """The activation areas snap to the app's 25 % detents and the brightness threshold to its 5 lx steps; the
+    threshold is unavailable in day mode (`DayModeCompatible`); area C is the presence detector's only."""
+    entry, mesh = detectors_with_mesh
+    motion = UUID_MOTION.lower()
+    area_a = entity_id(hass, "number", f"{motion}-0040-pir_sensor_a")
+    threshold = entity_id(hass, "number", f"{motion}-0040-switch_on_brightness")
+    assert hass.states.get(area_a).attributes["step"] == 25
+    assert hass.states.get(threshold).attributes["step"] == 5
+
+    async def set_value(eid: str, value: float) -> None:
+        await hass.services.async_call(
+            "number", "set_value", {ATTR_ENTITY_ID: eid, "value": value}, blocking=True
+        )
+
+    await set_value(area_a, 60)
+    await set_value(threshold, 13)
+    await set_value(threshold, 1000)
+    assert mesh.sets[-3:] == [
+        (DETECTOR_MOTION, 0x6008, bytes([128])),  # 50 %
+        (DETECTOR_MOTION, 0x600F, (15).to_bytes(2, "little")),
+        (DETECTOR_MOTION, 0x600F, (1000).to_bytes(2, "little")),
+    ]
+    fake_link.inject(
+        DETECTOR_MOTION, OUR_ADDRESS, ph.vendor_status(0x05, 0x6015, b"\x01")
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(threshold).state == STATE_UNAVAILABLE
+    fake_link.inject(
+        DETECTOR_MOTION, OUR_ADDRESS, ph.vendor_status(0x05, 0x6015, b"\x00")
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(threshold).state != STATE_UNAVAILABLE
+
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id(
+            "number", "junghome_ble", f"{motion}-0040-pir_sensor_c"
+        )
+        is None
+    )
+    presence = UUID_PRESENCE.lower()
+    assert registry.async_get_entity_id(
+        "number", "junghome_ble", f"{presence}-0040-pir_sensor_c"
+    )
+    # an earlier version's area C of a motion detector is cleared from the registry
+    assert ("number", f"{motion}-0040-pir_sensor_c") in retired_unique_ids(
+        entry.runtime_data
+    )
+    assert ("number", f"{presence}-0040-pir_sensor_c") not in retired_unique_ids(
+        entry.runtime_data
+    )

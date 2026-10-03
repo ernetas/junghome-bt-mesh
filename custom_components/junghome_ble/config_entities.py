@@ -40,6 +40,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import EntityCategory
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
@@ -63,6 +64,7 @@ from .const import (
     SIG_HARDWARE_REVISION,
     SIG_MANUFACTURER_NAME,
     SIG_SOFTWARE_VERSION,
+    SIGNAL_UPDATE,
 )
 from .coordinator import JungHomeHub, register_status_handler
 from .entity import (
@@ -95,6 +97,7 @@ if TYPE_CHECKING:
     from .entity import UpdateRead
     from .jhmesh.cdb import Element, Node
     from .jhmesh.client import AccessMessage
+    from .jhmesh.devices import Thermostat
     from .jhmesh.properties import PropertySpec
 
 _LOGGER = logging.getLogger(__name__)
@@ -116,6 +119,8 @@ PROPERTY_LOCK = 0x0009  # EnforceOutput, the app's lock (`JungHomeLockSwitch`, `
 LOCK_SPEC = P.PROPERTIES[PROPERTY_LOCK]
 # a light's / socket's lock attributes (`LoadLock`)
 ATTR_LOCKED, ATTR_LOCK_UNTIL = "locked", "lock_until"
+# a load's room thermostats and a detector relay's continuous on / off (`LoadLock`)
+ATTR_CONTROLLED_BY, ATTR_CONTINUOUS_ON_OFF = "controlled_by", "continuous_on_off"
 PROPERTY_DEVICE_LOCK = 0x0001  # the node's lock flags (`device_lock_targets`)
 GATEWAY_API_STATUS, GATEWAY_IP = (
     0xC000,
@@ -150,7 +155,18 @@ UNSAFE_PROPERTIES: frozenset[int] = frozenset(
 # (review-4 brief 36), and an id without a codec stays Raw and unmapped here even when listed.
 FIRMWARE_ENTITIES: frozenset[int] = frozenset()
 PROPERTY_WALKING_TEST, PROPERTY_PRESENCE_CONTROL = 0x6001, 0x6003
+# The room thermostat's automatic operation (0x1246) and its scheduler-function status (0x1249): the app's resolver
+# feeds a reported 0x1249 into the same capability as 0x1246 (`resolver/C1952s1.java`, `docs/android/properties.md`
+# §1.10), so a 0x1249 Status is cached as 0x1246 too (`_on_vendor_property_status`). Unverified on air.
+PROPERTY_SCHEDULER_ENABLED, PROPERTY_SCHEDULER_STATUS = 0x1246, 0x1249
 PROPERTY_FORCED_OFF = 0x6016
+FORCED_OFF_SPEC = P.PROPERTIES[PROPERTY_FORCED_OFF]
+PIR_SENSOR_C = P.PROPERTIES[0x600A]  # a presence detector's only (`retired_unique_ids`)
+# How a detector's continuous on / off ends, as the app's banner says per product (`LampDetailActivity`,
+# `detector_forced_off_*`): the ON / OFF button of the motion detector 0x0008, the programming button of the
+# presence detector 0x0009, the slide switch's middle position on the others (`load_forced_short`); the translation
+# key is `load_forced_<on|off>_<hint>`.
+FORCED_HINTS: dict[int, str] = {0x08: "button", 0x09: "presence"}
 # Load-element properties that only apply to some load kinds (`Light.kind`); the rest apply to every load.
 LAMP_KINDS = frozenset({"switch", "dimmer", "ctl"})
 # The dim mode only on a dimmer: the app's `DimLampDevice` is `DimModeCompatible`, its `TunableWhiteLampDevice`
@@ -161,6 +177,27 @@ LOAD_KINDS: dict[int, frozenset[str]] = {
     PROPERTY_LOCK: LAMP_KINDS | {"socket", "blind"},
 }
 BLIND_PROPERTIES = range(0x1100, 0x1200)  # a blind load: no such device is derived yet
+# Cells the app offers only for some values of another property of the same element (`docs/gap-analysis/
+# device-settings.md` §7.2, §9.2): property -> (the property it follows, the values it is offered for), every pair
+# must hold. Such an entity is unavailable otherwise, as the app hides or disables the cell; while the other value is
+# not known it is offered (`PropertyEntity.gated`), and the other value's own entity reads it. The blind's slat
+# cells only in operation mode *blinds* (0x1104, `SlatCompatible`, `C1847c` / `C1854j`), its slat time hidden for a
+# shutter (`C1855k`), the positions on power only for *stored position* (0x1105, `C1851g` / `C1854j`); a detector's
+# switch-on brightness not in day mode (0x6015, `DayModeCompatible`). Unverified on air: no blind or detector here.
+VALUE_GATES: dict[int, tuple[tuple[int, frozenset[object]], ...]] = {
+    0x1103: ((0x1104, frozenset({"blinds", "awning"})),),
+    0x1106: ((0x1105, frozenset({"move_to_stored_position"})),),
+    0x1107: (
+        (0x1105, frozenset({"move_to_stored_position"})),
+        (0x1104, frozenset({"blinds"})),
+    ),
+    0x110B: ((0x1104, frozenset({"blinds"})),),
+    0x600F: ((0x6015, frozenset({False})),),
+}
+# A load's run-on time, manual off, on / off delay, switch blocking time and prewarning: the app disables them while
+# a room thermostat switches the load (`RtrConnectionHandler.b()`, `rtr_connection_parameter_info_text`; the load's
+# `thermostats_of` entry, `jhmesh.devices.thermostat_links`). Unverified on air: no room thermostat here.
+THERMOSTAT_GATED = frozenset({0x1001, 0x1002, 0x1007, 0x100A, 0x100B, 0x100D})
 # Keys with an LED: mini-actuator inputs publish key events too, but have nothing to light. Mains push-buttons only:
 # a battery wall transmitter sleeps between key presses, so an unacknowledged write to it is lost, yet the switch
 # would show the written value as applied for good (review-3 P1).
@@ -1071,7 +1108,8 @@ def _on_vendor_property_status(hub: JungHomeHub, m: AccessMessage, p: bytes) -> 
     and the access byte — which is how an element answers for a property it does not have (the metering socket's
     meter element to an Admin Set of 0x5003, on air): the app's resolver drops it
     (`StatusMessageResolver` `AbstractC1972z0`, `UtilsKt.k`) and keeps the value it had, so does this. The value is
-    the sender's, except for a status LED written as a Status (`status_owner`).
+    the sender's, except for a status LED written as a Status (`status_owner`). A thermostat's 0x1249 is its 0x1246
+    as well (`PROPERTY_SCHEDULER_STATUS`).
     """
     if len(p) <= 3:
         return
@@ -1084,6 +1122,8 @@ def _on_vendor_property_status(hub: JungHomeHub, m: AccessMessage, p: bytes) -> 
     # a load's lock, which its light / socket entity acts on (`LoadLock`)
     if pid == PROPERTY_LOCK:
         st.note_lock(st.properties[pid])
+    elif pid == PROPERTY_SCHEDULER_STATUS:
+        st.properties[PROPERTY_SCHEDULER_ENABLED] = st.properties[pid]
     hub.notify_update(owner)
 
 
@@ -1900,6 +1940,40 @@ class PropertyEntity(ConfigEntity):
             f"0x{s.id:04X}" for s in self.specs
         )
 
+    @property
+    def gates(self) -> tuple[tuple[PropertySpec, frozenset[object]], ...]:
+        """The other properties of the element the cell follows, with the values it is offered for (`VALUE_GATES`)."""
+        return tuple(
+            (P.PROPERTIES[pid], values)
+            for pid, values in VALUE_GATES.get(self.spec.id, ())
+        )
+
+    @property
+    def gated(self) -> bool:
+        """Whether the app would not offer the cell now: a followed value outside its set, or a thermostat's load.
+
+        A followed value not known yet gates nothing, nor does one the catalogue cannot name (an enumeration's
+        raw integer): what cannot be read is not hidden. The entity does not ask for the value: its own entity
+        does (the cover reads the operation mode at every link, the day-mode switch is on by default, the power-on
+        select reads its value once enabled), and a second Get to an element that left the first unanswered only
+        adds to the traffic.
+        """
+        if self.spec.id in THERMOSTAT_GATED and self.hub.devices.thermostats_of.get(
+            self.address
+        ):
+            return True
+        return any(
+            (value := self.value_of(spec)) is not None
+            and not (isinstance(spec.codec, P.Enum) and isinstance(value, int))
+            and value not in values
+            for spec, values in self.gates
+        )
+
+    @property
+    def available(self) -> bool:
+        """Available with the link, unless the app would not offer the cell now (`gated`)."""
+        return super().available and not self.gated
+
     async def _read(self) -> bool:
         done = True
         for spec in self.specs:
@@ -2158,6 +2232,13 @@ class LoadLock(JungHomeEntity):
     unknown state for on and sends off (`ui:uc:toggledevice`): kept deliberately, as switching a load on is what a
     user toggling a load that shows nothing expects. Room and central commands (*All lights*, a room's lights) go
     out unacknowledged to every member and are not refused: a locked member ignores them, as in the app.
+
+    The app disables a load's controls in two more cases (`LampDetailActivity`: `RtrConnectionMode`,
+    `ForcedOffMode`), and so does this (review-4 F4-16, unverified on air: no room thermostat or detector here). A
+    load a room thermostat switches (`Devices.thermostats_of`, the app's RTR link) shows the thermostats' names as
+    `controlled_by` and refuses commands: the thermostat would switch it back. A detector's relay shows the
+    detector's continuous on / off (0x6016, read once per link with the lock) as `continuous_on_off` and refuses
+    commands while it is `on` or `off`, with the product's instruction to end it (the app's `ForcedOffView` texts).
     """
 
     # `hub.link_count` of the link the lock read was last queued on
@@ -2170,9 +2251,42 @@ class LoadLock(JungHomeEntity):
         return node is not None and (node.pid or 0) in LOCK_SPEC.products
 
     @property
+    def thermostats(self) -> list[Thermostat]:
+        """The room thermostats that switch the load; none for most loads (`Devices.thermostats_of`)."""
+        return self.hub.devices.thermostats_of.get(self.address, [])
+
+    @property
+    def detector_element(self) -> int | None:
+        """The detector element of the load's node when the load is a detector's relay, else None.
+
+        The detector's properties live on its highest element (`docs/gap-analysis/control-and-state.md` §2.8).
+        """
+        node = self.hub.cdb.node_by_addr(self.address)
+        if node is None or (node.pid or 0) not in FORCED_OFF_SPEC.products:
+            return None
+        return node.elements[-1].address
+
+    @property
+    def continuous_on_off(self) -> str | None:
+        """The detector's continuous on / off of a relay (`inactive`, `on`, `off`); None until read or unnamed."""
+        detector = self.detector_element
+        if detector is None:
+            return None
+        value = cached_value(self.hub, detector, FORCED_OFF_SPEC)
+        return value if value in P.FORCED_OFF.values() else None
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """The entity's attributes, plus `locked` and, while a timed lock holds, `lock_until` (ISO 8601, UTC)."""
+        """The entity's attributes, plus `locked` and, while a timed lock holds, `lock_until` (ISO 8601, UTC).
+
+        A load a thermostat switches has `controlled_by` (the thermostats' names), a detector's relay
+        `continuous_on_off`; other loads have neither.
+        """
         attrs = dict(self._attr_extra_state_attributes)
+        if thermostats := self.thermostats:
+            attrs[ATTR_CONTROLLED_BY] = [t.name for t in thermostats]
+        if self.detector_element is not None:
+            attrs[ATTR_CONTINUOUS_ON_OFF] = self.continuous_on_off
         st = self.hub.states.get(self.address)
         if st is None or st.lock is None:
             attrs[ATTR_LOCKED] = attrs[ATTR_LOCK_UNTIL] = None
@@ -2184,9 +2298,23 @@ class LoadLock(JungHomeEntity):
         return attrs
 
     async def async_added_to_hass(self) -> None:
-        """Subscribe, then queue the lock read once the link is up."""
+        """Subscribe (a detector relay to its detector element too), then queue the lock read once the link is up."""
         await super().async_added_to_hass()
+        for address in self.listened:
+            self.async_on_remove(
+                async_dispatcher_connect(
+                    self.hass,
+                    SIGNAL_UPDATE.format(self.hub.entry.entry_id, address),
+                    self._handle_update,
+                )
+            )
         self._maybe_read_lock()
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """A detector relay's detector element, whose continuous on / off it shows; nothing for other loads."""
+        detector = self.detector_element
+        return () if detector is None else (detector,)
 
     @callback
     def _handle_update(self) -> None:
@@ -2195,17 +2323,25 @@ class LoadLock(JungHomeEntity):
 
     @callback
     def _maybe_read_lock(self) -> None:
-        """Queue the read of the lock once per link (a load that stayed silent is asked on the next one)."""
+        """Queue the read of the lock, and of a detector relay's continuous on / off, once per link.
+
+        A load that stayed silent is asked on the next link.
+        """
+        detector = self.detector_element
         if (
-            not self.lockable
+            not (self.lockable or detector is not None)
             or not self.hub.connected
             or self._lock_link == self.hub.link_count
         ):
             return
         self._lock_link = self.hub.link_count
-        property_reader(self.hass, self.hub).schedule(
-            self.address, self._read_lock, key=PROPERTY_LOCK
-        )
+        reader = property_reader(self.hass, self.hub)
+        if self.lockable:
+            reader.schedule(self.address, self._read_lock, key=PROPERTY_LOCK)
+        if detector is not None:
+            reader.schedule(
+                detector, partial(self._read_forced, detector), key=PROPERTY_FORCED_OFF
+            )
 
     async def _read_lock(self) -> None:
         """Ask for the lock unless the load answered since the link came up (the *Lock* switch's read, say)."""
@@ -2213,8 +2349,27 @@ class LoadLock(JungHomeEntity):
             self.address, LOCK_SPEC, since=self.hub.link_since
         )
 
+    async def _read_forced(self, detector: int) -> None:
+        """Ask for the detector's continuous on / off unless it answered since the link came up (its sensor's read)."""
+        await property_reader(self.hass, self.hub).read(
+            detector, FORCED_OFF_SPEC, since=self.hub.link_since
+        )
+
     async def _check_unlocked(self) -> None:
-        """Refuse a command while the load is locked; read the lock again first, it may have ended unseen."""
+        """Refuse a command while the load is locked, a thermostat switches it, or its detector holds it.
+
+        The lock and the continuous on / off are read again first, they may have ended unseen.
+        """
+        if thermostats := self.thermostats:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="load_thermostat_controlled",
+                translation_placeholders={
+                    "entity": self.entity_id,
+                    "thermostats": ", ".join(t.name for t in thermostats),
+                },
+            )
+        await self._check_not_forced()
         st = self.hub.states.get(self.address)
         if not self.lockable or st is None or st.lock is None or not st.lock.locked:
             return
@@ -2277,6 +2432,31 @@ class LoadLock(JungHomeEntity):
         return ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="load_locked",
+            translation_placeholders={"entity": self.entity_id},
+        )
+
+    async def _check_not_forced(self) -> None:
+        """Refuse a command while the relay's detector holds it on or off; read the state again first.
+
+        The app's banner names how to end it per product (`LampDetailActivity`, `FORCED_HINTS`).
+        """
+        if self.continuous_on_off not in ("on", "off"):
+            return
+        detector = self.detector_element
+        # a continuous on / off is only known for a detector's relay
+        assert detector is not None
+        await property_reader(self.hass, self.hub).read(detector, FORCED_OFF_SPEC)
+        state = self.continuous_on_off
+        if state not in ("on", "off"):
+            return
+        node = self.hub.cdb.node_by_addr(self.address)
+        assert node is not None  # as `detector_element`
+        hint = FORCED_HINTS.get(node.pid or 0)
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="load_forced_short"
+            if hint is None
+            else f"load_forced_{state}_{hint}",
             translation_placeholders={"entity": self.entity_id},
         )
 
@@ -2344,8 +2524,9 @@ def retired_unique_ids(hub: JungHomeHub) -> list[tuple[Platform, str]]:
     """Return the config entities an earlier version created that the app's gates now leave out, with their platform.
 
     The dim mode of a tunable-white load (`LOAD_KINDS`), *Automatic daylight saving time* on a node without a load
-    (`_elements_for`) and *Night mode* on a battery wall transmitter (`night_mode_targets`): nothing else would ever
-    clear their registry entries (`drop_retired_entities`).
+    (`_elements_for`), *Night mode* on a battery wall transmitter (`night_mode_targets`) and *Activation area C* on a
+    motion detector, which has two PIR segments (`P.PRESENCE_DETECTOR`): nothing else would ever clear their
+    registry entries (`drop_retired_entities`).
     """
     out: list[tuple[Platform, str]] = []
     for node in hub.cdb.nodes:
@@ -2368,4 +2549,7 @@ def retired_unique_ids(hub: JungHomeHub) -> list[tuple[Platform, str]]:
         if night_mode and node.pid in BATTERY_PIDS:
             location = _led(hub, node, 1).location
             out.append(("switch", f"{uuid}-{location:04x}-led_night_mode"))
+        if node.pid in P.DETECTORS - P.PRESENCE_DETECTOR:
+            location = node.elements[-1].location
+            out.append(("number", f"{uuid}-{location:04x}-{PIR_SENSOR_C.name}"))
     return out

@@ -192,6 +192,9 @@
 
 ### Fixed — Home Assistant
 
+- A motion detector (1 m / 2 m) no longer has an *Activation area C*: it has two PIR segments, and the app reads and
+  writes A and B only (review-4 F4-16); the entity an earlier version created is removed at start. Unverified on
+  air.
 - The room, key, scene, threshold and *Sensor values for IoT systems* actions, a device rename and the export taken
   over from the gateway for a device the integration did not know no longer reload the integration (decision M5,
   review-4 D23, H4-1, H I-1). Each reload removed every entity first: lights, sockets and sensors went *unavailable*,
@@ -412,6 +415,25 @@
   publishes to the pucks' group `FEFF` and Time Role Set makes it a relay; off undoes both. The repair *JUNG HOME
   pucks have no time keeper* asks for one once every candidate answered that it is not. The app chooses a keeper
   itself; Home Assistant leaves the choice to the user. Unverified on air: no puck in the installation.
+- The app's rules for blinds, room thermostats, detectors and battery devices (review-4 F4-16), none of which this
+  installation has — all unverified on air. **Blinds**: open does nothing while the blind is fully open and close
+  nothing while it is fully closed, and the slats are refused while it is fully open, as the app's arrows and slat
+  slider; the slat parameters follow the operation mode (*Ventilation position slats* and *Slat position after mains
+  return* for blinds only, *Slat change-over time* not for a shutter and from 300 ms for blinds), the positions after
+  mains return need *Stored position*, and *Behaviour after mains voltage return* offers the app's four options.
+  **Room thermostats**: a light or socket a thermostat switches (the app's thermostat link) shows `controlled_by`,
+  refuses on / off and has its run-on time, delays, blocking time, manual off and switch-off warning unavailable; the
+  `climate` entity lists them as `controlled_loads`; a target temperature is refused during a boost; boost is read
+  every minute while the link is up, so a boost started on the thermostat shows; a reported `0x1249` moves the
+  automatic operation, and is a *Scheduler function* binary sensor (disabled by default); `assign_key` has the mode
+  `temperature` (key mode 4, the set-point), derived for a thermostat target and the only mode one takes (no
+  `lock`, no `target_element`). **Detectors**: `assign_key` takes a detector as the source, for one device and in
+  the mode the target gives (`light`, `switch` or `move`: no key mode, lock function, thermostat, gateway or target
+  element, which live in a key's key mode); a detector's relay shows the detector's continuous on / off as
+  `continuous_on_off` and refuses commands while it holds the relay, naming how to end it; the activation areas
+  take the app's 25 % detents, the brightness threshold its 5 lx steps and is unavailable in day mode. **Battery
+  devices**: a *Sleep mode* sensor (diagnostic, disabled by default), and an asleep device's error adds that one
+  reacting to no key press usually has an empty battery.
 
 ### CLI tools and library
 

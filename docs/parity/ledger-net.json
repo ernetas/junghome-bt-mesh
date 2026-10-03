@@ -3753,12 +3753,18 @@
   },
   {
    "id": "net:uc:getconnecteddevices",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no RTR -> heating actuator connections are derived (loads whose OnOff server subscribes to the RTR's element group)",
-   "class": "build",
-   "verify": "absent-hardware"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/devices.py::thermostat_links",
+    "custom_components/junghome_ble/jhmesh/devices.py::Devices.thermostats_of",
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.extra_state_attributes"
+   ],
+   "tests": [
+    "tests/jhmesh/test_devices.py::test_loads_a_room_thermostat_switches",
+    "tests/test_climate.py::test_loads_a_thermostat_switches"
+   ],
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): the loads whose OnOff server subscribes to the element group the RTR's OnOff client publishes to, the climate entity's controlled_loads."
   },
   {
    "id": "net:uc:getconnection",
@@ -3888,12 +3894,17 @@
   },
   {
    "id": "net:uc:isanyrtrdeviceconnected",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no RTR multi-connection model, so no check whether another RTR still drives a load",
-   "class": "build",
-   "verify": "absent-hardware"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/devices.py::Devices.thermostats_of",
+    "custom_components/junghome_ble/config_entities.py::LoadLock.thermostats"
+   ],
+   "tests": [
+    "tests/jhmesh/test_devices.py::test_loads_a_room_thermostat_switches",
+    "tests/test_climate.py::test_loads_a_thermostat_switches"
+   ],
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): each load lists every thermostat that drives it (controlled_by); the multi-connection removal that asks it stays net:uc:removemulticonnection."
   },
   {
    "id": "net:uc:isbleprocessrunning",
@@ -4221,12 +4232,17 @@
   },
   {
    "id": "net:uc:observertrconnectionmode",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no 'controlled by thermostat' state for loads (RTR element group in the load's OnOff subscriptions), so parameters the app disables in that state stay editable",
-   "class": "build",
-   "verify": "absent-hardware"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::LoadLock.thermostats",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated",
+    "custom_components/junghome_ble/config_entities.py::THERMOSTAT_GATED"
+   ],
+   "tests": [
+    "tests/test_climate.py::test_loads_a_thermostat_switches"
+   ],
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): a load is controlled by a thermostat when its OnOff server listens to a thermostat's element group (jhmesh/devices.py::thermostat_links); the app's ObserveRtrConnectionMode body did not decompile, so whether it also reads 0x1014 RtrOperationMode is to be seen with a real link."
   },
   {
    "id": "net:uc:observescene",
@@ -4991,10 +5007,15 @@
   },
   {
    "id": "net:ui:connectiontemperature",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no temperature connections for mini-actuator inputs (KeyMode RTR 4 set-point control, Eco|Comfort, Auto|Manu to an RTR or a room)",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/mesh_config.py::MODE_TEMPERATURE",
+    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS"
+   ],
+   "tests": [
+    "tests/test_mesh_config.py::test_a_key_drives_a_room_thermostats_set_point_in_key_mode_4"
+   ],
+   "missing": "the set-point control (KeyMode RTR 4) is assign_key mode temperature (prod:key-mode:rtr); the Eco|Comfort and Auto|Manu connections of a mini-actuator input to an RTR or a room are not built (net:uc:setrtrpropertyconnection)",
    "class": "build",
    "verify": "absent-hardware"
   },

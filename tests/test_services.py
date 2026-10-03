@@ -91,6 +91,7 @@ from .helpers import (
     NODE_LIGHT_CTL,
     NODE_LIGHT_SWITCH,
     NODE_MOTION,
+    NODE_PRESENCE,
     NODE_SOCKET,
     NODE_THERMOSTAT,
     ROCKER_A,
@@ -163,6 +164,11 @@ class Env:
 
     def reload(self) -> ProjectFile:
         return ProjectFile.load(self.path)
+
+
+# What the env's elements answer for a value other settings follow (`config_entities.VALUE_GATES`) instead of the
+# catch-all 0x06: a detector out of day mode, so no setting turns unavailable when the answer comes in mid-test.
+GATE_VALUES = {(0x6015).to_bytes(2, "little"): b"\x00"}
 
 
 def onoff_status(*, on: bool) -> bytes:
@@ -272,7 +278,7 @@ async def env(
         if cid == M.JUNG_CID and op in (0x02, 0x03):
             if op == 0x03:
                 env.modes[dst] = p[3:]
-            value = env.modes.get(dst, b"\x06")
+            value = env.modes.get(dst, GATE_VALUES.get(p[:2], b"\x06"))
             return encode_opcode(0x05, M.JUNG_CID) + p[:2] + b"\x03" + value
         if cid is None and op in (M.SCENE_STORE, M.SCENE_DELETE):
             scene = int.from_bytes(p[:2], "little")
@@ -589,6 +595,38 @@ async def test_assign_key_to_a_target_device_and_a_single_key_device(
     await settled(hass, env)
     assert env.modes == {0x0149: b"\x00"}
     assert env.reload().publication(0x0149, "1003") == DALI_GROUP
+
+
+@pytest.mark.parametrize("export_source", [FIXTURES / "MeshNetwork-rtr.json"])
+async def test_assign_key_to_a_thermostat_entity(hass: HomeAssistant, env: Env) -> None:
+    """A room thermostat is a key target: key mode 4 (*temperature*) on its set-point (review-4 F4-16)."""
+    rtr = env.hub.devices.thermostats[0]
+    climate = entity_id(hass, "climate", rtr.unique_id)
+    key = entity_id(hass, "event", f"{NODE_LIGHT_SWITCH}-0040")
+    await call(hass, "assign_key", {"key_entity": key, "target_entity": climate})
+    await settled(hass, env)
+    assert env.modes == {0x0149: b"\x04"}
+    assert env.reload().publication(0x0149, "1003") == 0xC090
+
+
+@pytest.mark.parametrize("export_source", [FIXTURES / "MeshNetwork-detectors.json"])
+async def test_assign_key_from_a_detector(hass: HomeAssistant, env: Env) -> None:
+    """A detector is a key source, named by one of its entities or its device: it drives one device and takes no
+    key mode (review-4 F4-16)."""
+    motion = env.hub.devices.detectors[0]
+    relay = entity_id(hass, "light", f"{NODE_PRESENCE}-0001")
+    sensor = entity_id(hass, "binary_sensor", f"{motion.unique_id}-motion")
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(
+            hass,
+            "assign_key",
+            {"key_device": device_id(hass, f"node:{NODE_MOTION}"), "room": "WC"},
+        )
+    assert exc.value.translation_key == "service_detector_device_only"
+    await call(hass, "assign_key", {"key_entity": sensor, "target_entity": relay})
+    await settled(hass, env)
+    assert env.modes == {}
+    assert env.reload().publication(motion.address, "1001") == 0xC0A2
 
 
 async def test_clear_key(hass: HomeAssistant, env: Env) -> None:

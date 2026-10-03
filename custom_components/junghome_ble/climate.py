@@ -38,6 +38,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -53,9 +54,9 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES, UnitOfTemperature
 from homeassistant.core import CALLBACK_TYPE, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 
 from .config_entities import (
     cached_value,
@@ -70,6 +71,7 @@ from .const import (
     DOMAIN,
     REFRESH_RETRIES,
     RTR_BOOST_DURATION,
+    RTR_BOOST_POLL_INTERVAL,
     RTR_BOOST_READBACK_MARGIN,
     SIGNAL_UPDATE,
 )
@@ -252,6 +254,23 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
             "rooms": thermostat.rooms,
         }
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The addresses and rooms, and `controlled_loads`: the lights and sockets the RTR switches (its links).
+
+        The app's `GetConnectedDevices`, read from the loads' subscriptions (`jhmesh.devices.thermostat_links`);
+        unverified on air.
+        """
+        devices = self.hub.devices
+        return {
+            **self._attr_extra_state_attributes,
+            "controlled_loads": [
+                devices.by_address[address].name
+                for address, rtrs in devices.thermostats_of.items()
+                if any(rtr.address == self.address for rtr in rtrs)
+            ],
+        }
+
     # ------------------------------------------------------------------ wiring
     @property
     def reader(self) -> PropertyReader:
@@ -289,7 +308,30 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
                 )
             )
         self.async_on_remove(self._cancel_boost_check)
+        self.async_on_remove(
+            async_track_time_interval(
+                self.hass,
+                self._poll_boost,
+                timedelta(seconds=RTR_BOOST_POLL_INTERVAL),
+            )
+        )
         self._maybe_refresh()
+
+    @callback
+    def _poll_boost(self, _now: datetime) -> None:
+        """Queue a read of the boost while the link is up (`RTR_BOOST_POLL_INTERVAL`): one started on the RTR shows.
+
+        The app's 5 s poll runs only while its thermostat page is open (`requestBoostFunction`); this one runs at a
+        minute, behind the property reader's queue, and not while a boost is known to run: its read-back follows
+        that one (`_follow_boost`). A value another read got within PROPERTY_READ_FRESH is taken as it is.
+        Unverified on air.
+        """
+        if not self.hub.connected or self._property(self.primary, BOOST_SPEC) is True:
+            return
+        self.reader.schedule(self.primary, self._read_boost, key=BOOST_SPEC.id)
+
+    async def _read_boost(self) -> None:
+        await self.reader.read(self.primary, BOOST_SPEC)
 
     @callback
     def _handle_update(self) -> None:
@@ -476,10 +518,20 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         await self._send(self.hub.set_level(self.address, level))
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Send the set-point as a Generic Level Set (HA has already checked the 5..30 °C range)."""
+        """Send the set-point as a Generic Level Set (HA has already checked the 5..30 °C range).
+
+        Refused while the RTR boosts: the app disables its slider and +/- then (`updateBoostMode`); another preset
+        ends the boost first. Unverified on air.
+        """
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
+        if self._property(self.primary, BOOST_SPEC) is True:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="thermostat_boosting",
+                translation_placeholders={"entity": self.entity_id},
+            )
         await self._set_level(temperature_to_level(float(temperature)))
 
     async def _write(self, spec: P.PropertySpec, value: Any) -> None:

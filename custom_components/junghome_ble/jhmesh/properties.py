@@ -51,6 +51,9 @@ PUSH_BUTTONS = PB_MAINS | PB_BATTERY
 SOCKETS = frozenset({0x03, 0x0C})
 SOCKET_METERING = frozenset({0x03})
 DETECTORS = frozenset({0x07, 0x08, 0x09})
+PRESENCE_DETECTOR = frozenset(
+    {0x09}
+)  # three PIR segments; the motion detectors 0x07 / 0x08 have two
 RTR = frozenset({0x0A})
 GATEWAY = frozenset({0x0B})
 MINI_SWITCH = frozenset(
@@ -1320,10 +1323,13 @@ _VENDOR_SPECS: list[PropertySpec] = [
     PropertySpec(0x6004, "current_brightness", "manufacturer", "ro", U16, element="detector", unit="lx", products=DETECTORS),  # app declares a Set, UI reads only
     PropertySpec(0x6005, "presence_control_pir", "manufacturer", "ro", U8, element="detector", products=DETECTORS),  # polled during the walking test
     PropertySpec(0x6006, "detector_operation_mode", "admin", "rw", Enum(DETECTOR_MODE), element="detector", products=DETECTORS),
-    PropertySpec(0x6008, "pir_sensor_a", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=1, products=DETECTORS),
-    PropertySpec(0x6009, "pir_sensor_b", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=1, products=DETECTORS),
-    PropertySpec(0x600A, "pir_sensor_c", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=1, products=DETECTORS),
-    PropertySpec(0x600F, "switch_on_brightness", "admin", "rw", U16, element="detector", unit="lx", min=5, max=1000, step=1, products=DETECTORS),
+    # the app's activation-area detents 0 / 25 / 50 / 75 / 100 % (`DetectorView`); segment C on the presence detector
+    # only, the motion detectors have two (`p012a8/a.java` reads and writes A / B)
+    PropertySpec(0x6008, "pir_sensor_a", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=25, products=DETECTORS),
+    PropertySpec(0x6009, "pir_sensor_b", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=25, products=DETECTORS),
+    PropertySpec(0x600A, "pir_sensor_c", "admin", "rw", PERCENT, element="detector", unit="%", min=0, max=100, step=25, products=PRESENCE_DETECTOR),
+    # the app's slider moves in 5 lx steps (`SliderContentType.SWITCH_ON_BRIGHTNESS`)
+    PropertySpec(0x600F, "switch_on_brightness", "admin", "rw", U16, element="detector", unit="lx", min=5, max=1000, step=5, products=DETECTORS),
     PropertySpec(0x6015, "day_mode", "admin", "rw", BOOL, element="detector", products=DETECTORS),
     PropertySpec(0x6016, "forced_off", "admin", "rw", Enum(FORCED_OFF), element="detector", products=DETECTORS),
     PropertySpec(0x6017, "operation_site", "admin", "rw", Enum(OPERATION_SITE), element="detector", products=DETECTORS),

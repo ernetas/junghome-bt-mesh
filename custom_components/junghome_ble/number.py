@@ -73,6 +73,14 @@ UNITS: dict[str, tuple[str, NumberDeviceClass | None]] = {
 }
 
 
+# A minimum that follows another property of the element: the slat change-over time is 300 ms at least in operation
+# mode *blinds*, from 0 ms as an awning's reversal time (`p056e8/m.java`, `docs/gap-analysis/device-settings.md`
+# §7.2; a shutter has no such cell, `config_entities.VALUE_GATES`). Unverified on air.
+MODE_MINIMUMS: dict[int, tuple[int, dict[object, float]]] = {
+    0x1103: (0x1104, {"blinds": 300}),
+}
+
+
 def _int_bounds(size: int, signed: bool) -> tuple[int, int]:
     bits = 8 * size
     if signed:
@@ -138,13 +146,30 @@ class JungHomePropertyNumber(PropertyEntity, NumberEntity):
             self._attr_device_class = device_class
 
     @property
+    def native_min_value(self) -> float:
+        """The catalogue's minimum, or the one the element's mode sets (`MODE_MINIMUMS`) once it is known."""
+        floor = self._attr_native_min_value
+        if (rule := MODE_MINIMUMS.get(self.spec.id)) is None:
+            return floor
+        pid, minimums = rule
+        return minimums.get(self.value_of(P.PROPERTIES[pid]), floor)
+
+    @property
     def native_value(self) -> float | None:
         """The decoded value; None until the element reported it (or when it reports "unknown")."""
         value = self.property_value
         return value if isinstance(value, int | float) else None
 
     async def async_set_native_value(self, value: float) -> None:
-        """Write the value (integer codecs take whole numbers)."""
+        """Write the value (integer codecs take whole numbers), on the app's detents where its slider has them.
+
+        A step above 1 is the app's (the PIR activation areas' 25 %, the brightness threshold's 5 lx): a value
+        between two is written as the nearer one, counted from the minimum, as the slider snaps.
+        """
+        step = self.native_step
+        if isinstance(self.spec.codec, P.Int | P.Percent) and step and step > 1:
+            low = self.native_min_value
+            value = low + round((value - low) / step) * step
         await self.async_write_value(
             int(value) if isinstance(self.spec.codec, P.Int) else value
         )

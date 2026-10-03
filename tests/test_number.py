@@ -299,7 +299,8 @@ def test_codec_ranges() -> None:
 
 
 def test_percent_properties_are_sliders_and_units_map() -> None:
-    """A detector's PIR area (no such device in the fixture): slider 0-100 %, no device class."""
+    """A detector's PIR area (no such device in the fixture): slider 0-100 % on the app's 25 % detents, no device
+    class."""
     hub = fake_hub()
     node = hub.cdb.node_by_addr(LIGHT_SWITCH)
     assert node is not None
@@ -314,7 +315,7 @@ def test_percent_properties_are_sliders_and_units_map() -> None:
     assert (number.native_min_value, number.native_max_value, number.native_step) == (
         0,
         100,
-        1,
+        25,
     )
     assert number.native_unit_of_measurement == "%"
     assert number.device_class is None

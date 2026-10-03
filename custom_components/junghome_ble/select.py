@@ -46,6 +46,12 @@ PARALLEL_UPDATES = (
 UNKNOWN_OPTION = "unknown"  # the catalogue's name for a wire value the app cannot set
 # Generic OnPowerUp 0 / 1 / 2, the app's Switched OFF / Switched ON / Previous state (`device-settings.md` S5)
 POWER_ON_OPTIONS = ["off", "on", "restore"]
+# Where the app offers fewer options than the catalogue names: a blind's behaviour after mains return has no *stop*
+# and no *position for network failure* (`C1846b.java:112-118`, `device-settings.md` §7.2). A value outside them,
+# set elsewhere, shows as unknown. Unverified on air: no blind here.
+OFFERED_OPTIONS: dict[int, list[str]] = {
+    0x1105: ["no_reaction", "move_up", "move_down", "move_to_stored_position"],
+}
 
 
 async def async_setup_entry(
@@ -82,14 +88,18 @@ def build_entities(hub: JungHomeHub) -> list[SelectEntity]:
 
 
 class JungHomePropertySelect(PropertyEntity, SelectEntity):
-    """An enumerated property: the options are the catalogue's value names (minus "unknown")."""
+    """An enumerated property: the options are the catalogue's value names (minus "unknown"), or the app's few."""
 
     def __init__(self, hub: JungHomeHub, target: PropertyTarget) -> None:
         """Bind to `target`."""
         super().__init__(hub, target)
         codec = target.spec.codec
         assert isinstance(codec, P.Enum)
-        self._attr_options = [o for o in codec.options if o != UNKNOWN_OPTION]
+        self._attr_options = list(
+            OFFERED_OPTIONS.get(
+                target.spec.id, [o for o in codec.options if o != UNKNOWN_OPTION]
+            )
+        )
 
     @property
     def current_option(self) -> str | None:

@@ -552,6 +552,8 @@ class Devices:
     # room address -> the lights, sockets, blinds and thermostats that listen to it (the app's area filter, for the
     # area's central control); a room without such a load is absent
     room_members: dict[int, list[Device]] = field(default_factory=dict)
+    # load element -> the room thermostats that switch it (`thermostat_links`); a load no thermostat drives is absent
+    thermostats_of: dict[int, list[Thermostat]] = field(default_factory=dict)
     # meter element → its load (`by_meter`), and temperature element → its CTL light (`by_temperature`): both looked
     # up per status (review-4 R4-9), so kept up by `add` rather than searched
     _by_meter: dict[int, MeteredLoad] = field(default_factory=dict, repr=False)
@@ -1102,6 +1104,31 @@ def with_key_lock(
     return replace(connection, kind="lock", lock=lock)
 
 
+def thermostat_links(cdb: CDB, devices: Devices) -> dict[int, list[Thermostat]]:
+    """Map each light / socket element a room thermostat switches to those thermostats, as the app derives it.
+
+    The app's RTR -> actuator link (`SetMultiConnection`, `network-logic.md` §2.6) subscribes the load's Generic
+    OnOff server to the element group of the thermostat's OnOff client element, which publishes there; the app's
+    `ObserveRtrConnectionMode` / `IsAnyRtrDeviceConnected` read the link back from those subscriptions (a load is
+    "controlled by a thermostat"). Any thermostat element hosting the client counts. Unverified on air: no room
+    thermostat has been seen, so neither has such a link.
+    """
+    groups = {element: group for group, element in _element_groups(cdb).items()}
+    out: dict[int, list[Thermostat]] = {}
+    for rtr in devices.thermostats:
+        published = {
+            groups[e.address]
+            for e in rtr.node.elements
+            if "1001" in e.models and e.address in groups
+        }
+        for load in [*devices.lights, *devices.sockets]:
+            element = cdb.element(load.address)
+            assert element is not None  # a load is built from one of the CDB's elements
+            if published & set(element.subscriptions("1000")):
+                out.setdefault(load.address, []).append(rtr)
+    return out
+
+
 def _central_element(device: Device, group: int) -> int:
     """Return the element of `device` that listens to the central group: a blind's slat element for the slats."""
     if group == ALL_SLATS and isinstance(device, Blind) and device.slat_address:
@@ -1167,6 +1194,7 @@ def build_devices(
     for room in out.rooms:
         if members := [d for d in loads if _listens(cdb, d.address, room)]:
             out.room_members[room] = members
+    out.thermostats_of = thermostat_links(cdb, out)
     # after every device and scene: a connection names its target
     for button in out.buttons:
         key = cdb.element(button.address)

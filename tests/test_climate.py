@@ -39,6 +39,8 @@ from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
     ATTR_TEMPERATURE,
+    STATE_OFF,
+    STATE_ON,
     STATE_UNAVAILABLE,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -61,6 +63,7 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
     RTR_BOOST_DURATION,
+    RTR_BOOST_POLL_INTERVAL,
     RTR_BOOST_READBACK_MARGIN,
 )
 from custom_components.junghome_ble.coordinator import STATUS_HANDLERS, JungHomeHub
@@ -87,6 +90,7 @@ from .conftest import (
     wait_until,
 )
 from .helpers import (
+    NODE_ACTUATOR,
     NODE_THERMOSTAT,
     OUR_ADDRESS,
     SENSOR_POWER,
@@ -95,6 +99,7 @@ from .helpers import (
     UID_SOCKET,
     entity_id,
     onoff_status,
+    rtr_links_export,
     sensor_status,
 )
 from .property_helpers import PropertyMesh, vendor_status
@@ -1142,3 +1147,165 @@ async def test_room_thermostats_set_each_set_point(
     assert int.from_bytes(params[:2], "little", signed=True) == CL.temperature_to_level(
         19.0
     )
+
+
+# --------------------------------------------------------------------------- the app's rules (review-4 F4-16)
+
+
+async def test_a_boosting_thermostat_refuses_a_set_point(
+    hass: HomeAssistant, init_rtr: MockConfigEntry, rtr_mesh: RtrMesh
+) -> None:
+    """The app disables its slider and +/- during a boost (`updateBoostMode`); another preset ends the boost."""
+    rtr_mesh.link.inject(RTR, 0xC090, vendor_status(0x05, PID_BOOST, b"\x01"))
+    await hass.async_block_till_done()
+    rtr_mesh.link.sent.clear()
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, SERVICE_SET_TEMPERATURE, **{ATTR_TEMPERATURE: 22.5})
+    assert exc.value.translation_key == "thermostat_boosting"
+    assert level_sets(rtr_mesh.link) == []
+    rtr_mesh.link.inject(RTR, 0xC090, vendor_status(0x05, PID_BOOST, b"\x00"))
+    await hass.async_block_till_done()
+    await call(hass, SERVICE_SET_TEMPERATURE, **{ATTR_TEMPERATURE: 22.5})
+    assert level_sets(rtr_mesh.link) == [CL.temperature_to_level(22.5)]
+
+
+async def test_boost_is_polled_while_the_link_is_up(
+    hass: HomeAssistant,
+    init_rtr: MockConfigEntry,
+    rtr_mesh: RtrMesh,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """A boost started on the RTR shows within a minute: 0x120D is read every RTR_BOOST_POLL_INTERVAL, unless a
+    boost already runs (its read-back follows it) or there is no link."""
+    mesh = rtr_mesh.mesh
+    reader = property_reader(hass, hub_of(init_rtr))
+    poll = timedelta(seconds=RTR_BOOST_POLL_INTERVAL + 1)
+    now = dt_util.utcnow()
+
+    def tick() -> None:
+        nonlocal now
+        reader._read_at.pop((RTR, PID_BOOST), None)  # the last answer is old by now
+        now += poll
+        async_fire_time_changed(hass, now)
+
+    mesh.gets.clear()
+    mesh.values[RTR, PID_BOOST] = b"\x01"  # started on the thermostat
+    tick()
+    await reads_done(hass, init_rtr)
+    assert mesh.gets == [(RTR, PID_BOOST)]
+    assert climate_state(hass).attributes[ATTR_PRESET_MODE] == PRESET_BOOST
+    tick()  # boosting: the read-back's turn
+    await reads_done(hass, init_rtr)
+    assert mesh.gets == [(RTR, PID_BOOST)]
+    rtr_mesh.link.inject(RTR, 0xC090, vendor_status(0x05, PID_BOOST, b"\x00"))
+    await hass.async_block_till_done()
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()
+    await settle(hass)
+    tick()  # no link: nothing
+    await settle(hass)
+    assert mesh.gets == [(RTR, PID_BOOST)]
+
+
+async def test_scheduler_function_status_is_the_automatic_operation(
+    hass: HomeAssistant, init_rtr: MockConfigEntry, rtr_mesh: RtrMesh
+) -> None:
+    """A reported 0x1249 moves the automatic operation as 0x1246 does (`resolver/C1952s1.java`)."""
+    assert climate_state(hass).state == HVACMode.HEAT
+    rtr_mesh.link.inject(RTR, 0xC090, vendor_status(0x05, 0x1249, b"\x01"))
+    await hass.async_block_till_done()
+    assert climate_state(hass).state == HVACMode.AUTO
+    hub = hub_of(init_rtr)
+    assert hub.states[RTR].properties[0x1249] == b"\x01"
+    registry = er.async_get(hass)
+    sensor = registry.async_get(
+        entity_id(hass, "binary_sensor", f"{UID_RTR}-scheduler_function_status")
+    )
+    assert sensor is not None
+    assert sensor.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_scheduler_function_sensor_reads_the_thermostat(
+    hass: HomeAssistant,
+    entity_registry_enabled_by_default: None,
+    init_rtr: MockConfigEntry,
+    rtr_mesh: RtrMesh,
+) -> None:
+    eid = entity_id(hass, "binary_sensor", f"{UID_RTR}-scheduler_function_status")
+    await reads_done(hass, init_rtr)
+    assert (RTR, 0x1249) in rtr_mesh.mesh.gets
+    assert hass.states.get(eid).state == STATE_OFF  # what the test mesh reports
+    rtr_mesh.link.inject(RTR, 0xC090, vendor_status(0x05, 0x1249, b"\x01"))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == STATE_ON
+
+
+async def test_loads_a_thermostat_switches(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    rtr_mesh: RtrMesh,
+    fast_sleep: list[float],
+    fast_timeouts: None,
+) -> None:
+    """The app's RTR link (`SetMultiConnection`): the thermostat lists its loads, each load names its thermostat,
+    refuses on / off (the app disables its toggle) and offers no run-on time, delays, blocking time or manual off
+    (`RtrConnectionHandler`)."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="JUNG HOME mesh test",
+        unique_id="1fbd2c61a4b6e5a4",
+        data={
+            CONF_CDB_PATH: str(rtr_links_export(tmp_path)),
+            CONF_METADATA_DIR: META_DIR,
+            CONF_UNICAST: "0D00",
+        },
+    )
+    for uid in (
+        f"{NODE_ACTUATOR}-0001-on_delay",
+        f"{NODE_ACTUATOR}-0002-on_delay",
+    ):
+        er.async_get(hass).async_get_or_create("number", DOMAIN, uid, disabled_by=None)
+    await setup_entry(hass, entry)
+    await wait_for_link(hass, entry)
+    await settle(hass, 200)
+    hub = hub_of(entry)
+    rtr = hub.devices.by_address[RTR]
+    out1, socket = hub.devices.by_address[0x0400], hub.devices.by_address[SOCKET]
+    assert climate_state(hass).attributes["controlled_loads"] == [
+        out1.name,
+        socket.name,
+    ]
+    light = entity_id(hass, "light", f"{NODE_ACTUATOR}-0001")
+    switch = entity_id(hass, "switch", UID_SOCKET)
+    assert hass.states.get(light).attributes["controlled_by"] == [rtr.name]
+    assert hass.states.get(switch).attributes["controlled_by"] == [rtr.name]
+    out2 = entity_id(hass, "light", f"{NODE_ACTUATOR}-0002")
+    assert "controlled_by" not in hass.states.get(out2).attributes
+    rtr_mesh.link.sent.clear()
+    for domain, eid in (("light", light), ("switch", switch)):
+        with pytest.raises(ServiceValidationError) as exc:
+            await hass.services.async_call(
+                domain, "turn_on", {ATTR_ENTITY_ID: eid}, blocking=True
+            )
+        assert exc.value.translation_key == "load_thermostat_controlled"
+        assert exc.value.translation_placeholders == {
+            "entity": eid,
+            "thermostats": rtr.name,
+        }
+    assert rtr_mesh.link.sent == []
+    assert (
+        hass.states.get(
+            entity_id(hass, "number", f"{NODE_ACTUATOR}-0001-on_delay")
+        ).state
+        == STATE_UNAVAILABLE
+    )
+    assert (
+        hass.states.get(
+            entity_id(hass, "number", f"{NODE_ACTUATOR}-0002-on_delay")
+        ).state
+        != STATE_UNAVAILABLE
+    )
+    # the plain network: nothing is controlled
+    assert build_devices(CDB.load(Path(RTR_CDB_PATH))).thermostats_of == {}

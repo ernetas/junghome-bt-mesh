@@ -103,7 +103,9 @@ assign_key:
       selector:
         entity:
           integration: junghome_ble
-          domain: event
+          domain:
+            - event
+            - binary_sensor
     key_device:
       selector:
         device:
@@ -129,6 +131,7 @@ assign_key:
             - light
             - switch
             - cover
+            - climate
     target_device:
       selector:
         device:
@@ -153,6 +156,7 @@ assign_key:
             - gateway
             - lock
             - light_and_switch
+            - temperature
     target_element:
       example: "color_temperature"
       selector:

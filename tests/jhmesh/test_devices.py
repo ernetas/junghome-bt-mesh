@@ -1041,6 +1041,43 @@ def test_blinds_detectors_and_thermostats_of_the_other_fixture_networks():
     assert 0x0500 not in {light.address for light in rtr.lights}
 
 
+def test_loads_a_room_thermostat_switches(tmp_path: Path):
+    """The app's RTR -> actuator link (`SetMultiConnection`): a load whose OnOff server subscribes to the element
+    group the thermostat's OnOff client publishes to is controlled by it; an RTR element without the client, an
+    element without a group and a load listening elsewhere are not."""
+    raw = json.loads((FIXTURES / "MeshNetwork-rtr.json").read_text())
+    for node in raw["meshNetwork"]["nodes"]:
+        for element in node["elements"]:
+            for model in element["models"]:
+                # actuator output 1 (0x0400) and the socket (0x0172) are driven by the thermostat's group 0xC090
+                if model["modelId"] == "1000" and node["unicastAddress"] in (
+                    "0400",
+                    "0172",
+                ):
+                    if element["index"] == 0:
+                        model["subscribe"].append("C090")
+        if node["unicastAddress"] == "0500":
+            # a second RTR element, with the client but no element group of its own
+            node["elements"].append(
+                {
+                    "name": "Element 2",
+                    "index": 1,
+                    "location": "0002",
+                    "models": [
+                        {"modelId": "1001", "bind": [0], "subscribe": []},
+                    ],
+                }
+            )
+    path = tmp_path / "rtr-links.json"
+    path.write_text(json.dumps(raw))
+    devices = build_devices(CDB.load(path))
+    (rtr,) = devices.thermostats
+    assert devices.thermostats_of == {0x0400: [rtr], 0x0172: [rtr]}
+
+    plain = build_devices(CDB.load(FIXTURES / "MeshNetwork-rtr.json"))
+    assert plain.thermostats_of == {}
+
+
 def test_the_energy_puck_output_is_a_metered_light():
     """The puck (0x0010, `MeshNetwork-puck.json`): its output a switched light measured by the node's meter element.
 

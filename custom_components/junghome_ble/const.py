@@ -231,6 +231,10 @@ CLIMATE_TEMP_STEP: Final = 0.5
 # §2.7: the app polls 0x120D while its page is open); the climate entity reads it back this long after it started.
 RTR_BOOST_DURATION: Final = 300.0
 RTR_BOOST_READBACK_MARGIN: Final = 10.0
+# A boost started on the thermostat itself is seen only if it publishes the Status (unverified): the climate entity
+# also asks for 0x120D this often while the link is up — the app every 5 s, but only while its page is open
+# (`RoomTemperatureViewModel.requestBoostFunction`); a minute shows such a boost within a fifth of its run.
+RTR_BOOST_POLL_INTERVAL: Final = 60.0
 DOUBLE_CLICK_WINDOW: Final = 0.5  # seconds between two clicks to report a double click
 BUTTON_REPEAT_WINDOW: Final = 3.0  # a vendor button event with a counter seen this recently is the firmware's second copy
 # (the sniffer measured the copy spacing of status publications at 0.9-2.3 s, docs/sniffer.md; the counter is per press,

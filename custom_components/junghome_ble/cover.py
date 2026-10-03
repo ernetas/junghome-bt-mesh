@@ -28,6 +28,10 @@ the state changes when the element publishes (or answers) its Generic Level Stat
 position's stop sent to the slat element: no JUNG client does it (the app has a slat slider only), it is the
 plain Generic Level server semantics of the SIG spec (class c).
 
+End positions (review-4 F4-16). As the app's arrows, open does nothing at all while the blind reports itself fully
+open and close nothing while fully closed; the slats are refused while the blind is fully open, where the app
+disables its slat slider. Unverified on air.
+
 Locks. A blind whose lock function (`0x0009`) holds it — a lock, lock-out protection, a wind alarm — ignores
 commands; the app disables its controls meanwhile (`control-and-state.md` §2.6). The cover refuses them with an
 error that says so, when the lock state is known: the blind's *Wind alarm* sensor (or its lock entities) read it
@@ -48,7 +52,7 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .config_entities import PROPERTY_LOCK, property_reader
@@ -361,16 +365,38 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
         )
 
     # ------------------------------------------------------------------ commands
+    def _at_end(self, closedness: int) -> bool:
+        """Whether the blind last reported the end `closedness` (0 fully open, 100 fully closed) as its position."""
+        st = self._state(self.address)
+        return (
+            st is not None
+            and st.level is not None
+            and level_to_closedness(st.level) == closedness
+        )
+
     async def async_open_cover(self, **kwargs: Any) -> None:
-        """Run up: Generic Move Set 0x8000 (the app: Generic Delta Set -1)."""
+        """Run up: Generic Move Set 0x8000 (the app: Generic Delta Set -1); nothing at all when fully open.
+
+        The app skips its up arrow at the end position (`BlindsViewModel.blindsOpening`: the blind's level at
+        0 %), so does this. Unverified on air.
+        """
         await self._check_unlocked()
+        if self._at_end(0):
+            _LOGGER.debug("%s is fully open: nothing to send", self.entity_id)
+            return
         await self._send(
             self.hub.move_level(self.address, COVER_MOVE_UP, COVER_MOVE_TRANSITION)
         )
 
     async def async_close_cover(self, **kwargs: Any) -> None:
-        """Run down: Generic Move Set 0x7FFF (the app: Generic Delta Set +1)."""
+        """Run down: Generic Move Set 0x7FFF (the app: Generic Delta Set +1); nothing at all when fully closed.
+
+        As the app's down arrow (`BlindsViewModel.blindsClosing`: the blind's level at 100 %). Unverified on air.
+        """
         await self._check_unlocked()
+        if self._at_end(100):
+            _LOGGER.debug("%s is fully closed: nothing to send", self.entity_id)
+            return
         await self._send(
             self.hub.move_level(self.address, COVER_MOVE_DOWN, COVER_MOVE_TRANSITION)
         )
@@ -419,9 +445,21 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
         await self._stop(self.blind.slat_address)
 
     async def _set_slats(self, level: int) -> None:
+        """Send the slats a level; refused while the blind is fully open, where the app disables its slat slider.
+
+        The app's slat slider is enabled only while the blind's level is known and not 0 % (`elements/c.java`
+        `R0()`, `GenericLevelCapable.q0()`). A position not known yet is not refused here, where the app would: the
+        cover offers its tilt once the mode is known, and the position is read at every link. Unverified on air.
+        """
         if self.blind.slat_address is None:
             return  # the tilt services are not offered without a slat element (`supported_features`)
         await self._check_unlocked()
+        if self._at_end(0):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="cover_slats_open",
+                translation_placeholders={"entity": self.entity_id},
+            )
         await self._send(self.hub.set_level(self.blind.slat_address, level))
 
     async def _request_level(self, addr: int) -> None:

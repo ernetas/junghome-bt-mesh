@@ -220,6 +220,9 @@
       },
       "input_state_key": {
         "name": "Input state {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Scheduler function"
       }
     },
     "event": {
@@ -470,6 +473,13 @@
           "inactive": "Inactive",
           "off": "Continuous off",
           "on": "Continuous on"
+        }
+      },
+      "sleep_mode": {
+        "name": "Sleep mode",
+        "state": {
+          "awake": "Awake",
+          "asleep": "Asleep"
         }
       }
     },
@@ -1053,7 +1063,7 @@
       "message": "Not sent: {nodes} did not answer Home Assistant's last request and count as unreachable (their entities are unavailable), so the plan would stop at their first message. Check that they are powered and in range, and run the action again once they answer. {applied}"
     },
     "service_node_asleep": {
-      "message": "Node {node} runs on a battery and did not answer {message}: it is asleep. Press one of its keys to wake it, then run the action again right away. {applied}"
+      "message": "Node {node} runs on a battery and did not answer {message}: it is asleep. Press one of its keys to wake it, then run the action again right away. If it does not react to a key press either, its battery is usually empty: replace it. {applied}"
     },
     "service_key_mode_not_applied": {
       "message": "Key {address} did not take key mode {mode}; its connections were configured and are recorded in the mesh export — run the action again with the same target to set the mode."
@@ -1188,7 +1198,7 @@
       "message": "The JUNG device answered neither the change of {entity} nor the read-back; it may still have taken the new value. Is it powered and in range?"
     },
     "setting_asleep": {
-      "message": "The battery device of {entity} did not answer: it is asleep. Press one of its keys to wake it, then make the change again right away."
+      "message": "The battery device of {entity} did not answer: it is asleep. Press one of its keys to wake it, then make the change again right away. If it does not react to a key press either, its battery is usually empty: replace it."
     },
     "setting_not_applied": {
       "message": "The JUNG device did not take the new value of {entity}; it still reports another one."
@@ -1396,6 +1406,36 @@
     },
     "time_keeper_role_failed": {
       "message": "The device at {address} did not take its time role ({error}). Its Time Server's publication was changed already: switch the time keeper again once the device answers."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} is switched by the room thermostat {thermostats} (linked in the JUNG HOME app) and is not switched by hand, as in the app."
+    },
+    "load_forced_short": {
+      "message": "The detector of {entity} holds it on or off (continuous on / off): move the detector's switch for automatic operation into the middle position to end it."
+    },
+    "load_forced_on_button": {
+      "message": "The detector of {entity} holds it on (continuous ON): press the detector's ON button to end it."
+    },
+    "load_forced_off_button": {
+      "message": "The detector of {entity} holds it off (continuous OFF): press the detector's OFF button to end it."
+    },
+    "load_forced_on_presence": {
+      "message": "The detector of {entity} holds it on (continuous ON): the detector's programming button ends it."
+    },
+    "load_forced_off_presence": {
+      "message": "The detector of {entity} holds it off (continuous OFF): the detector's programming button ends it."
+    },
+    "cover_slats_open": {
+      "message": "{entity} is fully open: its slats cannot be moved until it is lowered, as in the JUNG HOME app."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} is boosting: choose another preset to end the boost before setting a temperature, as in the JUNG HOME app."
+    },
+    "service_detector_device_only": {
+      "message": "Detector {address} can only drive one device: give a target light, socket or device, not a room or a scene."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Detector {address} cannot drive a target in mode {mode}: a detector has no key mode, so it only switches a light, a socket or a blind in the mode the target gives, with no lock function, room thermostat, gateway or target element."
     }
   },
   "issues": {
@@ -1682,23 +1722,23 @@
     },
     "assign_key": {
       "name": "Assign key",
-      "description": "Connects a push-button key to a light, a socket, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Administrators only.",
+      "description": "Connects a push-button key or a detector to a light, a socket, a blind, a room thermostat, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set (a detector has none and drives one device only). The mesh export is rewritten and Home Assistant follows it without reloading the integration. A detector source and the temperature mode are unverified on air. Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
-          "description": "The key's button event entity."
+          "description": "The key's button event entity, or an entity of a detector."
         },
         "key_device": {
           "name": "Key device",
-          "description": "The push-button device holding the key (use with Key letter when it has several keys)."
+          "description": "The push-button device holding the key (use with Key letter when it has several keys), or a detector."
         },
         "key": {
           "name": "Key letter",
           "description": "Which key of the device: A, B, C or D; E1 or E2 for an input of a mini actuator."
         },
         "target_entity": {
-          "name": "Target light or socket",
-          "description": "The light or socket the key should control."
+          "name": "Target entity",
+          "description": "The light, socket, blind or room thermostat the key should control."
         },
         "target_device": {
           "name": "Target device",
@@ -1714,7 +1754,7 @@
         },
         "mode": {
           "name": "Mode",
-          "description": "What the key does: light (on/off and dimming), switch (on/off), move (blinds; untested), gateway (event reporting), lock (the up / on side locks a light or socket in its current state, the down / off side unlocks it; unverified on air), or for rooms light_and_switch (lights and sockets together). Left empty, the mode follows the target."
+          "description": "What the key does: light (on/off and dimming), switch (on/off), move (blinds; untested), gateway (event reporting), lock (the up / on side locks a light or socket in its current state, the down / off side unlocks it; unverified on air), temperature (a room thermostat's set-point; unverified on air), or for rooms light_and_switch (lights and sockets together). Left empty, the mode follows the target."
         },
         "target_element": {
           "name": "Target element",
@@ -2209,7 +2249,8 @@
         "move": "Blinds (untested)",
         "gateway": "Gateway (report events)",
         "light_and_switch": "Lights and sockets (rooms only)",
-        "lock": "Lock and unlock (unverified on air)"
+        "lock": "Lock and unlock (unverified on air)",
+        "temperature": "Temperature (room thermostat, untested)"
       }
     },
     "target_element": {

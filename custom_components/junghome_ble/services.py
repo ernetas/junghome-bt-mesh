@@ -96,6 +96,7 @@ from .jhmesh.devices import (
     GATEWAY_PID,
     Blind,
     Button,
+    Detector,
     Device,
     Light,
     Socket,
@@ -248,6 +249,8 @@ LINK_WAIT_SLICE = (
 # services take thermostats too, each with its own scene action record (`scene_action_for`); a threshold switches
 # what has an OnOff server (lights and sockets).
 LOAD_TYPES: tuple[type[Device], ...] = (Light, Socket, Blind)
+# what a key can drive: a load, or a room thermostat's set-point (key mode `temperature`)
+KEY_TARGET_TYPES: tuple[type[Device], ...] = (Light, Socket, Blind, Thermostat)
 SCENE_LOAD_TYPES: tuple[type[Device], ...] = (Light, Socket, Blind, Thermostat)
 ONOFF_LOAD_TYPES: tuple[type[Device], ...] = (Light, Socket)
 # every load hosts a JH Scheduler, a room thermostat too
@@ -815,13 +818,23 @@ def _device_of_entity(
     return entry.config_entry_id, device, entry.device_id
 
 
-def _resolve_key(hass: HomeAssistant, data: dict[str, Any]) -> tuple[str, Button]:
-    """Find the key element a call names: its event entity, or its buttons device plus the key letter."""
+def _resolve_key(
+    hass: HomeAssistant, data: dict[str, Any], *, detector: bool = False
+) -> tuple[str, Button | Detector]:
+    """Find the key element a call names: its event entity, or its buttons device plus the key letter.
+
+    `detector`: a detector counts as a key too (`assign_key`, the app's `ConnectionSource.Detector`), named by one
+    of its entities or its device; unverified on air.
+    """
     if (entity_id := data.get(ATTR_KEY_ENTITY)) is not None:
-        entry_id, device, _ = _device_of_entity(hass, entity_id)
-        if not isinstance(device, Button):
-            raise _validation("service_not_a_key", name=entity_id)
-        return entry_id, device
+        entry_id, device, registry_id = _device_of_entity(hass, entity_id)
+        if isinstance(device, Button):
+            return entry_id, device
+        if detector and registry_id is not None:
+            found = _detector_behind(hass, registry_id)
+            if found is not None:
+                return found
+        raise _validation("service_not_a_key", name=entity_id)
     registry_device, entry_id = _registry_device(hass, data[ATTR_KEY_DEVICE])
     name = registry_device.name_by_user or registry_device.name or registry_device.id
     keys = [
@@ -829,6 +842,8 @@ def _resolve_key(hass: HomeAssistant, data: dict[str, Any]) -> tuple[str, Button
         for d in _devices_behind(_hub(hass, entry_id), registry_device)
         if isinstance(d, Button)
     ]
+    if not keys and detector and (found := _detector_behind(hass, registry_device.id)):
+        return found
     if not keys:
         raise _validation("service_not_a_key", name=name)
     letters = ", ".join(k.key for k in keys)
@@ -842,14 +857,28 @@ def _resolve_key(hass: HomeAssistant, data: dict[str, Any]) -> tuple[str, Button
     return entry_id, keys[0]
 
 
+def _detector_behind(
+    hass: HomeAssistant, device_id: str
+) -> tuple[str, Detector] | None:
+    """Return the detector a registry device of ours stands for (a detector node's) with its entry, else None."""
+    registry_device, entry_id = _registry_device(hass, device_id)
+    found = [
+        d
+        for d in _devices_behind(_hub(hass, entry_id), registry_device)
+        if isinstance(d, Detector)
+    ]
+    return (entry_id, found[0]) if found else None
+
+
 def _resolve_target(hass: HomeAssistant, data: dict[str, Any]) -> tuple[str, int]:
     """Find the load element a key should drive: (entry id, element address); the gateway node is a target too.
 
-    A blind's address is its position element, the one a key in *move* mode publishes to.
+    A blind's address is its position element, the one a key in *move* mode publishes to; a room thermostat's its
+    set-point element (key mode `temperature`).
     """
     if (entity_id := data.get(ATTR_TARGET_ENTITY)) is not None:
         entry_id, device, _ = _device_of_entity(hass, entity_id)
-        if not isinstance(device, LOAD_TYPES):
+        if not isinstance(device, KEY_TARGET_TYPES):
             raise _validation("service_not_a_load", name=entity_id)
         return entry_id, device.address
     registry_device, entry_id = _registry_device(hass, data[ATTR_TARGET_DEVICE])
@@ -861,7 +890,9 @@ def _resolve_target(hass: HomeAssistant, data: dict[str, Any]) -> tuple[str, int
         if node is not None and node.pid == GATEWAY_PID:
             return entry_id, node.unicast
     loads = [
-        d for d in _devices_behind(hub, registry_device) if isinstance(d, LOAD_TYPES)
+        d
+        for d in _devices_behind(hub, registry_device)
+        if isinstance(d, KEY_TARGET_TYPES)
     ]
     if len(loads) != 1:
         raise _validation("service_not_a_load", name=name)
@@ -1167,7 +1198,7 @@ async def _delete_room(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
 
 
 async def _assign_key(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    entry_id, key = _resolve_key(hass, call.data)
+    entry_id, key = _resolve_key(hass, call.data, detector=True)
     options: dict[str, Any] = {
         "mode": call.data.get(ATTR_MODE),
         "target_element": call.data.get(ATTR_TARGET_ELEMENT),

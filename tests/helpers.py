@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from homeassistant.helpers import device_registry as dr
@@ -206,6 +208,26 @@ def entity_id(hass: HomeAssistant, domain: str, unique_id: str) -> str:
     eid = er.async_get(hass).async_get_entity_id(domain, DOMAIN, unique_id)
     assert eid is not None, f"no {domain} entity with unique id {unique_id}"
     return eid
+
+
+def rtr_links_export(directory: Path) -> Path:
+    """`MeshNetwork-rtr.json` with the app's RTR -> actuator links (`SetMultiConnection`), written to `directory`.
+
+    Output 1 of the 2-channel actuator (0x0400) and the socket (0x0172) subscribe their OnOff servers to the
+    thermostat's element group 0xC090, which its OnOff client publishes to.
+    """
+    raw = json.loads(
+        (Path(__file__).parent / "fixtures" / "MeshNetwork-rtr.json").read_text()
+    )
+    for node in raw["meshNetwork"]["nodes"]:
+        if node["unicastAddress"] not in ("0400", "0172"):
+            continue
+        for model in node["elements"][0]["models"]:
+            if model["modelId"] == "1000":
+                model["subscribe"].append("C090")
+    path = directory / "MeshNetwork-rtr-links.json"
+    path.write_text(json.dumps(raw))
+    return path
 
 
 def device_name_of(hass: HomeAssistant, eid: str) -> str | None:

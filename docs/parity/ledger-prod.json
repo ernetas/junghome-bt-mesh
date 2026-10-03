@@ -2045,19 +2045,23 @@
   },
   {
    "id": "prod:key-mode:rtr",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS"
+    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/mesh_config.py::MODE_TEMPERATURE",
+    "custom_components/junghome_ble/mesh_config.py::derive_mode",
+    "custom_components/junghome_ble/services.py::KEY_TARGET_TYPES"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
-    "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode"
+    "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode",
+    "tests/test_mesh_config.py::test_a_key_drives_a_room_thermostats_set_point_in_key_mode_4",
+    "tests/test_services.py::test_assign_key_to_a_thermostat_entity"
    ],
-   "missing": "mode 4 is only decoded (key-mode sensor); assign_key has no rtr mode (KEY_MODE_CLIENTS lacks 4): no Generic Level client publication to the RTR set-point element with key mode 4",
-   "class": "build",
-   "verify": "absent-hardware"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): assign_key mode temperature (key mode 4, derived for a thermostat target) wires the key's Generic Level client to the set-point element's group and writes KeyMode 4."
   },
   {
    "id": "prod:key-mode:scene",
@@ -2405,17 +2409,19 @@
   },
   {
    "id": "prod:param-gate:rtr-connection",
-   "status": "gap",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES"
+    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES",
+    "custom_components/junghome_ble/config_entities.py::THERMOSTAT_GATED",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated"
    ],
    "tests": [
-    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes"
+    "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes",
+    "tests/test_climate.py::test_loads_a_thermostat_switches"
    ],
-   "missing": "no RtrConnectionHandler equivalent: run-on time, manual off, on/off delay, switch blocking time and prewarning stay writable while a load is linked to a room thermostat; HA never reads RtrOperationMode 0x1014 nor shows the ConnectedToRtr info (rtr_connection_parameter_info_text)",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no room thermostat here, docs/on-air-sweep.md F): run-on time, manual off, on / off delay, switch blocking time and prewarning are unavailable while a thermostat switches the load (the app disables the cells, RtrConnectionHandler.b()); the info text is the light's / socket's controlled_by and its refusal. 0x1014 is not read: see net:uc:observertrconnectionmode."
   },
   {
    "id": "prod:param:blind:blind-ventilation-position",
@@ -2448,19 +2454,21 @@
   },
   {
    "id": "prod:param:blind:move-blind-position-on-power",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
-    "tests/test_config_entities.py::test_mapping_table"
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "shown and writable whatever the power-on mode: the app offers the cell only while MoveOnPowerMode 0x1105 = MOVE_TO_STORED_POSITION",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): Blind position after mains return is unavailable unless MoveOnPowerMode 0x1105 reads move_to_stored_position (the app's C1851g); while 0x1105 is not known it is offered, and the select reads it once enabled."
   },
   {
    "id": "prod:param:blind:move-revision-time",
@@ -2476,19 +2484,21 @@
   },
   {
    "id": "prod:param:blind:move-slat-position-on-power",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
-    "tests/test_config_entities.py::test_mapping_table"
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "shown and writable in every mode: the app offers the cell only while MoveOnPowerMode 0x1105 = MOVE_TO_STORED_POSITION and the operation mode 0x1104 is BLINDS",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): Slat position after mains return is unavailable unless 0x1105 reads move_to_stored_position and the operation mode 0x1104 is blinds (the app's C1854j)."
   },
   {
    "id": "prod:param:blind:move-time",
@@ -2507,19 +2517,20 @@
   },
   {
    "id": "prod:param:blind:on-power-up-behavior",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::MOVE_ON_POWER",
-    "custom_components/junghome_ble/select.py::JungHomePropertySelect"
+    "custom_components/junghome_ble/select.py::JungHomePropertySelect",
+    "custom_components/junghome_ble/select.py::OFFERED_OPTIONS"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
-    "tests/test_setup_states.py::test_blinds_have_their_own_power_on_property"
+    "tests/test_setup_states.py::test_blinds_have_their_own_power_on_property",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "the select offers all six MOVE_ON_POWER values; the app offers only no reaction (0), up (1), down (2) and stored position (4), not STOP (3) or POSITION_FOR_NETWORK_FAILURE (5)",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): the select offers no reaction, up, down and stored position as the app (C1846b.java:112-118); a STOP or POSITION_FOR_NETWORK_FAILURE set elsewhere shows as unknown."
   },
   {
    "id": "prod:param:blind:operation-mode",
@@ -2538,35 +2549,41 @@
   },
   {
    "id": "prod:param:blind:slat-reversal-time",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated",
+    "custom_components/junghome_ble/number.py::MODE_MINIMUMS",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.native_min_value"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
-    "tests/test_config_entities.py::test_blind_targets_follow_the_property_products"
+    "tests/test_config_entities.py::test_blind_targets_follow_the_property_products",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "one number 0..10000 ms in every mode: the app hides it for SHUTTER, requires 300..10000 ms for BLINDS and allows 0..10000 ms (titled reversal time) for AWNING; choosing the operation mode (0x1104) does not also write the app's per-mode slat time default 0x1103 (2000 ms BLINDS, 0 SHUTTER, 300 ms AWNING; setup assistant, prod:ui:blind_detail_parameter_operating_mode_title)",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): Slat change-over time is unavailable for a SHUTTER and starts at 300 ms for BLINDS, 0 ms for AWNING (p056e8/m.java). Deliberate difference, documented in docs/ha-integration.md ('### Cover', the blind parameters): choosing the operation mode writes 0x1104 alone, as the app's Parameters tab does (C1849e); the setup assistant's per-mode default (2000 / 0 / 300 ms) stays with the app's setup assistant."
   },
   {
    "id": "prod:param:blind:slat-ventilation-position",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
-    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE"
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
-    "tests/test_config_entities.py::test_mapping_table"
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_cover.py::test_blind_parameters_follow_the_operation_mode"
    ],
-   "missing": "shown and writable in every mode: the app offers it only while the operation mode 0x1104 is BLINDS (SlatCompatible)",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no blind here, docs/on-air-sweep.md F): Ventilation position slats is unavailable unless the operation mode 0x1104 reads blinds (SlatCompatible, C1847c); offered while the mode is not known, which the cover reads at every link."
   },
   {
    "id": "prod:param:blind:ventilation-position-label",
@@ -2628,18 +2645,21 @@
   },
   {
    "id": "prod:param:detector:switch-on-brightness",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
+    "custom_components/junghome_ble/config_entities.py::PropertyEntity.gated",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
-    "tests/test_config_entities.py::test_enabled_by_default_is_the_first_parameters_page"
+    "tests/test_config_entities.py::test_enabled_by_default_is_the_first_parameters_page",
+    "tests/test_sensor.py::test_detector_numbers_take_the_apps_steps"
    ],
-   "missing": "range 5..1000 lx matches, but the number stays writable while day mode 0x6015 is on; the app disables the cell then (DayModeCompatible); and the app's slider moves in 5 lx steps (SliderContentType.SWITCH_ON_BRIGHTNESS: step 5.0, ticks 5/150/500, deviceParameter/cells/Y.java k()/j()) where the HA number takes any 1 lx step (PropertySpec step=1)",
-   "class": "build",
-   "verify": "offline"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no detector here, docs/on-air-sweep.md F): the number steps 5 lx (written as the nearer step) and is unavailable while day mode 0x6015 is on (DayModeCompatible)."
   },
   {
    "id": "prod:param:lamp:default-color-temperature",
@@ -3907,18 +3927,22 @@
   },
   {
    "id": "prod:ui:detector_connection_title",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::Detector",
-    "custom_components/junghome_ble/jhmesh/devices.py::_build_detector"
+    "custom_components/junghome_ble/jhmesh/devices.py::_build_detector",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
+    "custom_components/junghome_ble/services.py::_resolve_key",
+    "custom_components/junghome_ble/services.py::_detector_behind"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_blinds_detectors_and_thermostats_of_the_other_fixture_networks",
-    "tests/test_binary_sensor.py::test_detector_devices_from_the_detectors_network"
+    "tests/test_binary_sensor.py::test_detector_devices_from_the_detectors_network",
+    "tests/test_mesh_config.py::test_a_detector_drives_a_device_without_a_key_mode",
+    "tests/test_services.py::test_assign_key_from_a_detector"
    ],
-   "missing": "the detector's target is read from its OnOff client publication (Detector.target) but cannot be changed: no service rewires the detector element's publication / the loads' subscriptions (ConnectionSource.Detector)",
-   "class": "build",
-   "verify": "absent-hardware"
+   "verify": "absent-hardware",
+   "note": "Unverified on air (no detector here, docs/on-air-sweep.md F): assign_key takes a detector (one of its entities or its device) as the source of a device link, SetDeviceConnection with the target's mode and no KeyMode or property-mode reset (no KeyModeCapability); a room or scene is refused."
   },
   {
    "id": "prod:ui:detector_forced_off_on_title",

@@ -51,7 +51,11 @@ from homeassistant.const import (
     STATE_UNKNOWN,
     EntityCategory,
 )
-from homeassistant.exceptions import HomeAssistantError, ServiceNotSupported
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceNotSupported,
+    ServiceValidationError,
+)
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers import entity_registry as er
@@ -745,6 +749,9 @@ async def test_open_close_stop(
 ) -> None:
     """Open / close / stop are the gateway's Generic Move Sets; a stop is followed by a Generic Level Get."""
     eid = entity_id(hass, "cover", UID_SHUTTER)
+    levels.levels[SHUTTER] = 0  # half open: neither end skips its arrow
+    fake_link.inject(SHUTTER, 0xC090, level_status(0))
+    await hass.async_block_till_done()
     fake_link.sent.clear()
     levels.gets.clear()
 
@@ -765,10 +772,10 @@ async def test_open_close_stop(
     assert len(fake_link.sent) == 2
 
     # nothing is written optimistically: the state is what the element last reported (answering the Move Sets)
-    assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 100
+    assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 50
     assert hass.states.get(eid).state == CoverState.OPEN
 
-    levels.levels[SHUTTER] = 0  # the blind stopped half-way
+    levels.levels[SHUTTER] = 16384  # the blind stopped three quarters down
     await call(hass, SERVICE_STOP_COVER, eid)
     await settle(hass)
     assert [pdu for _, _, pdu in fake_link.sent[2:]] == [
@@ -777,7 +784,7 @@ async def test_open_close_stop(
     ]
     assert fake_link.sent[3][1] == SHUTTER
     assert levels.gets == [SHUTTER]
-    assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 50
+    assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 25
 
 
 async def test_a_blind_that_does_not_answer_its_movements_still_runs(
@@ -792,6 +799,8 @@ async def test_a_blind_that_does_not_answer_its_movements_still_runs(
     hub = init_blinds.runtime_data
     eid = entity_id(hass, "cover", UID_SHUTTER)
     await settle(hass)
+    fake_link.inject(SHUTTER, 0xC090, level_status(0))  # half open: no end to skip
+    await hass.async_block_till_done()
     fake_link.sets_silent.add(SHUTTER)
     fake_link.sent.clear()
     levels.gets.clear()
@@ -1267,13 +1276,13 @@ async def test_a_locked_blind_refuses_commands(
         await call(hass, SERVICE_OPEN_COVER, shutter)
     assert exc.value.translation_key == "cover_locked"
 
-    # the shutter's lock ended on its own: the fresh read says so and the command goes out
+    # the shutter's lock ended on its own: the fresh read says so and the command goes out (it is open: down)
     mesh.values[SHUTTER, PID_LOCK] = UNLOCKED
     fake_link.sent.clear()
-    await call(hass, SERVICE_OPEN_COVER, shutter)
+    await call(hass, SERVICE_CLOSE_COVER, shutter)
     assert last_sent(fake_link)[1:] == (
         SHUTTER,
-        move_set(-32768, tid=last_sent(fake_link)[2][4]),
+        move_set(32767, tid=last_sent(fake_link)[2][4]),
     )
     # unlocked in the cache: no read before the next command
     mesh.gets.clear()
@@ -1445,3 +1454,166 @@ async def test_blind_sensors_unknown_until_read(
         hass.states.get(entity_id(hass, "binary_sensor", UID_REFERENCE_RUN)).state
         == STATE_UNKNOWN
     )
+
+
+# --------------------------------------------------------------------------- the app's rules (review-4 F4-16)
+
+
+async def test_open_and_close_skip_the_end_positions(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """The app skips its up arrow at 0 % and its down arrow at 100 % (`BlindsViewModel.blindsOpening` / `Closing`):
+    nothing at all goes out then; the other direction does."""
+    shutter = entity_id(hass, "cover", UID_SHUTTER)  # fully open
+    awning = entity_id(hass, "cover", UID_AWNING)  # fully closed
+    fake_link.sent.clear()
+    await call(hass, SERVICE_OPEN_COVER, shutter)
+    await call(hass, SERVICE_CLOSE_COVER, awning)
+    assert fake_link.sent == []
+    await call(hass, SERVICE_CLOSE_COVER, shutter)
+    await call(hass, SERVICE_OPEN_COVER, awning)
+    assert [(dst, pdu[:4]) for _, dst, pdu in fake_link.sent] == [
+        (SHUTTER, bytes([0x82, 0x0B, 0xFF, 0x7F])),
+        (AWNING, bytes([0x82, 0x0B, 0x00, 0x80])),
+    ]
+    # a position not known (yet) skips nothing
+    hub = init_blinds.runtime_data
+    hub.states[SHUTTER].level = None
+    fake_link.sent.clear()
+    await call(hass, SERVICE_OPEN_COVER, shutter)
+    assert [dst for _, dst, _ in fake_link.sent] == [SHUTTER]
+
+
+async def test_slats_are_refused_while_the_blind_is_fully_open(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """The app's slat slider is disabled while the blind is at 0 % (`GenericLevelCapable.q0()`); stopping the slats
+    is not a slider move and stays allowed."""
+    eid = entity_id(hass, "cover", UID_BLIND)
+    fake_link.inject(BLIND, 0xC090, level_status(LEVEL_OPEN))
+    await hass.async_block_till_done()
+    fake_link.sent.clear()
+    for service, data in (
+        (SERVICE_OPEN_COVER_TILT, {}),
+        (SERVICE_CLOSE_COVER_TILT, {}),
+        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 30}),
+    ):
+        with pytest.raises(ServiceValidationError) as exc:
+            await call(hass, service, eid, **data)
+        assert exc.value.translation_key == "cover_slats_open"
+        assert exc.value.translation_placeholders == {"entity": eid}
+    assert fake_link.sent == []
+    await call(hass, SERVICE_STOP_COVER_TILT, eid)
+    assert fake_link.sent[0][1] == BLIND_SLAT
+    # lowered a little: the slats move again
+    fake_link.inject(BLIND, 0xC090, level_status(-30000))
+    await hass.async_block_till_done()
+    fake_link.sent.clear()
+    await call(hass, SERVICE_CLOSE_COVER_TILT, eid)
+    assert [dst for _, dst, _ in fake_link.sent] == [BLIND_SLAT]
+
+
+def param(name: str, uid: str = UID_BLIND) -> str:
+    """The unique id of a blind's device parameter."""
+    return f"{uid}-{name}"
+
+
+async def test_blind_parameters_follow_the_operation_mode(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any],
+    levels: LevelMesh, mesh: PropertyMesh, fast_sleep: list[float], fake_link: FakeProxyLink,
+) -> None:  # fmt: skip
+    """The app's Parameters tab per operation mode (`device-settings.md` §7.2): slat cells only for *blinds*, the
+    slat time hidden for a shutter and at least 300 ms for blinds, the positions on power only for *stored
+    position*; the behaviour after mains return without *stop* and *position for network failure*."""
+    for uid in (UID_BLIND, UID_SHUTTER, UID_AWNING):
+        enable(hass, "number", param("slats_move_time", uid))
+        enable(hass, "number", param("blind_position_on_power", uid))
+        enable(hass, "number", param("slat_position_on_power", uid))
+        enable(hass, "select", param("move_on_power_mode", uid))
+    mesh.values[BLIND, 0x1105] = b"\x04"  # stored position
+    mesh.values[AWNING, 0x1105] = b"\x04"
+    mesh.values[SHUTTER, 0x1105] = b"\x00"  # no reaction
+    await start(hass, mock_config_entry)
+    await settle(hass, 100)
+
+    def state(domain: str, name: str, uid: str) -> Any:
+        return hass.states.get(entity_id(hass, domain, param(name, uid)))
+
+    # slat ventilation position (on by default) and slat position on power: blinds only
+    assert (
+        state("number", "slat_ventilation_position", UID_BLIND).state
+        != STATE_UNAVAILABLE
+    )
+    for uid in (UID_SHUTTER, UID_AWNING):
+        assert (
+            state("number", "slat_ventilation_position", uid).state == STATE_UNAVAILABLE
+        )
+        assert state("number", "slat_position_on_power", uid).state == STATE_UNAVAILABLE
+    assert (
+        state("number", "slat_position_on_power", UID_BLIND).state != STATE_UNAVAILABLE
+    )
+    # the slat change-over time: from 300 ms for blinds, 0 ms as an awning's reversal time, none for a shutter
+    assert state("number", "slats_move_time", UID_BLIND).attributes["min"] == 300
+    assert state("number", "slats_move_time", UID_AWNING).attributes["min"] == 0
+    assert state("number", "slats_move_time", UID_SHUTTER).state == STATE_UNAVAILABLE
+    # the positions on power while the drive goes to its stored position only
+    assert (
+        state("number", "blind_position_on_power", UID_AWNING).state
+        != STATE_UNAVAILABLE
+    )
+    assert (
+        state("number", "blind_position_on_power", UID_SHUTTER).state
+        == STATE_UNAVAILABLE
+    )
+    assert state("select", "move_on_power_mode", UID_SHUTTER).attributes["options"] == [
+        "no_reaction",
+        "move_up",
+        "move_down",
+        "move_to_stored_position",
+    ]
+    # choosing the stored position offers its position at once
+    await hass.services.async_call(
+        SELECT_DOMAIN,
+        SERVICE_SELECT_OPTION,
+        {
+            ATTR_ENTITY_ID: entity_id(
+                hass, "select", param("move_on_power_mode", UID_SHUTTER)
+            ),
+            "option": "move_to_stored_position",
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert (
+        state("number", "blind_position_on_power", UID_SHUTTER).state
+        != STATE_UNAVAILABLE
+    )
+    # a value the app cannot set shows as unknown
+    fake_link.inject(SHUTTER, 0xC090, vendor_status(0x05, 0x1105, b"\x03"))
+    await hass.async_block_till_done()
+    assert state("select", "move_on_power_mode", UID_SHUTTER).state == STATE_UNKNOWN
+    # a blind turned into a shutter loses its slat cells; one whose mode is not known (or not named) keeps them
+    fake_link.inject(BLIND, 0xC090, vendor_status(0x05, COVER_MODE_PROPERTY, b"\x01"))
+    await hass.async_block_till_done()
+    assert (
+        state("number", "slat_ventilation_position", UID_BLIND).state
+        == STATE_UNAVAILABLE
+    )
+    fake_link.inject(BLIND, 0xC090, vendor_status(0x05, COVER_MODE_PROPERTY, b"\x02"))
+    await hass.async_block_till_done()
+    assert (
+        state("number", "slat_ventilation_position", UID_BLIND).state
+        != STATE_UNAVAILABLE
+    )
+    del mock_config_entry.runtime_data.states[BLIND].properties[COVER_MODE_PROPERTY]
+    async_dispatcher_send(hass, SIGNAL_UPDATE.format(mock_config_entry.entry_id, BLIND))
+    await hass.async_block_till_done()
+    assert (
+        state("number", "slat_ventilation_position", UID_BLIND).state
+        != STATE_UNAVAILABLE
+    )
+    assert state("number", "slats_move_time", UID_BLIND).attributes["min"] == 0

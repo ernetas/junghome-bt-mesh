@@ -115,12 +115,14 @@ from .jhmesh.advert import mac_from_uuid
 from .jhmesh.cdb import CDB, InvalidExport, canonical_uuid, parse_address
 from .jhmesh.devices import (
     ALL_SCENES,
+    DETECTOR_PIDS,
     GATEWAY_PID,
     GROUP_RANGE,
     KEY_LOCATION,
     MINI_ACTUATOR_PIDS,
     SCENE_CLIENT,
     SOCKET_PIDS,
+    THERMOSTAT_PIDS,
     TIME_KEEPER_ADDRESS,
     TIME_SERVER,
     Metadata,
@@ -139,6 +141,7 @@ from .jhmesh.export import (
     KEY_MODE_LIGHT,
     KEY_MODE_MOVE,
     KEY_MODE_PROPERTY,
+    KEY_MODE_RTR,
     KEY_MODE_SCENE,
     KEY_MODE_SERVERS,
     KEY_MODE_SWITCH,
@@ -182,7 +185,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # Service-facing mode names. `light_and_switch` is a room function (lamps and sockets together); `gateway` is only
 # meaningful with the gateway's primary element as the target (network-logic.md §2.3, "key -> gateway"); `lock` is
-# the app's locking function on a light or socket, KeyMode *property* (network-logic.md §2.6).
+# the app's locking function on a light or socket, KeyMode *property* (network-logic.md §2.6); `temperature` (key
+# mode 4, the app's *Temperature* category: the set-point up / down) needs a room thermostat's.
 MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LIGHT_AND_SWITCH, MODE_LOCK = (
     "light",
     "switch",
@@ -191,6 +195,7 @@ MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LIGHT_AND_SWITCH, MODE_LO
     "light_and_switch",
     "lock",
 )
+MODE_TEMPERATURE = "temperature"
 KEY_MODES: dict[str, int] = {
     MODE_LIGHT: KEY_MODE_LIGHT,
     MODE_SWITCH: KEY_MODE_SWITCH,
@@ -198,6 +203,7 @@ KEY_MODES: dict[str, int] = {
     MODE_GATEWAY: KEY_MODE_GATEWAY,
     MODE_LIGHT_AND_SWITCH: KEY_MODE_LIGHT,
     MODE_LOCK: KEY_MODE_PROPERTY,
+    MODE_TEMPERATURE: KEY_MODE_RTR,
 }
 ROOM_FUNCTIONS: dict[
     str, str
@@ -207,13 +213,19 @@ ROOM_FUNCTIONS: dict[
     MODE_MOVE: "BLIND",
     MODE_LIGHT_AND_SWITCH: "LIGHT_AND_SWITCH",
 }
-DEVICE_MODES = frozenset({MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LOCK})
+DEVICE_MODES = frozenset(
+    {MODE_LIGHT, MODE_SWITCH, MODE_MOVE, MODE_GATEWAY, MODE_LOCK, MODE_TEMPERATURE}
+)
 ROOM_MODES = frozenset(ROOM_FUNCTIONS)
+# a detector source (`ConnectionSource.Detector`) has no KeyMode nor property mode: it drives a load in the mode the
+# load gives, never a gateway, a lock function or a thermostat's set-point (those live in the key's KeyMode / 0x5006)
+DETECTOR_MODES = frozenset({MODE_LIGHT, MODE_SWITCH, MODE_MOVE})
 # a scene link's key mode: never a `mode` of the action, which names the scene instead (`assign_key(scene=…)`)
 MODE_SCENE = "scene"
-# blinds: no such device was ever wired from here; scene links: never tried on a real device (review-3 F15); lock
-# links: written from the app's code alone, no capture of the app making one yet (review-4 brief 38)
-UNTESTED_MODES = frozenset({MODE_MOVE, MODE_SCENE, MODE_LOCK})
+# blinds and room thermostats: no such device was ever wired from here; scene links: never tried on a real device
+# (review-3 F15); lock links: written from the app's code alone, no capture of the app making one yet (review-4
+# brief 38)
+UNTESTED_MODES = frozenset({MODE_MOVE, MODE_SCENE, MODE_LOCK, MODE_TEMPERATURE})
 MODES = tuple(KEY_MODES)
 # `DeviceConnection.Element` beyond the target's own element (network-logic.md §2.1), with the mode the target's kind
 # gives: a tunable-white light's temperature element (LIGHT_TEMPERATURE, `Light.temperature_address`) and a blind's
@@ -234,6 +246,8 @@ KEY_MODE_CLIENTS: dict[int, tuple[str, ...]] = {
     KEY_MODE_GATEWAY: ("05271015",),
     KEY_MODE_SCENE: (SCENE_CLIENT,),  # publish only, to all nodes
     KEY_MODE_PROPERTY: ("05271015",),
+    # the set-point's Generic Level; unverified on air (no room thermostat here)
+    KEY_MODE_RTR: ("1003",),
 }
 # `RemoveConnectionForAddress` never touches these models of a key element (network-logic.md §2.3 step 4).
 CLEAR_KEEP_MODELS = frozenset({"1100", "05271013", "05271011"})
@@ -741,6 +755,9 @@ def derive_mode(element: Element) -> str:
     node = element.node
     if node.pid == GATEWAY_PID:
         return MODE_GATEWAY
+    if node.pid in THERMOSTAT_PIDS:
+        # `ActuatorFunctionId` Rtr -> RTR (4); unverified on air
+        return MODE_TEMPERATURE
     if node.pid in SOCKET_PIDS:
         return MODE_SWITCH
     if has_model(element, "1300") or has_model(element, "1303"):
@@ -2581,8 +2598,10 @@ class MeshConfigurator:
             target, mode = self._target_element(target, target_element, mode)
             clients = (LEVEL_CLIENT,)
         mode = mode or derive_mode(target)
-        if mode not in DEVICE_MODES or (
-            (mode == MODE_GATEWAY) != (target.node.pid == GATEWAY_PID)
+        if (
+            mode not in DEVICE_MODES
+            or ((mode == MODE_GATEWAY) != (target.node.pid == GATEWAY_PID))
+            or ((mode == MODE_TEMPERATURE) != (target.node.pid in THERMOSTAT_PIDS))
         ):
             raise _validation(
                 "service_invalid_mode", mode=mode, target=hexaddr(target.address)
@@ -3401,14 +3420,20 @@ class MeshConfigurator:
     ) -> bool:
         """Wire the key element at `key_address` to a load element (`element`), a `room` or a `scene`.
 
-        `mode` picks the key mode (`light` / `switch` / `move` / `gateway` / `lock`, rooms also
+        `mode` picks the key mode (`light` / `switch` / `move` / `gateway` / `lock` / `temperature`, rooms also
         `light_and_switch`); left out, a device target gets the mode the app derives from it and a room gets
         `light`. A scene (number or name) is recalled on every node, in key mode *scene*; it takes no `mode`.
 
         A device target only: `target_element` drives a tunable-white light's colour temperature or a blind's slats
         (`TARGET_ELEMENTS`) with the key's Level client; `mode: lock` makes the key lock (up / on) and unlock (down /
         off) a light or socket, for `lock_seconds` (0 or left out: no limit) — KeyMode *property* with the lock in the
-        key's 0x5006 to 0x5008 (`_write_lock_function`), then the load is asked for its lock. Both unverified on air.
+        key's 0x5006 to 0x5008 (`_write_lock_function`), then the load is asked for its lock; `mode: temperature`
+        (KeyMode RTR) steps a room thermostat's set-point. All unverified on air.
+
+        A detector's sensor element is a key here too, the app's `ConnectionSource.Detector`: it drives one device,
+        wired as a key's (`SetDeviceConnection`, network-logic.md §2.3), but has no KeyMode nor property mode to
+        write (`KeyModeCapability`: `P.KEY_HOSTS` has no detector) — so only in a load's own mode
+        (`DETECTOR_MODES`), with no `target_element` nor lock. Unverified on air (no detector here).
         """
         if sum(target is not None for target in (element, room, scene)) != 1:
             raise _validation("service_one_target")
@@ -3421,6 +3446,11 @@ class MeshConfigurator:
         async with self.lock:
             pf = await self._load()
             key = self._element(pf, key_address)
+            detector = key.node.pid in DETECTOR_PIDS
+            if detector and element is None:
+                raise _validation(
+                    "service_detector_device_only", address=hexaddr(key.address)
+                )
             if room is not None:
                 plan = self._plan_room_link(pf, key, room, mode)
             elif scene is not None:
@@ -3430,6 +3460,16 @@ class MeshConfigurator:
                 plan = self._plan_device_link(
                     pf, key, element, mode, target_element, lock_seconds
                 )
+                if detector and (
+                    plan.mode not in DETECTOR_MODES or target_element is not None
+                ):
+                    raise _validation(
+                        "service_detector_mode_unsupported",
+                        address=hexaddr(key.address),
+                        mode=plan.mode
+                        if target_element is None
+                        else f"{plan.mode} ({target_element})",
+                    )
             clients = [
                 m
                 for m in plan.clients or KEY_MODE_CLIENTS[plan.key_mode]
@@ -3468,17 +3508,7 @@ class MeshConfigurator:
                 )
                 # every Config step was accepted: the key is wired as planned, whatever the vendor writes do next
                 try:
-                    if plan.scene is not None:
-                        await self._write_scene_config(key.address, plan.scene)
-                        assert (
-                            plan.record_scene is not None
-                        )  # a scene plan always has it
-                        plan.record_scene(pf)
-                    elif plan.lock is not None:
-                        await self._write_lock_function(key.address, plan.lock)
-                    else:
-                        await self._reset_property_mode(key.address)
-                    await self._write_key_mode(key.address, plan.key_mode)
+                    await self._write_key_link(pf, key.address, plan, detector=detector)
                 except (HomeAssistantError, asyncio.CancelledError):
                     await self._save(pf)
                     raise
@@ -3494,6 +3524,26 @@ class MeshConfigurator:
                 len(steps),
             )
             return True
+
+    async def _write_key_link(
+        self, pf: ProjectFile, key: int, plan: KeyPlan, *, detector: bool
+    ) -> None:
+        """Write what the key does on its own after a key link's Config steps (network-logic.md §2.2).
+
+        A scene link names its scene (and records the app's row), a lock link its lock function, any other link resets
+        the property mode; then the KeyMode. A detector source has neither property mode nor KeyMode: its wiring is
+        all of it (it never takes a scene nor a lock, `assign_key`).
+        """
+        if plan.scene is not None:
+            await self._write_scene_config(key, plan.scene)
+            assert plan.record_scene is not None  # a scene plan always has it
+            plan.record_scene(pf)
+        elif plan.lock is not None:
+            await self._write_lock_function(key, plan.lock)
+        elif not detector:  # a detector has no property mode to reset ...
+            await self._reset_property_mode(key)
+        if not detector:  # ... nor a KeyMode
+            await self._write_key_mode(key, plan.key_mode)
 
     async def clear_key(self, key_address: int) -> bool:
         """Give the key no function: drop its room link and every publication / subscription; KeyMode stays (as in the app)."""
