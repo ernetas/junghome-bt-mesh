@@ -86,7 +86,8 @@
           "gateway": "Fetch it from the JUNG HOME Gateway",
           "upload": "Upload the app's export file",
           "path": "Use a file on the Home Assistant host",
-          "import_gateway": "Import the entities of the JUNG HOME Gateway integration"
+          "import_gateway": "Import the entities of the JUNG HOME Gateway integration",
+          "areas": "Change which area each room's devices go to"
         },
         "data": {
           "cdb_path": "Mesh export file",
@@ -115,6 +116,16 @@
         },
         "data_description": {
           "gateway_password": "Optional. With it the gateway grants access immediately; without it you approve the request in the app. It is not stored."
+        }
+      },
+      "areas": {
+        "title": "Rooms and areas",
+        "description": "Choose the Home Assistant area for each room of the JUNG HOME app. A room is prefilled with the area of the same name, or the area that has the room's name as an alias. Leave a room empty to have an area named after the room (created if there is none). Devices without a room of their own get one too: a push-button's keys the room of the load next to them, a wall transmitter's the room its keys switch. From the Reconfigure menu, this moves the devices that are still in the area the previous choice gave them; a device you placed in another area yourself is never moved.",
+        "data": {
+          "assign_areas": "Put the JUNG HOME devices in areas"
+        },
+        "data_description": {
+          "assign_areas": "Off: new devices start without an area, and the rooms below are ignored."
         }
       }
     },
@@ -155,7 +166,9 @@
       "import_successful": "{count} entities were taken over from the JUNG HOME Gateway integration:\n{matched}\n\nKept as they were (already customised here):\n{customised}\n\nWithout a gateway counterpart:\n{unmatched}\n\nStill with the gateway entry:\n{gateway_only}\n\nThe gateway entry has been disabled; delete it under Settings → Devices & services → JUNG HOME once everything looks right.",
       "certificate_vouched_by_mesh": "The JUNG HOME Gateway at {host} presents certificate {observed}, but the gateway node vouched for {expected} over the mesh. Nothing was sent to that address: another device on your network is probably answering as the gateway. If you replaced the gateway or its certificate yourself, reconfigure again while Home Assistant is connected to the mesh: the gateway node then reports the new certificate.",
       "import_unload_failed": "{title} could not be unloaded, so nothing was imported; every entry the import had unloaded is set up again. Check the log, then try the import again.",
-      "reauth_successful": "The JUNG HOME Gateway accepts Home Assistant again. Changes made in Home Assistant meanwhile reach it with the next change, or at once with the action Sync gateway."
+      "reauth_successful": "The JUNG HOME Gateway accepts Home Assistant again. Changes made in Home Assistant meanwhile reach it with the next change, or at once with the action Sync gateway.",
+      "areas_updated": "The rooms' areas are saved; {count} devices moved to their room's new area.",
+      "not_loaded": "The integration is not running: set it up again first."
     }
   },
   "options": {
@@ -168,7 +181,8 @@
           "allow_provisioning": "Allow Home Assistant to add and remove devices (experimental)",
           "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)",
           "follow_app": "Follow changes made in the JUNG HOME app",
-          "gateway_check": "Check the gateway's export every six hours"
+          "gateway_check": "Check the gateway's export every six hours",
+          "sync_areas": "Move devices along when their JUNG room changes"
         },
         "data_description": {
           "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well.",
@@ -176,7 +190,8 @@
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
           "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it.",
           "follow_app": "When the phone running the JUNG HOME app is heard on the mesh, an entry set up from the gateway fetches the gateway's export a few minutes after the phone went quiet (at most every 15 minutes) and takes it over when it changed: devices, rooms, scenes and key connections changed in the app reach Home Assistant without Reconfigure. An entry set up from a file shows a repair notice instead, once the app was seen changing a device's configuration. Nothing is sent on the mesh for it. Unverified on air.",
-          "gateway_check": "An entry set up from the gateway asks the gateway for its export every six hours and takes it over when it changed, which catches what the app changed while Home Assistant did not hear the phone. One request to the gateway; nothing is sent on the mesh. No effect on an entry set up from a file."
+          "gateway_check": "An entry set up from the gateway asks the gateway for its export every six hours and takes it over when it changed, which catches what the app changed while Home Assistant did not hear the phone. One request to the gateway; nothing is sent on the mesh. No effect on an entry set up from a file.",
+          "sync_areas": "When a device changes room in the app (once Home Assistant follows the new export) or through a room action, it moves to the new room's area too — unless you placed it in an area yourself. Off: a device stays in the area it started in. Unverified on air."
         }
       }
     }

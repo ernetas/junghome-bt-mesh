@@ -26,6 +26,14 @@
 - **`set_room` no longer creates a room it does not know** (review-4 W4-12): a mistyped room name used to create a
   new room and move the devices into it. An unknown name is now refused (*There is no room named …*); add
   `create: true` to create the room, as automations that relied on it need to.
+- **Node devices are named after what they carry, and keys and nodes get an area** (review-4 U4-2): a node device
+  with a single load — or, without a load, a single gang of keys — that the app named is now called
+  *`<that name> - <product>`*, e.g. *WC mirror - Push-button 1-gang*, instead of *Push-button 1-gang 0148*; any
+  other node keeps its old name, a name you gave a device stays. Entity ids do not change. A device Home Assistant
+  registers from now on — a buttons device and a node device included — starts in its room's area, and Home
+  Assistant then puts the area in front of its new entity ids (*event.wc_wc_mirror_button*), as it already did for
+  the lights; devices registered before keep their area (none for keys and nodes) and their entity ids, until you
+  use *Reconfigure → Change which area each room's devices go to*.
 
 ### Fixed — mesh safety
 
@@ -478,6 +486,17 @@
   fetches nothing: when the phone is seen configuring a device, the repair *The JUNG HOME app changed the
   installation* asks for the app's new export (its **Submit** takes the upload). Both are options of the entry, on by
   default. Unverified on air.
+- Rooms to areas (review-4 U4-2): after an export is loaded — setup, Bluetooth discovery, *Reconfigure* — the new
+  step *Rooms and areas* offers one Home Assistant area per JUNG room, prefilled with the area of the same name or
+  the one that has the room's name as an alias (Home Assistant itself matched by name alone, so a room named
+  differently from its area made a second area); a room left empty gets an area named after it, as before, and a
+  switch leaves the devices without areas. Push-button keys go to the room of the load next to them, a wall
+  transmitter's to the room its keys switch (unverified on air), a node device to its first unit's room; the
+  gateway and the mesh device to none. *Reconfigure → Change which area each room's devices go to* changes the
+  mapping later and moves the devices that are still in the area the previous one gave them (or in none), never one
+  you placed yourself, and says how many moved. The new option *Move devices along when their JUNG room changes*
+  (off by default) does the same after `set_room` and the other room actions, and after Home Assistant took over a
+  new export. Unverified on air.
 
 ### CLI tools and library
 

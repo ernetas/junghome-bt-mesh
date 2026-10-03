@@ -27,6 +27,11 @@ Reauth renews the gateway token alone, when the gateway rejected the entry's (`M
 starts it): by the gateway's password, or by approving a new access request in the app. The export, the mesh and the
 running hub are left alone; the new token is used from the next request on.
 
+Once an export is loaded (setup, discovery, reconfigure), the `areas` step maps each JUNG room to a Home Assistant
+area (`areas.py`, review-4 U4-2): prefilled with the area named or aliased like the room, left empty for an area named
+after it; stored in the entry's options. The reconfigure menu offers the same step on its own, which also moves the
+devices still in the area the previous mapping gave them, never one the user placed.
+
 The reconfigure menu also offers the import from the JUNG HOME Gateway integration (`migration.py`): a dry run shown
 as a form, applied on confirmation. Options (`JungHomeOptionsFlow`) hold the runtime behaviour switches; a change
 reloads the entry through the update listener (`__init__._async_entry_updated`), which also reloads a loaded entry
@@ -64,6 +69,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    AreaSelector,
     BooleanSelector,
     FileSelector,
     FileSelectorConfig,
@@ -72,6 +78,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
+from .areas import async_move_devices, mapped_area
 from .const import (
     CONF_CDB_PATH,
     CONF_EXPORT_FILE,
@@ -82,14 +89,17 @@ from .const import (
     CONF_GATEWAY_TOKEN,
     CONF_MESH_UUID,
     CONF_METADATA_DIR,
+    CONF_ROOM_AREAS,
     CONF_SOURCE,
     CONF_UNICAST,
     DEFAULT_ALLOW_PROVISIONING,
+    DEFAULT_ASSIGN_AREAS,
     DEFAULT_CLICK_DELAY,
     DEFAULT_FOLLOW_APP,
     DEFAULT_GATEWAY_CHECK,
     DEFAULT_HEARTBEATS,
     DEFAULT_PROVISIONER_IDENTITY,
+    DEFAULT_SYNC_AREAS,
     DEFAULT_UNICAST,
     DOMAIN,
     GATEWAY_DEFAULT_HOST,
@@ -99,11 +109,13 @@ from .const import (
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
     OPTION_ALLOW_PROVISIONING,
+    OPTION_ASSIGN_AREAS,
     OPTION_CLICK_DELAY,
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
     OPTION_PROVISIONER_IDENTITY,
+    OPTION_SYNC_AREAS,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -119,6 +131,7 @@ from .coordinator import (
     issue_id,
     node_macs,
 )
+from .entity import device_rooms
 from .gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -131,7 +144,7 @@ from .gateway_api import (
 from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB, UUID_PATTERN, InvalidExport
 from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
-from .jhmesh.devices import InvalidMetadata, Metadata
+from .jhmesh.devices import InvalidMetadata, Metadata, room_names
 from .jhmesh.export import write_private
 from .jhmesh.fileio import PRIVATE_MODE, backup_paths, copy_private, fsync_dir
 from .jhmesh.vault import recognise
@@ -142,6 +155,7 @@ from .migration import (
     async_apply_import,
     build_import_plan,
 )
+from .model_update import remember_device_rooms
 from .tls import (
     CONF_GATEWAY_FINGERPRINT,
     async_learn_fingerprint,
@@ -167,6 +181,7 @@ STEP_CERTIFICATE = "gateway_certificate"
 STEP_REGISTER = "gateway_register"
 STEP_REAUTH = "reauth_confirm"
 STEP_REAUTH_DONE = "reauth_done"
+STEP_AREAS = "areas"
 
 # Exceptions a malformed export can raise from `CDB.load` beyond `InvalidExport` (which covers the validated shape):
 # an unreadable file, JSON that is not JSON, and — should a shape slip past the validation — the bare Python errors.
@@ -296,7 +311,61 @@ def _options_schema(options: dict[str, Any]) -> vol.Schema:
                 OPTION_GATEWAY_CHECK,
                 default=options.get(OPTION_GATEWAY_CHECK, DEFAULT_GATEWAY_CHECK),
             ): BooleanSelector(),
+            vol.Required(
+                OPTION_SYNC_AREAS,
+                default=options.get(OPTION_SYNC_AREAS, DEFAULT_SYNC_AREAS),
+            ): BooleanSelector(),
         }
+    )
+
+
+def _areas_schema(
+    hass: HomeAssistant, rooms: list[str], options: Mapping[str, Any]
+) -> vol.Schema:
+    """Return the `areas` form: whether to assign areas, then one area per room, prefilled by `areas.mapped_area`.
+
+    A suggested value rather than a default: a field the user empties must stay empty (an area named after the
+    room), and a default would fill it in again.
+    """
+    fields: dict[Any, Any] = {
+        vol.Required(
+            OPTION_ASSIGN_AREAS,
+            default=bool(options.get(OPTION_ASSIGN_AREAS, DEFAULT_ASSIGN_AREAS)),
+        ): BooleanSelector()
+    }
+    for room in rooms:
+        suggested = mapped_area(hass, options, room)
+        fields[vol.Optional(room, description={"suggested_value": suggested})] = (
+            AreaSelector()
+        )
+    return vol.Schema(fields)
+
+
+def area_choice(rooms: list[str], user_input: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the options the `areas` form sets: the switch, and each room's area (None: one named after the room)."""
+    return {
+        OPTION_ASSIGN_AREAS: bool(
+            user_input.get(OPTION_ASSIGN_AREAS, DEFAULT_ASSIGN_AREAS)
+        ),
+        CONF_ROOM_AREAS: {room: user_input.get(room) or None for room in rooms},
+    }
+
+
+def async_apply_area_choice(
+    hass: HomeAssistant, entry: ConfigEntry, choice: Mapping[str, Any]
+) -> int:
+    """Move the devices of a loaded `entry` to the areas `choice` gives their rooms; how many moved (`areas.py`).
+
+    Only a device without an area, or in the one the entry's options gave it, moves. Moved before the options are
+    stored, against the running hub's model; an entry that is not loaded has nothing to compare (0).
+    """
+    if entry.state is not ConfigEntryState.LOADED:
+        return 0
+    rooms = {
+        ident: (room, room) for ident, room in device_rooms(entry.runtime_data).items()
+    }
+    return async_move_devices(
+        hass, entry.entry_id, rooms, entry.options, {**entry.options, **choice}
     )
 
 
@@ -716,8 +785,9 @@ def async_update_and_reload(
     entry: ConfigEntry,
     updated: dict[str, Any],
     unique_id: str | None = None,
+    options: dict[str, Any] | None = None,
 ) -> None:
-    """Store `updated` as `entry`'s data and have the entry set up again from it, once.
+    """Store `updated` as `entry`'s data (and `options` as its options, when given); set the entry up again, once.
 
     Home Assistant wants the update listener to reload: a loaded entry's listener (`__init__._async_entry_updated`)
     starts eagerly from inside `async_update_entry` and reloads the entry when the data the hub is built from
@@ -726,13 +796,32 @@ def async_update_and_reload(
     key refresh) is new: those are reloaded here.
     """
     loaded = entry.state is ConfigEntryState.LOADED
-    listener_reloads = loaded and hub_data(entry.data) != hub_data(updated)
-    if unique_id is None:
-        hass.config_entries.async_update_entry(entry, data=updated)
-    else:
-        hass.config_entries.async_update_entry(entry, unique_id=unique_id, data=updated)
+    listener_reloads = loaded and (
+        hub_data(entry.data) != hub_data(updated)
+        or (options is not None and options != dict(entry.options))
+    )
+    changes: dict[str, Any] = {"data": updated}
+    if unique_id is not None:
+        changes["unique_id"] = unique_id
+    if options is not None:
+        changes["options"] = options
+    hass.config_entries.async_update_entry(entry, **changes)
     if not listener_reloads:
         hass.config_entries.async_schedule_reload(entry.entry_id)
+
+
+async def async_export_refusal(
+    hass: HomeAssistant, entry: ConfigEntry, cdb: CDB
+) -> str | None:
+    """Return why `entry` cannot take the export `cdb` (`async_replace_export`'s refusals); None when it can."""
+    known = await configured_mesh_uuid(hass, entry)
+    if known is not None and known.lower() != cdb.mesh_uuid.lower():
+        return "network_mismatch"
+    if known is None and await _mesh_uuid_taken(
+        hass, cdb.mesh_uuid, exclude=entry.entry_id
+    ):
+        return "mesh_already_configured"
+    return None
 
 
 async def async_replace_export(
@@ -743,6 +832,7 @@ async def async_replace_export(
     incoming: Path | None,
     *,
     keep_flow: str | None = None,
+    options: dict[str, Any] | None = None,
 ) -> str:
     """Point the existing `entry` at a new, validated export of its mesh and set it up again; the abort reason.
 
@@ -750,18 +840,15 @@ async def async_replace_export(
     `mesh_already_configured` (an entry whose own mesh is unknown — a legacy entry with its export gone — could
     otherwise take over a mesh another entry owns, and two entries on one mesh share its sequence-number store).
     A fetched or uploaded file (`incoming`) is moved to its final name, or deleted whatever stops this. `keep_flow`
-    is the reconfigure flow asking, which must not abort itself.
+    is the reconfigure flow asking, which must not abort itself; `options` the entry's options from then on (the
+    `areas` step's), None to keep them. With `OPTION_SYNC_AREAS` on, the devices' rooms are noted first: the setup
+    from the new export moves those whose room changed (`model_update.async_sync_areas`).
     """
     try:
         network_id = cdb.net_keys[0].network_id
         data[CONF_MESH_UUID] = cdb.mesh_uuid
-        known = await configured_mesh_uuid(hass, entry)
-        if known is not None and known.lower() != cdb.mesh_uuid.lower():
-            return "network_mismatch"
-        if known is None and await _mesh_uuid_taken(
-            hass, cdb.mesh_uuid, exclude=entry.entry_id
-        ):
-            return "mesh_already_configured"
+        if (refusal := await async_export_refusal(hass, entry, cdb)) is not None:
+            return refusal
         # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it
         # started, and an ignored entry holding it (H4-4)
         await async_release_network_id(
@@ -786,8 +873,13 @@ async def async_replace_export(
             issue_id(entry, ISSUE_APP_CHANGED),
         ):
             ir.async_delete_issue(hass, DOMAIN, issue)
+        remember_device_rooms(hass, entry)
         async_update_and_reload(
-            hass, entry, {**entry.data, **data}, unique_id=network_id.hex()
+            hass,
+            entry,
+            {**entry.data, **data},
+            unique_id=network_id.hex(),
+            options=options,
         )
         return "reconfigure_successful"
     finally:
@@ -825,6 +917,9 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._pending_errors: dict[str, str] = {}
         # a fetched/uploaded export in our store that is not yet renamed to its final name
         self._incoming: Path | None = None
+        # a validated export waiting for the `areas` step (entry data, its CDB), and what that step chose
+        self._pending: tuple[dict[str, Any], CDB] | None = None
+        self._area_choice: dict[str, Any] | None = None
 
     @callback
     def async_remove(self) -> None:
@@ -901,6 +996,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             options.insert(0, STEP_REFETCH)
         if self.hass.config_entries.async_entries(GATEWAY_DOMAIN):
             options.append(STEP_IMPORT)
+        if entry.state is ConfigEntryState.LOADED and entry.runtime_data.devices.rooms:
+            options.append(STEP_AREAS)
         return self.async_show_menu(
             step_id="reconfigure",
             menu_options=options,
@@ -1182,6 +1279,59 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id=STEP_IMPORT,
             data_schema=vol.Schema({}),
             description_placeholders=import_placeholders(plan),
+        )
+
+    async def async_step_areas(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Map the export's rooms to Home Assistant areas, after the export is loaded or from the reconfigure menu.
+
+        After a load (`_pending`), submitting finishes the setup or the reconfiguration as it would have without
+        the step, with the choice as the entry's options; in a reconfiguration the running entry's devices move to
+        the new choice first (`async_apply_area_choice`). Without a load it is the reconfigure menu's own option.
+        """
+        if self._pending is None:
+            return await self._async_areas_option(user_input)
+        data, cdb = self._pending
+        rooms = room_names(cdb)
+        entry = self._flow_entry()
+        current = dict(entry.options) if entry is not None else {}
+        if user_input is None:
+            return self.async_show_form(
+                step_id=STEP_AREAS, data_schema=_areas_schema(self.hass, rooms, current)
+            )
+        self._area_choice = area_choice(rooms, user_input)
+        if entry is not None:
+            async_apply_area_choice(self.hass, entry, self._area_choice)
+        try:
+            return await self._async_finish(data, cdb)
+        except _FormError as err:
+            return self.async_abort(reason=err.errors["base"])
+
+    async def _async_areas_option(
+        self, user_input: dict[str, Any] | None
+    ) -> ConfigFlowResult:
+        """Reconfigure menu: change the room to area mapping of the running entry, and move its devices to match.
+
+        Unverified on air: moving devices on the installation's own registry has not been tried.
+        """
+        entry = self._get_reconfigure_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="not_loaded")
+        rooms = room_names(entry.runtime_data.cdb)
+        if user_input is None:
+            return self.async_show_form(
+                step_id=STEP_AREAS,
+                data_schema=_areas_schema(self.hass, rooms, entry.options),
+            )
+        choice = area_choice(rooms, user_input)
+        moved = async_apply_area_choice(self.hass, entry, choice)
+        # the update listener reloads the entry, as for every options change
+        self.hass.config_entries.async_update_entry(
+            entry, options={**entry.options, **choice}
+        )
+        return self.async_abort(
+            reason="areas_updated", description_placeholders={"count": str(moved)}
         )
 
     # ------------------------------------------------------------------ options
@@ -1494,14 +1644,27 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         network_id = cdb.net_keys[0].network_id
         data[CONF_MESH_UUID] = cdb.mesh_uuid
         if self.source == SOURCE_RECONFIGURE:
+            entry = self._get_reconfigure_entry()
+            # a refused export is refused at once (by `async_replace_export`), not after the rooms were mapped
+            if (
+                self._area_choice is None
+                and room_names(cdb)
+                and await async_export_refusal(self.hass, entry, cdb) is None
+            ):
+                return await self._async_ask_areas(data, cdb)
             incoming, self._incoming = self._incoming, None
             reason = await async_replace_export(
                 self.hass,
-                self._get_reconfigure_entry(),
+                entry,
                 data,
                 cdb,
                 incoming,
                 keep_flow=self.flow_id,
+                options=(
+                    None
+                    if self._area_choice is None
+                    else {**entry.options, **self._area_choice}
+                ),
             )
             return self.async_abort(reason=reason)
         if self._discovered_network_id and network_id != self._discovered_network_id:
@@ -1514,10 +1677,21 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         # UUID, which does not, so a refreshed export of an already-configured mesh cannot found a second entry
         if await _mesh_uuid_taken(self.hass, cdb.mesh_uuid):
             raise _FormError({"base": "mesh_already_configured"})
+        if self._area_choice is None and room_names(cdb):
+            return await self._async_ask_areas(data, cdb)
         await self._async_keep_incoming(data, cdb)
         return self.async_create_entry(
-            title=f"JUNG HOME mesh {cdb.mesh_uuid[:8]}", data=data
+            title=f"JUNG HOME mesh {cdb.mesh_uuid[:8]}",
+            data=data,
+            options=self._area_choice or {},
         )
+
+    async def _async_ask_areas(
+        self, data: dict[str, Any], cdb: CDB
+    ) -> ConfigFlowResult:
+        """Hold the validated export (a fetched or uploaded file stays `_incoming`) and show the `areas` step."""
+        self._pending = (data, cdb)
+        return await self.async_step_areas()
 
 
 class JungHomeOptionsFlow(OptionsFlow):
@@ -1526,9 +1700,11 @@ class JungHomeOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show the one options form; saving stores it as the entry's options."""
+        """Show the one options form; saving stores it into the entry's options (the `areas` step's stay)."""
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            return self.async_create_entry(
+                data={**self.config_entry.options, **user_input}
+            )
         return self.async_show_form(
             step_id="init", data_schema=_options_schema(dict(self.config_entry.options))
         )

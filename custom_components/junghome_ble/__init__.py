@@ -86,7 +86,12 @@ from .migration import (
     enable_now_default,
 )
 from .migration import issue_id as gateway_import_issue_id
-from .model_update import async_follow_export, check_our_address, remove_stale_devices
+from .model_update import (
+    async_follow_export,
+    async_sync_areas,
+    check_our_address,
+    remove_stale_devices,
+)
 from .onboard import async_clear_vault_issue, async_update_pending_issue
 from .services import (
     async_register_configurator,
@@ -254,6 +259,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     entry.async_on_unload(hub.app_follow.stop)
     await hub.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # every device registered: those whose room an export change moved follow it (`OPTION_SYNC_AREAS`)
+    async_sync_areas(hass, entry, hub)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
     # a device the user names goes into the app's project too (device_names.py)
     entry.async_on_unload(async_track_device_names(hass, entry))

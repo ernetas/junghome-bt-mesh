@@ -151,7 +151,7 @@ async def test_led_colour_select(
         entity_id(hass, "select", UID_LED_ON),
         entity_id(hass, "select", UID_LED_OFF),
     )
-    assert on == "select.wc_mirror_button_led_colour_switched_on"
+    assert on == "select.wc_wc_mirror_button_led_colour_switched_on"
     assert hass.states.get(on).state == "red"
     assert hass.states.get(on).attributes[ATTR_OPTIONS] == PALETTE
     assert hass.states.get(off).state == STATE_UNKNOWN
@@ -225,7 +225,7 @@ async def test_second_led_of_a_two_gang(
     hass: HomeAssistant, init_with_mesh: MockConfigEntry, mesh: PropertyMesh
 ) -> None:
     eid = entity_id(hass, "select", UID_ROCKER_LED2_ON)
-    assert eid == "select.living_room_rocker_led_colour_switched_on_b"
+    assert eid == "select.living_room_living_room_rocker_led_colour_switched_on_b"
     assert hass.states.get(eid).state == "no_color"
     await hass.services.async_call(
         SELECT_DOMAIN,

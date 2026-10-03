@@ -193,21 +193,23 @@ async def test_a_node_that_does_not_answer_counts_until_heard(
     await settle(hass)
     state = hass.states.get(unreachable)
     assert state.state == "1"
-    assert state.attributes["devices"] == ["Socket 0172"]  # its node device's name
+    assert state.attributes["devices"] == [
+        "Boiler - Socket (metering)"
+    ]  # its node device's name
     assert overview_writes == []  # held back: the last write is less than a minute old
     miss(hub, LIGHT_DIMMER)
     await settle(hass)
     assert hass.states.get(unreachable).attributes["devices"] == [
-        "Socket 0172",
-        "Push-button 1-gang 0300",
+        "Boiler - Socket (metering)",
+        "WC ceiling - Push-button 1-gang",
     ]
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL - 1)
     assert overview_writes == []
     await tick(hass, freezer, 1)
     assert overview_writes == [str(MAINS_NODES - 2)]  # both changes in one write
     rows = overview_rows(hass)
-    assert rows["Socket 0172"]["reachable"] is False
-    assert rows["Push-button 1-gang 0300"]["reachable"] is False
+    assert rows["Boiler - Socket (metering)"]["reachable"] is False
+    assert rows["WC ceiling - Push-button 1-gang"]["reachable"] is False
     assert rows["Gateway 00DC"]["reachable"] is True
 
     # heard again: back at once in the count, in the overview once the minute is over
@@ -217,7 +219,7 @@ async def test_a_node_that_does_not_answer_counts_until_heard(
     assert hass.states.get(overview).state == str(MAINS_NODES - 2)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     assert hass.states.get(overview).state == str(MAINS_NODES - 1)
-    assert overview_rows(hass)["Socket 0172"]["reachable"] is True
+    assert overview_rows(hass)["Boiler - Socket (metering)"]["reachable"] is True
 
     # a write held back when the entry unloads is dropped with it
     miss(hub, SOCKET)
@@ -255,12 +257,12 @@ async def test_dead_nodes_count_with_heartbeats(
         await settle(hass)
         state = hass.states.get(unreachable)
         assert state.state == str(MAINS_NODES - 1)
-        assert "Push-button 1-gang 0148" not in state.attributes["devices"]
+        assert "WC mirror - Push-button 1-gang" not in state.attributes["devices"]
         await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
-        row = overview_rows(hass)["Push-button 1-gang 0148"]
+        row = overview_rows(hass)["WC mirror - Push-button 1-gang"]
         assert row["reachable"] is True
         assert row["hops"] == 2
-        assert overview_rows(hass)["Socket 0172"]["reachable"] is False
+        assert overview_rows(hass)["Boiler - Socket (metering)"]["reachable"] is False
 
 
 async def test_overview_rows(
@@ -301,14 +303,14 @@ async def test_overview_rows(
     rows = overview_rows(hass)
     assert list(rows) == [
         "Gateway 00DC",
-        "Push-button 1-gang 0148",
-        "Push-button 2-gang 0232",
+        "WC mirror - Push-button 1-gang",
+        "Living room DALI - Push-button 2-gang",
         "Boiler socket",
-        "Push-button 1-gang 0300",
+        "WC ceiling - Push-button 1-gang",
         "2-channel actuator 0400",
     ]
-    assert rows["Push-button 1-gang 0148"] == {
-        "name": "Push-button 1-gang 0148",
+    assert rows["WC mirror - Push-button 1-gang"] == {
+        "name": "WC mirror - Push-button 1-gang",
         "area": "WC",  # its light's: the node device has none
         "product": "Push-button 1-gang",
         "reachable": True,
@@ -340,7 +342,7 @@ async def test_overview_rows(
         rows = {row["name"]: row for row in state.attributes["nodes"]}
         assert {row["reachable"] for row in rows.values()} == {False}
         assert {row["proxy"] for row in rows.values()} == {False}
-        assert rows["Push-button 1-gang 0148"]["last_seen"] is not None
+        assert rows["WC mirror - Push-button 1-gang"]["last_seen"] is not None
     hub._link_lost.set()
     await wait_for_link(hass, init_integration)
 
@@ -370,7 +372,7 @@ async def test_the_helpers_without_a_device_or_an_address(
     hub = hub_of(init_integration)
     node = hub.cdb.node_by_addr(SOCKET)
     registry = dr.async_get(hass)
-    assert node_label(hub, registry, node) == "Socket 0172"
+    assert node_label(hub, registry, node) == "Boiler - Socket (metering)"
     with patch.dict(hub.device_ids, {node_identifier(node): "gone"}):
         assert node_label(hub, registry, node) == f"{node.name} 0172"
     assert best_scanner(hass, None) is None
@@ -470,11 +472,11 @@ async def test_the_documented_card_renders_the_overview(
         "| 2-channel actuator 0400 | Kitchen | yes |"
     )  # sorted by name
     assert (
-        f"| Push-button 1-gang 0148 (proxy) | WC | yes | 2 minutes ago | {NONE} | {NONE} | {NONE} |"
+        f"| WC mirror - Push-button 1-gang (proxy) | WC | yes | 2 minutes ago | {NONE} | {NONE} | {NONE} |"
         in rows
     )
     assert (
-        f"| Socket 0172 | Kitchen | **no** | 2 minutes ago | {NONE} | {NONE} | {NONE} |"
+        f"| Boiler - Socket (metering) | Kitchen | **no** | 2 minutes ago | {NONE} | {NONE} | {NONE} |"
         in rows
     )
     # nothing to show: the card says so rather than failing

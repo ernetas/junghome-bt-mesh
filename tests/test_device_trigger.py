@@ -301,7 +301,7 @@ async def test_trigger_runs_with_the_keys_event_entity_disabled(
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
     await settle(hass)
-    assert hass.states.get("event.wc_mirror_button") is None
+    assert hass.states.get("event.wc_wc_mirror_button") is None
     device_id = _device_id(hass, mock_config_entry, f"{UID_BUTTON_WC}-buttons")
     assert await async_validate_trigger_config(
         hass, _trigger(device_id, "a", "press_on")

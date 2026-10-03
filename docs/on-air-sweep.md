@@ -134,6 +134,7 @@ pass removed the markers of the checks that passed.
 | [C6](#c6--firmware-only-properties-set-and-restored-brief-36) | Firmware-only properties, set and restored | DALI insert, socket meter, a key, a light | settings, restored | **yes** |
 | [C7](#c7--repairs-that-fix-u4-5) | Repairs that fix: gateway sync, a device name, a fetch | gateway, a light, a firewall rule | a device name, restored | — |
 | [C8](#c8--following-the-app-u4-6) | Following the app: a rename in the app reaches Home Assistant | gateway, the app, a light | a device name, restored | **yes** |
+| [C9](#c9--rooms-to-areas-u4-2) | *Change which area each room's devices go to*: devices move, a hand-placed one stays | the integration's devices | areas, set back | — |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
 | [D2](#d2--key--scene-f15) | Key → scene (F15) | push-button key, harmless scene | key wiring, restored | **yes** |
 | [D3](#d3--rooms-and-scenes-allocated-from-the-top) | Rooms and scenes allocated from the top | a light, the app | room / scene, removed | — |
@@ -144,6 +145,7 @@ pass removed the markers of the checks that passed.
 | [D8](#d8--several-rooms-per-light-leaving-a-room-f4-5) | Several rooms per light, leaving a room | a light, two rooms | rooms, set back | — |
 | [D9](#d9--key-connections-colour-temperature-lock-function-property-users-brief-38) | Key → colour temperature, lock function, property users: the app captured first | spare key, DALI TW light, a light, socket, mini actuator, the app | key wiring and locks, restored | **yes** |
 | [D10](#d10--a-key-that-only-talks-to-home-assistant-with-a-blueprint) | A key that only talks to Home Assistant, with a blueprint | a key, a light | a room and a key, undone | **yes** |
+| [D11](#d11--areas-follow-a-room-change-u4-2) | *Move devices along when their JUNG room changes* after `set_room` | a light, two rooms | a room and areas, set back | — |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -783,6 +785,25 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   `custom_components/junghome_ble/strings.json::issues.app_changed.fix_flow.step.gateway_refetch.description` (shown
   only for an entry reconfigured to the gateway while the notice stood, which Reconfigure clears).
 
+### C9 · Rooms to areas (U4-2)
+
+- **Checks:** review-4 U4-2 (brief 47) — *Reconfigure → Change which area each room's devices go to* moves the
+  devices still in the area the previous choice gave them (keys and node devices included, which had none before
+  1.1.0) and leaves a device placed by hand where it is; Home Assistant side only, nothing goes on air.
+- **Needs:** the running entry; a room R (note the area its devices are in). **Safety:** areas only; set back in
+  step 4.
+- **Do:**
+  1. Note the area of R's light devices, their *Push-buttons* devices and node devices; move one light device of R
+     to another area by hand (note it).
+  2. Create an area *Sweep area*. *Reconfigure → Change which area each room's devices go to*: the form shows each
+     room with its current area (an area named, or aliased, like the room); pick *Sweep area* for R, **Submit**.
+  3. The result names how many devices moved. Check R's device pages.
+  4. Undo: the same step with R's old area; move the hand-placed device back; delete *Sweep area*.
+- **Pass:** every device of R in step 3 is in *Sweep area* but the one placed by hand; the count matches; after step 4
+  everything is where it was (keys and nodes now in R's area). The entry reloads after each submit, as for any
+  options change.
+- **Markers:** `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow._async_areas_option`.
+
 ## D · Rewiring, undone in the sitting
 
 **These change the network's wiring and the export, upload it to the gateway and reload the entry.** Each ends with the
@@ -1037,6 +1058,24 @@ starting state restored; the app shows Home Assistant's changes only once it tak
   switches (the room is empty); afterwards the key does its old job again and the room is gone.
 - **Markers:** none in the code (the guide's recipe); the key blueprints' sentence on it, cited under B12.
 
+### D11 · Areas follow a room change (U4-2)
+
+- **Checks:** review-4 U4-2 (brief 47) — with *Move devices along when their JUNG room changes* on, `set_room`
+  moves the light's device, its node device and its keys' device to the new room's area, unless one was placed by
+  hand; off, nothing moves.
+- **Needs:** a `<light>` in room R1 whose devices are in R1's area, a second room R2. **Safety:** `<light>`'s room
+  and the devices' areas change; set back in step 4.
+- **Do:**
+  1. *Configure*: switch *Move devices along when their JUNG room changes* on (the entry reloads).
+  2. Move the *Push-buttons* device next to `<light>` to another area by hand (note it).
+  3. `junghome_ble.set_room` with `<light>`, `room: R2`.
+  4. Undo: `set_room` `<light>` → R1; move the *Push-buttons* device back; switch the option off again.
+- **Pass:** after step 3 `<light>`'s device and its node device are in R2's area, the *Push-buttons* device stays
+  where it was put; after step 4's `set_room` they are back in R1's area (with the option still on); the light
+  never went `unavailable`.
+- **Markers:** `custom_components/junghome_ble/model_update.py::async_sync_areas`,
+  `custom_components/junghome_ble/strings.json::options.step.init.data_description.sync_areas`.
+
 ## E · Credentials, sequence numbers and keys
 
 **Not fully reversible.** Each item says what stays changed. Leave them for last, and skip any you would rather not
@@ -1125,7 +1164,7 @@ spend.
 | **Blinds** (none): cover, lock function select, wind alarm, reference run, *All blinds*, scenes, *update entity*, a key on a blind's slats (`assign_key` `target_element: slat`, brief 38); the end positions, the slat refusal and the parameter gates (F4-16) | `custom_components/junghome_ble/strings.json::selector.target_element.options.slat`, `custom_components/junghome_ble/cover.py::JungHomeCover._update_read`, `custom_components/junghome_ble/cover.py::<module>`, `custom_components/junghome_ble/cover.py::JungHomeAllBlinds`, `custom_components/junghome_ble/const.py::COVER_LEVEL_OPEN`, `custom_components/junghome_ble/select.py::JungHomeLockFunction`, `custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm`, `custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun`, `custom_components/junghome_ble/services.py::_store_scene`, `custom_components/junghome_ble/cover.py::JungHomeCover.async_open_cover`, `custom_components/junghome_ble/cover.py::JungHomeCover.async_close_cover`, `custom_components/junghome_ble/cover.py::JungHomeCover._set_slats`, `custom_components/junghome_ble/config_entities.py::VALUE_GATES`, `custom_components/junghome_ble/number.py::MODE_MINIMUMS`, `custom_components/junghome_ble/select.py::OFFERED_OPTIONS`, `prod:param:blind:move-blind-position-on-power`, `prod:param:blind:move-slat-position-on-power`, `prod:param:blind:on-power-up-behavior`, `prod:param:blind:slat-reversal-time`, `prod:param:blind:slat-ventilation-position`, `prop:0x1103`, `ui:vm:blindsviewmodel.blindsclosing`, `ui:vm:blindsviewmodel.blindsopening`, `ui:vm:blindsviewmodel.updateslatlevel` |
 | **Room thermostats** (none): climate, window, *All thermostats*, key lock bits 3 / 4, *update entity*; the thermostat links and their gates, the boost poll and refusal, `0x1249`, key mode 4 (F4-16) | `custom_components/junghome_ble/climate.py::JungHomeClimate._update_read`, `custom_components/junghome_ble/climate.py::<module>`, `custom_components/junghome_ble/climate.py::JungHomeAllThermostats`, `custom_components/junghome_ble/binary_sensor.py::JungHomeRtrWindow`, `ui:vm:roomtemperatureviewmodel.changemode`, `custom_components/junghome_ble/climate.py::JungHomeClimate.extra_state_attributes`, `custom_components/junghome_ble/climate.py::JungHomeClimate._poll_boost`, `custom_components/junghome_ble/climate.py::JungHomeClimate.async_set_temperature`, `custom_components/junghome_ble/binary_sensor.py::JungHomeRtrSchedulerStatus`, `custom_components/junghome_ble/config_entities.py::PROPERTY_SCHEDULER_ENABLED`, `custom_components/junghome_ble/config_entities.py::THERMOSTAT_GATED`, `custom_components/junghome_ble/jhmesh/devices.py::thermostat_links`, `custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS`, `custom_components/junghome_ble/mesh_config.py::derive_mode`, `custom_components/junghome_ble/strings.json::services.assign_key.description`, `custom_components/junghome_ble/strings.json::services.assign_key.fields.mode.description`, `net:uc:getconnecteddevices`, `net:uc:isanyrtrdeviceconnected`, `net:uc:observertrconnectionmode`, `prod:key-mode:rtr`, `prod:param-gate:rtr-connection`, `prop:0x1249`, `ui:vm:devicesviewmodel.isactiondisabled`, `ui:vm:roomtemperatureviewmodel.requestboostfunction`, `ui:vm:roomtemperatureviewmodel.updateboostmode` |
 | **Detectors** (none): walking test, illuminance, continuous on / off, *update entity*; the detector as a key source, the relay's continuous on / off, the PIR detents and 5 lx steps (F4-16); a detector's sensors in the presence blueprint (U4-3) | `blueprints/automation/junghome_ble/presence_lighting.yaml::blueprint.description`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now`, `custom_components/junghome_ble/switch.py::JungHomeWalkingTest`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance`, `custom_components/junghome_ble/sensor.py::JungHomeForcedOff`, `custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key`, `custom_components/junghome_ble/services.py::_resolve_key`, `prod:param:detector:switch-on-brightness`, `prod:ui:detector_connection_title`, `ui:ctl:detectorsensorviewmodel.pirsensitivity`, `ui:state:detectorforcedoffcapability` |
-| **Battery nodes** (none): keep-awake, how long a transmitter stays awake, the sleep-mode sensor (F4-16) | `custom_components/junghome_ble/keep_awake.py::<module>`, `custom_components/junghome_ble/sensor.py::JungHomeSleepMode`, `ui:state:sleepmode` |
+| **Battery nodes** (none): keep-awake, how long a transmitter stays awake, the sleep-mode sensor (F4-16); a wall transmitter's keys and node in the area of the room its keys switch (U4-2) | `custom_components/junghome_ble/entity.py::gang_room`, `custom_components/junghome_ble/keep_awake.py::<module>`, `custom_components/junghome_ble/sensor.py::JungHomeSleepMode`, `ui:state:sleepmode` |
 | **Mesh 1.1 privacy**: the installation's devices do not use it | `custom_components/junghome_ble/config_flow.py::proxy_in_range`, `custom_components/junghome_ble/jhmesh/client.py::classify_proxy_advert`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon` |
 | **A spare device** (none): `add_device`, `remove_device`, `reset_pending_device`, the vault, its key refresh (D2, D11, D15, D20, W4-7) | `custom_components/junghome_ble/onboard.py::<module>`, `custom_components/junghome_ble/onboard.py::_keep_key`, `custom_components/junghome_ble/onboard.py::async_reset_pending_device`, `custom_components/junghome_ble/services.py::_reset_pending_device`, `custom_components/junghome_ble/jhmesh/provisioning.py::<module>`, `mgmt:flow:checkformissingdevices`, `custom_components/junghome_ble/jhmesh/provisioning.py::provision`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_unconfirmed`, `custom_components/junghome_ble/vault_refresh.py::<module>`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config`, `custom_components/junghome_ble/strings.json::issues.pending_device.description`, `custom_components/junghome_ble/strings.json::issues.vault_unwritable.description`, `custom_components/junghome_ble/strings.json::issues.vault_key_refresh_lagging.description`, `custom_components/junghome_ble/strings.json::services.reset_pending_device.description`, `msg:op:8016`, `msg:op:8045`, `net:alloc:element-group`; the commissioning by the app's rules from the node's own composition, the InsertId check, Time Set, the 30 s budget and the reset of a device `add_device` could not finish (brief 40: F4-13): `custom_components/junghome_ble/jhmesh/commission.py::<module>`, `custom_components/junghome_ble/onboard.py::_commission`, `custom_components/junghome_ble/onboard.py::_reset_new_node`, `custom_components/junghome_ble/strings.json::services.add_device.description`, `mgmt:cfgop:02`, `mgmt:err:configuredeviceerror.nodenotconfigured`, `mgmt:flow:deviceprovisioning`, `mgmt:flow:devicesetupprogress`, `mgmt:setup:provisioningaborting`, `mgmt:setup:settime`, `net:uc:connecttodevicetypegroup`, `net:uc:createelementconnectiongroups`, `net:alloc:element-group`, `mgmt:flow:removedevice` |
 | **A spare device that offers Static OOB or the HMAC-SHA256 algorithm** (no JUNG device is known to; they offer No OOB with algorithm 0): the authenticated provisioning methods (brief 40: P4-8) — run `add_device` with its `static_oob` value and capture the Start (`02 01 00 01 00 00` for HMAC with Static OOB) | `mgmt:provauth:01`, `mgmt:provalg:fips_p_256_elliptic_curve` |
@@ -1183,6 +1222,7 @@ citing the session and sequence number, open a regression test for each failure,
 | C6 | | | |
 | C7 | | | |
 | C8 | | | |
+| C9 | | | |
 | D1 | | | |
 | D2 | | | |
 | D3 | | | |
@@ -1190,6 +1230,7 @@ citing the session and sequence number, open a regression test for each failure,
 | D5 | | | |
 | D6 | | | |
 | D10 | | | |
+| D11 | | | |
 | E1 | | | |
 | E2 | | | |
 | E3 | | | |

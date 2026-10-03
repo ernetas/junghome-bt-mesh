@@ -75,6 +75,7 @@ from .conftest import (
     wait_for_link,
     wait_until,
 )
+from .helpers import through_areas
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -353,6 +354,7 @@ async def test_user_flow_learns_the_certificate_before_the_password_leaves(
         },
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == servers.gateway.fingerprint
     assert result["data"][CONF_GATEWAY_TOKEN] == TOKEN
@@ -400,6 +402,7 @@ async def test_refetch_with_a_changed_certificate_asks_before_the_token_leaves(
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_FINGERPRINT] == servers.impostor.fingerprint
@@ -438,6 +441,7 @@ async def test_gateway_form_with_a_changed_certificate_resumes_after_confirmatio
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_FINGERPRINT] == servers.impostor.fingerprint
@@ -463,6 +467,7 @@ async def test_legacy_entry_without_a_pin_learns_it_on_refetch(
         result["flow_id"], {CONF_UNICAST: "0D00"}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_FINGERPRINT] == servers.gateway.fingerprint
@@ -600,6 +605,7 @@ async def test_mesh_provided_fingerprint_wins_over_the_stored_one(
             result["flow_id"], {CONF_UNICAST: "0D00"}
         )
         await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert mesh_answer["asked"] == [(GATEWAY_NODE, PROPERTY_GATEWAY_FINGERPRINT)]

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+import voluptuous as vol
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
@@ -237,3 +239,31 @@ def device_name_of(hass: HomeAssistant, eid: str) -> str | None:
     assert entry.device_id is not None
     device = dr.async_get(hass).async_get(entry.device_id)
     return device.name if device else None
+
+
+def areas_prefill(result: Any) -> dict[str, Any]:
+    """Return what the config flow's `areas` form shows filled in: its defaults and suggested values."""
+    filled: dict[str, Any] = {}
+    for key in result["data_schema"].schema:
+        suggested = (key.description or {}).get("suggested_value")
+        if suggested is not None:
+            filled[str(key)] = suggested
+        elif not isinstance(key.default, vol.Undefined):
+            filled[str(key)] = key.default()
+    return filled
+
+
+async def through_areas(
+    hass: HomeAssistant, result: Any, user_input: dict[str, Any] | None = None
+) -> Any:
+    """Submit the `areas` step a flow shows after loading an export, as prefilled unless `user_input` is given.
+
+    Any other result is returned as it is.
+    """
+    if result["type"] is not FlowResultType.FORM or result["step_id"] != "areas":
+        return result
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], areas_prefill(result) if user_input is None else user_input
+    )
+    await hass.async_block_till_done()
+    return result

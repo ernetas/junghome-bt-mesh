@@ -583,7 +583,7 @@ async def test_device_registry_layout(
 
     node = devices.async_get_device_by_identifier((DOMAIN, NODE_0148), entry_id)
     assert node is not None
-    assert node.name == "Push-button 1-gang 0148"
+    assert node.name == "WC mirror - Push-button 1-gang"
     assert node.model == "Push-button 1-gang (Switch insert)"  # the export's InsertId
     assert node.serial_number == MAC_LIGHT_SWITCH
     assert node.connections == {(CONNECTION_BLUETOOTH, MAC_LIGHT_SWITCH)}

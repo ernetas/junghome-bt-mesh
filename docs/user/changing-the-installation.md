@@ -20,7 +20,9 @@ added, removed or replaced a device, rewired a key, renamed things or edited roo
   [Maintenance](maintenance.md#the-jung-home-app-changed-the-installation)).
 
 Home Assistant takes the new export over without a reload where it can (no entity goes unavailable), and reloads
-otherwise. Devices that are no longer in it disappear; the others keep their entities, names and history. A device that the app reports as new but that is not in the export yet raises a repair
+otherwise. Devices that are no longer in it disappear; the others keep their entities, names and history. On the way
+it asks again which area each room goes to (see [Areas](getting-started.md#areas)), with your previous choice filled
+in. A device that the app reports as new but that is not in the export yet raises a repair
 notice (see [Maintenance](maintenance.md#jung-home-devices-missing-from-the-export)).
 
 After a **key renewal** in the app (rarely needed), Home Assistant follows along if it was running at the time;
@@ -44,8 +46,10 @@ is recorded and the action tells you which device it was; run it again once the 
 | Take them out of one room | *Remove from room* (`junghome_ble.remove_from_room`) |
 | Create, rename or delete a room | *Create room*, *Rename room*, *Delete room* |
 
-A device without a Home Assistant area is placed in the area named like the room. Keys connected to the room start
-or stop switching the device with it. *Add to room* and *Remove from room* are **unverified on air**.
+A device without a Home Assistant area is placed in the room's area (the one chosen for the room under
+[Areas](getting-started.md#areas), else the one named or aliased like it); with *Move devices along when their JUNG
+room changes* on, a device still in its old room's area moves too. Keys connected to the room start or stop
+switching the device with it. *Add to room* and *Remove from room* are **unverified on air**.
 
 ### Key connections
 

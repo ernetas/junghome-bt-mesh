@@ -42,6 +42,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 from homeassistant.util.hass_dict import HassKey
 
+from .areas import area_name_for
 from .const import (
     DOMAIN,
     NODE_INFO,
@@ -54,14 +55,21 @@ from .const import (
 )
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
-from .jhmesh.devices import BATTERY_PIDS, Blind, Light, Socket, Thermostat
+from .jhmesh.devices import (
+    BATTERY_PIDS,
+    GATEWAY_PID,
+    Blind,
+    Light,
+    Socket,
+    Thermostat,
+)
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from .coordinator import JungHomeHub
     from .jhmesh.cdb import Node
-    from .jhmesh.devices import Button, Device, MeteredLoad
+    from .jhmesh.devices import Button, Device, KeyConnection, MeteredLoad
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -169,17 +177,41 @@ def node_registry_fields(hub: JungHomeHub, node: Node) -> NodeRegistryFields:
     )
 
 
-def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
-    """Return the device info of a node device, hanging off the mesh device.
+def room_area_name(hub: JungHomeHub, room: str | None) -> str | None:
+    """Return the area a device of `room` starts in, by name (its `suggested_area`): `areas.area_name_for`.
 
-    The model is the product and a push-button's insert once known (`inserts.NodeInserts.node_model`), the model id
-    the JUNG product id; the software version (review-3 F1), hardware revision and manufacturer
-    are the node's SIG 0x001A / 0x0010 / 0x0011 once read (`node_registry_fields`; `update_node_device` fills them
-    in when they arrive later). A room thermostat's or detector's entities live on the node device itself, so it
-    carries that device's app name and first room, as a load's own device does.
+    The mapped area's name, else the room's; None without a room, or when the entry assigns no areas. A model
+    looked at without Home Assistant (no `hass`: a stand-in hub resolving devices alone) suggests the room's name.
     """
-    mac = mac_from_uuid(node.uuid)
-    unit = next(
+    if (hass := getattr(hub, "hass", None)) is None:
+        return room
+    return area_name_for(hass, hub.entry.options, room)
+
+
+def _suggest_area(info: DeviceInfo, hub: JungHomeHub, room: str | None) -> None:
+    """Have the device start in the area of `room` (`room_area_name`), when that names one."""
+    if (area := room_area_name(hub, room)) is not None:
+        info["suggested_area"] = area
+
+
+def first_room(device: Device | None) -> str | None:
+    """Return the room a device's own device goes to: its first (a load may be in several, review-4 F4-5), else None."""
+    return device.rooms[0] if device is not None and device.rooms else None
+
+
+def node_loads(hub: JungHomeHub, node: Node) -> list[Device]:
+    """Return the node's loads (lights, sockets, blinds), by element address."""
+    loads: list[Device] = [
+        *hub.devices.lights,
+        *hub.devices.sockets,
+        *hub.devices.blinds,
+    ]
+    return sorted((d for d in loads if d.node is node), key=lambda d: d.address)
+
+
+def node_unit(hub: JungHomeHub, node: Node) -> Device | None:
+    """Return the room thermostat or detector whose entities live on the node device itself, if the node has one."""
+    return next(
         (
             d
             for d in (*hub.devices.thermostats, *hub.devices.detectors)
@@ -187,16 +219,112 @@ def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
         ),
         None,
     )
+
+
+def node_gangs(hub: JungHomeHub, node: Node) -> list[list[Button]]:
+    """Return the node's gangs of keys (`button_gang`), by their lowest key location."""
+    gangs: dict[str, list[Button]] = {}
+    for button in sorted(hub.devices.buttons, key=lambda b: b.location):
+        if button.node is node:
+            gang = button_gang(hub, button)
+            gangs.setdefault(buttons_device_id(gang), gang)
+    return list(gangs.values())
+
+
+def connection_room(hub: JungHomeHub, connection: KeyConnection | None) -> str | None:
+    """Return the room what a key drives is in: the room it switches, or the first room of the load it switches."""
+    if connection is None:
+        return None
+    if connection.kind in ("room", "group"):
+        return connection.name  # a room's name; None for a group that is no room
+    if connection.kind in ("device", "lock") and connection.target is not None:
+        return first_room(hub.devices.by_address.get(connection.target))
+    return None  # a scene, the gateway
+
+
+def gang_room(hub: JungHomeHub, gang: list[Button]) -> str | None:
+    """Return the room a gang of keys goes to: that of a load on its node, else that of what its keys drive.
+
+    A push-button or mini actuator sits next to its load; a node without a load of its own (a wall transmitter,
+    an extension insert, a mini sensor) is where the room it switches is. Unverified on air for a wall transmitter:
+    none has been seen.
+    """
+    node = gang[0].node
+    for load in node_loads(hub, node):
+        if load.rooms:
+            return load.rooms[0]
+    for key in sorted(gang, key=lambda b: b.location):
+        if (room := connection_room(hub, key.connection)) is not None:
+            return room
+    return None
+
+
+def node_room(hub: JungHomeHub, node: Node) -> str | None:
+    """Return the room a node device goes to: that of its first unit (its thermostat or detector, a load, a gang).
+
+    The gateway gets none: it serves the whole home.
+    """
+    if node.pid == GATEWAY_PID:
+        return None
+    if (unit := node_unit(hub, node)) is not None:
+        return first_room(unit)
+    for load in node_loads(hub, node):
+        if load.rooms:
+            return load.rooms[0]
+    for gang in node_gangs(hub, node):
+        if (room := gang_room(hub, gang)) is not None:
+            return room
+    return None
+
+
+def _app_named(hub: JungHomeHub, device: Device) -> bool:
+    """Whether the app named the load (`Metadata.name_for` at its element), rather than the fallback node label."""
+    element = hub.cdb.element(device.address)
+    assert element is not None  # a load is built from one of the CDB's elements
+    return hub.devices.metadata.name_for(device.node.uuid, element.location) is not None
+
+
+def node_device_name(hub: JungHomeHub, node: Node) -> str:
+    """Return the name of a node device: what it carries, so the device list shows which one it is.
+
+    A room thermostat's or detector's node device is that unit (its app name). A node with exactly one unit — its
+    one load, or without a load its one gang of keys — that the app named is `"<unit name> - <product name>"`. Any
+    other (two outputs, two gangs, nothing named) keeps `"<node name> <address>"`.
+    """
+    if (unit := node_unit(hub, node)) is not None:
+        return unit.name
+    loads = node_loads(hub, node)
+    named = (
+        [d.name for d in loads if _app_named(hub, d)]
+        if loads
+        else [g[0].group_name for g in node_gangs(hub, node) if g[0].gang]
+    )
+    units = len(loads) if loads else len(node_gangs(hub, node))
+    if units == 1 and named:
+        return f"{named[0]} - {product_name(node.pid)}"
+    return f"{node.name} {node.unicast:04X}"
+
+
+def node_device_info(hub: JungHomeHub, node: Node) -> DeviceInfo:
+    """Return the device info of a node device, hanging off the mesh device.
+
+    The model is the product and a push-button's insert once known (`inserts.NodeInserts.node_model`), the model id
+    the JUNG product id; the software version (review-3 F1), hardware revision and manufacturer
+    are the node's SIG 0x001A / 0x0010 / 0x0011 once read (`node_registry_fields`; `update_node_device` fills them
+    in when they arrive later). A room thermostat's or detector's entities live on the node device itself, so it
+    carries that device's app name, as a load's own device does. Its name is `node_device_name`'s, its area that
+    of its first unit (`node_room`).
+    """
+    mac = mac_from_uuid(node.uuid)
     fields = node_registry_fields(hub, node)
     info = DeviceInfo(
         identifiers={(DOMAIN, node_identifier(node))},
-        name=unit.name if unit is not None else f"{node.name} {node.unicast:04X}",
+        name=node_device_name(hub, node),
         manufacturer=fields.manufacturer,
         model=hub.inserts.node_model(node),
         serial_number=mac,
     )
-    if unit is not None and unit.rooms:
-        info["suggested_area"] = unit.rooms[0]
+    _suggest_area(info, hub, node_room(hub, node))
     if node.pid is not None:
         info["model_id"] = f"0x{node.pid:04X}"
     if fields.sw_version is not None:
@@ -284,8 +412,7 @@ def light_device_info(hub: JungHomeHub, light: Light) -> DeviceInfo:
     )
     if (via := hub.device_ids.get(node_identifier(light.node))) is not None:
         info["via_device_id"] = via
-    if light.rooms:
-        info["suggested_area"] = light.rooms[0]
+    _suggest_area(info, hub, first_room(light))
     return info
 
 
@@ -302,8 +429,7 @@ def socket_device_info(hub: JungHomeHub, socket: Socket) -> DeviceInfo:
     )
     if (via := hub.device_ids.get(node_identifier(socket.node))) is not None:
         info["via_device_id"] = via
-    if socket.rooms:
-        info["suggested_area"] = socket.rooms[0]
+    _suggest_area(info, hub, first_room(socket))
     return info
 
 
@@ -324,8 +450,7 @@ def blind_device_info(hub: JungHomeHub, blind: Blind) -> DeviceInfo:
     )
     if (via := hub.device_ids.get(node_identifier(blind.node))) is not None:
         info["via_device_id"] = via
-    if blind.rooms:
-        info["suggested_area"] = blind.rooms[0]
+    _suggest_area(info, hub, first_room(blind))
     return info
 
 
@@ -344,7 +469,7 @@ def buttons_device_id(gang: list[Button]) -> str:
 
 
 def buttons_device_info(hub: JungHomeHub, gang: list[Button]) -> DeviceInfo:
-    """Return the device info of a gang of buttons, hanging off its node device."""
+    """Return the device info of a gang of buttons, hanging off its node device, in its room's area (`gang_room`)."""
     info = DeviceInfo(
         identifiers={(DOMAIN, buttons_device_id(gang))},
         name=gang[0].group_name,
@@ -353,6 +478,7 @@ def buttons_device_info(hub: JungHomeHub, gang: list[Button]) -> DeviceInfo:
     )
     if (via := hub.device_ids.get(node_identifier(gang[0].node))) is not None:
         info["via_device_id"] = via
+    _suggest_area(info, hub, gang_room(hub, gang))
     return info
 
 
@@ -396,6 +522,23 @@ def current_device_identifiers(hub: JungHomeHub) -> set[tuple[str, str]]:
         (DOMAIN, buttons_device_id(button_gang(hub, b))) for b in hub.devices.buttons
     )
     return ids
+
+
+def device_rooms(hub: JungHomeHub) -> dict[str, str | None]:
+    """Return the room each device of the current export goes to, by device identifier (the mesh device has none).
+
+    What `areas.async_move_devices` compares: the same rooms the device infos suggest areas for.
+    """
+    rooms: dict[str, str | None] = {}
+    for node in hub.cdb.nodes:
+        if node.pid is not None:
+            rooms[node_identifier(node)] = node_room(hub, node)
+    for load in [*hub.devices.lights, *hub.devices.sockets, *hub.devices.blinds]:
+        rooms[load.unique_id] = first_room(load)
+    for button in hub.devices.buttons:
+        gang = button_gang(hub, button)
+        rooms[buttons_device_id(gang)] = gang_room(hub, gang)
+    return rooms
 
 
 def room_loads(hub: JungHomeHub, kind: type[Device]) -> dict[int, list[Device]]:

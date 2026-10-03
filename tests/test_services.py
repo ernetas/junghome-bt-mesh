@@ -990,7 +990,7 @@ async def test_set_room_by_entity_label_and_entity_area(
     [
         ({"device_id": "nope"}, "service_unknown_device"),
         ({"device_id": BUTTONS_WC}, "service_not_a_load"),
-        ({"entity_id": "event.wc_mirror_button"}, "service_not_a_load"),
+        ({"entity_id": "event.wc_wc_mirror_button"}, "service_not_a_load"),
         ({"entity_id": "light.nope"}, "service_unknown_device"),
         ({"area_id": "empty"}, "service_no_loads"),
     ],

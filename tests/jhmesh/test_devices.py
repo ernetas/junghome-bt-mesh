@@ -37,6 +37,7 @@ from jhmesh.devices import (
     meta_list,
     meter_element,
     pick_insert,
+    room_names,
     time_keeper_candidates,
     with_key_lock,
 )
@@ -831,6 +832,18 @@ def test_time_keeper_group_is_not_a_room():
     assert 0xFEFF not in devices.rooms
     light = devices.by_address[0x0148]
     assert "#time_keeper_group#" not in light.rooms
+
+
+def test_room_names_are_each_room_once_sorted():
+    """What the config flow maps to areas: the rooms' names, a name two rooms share once (review-4 U4-2)."""
+    raw = json.loads(CDB_PATH.read_text())
+    net = raw["meshNetwork"]
+    net["groups"].append(
+        {"name": "Kitchen", "address": "C030", "parentAddress": "0000"}
+    )
+    cdb = CDB.from_network(net)
+    assert room_names(cdb) == ["Kitchen", "Living room", "WC"]
+    assert len(build_devices(cdb).rooms) == 4
 
 
 # ----------------------------------------------------------------------------- key connections

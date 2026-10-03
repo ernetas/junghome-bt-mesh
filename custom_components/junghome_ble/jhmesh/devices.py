@@ -145,6 +145,19 @@ def is_room(address: int, name: str) -> bool:
     )
 
 
+def room_groups(cdb: CDB) -> dict[int, str]:
+    """Return the network's rooms: group address -> name (`is_room`), as the device model keeps them (`Devices.rooms`)."""
+    return {a: n for a, n in cdb.groups.items() if is_room(a, n)}
+
+
+def room_names(cdb: CDB) -> list[str]:
+    """Return the names of the network's rooms, each once, sorted: what the config flow maps to Home Assistant areas.
+
+    Two rooms of one name are one choice there: a device names its room by name (`Device.rooms`).
+    """
+    return sorted(set(room_groups(cdb).values()))
+
+
 KEY_LOCATION = 0x40  # keys, binary inputs and sensor elements start here
 GATEWAY_PID = 0x000B
 
@@ -1158,7 +1171,7 @@ def build_devices(
     table = ELEMENT_RULES if rules is None else rules
     ctx = BuildContext(cdb, meta)
     out = Devices(
-        rooms={a: n for a, n in cdb.groups.items() if is_room(a, n)},
+        rooms=room_groups(cdb),
         metadata=meta,
     )
     # an excluded node (being removed) is in `cdb.excluded_nodes`, never a device

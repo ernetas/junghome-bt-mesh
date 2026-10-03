@@ -808,7 +808,7 @@ async def test_fault_register_is_asked_of_every_node_and_shown_where_identify_is
     The survey's place in the connect sequence is asserted in test_coordinator.py; here it runs by itself.
     """
     wc = entity_id(hass, "binary_sensor", UID_FAULT_WC)
-    assert wc == "binary_sensor.wc_mirror_button_fault"
+    assert wc == "binary_sensor.wc_wc_mirror_button_fault"
     assert (
         device_name_of(hass, wc) == "WC mirror button"
     )  # a push-button's keys, like Identify

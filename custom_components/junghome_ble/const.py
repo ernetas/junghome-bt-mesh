@@ -81,6 +81,16 @@ OPTION_FOLLOW_APP: Final = "follow_app"
 DEFAULT_FOLLOW_APP: Final = True
 OPTION_GATEWAY_CHECK: Final = "gateway_check"
 DEFAULT_GATEWAY_CHECK: Final = True
+# Rooms to areas (`areas.py`, review-4 U4-2): the area each JUNG room's devices start in, chosen in the flow's `areas`
+# step — room name -> area id, or None for an area named after the room (created when missing); a room the mapping
+# does not know (added later) goes to the area named or aliased like it, else to a new one named after it
+CONF_ROOM_AREAS: Final = "room_areas"
+# give new devices an area at all; off, they start without one (the `areas` step's switch)
+OPTION_ASSIGN_AREAS: Final = "assign_areas"
+DEFAULT_ASSIGN_AREAS: Final = True
+# after an export adoption or a room action, move the devices whose room changed, unless the user placed them by hand
+OPTION_SYNC_AREAS: Final = "sync_areas"
+DEFAULT_SYNC_AREAS: Final = False
 
 # Heartbeats (`OPTION_HEARTBEATS`, `docs/hidden-features.md` §4): Config Heartbeat Publication with this PeriodLog
 # (2^(n-1) s) to our own address; a node is dead after HEARTBEAT_MISSED_BEATS periods (plus half a period of slack)

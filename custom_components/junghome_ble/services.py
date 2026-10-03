@@ -58,6 +58,7 @@ from homeassistant.helpers.target import (
 from homeassistant.util.hass_dict import HassKey
 
 from . import onboard
+from .areas import area_name_for
 from .climate import temperature_to_level
 from .const import (
     ATTR_KEY,
@@ -1091,13 +1092,22 @@ async def _wait_for_link(
 
 
 @callback
-def _suggest_area(hass: HomeAssistant, device_id: str | None, room: str) -> None:
-    """Put a device that has no area yet into the area named like its room (as `suggested_area` does on creation)."""
+def _suggest_area(
+    hass: HomeAssistant, entry_id: str, device_id: str | None, room: str
+) -> None:
+    """Put a device that has no area yet into its room's area (`areas.area_name_for`, as on creation).
+
+    The area the entry's `areas` step mapped the room to, else the one named or aliased like it, else a new one
+    named after it; none when the entry assigns no areas.
+    """
     registry = dr.async_get(hass)
     device = registry.async_get(device_id) if device_id else None
-    if device is None or device.area_id is not None:
+    entry = hass.config_entries.async_get_entry(entry_id)
+    if device is None or device.area_id is not None or entry is None:
         return
-    area = ar.async_get(hass).async_get_or_create(room)
+    if (name := area_name_for(hass, entry.options, room)) is None:
+        return
+    area = ar.async_get(hass).async_get_or_create(name)
     registry.async_update_device(device.id, area_id=area.id)
 
 
@@ -1112,14 +1122,16 @@ async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
         mine = [load for load in loads if load.entry_id == entry_id]
 
         async def operation(
-            configurator: MeshConfigurator, mine: list[Load] = mine
+            configurator: MeshConfigurator,
+            mine: list[Load] = mine,
+            entry_id: str = entry_id,
         ) -> bool:
             # one plan, one export rewrite (and `.bak`), one gateway upload for every load of the call
             changed = await configurator.set_rooms(
                 [load.address for load in mine], room, create=create
             )
             for load in mine:
-                _suggest_area(hass, load.device_id, room)
+                _suggest_area(hass, entry_id, load.device_id, room)
             return changed
 
         await _run(hass, entry_id, operation)
@@ -1135,13 +1147,15 @@ async def _add_to_room(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
         mine = [load for load in loads if load.entry_id == entry_id]
 
         async def operation(
-            configurator: MeshConfigurator, mine: list[Load] = mine
+            configurator: MeshConfigurator,
+            mine: list[Load] = mine,
+            entry_id: str = entry_id,
         ) -> bool:
             changed = await configurator.add_to_rooms(
                 [load.address for load in mine], room, create=create
             )
             for load in mine:
-                _suggest_area(hass, load.device_id, room)
+                _suggest_area(hass, entry_id, load.device_id, room)
             return changed
 
         await _run(hass, entry_id, operation)

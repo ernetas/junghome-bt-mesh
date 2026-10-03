@@ -22,6 +22,9 @@ states cache, the property reader, the link — and removed every entity first, 
    changed (`JungHomeEntity.async_model_rebound`: a room entity's members) and writes its state; the registry
    devices follow (`register_parent_devices`, each entity's device info, the devices the export lost pruned).
 
+With `OPTION_SYNC_AREAS` on, the devices whose room the change moved follow it into their new room's area
+(`async_sync_areas`), in place or after the reload alike; a device the user placed stays where it is.
+
 Anything refused in 1 or 2 reloads the entry as before, and so does an error anywhere (logged at DEBUG with the reason):
 the reload rebuilds all of it, so the running model is never left half-updated. Adding or removing a node with
 Home Assistant (`add_device`, `remove_device`), an options change and a reconfiguration still reload. The states
@@ -40,14 +43,18 @@ from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.util.hass_dict import HassKey
 
+from .areas import async_move_devices
 from .const import (
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
     CONF_UNICAST,
+    DEFAULT_SYNC_AREAS,
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
+    OPTION_SYNC_AREAS,
     learn_more_url,
 )
 from .coordinator import (
@@ -61,6 +68,7 @@ from .entity import (
     JungHomeEntity,
     current_device_identifiers,
     current_room_central_ids,
+    device_rooms,
     entities_by_unique_id,
     register_parent_devices,
     room_central_prefix,
@@ -85,6 +93,12 @@ _PRIVATE_ATTR: Final = (
 )
 
 
+# entry id -> each device's room before an export change (`remember_device_rooms`), until `async_sync_areas` takes it
+ROOMS_BEFORE: HassKey[dict[str, dict[str, str | None]]] = HassKey(
+    f"{DOMAIN}_rooms_before"
+)
+
+
 class ApplyRefused(Exception):
     """The export cannot be followed in place with confidence; the message says why (never a key)."""
 
@@ -100,6 +114,7 @@ async def async_follow_export(
     """
     entry = hass.config_entries.async_get_entry(entry_id)
     if entry is not None and entry.state is ConfigEntryState.LOADED:
+        remember_device_rooms(hass, entry)
         try:
             await _async_follow(hass, entry, entry.runtime_data, scenes=scenes)
         except ApplyRefused as err:
@@ -112,8 +127,42 @@ async def async_follow_export(
                 exc_info=True,
             )
         else:
+            async_sync_areas(hass, entry, entry.runtime_data)
             return
     await hass.config_entries.async_reload(entry_id)
+
+
+def remember_device_rooms(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Note each device's room before the entry follows a new export, for `async_sync_areas` (sync on, entry loaded).
+
+    Kept until the next setup or in-place apply of the entry takes it: the export's new rooms are known only then.
+    """
+    if (
+        entry.options.get(OPTION_SYNC_AREAS, DEFAULT_SYNC_AREAS)
+        and entry.state is ConfigEntryState.LOADED
+    ):
+        hass.data.setdefault(ROOMS_BEFORE, {})[entry.entry_id] = device_rooms(
+            entry.runtime_data
+        )
+
+
+def async_sync_areas(hass: HomeAssistant, entry: ConfigEntry, hub: JungHomeHub) -> int:
+    """Move the devices whose room changed since `remember_device_rooms` into their new room's area; how many moved.
+
+    `OPTION_SYNC_AREAS` (off by default): a device the user placed in an area of their own stays there
+    (`areas.async_move_devices`). Unverified on air.
+    """
+    before = hass.data.get(ROOMS_BEFORE, {}).pop(entry.entry_id, None)
+    if before is None or not entry.options.get(OPTION_SYNC_AREAS, DEFAULT_SYNC_AREAS):
+        return 0
+    changed = {
+        ident: (before[ident], room)
+        for ident, room in device_rooms(hub).items()
+        if ident in before and before[ident] != room
+    }
+    return async_move_devices(
+        hass, entry.entry_id, changed, entry.options, entry.options
+    )
 
 
 async def _async_follow(

@@ -101,7 +101,7 @@ async def test_identify_button_sits_where_its_led_is(
     socket its own LED, while the 2-channel actuator in a junction box has nothing visible.
     """
     wc = entity_id(hass, "button", f"node:{NODE_LIGHT_SWITCH}-identify")
-    assert wc == "button.wc_mirror_button_identify"
+    assert wc == "button.wc_wc_mirror_button_identify"
     assert device_name_of(hass, wc) == "WC mirror button"
     rocker = entity_id(hass, "button", f"node:{NODE_LIGHT_CTL}-identify")
     assert device_name_of(hass, rocker) == "Living room rocker"  # the node's first gang
@@ -175,12 +175,12 @@ async def test_clear_faults_button_empties_the_register_and_reads_it_back(
     hub = init_integration.runtime_data
     uid = f"node:{NODE_LIGHT_SWITCH}-clear-faults"
     eid = entity_id(hass, "button", uid)
-    assert eid == "button.wc_mirror_button_clear_faults"
+    assert eid == "button.wc_wc_mirror_button_clear_faults"
     entry = er.async_get(hass).async_get(eid)
     assert entry is not None
     assert entry.entity_category is EntityCategory.DIAGNOSTIC
     assert device_name_of(hass, eid) == "WC mirror button"
-    fault = "binary_sensor.wc_mirror_button_fault"
+    fault = "binary_sensor.wc_wc_mirror_button_fault"
     fake_link.inject(
         LIGHT_SWITCH,
         OUR_ADDRESS,

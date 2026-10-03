@@ -278,7 +278,7 @@ async def test_status_led_is_written_with_a_user_property_status(
 ) -> None:
     """The gateway drives the key's status LED with a User Property Status to the key element, never a Set."""
     eid = entity_id(hass, "switch", UID_STATUS_LED)
-    assert eid == "switch.wc_mirror_button_status_led"
+    assert eid == "switch.wc_wc_mirror_button_status_led"
     state = hass.states.get(eid)
     assert state is not None
     assert (
@@ -314,8 +314,8 @@ async def test_status_led_is_written_with_a_user_property_status(
     a = entity_id(hass, "switch", f"{UID_ROCKER_A}-key_status_led")
     b = entity_id(hass, "switch", f"{UID_ROCKER_B}-key_status_led")
     assert (a, b) == (
-        "switch.living_room_rocker_status_led_a",
-        "switch.living_room_rocker_status_led_b",
+        "switch.living_room_living_room_rocker_status_led_a",
+        "switch.living_room_living_room_rocker_status_led_b",
     )
     await hass.services.async_call(
         SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: b}, blocking=True
@@ -377,10 +377,10 @@ async def test_night_mode(
     await wait_for_link(hass, mock_config_entry)
     await settle(hass, 200)
     eid = entity_id(hass, "switch", UID_NIGHT_MODE)
-    assert eid == "switch.wc_mirror_button_led_night_mode"
+    assert eid == "switch.wc_wc_mirror_button_led_night_mode"
     assert hass.states.get(eid).state == STATE_OFF  # not every LED has it
     rocker = entity_id(hass, "switch", UID_ROCKER_NIGHT_MODE)
-    assert rocker == "switch.living_room_rocker_led_night_mode"
+    assert rocker == "switch.living_room_living_room_rocker_led_night_mode"
     assert hass.states.get(rocker).state == STATE_ON
     # the LED colours were read once for the colour selects and the night-mode switch together
     assert mesh.gets.count((LIGHT_SWITCH, PID_LED1_ON)) == 1
@@ -1066,7 +1066,7 @@ async def test_led_colour_sync(
     """On writes LED 1's values to LED 1 and LED 2 in the app's order (0xA001, 0xA004, 0xA002, 0xA005, as on
     air); while on, an LED 1 colour goes to LED 2 too and LED 2's selects are unavailable; off sends nothing."""
     sync, led1_on, led2_on = await _sync_setup(hass, mesh, mock_config_entry)
-    assert sync == "switch.living_room_rocker_synchronise_led_colours"
+    assert sync == "switch.living_room_living_room_rocker_synchronise_led_colours"
     assert hass.states.get(sync).state == STATE_OFF
     entry = er.async_get(hass).async_get(sync)
     assert entry is not None
@@ -1126,7 +1126,13 @@ async def test_led_colour_sync_is_restored(
 ) -> None:  # fmt: skip
     """The node has no such setting (the app keeps it itself): the flag survives a restart as the entity's state."""
     mock_restore_cache(
-        hass, [State("switch.living_room_rocker_synchronise_led_colours", STATE_ON)]
+        hass,
+        [
+            State(
+                "switch.living_room_living_room_rocker_synchronise_led_colours",
+                STATE_ON,
+            )
+        ],
     )
     sync, _, led2_on = await _sync_setup(hass, mesh, mock_config_entry)
     assert hass.states.get(sync).state == STATE_ON

@@ -93,7 +93,9 @@ Every JUNG device of the export becomes a device in Home Assistant, named as in 
 shows up as **several Home Assistant devices**, because the app shows it that way too:
 
 - the **node device** — the JUNG device itself (a push-button, a socket, an actuator), with its firmware, its
-  diagnostics and the settings that belong to the device as a whole;
+  diagnostics and the settings that belong to the device as a whole; it is named after the one output (or, without
+  an output, the one gang of keys) the app named on it, with the product behind, e.g. *WC mirror (Push-button
+  1-gang)*, and otherwise after the product and its address, e.g. *2-channel actuator 0400*;
 - a **light, socket or blind device** for each output, named as the load in the app — this is where you switch it;
 - a **push-buttons device** per gang of keys, with an event entity per key (*Button A*, *Button B*, …; *Input E1* /
   *Input E2* on a mini actuator);
@@ -110,10 +112,32 @@ a timer — usually within a second.
 
 ## Areas
 
-Each light, socket or blind device is put into the Home Assistant **area** named like its first room in the app; a
-room thermostat or detector likewise. Home Assistant creates the area when there is none of that name. This happens
-once, when the device first appears: afterwards you can move devices to any area you like, and changing rooms in the
-app does not move them again.
+Once the export is read, the setup asks **which Home Assistant area each room of the app goes to** (*Rooms and
+areas*). Each room is prefilled with the area of the same name, or else the area that has the room's name as an
+**alias** — so a room *Küche* lands in your area *Kitchen* when that area lists *Küche* as an alias, instead of a
+second area appearing. Leave a room empty to get an area named after the room (created when there is none);
+switch *Put the JUNG HOME devices in areas* off to leave every device without an area.
+
+The devices then start in these areas:
+
+- a light, socket or blind device in its first room's area;
+- a push-buttons device in the room of the load next to it; a wall transmitter, which has no load, in the room its
+  keys switch (**unverified on air**: none has been seen);
+- a node device in the room of the first thing it carries; a room thermostat or detector in its own room;
+- the gateway and the mesh network device in none.
+
+This happens once, when the device first appears: afterwards move devices to any area you like.
+
+To change the choice later, open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)**, the entry's menu,
+**Reconfigure → Change which area each room's devices go to**. It moves the devices that are still in the area the
+previous choice gave them, or in none, and says how many moved. **A device you placed in another area yourself is
+never moved.**
+
+Changing rooms in the app, or with the room actions, does not move devices — unless you switch on *Move devices
+along when their JUNG room changes* in the integration's options (**Configure**; off by default). Then a device
+whose room changes moves to the new room's area by the same rule: once Home Assistant takes over the app's new
+export, or right after *Set room* and the other [room actions](changing-the-installation.md#rooms). **Unverified on
+air.**
 
 ## Next steps
 

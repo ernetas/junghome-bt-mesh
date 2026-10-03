@@ -67,7 +67,7 @@ async def test_button_actions_are_named_after_the_entity(
     assert describe(events[-1]) == {
         "name": "WC mirror button",
         "message": "clicked",
-        "entity_id": "event.wc_mirror_button",
+        "entity_id": "event.wc_wc_mirror_button",
     }
 
     fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
@@ -75,7 +75,7 @@ async def test_button_actions_are_named_after_the_entity(
     assert describe(events[-1]) == {
         "name": "Living room rocker Button A",
         "message": "hold started",
-        "entity_id": "event.living_room_rocker_button_a",
+        "entity_id": "event.living_room_living_room_rocker_button_a",
     }
 
     fake_link.inject(ROCKER_B, 0xFFFF, M.scene_recall(2, ack=False, tid=3))
@@ -83,7 +83,7 @@ async def test_button_actions_are_named_after_the_entity(
     assert describe(events[-1]) == {
         "name": "Living room rocker Button B",
         "message": "recalled scene 2",
-        "entity_id": "event.living_room_rocker_button_b",
+        "entity_id": "event.living_room_living_room_rocker_button_b",
     }
 
 

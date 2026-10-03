@@ -788,16 +788,43 @@ entry otherwise does a few minutes after the phone was heard and every six hours
 | Device | Represents | Details |
 |---|---|---|
 | *JUNG HOME mesh &lt;uuid&gt;* (service) | The mesh network | Hosts the central *All …* entities, the link diagnostics (*Proxy node*, *Link state*) and the mesh health entities (*Mesh connection*, *Unreachable devices*, *Mesh overview*) |
-| *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room |
+| *&lt;unit&gt; - &lt;product&gt;* or *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room; any other node with exactly one load — or, without a load, one gang of keys — that the app named is *&lt;that name&gt; (&lt;product&gt;)*, e.g. *WC mirror (Push-button 1-gang)* (its `name`, never one you gave it); the others keep *&lt;node name&gt; &lt;address&gt;* |
 | Light / socket device | One output of a node | Identifier `<node uuid>-<element location>` (`0001` / `0002`); model *Switched light*, *Dimmable light* or *Tunable-white (DALI) light* for a light, the product name (*Socket (metering)*, *Socket*) for a socket; linked to the node device |
 | Blind device | One blind / shutter / awning drive of a node | Identifier `<node uuid>-<location of the position element>`, the same scheme as a light; model *Blind / shutter drive*; hosts the `cover` and the blind parameters; linked to the node device |
 | *Push-buttons* device | One **gang** of keys: the keys the app presents as one device (a 2-gang push-button set up as two devices in the app gives two of these, both linked to the same node device) | Identifier `<node uuid>-<lowest key location>-buttons`; model *Push-buttons*, with the node's key layout once known (*Push-buttons (Rocker &#124; Button)*); linked to the node device |
 
-The first room a load belongs to in the app is the *suggested area* of its light, socket or blind device (and of a
-room thermostat's or detector's node device). Home Assistant applies it on its own, once, when it first registers
-the device: the device goes into the area of that name, which Home Assistant creates when there is none. Nothing is
-asked, and nothing follows later: a device you moved to another area stays there, and a room changed in the app
-afterwards does not move it (the room actions below place a device that has no area yet).
+Every device but the mesh device and the gateway's node gets a *suggested area* (review-4 U4-2): a light, socket or
+blind device its first room's, a *Push-buttons* device the room of a load on its node — or, for a node without a
+load (a wall transmitter, an extension insert, a mini sensor), the room of what its keys switch, the room of a room
+link or the first room of the load of a load link (unverified on air for a wall transmitter) — and a node device
+its first unit's: its thermostat or detector, else its first load with a room, else its first gang's. Home Assistant
+applies it once, when it first registers the device, and creates an area by *name* only, aliases ignored. So the
+config flow's **Rooms and areas** step, after every export load (setup, Bluetooth discovery, Reconfigure), maps each
+room (`jhmesh.devices.room_names`: each name once, sorted) to an area: prefilled with the area named like the room,
+else the first that has the room's name as an alias (case ignored); left empty, an area named after the room
+(created when missing, as before); the switch *Put the JUNG HOME devices in areas* off, no area at all. The choice is
+stored in the entry's options (`room_areas`: room → area id, None for empty; `assign_areas`), and the suggested area
+is the mapped area's name — the room's name when the mapped area was deleted since; a room the mapping does not know
+(made in the app later, or an entry from before 1.1.0) takes the area named or aliased like it, else its own name. An
+export without rooms skips the step. The device registry's entity ids then start with the area, as Home Assistant
+does for every device in an area.
+
+Afterwards the integration moves a device only in two cases, and **never one whose area the user set**: only a
+device without an area, or in the very area the previous mapping (or room) gave it, moves, and its new area is
+created when missing (`areas.async_move_devices`):
+
+- **Reconfigure → Change which area each room's devices go to** (offered while the entry runs) shows the stored
+  mapping and moves the devices to the new one; the result says how many moved (`areas_updated`). The new export's
+  *Rooms and areas* step in a reconfiguration moves them the same way. Unverified on air.
+- The option **Move devices along when their JUNG room changes** (`sync_areas`, off by default): after a room action
+  (`set_room`, `add_to_room`, `remove_from_room`, `rename_room`, `delete_room`) or an export Home Assistant took
+  over (the unknown-node adoption, a Reconfigure, a repair's new export), the devices whose room changed move to the
+  new room's area, whether the change was followed in place or by a reload (the rooms are noted before,
+  `model_update.remember_device_rooms`, compared after, `model_update.async_sync_areas`). A renamed room counts as a
+  room change: its devices move to an area named after the new name unless the mapping is updated. Unverified on
+  air.
+
+`set_room` and `add_to_room` place a device that has no area yet into its room's area by the same mapping.
 
 **Renaming a device** in Home Assistant writes the new name where the app's own rename does, so the JUNG HOME app
 shows it once it loads that export (an app that never downloads the project keeps its own name until then): a
@@ -973,6 +1000,7 @@ the integration when something changed.
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
 | Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
 | Check the gateway's export every six hours | on | An entry set up from the gateway asks the gateway for its export every six hours, whatever it heard on the mesh. No effect on an entry set up from a file. See [Following the app](#following-the-app). |
+| Move devices along when their JUNG room changes | off | After a room action or an export Home Assistant took over, a device whose room changed moves to the new room's area, unless you placed it in an area yourself (see [Devices and areas](#devices-and-areas)). Unverified on air. |
 | Node heartbeats (mark a silent device unavailable) | off | On: after each connection every mains-powered device is asked (a standard Bluetooth Mesh *Heartbeat Publication* setting the JUNG app leaves off, sent with the device key once and then at most every six hours) to send a heartbeat to Home Assistant every 64 s. A device that sends neither a heartbeat nor anything else for about 3½ minutes has its entities marked **unavailable**, with a warning in the log, until it is heard again; while it is missing — or while its heartbeats have stopped although it still talks (a metering socket after a power cut keeps publishing readings) — it is asked for heartbeats again every two minutes, so a device that restarted (and lost the setting) comes back, and beats again, by itself. Off (the default): only the rule below marks a device unavailable. Switching the option off tells the devices to stop beating. |
 
 The click option only concerns rockers linked to the gateway (key mode *Gateway*), the only ones that report
@@ -1045,6 +1073,10 @@ changing rooms or editing scenes, and after a key refresh (see [Known limitation
    to approve a new request in the app. Otherwise upload the new `JungHome.json` or point at the new file. The address
    Home Assistant uses in the mesh can be changed in the same dialog.
 3. The new export must belong to the same mesh network; otherwise the dialog refuses it.
+4. **Rooms and areas** shows the room-to-area mapping again, with the stored choice filled in (see
+   [Devices and areas](#devices-and-areas)); submitting it finishes the reconfiguration.
+
+The menu also offers **Change which area each room's devices go to** on its own, without a new export.
 
 A fetched or uploaded export replaces the file the integration keeps for the entry; the file it replaces is kept
 beside it as `<export>.pre-reconfigure` (owner-only, it holds the mesh keys) until the next reconfigure, so rooms,
@@ -1376,7 +1408,8 @@ hand), the action refuses with *"export from the app again"* — export, replace
   refused (*There is no room named …*), so a typo no longer makes a new room and moves the devices into it
   (review-4 W4-12; before 1.1.0 every unknown name created a room).
   The device leaves every other room; keys already connected to the room start driving it. A device without a Home
-  Assistant area is placed in the area of the same name.
+  Assistant area is placed in the room's area (see [Devices and areas](#devices-and-areas)); with `sync_areas` on, one
+  still in its old room's area moves too.
 - **`junghome_ble.add_to_room`** — the same target, `room` and `create` as `set_room`, but the device **stays in the
   rooms it is in**: a device can be in several JUNG rooms, as in the app (review-4 F4-5). It sends the same
   messages as `set_room`'s joining half (the room's subscriptions on the device's OnOff / Level servers, then the

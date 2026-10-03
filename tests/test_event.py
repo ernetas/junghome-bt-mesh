@@ -98,7 +98,7 @@ async def test_entities(hass: HomeAssistant, init_integration: MockConfigEntry) 
     # a node with one key: the button device *is* the entity
     wc = hass.states.get(entity_id(hass, "event", UID_BUTTON_WC))
     assert wc is not None
-    assert wc.entity_id == "event.wc_mirror_button"
+    assert wc.entity_id == "event.wc_wc_mirror_button"
     assert wc.state == STATE_UNKNOWN
     assert wc.attributes[ATTR_DEVICE_CLASS] == EventDeviceClass.BUTTON
     assert wc.attributes[ATTR_EVENT_TYPES] == EVENT_TYPES
@@ -109,9 +109,9 @@ async def test_entities(hass: HomeAssistant, init_integration: MockConfigEntry) 
     rocker_a = hass.states.get(entity_id(hass, "event", UID_ROCKER_A))
     rocker_b = hass.states.get(entity_id(hass, "event", UID_ROCKER_B))
     assert rocker_a is not None
-    assert rocker_a.entity_id == "event.living_room_rocker_button_a"
+    assert rocker_a.entity_id == "event.living_room_living_room_rocker_button_a"
     assert rocker_b is not None
-    assert rocker_b.entity_id == "event.living_room_rocker_button_b"
+    assert rocker_b.entity_id == "event.living_room_living_room_rocker_button_b"
     assert rocker_a.attributes["friendly_name"] == "Living room rocker Button A"
     assert rocker_b.attributes["location"] == "0041"
 
@@ -162,10 +162,13 @@ async def test_one_device_per_gang(
     assert a is not None
     assert b is not None
     assert a.device_id != b.device_id
-    assert (a.entity_id, b.entity_id) == (
-        "event.left_rocker",
-        "event.right_rocker",
-    )  # one key per gang: the device *is* the button
+    assert (
+        (a.entity_id, b.entity_id)
+        == (
+            "event.living_room_left_rocker",
+            "event.living_room_right_rocker",
+        )
+    )  # one key per gang: the device *is* the button (in its room's area, which leads a new entity id)
     left, right = devreg.async_get(a.device_id), devreg.async_get(b.device_id)
     assert left is not None
     assert right is not None
@@ -213,7 +216,10 @@ async def test_same_named_gangs_stay_separate_devices(
     assert a is not None
     assert b is not None
     assert a.device_id != b.device_id
-    assert (a.entity_id, b.entity_id) == ("event.rocker", "event.rocker_2")
+    assert (a.entity_id, b.entity_id) == (
+        "event.living_room_rocker",
+        "event.living_room_rocker_2",
+    )
     left, right = devreg.async_get(a.device_id), devreg.async_get(b.device_id)
     assert left is not None
     assert right is not None

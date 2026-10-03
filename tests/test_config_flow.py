@@ -32,6 +32,7 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
@@ -57,6 +58,7 @@ from custom_components.junghome_ble.const import (
     CONF_GATEWAY_SYNCED,
     CONF_GATEWAY_TOKEN,
     CONF_METADATA_DIR,
+    CONF_ROOM_AREAS,
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
@@ -64,11 +66,13 @@ from custom_components.junghome_ble.const import (
     GATEWAY_DOMAIN,
     GATEWAY_USER_NAME,
     OPTION_ALLOW_PROVISIONING,
+    OPTION_ASSIGN_AREAS,
     OPTION_CLICK_DELAY,
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
     OPTION_PROVISIONER_IDENTITY,
+    OPTION_SYNC_AREAS,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -100,6 +104,7 @@ from .conftest import (
     setup_entry,
     wait_for_link,
 )
+from .helpers import areas_prefill, through_areas
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -346,6 +351,7 @@ async def test_user_flow(
     result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
     await hass.async_block_till_done()
 
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "JUNG HOME mesh 1BAF3ADE"
     assert (
@@ -368,6 +374,7 @@ async def test_user_flow_share_export(
     result = await hass.config_entries.flow.async_configure(
         flow_id, {CONF_CDB_PATH: SHARE_EXPORT_PATH, CONF_UNICAST: "0D00"}
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {
         CONF_CDB_PATH: SHARE_EXPORT_PATH,
@@ -578,6 +585,7 @@ async def test_user_flow_accepts_a_proxy_advertising_node_identity(
     mock_bluetooth_env["infos"] = [make_node_identity_info(cdb, 0x0232)]
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
@@ -625,6 +633,7 @@ async def test_user_flow_address_in_use(
     result = await hass.config_entries.flow.async_configure(
         flow_id, {**USER_INPUT, CONF_CDB_PATH: path, CONF_UNICAST: "0CCD"}
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_UNICAST] == "0CCD"
 
@@ -650,6 +659,7 @@ async def test_user_flow_no_proxy_visible(
         make_service_info(CDB.load(Path(CDB_PATH)).net_keys[0].network_id)
     )
     result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
@@ -685,6 +695,7 @@ async def test_user_flow_metadata_optional(
     result = await hass.config_entries.flow.async_configure(
         flow_id, {CONF_CDB_PATH: CDB_PATH, CONF_UNICAST: "0D00"}
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {**ENTRY_DATA, CONF_METADATA_DIR: ""}
 
@@ -751,6 +762,7 @@ async def test_gateway_flow_password(
     )
     await hass.async_block_till_done()
 
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     stored = _stored(hass)
     assert result["data"] == {
@@ -812,6 +824,7 @@ async def test_gateway_flow_app_approval(
     approved.set()
     result = await _advance_progress(hass, result)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_TOKEN] == TOKEN
     assert result["data"][CONF_GATEWAY_HOST] == HOST  # scheme and slash stripped
@@ -853,6 +866,7 @@ async def test_gateway_flow_not_approved_then_retry(
     )
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _advance_progress(hass, result)
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert len(_calls(aioclient_mock, "/register")) == 2
 
@@ -1000,6 +1014,7 @@ async def test_gateway_flow_token_rejected_registers_anew(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], PASSWORD_INPUT
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_TOKEN] == TOKEN_2
     assert _calls(aioclient_mock, "/project/junghome")[-1][3] == {"token": TOKEN_2}
@@ -1021,6 +1036,7 @@ async def test_gateway_flow_cdb_fallback(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], PASSWORD_INPUT
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert json.loads(_stored(hass).read_text()) == {"meshNetwork": _bare_cdb()}
     assert result["data"][CONF_MESH_UUID] == MESH_UUID
@@ -1050,6 +1066,7 @@ async def test_gateway_flow_no_proxy_visible_keeps_token(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], GATEWAY_INPUT
     )  # no password this time: the token from the first round is reused
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert len(_calls(aioclient_mock, "/register/by-password")) == 1
     assert _calls(aioclient_mock, "/register") == []
@@ -1159,6 +1176,7 @@ async def test_gateway_flow_certificate_changed_during_approval(
     )  # a new access request, pinned anew
     result = await _advance_progress(hass, result)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
     assert len(_calls(aioclient_mock, "/register")) == 2
@@ -1186,6 +1204,7 @@ async def test_gateway_flow_certificate_changed_at_the_fetch_after_approval(
     assert result["step_id"] == "gateway_certificate"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
     assert result["data"][CONF_GATEWAY_TOKEN] == TOKEN
@@ -1217,6 +1236,7 @@ async def test_gateway_flow_certificate_changed_at_the_password_probe(
     )  # the password stayed home
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
     assert len(_calls(aioclient_mock, "/register/by-password")) == 1
@@ -1243,6 +1263,7 @@ async def test_gateway_flow_certificate_changed_at_the_password_registration(
     assert result["step_id"] == "gateway_certificate"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
 
@@ -1304,6 +1325,7 @@ async def test_reconfigure_refetch_certificate_changed_clears_the_repairs(
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
@@ -1350,6 +1372,7 @@ async def test_reconfigure_refetch_with_a_corrupt_pin_learns_anew(
         result["flow_id"], {CONF_UNICAST: "0D00"}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert entry.data[CONF_GATEWAY_FINGERPRINT] == FINGERPRINT
     mock_learn.assert_awaited_once()
@@ -1636,6 +1659,7 @@ async def test_reconfigure_ends_a_pending_reauth(
         result["flow_id"], {CONF_UNICAST: "0D00"}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert not [
         f
@@ -1749,6 +1773,7 @@ async def test_reconfigure_away_from_the_store_deletes_the_stored_export(
         result["flow_id"], FORM_INPUT
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_CDB_PATH] == CDB_PATH
     assert entry.data[CONF_SOURCE] == "path"
@@ -1775,6 +1800,7 @@ async def test_reconfigure_of_a_path_entry_deletes_nothing(
         result["flow_id"], FORM_INPUT
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert copy.exists()
 
@@ -1833,6 +1859,7 @@ async def test_upload_flow(
     await hass.async_block_till_done()
     assert process.call_args[0][1] == user_input[CONF_EXPORT_FILE]
 
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     stored = _stored(hass)
     assert result["data"] == {
@@ -1938,6 +1965,7 @@ async def test_bluetooth_flow(
         result["flow_id"], USER_INPUT
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == ENTRY_DATA
     assert result["result"].unique_id == network_id.hex()
@@ -1960,6 +1988,7 @@ async def test_user_flow_finishes_while_a_discovery_of_the_same_mesh_is_pending(
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["result"].unique_id == network_id.hex()
     assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
@@ -2132,6 +2161,7 @@ async def test_reconfigure_flow(
         {CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: "", CONF_UNICAST: "0d01"},
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     # the mesh UUID is recorded from now on, the Network ID stays the unique_id
@@ -2167,6 +2197,7 @@ async def test_reconfigure_flow_error(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], FORM_INPUT
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
 
@@ -2210,6 +2241,7 @@ async def test_reconfigure_flow_after_key_refresh(
         result["flow_id"], {**FORM_INPUT, CONF_CDB_PATH: new_path}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.unique_id == new_id.hex() != "1fbd2c61a4b6e5a4"
@@ -2251,6 +2283,7 @@ async def test_reconfigure_after_key_refresh_removes_an_ignored_discovery(
         result["flow_id"], {**FORM_INPUT, CONF_CDB_PATH: new_path}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert hass.config_entries.async_get_entry(ignored.entry_id) is None
     assert entry.unique_id == new_id.hex()
@@ -2291,6 +2324,7 @@ async def test_reconfigure_applies_the_key_refresh_the_hub_followed(
         result["flow_id"], FORM_INPUT
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.unique_id == new.network_id.hex()
@@ -2348,6 +2382,7 @@ async def test_reconfigure_flow_legacy_entry_without_readable_export(
         result["flow_id"], {**FORM_INPUT, CONF_CDB_PATH: other_path}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data == {
@@ -2419,6 +2454,7 @@ async def test_reconfigure_refetch(
         result["flow_id"], {CONF_UNICAST: "0d02"}
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data == {
@@ -2467,6 +2503,7 @@ async def test_reconfigure_keeps_the_export_it_replaces(
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_UNICAST: "0D00"}
         )
+        result = await through_areas(hass, result)
     await hass.async_block_till_done()
     assert result["reason"] == "reconfigure_successful"
     kept = pre_reconfigure_path(_stored(hass))
@@ -2500,6 +2537,7 @@ async def test_reconfigure_refetch_token_rejected(
     assert result["step_id"] == "gateway_register"
     result = await _advance_progress(hass, result)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
@@ -2611,6 +2649,7 @@ async def test_reconfigure_gateway_step_reuses_token(
     assert result["type"] is FlowResultType.SHOW_PROGRESS  # token rejected: approval
     result = await _advance_progress(hass, result)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
@@ -2633,6 +2672,7 @@ async def test_reconfigure_gateway_step_new_host(
         result["flow_id"], PASSWORD_INPUT
     )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert mock_config_entry.data == {
@@ -2667,6 +2707,7 @@ async def test_reconfigure_gateway_step_other_gateway(
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _advance_progress(hass, result)
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_GATEWAY_HOST] == "10.0.0.9"
@@ -2698,6 +2739,7 @@ async def test_reconfigure_upload(
             result["flow_id"], _upload_input("0d03")
         )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data == {
@@ -2738,6 +2780,7 @@ async def test_reconfigure_replacing_the_export_drops_the_stale_merge_base(
             {CONF_UNICAST: "0d00"} if option == "gateway_refetch" else _upload_input(),
         )
     await hass.async_block_till_done()
+    result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert json.loads(_stored(hass).read_text()) == _share_export()
     assert not base.exists()  # the next save keeps the export now on disk instead
@@ -2800,6 +2843,7 @@ async def test_reconfigure_of_a_loaded_entry_reloads_once_through_the_listener(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {**FORM_INPUT, CONF_UNICAST: "0d05"}
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
@@ -2834,6 +2878,7 @@ async def test_reconfigure_of_an_unloaded_entry_reloads_it_explicitly(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], FORM_INPUT
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
@@ -2871,6 +2916,7 @@ async def test_reconfigure_with_unchanged_data_still_reloads_once(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], FORM_INPUT
     )
+    result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
@@ -2920,7 +2966,10 @@ async def test_gateway_only_data_update_does_not_reload(
 async def test_options_flow(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_setup_entry: AsyncMock
 ) -> None:
+    """The switches, `sync_areas` off by default; saving keeps what the `areas` step stored next to them."""
+    areas = {OPTION_ASSIGN_AREAS: True, CONF_ROOM_AREAS: {"WC": None}}
     mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(mock_config_entry, options=areas)
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
@@ -2931,6 +2980,7 @@ async def test_options_flow(
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,  # decision M12: following the app is on by default
         OPTION_GATEWAY_CHECK: True,
+        OPTION_SYNC_AREAS: False,
     }  # the defaults
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -2938,16 +2988,19 @@ async def test_options_flow(
             OPTION_CLICK_DELAY: True,
             OPTION_HEARTBEATS: True,
             OPTION_GATEWAY_CHECK: False,
+            OPTION_SYNC_AREAS: True,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.options == {
+        **areas,
         OPTION_CLICK_DELAY: True,
         OPTION_HEARTBEATS: True,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,
         OPTION_GATEWAY_CHECK: False,
+        OPTION_SYNC_AREAS: True,
     }
     # the form offers the stored values next time
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
@@ -2958,6 +3011,7 @@ async def test_options_flow(
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,
         OPTION_GATEWAY_CHECK: False,
+        OPTION_SYNC_AREAS: True,
     }
 
 
@@ -2988,3 +3042,170 @@ async def test_options_change_reloads_the_entry(
     await hass.async_block_till_done()
     assert init_integration.runtime_data is hub
     assert count_setups.call_count == 1
+
+
+# --------------------------------------------------------------------------- the areas step (review-4 U4-2)
+
+
+async def _to_areas(hass: HomeAssistant) -> Any:
+    """Manual setup from the fixture export up to the `areas` step."""
+    flow_id = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "areas"
+    return result
+
+
+async def test_areas_step_prefills_by_name_and_by_alias(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    """Each room is offered the area named like it, else the one with its name as an alias (case aside); a room
+    with neither is empty. As shown, they are stored in the options, an empty one as None."""
+    registry = ar.async_get(hass)
+    toilet = registry.async_create("Toilet", aliases={"wc"})
+    kitchen = registry.async_create("kitchen")
+    result = await _to_areas(hass)
+    prefill = areas_prefill(result)
+    assert prefill == {
+        OPTION_ASSIGN_AREAS: True,
+        "Kitchen": kitchen.id,
+        "WC": toilet.id,
+    }
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], prefill)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["options"] == {
+        OPTION_ASSIGN_AREAS: True,
+        CONF_ROOM_AREAS: {"Kitchen": kitchen.id, "Living room": None, "WC": toilet.id},
+    }
+    assert result["data"][CONF_MESH_UUID] == MESH_UUID
+
+
+async def test_areas_step_switched_off(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    result = await _to_areas(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {OPTION_ASSIGN_AREAS: False}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["options"] == {
+        OPTION_ASSIGN_AREAS: False,
+        CONF_ROOM_AREAS: {"Kitchen": None, "Living room": None, "WC": None},
+    }
+
+
+async def test_areas_step_holds_an_upload_until_it_is_submitted(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    """The uploaded export waits under its incoming name while the rooms are mapped; a flow left there takes it
+    away again."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await _choose(hass, result, "upload")
+    with patch(
+        "custom_components.junghome_ble.config_flow.process_uploaded_file",
+        return_value=_uploaded(SHARE_EXPORT_PATH),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], _upload_input()
+        )
+    assert result["step_id"] == "areas"
+    assert len(_incoming_files(hass)) == 1
+    assert not _stored(hass).exists()
+    hass.config_entries.flow.async_abort(result["flow_id"])
+    await hass.async_block_till_done()
+    assert _incoming_files(hass) == []
+
+
+async def test_areas_step_refuses_a_mesh_set_up_meanwhile(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    """The checks run again on submit: another entry took the mesh while the rooms were being mapped."""
+    result = await _to_areas(hass)
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="another network id",
+        data={**ENTRY_DATA, CONF_MESH_UUID: MESH_UUID},
+    ).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], areas_prefill(result)
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "mesh_already_configured"
+
+
+async def test_an_export_without_rooms_skips_the_areas_step(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    tmp_path: Path,
+) -> None:
+    """Nothing to map: the setup and a reconfiguration finish as before, the options left as they are."""
+    groups = _read_json(CDB_PATH)["meshNetwork"]["groups"]
+    path, _network_id = _export_variant(
+        tmp_path,
+        "NoRooms.json",
+        groups=[g for g in groups if g["name"] not in ("WC", "Living room", "Kitchen")],
+    )
+    flow_id = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_CDB_PATH: path}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["options"] == {}
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="1fbd2c61a4b6e5a4",
+        data={**ENTRY_DATA, CONF_CDB_PATH: path},
+        options={OPTION_HEARTBEATS: True},
+    )
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure(hass, entry, "path")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**FORM_INPUT, CONF_CDB_PATH: path}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.options == {OPTION_HEARTBEATS: True}
+
+
+async def test_reconfigure_with_a_new_export_maps_the_rooms_again(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The step follows the reconfiguration's load too, prefilled with what the entry stores; what it chooses is
+    stored with the new export, next to the entry's other options (an entry not running moves nothing)."""
+    registry = ar.async_get(hass)
+    toilet = registry.async_create("Toilet")
+    pantry = registry.async_create("Pantry")
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            OPTION_HEARTBEATS: True,
+            OPTION_ASSIGN_AREAS: True,
+            CONF_ROOM_AREAS: {"WC": toilet.id, "Kitchen": None},
+        },
+    )
+    result = await _start_reconfigure(hass, mock_config_entry, "path")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], FORM_INPUT
+    )
+    assert result["step_id"] == "areas"
+    prefill = areas_prefill(result)
+    assert prefill == {OPTION_ASSIGN_AREAS: True, "WC": toilet.id}
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**prefill, "Kitchen": pantry.id}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.options == {
+        OPTION_HEARTBEATS: True,
+        OPTION_ASSIGN_AREAS: True,
+        CONF_ROOM_AREAS: {"Kitchen": pantry.id, "Living room": None, "WC": toilet.id},
+    }
