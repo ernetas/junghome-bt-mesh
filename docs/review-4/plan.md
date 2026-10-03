@@ -537,6 +537,12 @@ Dependencies (hard unless marked *soft*):
   `MeshConfigurator` a facade over the `configurator/` package (55); A4-8 the actions into `actions/`, one module per
   domain (56); A4-9 `jhmesh` states its public API in `__all__`, `LocalState` in `jhmesh/state.py` (57). Follow-ups:
   `mesh_errors` at the remaining `send_failed` sites, stale comment references to the old private names.
+- **Wave 16 (briefs 58–59) and the wave-15 follow-ups: done.** A4-3 the button gestures out of `JungHomeHub` into
+  `hub_gestures.ButtonGestures`, the hub's first component (58); Q4 T2, T3, T5, T7, C4 a nightly workflow (thorough
+  Hypothesis, mutation testing, the newest Home Assistant), `tools/trace_to_fixture.py` with a synthetic replayed
+  trace and its privacy test, upgrade fixtures from 1.0.0 (59; traces of the installation's own devices wait for the
+  maintainer's captures). Follow-ups: `mesh_errors` at seven more sites (`audit_network` keeps mapping only a lost
+  link), comments name the moved code's new homes, `actions/` imports absolutely.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -544,4 +550,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 58–64 and 67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 60–64 and 67 are TODO; the on-air sweep is the maintainer's.
