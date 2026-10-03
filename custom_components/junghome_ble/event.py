@@ -6,12 +6,14 @@ A rocker in that mode is one element with two halves: its events carry a `side` 
 messages they send (press_on / press_off / scene / dim). Each entity also says what its key drives
 (`connection_attributes`).
 
-Every event an entity fires is also published on the Home Assistant bus as `EVENT_BUTTON_ACTION`, because a
-device trigger (`device_trigger.py`) can only attach to a bus event, not to an entity (this is how HA's own button
-integrations do it). A `scene` event additionally publishes `EVENT_SCENE_RECALLED`, named after the scene, so
-automations and the logbook can follow scene recalls without knowing which key is wired to which scene. The hub
-publishes the same event for the app's and the gateway's recalls, for our own, and — from the Scene Status the
-members publish after a recall — for one Home Assistant did not hear (`coordinator._on_scene_status`).
+Every event of a key is also published on the Home Assistant bus as `EVENT_BUTTON_ACTION`, because a device trigger
+(`device_trigger.py`) can only attach to a bus event, not to an entity (this is how HA's own button integrations do
+it). The hub publishes it (`publish_button_event`, from `JungHomeHub.fire_button`), not the entity: a key whose event
+entity is disabled keeps its device triggers and logbook lines (review-4 H4-2), the event then without `entity_id`.
+A `scene` event additionally publishes `EVENT_SCENE_RECALLED`, named after the scene, so automations and the logbook
+can follow scene recalls without knowing which key is wired to which scene. The hub publishes the same event for the
+app's and the gateway's recalls, for our own, and — from the Scene Status the members publish after a recall — for
+one Home Assistant did not hear (`coordinator._on_scene_status`).
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
@@ -35,7 +38,8 @@ from .const import (
     EVENT_SCENE_RECALLED,
     SIGNAL_SCENE_RECALLED,
 )
-from .entity import JungHomeEntity, button_gang, buttons_device_info
+from .entity import JungHomeEntity, button_gang, buttons_device_id, buttons_device_info
+from .jhmesh.devices import Button
 from .scene import scene_unique_id
 
 if TYPE_CHECKING:
@@ -43,7 +47,6 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .coordinator import JungHomeHub
-    from .jhmesh.devices import Button
 
 PARALLEL_UPDATES = 0  # push-based
 
@@ -140,6 +143,44 @@ def fire_scene_recalled(
     )
 
 
+@callback
+def publish_button_event(
+    hass: HomeAssistant,
+    hub: JungHomeHub,
+    addr: int,
+    event_type: str,
+    attrs: dict[str, Any],
+) -> None:
+    """Publish a key's event on the bus for device triggers and the logbook, plus the scene event for a recall.
+
+    Called by the hub for every event it delivers (`JungHomeHub.fire_button`), after the key's event entity — if it
+    is enabled — took it: once per event, whether or not that entity exists. An element that is no key, and an
+    event type the entities do not declare (an unknown vendor code), publish nothing. The button event is skipped
+    while the key's buttons device is not in the device registry: a device trigger is keyed on the device id, so an
+    event without one could match nothing. `entity_id` is the key's event entity, left out while it is disabled or
+    not registered (the logbook then names the device and key). The buttons device is looked up in the registry by
+    its identifier: `hub.device_ids` only holds the parents registered up front (`register_parent_devices`).
+    """
+    button = hub.devices.by_address.get(addr)
+    if not isinstance(button, Button) or event_type not in EVENT_TYPES:
+        return
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, buttons_device_id(button_gang(hub, button))), hub.entry.entry_id
+    )
+    device_id = None if device is None else device.id
+    if device_id is not None:
+        data: dict[str, Any] = {ATTR_DEVICE_ID: device_id}
+        entities = er.async_get(hass)
+        entity_id = entities.async_get_entity_id("event", DOMAIN, button.unique_id)
+        entry = entities.async_get(entity_id) if entity_id is not None else None
+        if entry is not None and not entry.disabled:
+            data[ATTR_ENTITY_ID] = entry.entity_id
+        data |= {ATTR_KEY: button.key, CONF_TYPE: event_type, **attrs}
+        hass.bus.async_fire(EVENT_BUTTON_ACTION, data)
+    if event_type == "scene":  # the coordinator always attaches the scene number
+        fire_scene_recalled(hass, hub, attrs[ATTR_SCENE], addr, device_id=device_id)
+
+
 class JungHomeButtonEvent(JungHomeEntity, EventEntity):
     """One key of a push-button node; fires the gesture events the node reports."""
 
@@ -175,37 +216,8 @@ class JungHomeButtonEvent(JungHomeEntity, EventEntity):
 
     @callback
     def _on_event(self, event_type: str, attrs: dict[str, Any]) -> None:
+        """Show the event on the entity; the hub publishes it on the bus itself (`publish_button_event`)."""
         if event_type not in EVENT_TYPES:
             return  # an unknown vendor event code; EventEntity rejects event types it was not declared with
         self._trigger_event(event_type, attrs)
         self.async_write_ha_state()
-        self._fire_bus_events(event_type, attrs)
-
-    @callback
-    def _fire_bus_events(self, event_type: str, attrs: dict[str, Any]) -> None:
-        """Re-emit the event on the bus for device triggers, plus the scene event for a scene recall.
-
-        Skipped while the entity is not in the device registry yet: a device trigger is keyed on the device id,
-        so an event without one could match nothing.
-        """
-        device_entry = self.device_entry
-        if device_entry is None:
-            return
-        self.hass.bus.async_fire(
-            EVENT_BUTTON_ACTION,
-            {
-                ATTR_DEVICE_ID: device_entry.id,
-                ATTR_ENTITY_ID: self.entity_id,
-                ATTR_KEY: self.button.key,
-                CONF_TYPE: event_type,
-                **attrs,
-            },
-        )
-        if event_type == "scene":  # the coordinator always attaches the scene number
-            fire_scene_recalled(
-                self.hass,
-                self.hub,
-                attrs[ATTR_SCENE],
-                self.address,
-                device_id=device_entry.id,
-            )

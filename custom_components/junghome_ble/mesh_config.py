@@ -94,6 +94,7 @@ from .const import (
     ISSUE_PLAN_INTERRUPTED,
     ISSUE_SCENE_HELD,
     OPTION_PROVISIONER_IDENTITY,
+    SERVICE_LINK_WAIT,
     SIGNAL_GATEWAY_SYNCED,
 )
 from .coordinator import issue_id
@@ -159,6 +160,7 @@ from .jhmesh.onboarding import record as record_node
 from .jhmesh.pdu import ALL_PROXIES
 from .jhmesh.vault import RangeError, Ranges
 from .keep_awake import sleepy_node
+from .onboard import advertises_unprovisioned
 
 if TYPE_CHECKING:
     from .coordinator import JungHomeHub
@@ -593,6 +595,18 @@ def _listed_macs(text: str) -> set[str]:
     }
 
 
+def token_rejected_open(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Whether the entry's `gateway_token_rejected` repair is open: raised since Home Assistant started, not cleared.
+
+    An issue raised before a restart comes back from the registry inactive (it is not persistent): it is not open,
+    so the first rejection after the restart is reported — and the reauth started — again.
+    """
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN)
+    )
+    return issue is not None and issue.active
+
+
 def export_digest(doc: dict[str, Any]) -> str | None:
     """SHA-256 of a gateway export's `(meta, network)` content, canonical so whitespace or key order don't matter.
 
@@ -717,6 +731,9 @@ def _confirms_property(params: bytes, prop: int, value: bytes) -> bool:
 NODE_RESET_TIMEOUT = (
     3.0  # seconds to wait for a Node Reset Status, per attempt (three attempts)
 )
+# an unconfirmed reset: how long to look for the node advertising as a new device, and how often (review-4 W4-7)
+RESET_ADVERT_WAIT = 5.0
+RESET_ADVERT_POLL = 0.5
 
 
 def _confirms_key_mode(params: bytes, key_mode: int) -> bool:
@@ -1590,26 +1607,33 @@ class MeshConfigurator:
             raise _failure(key, **placeholders)
 
     def report_token_rejected(self, api: JungHomeGatewayApi) -> None:
-        """Raise the repair for a token the gateway rejects: Reconfigure → fetch again requests access anew.
+        """Raise the repair for a token the gateway rejects, and start Home Assistant's reauthentication.
 
-        Logged once per open repair: a change's check, `sync_gateway` and the status polls all end up here.
+        Logged, and the reauth flow started, once per outage — while the repair is open: a change's check,
+        `sync_gateway` and the status polls all end up here (and Home Assistant starts no second reauth flow while
+        one is in progress). Not `ConfigEntryAuthFailed`: that would stop the entry, and only the gateway sync
+        needs the token — the mesh keeps working. The reauth flow's success clears the repair. A reload aborts the
+        flow; the set-up entry starts it again while the repair is open (`__init__.async_setup_entry`).
         """
-        issue = issue_id(self.hub.entry, ISSUE_GATEWAY_TOKEN)
-        if ir.async_get(self.hub.hass).async_get_issue(DOMAIN, issue) is None:
+        hass, entry = self.hub.hass, self.hub.entry
+        first = not token_rejected_open(hass, entry)
+        if first:
             _LOGGER.warning(
-                "The gateway %s no longer accepts Home Assistant's access token: nothing is exchanged with it "
-                "until the entry is reconfigured (fetching the export again there requests access anew)",
+                "The gateway %s no longer accepts Home Assistant's access token: the export is not handed to it "
+                "until access is granted again (Home Assistant asks for it: Settings → Devices & services)",
                 api.host,
             )
         ir.async_create_issue(
-            self.hub.hass,
+            hass,
             DOMAIN,
-            issue,
+            issue_id(entry, ISSUE_GATEWAY_TOKEN),
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_GATEWAY_TOKEN,
-            translation_placeholders={"host": api.host, "title": self.hub.entry.title},
+            translation_placeholders={"host": api.host, "title": entry.title},
         )
+        if first:
+            entry.async_start_reauth(hass)
 
     async def _gateway_state(self) -> tuple[str, str, str | None, str | None] | None:
         """(text, stamp, gateway digest, disk digest) of the gateway's export against what is on disk.
@@ -2033,6 +2057,12 @@ class MeshConfigurator:
         cancellation too (D12) — still records the removal itself (`ProjectFile.exclude_node`) with what the
         others accepted, and the vault forgets the node either way. The gateway node is refused: taking it out is
         a takeover of its own (plan N11).
+
+        A node can take the reset and lose its status (review-4 W4-7): an unconfirmed reset is looked into
+        (`_reset_unconfirmed`) rather than reported as nothing changed. The node carrying Home Assistant's link
+        (`hub.proxy_node`) is refused without `force`: its reset ends the link its confirmation would come back
+        on. With `force` the link lost on its reset is that silence, and the unwiring waits for the next link.
+        Both unverified on air.
         """
         async with self.lock:
             pf = await self._load()
@@ -2041,6 +2071,12 @@ class MeshConfigurator:
                 raise _validation("service_unknown_element", address=hexaddr(unicast))
             if node.pid == GATEWAY_PID:
                 raise _validation("remove_device_gateway")
+            carries_link = unicast == self.hub.proxy_node
+            if carries_link and not force:
+                raise _validation("remove_device_proxy", address=hexaddr(unicast))
+            # scanners keep a device's advert data merged: one from before it was provisioned proves nothing later
+            advertised = advertises_unprovisioned(self.hub.hass, node.uuid)
+            relink = False
             try:
                 await self.hub.proxy.request_config(
                     unicast,
@@ -2049,23 +2085,27 @@ class MeshConfigurator:
                     timeout=NODE_RESET_TIMEOUT,
                 )
             except TimeoutError as err:
-                if not force:
-                    raise _failure(
-                        "remove_device_no_answer", address=hexaddr(unicast)
-                    ) from err
-                _LOGGER.warning(
-                    "%s did not confirm its reset; removing it from the network all the same",
-                    node.name,
+                await self._reset_unconfirmed(
+                    node, force=force, advertised=advertised, err=err
                 )
             except (ConnectionError, OSError) as err:
-                raise _failure(
-                    "service_send_failed",
-                    node=hexaddr(unicast),
-                    message="Config Node Reset",
-                    applied=APPLIED_NOTHING,
-                ) from err
+                if not carries_link:
+                    raise _failure(
+                        "service_send_failed",
+                        node=hexaddr(unicast),
+                        message="Config Node Reset",
+                        applied=APPLIED_NOTHING,
+                    ) from err
+                _LOGGER.warning(
+                    "%s carried the link, which ended with its reset; removing it from the network all the same",
+                    node.name,
+                )
+                relink = True
             iv_index = self.hub.proxy.state.iv_index
             changes = pf.remove_node(node, iv_index)
+            if relink and changes:
+                # the others' unwiring needs a link; without one it stops at its first message, recorded as such
+                await self.hub.async_wait_connected(SERVICE_LINK_WAIT)
             try:
                 await self._send(
                     self._steps(pf, changes),
@@ -2092,6 +2132,43 @@ class MeshConfigurator:
                 len(changes),
             )
             return True
+
+    async def _reset_unconfirmed(
+        self, node: Node, *, force: bool, advertised: bool, err: TimeoutError
+    ) -> None:
+        """Decide on a Node Reset the node did not confirm: return to go on with the removal, else raise.
+
+        The status can be lost when the node took the reset (it forgets the keys that would seal it), so silence
+        is no "nothing changed". A reset node advertises as a new device (the Mesh Provisioning Service with its
+        UUID): seen within RESET_ADVERT_WAIT, the reset took. Not seen proves nothing — the scanners may not reach
+        it — so the error says it may have been reset, and `force` is the way on for a node that is gone; one
+        that already advertised so before the reset (a stale scanner cache) is not looked for. Unverified on air.
+        """
+        if force:
+            _LOGGER.warning(
+                "%s did not confirm its reset; removing it from the network all the same",
+                node.name,
+            )
+            return
+        if not advertised and await self._advertises_reset(node.uuid):
+            _LOGGER.info(
+                "%s did not confirm its reset but advertises as a new device: it was reset",
+                node.name,
+            )
+            return
+        raise _failure(
+            "remove_device_unconfirmed", address=hexaddr(node.unicast)
+        ) from err
+
+    async def _advertises_reset(self, uuid: str) -> bool:
+        """Whether the node `uuid` advertises as a new device within RESET_ADVERT_WAIT (looked at every POLL)."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + RESET_ADVERT_WAIT
+        while not advertises_unprovisioned(self.hub.hass, uuid):
+            if loop.time() >= deadline:
+                return False
+            await asyncio.sleep(RESET_ADVERT_POLL)
+        return True
 
     async def async_export(self, flavour: str) -> dict[str, Any]:
         """Return the export on disk rendered as `flavour` (`share` / `cdb`), with its mesh and timestamp."""
@@ -2589,6 +2666,12 @@ class MeshConfigurator:
         how many of its steps were accepted, written before its first message and after every accepted one, and
         removed once the export records the outcome; the next setup records what it says (`async_replay_journal`).
         `action` names the plan there, for the repair issue.
+
+        A plan with a step to a node the hub counts as unreachable (`JungHomeHub.node_alive`: a request it left
+        unanswered, or its heartbeats missing) is refused before its first message (review-4 W I5), naming them:
+        it would only stop at that node after CONFIG_TIMEOUT times (1 + CONFIG_RETRIES), with the steps before it
+        applied. `happened` is still recorded. Battery nodes are never marked so; they go the keep-awake way.
+        Unverified on air.
         """
         steps = list(steps)
         sleepy = {
@@ -2598,7 +2681,7 @@ class MeshConfigurator:
         }
         plan = steps if as_planned else ordered(steps, sleepy)
         accepted: list[ConfigStep] = []
-        problem = None
+        problem = self._unreachable(plan, sleepy)
         journal: dict[str, Any] = {
             "action": action,
             "steps": [_step_json(s) for s in plan],
@@ -2607,16 +2690,17 @@ class MeshConfigurator:
             "happened": happened,
         }
         try:
-            if plan or happened is not None:
-                await self._journal_save(journal)
-            async with self.hub.keep_awake.hold(sleepy):
-                for step in plan:
-                    problem = await self._request(step)
-                    if problem is not None:
-                        break
-                    accepted.append(step)
-                    journal["accepted"] = len(accepted)
+            if problem is None:
+                if plan or happened is not None:
                     await self._journal_save(journal)
+                async with self.hub.keep_awake.hold(sleepy):
+                    for step in plan:
+                        problem = await self._request(step)
+                        if problem is not None:
+                            break
+                        accepted.append(step)
+                        journal["accepted"] = len(accepted)
+                        await self._journal_save(journal)
         except asyncio.CancelledError:
             await self._record_stopped(accepted, plan, prepare, happened)
             raise
@@ -2652,6 +2736,23 @@ class MeshConfigurator:
             )
             return record_err
         return None
+
+    def _unreachable(
+        self, plan: list[ConfigStep], sleepy: set[int]
+    ) -> tuple[str, dict[str, str]] | None:
+        """Return the error key and placeholders refusing `plan` for its unreachable nodes; None when all are there."""
+        nodes = sorted(
+            {
+                s.node
+                for s in plan
+                if s.node not in sleepy and not self.hub.node_alive(s.node)
+            }
+        )
+        if not nodes:
+            return None
+        return "service_nodes_unreachable", {
+            "nodes": ", ".join(hexaddr(n) for n in nodes)
+        }
 
     def _silence(self, node: int) -> str:
         """Return the error key for a node that did not answer: *asleep* for a battery node (press a key, then run)."""
@@ -2955,17 +3056,21 @@ class MeshConfigurator:
             )
             return True
 
-    async def set_room(self, address: int, room: str) -> bool:
-        """Put the load element at `address` into `room` (created when missing), leaving every other room."""
-        return await self.set_rooms([address], room)
+    async def set_room(self, address: int, room: str, *, create: bool = False) -> bool:
+        """Put the load element at `address` into `room` (created when missing with `create`), leaving every other room."""
+        return await self.set_rooms([address], room, create=create)
 
-    async def set_rooms(self, addresses: Iterable[int], room: str) -> bool:
-        """Put every load element in `addresses` into `room` (created when missing), leaving every other room.
+    async def set_rooms(
+        self, addresses: Iterable[int], room: str, *, create: bool = False
+    ) -> bool:
+        """Put every load element in `addresses` into `room`, leaving every other room.
 
         Membership is what `AddGroupToDevices` sends: the element's OnOff / Level servers subscribe to the room, and
         to the publish group of every key already linked to the room (`reconnectSwitchesWithGroup`); leaving a room
         is the mirror image (`DeleteGroupFromDevices`). One plan, one file rewrite and one gateway upload for
-        all the loads of a service call — the gateway reconfigures itself on every upload.
+        all the loads of a service call — the gateway reconfigures itself on every upload. A room the export does
+        not have is created only with `create`: a typo used to make a new room and move the loads into it
+        (review-4 W4-12).
         """
         async with self.lock:
             pf = await self._load()
@@ -2975,6 +3080,8 @@ class MeshConfigurator:
             try:
                 group = self._room(pf, room)
             except ServiceValidationError:
+                if not create:
+                    raise
                 created = self._room_name(room)
                 group = self._add_room(pf, room)
             changes: list[ModelChange] = []
@@ -3131,7 +3238,11 @@ class MeshConfigurator:
             self._threshold_plan(await self._load(), socket_address, devices)
 
     async def set_threshold_devices(
-        self, socket_address: int, devices: Iterable[int]
+        self,
+        socket_address: int,
+        devices: Iterable[int],
+        *,
+        applied: Callable[[int, int], str] = applied_text,
     ) -> bool:
         """Make the socket's thresholds switch exactly `devices` (load elements), the wiring of `CreateThreshold`.
 
@@ -3139,7 +3250,7 @@ class MeshConfigurator:
         and publishes there, then each load subscribes its JUNG User Property Server (`0x0527:1013`, where it has
         one) and its OnOff server to that group; a load no longer wanted leaves it (`threshold_wiring`). Both
         thresholds of the socket share the list: the app wires one client for both. The caller writes the
-        threshold first, as the app does.
+        threshold first, as the app does; `applied` words a stop, with what the call wrote before (W4-13).
         """
         async with self.lock:
             pf = await self._load()
@@ -3170,7 +3281,9 @@ class MeshConfigurator:
                         steps += self._steps(pf, pf.subscribe(element, model, group))
             if not steps and pf.snapshot() == before:
                 return self.adopted  # already wired so
-            await self._send(steps, action="junghome_ble.set_threshold")
+            await self._send(
+                steps, action="junghome_ble.set_threshold", applied=applied
+            )
             await self._save(pf)
             _LOGGER.info(
                 "Socket %04X's thresholds now switch %s (group %04X), %d Config messages",
@@ -3181,7 +3294,12 @@ class MeshConfigurator:
             )
             return True
 
-    async def unwire_threshold(self, socket_address: int) -> bool:
+    async def unwire_threshold(
+        self,
+        socket_address: int,
+        *,
+        applied: Callable[[int, int], str] = applied_text,
+    ) -> bool:
         """Stop the socket's thresholds switching anything, as the app does when it disables or deletes one.
 
         On air (the app settings session), once no threshold of the socket is active: every load leaves
@@ -3190,6 +3308,7 @@ class MeshConfigurator:
         again — even when no load was left to unwire. The steps go out in that order (`_send(as_planned=True)`).
         A publication the client does not have to its group is left alone. The app also writes KeyMode 5 to the
         meter element around it, which that element does not hold (`air:access:03-0527:0x5003`): not sent.
+        `applied` words a stop, with what the call wrote before (W4-13).
         """
         async with self.lock:
             pf = await self._load()
@@ -3224,6 +3343,7 @@ class MeshConfigurator:
             await self._send(
                 steps,
                 action="junghome_ble.set_threshold / delete_threshold",
+                applied=applied,
                 as_planned=True,
             )
             if pf.snapshot() == before:
@@ -3243,12 +3363,19 @@ class MeshConfigurator:
             return True
 
     # ------------------------------------------------------------------ sensor values for IoT systems
-    async def set_sensor_publication(self, node_unicast: int, on: bool) -> bool:
+    async def set_sensor_publication(
+        self, node_unicast: int, on: bool, *, live: bool | None = None
+    ) -> bool:
         """Publish the node's sensor values or stop: the app's *Sensor values for IoT systems*.
 
         `ConfigurePublicationForSensorServer`: every Sensor Server of the node publishes to its element's own group,
         where the gateway (and Home Assistant) hear it. Off is a `Publication Set` to `0x0000`. The app's publication parameters (TTL 0xFF, no period: the node
         publishes on change) are inferred, not captured.
+
+        `live` is what the node last answered (the switch's read, None when it has not): a node that differs from
+        `on` gets its Publication Sets even where the export already agrees (review-4 W4-6) — the app changed it
+        since, or never recorded it, and the switch shows the node's state, so a skip would leave it unchangeable.
+        Unverified on air.
         """
         async with self.lock:
             pf = await self._load()
@@ -3267,7 +3394,10 @@ class MeshConfigurator:
                         "service_no_element_group", address=hexaddr(element.address)
                     )
                 want = group if on else None
-                if pf.publication(element, SENSOR_SERVER) == want:
+                if pf.publication(element, SENSOR_SERVER) == want and live in (
+                    None,
+                    on,
+                ):
                     continue
                 if on and (bind := self._bind_step(element, SENSOR_SERVER)) is not None:
                     steps.append(bind)

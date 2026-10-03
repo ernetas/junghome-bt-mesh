@@ -11,10 +11,11 @@ last upload of Home Assistant's export (the app's `gateway_last_sync`) is in the
 
 The gateway is asked under the same rules as the export's fetch and upload (`mesh_config.py`): only with a pin the
 gateway node vouched for (`JungHomeHub.gateway_vouched`; the vouching itself runs on every link), a rejected token
-raises the `gateway_token_rejected` repair (the polls stop asking while it is open), another certificate the
-`gateway_certificate_changed` one. Like the app, a gateway that stops answering is looked for again over the mesh
-(`JungHomeHub.async_follow_gateway`: its `0xC002` address and `0xC003` certificate) — once per outage here, not on
-every failed poll, and never its token (`0xC001` is the app's). An answer clears both repairs.
+raises the `gateway_token_rejected` repair and starts the reauth flow (the polls stop asking while the repair is
+open), another certificate the `gateway_certificate_changed` one. Like the app, a gateway that stops answering is
+looked for again over the mesh (`JungHomeHub.async_follow_gateway`: its `0xC002` address and `0xC003` certificate) —
+once per outage here, not on every failed poll, and never its token (`0xC001` is the app's). An answer clears both
+repairs.
 """
 
 from __future__ import annotations
@@ -53,6 +54,7 @@ from .gateway_api import (
     api_for_entry,
 )
 from .jhmesh.devices import GATEWAY_PID
+from .mesh_config import token_rejected_open
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -98,13 +100,11 @@ class GatewayPoll[T](DataUpdateCoordinator[T]):
             raise UpdateFailed(
                 "the gateway node has not vouched for the pinned certificate"
             )
-        if ir.async_get(self.hass).async_get_issue(
-            DOMAIN, issue_id(hub.entry, ISSUE_GATEWAY_TOKEN)
-        ):
-            # not every interval with a token the gateway rejected: the repair's reconfigure (or an export fetch
-            # that is answered) clears the issue, and the polls ask again
+        if token_rejected_open(self.hass, hub.entry):
+            # not every interval with a token the gateway rejected: the reauth flow (or a reconfigure, or an export
+            # fetch that is answered) clears the issue, and the polls ask again
             raise UpdateFailed(
-                f"the gateway {api.host} rejects the token; reconfigure the entry"
+                f"the gateway {api.host} rejects the token; grant access again"
             )
         try:
             try:

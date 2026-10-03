@@ -4,7 +4,9 @@
 `pdus_dropped` (the nodes drop our messages as replays) are both fixed the same way: the counter continues past
 every number the mesh may have seen (`coordinator.SEQ_SKIP_AHEAD`), then the entry is set up again or the link
 is renewed. `iv_index_mismatch`, when Home Assistant's IV index is ahead of the mesh's and it can go back, takes it
-back to the mesh's index (`JungHomeHub.async_rewind_iv_index`) and sets the entry up again. `plan_interrupted` (a
+back to the mesh's index (`JungHomeHub.async_rewind_iv_index`) and sets the entry up again. `address_shared` (another
+client sends from Home Assistant's address) continues past the numbers it was seen with
+(`JungHomeHub.async_skip_past_shared`), which lets Home Assistant send again. `plan_interrupted` (a
 configuration change cut off by a stop or crash, recorded at the next setup) is a notice: confirming it dismisses it.
 """
 
@@ -22,6 +24,7 @@ from homeassistant.helpers import issue_registry as ir
 
 from .const import (
     DOMAIN,
+    ISSUE_ADDRESS_SHARED,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_PDUS_DROPPED,
     ISSUE_PLAN_INTERRUPTED,
@@ -38,7 +41,7 @@ class SkipAheadFlow(RepairsFlow):
     """Confirm, then continue the address's sequence numbers past the ones the mesh may know.
 
     For an IV index ahead of the mesh's (`iv_index_mismatch`): go back to the mesh's index, above every number sent
-    since.
+    since. For another client on the address (`address_shared`): past the numbers it was seen with.
     """
 
     def __init__(self, kind: str, data: dict[str, Any]) -> None:
@@ -83,6 +86,8 @@ class SkipAheadFlow(RepairsFlow):
                 return self.async_abort(reason=reason)
             ir.async_delete_issue(self.hass, DOMAIN, self.issue_id)
             self.hass.config_entries.async_schedule_reload(entry.entry_id)
+        elif self.kind == ISSUE_ADDRESS_SHARED:
+            await hub.async_skip_past_shared()  # deletes the issue
         else:
             # the issue stays until a device answers: that is the proof the skip was enough
             await hub.async_skip_ahead()
@@ -116,7 +121,12 @@ async def async_create_fix_flow(
         return ConfirmRepairFlow()
     kind = next(
         key
-        for key in (ISSUE_SEQ_STORE_LOST, ISSUE_PDUS_DROPPED, ISSUE_IV_INDEX_MISMATCH)
+        for key in (
+            ISSUE_SEQ_STORE_LOST,
+            ISSUE_PDUS_DROPPED,
+            ISSUE_IV_INDEX_MISMATCH,
+            ISSUE_ADDRESS_SHARED,
+        )
         if issue_id.startswith(f"{key}_")
     )
     return SkipAheadFlow(kind, data or {})

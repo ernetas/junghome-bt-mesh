@@ -41,6 +41,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_call_later
+from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import const
@@ -86,6 +87,8 @@ from .jhmesh.devices import (
 from .jhmesh.pdu import decode_opcode
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from homeassistant.helpers.device_registry import DeviceInfo
 
     from .jhmesh.cdb import Element, Node
@@ -1154,6 +1157,20 @@ READERS: HassKey[dict[str, PropertyReader]] = HassKey(f"{DOMAIN}_property_reader
 Job = Callable[[], Awaitable[None]]
 
 
+@dataclass(eq=False)
+class _Queued:
+    """A job in the reader's queue: the element it reads, what it reads (`key`), the link it was queued for.
+
+    `link` is the hub's `link_count` the job was queued on; None for one queued while no link was up, which waits
+    for the next link, whichever it is.
+    """
+
+    addr: int
+    key: object
+    link: int | None
+    job: Job
+
+
 class PropertyReader:
     """The mesh side of the config entities of one hub: rate-limited initial reads, serialised per element.
 
@@ -1165,6 +1182,11 @@ class PropertyReader:
     property's Get. A property several entities share (the LED colours and the night mode) is read once: a read
     that succeeded within `PROPERTY_READ_FRESH` is not repeated.
 
+    A job is queued once (review-4 R4-5): one still waiting is kept in its place and counted for the current link,
+    and one queued on a link that went away is dropped when its turn comes — its entity queues it again on the next
+    link if it still wants it. Several quick drops used to leave a copy per link in the queue, each read in turn.
+    Unverified on air.
+
     An entity that rewrites a value other entities write too (an LED colour and the night-mode byte, the three
     fields of an edge-evaluation byte, the two ends of a lightness range) holds `modifying(addr)` from reading the
     current value to its write: two such changes at once would otherwise both start from the same value and the
@@ -1174,7 +1196,9 @@ class PropertyReader:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub`; no worker until the first job."""
         self.hub = hub
-        self._jobs: deque[tuple[int, Job]] = deque()
+        self._jobs: deque[_Queued] = deque()
+        # (address, key) -> its entry in `_jobs`, while it waits there
+        self._queued: dict[tuple[int, object], _Queued] = {}
         self._worker: asyncio.Task[None] | None = None
         self._locks: defaultdict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
         # per element, around a whole read-modify-write; `_locks` is taken inside it by each exchange
@@ -1182,36 +1206,56 @@ class PropertyReader:
         self._read_at: dict[
             tuple[int, int | str], float
         ] = {}  # (address, property id or setup state name) -> when it last answered
-        self._version_link: dict[
-            int, int
-        ] = {}  # node unicast -> `hub.link_count` its version was asked on
+        # node unicast -> `hub.link_count` its version was last queued on (`schedule_version`)
+        self._version_link: dict[int, int] = {}
+        # node unicast -> when the last read of its node information that got every answer started (`_read_version`)
+        self._version_read: dict[int, datetime] = {}
         # load address -> the time limit (s, 0 = none) its lock switch sends, set by its `number` entity
         self.lock_time_limits: dict[int, int] = {}
         # LED element address -> whether LED 1's colours are copied to LED 2 (`switch.JungHomeLedColourSync`)
         self.led_sync: dict[int, bool] = {}
 
     @callback
-    def schedule(self, addr: int, job: Job) -> None:
-        """Queue `job`, a read of the element at `addr`, and make sure the worker runs."""
-        self._jobs.append((addr, job))
+    def schedule(self, addr: int, job: Job, *, key: object = None) -> None:
+        """Queue `job`, a read of the element at `addr`, and make sure the worker runs.
+
+        `key` names what the job reads (by default the job itself: an entity's bound method equals itself on every
+        call). A job with the same address and key still waiting is not queued again: it keeps its place and is
+        counted for the current link.
+        """
+        link = self.hub.link_count if self.hub.connected else None
+        ident = (addr, job if key is None else key)
+        queued = self._queued.get(ident)
+        if queued is not None:
+            queued.link, queued.job = link, job
+        else:
+            self._queued[ident] = item = _Queued(addr, ident[1], link, job)
+            self._jobs.append(item)
         if self._worker is None or self._worker.done():
             self._worker = self.hub.entry.async_create_background_task(
                 self.hub.hass, self._run(), f"{DOMAIN} property reads"
             )
 
     def _take_chunk(self) -> list[Job]:
-        """Dequeue up to `PROPERTY_READ_CHUNK` jobs for distinct elements, oldest first."""
-        chunk: list[tuple[int, Job]] = []
+        """Dequeue up to `PROPERTY_READ_CHUNK` jobs for distinct elements, oldest first; drop those of lost links.
+
+        One pass that rebuilds the queue: taking each job out with `deque.remove` cost a scan of the queue per job.
+        """
+        current = self.hub.link_count
+        chunk: list[Job] = []
         addrs: set[int] = set()
+        rest: deque[_Queued] = deque()
         for item in self._jobs:
-            if item[0] not in addrs:
-                chunk.append(item)
-                addrs.add(item[0])
-                if len(chunk) == PROPERTY_READ_CHUNK:
-                    break
-        for item in chunk:
-            self._jobs.remove(item)
-        return [job for _, job in chunk]
+            if item.link is not None and item.link != current:
+                del self._queued[item.addr, item.key]  # queued on a link that is gone
+            elif len(chunk) < PROPERTY_READ_CHUNK and item.addr not in addrs:
+                del self._queued[item.addr, item.key]
+                chunk.append(item.job)
+                addrs.add(item.addr)
+            else:
+                rest.append(item)
+        self._jobs = rest
+        return chunk
 
     async def _wait_for_setup(self) -> bool:
         """Hold the first reads until every platform has queued its jobs (the entry is LOADED).
@@ -1256,35 +1300,47 @@ class PropertyReader:
 
     @callback
     def schedule_version(self, node: Node) -> None:
-        """Queue a read of what the node tells about itself (`_read_version`), once per node and link.
+        """Queue a read of what the node tells about itself (`_read_version`), once per hub and node.
 
         The firmware gates (`node_version`: illuminance scaling, `_candidates`, the thermostat's property set)
         need the software version and nothing else asks for it. The hub keeps what it learns across the entry's
         reloads and on disk (`coordinator.NODE_VERSIONS`), so `_candidates` — which runs once, at setup, before any
         read — applies it from the next setup on, a restart's included.
+
+        A read that got every answer is not repeated until the hub sees the node restart (`hub.restarted`: a
+        firmware update restarts it; review-4 R4-5) — asked on every link, it cost a Get per node at every link-up
+        and piled up in the queue when links came and went. One that went unanswered is queued again on the next
+        link, at most once per link. Unverified on air.
         """
-        if self._version_link.get(node.unicast) == self.hub.link_count:
+        unicast = node.unicast
+        read = self._version_read.get(unicast)
+        restarted = self.hub.restarted.get(unicast)
+        if self._version_link.get(unicast) == self.hub.link_count or (
+            read is not None and (restarted is None or restarted < read)
+        ):
             return
-        self._version_link[node.unicast] = self.hub.link_count
-        self.schedule(node.unicast, partial(self._read_version, node))
+        self._version_link[unicast] = self.hub.link_count
+        self.schedule(unicast, partial(self._read_version, node), key="version")
 
     async def _read_version(self, node: Node) -> None:
         """Ask the node for its software version, then for what else of its node information is not known yet.
 
         The app reads the identity block (SIG 0x0011, 0x001A, 0x0010) and the time role on every opening of the
-        device page (the settings session); here the software version is asked once per link and the rest
-        once for good — a node's hardware revision, manufacturer name and LBC version blocks (0x0003 .. 0x0005,
-        `NODE_INFO_VENDOR`) do not change while it keeps its address, and every Get is traffic at link-up. The
-        time role is kept the same way: only the device diagnostics show it, nothing acts on it, Home Assistant
-        never sets it, and every node on air answered "client". A node that does not answer the first Get is not
-        asked the rest on this link. SIG Statuses land in the hub's cache through its property handler, the others
-        through `remember_node_info` here.
+        device page (the settings session); here the software version is asked once per hub and restart of the
+        node (`schedule_version`) and the rest once for good — a node's hardware revision, manufacturer name and
+        LBC version blocks (0x0003 .. 0x0005, `NODE_INFO_VENDOR`) do not change while it keeps its address, and
+        every Get is traffic at link-up. The time role is kept the same way: only the device diagnostics show it,
+        nothing acts on it, Home Assistant never sets it, and every node on air answered "client". A node that does
+        not answer the first Get is not asked the rest on this link. SIG Statuses land in the hub's cache through
+        its property handler, the others through `remember_node_info` here.
 
         An item the node answers without a value (it does not have it) is remembered as not supported under the
         software version it just answered (`NODE_INFO_UNSUPPORTED`), so it is not asked on every link either; a
-        firmware update asks again. Silence is not an answer: that item is asked on the next link.
+        firmware update asks again. Silence is not an answer: that item, and the version with it, is asked on the
+        next link.
         """
         addr = node.unicast
+        started = dt_util.utcnow()
         async with self._locks[addr]:
             version = await self._ask_sig(addr, SIG_SOFTWARE_VERSION)
             if version is None:
@@ -1293,6 +1349,7 @@ class PropertyReader:
                 )
                 return
             known = self.hub.node_info(addr)
+            complete = True
 
             def wanted(name: str) -> bool:
                 return (
@@ -1302,17 +1359,21 @@ class PropertyReader:
 
             for pid in (SIG_HARDWARE_REVISION, SIG_MANUFACTURER_NAME):
                 name = NODE_INFO[pid]
-                if wanted(name) and await self._ask_sig(addr, pid) == b"":
-                    self._unsupported(addr, name, version)
+                if wanted(name):
+                    answer = await self._ask_sig(addr, pid)
+                    complete = complete and answer is not None
+                    if answer == b"":
+                        self._unsupported(addr, name, version)
             for pid, name in NODE_INFO_VENDOR.items():
-                if (
-                    wanted(name)
-                    and (node.pid or 0) in P.PROPERTIES[pid].products
-                    and await self._ask_vendor_info(addr, pid, name) == b""
-                ):
-                    self._unsupported(addr, name, version)
+                if wanted(name) and (node.pid or 0) in P.PROPERTIES[pid].products:
+                    answer = await self._ask_vendor_info(addr, pid, name)
+                    complete = complete and answer is not None
+                    if answer == b"":
+                        self._unsupported(addr, name, version)
             if NODE_INFO_TIME_ROLE not in known:
-                await self._ask_time_role(node)
+                complete = await self._ask_time_role(node) and complete
+            if complete:
+                self._version_read[addr] = started
 
     def _unsupported(self, addr: int, name: str, version: bytes) -> None:
         """Remember that the node at `addr` has no item `name` under software version `version` (`_read_version`)."""
@@ -1380,24 +1441,28 @@ class PropertyReader:
             self.hub.remember_node_info(addr, name, value)
         return value
 
-    async def _ask_time_role(self, node: Node) -> None:
-        """Send Time Role Get to the node's Time Setup Server (`1201`, every JUNG node has one) and keep its role."""
+    async def _ask_time_role(self, node: Node) -> bool:
+        """Send Time Role Get to the node's Time Setup Server (`1201`, every JUNG node has one) and keep its role.
+
+        Returns False when the role is still to be asked: the node stayed silent or answered no role.
+        """
         element = next(
             (e for e in node.elements if TIME_SETUP_SERVER in e.models), None
         )
         if element is None:
-            return
+            return True
         reply = await self._ask(
             element.address, M.time_role_get(), M.TIME_ROLE_STATUS, NODE_INFO_TIME_ROLE
         )
         if reply is None:
-            return
+            return False
         try:
             M.decode_time_role_status(reply.params)
         except ValueError as err:
             _LOGGER.debug("%04X: %s", element.address, err)
-            return
+            return False
         self.hub.remember_node_info(node.unicast, NODE_INFO_TIME_ROLE, reply.params[:1])
+        return True
 
     def modifying(self, addr: int) -> asyncio.Lock:
         """Return the lock a read-modify-write of a value of the element at `addr` holds (class docstring)."""
@@ -1707,15 +1772,13 @@ class ConfigEntity(JungHomeEntity):
         A read that got no answer (or was cut by a lost link) is queued again on the next link, not on the next
         update of this one: the element was asked and stayed silent, asking again through the same link would only
         add to the traffic that may have drowned the first attempt. Never for a battery node (`_on_key_event`).
+        A read still queued from a lost link is queued again regardless: the reader drops the lost link's copy
+        (`PropertyReader.schedule`) and keeps one.
         """
         if not self.hub.connected or self._battery:
             return
         self.reader.schedule_version(self.target.node)
-        if (
-            self._read_done
-            or self._read_pending
-            or self._read_link == self.hub.link_count
-        ):
+        if self._read_done or self._read_link == self.hub.link_count:
             return
         self._read_pending = True
         self._read_link = self.hub.link_count

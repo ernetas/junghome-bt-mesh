@@ -106,6 +106,8 @@ def bleak_client(monkeypatch: pytest.MonkeyPatch, cdb: CDB) -> Any:
                 cdb, address=getattr(address_or_device, "address", address_or_device)
             )
             self.is_connected = False
+            # as a real proxy: `connect` waits for this beacon before the filter request (`BEACON_WAIT`)
+            self.beacon_on_subscribe = True
             self.given = address_or_device
             self.disconnected_callback = disconnected_callback
             self.timeout = timeout
@@ -222,6 +224,42 @@ async def test_connect_with_explicit_candidate(
     client.drop()
     assert proxy.client is None
     assert not proxy.connected
+
+
+async def test_connect_waits_for_the_proxy_beacon_before_the_filter(
+    proxy: ProxyClient,
+    bleak_client: Any,
+    fast: FastAsyncio,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Review-4 R4-10: the CLI's link sent its filter request without waiting for the proxy's beacon (the hub
+    waits), so after an IV Update the request went out under a stale IV index and the proxy dropped it. `connect`
+    waits up to BEACON_WAIT for it; a proxy that does not beacon gets the filter after that wait."""
+    waits: list[float] = []
+    wait = proxy._wait_for_beacon
+
+    async def spy(timeout: float) -> None:
+        waits.append(timeout)
+        await wait(timeout)
+
+    monkeypatch.setattr(proxy, "_wait_for_beacon", spy)
+    await connect(proxy, ProxyCandidate(ADDR_A, -50, "network-id"))
+    assert waits == [standalone.BEACON_WAIT]
+    assert proxy.proxy_addr == PROXY_NODE  # the filter went out and was answered
+    await proxy.detach()
+
+    # a proxy that does not beacon when subscribed to: the filter follows the (shortened) wait
+    monkeypatch.setattr(standalone, "BEACON_WAIT", 0.01)
+    connecting = bleak_client.cls.__init__
+
+    def quiet(self: Any, *args: Any, **kw: Any) -> None:
+        connecting(self, *args, **kw)
+        self.beacon_on_subscribe = False
+
+    monkeypatch.setattr(bleak_client.cls, "__init__", quiet)
+    await connect(proxy, ProxyCandidate(ADDR_B, -50, "network-id"))
+    assert waits[1:] == [0.01]
+    assert proxy.proxy_addr == PROXY_NODE
 
 
 async def test_connect_uses_the_address_when_there_is_no_device_object(

@@ -253,6 +253,31 @@ def test_copies_the_proxy_forwards_are_handed_out_once() -> None:
     assert any("handed out" in p for p in mesh.violations())
 
 
+def test_our_own_pdus_handed_back_by_the_proxy_are_not_another_client() -> None:
+    """A proxy that forwards every copy hands the client its own PDUs back as the relays repeat them: each carries a
+    number the client handed out, so none is taken for another client on its address (review-4 S I2)."""
+    echoes: list[tuple[int, int]] = []
+    foreign: list[tuple[int, int]] = []
+
+    async def body(s: Session) -> None:
+        s.client.on_foreign_own_source = lambda iv, seq: foreign.append((iv, seq))
+        handed_out = s.client._handed_out
+
+        def spy(iv: int, seq: int) -> bool:
+            echoes.append((iv, seq))
+            return handed_out(iv, seq)
+
+        s.client._handed_out = spy  # type: ignore[method-assign]
+        for i in range(4):
+            assert await s.onoff(FAR, bool(i % 2)) is bool(i % 2)
+
+    simulate(
+        body, Mesh(quirks=Quirks(proxy_forwards_every_copy=True), retransmissions=True)
+    )
+    assert echoes  # the proxy did hand our own PDUs back
+    assert foreign == []
+
+
 # ============================================================================= request / response
 
 

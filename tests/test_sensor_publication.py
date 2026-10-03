@@ -123,6 +123,31 @@ async def test_set_sensor_publication(hass: HomeAssistant, env: Env) -> None:
     assert publication(env) == METER_GROUP
 
 
+async def test_set_sensor_publication_plans_against_the_node(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 W4-6: the export says off, the node publishes (the app turned it on since): turning it off sends
+    the Publication Set the export alone would skip, and records it; a node that agrees with the export sends
+    nothing."""
+    pf = env.reload()
+    pf.set_publication(SOCKET, pf.cdb.element(SOCKET_SENSOR), "1100", None)
+    pf.save(env.path, force=True)
+    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    assert await configurator.set_sensor_publication(SOCKET, False) is False
+    assert await configurator.set_sensor_publication(SOCKET, False, live=False) is False
+    assert env.config_calls == []
+    await svc.async_configure(
+        hass,
+        env.entry.entry_id,
+        lambda c: c.set_sensor_publication(SOCKET, False, live=True),
+    )
+    await settled(hass, env)
+    assert [p for _n, p in env.config_calls] == [
+        C.model_publication_set(SOCKET_SENSOR, 0, "1100")
+    ]
+    assert publication(env) is None
+
+
 async def test_set_sensor_publication_refusals(hass: HomeAssistant, env: Env) -> None:
     configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
     with pytest.raises(ServiceValidationError) as exc:
@@ -160,8 +185,16 @@ async def test_sensor_publication_switch(hass: HomeAssistant, env: Env) -> None:
         await entity.async_turn_on()
     assert calls == [env.entry.entry_id] * 2
     assert configurator.set_sensor_publication.await_args_list == [
-        ((SOCKET, False),),
-        ((SOCKET, True),),
+        ((SOCKET, False), {"live": None}),
+        ((SOCKET, True), {"live": None}),
+    ]
+    # once the node answered, the switch plans against that (W4-6)
+    entity._published = True
+    configurator.reset_mock()
+    with patch.object(SW, "async_configure", run):
+        await entity.async_turn_off()
+    assert configurator.set_sensor_publication.await_args_list == [
+        ((SOCKET, False), {"live": True})
     ]
     assert P.parse_version("1.3.0.0") == SW.SENSOR_PUBLICATION_MIN_VERSION
 

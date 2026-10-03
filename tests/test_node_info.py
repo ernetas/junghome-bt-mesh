@@ -1,18 +1,20 @@
 """What a node tells about itself: the identity block, the LBC version blocks and the time role (A18, A10 parity).
 
 The app reads SIG 0x0011 / 0x001A / 0x0010 and the time role on every opening of a device page (on air
-settings session); the reader asks the version once per link, the rest (the time role too) once for good, and the
-node's device shows the manufacturer name and hardware revision.
+settings session); the reader asks the version once per hub and restart of the node, the rest (the time role too)
+once for good, and the node's device shows the manufacturer name and hardware revision.
 """
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.helpers import device_registry as dr
+from homeassistant.util import dt as dt_util
 
 from custom_components.junghome_ble.config_entities import PropertyReader
 from custom_components.junghome_ble.const import (
@@ -237,6 +239,72 @@ async def test_an_item_the_node_lacks_is_not_asked_again_until_a_firmware_update
         *VALUELESS,
     ]
     assert remembered == dict.fromkeys(UNSUPPORTED, b"02030000")
+
+
+# all a push-button tells about itself but its time role
+KNOWN_BUT_THE_ROLE = {
+    "hardware_revision": b"1",
+    "manufacturer_name": b"J",
+    "secure_element_version": b"\x0d\x02\x01\x00",
+    "bootloader_version": b"\x01\x00\x00\x00",
+}
+
+
+def _scheduling(
+    reader: PropertyReader,
+) -> list[tuple[int, object, Callable[[], Awaitable[None]]]]:
+    """Give the reader's hub a link and record what `schedule_version` queues instead of running a worker."""
+    hub = reader.hub
+    hub.link_count, hub.connected, hub.restarted = 1, True, {}  # type: ignore[misc]
+    queued: list[tuple[int, object, Callable[[], Awaitable[None]]]] = []
+
+    def schedule(addr: int, job: Callable[[], Awaitable[None]], *, key: object) -> None:
+        queued.append((addr, key, job))
+
+    reader.schedule = schedule  # type: ignore[method-assign]
+    return queued
+
+
+async def test_the_version_is_asked_once_per_hub_and_again_after_a_restart() -> None:
+    """Review-4 R4-5: asked on every link, the version cost a Get per node at each link-up. A read that got every
+    answer is not repeated until the node restarts (a firmware update restarts it); one still unanswered is asked
+    again on the next link, once."""
+    answers = {sig_get(SIG_SOFTWARE_VERSION): b"\x1a\x00", M.time_role_get(): b"\x03"}
+    reader, sent, _ = _reader(answers, KNOWN_BUT_THE_ROLE)
+    queued = _scheduling(reader)
+    hub = reader.hub
+    node = _node(0x02)
+    reader.schedule_version(node)
+    reader.schedule_version(node)  # the same link
+    assert [(addr, key) for addr, key, _ in queued] == [(0x0700, "version")]
+    hub.link_count = 2  # not read yet: the next link asks again
+    reader.schedule_version(node)
+    assert len(queued) == 2
+    await queued[-1][2]()
+    assert sent[0] == (0x0700, sig_get(SIG_SOFTWARE_VERSION))
+    hub.link_count = 3  # read, every item answered: not on later links
+    reader.schedule_version(node)
+    assert len(queued) == 2
+    hub.restarted[0x0700] = dt_util.utcnow()  # the hub saw it restart since
+    reader.schedule_version(node)
+    assert len(queued) == 3
+
+
+async def test_a_read_with_an_item_unanswered_is_asked_again_on_the_next_link() -> None:
+    """The version answered, the time role did not: the read is not through, the next link asks again."""
+    answers = {sig_get(SIG_SOFTWARE_VERSION): b"\x1a\x00"}
+    reader, sent, _ = _reader(answers, KNOWN_BUT_THE_ROLE)
+    queued = _scheduling(reader)
+    node = _node(0x02)
+    reader.schedule_version(node)
+    await queued[-1][2]()
+    assert [pdu for _, pdu in sent] == [
+        sig_get(SIG_SOFTWARE_VERSION),
+        M.time_role_get(),
+    ]
+    reader.hub.link_count = 2  # type: ignore[attr-defined]
+    reader.schedule_version(node)
+    assert len(queued) == 2
 
 
 # --------------------------------------------------------------------------- the hub and the device registry

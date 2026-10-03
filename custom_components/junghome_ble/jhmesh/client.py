@@ -95,7 +95,10 @@ FILTER_ACK_TIMEOUT = (
     2.0  # the proxy answers Set Filter Type with a Filter Status within milliseconds
 )
 FILTER_SET_TRIES = 3  # Set Filter Type requests per link without a Filter Status before giving up on it
-GATT_TIMEOUT = 5.0  # one GATT write (a frame, without response) or unsubscription; normally milliseconds
+GATT_TIMEOUT = 5.0  # one GATT write (a frame, without response), subscription, unsubscription or disconnect; normally ms
+# a PDU from our own address with a number we never handed out is reported at most this often per link (seconds):
+# another client on the address sends steadily, and one report (with the highest number seen) is the news
+FOREIGN_SOURCE_REPORT_INTERVAL = 60.0
 
 
 class SequenceExhausted(ConnectionError):
@@ -932,6 +935,7 @@ class ProxyClient:
         on_undecryptable: Callable[[], None] | None = None,
         on_heartbeat: Callable[[Heartbeat], None] | None = None,
         on_key_refresh: Callable[[int, NetKeyMaterial], None] | None = None,
+        on_foreign_own_source: Callable[[int, int], None] | None = None,
     ) -> None:
         """Set up for the first NetKey/AppKey of `cdb`; nothing is connected until `attach()`.
 
@@ -942,7 +946,9 @@ class ProxyClient:
         (`rx_undecryptable` counts them per link — the signature of an export whose keys are stale), and
         `on_heartbeat` for every Heartbeat control message the proxy forwards (`Heartbeat`), `on_key_refresh(phase,
         new_key)` when the mesh's key refresh moves (`_follow_key_refresh`; phase 0 = completed, the new key is the
-        only one now).
+        only one now), `on_foreign_own_source(iv_index, seq)` when a PDU from our own address carries a number we
+        never handed out — another client uses the address (`_on_own_source`; at most once per
+        `FOREIGN_SOURCE_REPORT_INTERVAL` per link, with the highest number seen so far).
         """
         self.cdb = cdb
         self.state = state
@@ -954,6 +960,7 @@ class ProxyClient:
         self.on_undecryptable = on_undecryptable
         self.on_heartbeat = on_heartbeat
         self.on_key_refresh = on_key_refresh
+        self.on_foreign_own_source = on_foreign_own_source
         # the NetKeys derived so far (`_net_key`), pruned to those we accept whenever the key refresh moves
         self._net_keys: dict[bytes, NetKeyMaterial] = {}
         self._kr = self._resume_key_refresh(cdb, state)
@@ -968,6 +975,14 @@ class ProxyClient:
         # on the current link: Set Filter Type requests actually written — none means the proxy was never
         # asked, so a missing Filter Status says nothing about it discarding our PDUs (the HA hub's watchdog)
         self.filter_writes = 0
+        # on the current link: the highest (IV index, SEQ) from our own address we never handed out — proof that
+        # another client sends from it (`_on_own_source`) — and when it was last reported (monotonic)
+        self.foreign_own_source: tuple[int, int] | None = None
+        self._foreign_reported_at: float | None = None
+        # on the current link: proxy configuration PDUs dropped (not CTL=1 / DST=0, undecryptable, or a replay of
+        # one already taken), and the (IV index, SEQ) of the last one taken (review-4 P4-7)
+        self.rx_proxy_config_dropped = 0
+        self._proxy_config_last: tuple[int, int] | None = None
         self._reasm = ProxyReassembler()
         self._segments: dict[tuple[int, int], dict[str, Any]] = {}
         # source -> (IV index, SeqAuth) of its last segmented message delivered: a retransmission of it (fresh
@@ -1188,10 +1203,7 @@ class ProxyClient:
             )
             old = self._release_link("re-attached")
             if old is not client:
-                try:
-                    await old.disconnect()
-                except Exception:
-                    log.debug("disconnect of the previous client failed", exc_info=True)
+                await self._disconnect(old)
             else:
                 await self._stop_notify(old)  # subscribed again below
         self._ready.clear()  # a previous attach whose link dropped mid-way may have left it set
@@ -1203,7 +1215,7 @@ class ProxyClient:
         self.proxy_addr = (
             None  # the previous link's node until this proxy's Filter Status arrives
         )
-        self.rx_undecryptable = 0
+        self._reset_link_counters()
         self.connected_at = self.last_rx = (
             time.monotonic()
         )  # a fresh link counts as heard from
@@ -1216,7 +1228,11 @@ class ProxyClient:
 
         self._link_notify = on_notify
         try:
-            await client.start_notify(MESH_PROXY_DATA_OUT, on_notify)
+            # bounded like every GATT call (review-4 R4-11): a subscription that never completes would hold the
+            # caller's connection loop — and the connection slot — for good
+            await asyncio.wait_for(
+                client.start_notify(MESH_PROXY_DATA_OUT, on_notify), GATT_TIMEOUT
+            )
             log.info(
                 "attached to proxy %s, MTU %d",
                 getattr(client, "address", "?"),
@@ -1262,6 +1278,13 @@ class ProxyClient:
             await self.detach()
             raise
 
+    def _reset_link_counters(self) -> None:
+        """Start the per-link counts and marks over (`attach`): what the last link saw says nothing about this one."""
+        self.rx_undecryptable = 0
+        self.rx_proxy_config_dropped = 0
+        self._proxy_config_last = None
+        self.foreign_own_source = self._foreign_reported_at = None
+
     async def _wait_for_beacon(self, timeout: float) -> None:
         try:
             await asyncio.wait_for(self._beacon_seen.wait(), timeout)
@@ -1284,8 +1307,24 @@ class ProxyClient:
         if not disconnect:
             await self._stop_notify(client)
             return
+        await self._disconnect(client)
+
+    @staticmethod
+    async def _disconnect(client: Any) -> None:
+        """Disconnect `client`, best effort and bounded by `GATT_TIMEOUT` (review-4 R4-11).
+
+        A transport whose disconnect never returns (a stuck BlueZ or ESPHome proxy call) must not hold up the
+        caller: the link is released already, and the transport's own timeout ends the connection eventually.
+        Unverified on air.
+        """
         try:
-            await client.disconnect()
+            await asyncio.wait_for(client.disconnect(), GATT_TIMEOUT)
+        except TimeoutError:
+            log.warning(
+                "disconnecting %s did not complete within %gs; leaving it",
+                getattr(client, "address", "?"),
+                GATT_TIMEOUT,
+            )
         except Exception:
             log.debug("disconnect failed", exc_info=True)
 
@@ -2026,30 +2065,62 @@ class ProxyClient:
                     if self.on_beacon:
                         self.on_beacon(b)
             elif msg_type == PROXY_CONFIG:
-                n = self._network_decrypt(payload, proxy=True)
-                if n and len(n.transport_pdu) >= 4 and n.transport_pdu[0] == 0x03:
-                    self.proxy_addr = n.src
-                    self._filter_acked.set()
-                    log.info(
-                        "proxy filter status: type=%s list_size=%d (proxy node %04X)",
-                        "blacklist" if n.transport_pdu[1] else "whitelist",
-                        int.from_bytes(n.transport_pdu[2:4], "big"),
-                        n.src,
-                    )
-                    if self.on_filter_status:
-                        self.on_filter_status(n.src)
-                elif n and n.transport_pdu[0] == 0x03:
-                    log.debug(
-                        "proxy filter status from %04X too short (%d octets), dropped",
-                        n.src,
-                        len(n.transport_pdu),
-                    )
-                else:
-                    log.info("proxy config pdu %s", payload.hex())
+                self._on_proxy_config(payload)
             else:
                 log.info("proxy msg type %d: %s", msg_type, payload.hex())
         except Exception:
             log.exception("error handling proxy PDU %s", data.hex())
+
+    def _on_proxy_config(self, payload: bytes) -> None:
+        """Take a proxy configuration PDU (§6.5): the Filter Status that names the proxy node and acknowledges our filter.
+
+        It gets the checks every other PDU gets (review-4 P4-7): CTL=1 and DST unassigned, as §6.5 requires of
+        these and only these, and no replay — an (IV index, SEQ) at or below the last one taken on this link is
+        dropped. Without them a recorded Filter Status could be played back to set `proxy_addr` and stand in for
+        the acknowledgement of a filter the proxy never took. What is dropped is counted
+        (`rx_proxy_config_dropped`).
+        """
+        n = self._network_decrypt(payload, proxy=True)
+        if n is None or not n.ctl or n.dst != 0x0000:
+            self.rx_proxy_config_dropped += 1
+            log.debug(
+                "proxy configuration PDU dropped: %s",
+                "not ours"
+                if n is None
+                else f"CTL={int(n.ctl)} DST={n.dst:04X} from {n.src:04X}",
+            )
+            return
+        if self._proxy_config_last is not None and (
+            (n.iv_index, n.seq) <= self._proxy_config_last
+        ):
+            self.rx_proxy_config_dropped += 1
+            log.debug(
+                "proxy configuration PDU from %04X seq %06X dropped: a replay",
+                n.src,
+                n.seq,
+            )
+            return
+        self._proxy_config_last = (n.iv_index, n.seq)
+        pdu = n.transport_pdu
+        if len(pdu) >= 4 and pdu[0] == 0x03:
+            self.proxy_addr = n.src
+            self._filter_acked.set()
+            log.info(
+                "proxy filter status: type=%s list_size=%d (proxy node %04X)",
+                "blacklist" if pdu[1] else "whitelist",
+                int.from_bytes(pdu[2:4], "big"),
+                n.src,
+            )
+            if self.on_filter_status:
+                self.on_filter_status(n.src)
+        elif pdu[0] == 0x03:
+            log.debug(
+                "proxy filter status from %04X too short (%d octets), dropped",
+                n.src,
+                len(pdu),
+            )
+        else:
+            log.info("proxy config pdu %s", payload.hex())
 
     def _network_decrypt(
         self, payload: bytes, proxy: bool = False
@@ -2179,7 +2250,8 @@ class ProxyClient:
             self._count_undecryptable()
             return
         if n.src == self.state.src:
-            return  # our own message echoed back by the proxy/relay
+            self._on_own_source(n)
+            return
         try:
             kind = parse_lower(n.transport_pdu, n.ctl)
         except ValueError as err:  # authenticated with the NetKey, yet not a lower transport PDU: dropped, no trace
@@ -2243,6 +2315,63 @@ class ProxyClient:
             self._deliver(n, akf, aid, upper, szmic=0, seq_auth=n.seq)
         elif kind[0] == "seg":
             self._on_segment(n, kind[1])
+
+    def _on_own_source(self, n: NetworkPDU) -> None:
+        """Take a PDU from our own address: ours echoed back by a relay or the proxy, or another client's (review-4 S I2).
+
+        An echo carries a number we handed out (`_handed_out`) and is dropped silently, as always. Anything else
+        proves a second client on our address — a second Home Assistant, the CLI on its address, a restored store —
+        whose numbers ours will run into: every one we send that it has sent too reuses a nonce, and the nodes drop
+        as replays whatever lies below its last. Reported (`on_foreign_own_source`, with the highest number seen on
+        this link) at most once per `FOREIGN_SOURCE_REPORT_INTERVAL`, and dropped too.
+        """
+        seen = (n.iv_index, n.seq)
+        if self._handed_out(*seen):
+            return  # our own message echoed back by the proxy/relay
+        if self.foreign_own_source is None or seen > self.foreign_own_source:
+            self.foreign_own_source = seen
+        now = _now()
+        if (
+            self._foreign_reported_at is not None
+            and now - self._foreign_reported_at < FOREIGN_SOURCE_REPORT_INTERVAL
+        ):
+            return
+        self._foreign_reported_at = now
+        iv, seq = self.foreign_own_source
+        log.warning(
+            "a PDU from our own address %04X under IV index %d with sequence number %06X, which we never sent: "
+            "another client uses this address",
+            n.src,
+            iv,
+            seq,
+        )
+        if self.on_foreign_own_source:
+            try:
+                self.on_foreign_own_source(iv, seq)
+            except Exception:
+                log.exception("on_foreign_own_source handler failed")
+
+    def _handed_out(self, iv: int, seq: int) -> bool:
+        """Whether (`iv`, `seq`) may be a number our address sent, as far as `state` can tell.
+
+        Under the transmit index everything below the counter was handed out. Under an older index (an echo from
+        before an IV Update completed) everything below the counter and `seq_peak` may have been, from
+        `seq_peak_from` on; below that the record knows nothing, so it may be ours. A newer index we have never
+        transmitted under — unless `seq_guard` says the counter carried on under it (a lost record skipped past,
+        an IV index gone back), where again everything below the counter may be ours.
+        """
+        state = self.state
+        tx = state.tx_iv_index
+        if iv == tx:
+            return seq < state.seq
+        if iv > tx:
+            guard = state.seq_guard
+            return (
+                guard is not None
+                and (guard == SEQ_GUARD_FIRST_BEACON or iv <= guard)
+                and seq < state.seq
+            )
+        return iv < state.seq_peak_from or seq < max(state.seq, state.seq_peak)
 
     def _is_replay(self, src: int, iv: int, seq: int) -> bool:
         """Whether `seq` under `iv` is at or below the last sequence number accepted from `src` (§3.8.8).

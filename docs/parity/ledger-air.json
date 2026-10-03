@@ -1487,12 +1487,12 @@
     "tests/test_scene.py::test_statuses_of_a_heard_recall_repeat_nothing",
     "tests/test_scene.py::test_status_answers_and_refusals_fire_nothing",
     "tests/test_scene.py::test_answers_to_the_apps_and_the_gateways_scene_get_fire_nothing",
-    "tests/test_scene.py::test_a_key_that_publishes_no_scene_event_leaves_the_recall_to_the_members",
+    "tests/test_scene.py::test_a_keys_recall_is_published_without_its_event_entity",
     "tests/test_scene.py::test_our_own_activation_is_recorded_once",
     "tests/jhmesh/test_messages.py::test_decode_scene_status",
     "tests/jhmesh/test_messages.py::test_describe_scene_messages"
    ],
-   "reason": "Every Scene Status (0x5E) is a STATUS_HANDLERS entry: a success keeps the element's current scene (ElementState.scene; the scene entity's active_members) and, published to a group (any destination that is no unicast address: a Status sent to the app, the gateway or us answers a Scene Get and only updates the state — the blacklist proxy filter delivers all three) for a scene no recall reported within SCENE_RECALL_WINDOW (5 s; the captured statuses follow the recall within 50 ms), fires junghome_ble_scene_recalled without source, with reported_by, and records the scene entity's activation. A recall is noted only where its scene event fires, so a key whose event entity is disabled leaves the report to the members' Status. Tested with the captured on-air form (3 bytes, status 0) injected in the sim."
+   "reason": "Every Scene Status (0x5E) is a STATUS_HANDLERS entry: a success keeps the element's current scene (ElementState.scene; the scene entity's active_members) and, published to a group (any destination that is no unicast address: a Status sent to the app, the gateway or us answers a Scene Get and only updates the state — the blacklist proxy filter delivers all three) for a scene no recall reported within SCENE_RECALL_WINDOW (5 s; the captured statuses follow the recall within 50 ms), fires junghome_ble_scene_recalled without source, with reported_by, and records the scene entity's activation. A recall is noted where its scene event fires; the hub publishes a key's recall whether or not the key's event entity is enabled (review-4 H4-2), so the members' Status reports only a recall nobody else told of. Tested with the captured on-air form (3 bytes, status 0) injected in the sim."
   },
   {
    "id": "air:access:8018",

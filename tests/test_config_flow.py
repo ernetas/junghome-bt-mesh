@@ -1300,6 +1300,295 @@ async def test_reconfigure_refetch_with_a_corrupt_pin_learns_anew(
     mock_learn.assert_awaited_once()
 
 
+# --------------------------------------------------------------------------- reauth (a token the gateway rejects)
+
+
+async def _start_reauth(hass: HomeAssistant, entry: MockConfigEntry) -> Any:
+    """The reauth flow `MeshConfigurator.report_token_rejected` starts, up to its form."""
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    assert result["errors"] == {}
+    return result
+
+
+async def test_reauth_by_password_renews_the_token_only(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+    mock_learn: AsyncMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The password brings a new token at once, pinned to the entry's certificate: the token alone changes, the
+    token repair goes, nothing is fetched and the entry is not set up again. Neither secret is logged."""
+    caplog.set_level(logging.DEBUG)
+    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(f"{API}/register/by-password", json={"token": TOKEN_2})
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    issues = _raise_gateway_issues(hass, entry)
+    before = dict(entry.data)
+
+    result = await _start_reauth(hass, entry)
+    assert result["description_placeholders"] == {
+        "host": HOST,
+        "title": entry.title,
+        "user_name": GATEWAY_USER_NAME,
+        "name": entry.title,  # Home Assistant's own, from the reauth context
+    }
+    assert set(result["data_schema"]({})) == set()  # the password is optional
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GATEWAY_PASSWORD: "netkey-pw"}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data == {**before, CONF_GATEWAY_TOKEN: TOKEN_2}
+    assert _calls(aioclient_mock, "/register/by-password")[0][2] == {
+        "password": "netkey-pw"
+    }
+    assert _calls(aioclient_mock, "/project/junghome") == []
+    assert _calls(aioclient_mock, "/register") == []
+    mock_learn.assert_not_awaited()  # the entry's pin
+    assert len(mock_setup_entry.mock_calls) == 0
+    registry = ir.async_get(hass)
+    assert registry.async_get_issue(DOMAIN, issues[1]) is None  # the token repair
+    assert registry.async_get_issue(DOMAIN, issues[0])  # the pin did not change
+    assert "netkey-pw" not in caplog.text
+    assert TOKEN_2 not in caplog.text
+
+
+async def test_reauth_wrong_password(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A rejected password is an error on its field; the entry keeps its token and the repair stays."""
+    caplog.set_level(logging.DEBUG)
+    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(f"{API}/register/by-password", status=401)
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    issues = _raise_gateway_issues(hass, entry)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GATEWAY_PASSWORD: "wrong-pw"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    assert result["errors"] == {CONF_GATEWAY_PASSWORD: "invalid_auth"}
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issues[1])
+    assert "wrong-pw" not in caplog.text
+
+
+async def test_reauth_by_approval_in_the_app(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Without a password the flow waits for the access request to be approved in the app, then stores the token."""
+    approved = asyncio.Event()
+
+    async def wait_for_approval(method: str, url: Any, data: Any) -> Any:
+        assert data == {"user_name": GATEWAY_USER_NAME}
+        await approved.wait()
+        return AiohttpClientMockResponse(
+            method=method, url=url, json={"token": TOKEN_2}
+        )
+
+    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(f"{API}/register", side_effect=wait_for_approval)
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    issues = _raise_gateway_issues(hass, entry)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    assert result["step_id"] == "gateway_register"
+    assert result["description_placeholders"] == {
+        "host": HOST,
+        "user_name": GATEWAY_USER_NAME,
+    }
+    approved.set()
+    result = await _advance_progress(hass, result)
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issues[1]) is None
+    assert _calls(aioclient_mock, "/project/junghome") == []
+
+
+async def test_reauth_approval_times_out(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The gateway gives up on the request (HTTP 400 after its three minutes): back to the reauth form, which
+    says so; submitting again asks anew."""
+    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(
+        f"{API}/register",
+        side_effect=_sequence({"status": 400}, {"json": {"token": TOKEN_2}}),
+    )
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await _advance_progress(hass, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    assert result["errors"] == {"base": "not_approved"}
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await _advance_progress(hass, result)
+    await hass.async_block_till_done()
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
+    assert len(_calls(aioclient_mock, "/register")) == 2
+
+
+async def test_reauth_unreachable_gateway(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The probe gets no answer: the form says so before any password or access request goes out."""
+    aioclient_mock.get(f"{API}/version/", exc=aiohttp.ClientConnectionError("down"))
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GATEWAY_PASSWORD: "netkey-pw"}
+    )
+    assert result["errors"] == {"base": "cannot_connect"}
+    assert _calls(aioclient_mock, "/register/by-password") == []
+
+
+async def test_reauth_certificate_changed(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The gateway presents another certificate than the entry's pin: nothing is sent until the user vouches for
+    it; then the password goes out under the new pin, which the entry records as the user's (the hub checks it
+    over the mesh before using it), and the certificate repair goes with the token repair."""
+    aioclient_mock.get(
+        f"{API}/version/",
+        side_effect=_sequence({"exc": _mismatch()}, {"json": {"api_version": "1.5.0"}}),
+    )
+    aioclient_mock.post(f"{API}/register/by-password", json={"token": TOKEN_2})
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    issues = _raise_gateway_issues(hass, entry)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GATEWAY_PASSWORD: "netkey-pw"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "gateway_certificate"
+    assert result["description_placeholders"]["observed"] == "CD:" * 31 + "CD"
+    assert _calls(aioclient_mock, "/register/by-password") == []
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
+    assert entry.data[CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
+    assert entry.data[CONF_GATEWAY_PIN_SOURCE] == PIN_FROM_USER
+    for issue in issues:
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue) is None
+
+
+async def test_reauth_certificate_changed_during_approval(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The access request meets another certificate: the certificate step follows the progress step, and
+    confirming asks for access again under the new pin."""
+    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(
+        f"{API}/register",
+        side_effect=_sequence({"exc": _mismatch()}, {"json": {"token": TOKEN_2}}),
+    )
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await _advance_progress(hass, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "gateway_certificate"
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    result = await _advance_progress(hass, result)
+    await hass.async_block_till_done()
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
+    assert entry.data[CONF_GATEWAY_FINGERPRINT] == OTHER_FINGERPRINT
+    assert len(_calls(aioclient_mock, "/register")) == 2
+
+
+async def test_reauth_refuses_a_certificate_the_mesh_contradicts(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The entry's pin was vouched for by the gateway node: a responder with another certificate is not the
+    gateway, so the reauth ends without sending the password, and the entry is untouched."""
+    aioclient_mock.get(f"{API}/version/", exc=_mismatch())
+    entry = _gateway_entry(hass, pin_source=PIN_FROM_MESH)
+    entry.add_to_hass(hass)
+    before = dict(entry.data)
+    result = await _start_reauth(hass, entry)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GATEWAY_PASSWORD: "netkey-pw"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "certificate_vouched_by_mesh"
+    assert entry.data == before
+    assert _calls(aioclient_mock, "/register/by-password") == []
+
+
+async def test_reconfigure_ends_a_pending_reauth(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """A reconfigure that finishes leaves the entry with a token the gateway took: the reauth waiting for the
+    user ends with it, like the token repair (Home Assistant aborts an entry's reauth flows when it reloads it)."""
+    aioclient_mock.get(f"{API}/project/junghome", json=_share_export())
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    reauth = await _start_reauth(hass, entry)
+    result = await _start_reconfigure(hass, entry, "gateway_refetch")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_UNICAST: "0D00"}
+    )
+    await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+    assert not [
+        f
+        for f in hass.config_entries.flow.async_progress()
+        if f["flow_id"] == reauth["flow_id"]
+    ]
+
+
 # --------------------------------------------------------------------------- stored files
 
 

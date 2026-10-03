@@ -6,7 +6,8 @@ takes at most 30 characters), a number suffix
 when another device already has the name, then `meta.devices[].name` — never the CDB node name — and the export
 upload to the gateway; nothing goes on air. Home Assistant gives an integration no rename hook of its own, so the
 entry follows the device registry: a user naming one of those devices (`name_by_user`) has
-`MeshConfigurator.rename_device` write the name the same way. The name the export then holds becomes the device's
+`MeshConfigurator.rename_device` write the name the same way, in a Home Assistant background task rather than one
+of the entry's (the reload after an adopted export would otherwise wait for the very task running it). The name the export then holds becomes the device's
 own name and `name_by_user` is cleared, so Home Assistant shows what the app shows (a suffixed name included), and
 a later rename in the app reaches Home Assistant with the next export it loads.
 
@@ -97,8 +98,9 @@ def async_track_device_names(
         target = app_device(entry.runtime_data, device)
         if target is None:
             return
-        entry.async_create_task(
-            hass,
+        # not an entry task: a rename that adopted the gateway's export reloads the entry, and an unload waits
+        # for the entry's own tasks — this one among them, which would only end after that wait (review-4 W4-10)
+        hass.async_create_background_task(
             async_write_name(hass, entry, device, target.address, device.name_by_user),
             f"{DOMAIN} device rename",
         )

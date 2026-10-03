@@ -1590,8 +1590,8 @@ async def test_store_minor_versions_both_ways(
     hass: HomeAssistant, hass_storage: dict[str, Any]
 ) -> None:
     """1.1 records (no `seq_guard`, no `in_backup`, no mesh-level part) load unchanged into this version's store; a
-    1.4 store (with a guard, a backup's mark and the mesh's key refresh) loads unchanged into a reader of 1.1 that
-    has no migration for it — an older integration keeps starting."""
+    1.5 store (with a guard, a backup's mark, another client's numbers and the mesh's key refresh) loads unchanged
+    into a reader of 1.1 that has no migration for it — an older integration keeps starting."""
     key = f"{DOMAIN}.seq.test-minor"
     record = {"seq": 7, "iv_index": 2, "iv_update_active": False, "clean": False}
     hass_storage[key] = {
@@ -1600,10 +1600,15 @@ async def test_store_minor_versions_both_ways(
         "data": {"addresses": {"0D00": record}},
     }
     store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
-    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 4
+    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 5
     assert await store.async_load() == {"addresses": {"0D00": record}}
-    assert hass_storage[key]["minor_version"] == 4
-    guarded = {**record, "seq_guard": SEQ_GUARD_FIRST_BEACON, "in_backup": "0" * 32}
+    assert hass_storage[key]["minor_version"] == 5
+    guarded = {
+        **record,
+        "seq_guard": SEQ_GUARD_FIRST_BEACON,
+        "in_backup": "0" * 32,
+        "address_shared": [2, 900],
+    }
     newer = {"addresses": {"0D00": guarded}, "mesh": {"key_refresh": None}}
     await store.async_save(newer)
     older = Store(hass, STORAGE_VERSION, key)  # minor version 1, no migration

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import voluptuous as vol
@@ -13,12 +13,14 @@ from homeassistant.components.device_automation.exceptions import (
 )
 from homeassistant.const import CONF_DEVICE_ID, CONF_DOMAIN, CONF_PLATFORM, CONF_TYPE
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_get_device_automations,
 )
 
+from custom_components.junghome_ble.config_entities import PROPERTY_KEY_MODE
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
@@ -30,13 +32,17 @@ from custom_components.junghome_ble.device_trigger import (
     TRIGGER_SUBTYPES,
     TRIGGER_TYPES,
     async_validate_trigger_config,
+    key_subtypes,
 )
 from custom_components.junghome_ble.event import EVENT_TYPES
+from custom_components.junghome_ble.jhmesh.devices import KeyConnection
 
-from .conftest import CDB_PATH, META_DIR
+from .conftest import CDB_PATH, META_DIR, settle, setup_entry, wait_for_link
 from .helpers import (
     BUTTON_CLICK,
+    BUTTON_DIMMER,
     BUTTON_HOLD_START,
+    BUTTON_WC,
     MESH_UUID,
     ROCKER_A,
     ROCKER_B,
@@ -125,20 +131,79 @@ def test_vocabulary() -> None:
     ) == TRIGGER_SUBTYPES
 
 
+GATEWAY = [
+    "click",
+    "double_click",
+    "hold_start",
+    "hold_end",
+    "click_up",
+    "click_down",
+    "double_click_up",
+    "double_click_down",
+    "hold_start_up",
+    "hold_start_down",
+    "hold_end_up",
+    "hold_end_down",
+]
+LOAD = ["hold_start", "hold_end", "press_on", "press_off", "dim"]
+
+
 async def test_triggers_listed_per_key_of_the_device(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """A 1-key gang offers key A only, a 2-key gang keys A and B, each with every event type in a fixed order."""
-    all_subtypes = list(TRIGGER_SUBTYPES)
+    """A 1-key gang offers key A only, a 2-key gang keys A and B, each with the event types its wiring produces
+    (review-4 H I-3, U4-9), in a fixed order: the WC key is linked to the gateway, the dimmer's key and rocker key A
+    are wired to loads; rocker key B, wired to a load in the export too, is rewired to a scene here."""
+    hub = init_integration.runtime_data
+    assert [
+        (b.key, b.connection.kind if b.connection else None)
+        for b in hub.devices.buttons
+    ] == [("A", "gateway"), ("A", "device"), ("B", "device"), ("A", "device")]
+    hub.devices.by_address[ROCKER_B].connection = KeyConnection("scene", 0xFFFF)
     assert await _our_triggers(
         hass, _device_id(hass, init_integration, f"{UID_BUTTON_WC}-buttons")
-    ) == [("a", subtype) for subtype in all_subtypes]
+    ) == [("a", subtype) for subtype in GATEWAY]
     assert await _our_triggers(
         hass, _device_id(hass, init_integration, f"{UID_BUTTON_DIMMER}-buttons")
-    ) == [("a", subtype) for subtype in all_subtypes]
+    ) == [("a", subtype) for subtype in LOAD]
     assert await _our_triggers(
         hass, _device_id(hass, init_integration, f"{UID_ROCKER_A}-buttons")
-    ) == [(key, subtype) for key in ("a", "b") for subtype in all_subtypes]
+    ) == [*(("a", subtype) for subtype in LOAD), ("b", "scene")]
+
+
+async def test_trigger_subtypes_per_connection_and_key_mode(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """The key mode the node reported wins over the export's connection; a room or another group is a load's
+    wiring; a key whose wiring neither tells (no connection, a mode whose messages are not known) offers all 16."""
+    hub = init_integration.runtime_data
+    button = hub.devices.by_address[BUTTON_DIMMER]
+    for kind, expected in (
+        ("room", LOAD),
+        ("group", LOAD),
+        ("scene", ["scene"]),
+        ("gateway", GATEWAY),
+        ("device", LOAD),
+    ):
+        button.connection = KeyConnection(kind, 0xC071)
+        assert list(key_subtypes(hub, button)) == expected, kind
+    button.connection = None
+    assert key_subtypes(hub, button) == TRIGGER_SUBTYPES
+    state = hub.element_state(BUTTON_DIMMER)
+    for mode, expected in (
+        (6, GATEWAY),
+        (2, ["scene"]),
+        (0, LOAD),
+        (5, LOAD),
+    ):
+        state.properties[PROPERTY_KEY_MODE] = bytes([mode])
+        assert list(key_subtypes(hub, button)) == expected, mode
+    state.properties[PROPERTY_KEY_MODE] = bytes([1])  # move: blinds, not mapped
+    assert key_subtypes(hub, button) == TRIGGER_SUBTYPES
+    button.connection = KeyConnection("scene", 0xFFFF)
+    assert list(key_subtypes(hub, button)) == ["scene"]  # the export decides then
+    state.properties[PROPERTY_KEY_MODE] = bytes([6])
+    assert list(key_subtypes(hub, button)) == GATEWAY  # the node's own mode first
 
 
 async def test_other_devices_offer_no_triggers(
@@ -219,6 +284,32 @@ async def test_trigger_on_another_gang_ignores_this_one(
     fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(1, BUTTON_CLICK))
     await hass.async_block_till_done()
     assert fired == []
+
+
+async def test_trigger_runs_with_the_keys_event_entity_disabled(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Review-4 H4-2: the hub publishes the key's events, so disabling `event.<key>` leaves its device triggers
+    working; a subtype the key's wiring does not list (saved before a rewiring) still validates and attaches."""
+    er.async_get(hass).async_get_or_create(
+        "event", DOMAIN, UID_BUTTON_WC, disabled_by=er.RegistryEntryDisabler.USER
+    )
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    assert hass.states.get("event.wc_mirror_button") is None
+    device_id = _device_id(hass, mock_config_entry, f"{UID_BUTTON_WC}-buttons")
+    assert await async_validate_trigger_config(
+        hass, _trigger(device_id, "a", "press_on")
+    ) == _trigger(device_id, "a", "press_on")
+    fired = await _automation_on(hass, device_id, "a", "hold_start")
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
+    await hass.async_block_till_done()
+    assert len(fired) == 1
 
 
 async def test_invalid_trigger_is_rejected(

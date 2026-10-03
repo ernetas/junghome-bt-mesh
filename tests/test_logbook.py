@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import Event
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import async_capture_events
 
 from custom_components.junghome_ble.const import (
@@ -16,12 +17,14 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.logbook import async_describe_events
 
+from .conftest import settle, setup_entry, wait_for_link
 from .helpers import (
     BUTTON_CLICK,
     BUTTON_HOLD_START,
     BUTTON_WC,
     ROCKER_A,
     ROCKER_B,
+    UID_ROCKER_A,
     vendor_button_event,
 )
 
@@ -82,6 +85,49 @@ async def test_button_actions_are_named_after_the_entity(
         "message": "recalled scene 2",
         "entity_id": "event.living_room_rocker_button_b",
     }
+
+
+async def test_a_key_with_its_event_entity_disabled_is_still_described(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Review-4 H4-2: the hub publishes the key's event without `entity_id`; the line names the device and key."""
+    er.async_get(hass).async_get_or_create(
+        "event", DOMAIN, UID_ROCKER_A, disabled_by=er.RegistryEntryDisabler.USER
+    )
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    describe = describers(hass)[EVENT_BUTTON_ACTION]
+    events = async_capture_events(hass, EVENT_BUTTON_ACTION)
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(1, BUTTON_CLICK))
+    await hass.async_block_till_done()
+    assert "entity_id" not in events[-1].data
+    assert describe(events[-1]) == {
+        "name": "Living room rocker Button A",
+        "message": "clicked",
+    }
+
+
+async def test_a_hold_ended_without_its_release_says_why(hass: HomeAssistant) -> None:
+    """Decision M11: a `hold_end` the hub made up (DIM_HOLD_MAX, a lost link, a stop) carries its reason."""
+    describe = describers(hass)[EVENT_BUTTON_ACTION]
+    for reason, said in (
+        ("timeout", "no release heard in time"),
+        ("link_lost", "link lost"),
+        ("stopped", "integration stopped"),
+        ("newer", "newer"),
+    ):
+        event = Event(
+            EVENT_BUTTON_ACTION, {"key": "A", "type": "hold_end", "reason": reason}
+        )
+        assert describe(event) == {
+            "name": "Button A",
+            "message": f"hold released ({said})",
+        }
 
 
 async def test_button_action_falls_back_to_the_device_name(

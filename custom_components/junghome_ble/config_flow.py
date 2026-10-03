@@ -1,7 +1,7 @@
 """Config flow: point the integration at the JUNG HOME app's mesh export.
 
-Entry points: manual (user), Bluetooth discovery of any Mesh Proxy advertisement, and reconfigure. All of them
-lead to the same menu: fetch the export from the JUNG HOME Gateway, upload the app's export file, or name a file
+Entry points: manual (user), Bluetooth discovery of any Mesh Proxy advertisement, reconfigure, and reauth. All but
+reauth lead to the same menu: fetch the export from the JUNG HOME Gateway, upload the app's export file, or name a file
 that is already on the Home Assistant host. Fetched and uploaded exports are kept under
 `<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold every mesh key).
 
@@ -17,6 +17,10 @@ the token leaves. A responder with another certificate is refused at the TLS han
 step then shows both fingerprints and continues only once the user vouches for the new one — unless the gateway
 node vouched for the pin (`CONF_GATEWAY_PIN_SOURCE`): then the responder is not the gateway, and the flow aborts.
 A pin the user vouched for is compared with the gateway node's report by the hub before the gateway is used.
+
+Reauth renews the gateway token alone, when the gateway rejected the entry's (`MeshConfigurator.report_token_rejected`
+starts it): by the gateway's password, or by approving a new access request in the app. The export, the mesh and the
+running hub are left alone; the new token is used from the next request on.
 
 The reconfigure menu also offers the import from the JUNG HOME Gateway integration (`migration.py`): a dry run shown
 as a form, applied on confirmation. Options (`JungHomeOptionsFlow`) hold the runtime behaviour switches; a change
@@ -38,6 +42,7 @@ import voluptuous as vol
 from homeassistant.components import bluetooth
 from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.config_entries import (
+    SOURCE_REAUTH,
     SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigEntryState,
@@ -134,6 +139,9 @@ STEP_REFETCH = "gateway_refetch"
 STEP_FETCH = "gateway_fetch"
 STEP_IMPORT = "import_gateway"
 STEP_CERTIFICATE = "gateway_certificate"
+STEP_REGISTER = "gateway_register"
+STEP_REAUTH = "reauth_confirm"
+STEP_REAUTH_DONE = "reauth_done"
 
 # Exceptions a malformed export can raise from `CDB.load` beyond `InvalidExport` (which covers the validated shape):
 # an unreadable file, JSON that is not JSON, and — should a shape slip past the validation — the bare Python errors.
@@ -203,6 +211,10 @@ def _gateway_schema(host: str, unicast: str) -> vol.Schema:
             vol.Required(CONF_UNICAST, default=unicast): TextSelector(),
         }
     )
+
+
+def _reauth_schema() -> vol.Schema:
+    return vol.Schema({vol.Optional(CONF_GATEWAY_PASSWORD): _PASSWORD})
 
 
 def _normalize_host(raw: str) -> str:
@@ -645,14 +657,19 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_gateway_register(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Wait (up to the gateway's 180 s) for the access request to be approved in the app."""
+        """Wait (up to the gateway's 180 s) for the access request to be approved in the app.
+
+        Approved, a setup or reconfigure fetches the export next and a reauth stores the token; anything else goes
+        back to the form that asked (the gateway form, or the reauth form), with the error or a certificate to vouch
+        for first.
+        """
         if self._register_task is None:
             self._register_task = self.hass.async_create_task(
                 self._async_register(), eager_start=False
             )
         if not self._register_task.done():
             return self.async_show_progress(
-                step_id="gateway_register",
+                step_id=STEP_REGISTER,
                 progress_action="waiting_for_approval",
                 progress_task=self._register_task,
                 description_placeholders={
@@ -661,16 +678,21 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 },
             )
         task, self._register_task = self._register_task, None
+        form, form_input, done = (
+            (STEP_REAUTH, {}, STEP_REAUTH_DONE)  # {}: no password, request access again
+            if self.source == SOURCE_REAUTH
+            else (SOURCE_GATEWAY, self._gateway_input, STEP_FETCH)
+        )
         try:
             self._token = task.result()
         except GatewayCertificateMismatch as err:
             # the certificate changed between the pin and the request: ask before requesting access again
-            self._prepare_certificate_step(err, (SOURCE_GATEWAY, self._gateway_input))
+            self._prepare_certificate_step(err, (form, form_input))
             return self.async_show_progress_done(next_step_id=STEP_CERTIFICATE)
         except GatewayError as err:
             self._pending_errors = {"base": _gateway_error_key(err)}
-            return self.async_show_progress_done(next_step_id=SOURCE_GATEWAY)
-        return self.async_show_progress_done(next_step_id=STEP_FETCH)
+            return self.async_show_progress_done(next_step_id=form)
+        return self.async_show_progress_done(next_step_id=done)
 
     async def async_step_gateway_fetch(
         self, user_input: dict[str, Any] | None = None
@@ -744,6 +766,49 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"host": str(entry.data[CONF_GATEWAY_HOST])},
         )
 
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Obtain a new token: the gateway rejected the entry's (`MeshConfigurator.report_token_rejected`).
+
+        Started without `ConfigEntryAuthFailed`: only the gateway sync needs the token, the mesh keeps working
+        meanwhile. Only the token (and a certificate the user vouched for on the way) changes.
+        """
+        self._host = str(entry_data[CONF_GATEWAY_HOST])
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the gateway's network-key password; left empty, approve a new access request in the app instead."""
+        assert self._host is not None
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                return await self._async_reauth_submit(user_input)
+            except _FormError as err:
+                errors = err.errors
+            except _CertificateChanged as err:
+                return self._async_show_certificate(err.mismatch)
+        elif self._pending_errors:
+            errors, self._pending_errors = self._pending_errors, {}
+        return self.async_show_form(
+            step_id=STEP_REAUTH,
+            data_schema=_reauth_schema(),
+            errors=errors,
+            description_placeholders={
+                "host": self._host,
+                "title": self._get_reauth_entry().title,
+                "user_name": GATEWAY_USER_NAME,
+            },
+        )
+
+    async def async_step_reauth_done(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """After the approval in the app: store the new token."""
+        return self._async_reauth_finish()
+
     async def async_step_import_gateway(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -806,16 +871,17 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Decide which certificate `host` must present, before anything is sent to it.
 
         In order of trust: what the gateway node reports over the mesh (the hub of the entry being reconfigured
-        is connected; the mesh is authenticated with the AppKey), what the entry recorded at its last fetch from
-        this host, and — trust on first use — what the host presents now, learned through a handshake that sends
-        nothing. A pin already decided in this flow (or confirmed in the certificate step) is kept.
+        or reauthenticated is connected; the mesh is authenticated with the AppKey), what the entry recorded at its
+        last fetch from this host, and — trust on first use — what the host presents now, learned through a
+        handshake that sends nothing. A pin already decided in this flow (or confirmed in the certificate step) is
+        kept.
         """
         if self._fingerprint is not None:
             return
         fingerprint = await self._async_mesh_fingerprint()
         source, self._pin_source = "the gateway node over the mesh", PIN_FROM_MESH
-        if fingerprint is None and self.source == SOURCE_RECONFIGURE:
-            entry = self._get_reconfigure_entry()
+        entry = self._flow_entry()
+        if fingerprint is None and entry is not None:
             if entry.data.get(CONF_GATEWAY_HOST) == host:
                 fingerprint = normalize_fingerprint(
                     entry.data.get(CONF_GATEWAY_FINGERPRINT)
@@ -842,13 +908,19 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._fingerprint = fingerprint
 
     async def _async_mesh_fingerprint(self) -> str | None:
-        """Read the gateway's certificate from its mesh node, when the entry being reconfigured is connected."""
-        if self.source != SOURCE_RECONFIGURE:
-            return None
-        entry = self._get_reconfigure_entry()
-        if entry.state is not ConfigEntryState.LOADED:
+        """Read the gateway's certificate from its mesh node, when the entry being reconfigured or reauthenticated is connected."""
+        entry = self._flow_entry()
+        if entry is None or entry.state is not ConfigEntryState.LOADED:
             return None
         return await async_read_mesh_fingerprint(entry.runtime_data)
+
+    def _flow_entry(self) -> ConfigEntry | None:
+        """Return the entry this flow works on: the one being reconfigured or reauthenticated; None for a new setup."""
+        if self.source == SOURCE_RECONFIGURE:
+            return self._get_reconfigure_entry()
+        if self.source == SOURCE_REAUTH:
+            return self._get_reauth_entry()
+        return None
 
     def _prepare_certificate_step(
         self,
@@ -941,27 +1013,80 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         await self._async_pin(
             host
         )  # before the password, the access request or the token leaves
-        if self._token is None or password:
-            api = self._api()
-            try:
-                await api.version()
-            except GatewayCertificateMismatch as err:
-                raise _CertificateChanged(err) from err
-            except GatewayUnreachable as err:
-                raise _FormError({"base": "cannot_connect"}) from err
-            except GatewayError:
-                pass  # it answered HTTP: reachable, whatever the firmware says about itself
-            if not password:
-                return await self.async_step_gateway_register()
-            try:
-                self._token = await api.register_by_password(password)
-            except GatewayCertificateMismatch as err:
-                raise _CertificateChanged(err) from err
-            except GatewayAuthError as err:
-                raise _FormError({CONF_GATEWAY_PASSWORD: "invalid_auth"}) from err
-            except GatewayError as err:
-                raise _FormError({"base": _gateway_error_key(err)}) from err
+        if (self._token is None or password) and (
+            progress := await self._async_obtain_token(password)
+        ) is not None:
+            return progress
         return await self._async_fetch_and_finish(reregister_on_401=reregister_on_401)
+
+    async def _async_obtain_token(self, password: str) -> ConfigFlowResult | None:
+        """Get a token from the pinned gateway: by `password` at once (None), else through the approval progress step.
+
+        The gateway is probed first, so an unreachable address or another certificate shows before the password
+        or the access request goes out. The password is neither kept nor logged.
+        """
+        api = self._api()
+        try:
+            await api.version()
+        except GatewayCertificateMismatch as err:
+            raise _CertificateChanged(err) from err
+        except GatewayUnreachable as err:
+            raise _FormError({"base": "cannot_connect"}) from err
+        except GatewayError:
+            pass  # it answered HTTP: reachable, whatever the firmware says about itself
+        if not password:
+            return await self.async_step_gateway_register()
+        try:
+            self._token = await api.register_by_password(password)
+        except GatewayCertificateMismatch as err:
+            raise _CertificateChanged(err) from err
+        except GatewayAuthError as err:
+            raise _FormError({CONF_GATEWAY_PASSWORD: "invalid_auth"}) from err
+        except GatewayError as err:
+            raise _FormError({"base": _gateway_error_key(err)}) from err
+        return None
+
+    async def _async_reauth_submit(
+        self, user_input: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Renew the token of the gateway the entry names, pinned before anything is sent; the export is not fetched."""
+        assert self._host is not None
+        self._pending_errors = {}
+        self._token = None
+        self._resume = (STEP_REAUTH, user_input)
+        await self._async_pin(self._host)
+        progress = await self._async_obtain_token(
+            user_input.get(CONF_GATEWAY_PASSWORD) or ""
+        )
+        return progress if progress is not None else self._async_reauth_finish()
+
+    @callback
+    def _async_reauth_finish(self) -> ConfigFlowResult:
+        """Store the new token (and the pin it was obtained under) in the entry, clear the repair, end the flow.
+
+        No reload: `hub_data` leaves the gateway out, so the update listener keeps the hub running, and every
+        gateway request reads the token from the entry. A pin that changed here (vouched for in the certificate
+        step) also clears the certificate repair: the hub compares the new pin with the gateway node's report
+        before it uses the gateway (`JungHomeHub.async_gateway_distrust`).
+        """
+        entry = self._get_reauth_entry()
+        assert self._token is not None
+        ir.async_delete_issue(self.hass, DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+        if self._fingerprint != normalize_fingerprint(
+            entry.data.get(CONF_GATEWAY_FINGERPRINT)
+        ):
+            ir.async_delete_issue(
+                self.hass, DOMAIN, certificate_issue_id(entry.entry_id)
+            )
+        _LOGGER.info("The gateway %s accepts Home Assistant again", self._host)
+        return self.async_update_and_abort(
+            entry,
+            data_updates={
+                CONF_GATEWAY_TOKEN: self._token,
+                CONF_GATEWAY_FINGERPRINT: self._fingerprint,
+                CONF_GATEWAY_PIN_SOURCE: self._pin_source,
+            },
+        )
 
     async def _async_fetch_and_finish(
         self, *, reregister_on_401: bool = False

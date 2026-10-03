@@ -105,6 +105,7 @@ from .thresholds import (
     CLEARED,
     OTHER_THRESHOLD,
     THRESHOLD_PROPERTIES,
+    ThresholdProgress,
     Which,
     current_threshold,
     has_thresholds,
@@ -116,6 +117,7 @@ if TYPE_CHECKING:
     from . import JungHomeConfigEntry
     from .coordinator import JungHomeHub
     from .identity import VaultKeeper
+    from .jhmesh.properties import Threshold
 
 SERVICE_SET_ROOM = "set_room"
 SERVICE_CREATE_ROOM = "create_room"
@@ -171,6 +173,7 @@ USER_SERVICES = frozenset(
 )
 
 ATTR_ROOM = "room"
+ATTR_CREATE = "create"
 ATTR_NAME = "name"
 ATTR_NEW_NAME = "new_name"
 ATTR_CONFIG_ENTRY = "config_entry_id"
@@ -227,7 +230,13 @@ def _key_only_with_device(data: dict[str, Any]) -> dict[str, Any]:
 
 
 SET_ROOM_SCHEMA = vol.All(
-    vol.Schema({vol.Required(ATTR_ROOM): cv.string, **cv.ENTITY_SERVICE_FIELDS}),
+    vol.Schema(
+        {
+            vol.Required(ATTR_ROOM): cv.string,
+            vol.Optional(ATTR_CREATE, default=False): cv.boolean,
+            **cv.ENTITY_SERVICE_FIELDS,
+        }
+    ),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
 )
 CREATE_ROOM_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, **_ENTRY_FIELD})
@@ -946,6 +955,7 @@ def _suggest_area(hass: HomeAssistant, device_id: str | None, room: str) -> None
 
 async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     room: str = call.data[ATTR_ROOM]
+    create: bool = call.data[ATTR_CREATE]
     loads = await _resolve_loads(hass, call, LOAD_TYPES)
     for entry_id in sorted({load.entry_id for load in loads}):
         mine = [load for load in loads if load.entry_id == entry_id]
@@ -955,7 +965,7 @@ async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
         ) -> bool:
             # one plan, one export rewrite (and `.bak`), one gateway upload for every load of the call
             changed = await configurator.set_rooms(
-                [load.address for load in mine], room
+                [load.address for load in mine], room, create=create
             )
             for load in mine:
                 _suggest_area(hass, load.device_id, room)
@@ -1603,11 +1613,13 @@ def _socket(hub: JungHomeHub, address: int) -> Socket:
 async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     """Write a socket's switch-on or switch-off threshold; `devices` replaces the loads both thresholds switch.
 
-    In the app's order: the threshold first, then the wiring; the wiring's checks run before either is written,
-    so a refused call leaves the socket as it was. Without `devices`, a call that disables the threshold
+    In the app's order: the threshold first, then the wiring. Every socket's wiring checks and value (read when
+    the call leaves a field out) come before anything is written, so a refused call leaves every socket as it was.
+    Without `devices`, a call that disables the threshold
     (`enabled: false`) while the socket's other one is not active either unwires the loads as the app's disable
     (`ToggleThreshold`) does (`MeshConfigurator.unwire_threshold`); an other threshold the socket does not tell
     about keeps them wired. Editing the level or duration of a disabled threshold is no disable: the loads stay.
+    A failure names the thresholds and sockets already written (`ThresholdProgress`, W4-13).
     """
     which: Which = call.data[ATTR_THRESHOLD]
     needs_current = not {"power", "duration", "enabled"} <= set(call.data)
@@ -1625,7 +1637,7 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         ) -> bool:
             # the hub the lock handed us: the one a previous call's reload left
             hub = configurator.hub
-            changed = False
+            values: list[Threshold] = []
             for address in sockets:
                 socket = _socket(hub, address)
                 if devices is not None:
@@ -1635,13 +1647,19 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
                     if needs_current
                     else None
                 )
-                value = planned_threshold(
-                    current, call.data, load_entity_id(hass, socket)
+                values.append(
+                    planned_threshold(current, call.data, load_entity_id(hass, socket))
                 )
-                await write_threshold(hass, hub, socket, which, value)
+            progress = ThresholdProgress()
+            changed = False
+            for address, value in zip(sockets, values, strict=True):
+                socket = _socket(hub, address)
+                await write_threshold(hass, hub, socket, which, value, progress)
                 if devices is not None:
                     changed = (
-                        await configurator.set_threshold_devices(address, devices)
+                        await configurator.set_threshold_devices(
+                            address, devices, applied=progress.applied
+                        )
                         or changed
                     )
                 elif call.data.get("enabled") is False:
@@ -1650,8 +1668,12 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
                     )
                     if other is not None and not other.active:
                         changed = (
-                            await configurator.unwire_threshold(address) or changed
+                            await configurator.unwire_threshold(
+                                address, applied=progress.applied
+                            )
+                            or changed
                         )
+                progress.finish(address)
             return changed
 
         await _run(hass, entry_id, operation)
@@ -1666,13 +1688,22 @@ async def _delete_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
             configurator: MeshConfigurator, sockets: list[int] = sockets
         ) -> bool:
             hub = configurator.hub
+            progress = (
+                ThresholdProgress()
+            )  # a failure names what was cleared before it (W4-13)
             changed = False
             for address in sockets:
                 for which in THRESHOLD_PROPERTIES:
                     await write_threshold(
-                        hass, hub, _socket(hub, address), which, CLEARED
+                        hass, hub, _socket(hub, address), which, CLEARED, progress
                     )
-                changed = await configurator.unwire_threshold(address) or changed
+                changed = (
+                    await configurator.unwire_threshold(
+                        address, applied=progress.applied
+                    )
+                    or changed
+                )
+                progress.finish(address)
             return changed
 
         await _run(hass, entry_id, operation)

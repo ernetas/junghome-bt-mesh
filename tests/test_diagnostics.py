@@ -183,6 +183,7 @@ async def test_diagnostics(
         "stalled_for": None,
         "last_write_error": None,
         "durable_headroom": headroom,
+        "address_shared": None,
     }
 
     # no key refresh, no device Home Assistant added (review-4 D11: phases and Network IDs only, never a key)
@@ -206,7 +207,7 @@ async def test_diagnostics(
     )  # a Bluetooth MAC; the mesh address below says which node it is
     assert link["proxy_node"] == "0148"
     assert isinstance(link["connected_since"], float)
-    assert link["mtu"] == 247
+    assert (link["mtu"], link["proxy_config_dropped"]) == (247, 0)
     assert link["visible_proxies"] == [
         {"address": REDACTED, "rssi": -50, "node": "0148"}
     ]  # the MAC names the node
@@ -443,6 +444,7 @@ async def test_diagnostics_without_link(
         "proxy_node": None,
         "connected_since": None,
         "mtu": init_integration.runtime_data.proxy.mtu,
+        "proxy_config_dropped": 0,
         "visible_proxies": [],
         "unknown_nodes": [],
     }

@@ -991,10 +991,8 @@ async def test_reads_wait_for_a_link_instead_of_failing_without_one(
     reader.schedule(LIGHT_SWITCH, job)
     await settle(hass)
     assert ran == []  # held while there is no link
-    assert (
-        LIGHT_SWITCH,
-        job,
-    ) in reader._jobs  # with the reads the lost link queued again
+    # queued for the next link, whichever it is (`link` None), with the reads the lost link queued again
+    assert reader._queued[LIGHT_SWITCH, job].link is None
 
     PropertyMesh(fake_link)  # the queued reads are answered
     mock_bluetooth_env["infos"] = infos
@@ -1002,6 +1000,97 @@ async def test_reads_wait_for_a_link_instead_of_failing_without_one(
     await wait_for_link(hass, mock_config_entry)
     await settle(hass, 200)
     assert ran == [True]
+
+
+def _queue_reader() -> tuple[C.PropertyReader, SimpleNamespace]:
+    """A reader over a hub stand-in whose worker never starts: the queue alone."""
+
+    def start(_hass: object, coro: Any, _name: str) -> SimpleNamespace:
+        coro.close()
+        return SimpleNamespace(done=lambda: False)
+
+    hub = SimpleNamespace(
+        link_count=1,
+        connected=True,
+        hass=None,
+        entry=SimpleNamespace(async_create_background_task=start),
+    )
+    return C.PropertyReader(hub), hub  # type: ignore[arg-type]
+
+
+async def test_a_job_is_queued_once_and_dropped_with_its_link() -> None:
+    """Review-4 R4-5: a job still waiting is not queued again but counted for the current link; one of a link that
+    went away is dropped when its turn comes; one queued while no link was up waits for any. A chunk takes one job
+    per element, at most PROPERTY_READ_CHUNK, the rest keeps its order."""
+    reader, hub = _queue_reader()
+
+    async def job() -> None:
+        pass
+
+    async def other() -> None:
+        pass
+
+    reader.schedule(LIGHT_SWITCH, job)
+    reader.schedule(LIGHT_SWITCH, job)  # still waiting: kept once
+    reader.schedule(LIGHT_SWITCH, other)
+    reader.schedule(SOCKET, job)  # another element: a job of its own
+    assert [(q.addr, q.job) for q in reader._jobs] == [
+        (LIGHT_SWITCH, job),
+        (LIGHT_SWITCH, other),
+        (SOCKET, job),
+    ]
+    hub.link_count = 2  # a new link: only what its entities queued again is read
+    reader.schedule(LIGHT_SWITCH, other)
+    assert reader._take_chunk() == [other]
+    assert not reader._jobs
+    assert not reader._queued
+
+    hub.connected = False
+    reader.schedule(LIGHT_SWITCH, job)  # no link: for the next one
+    hub.connected, hub.link_count = True, 3
+    reader.schedule(LIGHT_SWITCH, other)
+    reader.schedule(SOCKET, other)
+    assert reader._take_chunk() == [job, other]
+    assert reader._take_chunk() == [other]
+
+    addrs = range(0x0100, 0x0100 + C.PROPERTY_READ_CHUNK + 1)
+    for addr in addrs:
+        reader.schedule(addr, job)
+    assert len(reader._take_chunk()) == C.PROPERTY_READ_CHUNK
+    assert [q.addr for q in reader._jobs] == [addrs[-1]]
+
+
+async def test_quick_drops_leave_one_version_job_per_node(
+    hass: HomeAssistant,
+    fast_timeouts: None,
+    init_with_mesh: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 R4-5, the reviewer's repro: five quick drops while the queue waits held five version reads per node,
+    each read in turn. A job is queued once, for the link that is up."""
+    from homeassistant.config_entries import ConfigEntryState  # noqa: PLC0415
+
+    hub: JungHomeHub = init_with_mesh.runtime_data
+    reader = C.property_reader(hass, hub)
+    entry = hub.entry
+    reader._version_read.clear()  # as if no node had answered yet: each link asks again
+    # the worker that starts on the next link waits for the entry to load: the queue stays as the links leave it
+    entry._async_set_state(hass, ConfigEntryState.SETUP_IN_PROGRESS, None)
+    try:
+        for _ in range(5):
+            fake_link.drop_link()
+            await wait_for_link(hass, init_with_mesh, connected=False)
+            await wait_for_link(hass, init_with_mesh)
+            await settle(hass)
+        assert fake_link.connect_count == 6
+        versions = Counter(q.addr for q in reader._jobs if q.key == "version")
+        assert versions
+        assert set(versions.values()) == {1}
+        assert max(Counter((q.addr, q.key) for q in reader._jobs).values()) == 1
+        assert {q.link for q in reader._jobs} == {hub.link_count}
+    finally:
+        entry._async_set_state(hass, ConfigEntryState.LOADED, None)
+    await settle(hass)
 
 
 async def test_battery_node_is_read_when_a_key_wakes_it_not_at_link_up(

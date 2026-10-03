@@ -441,6 +441,14 @@ Dependencies (hard unless marked *soft*):
   Provisioning Data (17); S4-4 / S4-6 merge identities, a both-changed export merged, the replaced export kept, sync
   bookkeeping in its own store (18). Unverified on air: 15, 16's fresh-address skip, 17, 18's merge. Decision M6
   taken as automatic for 16 as well.
+- **Wave 5 (briefs 19–23): done.** H4-2 button events published by the hub whatever the entity's state, key-aware
+  device triggers, every hold ends (`reason`: decision M11 as recommended) (19); S I2 / P4-7 another client on Home
+  Assistant's address detected, sends refused, a fixable `address_shared` repair; proxy configuration PDUs checked
+  (20); R4-5 / R4-10 / R4-11 / R I-5 reader dedup, Time Set and location first, fresh connect-time steps skipped,
+  bounded GATT calls (21); W4-6 / W4-7 / W4-10 / W4-12 / W4-13 / W I5 node-truth writes, remove_device that checks
+  for the reset, `set_room` creates a room only with `create`, threshold progress in errors, plans refused for
+  unreachable nodes (22); H I-2 the gateway reauthentication flow, `reauthentication-flow: done` (23). Unverified on
+  air: most of it; the briefs' reports list the checks.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -448,4 +456,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 19–67 are TODO.
+Every other finding, every low item and briefs 24–67 are TODO.

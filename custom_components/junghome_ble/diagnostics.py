@@ -217,6 +217,8 @@ async def async_get_config_entry_diagnostics(
         "proxy_node": f"{hub.proxy_node:04X}" if hub.proxy_node else None,
         "connected_since": hub.connected_since,
         "mtu": hub.proxy.mtu,
+        # this link's proxy configuration PDUs dropped: a wrong header, not ours, or a replay (review-4 P4-7)
+        "proxy_config_dropped": hub.proxy.rx_proxy_config_dropped,
         "visible_proxies": [
             {
                 "address": i.address,
@@ -255,6 +257,11 @@ async def async_get_config_entry_diagnostics(
                 "stalled_for": hub.state.stalled_for,
                 "last_write_error": hub.state.last_write_error,
                 "durable_headroom": hub.state.durable_headroom,
+                # another client seen sending from our address (the open `address_shared` repair): the highest
+                # [IV index, seq] it was seen with; None when none was
+                "address_shared": None
+                if hub.state.address_shared is None
+                else list(hub.state.address_shared),
             },
             "link": async_redact_data(link, TO_REDACT_LINK),
             "heartbeats": _heartbeats(hub),

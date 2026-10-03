@@ -106,6 +106,16 @@
       "gateway_certificate": {
         "title": "Gateway certificate changed",
         "description": "The JUNG HOME Gateway at {host} now presents certificate {observed}; the entry recorded {expected}. Continue only if you replaced the gateway or its certificate yourself — otherwise another device on your network is answering as the gateway."
+      },
+      "reauth_confirm": {
+        "title": "Grant Home Assistant access to the gateway again",
+        "description": "The JUNG HOME Gateway at {host} no longer accepts the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). The devices keep working over Bluetooth; only handing Home Assistant's changes to the gateway has stopped. Enter the gateway's network-key password (from the JUNG HOME app) for immediate access, or leave it empty and approve the access request in the app after you continue (Settings → Gateway → Access permissions → Open requests, within three minutes; it appears as “{user_name}”). Only the access is renewed: the export is not fetched again.",
+        "data": {
+          "gateway_password": "Network-key password"
+        },
+        "data_description": {
+          "gateway_password": "Optional. With it the gateway grants access immediately; without it you approve the request in the app. It is not stored."
+        }
       }
     },
     "progress": {
@@ -143,7 +153,8 @@
       "nothing_to_import": "No gateway entity is left to take over. Entities of this integration without a counterpart:\n{unmatched}\n\nGateway entities without a counterpart here:\n{gateway_only}",
       "import_successful": "{count} entities were taken over from the JUNG HOME Gateway integration:\n{matched}\n\nKept as they were (already customised here):\n{customised}\n\nWithout a gateway counterpart:\n{unmatched}\n\nStill with the gateway entry:\n{gateway_only}\n\nThe gateway entry has been disabled; delete it under Settings → Devices & services → JUNG HOME once everything looks right.",
       "certificate_vouched_by_mesh": "The JUNG HOME Gateway at {host} presents certificate {observed}, but the gateway node vouched for {expected} over the mesh. Nothing was sent to that address: another device on your network is probably answering as the gateway. If you replaced the gateway or its certificate yourself, reconfigure again while Home Assistant is connected to the mesh: the gateway node then reports the new certificate.",
-      "import_unload_failed": "{title} could not be unloaded, so nothing was imported; every entry the import had unloaded is set up again. Check the log, then try the import again."
+      "import_unload_failed": "{title} could not be unloaded, so nothing was imported; every entry the import had unloaded is set up again. Check the log, then try the import again.",
+      "reauth_successful": "The JUNG HOME Gateway accepts Home Assistant again. Changes made in Home Assistant meanwhile reach it with the next change, or at once with the action Sync gateway."
     }
   },
   "options": {
@@ -236,6 +247,14 @@
               "group": "Group",
               "none": "None"
             }
+          },
+          "reason": {
+            "name": "Hold end reason",
+            "state": {
+              "timeout": "No release heard in time",
+              "link_lost": "Link lost",
+              "stopped": "Integration stopped"
+            }
           }
         }
       },
@@ -263,6 +282,14 @@
               "gateway": "Gateway",
               "group": "Group",
               "none": "None"
+            }
+          },
+          "reason": {
+            "name": "Hold end reason",
+            "state": {
+              "timeout": "No release heard in time",
+              "link_lost": "Link lost",
+              "stopped": "Integration stopped"
             }
           }
         }
@@ -975,6 +1002,9 @@
     "service_no_reply": {
       "message": "Node {node} did not answer {message}; is it powered and in range? {applied}"
     },
+    "service_nodes_unreachable": {
+      "message": "Not sent: {nodes} did not answer Home Assistant's last request and count as unreachable (their entities are unavailable), so the plan would stop at their first message. Check that they are powered and in range, and run the action again once they answer. {applied}"
+    },
     "service_node_asleep": {
       "message": "Node {node} runs on a battery and did not answer {message}: it is asleep. Press one of its keys to wake it, then run the action again right away. {applied}"
     },
@@ -1156,7 +1186,10 @@
       "message": "{name} holds no threshold to change (or did not answer): give both power and duration."
     },
     "threshold_not_applied": {
-      "message": "The JUNG socket {address} did not take its {which} threshold."
+      "message": "The JUNG socket {address} did not take its {which} threshold. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "The {which} threshold could not be sent to the JUNG socket {address}; no proxy node is connected. {applied}"
     },
     "threshold_other_network": {
       "message": "The socket and the devices its thresholds should switch belong to different mesh networks."
@@ -1180,7 +1213,7 @@
       "message": "{name} did not report the new state in time; the scene was not stored."
     },
     "service_gateway_token_rejected": {
-      "message": "The JUNG HOME Gateway at {host} no longer accepts Home Assistant's access, so the export was not handed to it. Fetch the export from the gateway again (Settings → Devices & services → JUNG HOME → Reconfigure): that requests access anew."
+      "message": "The JUNG HOME Gateway at {host} no longer accepts Home Assistant's access, so the export was not handed to it. Grant access again through the re-authentication Home Assistant asks for (Settings → Devices & services), then run this again."
     },
     "seq_store_lost": {
       "message": "The sequence-number record of address {unicast} is lost; Home Assistant will not reuse numbers the mesh has seen. Open the repair issue to continue past them."
@@ -1254,8 +1287,11 @@
     "remove_device_mesh": {
       "message": "Name a JUNG device, not the network."
     },
-    "remove_device_no_answer": {
-      "message": "Device {address} did not confirm its reset; nothing was changed. Use `force` for a device that is gone for good."
+    "remove_device_unconfirmed": {
+      "message": "Device {address} did not confirm its reset and was not seen advertising as a new device afterwards. It may have been reset all the same (its confirmation can be lost, and no Bluetooth scanner may be in its range), or it did not get the reset; the mesh export is unchanged. Run the action again, or use `force` if the device is gone for good."
+    },
+    "remove_device_proxy": {
+      "message": "Device {address} is the proxy node Home Assistant is connected through: its reset would end the connection its confirmation comes back on. Wait until Home Assistant connects through another device (the Proxy node sensor), or use `force`."
     },
     "device_lock_unknown": {
       "message": "The device lock of {entity} is not known yet; the device did not answer the read."
@@ -1286,6 +1322,34 @@
           "confirm": {
             "title": "Skip ahead past the numbers the devices know",
             "description": "Home Assistant hears the JUNG HOME mesh {title} through its proxy node, but not one device answered its state requests. The nodes are discarding Home Assistant's messages as replays. Two causes are likely: the sequence-number store of this integration (`.storage/junghome_ble.*`) was lost or restored from an older backup, so Home Assistant now sends sequence numbers the nodes have already seen; or another mesh client (for example the `mesh_poc.py` tool) transmits with the same unicast address {unicast}. Either give Home Assistant a fresh, unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address, and make sure no other client uses it) or, if the store was lost or restored (and no other client uses the address), confirm to let Home Assistant jump its sequence numbers 1 048 576 ahead and reconnect. Do not restore the sequence-number store from a backup to fix this: an older copy only repeats numbers the devices have already seen. The issue clears itself as soon as a device answers Home Assistant again."
+          }
+        },
+        "abort": {
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Another client uses Home Assistant's JUNG HOME address",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Skip past the other client's sequence numbers",
+            "description": "Home Assistant received a message of the JUNG HOME mesh {title} sent from its own unicast address {unicast} with a sequence number it never used: another mesh client transmits with the same address — a second Home Assistant installation, the `mesh_poc.py` tool configured with this address, or a copy of this installation started elsewhere. Two senders on one address reuse each other's sequence numbers, and the devices discard whatever lies below the other client's, so Home Assistant sends nothing to the mesh until this is repaired (commands fail, states are not refreshed). Stop the other client, or give it or Home Assistant another unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address). Then confirm to let Home Assistant continue its sequence numbers past the ones the other client was seen with and send again. If the other client keeps sending from this address, the issue comes back. Do not restore the sequence-number store from a backup to fix this. Unverified on air: a second client on Home Assistant's address has only been simulated."
+          }
+        },
+        "abort": {
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Another client still uses Home Assistant's JUNG HOME address",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Skip past the other client's sequence numbers again",
+            "description": "Home Assistant skipped past the sequence numbers of another mesh client on its address {unicast} in the JUNG HOME mesh {title}, and the other client has sent from that address again since: it is still running. Skipping ahead does not help while it does. Give Home Assistant a fresh, unused unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), or stop the other client or move it to another address. Until then Home Assistant sends nothing to the mesh. Confirm only once the other client no longer uses this address: Home Assistant then continues past its numbers again and resumes sending. Unverified on air: a second client on Home Assistant's address has only been simulated."
           }
         },
         "abort": {
@@ -1354,7 +1418,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway no longer accepts Home Assistant",
-      "description": "The JUNG HOME Gateway at {host} rejects the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). Home Assistant keeps changing rooms, key connections and scenes in its own export, but no longer hands it to the gateway, so the app does not see those changes. Open Settings → Devices & services → JUNG HOME → Reconfigure → Fetch it again from the gateway: Home Assistant requests access anew (approve it in the app) and loads the gateway's current export; then repeat any change made since this issue appeared. The issue clears once the gateway accepts Home Assistant again."
+      "description": "The JUNG HOME Gateway at {host} rejects the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). Home Assistant keeps changing rooms, key connections and scenes in its own export, but no longer hands it to the gateway, so the app does not see those changes; the devices keep working. Home Assistant asks for access again: follow its request to re-authenticate JUNG HOME (Settings → Devices & services; Repairs also lists it as expired authentication) and enter the gateway's network-key password or approve the new access request in the app. The issue clears once the gateway accepts Home Assistant again; the action Sync gateway then hands over the changes made since."
     },
     "seq_store_lost": {
       "title": "Sequence numbers of the JUNG HOME mesh {title} lost",
@@ -1411,11 +1475,15 @@
   "services": {
     "set_room": {
       "name": "Set room",
-      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"), creating the room if it does not exist yet. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and the integration reloads. Administrators only.",
+      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"). A room that does not exist yet is created only with Create the room, so a mistyped name is refused. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and the integration reloads. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
           "description": "Name of the room in the JUNG HOME app."
+        },
+        "create": {
+          "name": "Create the room",
+          "description": "Create the room when the mesh has none of that name. Off, an unknown name is refused."
         }
       }
     },
@@ -1829,7 +1897,7 @@
         },
         "force": {
           "name": "Even if it does not answer",
-          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good)."
+          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it."
         }
       }
     },

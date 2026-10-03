@@ -2408,10 +2408,11 @@
    "id": "msg:proxy:03",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_notify"
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_proxy_config"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_filter_status_reports_the_proxy_node_and_a_new_link_forgets_it",
+    "tests/jhmesh/test_client.py::test_proxy_configuration_needs_its_header_and_is_replay_protected",
     "tests/jhmesh/test_client.py::test_truncated_filter_status_is_dropped_quietly",
     "tests/jhmesh/test_client.py::test_a_filter_answered_on_the_second_try_stops_the_retries"
    ]

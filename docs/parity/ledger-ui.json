@@ -481,7 +481,7 @@
    "code": [
     "custom_components/junghome_ble/services.py::_remove_device",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node",
-    "custom_components/junghome_ble/strings.json::exceptions.remove_device_no_answer"
+    "custom_components/junghome_ble/strings.json::exceptions.remove_device_unconfirmed"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_refusals",

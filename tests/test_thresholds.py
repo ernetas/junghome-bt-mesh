@@ -358,13 +358,18 @@ async def test_a_later_socket_failing_still_reloads_for_an_earlier_one(
         }
 
     async def second_fails(
-        self: mesh_config.MeshConfigurator, address: int, devices: Any
+        self: mesh_config.MeshConfigurator,
+        address: int,
+        devices: Any,
+        **kwargs: Any,
     ) -> bool:
         wired.append(address)
         if len(wired) == 1:
-            return await real_wiring(self, address, devices)
+            return await real_wiring(self, address, devices, **kwargs)
         with patch.object(mesh_config, "threshold_client", return_value=None):
-            return await real_wiring(self, address, devices)  # fails after its _load
+            return await real_wiring(
+                self, address, devices, **kwargs
+            )  # fails after its _load
 
     with (
         patch.object(svc, "_threshold_sockets", two_sockets),
@@ -448,6 +453,7 @@ async def test_threshold_not_taken(hass: HomeAssistant, env: Env) -> None:
     assert err.value.translation_placeholders == {
         "address": "0172",
         "which": "switch_on",
+        "applied": mesh_config.APPLIED_NOTHING,
     }
 
 
@@ -466,7 +472,76 @@ async def test_threshold_lost_link(hass: HomeAssistant, env: Env) -> None:
                 "duration": 5,
             },
         )
-    assert err.value.translation_key == "send_failed"
+    assert err.value.translation_key == "threshold_send_failed"
+    assert err.value.translation_placeholders == {
+        "address": "0172",
+        "which": "switch_on",
+        "applied": mesh_config.APPLIED_NOTHING,
+    }
+
+
+async def test_a_threshold_failure_names_what_was_written_before_it(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 W4-13: a write that fails after others of the same call took says which — the thresholds of the
+    socket under way, the sockets done — not that nothing before it was applied."""
+    real_sockets = svc._threshold_sockets
+    real_write = PropertyReader.write
+    writes: list[int] = []
+    fail_at = 0
+
+    async def two_sockets(
+        hass: HomeAssistant, service_call: Any
+    ) -> dict[str, list[int]]:
+        return {
+            entry: [*addresses, *addresses]
+            for entry, addresses in (await real_sockets(hass, service_call)).items()
+        }
+
+    async def write(self: PropertyReader, *args: Any, **kwargs: Any) -> Any:
+        writes.append(1)
+        if len(writes) == fail_at:
+            raise ConnectionError
+        return await real_write(self, *args, **kwargs)
+
+    expected = {
+        2: "Before it, the switch-on threshold of socket 0172 was written. Run the action again with the same "
+        "target to finish.",
+        3: "Before it, socket 0172 was set as asked. Run the action again with the same target to finish.",
+        4: "Before it, socket 0172 was set as asked and the switch-on threshold of socket 0172 was written. Run "
+        "the action again with the same target to finish.",
+    }
+    with (
+        patch.object(svc, "_threshold_sockets", two_sockets),
+        patch.object(PropertyReader, "write", write),
+    ):
+        for fail_at, applied in expected.items():  # noqa: B007  # read by `write`
+            writes.clear()
+            with pytest.raises(HomeAssistantError) as err:
+                await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+            assert err.value.translation_key == "threshold_send_failed"
+            assert err.value.translation_placeholders["applied"] == applied
+            await settled(hass, env)
+
+
+def test_threshold_progress_words_a_stopped_wiring_plan() -> None:
+    """The wiring plan's own account follows what the call wrote before it; with nothing before, the usual one."""
+    progress = T.ThresholdProgress()
+    assert progress.applied(0, 4) == mesh_config.APPLIED_NOTHING
+    assert progress.applied(1, 4) == mesh_config.applied_text(1, 4)
+    progress.wrote(SOCKET, "switch_on")
+    progress.wrote(SOCKET, "switch_off")
+    done = (
+        "Before it, the switch-on threshold of socket 0172 and the switch-off threshold of socket 0172 were "
+        "written."
+    )
+    assert progress.applied(0, 4) == (
+        f"{done} Run the action again with the same target to finish."
+    )
+    assert progress.applied(3, 4) == f"{done} {mesh_config.applied_text(3, 4)}"
+    progress.finish(SOCKET)
+    progress.finish(SOCKET + 1)
+    assert progress.done() == "Before it, sockets 0172, 0173 were set as asked."
 
 
 async def test_set_threshold_disabled_unwires_like_the_app(
@@ -588,8 +663,13 @@ async def test_publication_reset_is_sent_as_planned(
     )
     await settled(hass, env)
     env.refuse[PUBLICATION_RESET[1]] = 0x04  # Invalid Publish Parameters
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as err:
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    # both thresholds were cleared before the plan (W4-13)
+    assert err.value.translation_placeholders["applied"] == (
+        "Before it, the switch-on threshold of socket 0172 and the switch-off threshold of socket 0172 were "
+        f"written. {mesh_config.applied_text(3, 4)}"
+    )
     await settled(hass, env)
     assert [pdu for _n, pdu in env.config_calls[-2:]] == PUBLICATION_RESET
     assert env.reload().publication(METER, "1001") is None

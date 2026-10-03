@@ -235,11 +235,11 @@ async def test_statuses_of_a_heard_recall_repeat_nothing(
     assert [e.data.get("source") for e in events] == ["0235", "0D00"]
 
 
-async def test_a_key_that_publishes_no_scene_event_leaves_the_recall_to_the_members(
+async def test_a_keys_recall_is_published_without_its_event_entity(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
-    """A key whose event entity is disabled (no listener) fires no scene event: its recall is not noted, so the
-    members' Scene Status that follows reports it."""
+    """A key whose event entity is disabled (no listener) still publishes its recall, the hub does (review-4 H4-2):
+    with the key as the source, and the members' Scene Status that follows adds nothing."""
     hub = init_integration.runtime_data
     events = async_capture_events(hass, EVENT_SCENE_RECALLED)
     with patch.dict(hub._event_listeners, {ROCKER_B: []}):
@@ -247,7 +247,7 @@ async def test_a_key_that_publishes_no_scene_event_leaves_the_recall_to_the_memb
         fake_link.inject(LIGHT_SWITCH, MEMBER_GROUP, scene_status(1))
         await hass.async_block_till_done()
     assert [(e.data.get("source"), e.data.get("reported_by")) for e in events] == [
-        (None, "0148")
+        ("0235", None)
     ]
 
 
