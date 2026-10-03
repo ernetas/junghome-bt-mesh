@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Bluetooth üzerinden JUNG HOME",
+        "description": "Home Assistant, JUNG HOME uygulamasının mesh anahtarlarını içeren ağ dışa aktarımını kullanarak JUNG HOME mesh ağınıza doğrudan Bluetooth üzerinden katılır. Dışa aktarımın nereden geleceğini seçin.",
+        "menu_options": {
+          "gateway": "JUNG HOME Gateway'den al",
+          "upload": "Uygulamanın dışa aktarım dosyasını yükle",
+          "path": "Home Assistant sunucusundaki bir dosyayı kullan"
+        },
+        "data": {
+          "cdb_path": "Mesh dışa aktarım dosyası",
+          "metadata_dir": "Uygulama meta veri dizini",
+          "unicast": "Home Assistant'ın unicast adresi"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant sunucusundaki mutlak yol, ör. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "İsteğe bağlı, yalnızca bir iOS yedeğinden alınan `MeshNetwork.json` için: uygulamanın `device_metadata.json` ve `scene_metadata.json` dosyalarını içeren `Application Support` klasörü; böylece varlıklar uygulamada onlara verdiğiniz adları alır. `JungHome.json` adları zaten içerir.",
+          "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Bu sizin JUNG HOME kurulumunuz mu?",
+        "description": "{network_id} ağına ait bir Bluetooth Mesh proxy'si menzilde. Home Assistant gördüğü her Bluetooth Mesh ağını önerir, başka markalarınkini de — örneğin bir komşunun lambalarını. Yalnızca bu sizin JUNG HOME kurulumunuzsa devam edin; ardından uygulamanın mesh dışa aktarımı istenir."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME Gateway bulundu",
+        "description": "{host} adresinde bir JUNG HOME Gateway kendini duyuruyor. JUNG HOME uygulamasının ağ dışa aktarımını ondan almak için devam edin: ardından ağ anahtarı parolasını girersiniz veya uygulamada bir erişim isteğini onaylarsınız. Elle girdiğiniz bir adreste olduğu gibi, herhangi bir şey gönderilmeden önce sertifikası ilk temasta sabitlenir. Bulunan ağ geçidinden kurulum gerçek cihazlarda henüz doğrulanmadı."
+      },
+      "gateway": {
+        "title": "Dışa aktarımı JUNG HOME Gateway'den al",
+        "description": "Ağ geçidi, uygulamanın ağ dışa aktarımının bir kopyasını tutar. Adresini girin ve anında erişim için ağ anahtarı parolasını (JUNG HOME uygulamasından) girin ya da parolayı boş bırakıp devam ettikten sonra erişim isteğini uygulamada onaylayın (Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler, üç dakika içinde; “{user_name}” olarak görünür). Dışa aktarım, Home Assistant yapılandırma dizininde `junghome_ble/` altında saklanır. Telefondan yapılan dışa aktarım gibi tüm mesh anahtarlarını içerir — bu dizinin yedeklerini gizli tutun.",
+        "data": {
+          "gateway_host": "Ağ geçidi adresi",
+          "gateway_password": "Ağ anahtarı parolası"
+        },
+        "data_description": {
+          "gateway_host": "JUNG HOME Gateway'in IP adresi veya ana bilgisayar adı. Home Assistant'ın ağda bulduğu bir ağ geçidi zaten doldurulmuştur. Aksi takdirde varsayılan `junghome.local` birçok ağda çalışır; ya da IP adresini kullanın (uygulamada Ayarlar → Ağ Geçidi altında gösterilir).",
+          "gateway_password": "İsteğe bağlı. Parolayla ağ geçidi erişimi hemen verir; parola olmadan isteği uygulamada onaylarsınız."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Gelişmiş",
+            "description": "İkinci bir Home Assistant veya deponun komut satırı araçları da bu kuruluma katılmıyorsa varsayılanı koruyun: her birinin kendine ait bir adrese ihtiyacı vardır.",
+            "data": {
+              "unicast": "Home Assistant'ın unicast adresi"
+            },
+            "data_description": {
+              "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "JUNG HOME uygulamasında onay bekleniyor"
+      },
+      "gateway_refetch": {
+        "title": "Dışa aktarımı yeniden al",
+        "description": "Güncel ağ dışa aktarımını, kayıtlı erişimle {host} adresindeki ağ geçidinden alır. Ağ geçidi bu erişimi artık kabul etmiyorsa uygulamada yeni bir erişim isteğini onaylamanız istenir.",
+        "sections": {
+          "advanced": {
+            "name": "Gelişmiş",
+            "description": "İkinci bir Home Assistant veya deponun komut satırı araçları da bu kuruluma katılmıyorsa varsayılanı koruyun: her birinin kendine ait bir adrese ihtiyacı vardır.",
+            "data": {
+              "unicast": "Home Assistant'ın unicast adresi"
+            },
+            "data_description": {
+              "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Uygulamanın dışa aktarım dosyasını yükle",
+        "description": "JUNG HOME uygulamasında Proje → Dosya ile paylaş'ı açın, oluşturduğu `JungHome.json` dosyasını kendinize gönderin ve ardından buraya yükleyin. Dosya, Home Assistant yapılandırma dizininde `junghome_ble/` altında saklanır. Tüm mesh anahtarlarını içerir — bu dizinin yedeklerini gizli tutun.",
+        "data": {
+          "export_file": "Mesh dışa aktarım dosyası"
+        },
+        "data_description": {
+          "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Gelişmiş",
+            "description": "İkinci bir Home Assistant veya deponun komut satırı araçları da bu kuruluma katılmıyorsa varsayılanı koruyun: her birinin kendine ait bir adrese ihtiyacı vardır.",
+            "data": {
+              "unicast": "Home Assistant'ın unicast adresi"
+            },
+            "data_description": {
+              "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Home Assistant sunucusundaki bir dosyayı kullan",
+        "description": "Önce uygulamanın `JungHome.json` dosyasını (Proje → Dosya ile paylaş; cihaz adlarınızı içerir) veya `MeshNetwork.json` dosyasını (iOS yedeği) Home Assistant sunucusuna kopyalayın ve yolunu girin.",
+        "data": {
+          "cdb_path": "Mesh dışa aktarım dosyası",
+          "metadata_dir": "Uygulama meta veri dizini"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant sunucusundaki mutlak yol, ör. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "İsteğe bağlı, yalnızca bir iOS yedeğinden alınan `MeshNetwork.json` için: uygulamanın `device_metadata.json` ve `scene_metadata.json` dosyalarını içeren `Application Support` klasörü; böylece varlıklar uygulamada onlara verdiğiniz adları alır. `JungHome.json` adları zaten içerir."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Gelişmiş",
+            "description": "İkinci bir Home Assistant veya deponun komut satırı araçları da bu kuruluma katılmıyorsa varsayılanı koruyun: her birinin kendine ait bir adrese ihtiyacı vardır.",
+            "data": {
+              "unicast": "Home Assistant'ın unicast adresi"
+            },
+            "data_description": {
+              "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "JUNG HOME mesh dışa aktarımını güncelle",
+        "description": "Bunu, JUNG HOME uygulamasında cihazları yeniden ağa kattıktan (provisioning) veya yeniden kabloladıktan sonra ya da bir anahtar yenilemeden sonra kullanın: aynı ağın yeni bir dışa aktarımını sağlayın. Dışa aktarımdan kaybolan cihazlar kaldırılır. Home Assistant'ın kendi mesh adresi aynı anda değiştirilebilir.",
+        "menu_options": {
+          "gateway_refetch": "{host} adresindeki ağ geçidinden yeniden al",
+          "gateway": "JUNG HOME Gateway'den al",
+          "upload": "Uygulamanın dışa aktarım dosyasını yükle",
+          "path": "Home Assistant sunucusundaki bir dosyayı kullan",
+          "import_gateway": "JUNG HOME Gateway entegrasyonunun varlıklarını içe aktar",
+          "areas": "Her odanın cihazlarının hangi alana gideceğini değiştir"
+        },
+        "data": {
+          "cdb_path": "Mesh dışa aktarım dosyası",
+          "metadata_dir": "Uygulama meta veri dizini",
+          "unicast": "Home Assistant'ın unicast adresi"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant sunucusundaki mutlak yol, ör. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "İsteğe bağlı, yalnızca bir iOS yedeğinden alınan `MeshNetwork.json` için: uygulamanın `device_metadata.json` ve `scene_metadata.json` dosyalarını içeren `Application Support` klasörü; böylece varlıklar uygulamada onlara verdiğiniz adları alır. `JungHome.json` adları zaten içerir.",
+          "unicast": "Home Assistant'ın düğüm olarak kullanacağı onaltılık mesh adresi (0001–7FFF). Başka bir düğüm tarafından kullanılmamalıdır; varsayılan değer uygulamanın adres aralığının dışındadır."
+        }
+      },
+      "import_gateway": {
+        "title": "JUNG HOME Gateway entegrasyonundan içe aktar",
+        "description": "JUNG HOME Gateway entegrasyonu (`junghome`) bu entegrasyonun yanında kurulu. Varlıkları buraya devralınabilir; böylece varlık kimlikleri, adları, alanları, etiketleri ve kayıt geçmişi Bluetooth Mesh entegrasyonuyla devam eder. Eşleştirme cihaz adına (JUNG HOME uygulamasındaki ad) ve varlık türüne göre yapılır; yalnızca bu entegrasyonun henüz yeniden adlandırmadığınız veya özelleştirmediğiniz varlıkları değiştirilir.\n\n**{count} varlık taşınacak** (ağ geçidi varlığı → değiştirdiği):\n{matched}\n\n**Olduğu gibi kalanlar** (burada zaten özelleştirilmiş; ağ geçidininki olduğu yerde kalır):\n{customised}\n\n**Ağ geçidinde karşılığı yok** (olduğu gibi kalır):\n{unmatched}\n\n**Burada karşılığı olmayan ağ geçidi varlıkları** (ağ geçidi girişinde kalır):\n{gateway_only}\n\nGönderildiğinde her iki entegrasyon da kaldırılır (unload), varlıklar taşınır, eşleşen her ağ geçidi cihazının alanı, özel adı ve etiketleri buradaki karşılık gelen cihaza kopyalanır, ağ geçidi girişi devre dışı bırakılır ve bu giriş yeniden yüklenir. Ardından ağ geçidi girişini silin."
+      },
+      "gateway_certificate": {
+        "title": "Ağ geçidi sertifikası değişti",
+        "description": "{host} adresindeki JUNG HOME Gateway artık {observed} sertifikasını sunuyor; girişte kayıtlı olan {expected}. Yalnızca ağ geçidini veya sertifikasını kendiniz değiştirdiyseniz devam edin — aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor."
+      },
+      "reauth_confirm": {
+        "title": "Home Assistant'a ağ geçidine yeniden erişim verin",
+        "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın {title} mesh ağı için kaydettiği erişimi artık kabul etmiyor (muhtemelen JUNG HOME uygulamasında Ayarlar → Ağ Geçidi → Erişim İzinleri altında kaldırıldı). Cihazlar Bluetooth üzerinden çalışmaya devam eder; yalnızca Home Assistant'ın değişikliklerinin ağ geçidine iletilmesi durdu. Anında erişim için ağ geçidinin ağ anahtarı parolasını (JUNG HOME uygulamasından) girin ya da boş bırakıp devam ettikten sonra erişim isteğini uygulamada onaylayın (Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler, üç dakika içinde; “{user_name}” olarak görünür). Yalnızca erişim yenilenir: dışa aktarım yeniden alınmaz.",
+        "data": {
+          "gateway_password": "Ağ anahtarı parolası"
+        },
+        "data_description": {
+          "gateway_password": "İsteğe bağlı. Parolayla ağ geçidi erişimi hemen verir; parola olmadan isteği uygulamada onaylarsınız. Parola saklanmaz."
+        }
+      },
+      "areas": {
+        "title": "Odalar ve alanlar",
+        "description": "JUNG HOME uygulamasının her odası için Home Assistant alanını seçin. Bir oda için aynı adlı alan veya odanın adını takma ad olarak taşıyan alan önceden doldurulur. Odanın adını taşıyan bir alan için odayı boş bırakın (yoksa oluşturulur). Kendine ait odası olmayan cihazlar da bir oda alır: bir butonun düğmeleri yanlarındaki yükün odasını, bir duvar vericisinin düğmeleri ise anahtarladıkları odayı. Yeniden yapılandır menüsünden açıldığında bu, hâlâ önceki seçimin onlara verdiği alanda bulunan cihazları taşır; kendiniz başka bir alana yerleştirdiğiniz bir cihaz asla taşınmaz.",
+        "data": {
+          "assign_areas": "JUNG HOME cihazlarını alanlara yerleştir"
+        },
+        "data_description": {
+          "assign_areas": "Kapalı: yeni cihazlar alansız başlar ve aşağıdaki odalar yok sayılır."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "JUNG HOME uygulamasını açın ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında “{user_name}” erişim isteğini onaylayın. {host} adresindeki ağ geçidi en fazla üç dakika bekler."
+    },
+    "error": {
+      "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+      "not_a_directory": "Meta veri yolu bir dizin değil.",
+      "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+      "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+      "address_in_use": "Bu adres mesh ağındaki bir düğüme ait; kullanılmayan bir adres seçin.",
+      "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+      "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+      "network_mismatch": "Dışa aktarım, bulunan mesh ağından farklı bir mesh ağına ait.",
+      "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu (ağ anahtarı muhtemelen Home Assistant onu son gördüğünden beri yenilendi). Yeni bir giriş eklemek yerine o girişin Yeniden yapılandır seçeneğini kullanın.",
+      "invalid_host": "Ağ geçidinin IP adresini veya ana bilgisayar adını girin.",
+      "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+      "invalid_auth": "Ağ geçidi ağ anahtarı parolasını reddetti.",
+      "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+      "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+      "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+      "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+      "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+      "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin.",
+      "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+      "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir."
+    },
+    "abort": {
+      "already_configured": "Bu mesh ağı zaten yapılandırılmış.",
+      "already_in_progress": "Bu mesh ağının kurulumu zaten devam ediyor.",
+      "not_supported": "Bu Bluetooth cihazı bir Mesh Proxy değil.",
+      "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+      "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın.",
+      "reconfigure_successful": "Mesh dışa aktarımı güncellendi.",
+      "no_gateway_entry": "JUNG HOME Gateway entegrasyonu kurulu değil; içe aktarılacak bir şey yok.",
+      "nothing_to_import": "Devralınacak ağ geçidi varlığı kalmadı. Bu entegrasyonun karşılığı olmayan varlıkları:\n{unmatched}\n\nBurada karşılığı olmayan ağ geçidi varlıkları:\n{gateway_only}",
+      "import_successful": "JUNG HOME Gateway entegrasyonundan {count} varlık devralındı:\n{matched}\n\nOlduğu gibi kalanlar (burada zaten özelleştirilmiş):\n{customised}\n\nAğ geçidinde karşılığı olmayanlar:\n{unmatched}\n\nHâlâ ağ geçidi girişinde olanlar:\n{gateway_only}\n\nAğ geçidi girişi devre dışı bırakıldı; her şey doğru göründüğünde onu Ayarlar → Cihazlar ve hizmetler → JUNG HOME altında silin.",
+      "certificate_vouched_by_mesh": "{host} adresindeki JUNG HOME Gateway {observed} sertifikasını sunuyor, ancak ağ geçidi düğümü mesh ağı üzerinden {expected} sertifikasını doğruladı. Bu adrese hiçbir şey gönderilmedi: ağınızdaki başka bir cihaz muhtemelen ağ geçidi gibi yanıt veriyor. Ağ geçidini veya sertifikasını kendiniz değiştirdiyseniz, Home Assistant mesh ağına bağlıyken yeniden yapılandırın: ağ geçidi düğümü o zaman yeni sertifikayı bildirir.",
+      "import_unload_failed": "{title} kaldırılamadı (unload), bu yüzden hiçbir şey içe aktarılmadı; içe aktarmanın kaldırdığı her giriş yeniden kuruldu. Günlüğü kontrol edin, ardından içe aktarmayı tekrar deneyin.",
+      "reauth_successful": "JUNG HOME Gateway, Home Assistant'ı yeniden kabul ediyor. Bu arada Home Assistant'ta yapılan değişiklikler ona bir sonraki değişiklikle veya Ağ geçidini eşitle eylemiyle hemen ulaşır.",
+      "areas_updated": "Odaların alanları kaydedildi; {count} cihaz odasının yeni alanına taşındı.",
+      "not_loaded": "Entegrasyon çalışmıyor: önce onu yeniden kurun.",
+      "not_junghome_gateway": "Bu cihaz kendini bir JUNG HOME Gateway olarak duyurmuyor (JUNG üreticisi veya seri numarası yok).",
+      "not_ipv4_address": "Ağ geçidi bir IPv4 adresi duyurmadı. Entegrasyonu elle ekleyin ve ağ geçidinin adresini girin."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME (Bluetooth Mesh) seçenekleri",
+        "data": {
+          "click_delay": "Tıklamaları yalnızca çift tıklama olasılığı ortadan kalktığında bildir",
+          "heartbeats": "Düğüm heartbeat'leri (sessiz bir cihazı kullanılamaz olarak işaretle)",
+          "allow_provisioning": "Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver (deneysel)",
+          "provisioner_identity": "Home Assistant'ı ağın dosyasına provisioner olarak yaz (deneysel, uygulamayla doğrulanmadı)",
+          "follow_app": "JUNG HOME uygulamasında yapılan değişiklikleri takip et",
+          "gateway_check": "Ağ geçidinin dışa aktarımını altı saatte bir kontrol et",
+          "sync_areas": "JUNG odası değiştiğinde cihazları da taşı"
+        },
+        "data_description": {
+          "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler.",
+          "heartbeats": "Şebekeden beslenen her cihazdan Home Assistant'a 64 saniyede bir heartbeat göndermesi istenir (JUNG uygulamasının kapalı bıraktığı standart bir Bluetooth Mesh ayarı). Yaklaşık üç buçuk dakika boyunca hiçbir şey göndermeyen bir cihazın varlıkları, yeniden duyulana kadar kullanılamaz olarak işaretlenir. Bunu kapatmak cihazlara durmalarını söyler (hepsine bir kerede söylenemediyse bir sonraki bağlantıda yeniden); entegrasyonu kaldırmadan önce kapatın, çünkü entegrasyon bunu sonradan onlara söyleyemez.",
+          "allow_provisioning": "`junghome_ble.add_device` eyleminin yeni bir JUNG cihazını ağa katmasına (provisioning) ve ağda zaten bulunan aynı ürünün bir cihazını örnek alarak uygulamanın yapacağı gibi yapılandırmasına, `junghome_ble.remove_device` eyleminin ise bir cihazı sıfırlayıp ağdan çıkarmasına izin verir. Henüz gerçek cihazlarda denenmedi: önce yedek bir cihazla deneyin. Ekleme, cihaza ağın anahtarlarını verir; kaldırma geri alınamaz.",
+          "provisioner_identity": "Home Assistant'ın yazdığı veya ağ geçidine ilettiği her dosya, Home Assistant için uygulamanınkilerden ayrı kendi adres aralıklarına sahip ve Home Assistant'ın adresini bu aralıkların içinde barındıran bir provisioner kaydı alır; Home Assistant'ın eklediği ve uygulamanın dosyasında eksik olan cihazlar da geri eklenir. Home Assistant'ın oluşturduğu odalar, sahneler ve cihazlar adreslerini bundan sonra onun kendi aralıklarından alır. Hiçbir JUNG uygulaması henüz böyle bir dosyayı içe aktarmadı: kendi uygulamanız veya ağ geçidiniz görmeden önce bunu yedek bir uygulama kurulumunda deneyin (dosyayı `junghome_ble.export_network` ile alıp içe aktarın). Kapalı: dosyalar bu seçenek olmadan nasıl yazılıyorsa tam öyle yazılır.",
+          "follow_app": "JUNG HOME uygulamasını çalıştıran telefon mesh ağında duyulduğunda, ağ geçidinden kurulan bir giriş, telefon sessizleştikten birkaç dakika sonra (en fazla 15 dakikada bir) ağ geçidinin dışa aktarımını alır ve değişmişse devralır: uygulamada değiştirilen cihazlar, odalar, sahneler ve düğme bağlantıları Yeniden yapılandır olmadan Home Assistant'a ulaşır. Bir dosyadan kurulan giriş ise, uygulamanın bir cihazın yapılandırmasını değiştirdiği görüldüğünde bunun yerine bir onarım bildirimi gösterir. Bunun için mesh ağında hiçbir şey gönderilmez. Gerçek cihazlarda henüz doğrulanmadı.",
+          "gateway_check": "Ağ geçidinden kurulan bir giriş, altı saatte bir ağ geçidinden dışa aktarımını ister ve değişmişse devralır; bu, Home Assistant telefonu duymadığı sırada uygulamanın değiştirdiklerini yakalar. Ağ geçidine tek bir istek; mesh ağında hiçbir şey gönderilmez. Bir dosyadan kurulan girişte etkisi yoktur.",
+          "sync_areas": "Bir cihaz uygulamada (Home Assistant yeni dışa aktarımı devraldığında) veya bir oda eylemiyle oda değiştirdiğinde, yeni odanın alanına da taşınır — onu kendiniz bir alana yerleştirmediyseniz. Kapalı: cihaz başladığı alanda kalır. Gerçek cihazlarda henüz doğrulanmadı."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh bağlantısı"
+      },
+      "motion": {
+        "name": "Hareket"
+      },
+      "occupancy": {
+        "name": "Doluluk"
+      },
+      "fault": {
+        "name": "Arıza"
+      },
+      "wind_alarm": {
+        "name": "Rüzgar alarmı"
+      },
+      "reference_run_active": {
+        "name": "Referans hareketi"
+      },
+      "gateway_api_available": {
+        "name": "API kullanılabilir"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Onay bekleyen istemci"
+      },
+      "gateway_network_problem": {
+        "name": "Ağ sorunu"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth mesh sorunu"
+      },
+      "gateway_cloud_problem": {
+        "name": "Bulut sorunu"
+      },
+      "gateway_cloud_connected": {
+        "name": "Bulut bağlantısı"
+      },
+      "window_open": {
+        "name": "Açık pencere"
+      },
+      "input_state": {
+        "name": "Giriş durumu"
+      },
+      "input_state_key": {
+        "name": "Giriş durumu {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Zamanlayıcı işlevi"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Düğme {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Tıklama",
+              "double_click": "Çift tıklama",
+              "hold_start": "Basılı tutma başladı",
+              "hold_end": "Basılı tutma bırakıldı",
+              "press_on": "Açma / yukarı basıldı",
+              "press_off": "Kapatma / aşağı basıldı",
+              "scene": "Sahne çağrıldı",
+              "dim": "Dimleme"
+            }
+          },
+          "connection": {
+            "name": "Bağlantı",
+            "state": {
+              "device": "Cihaz",
+              "room": "Oda",
+              "scene": "Sahne",
+              "gateway": "Ağ geçidi",
+              "group": "Grup",
+              "none": "Yok"
+            }
+          },
+          "reason": {
+            "name": "Basılı tutmanın bitiş nedeni",
+            "state": {
+              "timeout": "Bırakma zamanında algılanmadı",
+              "link_lost": "Bağlantı koptu",
+              "stopped": "Entegrasyon durduruldu"
+            }
+          },
+          "position": {
+            "name": "Konum",
+            "state": {
+              "top": "Üst",
+              "bottom": "Alt",
+              "rocker": "Çift yönlü tuş",
+              "left_top": "Sol, üst",
+              "left_bottom": "Sol, alt",
+              "right_top": "Sağ, üst",
+              "right_bottom": "Sağ, alt",
+              "left_rocker": "Sol çift yönlü tuş",
+              "right_rocker": "Sağ çift yönlü tuş"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Giriş {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Tıklama",
+              "double_click": "Çift tıklama",
+              "hold_start": "Basılı tutma başladı",
+              "hold_end": "Basılı tutma bırakıldı",
+              "press_on": "Açma / yukarı basıldı",
+              "press_off": "Kapatma / aşağı basıldı",
+              "scene": "Sahne çağrıldı",
+              "dim": "Dimleme"
+            }
+          },
+          "connection": {
+            "name": "Bağlantı",
+            "state": {
+              "device": "Cihaz",
+              "room": "Oda",
+              "scene": "Sahne",
+              "gateway": "Ağ geçidi",
+              "group": "Grup",
+              "none": "Yok"
+            }
+          },
+          "reason": {
+            "name": "Basılı tutmanın bitiş nedeni",
+            "state": {
+              "timeout": "Bırakma zamanında algılanmadı",
+              "link_lost": "Bağlantı koptu",
+              "stopped": "Entegrasyon durduruldu"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Güç"
+      },
+      "voltage": {
+        "name": "Gerilim"
+      },
+      "current": {
+        "name": "Akım"
+      },
+      "energy": {
+        "name": "Enerji"
+      },
+      "energy_resettable": {
+        "name": "Sıfırlamadan beri enerji"
+      },
+      "energy_since_on": {
+        "name": "Açılmadan beri enerji"
+      },
+      "power_on_time": {
+        "name": "Açık kalma süresi"
+      },
+      "proxy_node": {
+        "name": "Proxy düğümü"
+      },
+      "link_state": {
+        "name": "Bağlantı durumu",
+        "state": {
+          "bluetooth_off": "Bluetooth yok",
+          "searching": "Proxy düğümü aranıyor",
+          "connecting": "Bağlanıyor",
+          "updating": "Bağlandı, cihaz durumları güncelleniyor",
+          "connected": "Bağlandı",
+          "failed": "Bağlantı başarısız",
+          "disconnected": "Bağlantı kesildi"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Ulaşılamayan cihazlar",
+        "state_attributes": {
+          "devices": {
+            "name": "Cihazlar"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh genel bakışı",
+        "state_attributes": {
+          "nodes": {
+            "name": "Düğümler"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Aydınlık düzeyi"
+      },
+      "battery": {
+        "name": "Pil"
+      },
+      "installed": {
+        "name": "Kurulu"
+      },
+      "key_mode": {
+        "name": "Düğme modu",
+        "state": {
+          "light": "Aydınlatma",
+          "move": "Jaluzi hareketi",
+          "scene": "Sahne",
+          "property": "Özellik",
+          "rtr": "Sıcaklık",
+          "switch": "Anahtarlama",
+          "gateway": "Ağ geçidi"
+        }
+      },
+      "key_mode_key": {
+        "name": "Düğme modu {key}",
+        "state": {
+          "light": "Aydınlatma",
+          "move": "Jaluzi hareketi",
+          "scene": "Sahne",
+          "property": "Özellik",
+          "rtr": "Sıcaklık",
+          "switch": "Anahtarlama",
+          "gateway": "Ağ geçidi"
+        }
+      },
+      "schedules": {
+        "name": "Zamanlamalar"
+      },
+      "scenes": {
+        "name": "Sahneler"
+      },
+      "switch_off_at": {
+        "name": "Kapanma zamanı"
+      },
+      "switch_on_threshold": {
+        "name": "Açma eşiği"
+      },
+      "switch_off_threshold": {
+        "name": "Kapatma eşiği"
+      },
+      "last_seen": {
+        "name": "Son görülme"
+      },
+      "rssi": {
+        "name": "Sinyal gücü"
+      },
+      "hops": {
+        "name": "Atlama sayısı"
+      },
+      "last_restart": {
+        "name": "Son yeniden başlatma"
+      },
+      "clock_offset": {
+        "name": "Saat sapması"
+      },
+      "iv_index": {
+        "name": "IV dizini"
+      },
+      "sequence_used": {
+        "name": "Kullanılan sıra numaraları"
+      },
+      "mesh_sequence_used": {
+        "name": "Mesh ağında kullanılan sıra numaraları"
+      },
+      "switching_cycles": {
+        "name": "Anahtarlama döngüleri"
+      },
+      "power_on_cycles": {
+        "name": "Açılma döngüleri"
+      },
+      "gateway_ip": {
+        "name": "IP adresi"
+      },
+      "gateway_firmware": {
+        "name": "Donanım yazılımı sürümü"
+      },
+      "gateway_firmware_build": {
+        "name": "Donanım yazılımı derlemesi"
+      },
+      "gateway_serial": {
+        "name": "Seri numarası"
+      },
+      "gateway_access_requests": {
+        "name": "Erişim istekleri",
+        "state_attributes": {
+          "clients": {
+            "name": "İstemciler"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API istemcileri",
+        "state_attributes": {
+          "clients": {
+            "name": "İstemciler"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Hata günlüğü",
+        "state_attributes": {
+          "entries": {
+            "name": "Kayıtlar"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Son dışa aktarım yüklemesi"
+      },
+      "forced_off": {
+        "name": "Sürekli açık/kapalı",
+        "state": {
+          "inactive": "Etkin değil",
+          "off": "Sürekli kapalı",
+          "on": "Sürekli açık"
+        }
+      },
+      "sleep_mode": {
+        "name": "Uyku modu",
+        "state": {
+          "awake": "Uyanık",
+          "asleep": "Uykuda"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referans hareketi"
+      },
+      "identify": {
+        "name": "Tanımla"
+      },
+      "clear_faults": {
+        "name": "Arızaları temizle"
+      },
+      "reset_consumption": {
+        "name": "Tüketimi sıfırla"
+      },
+      "fetch_gateway_export": {
+        "name": "Dışa aktarımı ağ geçidinden al"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Şebeke geri geldikten sonra jaluzi konumu"
+      },
+      "blind_ventilation_position": {
+        "name": "Havalandırma konumu"
+      },
+      "color_temp_max": {
+        "name": "Maksimum renk sıcaklığı"
+      },
+      "color_temp_min": {
+        "name": "Minimum renk sıcaklığı"
+      },
+      "comfort_temperature": {
+        "name": "Konfor sıcaklığı"
+      },
+      "default_color_temp": {
+        "name": "Açılış renk sıcaklığı"
+      },
+      "default_lightness": {
+        "name": "Açılış parlaklığı"
+      },
+      "eco_temperature": {
+        "name": "ECO sıcaklığı"
+      },
+      "frost_protection_temperature": {
+        "name": "Donma koruması sıcaklığı"
+      },
+      "lightness_max": {
+        "name": "Maksimum parlaklık"
+      },
+      "lightness_min": {
+        "name": "Minimum parlaklık"
+      },
+      "lock_time_limit": {
+        "name": "Kilit süre sınırı"
+      },
+      "motor_reversal_time": {
+        "name": "Minimum motor yön değiştirme süresi"
+      },
+      "off_delay": {
+        "name": "Kapanma gecikmesi"
+      },
+      "on_delay": {
+        "name": "Açılma gecikmesi"
+      },
+      "pir_sensor_a": {
+        "name": "Algılama alanı A"
+      },
+      "pir_sensor_b": {
+        "name": "Algılama alanı B"
+      },
+      "pir_sensor_c": {
+        "name": "Algılama alanı C"
+      },
+      "repetition_time": {
+        "name": "Tekrarlama süresi"
+      },
+      "running_time": {
+        "name": "Hareket süresi"
+      },
+      "sensor_offset": {
+        "name": "Sıcaklık sensörü sapması"
+      },
+      "slat_position_on_power": {
+        "name": "Şebeke geri geldikten sonra lamel konumu"
+      },
+      "slat_ventilation_position": {
+        "name": "Lamellerin havalandırma konumu"
+      },
+      "slats_move_time": {
+        "name": "Lamel dönüş süresi"
+      },
+      "switch_blocking_time": {
+        "name": "Minimum anahtarlama tekrar süresi"
+      },
+      "switch_on_brightness": {
+        "name": "Parlaklık eşiği"
+      },
+      "timed_on_duration": {
+        "name": "Kapanma gecikmesi süresi"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Çalışma modu",
+        "state": {
+          "blinds": "Jaluzi (lamelli)",
+          "shutter": "Panjur (lamelsiz)",
+          "awning": "Tente"
+        }
+      },
+      "controller_type": {
+        "name": "Kontrolör çıkışı",
+        "state": {
+          "pi_control": "Darbe genişlik modülasyonu (PWM)",
+          "two_point_control": "İki noktalı kontrol"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Çalışma modu",
+        "state": {
+          "guard": "Montaj yeri",
+          "presence": "Oda parlaklığı"
+        }
+      },
+      "dim_mode": {
+        "name": "Dimleme modu",
+        "state": {
+          "leading_edge": "Faz başı kesme (RL)",
+          "trailing_edge": "Faz sonu kesme (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Çalışma modu",
+        "state": {
+          "none": "Yok",
+          "comfort": "Konfor",
+          "eco": "ECO",
+          "frost": "Donma koruması"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Düşen kenar",
+        "state": {
+          "no_reaction": "Tepki yok",
+          "on": "Aç",
+          "off": "Kapat",
+          "toggle": "Değiştir"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Düşen kenar {key}",
+        "state": {
+          "no_reaction": "Tepki yok",
+          "on": "Aç",
+          "off": "Kapat",
+          "toggle": "Değiştir"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Yükselen kenar",
+        "state": {
+          "no_reaction": "Tepki yok",
+          "on": "Aç",
+          "off": "Kapat",
+          "toggle": "Değiştir"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Yükselen kenar {key}",
+        "state": {
+          "no_reaction": "Tepki yok",
+          "on": "Aç",
+          "off": "Kapat",
+          "toggle": "Değiştir"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED rengi (kapalı)",
+        "state": {
+          "red": "Kırmızı",
+          "green": "Yeşil",
+          "white": "Beyaz",
+          "blue": "Mavi",
+          "violet": "Mor",
+          "orange": "Turuncu",
+          "yellow": "Sarı",
+          "cyan": "Camgöbeği",
+          "no_color": "Renk yok"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED rengi (kapalı) {key}",
+        "state": {
+          "red": "Kırmızı",
+          "green": "Yeşil",
+          "white": "Beyaz",
+          "blue": "Mavi",
+          "violet": "Mor",
+          "orange": "Turuncu",
+          "yellow": "Sarı",
+          "cyan": "Camgöbeği",
+          "no_color": "Renk yok"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED rengi (açık)",
+        "state": {
+          "red": "Kırmızı",
+          "green": "Yeşil",
+          "white": "Beyaz",
+          "blue": "Mavi",
+          "violet": "Mor",
+          "orange": "Turuncu",
+          "yellow": "Sarı",
+          "cyan": "Camgöbeği",
+          "no_color": "Renk yok"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED rengi (açık) {key}",
+        "state": {
+          "red": "Kırmızı",
+          "green": "Yeşil",
+          "white": "Beyaz",
+          "blue": "Mavi",
+          "violet": "Mor",
+          "orange": "Turuncu",
+          "yellow": "Sarı",
+          "cyan": "Camgöbeği",
+          "no_color": "Renk yok"
+        }
+      },
+      "main_page": {
+        "name": "Yerel ekran",
+        "state": {
+          "target_temperature": "Ayar sıcaklığı",
+          "current_temperature": "Gerçek sıcaklık",
+          "clock": "Saat"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Şebeke gerilimi geri geldikten sonraki davranış",
+        "state": {
+          "no_reaction": "Tepki yok",
+          "move_up": "Yukarı hareket (0 %)",
+          "move_down": "Aşağı hareket (100 %)",
+          "stop": "Durdur",
+          "move_to_stored_position": "Kaydedilen konum",
+          "position_for_network_failure": "Şebeke kesintisi konumu"
+        }
+      },
+      "operation_site": {
+        "name": "Kullanım yeri",
+        "state": {
+          "indoor": "İç mekân",
+          "outdoor": "Dış mekân"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Şebeke geri geldikten sonraki davranış",
+        "state": {
+          "off": "Kapalı",
+          "on": "Açık",
+          "restore": "Önceki durum"
+        }
+      },
+      "sensor_selection": {
+        "name": "Sıcaklık sensörü",
+        "state": {
+          "internal": "Oda",
+          "external": "Zemin",
+          "internal_and_external": "Oda ve zemin"
+        }
+      },
+      "valve_output": {
+        "name": "Vana ayarı",
+        "state": {
+          "normally_closed": "NC - normalde kapalı",
+          "normally_open": "NO - normalde açık"
+        }
+      },
+      "lock_function": {
+        "name": "Kilit işlevi",
+        "state": {
+          "unlocked": "Kilit açık",
+          "keep_state": "Kilitli (konumu koru)",
+          "lockout_protection": "Dışarıda kalma koruması",
+          "wind_alarm": "Rüzgar alarmı"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Tüm prizler"
+      },
+      "room_sockets": {
+        "name": "{room} odasındaki tüm prizler"
+      },
+      "automatic_dst": {
+        "name": "Saat değişikliği etkin"
+      },
+      "backlight_auto_off": {
+        "name": "Ekranı otomatik kapat"
+      },
+      "blinds_invert_output": {
+        "name": "Ters çalışma"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Gündüz modu"
+      },
+      "dim_to_warm": {
+        "name": "Sıcak dimleme"
+      },
+      "input_edge_mode": {
+        "name": "Kenar değerlendirmesi"
+      },
+      "input_edge_mode_key": {
+        "name": "Kenar değerlendirmesi {key}"
+      },
+      "invert_output": {
+        "name": "Anahtarlama çıkışını tersine çevir"
+      },
+      "led_colour_sync": {
+        "name": "LED renklerini eşitle"
+      },
+      "led_night_mode": {
+        "name": "LED gece modu"
+      },
+      "lock": {
+        "name": "Kilit",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Kilit modu",
+            "state": {
+              "keep_state": "Mevcut durumu koru",
+              "lockout_protection": "Dışarıda kalma koruması",
+              "wind_alarm": "Rüzgar alarmı",
+              "enforced_value": "Zorunlu durum"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Kilit süre sınırı"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Kapanma gecikmesi süresi içinde elle kapatma"
+      },
+      "prewarning": {
+        "name": "Kapanma uyarısı"
+      },
+      "scheduler_enabled": {
+        "name": "Otomatik çalışma"
+      },
+      "status_led": {
+        "name": "Durum LED'i"
+      },
+      "status_led_key": {
+        "name": "Durum LED'i {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Azaltılmış dokunma hassasiyeti"
+      },
+      "use_last_lightness": {
+        "name": "Önceki parlaklığı kullan"
+      },
+      "sensor_publication": {
+        "name": "IoT sistemleri için sensör değerleri"
+      },
+      "local_devices_lock": {
+        "name": "Kullanımı kilitle"
+      },
+      "factory_reset_time_limit": {
+        "name": "Fabrika ayarlarına sıfırlamayı kilitle"
+      },
+      "key_lock": {
+        "name": "Düğme kilidi"
+      },
+      "configuration_lock": {
+        "name": "Cihazda yapılandırmayı kilitle"
+      },
+      "walking_test": {
+        "name": "Yürüme testi"
+      },
+      "time_keeper": {
+        "name": "Zaman kaynağı"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Çalışma modu",
+            "state": {
+              "blinds": "Jaluzi (lamelli)",
+              "shutter": "Panjur",
+              "awning": "Tente",
+              "unknown": "Bilinmiyor"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Tüm jaluziler"
+      },
+      "room_blinds": {
+        "name": "{room} odasındaki tüm jaluziler"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Donma koruması"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Tüm termostatlar"
+      },
+      "room_thermostats": {
+        "name": "{room} odasındaki tüm termostatlar"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Tüm ışıklar"
+      },
+      "room_lights": {
+        "name": "{room} odasındaki tüm ışıklar"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Donanım yazılımı"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Düğme A {subtype}",
+      "b": "Düğme B {subtype}",
+      "c": "Düğme C {subtype}",
+      "d": "Düğme D {subtype}",
+      "e1": "Giriş E1 {subtype}",
+      "e2": "Giriş E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "tıklandı",
+      "double_click": "çift tıklandı",
+      "hold_start": "basılı tutma başladı",
+      "hold_end": "basılı tutma bırakıldı",
+      "press_on": "açma / yukarı basıldı",
+      "press_off": "kapatma / aşağı basıldı",
+      "scene": "bir sahne çağırdı",
+      "dim": "dimleme",
+      "click_up": "tıklandı (üst yarı)",
+      "click_down": "tıklandı (alt yarı)",
+      "double_click_up": "çift tıklandı (üst yarı)",
+      "double_click_down": "çift tıklandı (alt yarı)",
+      "hold_start_up": "basılı tutma başladı (üst yarı)",
+      "hold_start_down": "basılı tutma başladı (alt yarı)",
+      "hold_end_up": "basılı tutma bırakıldı (üst yarı)",
+      "hold_end_down": "basılı tutma bırakıldı (alt yarı)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Komut JUNG mesh ağına gönderilemedi; bağlı bir proxy düğümü yok."
+    },
+    "no_answer": {
+      "message": "JUNG cihazı yanıt vermedi; komut yine de uygulanmış olabilir ve bir sonraki bağlantıda yeniden kontrol edilir."
+    },
+    "device_not_reachable": {
+      "message": "{entity} komuta yanıt vermedi (9 saniyede 3 deneme); komut uygulanmamış olabilir. Mesh ağının geri kalanı hâlâ yanıt veriyorsa cihaz, kendisinden yeniden haber alınana kadar kullanılamaz olarak gösterilir: cihazın elektriği olup olmadığını kontrol edin."
+    },
+    "cannot_load": {
+      "message": "{path} mesh dışa aktarımı okunamadı."
+    },
+    "no_proxy_visible": {
+      "message": "JUNG mesh ağının hiçbir düğümü henüz Bluetooth üzerinden görünmüyor."
+    },
+    "export_keys_stale": {
+      "message": "JUNG mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri dışa aktarımdaki ağ anahtarını yayınlamıyor: anahtarlar dışa aktarım oluşturulduktan sonra yenilenmiş. Ağı JUNG HOME uygulamasından yeniden dışa aktarın ve Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında kullanın."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant'ın bağlanabilir bir Bluetooth adaptörü veya proxy'si yok: JUNG mesh ağına ulaşılamıyor."
+    },
+    "duplicate_mesh": {
+      "message": "Bu JUNG HOME mesh ağını zaten {others} çalıştırıyor; mesh ağı başına yalnızca bir giriş yüklenebilir. İki girişten birini kaldırın."
+    },
+    "seq_store_not_written": {
+      "message": "Eski bir sürümün sıra numarası kaydı mesh ağının deposuna (`.storage/junghome_ble.seq.*`) kaydedilemedi; yapılandırma dizininin yazılabilir olduğunu kontrol edin."
+    },
+    "seq_floor_not_written": {
+      "message": "Sıra numarası kaydı bir yedekten geri yüklendi ve ileri atlanmadan önce alt sınırı (`.storage/junghome_ble.seq.*.floor`) yazılamadı; yapılandırma dizininin yazılabilir olduğunu kontrol edin."
+    },
+    "service_entry_not_loaded": {
+      "message": "JUNG HOME mesh entegrasyonu yüklü değil (veya yeniden yükleniyor); birazdan tekrar deneyin."
+    },
+    "service_not_connected": {
+      "message": "JUNG HOME mesh ağı bağlı değil; bir proxy düğümü menzile girdiğinde tekrar deneyin."
+    },
+    "service_entry_ambiguous": {
+      "message": "Birden fazla JUNG HOME mesh ağı yapılandırılmış; mesh ağını (config_entry_id) belirtin."
+    },
+    "service_unknown_device": {
+      "message": "{id} bir JUNG HOME mesh cihazı veya varlığı değil."
+    },
+    "service_not_a_load": {
+      "message": "{name}, bu eylemin çalıştığı bir JUNG HOME cihazı değil."
+    },
+    "service_not_a_key": {
+      "message": "{name}, bir JUNG HOME buton düğmesi değil."
+    },
+    "service_key_required": {
+      "message": "{name} cihazının {keys} düğmeleri var; birini seçmek için düğme harfini belirtin."
+    },
+    "service_unknown_key": {
+      "message": "{name} cihazında {letter} düğmesi yok (mevcut olanlar: {keys})."
+    },
+    "service_no_loads": {
+      "message": "Hedef hiçbir JUNG HOME ışığını veya prizini belirtmiyor."
+    },
+    "service_target_other_network": {
+      "message": "Düğme ve hedefi farklı mesh ağlarına ait."
+    },
+    "service_unknown_element": {
+      "message": "{address} öğesi mesh dışa aktarımında yok."
+    },
+    "service_no_room": {
+      "message": "Mesh dışa aktarımında {room} adlı bir oda yok."
+    },
+    "service_room_exists": {
+      "message": "{room} adlı bir oda zaten var."
+    },
+    "service_room_key_drives_load": {
+      "message": "{room} odasından çıkarılmadı: {device}, {button} tarafından bu düğmenin odaya bağlantısı üzerinden anahtarlanıyor ve odadan çıkmak onu düğmeden de ayırır. Eylemi \"Bir düğme kontrol etse bile\" ile yeniden çalıştırın veya önce düğmeye başka bir işlev verin."
+    },
+    "service_invalid_room_name": {
+      "message": "Bir odanın adı olmalıdır."
+    },
+    "service_no_mode": {
+      "message": "{address} öğesine hiçbir düğme modu uymuyor; modu belirtin."
+    },
+    "service_invalid_mode": {
+      "message": "{mode} modu {target} hedefiyle kullanılamaz."
+    },
+    "service_key_mode_unsupported": {
+      "message": "{address} düğmesinin {mode} modu için bir istemci modeli yok."
+    },
+    "service_target_element_needs_device": {
+      "message": "Hedef öğe yalnızca bir cihaza bağlı düğme için geçerlidir; bir oda veya sahne için geçerli değildir."
+    },
+    "service_target_element_missing": {
+      "message": "{target} hedefinde, bir düğmenin kontrol edebileceği {target_element} öğesi yok."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Kilit süresi yalnızca lock modu için geçerlidir, 0 ile 65535 saniye arasında."
+    },
+    "service_lock_unsupported": {
+      "message": "Bir düğme {target} hedefini kilitleyemez: bir düğmeden yalnızca ışık veya priz kilitlenebilir."
+    },
+    "service_no_element_group": {
+      "message": "{address} öğesinin öğe grubu yok: JUNG HOME uygulaması onu hiç bağlamamış. Önce uygulamada bir kez bağlayın."
+    },
+    "service_one_target": {
+      "message": "Tam olarak bir hedef belirtin: bir cihaz, bir varlık, bir oda veya bir sahne."
+    },
+    "service_config_refused": {
+      "message": "{node} düğümü {message} isteğini reddetti: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "{node} düğümü {message} isteğine yanıt vermedi; elektriği var mı ve menzilde mi? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Gönderilmedi: {nodes}, Home Assistant'ın son isteğine yanıt vermedi ve ulaşılamaz sayılıyor (varlıkları kullanılamaz), bu nedenle plan onların ilk mesajında dururdu. Elektriklerinin olduğunu ve menzilde olduklarını kontrol edin, yanıt verdiklerinde eylemi yeniden çalıştırın. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "{node} düğümü pille çalışıyor ve {message} isteğine yanıt vermedi: uykuda. Uyandırmak için düğmelerinden birine basın, ardından eylemi hemen yeniden çalıştırın. Düğmeye basmaya da tepki vermiyorsa pili genellikle bitmiştir: pili değiştirin. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "{address} düğmesi {mode} düğme modunu almadı; bağlantıları yapılandırıldı ve mesh dışa aktarımına kaydedildi — modu ayarlamak için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "service_key_scene_not_applied": {
+      "message": "{address} düğmesi {scene} sahnesini almadı; sahne çağrılarını tüm cihazlara yayınlıyor ve bu mesh dışa aktarımına kaydedildi — ayarlamak için eylemi aynı sahneyle yeniden çalıştırın."
+    },
+    "service_key_lock_not_applied": {
+      "message": "{address} düğmesi kilit işlevini ({property} özelliği) almadı; bağlantıları yapılandırıldı ve mesh dışa aktarımına kaydedildi — ayarlamak için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "service_export_newer": {
+      "message": "{path} mesh dışa aktarımı, Home Assistant onu yükledikten sonra Home Assistant dışında (JUNG HOME uygulaması tarafından veya elle) değiştirildi. Projeyi uygulamadan yeniden dışa aktarın, dosyayı değiştirin (Yeniden yapılandır) ve tekrar deneyin."
+    },
+    "service_export_load_failed": {
+      "message": "{path} mesh dışa aktarımı okunamadı: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "{path} mesh dışa aktarımı yazılamadı: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} bu değeri alamaz: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostat {preset} sıcaklığını henüz bildirmedi; birazdan tekrar deneyin."
+    },
+    "led_colour_unknown": {
+      "message": "{entity} için LED renkleri henüz bilinmiyor; cihaz okuma isteğine yanıt vermedi."
+    },
+    "service_room_name_reserved": {
+      "message": "\"{name}\", mesh ağının dahili gruplar için ayırdığı bir ad; başka bir oda adı seçin."
+    },
+    "service_name_blank": {
+      "message": "Ad boş olamaz."
+    },
+    "service_name_too_long": {
+      "message": "JUNG HOME uygulaması \"{name}\" olarak yeniden adlandıramaz: yeniden adlandırma en fazla {max_length} karakter kabul eder."
+    },
+    "service_name_not_allowed": {
+      "message": "JUNG HOME uygulaması \"{name}\" adını reddediyor: % işaretini bir yer tutucunun başlangıcı olarak algılar (yalnızca %% ve %n kabul edilir)."
+    },
+    "service_room_range_full": {
+      "message": "Uygulamanın aralığında boş grup adresi kalmadı; önce JUNG HOME uygulamasında kullanılmayan bir odayı silin."
+    },
+    "gateway_certificate_changed": {
+      "message": "{host} adresindeki JUNG HOME Gateway, kaydedilenden farklı bir sertifika sunuyor ({expected} / {observed}). Ağ geçidi veya sertifikası bilerek değiştirildiyse girişi yeniden yapılandırın."
+    },
+    "service_ambiguous_scene": {
+      "message": "\"{scene}\" hem bir sahne numarası hem de başka bir sahnenin adı; ayırt etmek için o sahneyi yeniden adlandırın."
+    },
+    "service_unknown_scene": {
+      "message": "Mesh dışa aktarımında \"{scene}\" adlı bir sahne yok; sahnenin adını JUNG HOME uygulamasının gösterdiği şekilde veya numarasını verin."
+    },
+    "service_scene_exists": {
+      "message": "\"{scene}\" adlı bir sahne zaten var."
+    },
+    "service_scene_range_full": {
+      "message": "Uygulamanın aralığında boş sahne numarası kalmadı; önce kullanılmayan bir sahneyi silin."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant, uygulamanın kendi sonraki odaları aynı adresleri almasın diye yeni odalara uygulamanın aralığındaki en yüksek boş grup adreslerini verir; bir sonrakinin altında yalnızca {free} boş adres kaldı ve uygulama yakında ona ulaşacak. Kullanılmayan odaları silin veya Home Assistant'a kendine ait bir aralık veren provisioner kimliği seçeneğini açın."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant, uygulamanın kendi sonraki sahneleri aynı numaraları almasın diye yeni sahnelere uygulamanın aralığındaki en yüksek boş sahne numaralarını verir; bir sonrakinin altında yalnızca {free} boş numara kaldı ve uygulama yakında ona ulaşacak. Kullanılmayan sahneleri silin veya Home Assistant'a kendine ait bir aralık veren provisioner kimliği seçeneğini açın."
+    },
+    "add_device_groups_crowded": {
+      "message": "Yeni cihazın öğe grupları uygulamanın aralığındaki en yüksek boş grup adreslerini alırdı, ancak bunların altında yalnızca {free} boş adres kaldı ve uygulamanın kendi sonraki odaları yakında onlara ulaşacak. Kullanılmayan odaları silin veya Home Assistant'a kendine ait bir aralık veren provisioner kimliği seçeneğini açın."
+    },
+    "service_not_a_scene_element": {
+      "message": "{address} öğesi sahne kaydedemez (Scene Setup Server yok)."
+    },
+    "service_scene_not_stored": {
+      "message": "{address} cihazı {scene} sahnesini kaydetmedi ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "{address} cihazında {scene} sahnesi için yer yok: zamanlayıcı sahneleri dahil zaten {capacity} sahne tutuyor. Önce onu başka bir sahneden çıkarın. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "{address} cihazı silme işleminden sonra {scene} sahnesini hâlâ tutuyor ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "JUNG HOME Gateway dışa aktarımını vermedi ve bu eylemin buna ihtiyacı var: Home Assistant'ın tuttuğu kopyada JUNG HOME uygulamasının o zamandan beri değiştirdikleri eksik olabilir. Ağ geçidi yanıt verdiğinde tekrar deneyin (nedeni günlükte yazıyor)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Bu ağ bir dosyadan kuruldu; dosyada, dışa aktarıldıktan sonra JUNG HOME uygulamasında oluşturulan sahneler eksik olabilir. Dosyanın bilmediği sahne numaralarını silmek bu sahneleri tüm cihazlardan silerdi. Önce bir deneme çalıştırması yapın ve listelediği numaraları uygulamayla karşılaştırın, ardından \"Mesh dışa aktarımı güncel\" açıkken silin veya silinecek numaraları belirtin."
+    },
+    "service_unused_scenes_known": {
+      "message": "{numbers} sahne numaraları mesh dışa aktarımının sahneleridir; bunları \"Sahneyi sil\" ile silin."
+    },
+    "service_scene_action_not_applied": {
+      "message": "{address} cihazı {scene} sahnesini kaydetti ancak sahne tanımını (Scene Action Setup) almadı. {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "{address} durumu bilinmiyor, bu nedenle {scene} sahnesi sahne tanımı olmadan kaydedilirdi ve cihazın başka bir kanalını sahneden çıkarmak bu kanalı da düşürürdü. Kaydedilecek durumu verin (veya cihazı bir kez anahtarlayın) ve tekrar deneyin. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Bu ağ bir JUNG HOME Gateway'den kurulmadı (girişte ağ geçidi adresi ve belirteci yok); eşitlemek için girişi ağ geçidinden yeniden yapılandırın."
+    },
+    "service_gateway_sync_failed": {
+      "message": "{host} adresindeki ağ geçidi dışa aktarımı almadı: {error}."
+    },
+    "service_send_failed": {
+      "message": "{message}, {node} düğümüne gönderilirken JUNG mesh ağıyla bağlantı kesildi. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "{node} düğümü {path} mesh dışa aktarımında var, ancak Home Assistant'ın daha önce ondan yüklediği ağda yok; dışa aktarımı izlemesi için entegrasyonu yeniden yükleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yükle), ardından tekrar deneyin. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın yükleyeceği dosyadan ({file}) daha yeni bir dışa aktarım ({gateway}) tutuyor; yüklemek, JUNG HOME uygulamasının o zamandan beri değiştirdiklerini silerdi. Home Assistant'ta yapılan bir sonraki değişiklik ağ geçidinin dışa aktarımını devralır ve Home Assistant'ın kendi değişikliklerini onun üzerine taşır. Bu hata yeniden görünürse (uygulamanın son yüklemesinin kopyası olmayan bir giriş bunları ayırt edemez), ağ geçidinin dışa aktarımını yeniden alın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır; değiştirdiği dosya yanında `.pre-reconfigure` olarak saklanır), ardından Home Assistant'ta yapılan değişikliği tekrarlayın."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "{host} adresindeki JUNG HOME Gateway yalnızca çıplak cihaz veritabanıyla yanıt verdi (cihaz adları veya oda bağlantıları yok); bunu devralmak, onları Home Assistant'ın tuttuğu dosyadan silerdi. Ağ geçidi artık meşgul olmadığında tekrar deneyin veya uygulamanın dışa aktarımını yeniden alın."
+    },
+    "identify_no_answer": {
+      "message": "JUNG cihazı tanımlama isteğine yanıt vermedi; elektriği var mı ve menzilde mi?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} bir JUNG HOME mesh ağı değil; bunlardan birinin config_entry_id değerini verin (veya yalnızca biri yapılandırılmışsa boş bırakın)."
+    },
+    "service_all_not_supported": {
+      "message": "Bu eylem entity_id: all kabul etmez; uygulanacağı ışıkları, prizleri, cihazları, alanları veya etiketleri belirtin."
+    },
+    "edge_detection_unknown": {
+      "message": "{entity} için kenar değerlendirmesi henüz bilinmiyor; giriş okuma isteğine yanıt vermedi."
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG prizi {property} sayacını sıfırlamadı; hâlâ 0'dan farklı bir değer bildiriyor."
+    },
+    "setup_state_unknown": {
+      "message": "{entity} için geçerli ayar henüz bilinmiyor; cihaz okuma isteğine yanıt vermedi."
+    },
+    "setting_no_answer": {
+      "message": "JUNG cihazı ne {entity} değişikliğine ne de geri okumaya yanıt verdi; yeni değeri yine de almış olabilir. Elektriği var mı ve menzilde mi?"
+    },
+    "setting_asleep": {
+      "message": "{entity} varlığının pilli cihazı yanıt vermedi: uykuda. Uyandırmak için düğmelerinden birine basın, ardından değişikliği hemen yeniden yapın. Düğmeye basmaya da tepki vermiyorsa pili genellikle bitmiştir: pili değiştirin."
+    },
+    "setting_not_applied": {
+      "message": "JUNG cihazı {entity} için yeni değeri almadı; hâlâ başka bir değer bildiriyor."
+    },
+    "setting_not_supported": {
+      "message": "JUNG cihazında {entity} ayarı yok: değişikliğe değer içermeyen bir yanıt verdi."
+    },
+    "schedule_no_reply": {
+      "message": "{address} JUNG cihazı zamanlamaları hakkında yanıt vermedi."
+    },
+    "schedule_not_applied": {
+      "message": "{address} JUNG cihazı {slot} zamanlama yuvasındaki değişikliği almadı."
+    },
+    "schedule_slots_full": {
+      "message": "{address} JUNG cihazının 16 zamanlama yuvasının tamamı dolu; önce birini silin."
+    },
+    "schedule_empty_slot": {
+      "message": "{address} JUNG cihazının {slot} zamanlama yuvasında zamanlama yok."
+    },
+    "schedule_not_supported": {
+      "message": "{name} kendine ait zamanlama çalıştırmaz."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Zamanlama şunlara zaten yazıldı: {created}. Yeniden çağırmadan önce orada silin, aksi halde bu cihazlar onu iki kez çalıştırır."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Zamanlama {name} için uygun değil: {fields} buna uygulanmaz."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Zamanlama {name} için uygun değil: termostat bir sıcaklık gerektirir."
+    },
+    "schedule_action_needs_position": {
+      "message": "Zamanlama {name} için uygun değil: jaluzi bir konum gerektirir."
+    },
+    "schedule_action_needs_action": {
+      "message": "Zamanlama {name} için uygun değil: bir eylem (açık veya kapalı) gerekir."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Zamanlama {name} için uygun değil: parlaklık yalnızca açma eylemiyle birlikte verilir."
+    },
+    "threshold_not_supported": {
+      "message": "{name}, eşikleri olan enerji ölçümlü bir JUNG HOME prizi değil."
+    },
+    "threshold_incomplete": {
+      "message": "{name} değiştirilecek bir eşik tutmuyor (veya yanıt vermedi): hem gücü hem de süreyi verin."
+    },
+    "threshold_not_applied": {
+      "message": "{address} JUNG prizi {which} eşiğini almadı. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "{which} eşiği {address} JUNG prizine gönderilemedi; bağlı bir proxy düğümü yok. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Priz ve eşiklerinin anahtarlaması gereken cihazlar farklı mesh ağlarına ait."
+    },
+    "scene_state_not_applicable": {
+      "message": "Durum {name} için uygun değil: {fields} buna uygulanmaz."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Durum {name} için uygun değil: termostat bir sıcaklık gerektirir."
+    },
+    "scene_state_needs_position": {
+      "message": "Durum {name} için uygun değil: jaluzi bir konum gerektirir."
+    },
+    "scene_state_needs_action": {
+      "message": "Durum {name} için uygun değil: bir eylem (açık veya kapalı) gerekir."
+    },
+    "scene_state_brightness_off": {
+      "message": "Durum {name} için uygun değil: parlaklık yalnızca açma eylemiyle birlikte verilir."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} yeni durumu zamanında bildirmedi; sahne kaydedilmedi."
+    },
+    "service_gateway_token_rejected": {
+      "message": "{host} adresindeki JUNG HOME Gateway artık Home Assistant'ın erişimini kabul etmiyor, bu nedenle dışa aktarım ona iletilmedi. Home Assistant'ın istediği yeniden kimlik doğrulama ile erişimi yeniden verin (Ayarlar → Cihazlar ve hizmetler), ardından bunu yeniden çalıştırın."
+    },
+    "seq_store_lost": {
+      "message": "{unicast} adresinin sıra numarası kaydı kayboldu; Home Assistant, mesh ağının gördüğü numaraları yeniden kullanmaz. Bunları geçip devam etmek için Onarımlar'daki sorunu açın."
+    },
+    "address_in_use": {
+      "message": "Home Assistant'ın {unicast} adresini mesh ağının bir düğümü kullanıyor; entegrasyonu boş bir adresle yeniden yapılandırın (örneğin {suggestion} boş)."
+    },
+    "add_device_not_allowed": {
+      "message": "Bu ağ için cihaz ekleme ve kaldırma kapalı: önce entegrasyonun seçeneklerinde *Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver* seçeneğini açın."
+    },
+    "add_device_not_found": {
+      "message": "{address} adresinde yayın yapan yeni bir JUNG cihazı yok; `find_new_devices` eylemini çalıştırın ve listelediği bir adresi kullanın."
+    },
+    "add_device_not_jung": {
+      "message": "{address} adresindeki cihaz bir JUNG cihazı olduğunu bildirmiyor."
+    },
+    "add_device_no_template": {
+      "message": "Ağda henüz {product} ürününden bir cihaz yok: ilkini JUNG HOME uygulamasıyla ekleyin, Home Assistant onun yapılandırmasını kopyalar."
+    },
+    "add_device_no_address": {
+      "message": "Yeni cihaz için provisioner'ların aralıkları dışında boş bir adres aralığı kalmadı."
+    },
+    "provisioner_identity_failed": {
+      "message": "Home Assistant'ın provisioner girdisi dışa aktarımla birleştirilemedi ({error}); hiçbir şey değiştirilmedi. Günlüğe bakın."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant bu ağda kendine ait adres aralıklarına sahip olamaz: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Yeni cihaza bağlanılamadı: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Yeni cihaz ağa katılamadı (provisioning): {error}. Cihaz hâlâ yeni; tekrar deneyin."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "{unicast} adresindeki yeni cihazın ağa katılması onaylanmadı ({error}). Cihaz ağın anahtarlarını almış olabilir, bu nedenle Home Assistant onu bekleyen olarak tutuyor: `junghome_ble.reset_pending_device` eylemiyle sıfırlayın (unicast {unicast}; yanıt vermiyorsa `force` ekleyin, anahtarlarını hiç almamış bir cihaz yanıt veremez), ardından yeniden ekleyin. O zamana kadar adresleri ayrılmış kalır."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Yeni cihazın anahtarı Home Assistant'ın anahtar kasasına kaydedilemedi ({error}), bu nedenle ağa katma, cihaz herhangi bir şey almadan durdu: cihaz hâlâ yeni ve {unicast} adresinde onun için hiçbir şey ayrılmadı. Yer açın veya depolamayı onarın, ardından tekrar deneyin."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Cihaz {unicast} adresinde ağa katıldı, ancak yapılandırması {step} adımında başarısız oldu ({error}) ve cihaz sıfırlamayı onaylamadı. Uygulama onu bilmiyor: `junghome_ble.reset_pending_device` eylemiyle sıfırlayın (unicast {unicast}), ardından yeniden ekleyin. O zamana kadar adresleri ayrılmış kalır."
+    },
+    "add_device_record_failed": {
+      "message": "Cihaz yapılandırıldı ancak {unicast} adresinde kaydedilmedi ({error}). Uygulama onu bilmiyor: `junghome_ble.reset_pending_device` eylemiyle sıfırlayın (unicast {unicast}), ardından yeniden ekleyin. O zamana kadar adresleri ayrılmış kalır."
+    },
+    "add_device_no_beacon": {
+      "message": "Ağın IV dizini mevcut Bluetooth bağlantısında henüz doğrulanmadı (bu bağlantıda ağ beacon'ı gelmedi) ve yeni cihaz yanlış bir dizin tutardı. Bir JUNG cihazına bir sonraki bağlantıyı bekleyin ve tekrar deneyin."
+    },
+    "add_device_key_refresh": {
+      "message": "JUNG HOME uygulaması ağ anahtarını yeniliyor (Key Refresh, 1. aşama): şimdi eklenen bir cihaz kullanımdan kaldırılmakta olan anahtarı alırdı. Anahtar yenilemeyi uygulamada tamamlayın (Home Assistant onu izler), ardından tekrar deneyin."
+    },
+    "add_device_name_too_long": {
+      "message": "\"{name}\" adı, JUNG HOME uygulamasının bir cihaz için kabul ettiğinden uzun: en fazla {max_length} karakter."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Home Assistant'ın ağa katıp kaydetmediği cihazlardan hiçbiri {device} olarak bilinmiyor; *Home Assistant'ın eklediği bir cihaz kaydedilmedi* onarım sorunu bu tür cihazların adreslerini listeler."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Şu anda {unicast} adresinde ağın başka bir cihazı var, bu nedenle sıfırlama gönderilmedi ve hiçbir şey değiştirilmedi. O adresteki bekleyen cihazı unutmak için `force` kullanın (hâlâ varsa elle sıfırlayın)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "{unicast} adresindeki cihaz sıfırlamasını onaylamadı; hiçbir şey değiştirilmedi. Elle sıfırlanmış veya kalıcı olarak kaybolmuş bir cihaz için `force` kullanın."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Sıfırlama {unicast} adresindeki cihaza gönderilemedi ({error}); hiçbir şey değiştirilmedi."
+    },
+    "remove_device_gateway": {
+      "message": "Ağ geçidi bu şekilde kaldırılamaz."
+    },
+    "remove_device_mesh": {
+      "message": "Ağı değil, bir JUNG cihazını belirtin."
+    },
+    "remove_device_unconfirmed": {
+      "message": "{address} cihazı sıfırlamasını onaylamadı ve ardından yeni bir cihaz olarak yayın yaparken görülmedi. Yine de sıfırlanmış olabilir (onayı kaybolabilir ve menzilinde Bluetooth tarayıcısı olmayabilir) veya sıfırlamayı almamış olabilir; mesh dışa aktarımı değişmedi. Eylemi yeniden çalıştırın veya cihaz kalıcı olarak kaybolduysa `force` kullanın."
+    },
+    "remove_device_proxy": {
+      "message": "{address} cihazı, Home Assistant'ın üzerinden bağlı olduğu proxy düğümü: sıfırlanması, onayının geri geldiği bağlantıyı sonlandırırdı. Home Assistant başka bir cihaz üzerinden bağlanana kadar bekleyin (Proxy düğümü sensörü) veya `force` kullanın."
+    },
+    "device_lock_unknown": {
+      "message": "{entity} için cihaz kilidi henüz bilinmiyor; cihaz okuma isteğine yanıt vermedi."
+    },
+    "cover_locked": {
+      "message": "{entity} kilitli ve kilidi açılana kadar komutları yok sayar (Kilit anahtarı veya Kilit işlevi)."
+    },
+    "cover_wind_alarm": {
+      "message": "{entity} bir rüzgâr alarmı tarafından tutuluyor; alarm sona erene kadar komutları yok sayar (Kilit işlevi veya Kilit anahtarı)."
+    },
+    "load_locked": {
+      "message": "{entity} kilitli (JUNG HOME uygulamasında, bir düğmeyle veya Kilit anahtarıyla) ve kilidi açılana kadar durumunu korur."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} bir JUNG HOME dimmer'ı değil: bu şekilde yalnızca dimmer'lar ve DALI ayarlanabilir beyaz kanalları dimlenebilir."
+    },
+    "locate_no_answer": {
+      "message": "{node} JUNG cihazı kimliğini yayınlama isteğine yanıt vermedi; elektriği var mı ve menzilde mi? Pilli bir cihaz uykudadır ve yalnızca uyanıkken yanıt verir."
+    },
+    "locate_refused": {
+      "message": "{node} JUNG cihazı kimliğini yayınlamayı reddetti: {status}."
+    },
+    "locate_not_supported": {
+      "message": "{node} JUNG cihazı kimliğini yayınlayamaz (Node Identity desteklenmiyor)."
+    },
+    "approve_no_gateway": {
+      "message": "Bu ağ bir JUNG HOME Gateway'den kurulmadı (girişte ağ geçidi adresi ve belirteci yok): istemcilerin onaylanacağı bir ağ geçidi yok."
+    },
+    "approve_gateway_distrusted": {
+      "message": "{host} adresindeki JUNG HOME Gateway'e sorulmadı: {error}. Hiçbir şey onaylanmadı."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "{host} adresindeki JUNG HOME Gateway artık Home Assistant'ın erişimini kabul etmiyor, bu nedenle hiçbir şey onaylanmadı. Home Assistant'ın istediği yeniden kimlik doğrulama ile erişimi yeniden verin (Ayarlar → Cihazlar ve hizmetler), ardından bunu yeniden çalıştırın."
+    },
+    "approve_client_not_waiting": {
+      "message": "Ağ geçidinde erişim bekleyen “{client}” adlı bir API istemcisi yok (bekleyenler: {waiting}). Hiçbir şey onaylanmadı."
+    },
+    "approve_gateway_busy": {
+      "message": "{host} adresindeki JUNG HOME Gateway başka bir yapılandırma isteğiyle meşgul; bir dakika sonra tekrar deneyin. Hiçbir şey onaylanmadı."
+    },
+    "approve_gateway_failed": {
+      "message": "{host} adresindeki JUNG HOME Gateway isteneni yapmadı: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant JUNG donanım yazılımını güncellemez: cihazı JUNG HOME uygulamasıyla güncelleyin."
+    },
+    "add_device_node_not_configured": {
+      "message": "{unicast} adresindeki yeni cihaz {step} adımında yapılandırılamadı ({error}). Home Assistant onu JUNG HOME uygulaması gibi sıfırladı ve cihaz onayladı: yeniden yeni bir cihaz ve onun için hiçbir şey ayrılmadı. Yayınladığı ürün veya mekanizma olmayan bir cihaz bu şekilde reddedilir; aksi halde yeniden ekleyin."
+    },
+    "add_device_provisioning_reset": {
+      "message": "{unicast} adresindeki yeni cihazın ağa katılması onaylanmadı ({error}). Home Assistant onu sıfırladı ve cihaz onayladı: yeniden yeni bir cihaz ve onun için hiçbir şey ayrılmadı. Tekrar deneyin."
+    },
+    "time_keeper_role_failed": {
+      "message": "{address} adresindeki cihaz zaman rolünü almadı ({error}). Time Server yayını zaten değiştirildi: cihaz yanıt verdiğinde zaman kaynağını yeniden değiştirin."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity}, {thermostats} oda termostatı tarafından anahtarlanıyor (JUNG HOME uygulamasında bağlandı) ve uygulamadaki gibi elle anahtarlanmaz."
+    },
+    "load_forced_short": {
+      "message": "{entity} varlığının dedektörü onu açık veya kapalı tutuyor (sürekli açık / sürekli kapalı): sona erdirmek için dedektörün otomatik çalışma anahtarını orta konuma getirin."
+    },
+    "load_forced_on_button": {
+      "message": "{entity} varlığının dedektörü onu açık tutuyor (sürekli açık): sona erdirmek için dedektörün ON düğmesine basın."
+    },
+    "load_forced_off_button": {
+      "message": "{entity} varlığının dedektörü onu kapalı tutuyor (sürekli kapalı): sona erdirmek için dedektörün OFF düğmesine basın."
+    },
+    "load_forced_on_presence": {
+      "message": "{entity} varlığının dedektörü onu açık tutuyor (sürekli açık): dedektörün programlama düğmesi bunu sona erdirir."
+    },
+    "load_forced_off_presence": {
+      "message": "{entity} varlığının dedektörü onu kapalı tutuyor (sürekli kapalı): dedektörün programlama düğmesi bunu sona erdirir."
+    },
+    "cover_slats_open": {
+      "message": "{entity} tamamen açık: JUNG HOME uygulamasındaki gibi, indirilene kadar lamelleri hareket ettirilemez."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} boost modunda: JUNG HOME uygulamasındaki gibi, sıcaklık ayarlamadan önce boost'u sona erdirmek için başka bir ön ayar seçin."
+    },
+    "service_detector_device_only": {
+      "message": "{address} dedektörü yalnızca bir cihazı kontrol edebilir: bir oda veya sahne değil, hedef bir ışık, priz veya cihaz verin."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "{address} dedektörü {mode} modunda bir hedefi kontrol edemez: dedektörün düğme modu yoktur, bu nedenle yalnızca hedefin verdiği modda bir ışığı, prizi veya jaluziyi anahtarlar; kilit işlevi, oda termostatı, ağ geçidi veya hedef öğe olmadan."
+    },
+    "gateway_fetch_refused": {
+      "message": "Dışa aktarım {host} adresindeki JUNG HOME Gateway'den alınmadı: {error}. Hiçbir şey değişmedi; ne yapılacağını onarım bildirimleri söylüyor."
+    },
+    "service_unknown_area": {
+      "message": "{id} kimlikli bir alan yok."
+    },
+    "service_not_a_scene": {
+      "message": "{name}, bir JUNG HOME ağının sahnesi değil."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Bir cihazı kaldırmak geri alınamaz: gerçekleştirmek için çağrıya \"confirm: true\" ekleyin (veya ne yapacağını görmek için \"dry_run: true\")."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Bir cihaz yanıt vermese bile bir sahneyi silmek, o cihazda sahnenin kalmasına yol açar: gerçekleştirmek için çağrıya \"confirm: true\" ekleyin (veya ne yapacağını görmek için \"dry_run: true\")."
+    },
+    "plan_key_device": {
+      "message": "{key} artık {target} hedefini kontrol ediyor; {messages} mesaj"
+    },
+    "plan_key_room": {
+      "message": "{key} artık {room} odasını kontrol ediyor; {messages} mesaj"
+    },
+    "plan_key_scene": {
+      "message": "{key} artık {scene} sahnesini çağırıyor; {messages} mesaj"
+    },
+    "plan_key_cleared": {
+      "message": "{key} artık işlevsiz; {messages} mesaj"
+    },
+    "plan_room_joined": {
+      "message": "{devices} artık {room} odasında; {messages} mesaj"
+    },
+    "plan_room_left": {
+      "message": "{devices}, {room} odasından çıkarıldı; {messages} mesaj"
+    },
+    "plan_room_deleted": {
+      "message": "{room} odası silindi; {messages} mesaj"
+    },
+    "plan_device_removed": {
+      "message": "{device} ağdan kaldırıldı; diğer cihazlara {messages} mesaj"
+    },
+    "plan_scene_deleted": {
+      "message": "{scene} sahnesi silindi; {messages} mesaj"
+    },
+    "plan_finished": {
+      "message": "{action} tamamlandı; {messages} mesaj"
+    },
+    "plan_stopped": {
+      "message": "{action}, {total} mesajın {applied} tanesinden sonra durdu: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action}, {total} mesajın {applied} tanesinden sonra iptal edildi; mesh dışa aktarımı uygulananları kaydediyor"
+    },
+    "logbook_scene_from_key": {
+      "message": "{scene} sahnesini çağırdı"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "bırakma zamanında algılanmadı"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "bağlantı kesildi"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "entegrasyon durduruldu"
+    },
+    "logbook_scene_number": {
+      "message": "Sahne {scene}"
+    },
+    "logbook_scene": {
+      "message": "Sahne"
+    },
+    "logbook_recalled": {
+      "message": "çağrıldı"
+    },
+    "logbook_recalled_by": {
+      "message": "{device} tarafından çağrıldı"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Dışa aktarımda eksik olan JUNG HOME cihazları",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dışa aktarımı ağ geçidinden yeniden al",
+            "description": "{title} adlı JUNG HOME mesh ağındaki {count} cihaz Bluetooth üzerinden yayın paketi gönderiyor, ancak Home Assistant'ın yüklediği dışa aktarımda yer almıyor: {devices}. Bu cihazlar o dışa aktarım yapıldıktan sonra kuruluma eklendi (veya yeniden ağa katıldı), bu yüzden Home Assistant'ta onlar için varlık yok. Güncel dışa aktarımı, Home Assistant'ın zaten sahip olduğu erişimle {host} adresindeki JUNG HOME Gateway'den almak, denetlemek ve entegrasyonu ondan yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Ağ geçidinden yeniden al ile aynı şeyi yapar. Önceki dışa aktarım bir kopya olarak saklanır (`.pre-reconfigure`). Yeni dışa aktarım onları listelediğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+          },
+          "upload": {
+            "title": "Yeni bir dışa aktarım yükle",
+            "description": "{title} adlı JUNG HOME mesh ağındaki {count} cihaz Bluetooth üzerinden yayın paketi gönderiyor, ancak Home Assistant'ın yüklediği dışa aktarımda yer almıyor: {devices}. Bu cihazlar o dışa aktarım yapıldıktan sonra kuruluma eklendi (veya yeniden ağa katıldı), bu yüzden Home Assistant'ta onlar için varlık yok. Ağı JUNG HOME uygulamasından dışa aktarın (Proje → Dosya ile paylaş) ve dosyayı buraya yükleyin: Home Assistant dosyayı denetler, yapılandırma dizininde `junghome_ble/` altında saklar (tüm mesh anahtarlarını içerir) ve entegrasyonu ondan yeniden kurar; önceki dışa aktarım bir kopya olarak saklanır. Dışa aktarımını sunucudaki bir yoldan okuyan bir giriş bundan sonra yüklenen kopyayı kullanır — yolu korumak için yeni dosyayı bunun yerine oraya kopyalayın ve Yeniden yapılandır'ı kullanın. Yeni dışa aktarım onları listelediğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "export_file": "Mesh dışa aktarım dosyası"
+            },
+            "data_description": {
+              "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+          "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+          "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+          "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+          "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+          "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+          "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+          "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir.",
+          "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+          "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+          "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "not_a_directory": "Meta veri yolu bir dizin değil.",
+          "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+          "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+          "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
+          "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+          "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Dışa aktarımda eksik olan JUNG HOME cihazları",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dışa aktarımı ağ geçidinden yeniden al",
+            "description": "{title} adlı JUNG HOME mesh ağındaki {count} cihaz Bluetooth üzerinden yayın paketi gönderiyor, ancak Home Assistant'ın yüklediği dışa aktarımda yer almıyor: {devices}. Bu cihazlar o dışa aktarım yapıldıktan sonra kuruluma eklendi (veya yeniden ağa katıldı), bu yüzden Home Assistant'ta onlar için henüz varlık yok. Home Assistant ağ geçidinden güncel dışa aktarımını ister ve bu dışa aktarım onları listelediğinde onu kendiliğinden devralır. Güncel dışa aktarımı, Home Assistant'ın zaten sahip olduğu erişimle {host} adresindeki JUNG HOME Gateway'den almak, denetlemek ve entegrasyonu ondan yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Ağ geçidinden yeniden al ile aynı şeyi yapar. Önceki dışa aktarım bir kopya olarak saklanır (`.pre-reconfigure`). Sorun devam ederse ağ geçidinin dışa aktarımı da onları tanımıyor demektir: JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (uygulama projesini yükler), ardından yeniden onarın. Gerçek cihazlarda henüz doğrulanmadı."
+          },
+          "upload": {
+            "title": "Yeni bir dışa aktarım yükle",
+            "description": "{title} adlı JUNG HOME mesh ağındaki {count} cihaz Bluetooth üzerinden yayın paketi gönderiyor, ancak Home Assistant'ın yüklediği dışa aktarımda yer almıyor: {devices}. Bu cihazlar o dışa aktarım yapıldıktan sonra kuruluma eklendi (veya yeniden ağa katıldı), bu yüzden Home Assistant'ta onlar için henüz varlık yok. Home Assistant ağ geçidinden güncel dışa aktarımını ister ve bu dışa aktarım onları listelediğinde onu kendiliğinden devralır. Ağı JUNG HOME uygulamasından dışa aktarın (Proje → Dosya ile paylaş) ve dosyayı buraya yükleyin: Home Assistant dosyayı denetler, yapılandırma dizininde `junghome_ble/` altında saklar (tüm mesh anahtarlarını içerir) ve entegrasyonu ondan yeniden kurar; önceki dışa aktarım bir kopya olarak saklanır. Dışa aktarımını sunucudaki bir yoldan okuyan bir giriş bundan sonra yüklenen kopyayı kullanır — yolu korumak için yeni dosyayı bunun yerine oraya kopyalayın ve Yeniden yapılandır'ı kullanın. Sorun devam ederse ağ geçidinin dışa aktarımı da onları tanımıyor demektir: JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (uygulama projesini yükler), ardından yeniden onarın. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "export_file": "Mesh dışa aktarım dosyası"
+            },
+            "data_description": {
+              "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+          "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+          "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+          "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+          "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+          "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+          "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+          "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir.",
+          "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+          "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+          "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "not_a_directory": "Meta veri yolu bir dizin değil.",
+          "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+          "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+          "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
+          "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+          "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "JUNG HOME uygulaması kurulumu değiştirdi",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dışa aktarımı ağ geçidinden yeniden al",
+            "description": "JUNG HOME uygulamasının, {title} adlı mesh ağındaki bir cihazın yapılandırmasını değiştirdiği görüldü (bir düğme bağlantısı, bir oda, bir sahne veya bir cihaz ayarı); bu yüzden Home Assistant'ın yüklediği dışa aktarım artık kurulumla eşleşmeyebilir: uygulamada değiştirilenler henüz Home Assistant'ta yok. Güncel dışa aktarımı, Home Assistant'ın zaten sahip olduğu erişimle {host} adresindeki JUNG HOME Gateway'den almak, denetlemek ve entegrasyonu ondan yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Ağ geçidinden yeniden al ile aynı şeyi yapar. Önceki dışa aktarım bir kopya olarak saklanır (`.pre-reconfigure`). Gerçek cihazlarda henüz doğrulanmadı."
+          },
+          "upload": {
+            "title": "Yeni bir dışa aktarım yükle",
+            "description": "JUNG HOME uygulamasının, {title} adlı mesh ağındaki bir cihazın yapılandırmasını değiştirdiği görüldü (bir düğme bağlantısı, bir oda, bir sahne veya bir cihaz ayarı); bu yüzden Home Assistant'ın yüklediği dışa aktarım artık kurulumla eşleşmeyebilir: uygulamada değiştirilenler henüz Home Assistant'ta yok. Uygulamada işiniz bittiğinde ağı oradan dışa aktarın (Proje → Dosya ile paylaş) ve dosyayı buraya yükleyin: Home Assistant dosyayı denetler, yapılandırma dizininde `junghome_ble/` altında saklar (tüm mesh anahtarlarını içerir) ve entegrasyonu ondan yeniden kurar; önceki dışa aktarım bir kopya olarak saklanır. Dışa aktarımını sunucudaki bir yoldan okuyan bir giriş bundan sonra yüklenen kopyayı kullanır — yolu korumak için yeni dosyayı bunun yerine oraya kopyalayın ve Yeniden yapılandır'ı kullanın; bu, bu bildirimi de kaldırır. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "export_file": "Mesh dışa aktarım dosyası"
+            },
+            "data_description": {
+              "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+          "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+          "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+          "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+          "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+          "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+          "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+          "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir.",
+          "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+          "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+          "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "not_a_directory": "Meta veri yolu bir dizin değil.",
+          "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+          "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+          "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
+          "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+          "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Dışa aktarımdakinden farklı mekanizmalı JUNG HOME butonları",
+      "description": "{devices}: {title} adlı JUNG HOME mesh ağındaki bu butonlar, yayın paketlerinde Home Assistant'ın yüklediği dışa aktarımdakinden farklı bir mekanizma bildiriyor (dışa aktarım → cihaz). Mekanizma o dışa aktarım yapıldıktan sonra değiştirildi, bu yüzden Home Assistant ve uygulama bunlar için yanlış türde bir yük gösterebilir. Cihazları JUNG HOME uygulamasında kontrol edin, ağı yeniden dışa aktarın ve bu entegrasyonu güncelleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır); dışa aktarım, cihazların bildirdiği mekanizmaları içerdiğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+    },
+    "node_clock_wrong": {
+      "title": "Saati yanlış olan JUNG HOME cihazları",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Saati şimdi gönder",
+            "description": "{devices}: {title} adlı JUNG HOME mesh ağındaki bu cihazlar zamanlamalar çalıştırabilir (zamana bağlı veya gün doğumu / gün batımı anahtarlaması) ve saatleri yanlış: saat yok, Home Assistant'ınkinden bir dakikadan fazla sapıyor ya da Home Assistant'ın onlara gönderdiğinden farklı bir saat dilimi farkı var. Zamanlamaları, saati yeniden alana kadar yanlış zamanda çalışır. Home Assistant saati her bağlantıdan sonra ve günde bir kez gönderir; şimdi göndermek ve bu cihazlara yeniden sormak için onaylayın. Doğru saatle yanıt verdiklerinde sorun kendiliğinden kaybolur. Sorun geri gelirse Home Assistant'ın saat dilimini (Ayarlar → Sistem → Genel) ve cihazlara ulaşılıp ulaşılamadığını kontrol edin. Gerçek cihazlarda henüz doğrulanmadı."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "not_connected": "Home Assistant'ın şu anda mesh ağına bağlantısı yok. Bağlandığında tekrar deneyin."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "JUNG HOME mesh anahtarları değişiyor",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dışa aktarımı ağ geçidinden yeniden al",
+            "description": "{title} adlı mesh ağı, yeni ağ anahtarının dağıtıldığını Home Assistant'ın duymadığı bir anahtar yenileme duyurdu (Home Assistant'ın en başından gördüğü bir anahtar yenileme takip edilir ve sorun oluşturmaz). Yenileme tamamlandığında Home Assistant'ın kullandığı dışa aktarımdaki anahtarlar artık geçerli olmaz ve kontrol durur. Önce anahtar yenilemenin JUNG HOME uygulamasında tamamlanmasını bekleyin. Güncel dışa aktarımı, Home Assistant'ın zaten sahip olduğu erişimle {host} adresindeki JUNG HOME Gateway'den almak, denetlemek ve entegrasyonu ondan yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Ağ geçidinden yeniden al ile aynı şeyi yapar. Önceki dışa aktarım bir kopya olarak saklanır (`.pre-reconfigure`). Gerçek cihazlarda henüz doğrulanmadı."
+          },
+          "upload": {
+            "title": "Yeni bir dışa aktarım yükle",
+            "description": "{title} adlı mesh ağı, yeni ağ anahtarının dağıtıldığını Home Assistant'ın duymadığı bir anahtar yenileme duyurdu (Home Assistant'ın en başından gördüğü bir anahtar yenileme takip edilir ve sorun oluşturmaz). Yenileme tamamlandığında Home Assistant'ın kullandığı dışa aktarımdaki anahtarlar artık geçerli olmaz ve kontrol durur. Önce anahtar yenilemenin JUNG HOME uygulamasında tamamlanmasını bekleyin. Ağı JUNG HOME uygulamasından dışa aktarın (Proje → Dosya ile paylaş) ve dosyayı buraya yükleyin: Home Assistant dosyayı denetler, yapılandırma dizininde `junghome_ble/` altında saklar (tüm mesh anahtarlarını içerir) ve entegrasyonu ondan yeniden kurar; önceki dışa aktarım bir kopya olarak saklanır. Dışa aktarımını sunucudaki bir yoldan okuyan bir giriş bundan sonra yüklenen kopyayı kullanır — yolu korumak için yeni dosyayı bunun yerine oraya kopyalayın ve Yeniden yapılandır'ı kullanın. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "export_file": "Mesh dışa aktarım dosyası"
+            },
+            "data_description": {
+              "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+          "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+          "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+          "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+          "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+          "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+          "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+          "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir.",
+          "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+          "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+          "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "not_a_directory": "Meta veri yolu bir dizin değil.",
+          "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+          "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+          "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
+          "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+          "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME cihazları Home Assistant'ı yok sayıyor",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Cihazların bildiği numaraların ötesine atla",
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağını proxy düğümü üzerinden duyuyor, ancak durum isteklerine tek bir cihaz bile yanıt vermedi. Düğümler Home Assistant'ın mesajlarını tekrar oynatma (replay) sayıp atıyor. İki neden olası: bu entegrasyonun sıra numarası deposu (`.storage/junghome_ble.*`) kayboldu veya daha eski bir yedekten geri yüklendi, bu yüzden Home Assistant artık düğümlerin zaten gördüğü sıra numaralarını gönderiyor; ya da başka bir mesh istemcisi (örneğin `mesh_poc.py` aracı) aynı unicast adresiyle ({unicast}) gönderim yapıyor. Ya Home Assistant'a yeni, kullanılmayan bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi; başka hiçbir istemcinin onu kullanmadığından emin olun) ya da depo kaybolduysa veya geri yüklendiyse (ve adresi başka hiçbir istemci kullanmıyorsa) Home Assistant'ın sıra numaralarını 1 048 576 ileri atlatıp yeniden bağlanması için onaylayın. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin: daha eski bir kopya yalnızca cihazların zaten gördüğü numaraları tekrarlar. Bir cihaz Home Assistant'a yeniden yanıt verir vermez sorun kendiliğinden kaybolur."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Başka bir istemci Home Assistant'ın JUNG HOME adresini kullanıyor",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Diğer istemcinin sıra numaralarının ötesine atla",
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi unicast adresinden ({unicast}) gönderilmiş ve hiç kullanmadığı bir sıra numarası taşıyan bir mesaj aldı: başka bir mesh istemcisi aynı adresle gönderim yapıyor — ikinci bir Home Assistant kurulumu, bu adresle yapılandırılmış `mesh_poc.py` aracı veya bu kurulumun başka bir yerde başlatılmış bir kopyası. Aynı adresteki iki gönderici birbirinin sıra numaralarını yeniden kullanır ve cihazlar diğer istemcininkilerin altında kalan her şeyi atar; bu yüzden Home Assistant bu sorun onarılana kadar mesh ağına hiçbir şey göndermez (komutlar başarısız olur, durumlar yenilenmez). Diğer istemciyi durdurun veya ona ya da Home Assistant'a kullanılmayan başka bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi). Ardından Home Assistant'ın sıra numaralarını diğer istemcide görülenlerin ötesinden sürdürmesi ve yeniden göndermesi için onaylayın. Diğer istemci bu adresten göndermeye devam ederse sorun geri gelir. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Başka bir istemci hâlâ Home Assistant'ın JUNG HOME adresini kullanıyor",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Diğer istemcinin sıra numaralarının ötesine yeniden atla",
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi adresini ({unicast}) kullanan başka bir mesh istemcisinin sıra numaralarının ötesine atladı, ancak diğer istemci o zamandan beri bu adresten yeniden gönderim yaptı: hâlâ çalışıyor. O çalıştığı sürece ileri atlamak işe yaramaz. Home Assistant'a yeni, kullanılmayan bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi) ya da diğer istemciyi durdurun veya başka bir adrese taşıyın. O zamana kadar Home Assistant mesh ağına hiçbir şey göndermez. Yalnızca diğer istemci bu adresi artık kullanmadığında onaylayın: Home Assistant bunun ardından onun numaralarının ötesinden yeniden devam eder ve gönderime yeniden başlar. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "JUNG HOME mesh ağı için Bluetooth yok",
+      "description": "{title} adlı JUNG HOME mesh ağına Bluetooth üzerinden ulaşılıyor, ancak Home Assistant'ta bağlantı kurulabilir bir Bluetooth adaptörü veya proxy'si kalmadı: adaptör kapatıldı, çıkarıldı veya arızalandı ya da etkin bağlantıları olan tüm ESPHome Bluetooth proxy'leri çevrim dışı. Biri geri gelene kadar mesh ağının tüm cihazları kullanılamaz. Ayarlar → Cihazlar ve hizmetler → Bluetooth'u kontrol edin. Bir Bluetooth adaptörü veya proxy'si yeniden kullanılabilir olur olmaz sorun kaybolur."
+    },
+    "duplicate_mesh": {
+      "title": "İki giriş aynı JUNG HOME mesh ağını kapsıyor",
+      "description": "{title} ve {others} aynı JUNG HOME mesh ağı için kurulu. Mesh ağının sıra numarası sayaçlarını (`.storage/junghome_ble.seq.*`) paylaştıkları için yalnızca biri çalışabilir: {others} çalışıyor ve {title} başlatılmadı. Bu girişlerden birini kaldırın (Ayarlar → Cihazlar ve hizmetler); {others} girişini kaldırırsanız ardından {title} girişini yeniden yükleyin."
+    },
+    "gateway_import": {
+      "title": "JUNG HOME Gateway entegrasyonunun varlıklarını devral",
+      "description": "JUNG HOME Gateway entegrasyonu, {title} Bluetooth Mesh entegrasyonunun yanında kurulu; bu yüzden her ışık, priz, düğme ve sahne iki kez var. Ağ geçidi varlıklarını Ayarlar → Cihazlar ve hizmetler → JUNG HOME (Bluetooth Mesh) → Yeniden yapılandır → JUNG HOME Gateway entegrasyonunun varlıklarını içe aktar altında buraya taşıyın — varlık kimliklerini, adlarını, alanlarını ve geçmişlerini korurlar —, ardından ağ geçidi girişini silin. İkisini birden tutmak istiyorsanız bu sorunu yok sayın."
+    },
+    "export_stale": {
+      "title": "JUNG HOME mesh anahtarları değişti",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Dışa aktarımı ağ geçidinden yeniden al",
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağının bir düğümüne bağlı, ancak duyduğu hiçbir şeyin şifresi dışa aktarımdaki anahtarlarla çözülemiyor: her ağ mesajı ve düğümün beacon'ı kimlik doğrulamasından geçemiyor. Mesh ağı, bu dışa aktarım yapıldıktan sonra bir anahtar yenilemeyi tamamladı (JUNG HOME uygulamasında “anahtar yenileme”), bu yüzden dosya güncelliğini yitirdi. Güncel dışa aktarımı, Home Assistant'ın zaten sahip olduğu erişimle {host} adresindeki JUNG HOME Gateway'den almak, denetlemek ve entegrasyonu ondan yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Ağ geçidinden yeniden al ile aynı şeyi yapar. Önceki dışa aktarım bir kopya olarak saklanır (`.pre-reconfigure`). Bir mesajın şifresi yeniden çözülür çözülmez sorun kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+          },
+          "upload": {
+            "title": "Yeni bir dışa aktarım yükle",
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağının bir düğümüne bağlı, ancak duyduğu hiçbir şeyin şifresi dışa aktarımdaki anahtarlarla çözülemiyor: her ağ mesajı ve düğümün beacon'ı kimlik doğrulamasından geçemiyor. Mesh ağı, bu dışa aktarım yapıldıktan sonra bir anahtar yenilemeyi tamamladı (JUNG HOME uygulamasında “anahtar yenileme”), bu yüzden dosya güncelliğini yitirdi. Ağı JUNG HOME uygulamasından dışa aktarın (Proje → Dosya ile paylaş) ve dosyayı buraya yükleyin: Home Assistant dosyayı denetler, yapılandırma dizininde `junghome_ble/` altında saklar (tüm mesh anahtarlarını içerir) ve entegrasyonu ondan yeniden kurar; önceki dışa aktarım bir kopya olarak saklanır. Dışa aktarımını sunucudaki bir yoldan okuyan bir giriş bundan sonra yüklenen kopyayı kullanır — yolu korumak için yeni dosyayı bunun yerine oraya kopyalayın ve Yeniden yapılandır'ı kullanın. Bir mesajın şifresi yeniden çözülür çözülmez sorun kaybolur. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "export_file": "Mesh dışa aktarım dosyası"
+            },
+            "data_description": {
+              "export_file": "Uygulamadan `JungHome.json` (Dosya ile paylaş) veya bir iOS yedeğinden `MeshNetwork.json`."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
+          "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
+          "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
+          "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
+          "gateway_error": "Ağ geçidi bir hatayla yanıt verdi. JUNG HOME uygulamasında durumunu kontrol edin ve tekrar deneyin.",
+          "gateway_busy": "Ağ geçidi başka bir yapılandırma isteğiyle meşgul. Bir dakika sonra tekrar deneyin.",
+          "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
+          "invalid_export": "Dosya bir JUNG HOME mesh dışa aktarımı değil (veya hasarlı): ağı anahtarları, düğümleri ve 0 dizinli bir ağ anahtarıyla birlikte içermelidir.",
+          "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
+          "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
+          "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "not_a_directory": "Meta veri yolu bir dizin değil.",
+          "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
+          "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
+          "upload_failed": "Yüklenen dosya işlenemedi. Yeniden yüklemeyi deneyin."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
+          "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
+          "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "JUNG HOME Gateway sertifikası değişti",
+      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın onun için sabitlediği TLS sertifikasıyla artık eşleşmiyor: bu adres başka bir sertifika sunuyor veya ağ geçidi düğümü mesh ağı üzerinden başka bir sertifika bildiriyor. Home Assistant ağ geçidini kullanmayı bıraktı (oraya ne erişim belirteci ne de dışa aktarım gönderilir); cihazlar Bluetooth üzerinden çalışmaya devam eder. Ağ geçidini veya sertifikasını değiştirdiyseniz Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır bölümünü açın ve dışa aktarımı ağ geçidinden yeniden alın; aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir — ağınızı kontrol edin."
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME dışa aktarımı ağ geçidine iletilmedi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Dışa aktarımı ağ geçidine ilet",
+            "description": "Home Assistant JUNG HOME kurulumunu değiştirdi (bir oda, düğme bağlantısı veya sahne) ve mesh dışa aktarımını yeniden yazdı, ancak {host} adresindeki JUNG HOME Gateway yeni dışa aktarımı almadı: {error}. Alana kadar ağ geçidi ve uygulama eski durumu gösterir — ve uygulamanın bir sonraki değişikliği Home Assistant'ınkinin üzerine yazar. Home Assistant, uygulamanın yaptığı gibi 15 saniye arayla iki kez daha dener. Ağ geçidine ulaşılabildiğini kontrol edin, ardından dışa aktarımı şimdi ona iletmek için onaylayın; bu, Ağ geçidini eşitle eylemiyle (`junghome_ble.sync_gateway`) aynı şeyi yapar: ağ geçidinde Home Assistant'ın görmediği değişiklikler varsa, yükleme bunları sileceği için reddeder. Bir yükleme başarılı olduğunda sorun kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "not_loaded": "Bu sorunun ait olduğu JUNG HOME girişi şu anda çalışmıyor. Giriş kurulduktan sonra tekrar deneyin.",
+          "sync_failed": "Dışa aktarım ağ geçidine iletilmedi: {error} Sorun devam ediyor; neden ortadan kalktığında onu yeniden onarın."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "{title} üzerinde bir JUNG HOME değişikliği yarıda kesildi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Bir JUNG HOME değişikliği yarıda kesildi",
+            "description": "Home Assistant, {action} sırasında yarıda durdu: {total} yapılandırma mesajından {accepted} tanesi cihazlara ulaşmıştı. Bunlar artık mesh dışa aktarımına kaydedildi, böylece dışa aktarım cihazların tuttuklarını gösteriyor. Tamamlamak için eylemi aynı hedefle yeniden çalıştırın. JUNG HOME Gateway varsa kaydedilen dışa aktarım ona bir sonraki değişiklikle veya `junghome_ble.sync_gateway` eylemiyle iletilir. Bu bildirimi kapatmak için onaylayın."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Cihaz adı JUNG HOME uygulamasına iletilmedi",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Cihazı yeniden adlandır",
+            "description": "{device}, Home Assistant'ta “{name}” olarak yeniden adlandırıldı; JUNG HOME uygulaması bu adı reddediyor: ad boş veya 30 karakterden uzun olamaz ve uygulama % işaretini bir yer tutucunun başlangıcı olarak algılar (yalnızca %% ve %n kabul edilir). Mesh dışa aktarımı ve uygulama cihazın eski adını korur. Uygulamanın kabul ettiği bir ad girin: Home Assistant cihazı bu adla adlandırır ve her yeniden adlandırmada olduğu gibi adı dışa aktarıma (ve ağ geçidi varsa uygulamaya) iletir. Ad iletildiğinde sorun kaybolur. Gerçek cihazlarda henüz doğrulanmadı.",
+            "data": {
+              "name": "Ad"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Ad boş olamaz.",
+          "name_not_allowed": "Uygulama % işaretini bir yer tutucunun başlangıcı olarak algılar: yalnızca %% ve %n kabul edilir.",
+          "name_too_long": "Uygulama en fazla 30 karakterlik adları kabul eder."
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "not_loaded": "Bu sorunun ait olduğu JUNG HOME girişi şu anda çalışmıyor. Giriş kurulduktan sonra tekrar deneyin.",
+          "device_gone": "Bu sorunun belirttiği cihaz artık Home Assistant'ta yok."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Home Assistant'ın eklediği cihazlar yeni ağ anahtarını kaçırdı",
+      "description": "JUNG HOME uygulaması {title} adlı mesh ağının ağ anahtarını yeniledi ve Home Assistant yenilemeyi sonuna kadar takip etti. Uygulama, Home Assistant'ın eklediği cihazları bilmez; bu yüzden Home Assistant yeni anahtarı onlara kendisi iletir, ancak {addresses} adresindeki cihaz(lar) bunu onaylamadı. Elektriklerinin olduğundan ve menzil içinde olduklarından emin olun: Home Assistant her yeni Bluetooth bağlantısında yeniden dener. Yeni anahtarı hiç almamış bir cihaza artık ulaşılamaz: onu fabrika ayarlarına sıfırlayın, ardından yeniden ekleyin (önce `junghome_ble.remove_device` veya `junghome_ble.reset_pending_device` ile, `force` kullanarak Home Assistant'tan kaldırın). Henüz gerçek bir cihazda denenmedi. Bu tür her cihaz onayladığında sorun kaybolur."
+    },
+    "pending_device": {
+      "title": "Home Assistant'ın eklediği bir cihaz kaydedilmedi",
+      "description": "Home Assistant, {title} adlı mesh ağının bir JUNG cihazını `junghome_ble.add_device` ile ağa kattı, ancak cihazın yapılandırılması veya dışa aktarıma kaydedilmesi başarısız oldu: {addresses} adresindeki cihaz ağın anahtarlarına sahip, JUNG HOME uygulaması ve dışa aktarım onu bilmiyor; adresleri ve öğe grupları başka hiçbir cihaz almasın diye ayrılmış kalıyor. Onu `junghome_ble.reset_pending_device` eylemiyle (unicast adresiyle) sıfırlayın ve yeniden ekleyin; elle sıfırladığınız veya artık mevcut olmayan bir cihaz için `force` kullanın. Henüz gerçek bir cihazda denenmedi. Böyle bir cihaz kalmadığında sorun kaybolur."
+    },
+    "vault_unwritable": {
+      "title": "JUNG HOME cihaz anahtarları kaydedilemiyor",
+      "description": "Home Assistant, {address} adresindeki cihazı eklerken {title} adlı mesh ağının anahtar kasasını yazamadı ({path}; son hata: {error}). Anahtar kasası, Home Assistant'ın eklediği cihazların cihaz anahtarlarını tutar; dışa aktarım onları kaydedene kadar bu anahtarlar başka hiçbir yerde yoktur, bu yüzden cihaz ağa katılmadı: hiçbir şey almadı ve hâlâ yeni. Bu genellikle diskin dolu olduğu veya dosya sisteminin salt okunur olarak yeniden bağlandığı anlamına gelir; çoğu zaman nedeni arızalanmakta olan bir SD karttır. Yer açın veya depolamayı onarın (salt okunur olarak yeniden bağlanan bir dosya sistemi genellikle sunucunun yeniden başlatılmasını gerektirir), ardından cihazı yeniden ekleyin; anahtar kasasının dosyalarını düzenlemeyin, silmeyin veya değiştirmeyin. Henüz gerçek bir cihazda denenmedi. Anahtar kasasına bir yazma başarılı olur olmaz sorun kendiliğinden kaybolur."
+    },
+    "carry_over_conflict": {
+      "title": "JUNG HOME uygulaması, Home Assistant'ın {title} üzerinde yaptığı bir değişikliği geçersiz kıldı",
+      "description": "Home Assistant, JUNG HOME uygulamasının ağ geçidine en son ilettiği dışa aktarımı devraldı ve kendi değişikliklerini onun üzerine aktardı, ancak uygulama bu arada aynı kayıtları değiştirmişti. Şunlar için uygulamanın sürümü korunuyor: {paths}. Cihazlar hâlâ Home Assistant'ın yazdıklarını tutuyor olabilir: {held}. Bu odaları, sahneleri ve bağlantıları uygulamada ve Home Assistant'ta kontrol edin ve tek bir taraftan yeniden ayarlayın. Uygulama, bir dosyayı içe aktarana kadar Home Assistant'ın eklediklerini görmez. Ağ geçidinin dışa aktarımı böyle bir çakışma olmadan bir sonraki devralındığında sorun kaybolur."
+    },
+    "scene_held": {
+      "title": "{title} üzerinde cihazlar silinmiş bir JUNG HOME sahnesini hâlâ tutuyor",
+      "description": "Bir sahne, cihazlarından bazılarına ulaşılamazken veya bazıları reddederken “Bir cihaz yanıt vermese bile” ile silindi; bu cihazlar sahneyi hâlâ tutuyor ve o numaradaki herhangi bir sahneyle onu çağırıyor. Sahne numarası: cihazlar — {members}. Home Assistant bu numaraları hiçbir yeni sahneye vermez. Cihazlara yeniden ulaşılabildiğinde Kullanılmayan sahneleri sil eylemini “Deneme çalıştırması” kapalıyken çalıştırın: eylem bu numaraları cihazlardan siler ve sorun kaybolur."
+    },
+    "gateway_token_rejected": {
+      "title": "JUNG HOME Gateway artık Home Assistant'ı kabul etmiyor",
+      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın {title} adlı mesh ağı için kaydettiği erişimi reddediyor (erişim muhtemelen JUNG HOME uygulamasında Ayarlar → Ağ Geçidi → Erişim İzinleri altında kaldırıldı). Home Assistant odaları, düğme bağlantılarını ve sahneleri kendi dışa aktarımında değiştirmeye devam eder, ancak dışa aktarımı artık ağ geçidine iletmez; bu yüzden uygulama bu değişiklikleri görmez; cihazlar çalışmaya devam eder. Home Assistant yeniden erişim istiyor: JUNG HOME için yeniden kimlik doğrulama isteğini izleyin (Ayarlar → Cihazlar ve hizmetler; Onarımlar da bunu süresi dolmuş kimlik doğrulaması olarak listeler) ve ağ geçidinin ağ anahtarı parolasını girin veya uygulamada yeni erişim isteğini onaylayın. Ağ geçidi Home Assistant'ı yeniden kabul ettiğinde sorun kaybolur; ardından Ağ geçidini eşitle eylemi o zamandan beri yapılan değişiklikleri iletir."
+    },
+    "seq_store_lost": {
+      "title": "{title} JUNG HOME mesh ağının sıra numaraları kayboldu",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Zaten gönderilmiş numaraların ötesinden devam et",
+            "description": "Bu entegrasyonun sıra numarası deposu (`.storage/junghome_ble.seq.*`), Home Assistant'ın {unicast} adresi için kullanılabilir bir kayıt içermiyor, oysa bu adres daha önce gönderim yaptı. Numaraları yeniden 0'dan başlatmak, cihazların zaten gördüğü sıra numaralarını yeniden kullanır: cihazlar Home Assistant'ı yok sayar ve yeniden kullanılan her numara mesh ağının şifrelemesini zayıflatır. Depoyu bir yedekten geri yüklemek de aynı sonucu doğurur — daha eski bir kopya, alındığından beri gönderilen her numarayı tekrarlar —; bu yüzden `junghome_ble.seq.*` dosyalarını geri yüklemeyin. Home Assistant'ın hâlâ okuyabildiği son değerin 1 048 576 numara ötesinden devam etmesi (hiçbiri kalmadıysa, `junghome_ble.seq.*.floor` içinde sayaçla birlikte güncel tuttuğu alt sınırın veya 0'ın 4 194 304 ötesinden) ve entegrasyonu yeniden kurması için onaylayın."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "floor_not_written": "Sıra numarası alt sınırı (`.storage/junghome_ble.seq.*.floor`) yazılamadı: hiçbir şey değiştirilmedi ve entegrasyon durmuş olarak kalıyor. Home Assistant yapılandırmasının bulunduğu diski kontrol edin, ardından sorunu yeniden onarın."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "JUNG HOME sıra numaraları kaydedilemiyor",
+      "description": "Home Assistant, {title} adlı mesh ağının sıra numarası deposunu bir dakikadan uzun süredir yazamıyor ({path}; son hata: {error}). Cihazlara giden her mesaj yeni bir sıra numarası taşır ve Home Assistant, bir yeniden başlatma hiçbir numarayı tekrarlamasın diye yalnızca kaydettiği numaraları gönderir: bir yazma başarılı olana kadar mesh ağına hiçbir şey göndermez — komutlar başarısız olur ve durum yenilenmez. Bu genellikle diskin dolu olduğu veya dosya sisteminin salt okunur olarak yeniden bağlandığı anlamına gelir; çoğu zaman nedeni arızalanmakta olan bir SD karttır. Yer açın veya depolamayı onarın (salt okunur olarak yeniden bağlanan bir dosya sistemi genellikle sunucunun yeniden başlatılmasını gerektirir); deponun dosyalarını düzenlemeyin, silmeyin veya değiştirmeyin. Bir yazma başarılı olur olmaz sorun kendiliğinden kaybolur ve gönderim yeniden başlar."
+    },
+    "address_in_use": {
+      "title": "Home Assistant'ın JUNG HOME adresi kullanımda",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Home Assistant'ı {suggestion} adresine taşı",
+            "description": "{title} adlı mesh ağının dışa aktarımında bir düğüm, Home Assistant'ın gönderim yaptığı {unicast} unicast adresini kullanıyor. İkisi tek bir gönderici sanılır: cihazlar birinin mesajlarını tekrar oynatma (replay) sayıp atar ve yanıtlar yanlış olana gider. Home Assistant'a boş {suggestion} adresini vermek ve entegrasyonu yeniden kurmak için onaylayın; bu, Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi ile aynı şeyi yapar. Başka hiçbir mesh istemcisinin (bu entegrasyonun komut satırı araçları, başka bir Home Assistant) {suggestion} adresinden gönderim yapmadığından emin olun. Sıra numaraları adres başına tutulur: yeni adres kendi kaydından devam eder veya Home Assistant'ın onun için kaydı yoksa yeterince ileriden başlar; böylece hiçbir numara iki kez gönderilmez. Gerçek cihazlarda henüz doğrulanmadı."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "cannot_load": "Girişin dışa aktarımı okunamadı, bu yüzden boş bir adres belirlenemiyor: hiçbir şey değişmedi. Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında yeni bir dışa aktarım yükleyin.",
+          "no_free_address": "Dışa aktarım Home Assistant için boş adres bırakmıyor: hiçbir şey değişmedi. Dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında kontrol edin.",
+          "address_taken": "{suggestion} dışa aktarımda artık boş değil (bu arada değişti): hiçbir şey değişmedi. Yeni bir öneri için sorunu yeniden onarın."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Home Assistant'ın JUNG HOME adresi başkasına verilebilir",
+      "description": "Home Assistant'ın {title} adlı mesh ağında gönderim yaptığı {unicast} unicast adresi, uygulamanın provisioner'larından birinin adres aralığı içinde bulunuyor veya kaldırılmış bir düğüm tarafından kullanılmıştı. Uygulama oraya bir düğümü ağa katana kadar çalışmaya devam eder; bundan önce Home Assistant'ı boş bir adrese taşıyın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi; {suggestion} boş)."
+    },
+    "sequence_space_low": {
+      "title": "JUNG HOME mesh ağının sıra numaraları azalıyor",
+      "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Her gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunda durur; bu geçişi JUNG HOME Gateway kendiliğinden başlatır, Home Assistant ise onu takip eder ama başlatmaz. Ağ geçidini açık ve mesh ağına bağlı tutun; ağ geçidi olmadan, bir göndericinin numaraları tükendiğinde mesh ağı durur. Güncellemeden sonra sorun kendiliğinden kaybolur."
+    },
+    "iv_index_mismatch": {
+      "title": "JUNG HOME mesh ağı başka bir IV dizininde",
+      "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde: Home Assistant'ın takip edemeyeceği kadar birbirinden uzak (mesh ağını en fazla 42 ileriye kadar, en fazla 192 saatte bir takip eder ve asla geri gitmez). Bu arada cihazlar Home Assistant'ı yok sayar. Bu durum, Home Assistant birçok IV güncellemesi boyunca devre dışı kaldığında, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'a yeni bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi): orada mesh ağının IV dizininden başlar. Depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü sıra numaralarını tekrarlar ve bir sonraki başlatma elle yapılan bir düzenlemenin üzerine zaten yazar. Menzil içindeki bir beacon geldiğinde sorun kendiliğinden kaybolur."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant, JUNG HOME mesh ağının IV dizininin önünde",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Mesh ağının IV dizinine geri dön",
+            "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde — mesh ağının önünde, oysa mesh ağı hiçbir zaman geride kalmaz: cihazlar Home Assistant'ı yok sayar ve Home Assistant kendisinin gerisindeki bir mesh ağını takip edemez. Bu durum, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'ı mesh ağının IV dizinine geri almak ve entegrasyonu yeniden kurmak için onaylayın: sıra numaraları, o dizinden itibaren gönderdiği her numaranın üstünden devam eder, böylece hiçbiri iki kez kullanılmaz. Bunun yerine depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü numaraları tekrarlar. Geri dönmenin diğer yolu, Home Assistant için yeni bir unicast adresidir (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır). Gerçek cihazlarda henüz doğrulanmadı: mesh ağının önünde olan bir IV dizini gerçek bir mesh ağında görülmedi."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "iv_index_not_ahead": "Home Assistant artık mesh ağının ulaşılamayacak kadar önünde değil veya sorun oluşturulduğundan beri IV durumu değişti: hiçbir şey değiştirilmedi. Sorun geri gelirse onu yeniden onarın.",
+          "seq_store_not_written": "Sıra numarası alt sınırı (`.storage/junghome_ble.seq.*.floor`) yazılamadı: hiçbir şey değiştirilmedi. Home Assistant yapılandırmasının bulunduğu diski kontrol edin, ardından sorunu yeniden onarın."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME puck aktüatörlerinin zaman kaynağı yok",
+      "description": "{title} adlı mesh ağında eski tip JUNG puck aktüatörleri var ({pucks}): bunlar saati bir zaman kaynağından, yani saati onlara ileten, şebekeden beslenen bir cihazdan alır. Mesh ağındaki hiçbir cihaz zaman kaynağı değil, bu yüzden puck aktüatörlerinin zamanlayıcıları kayar. Her zaman elektriği olan bir cihazın, örneğin bir prizin veya bir mini aktüatörün *Zaman kaynağı* anahtarını (varsayılan olarak devre dışı olan bir yapılandırma varlığı) açın; JUNG HOME uygulaması bir puck aktüatörü yapılandırırken kendisi bir tane seçer. Gerçek cihazlarda henüz doğrulanmadı. Bir cihaz zaman kaynağı olduğunda sorun kaybolur."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Oda ata",
+      "description": "JUNG HOME ışıklarını ve prizlerini mesh ağının bir odasına yerleştirir (uygulamanın İngilizce arayüzünde “Area”). Henüz var olmayan bir oda yalnızca “Odayı oluştur” ile oluşturulur; böylece yanlış yazılmış bir ad reddedilir. Cihaz diğer tüm odalardan çıkar; odaya zaten bağlı düğmeler artık onu da kontrol eder. Mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "room": {
+          "name": "Oda",
+          "description": "JUNG HOME uygulamasındaki odanın adı."
+        },
+        "create": {
+          "name": "Odayı oluştur",
+          "description": "Mesh ağında bu adda bir oda yoksa odayı oluşturur. Kapalıyken bilinmeyen bir ad reddedilir."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Odaya ekle",
+      "description": "JUNG HOME ışıklarını, prizlerini ve jaluzilerini ek olarak mesh ağının bir odasına yerleştirir: uygulama bir cihazın birden fazla odada olmasına izin verdiğinden cihazlar bulundukları odalarda kalır. Henüz var olmayan bir oda yalnızca “Odayı oluştur” ile oluşturulur. Odaya zaten bağlı düğmeler artık onları da kontrol eder. Mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Gerçek cihazlarda henüz doğrulanmadı. Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "room": {
+          "name": "Oda",
+          "description": "JUNG HOME uygulamasındaki odanın adı."
+        },
+        "create": {
+          "name": "Odayı oluştur",
+          "description": "Mesh ağında bu adda bir oda yoksa odayı oluşturur. Kapalıyken bilinmeyen bir ad reddedilir."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Odadan çıkar",
+      "description": "JUNG HOME ışıklarını, prizlerini ve jaluzilerini mesh ağının bir odasından çıkarır; cihazlar diğer odalarında kalır ve bir cihaz hiçbir odada kalmayabilir. Bir düğmenin odaya olan bağlantısı üzerinden kontrol ettiği bir cihaz, “Bir düğme kontrol etse bile” açık olmadıkça reddedilir: odadan çıkmak, cihazın o düğmeyle bağlantısını da keser. Mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Gerçek cihazlarda henüz doğrulanmadı. Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "room": {
+          "name": "Oda",
+          "description": "JUNG HOME uygulamasındaki odanın adı."
+        },
+        "force": {
+          "name": "Bir düğme kontrol etse bile",
+          "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Oda oluştur",
+      "description": "Mesh dışa aktarımında boş bir oda oluşturur (cihazlara hiçbir şey gönderilmez). Home Assistant ona uygulamanın aralığındaki en yüksek boş grup adresini verir: uygulama, bir dosyayı içe aktarana kadar odayı görmez ve kendi oluşturacağı sonraki odaya en düşük boş adresi verir. İstenirse yanıt olarak odanın grup adresini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Yeni odanın adı."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Odayı yeniden adlandır",
+      "description": "Mesh dışa aktarımındaki bir odayı yeniden adlandırır (cihazlara hiçbir şey gönderilmez). Yalnızca yöneticiler için.",
+      "fields": {
+        "room": {
+          "name": "Oda",
+          "description": "Odanın mevcut adı."
+        },
+        "new_name": {
+          "name": "Yeni ad",
+          "description": "Yeni ad."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Odayı sil",
+      "description": "Bir odayı siler: cihazları odadan çıkar, odaya bağlı düğmeler işlevlerini kaybeder ve oda mesh dışa aktarımından kaldırılır. Cihazların kendisi çalışmaya devam eder. Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "room": {
+          "name": "Oda",
+          "description": "Silinecek odanın adı."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Düğme ata",
+      "description": "Bir buton düğmesini veya bir dedektörü bir ışığa, bir prize, bir jaluziye, bir oda termostatına, ağ geçidine, bir odaya veya bir sahneye bağlar; tıpkı JUNG HOME uygulamasının düğme bağlantısı gibi: düğmenin önceki bağlantısı kaldırılır, düğme hedefe bağlanır ve düğme modu ayarlanır (bir dedektörün düğme modu yoktur ve yalnızca tek bir cihazı kontrol eder). Mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Dedektör kaynağı ve sıcaklık modu gerçek cihazlarda henüz doğrulanmadı. Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "key_entity": {
+          "name": "Düğme",
+          "description": "Düğmenin buton olay varlığı veya bir dedektöre ait bir varlık."
+        },
+        "key_device": {
+          "name": "Düğme cihazı",
+          "description": "Düğmeyi barındıran buton cihazı (birden fazla düğmesi varsa “Düğme harfi” ile birlikte kullanın) veya bir dedektör."
+        },
+        "key": {
+          "name": "Düğme harfi",
+          "description": "Cihazın hangi düğmesi: A, B, C veya D; bir mini aktüatörün girişi için E1 veya E2."
+        },
+        "target_entity": {
+          "name": "Hedef varlık",
+          "description": "Düğmenin kontrol edeceği ışık, priz, jaluzi veya oda termostatı."
+        },
+        "target_device": {
+          "name": "Hedef cihaz",
+          "description": "Düğmenin kontrol edeceği cihaz: bir ışık, bir priz veya ağ geçidi (düğme bu durumda tıklamaları, çift tıklamaları ve basılı tutmaları Home Assistant'a bildirir)."
+        },
+        "room": {
+          "name": "Hedef oda",
+          "description": "Düğmenin ışıklarını veya prizlerini kontrol edeceği oda."
+        },
+        "scene": {
+          "name": "Hedef sahne",
+          "description": "Düğmenin her cihazda çağıracağı sahne, numarasıyla veya adıyla (düğme modu sahne; “Mod” alanını boş bırakın). Henüz gerçek bir cihazda denenmedi."
+        },
+        "mode": {
+          "name": "Mod",
+          "description": "Düğmenin ne yapacağı: light (açma/kapama ve parlaklık ayarı), switch (açma/kapama), move (jaluziler; test edilmedi), gateway (olay bildirimi), lock (üst / açık tarafı bir ışığı veya prizi mevcut durumunda kilitler, alt / kapalı tarafı kilidi açar; gerçek cihazlarda henüz doğrulanmadı), temperature (bir oda termostatının ayar noktası; gerçek cihazlarda henüz doğrulanmadı) veya odalar için light_and_switch (ışıklar ve prizler birlikte). Boş bırakılırsa mod hedefe göre belirlenir."
+        },
+        "target_element": {
+          "name": "Hedef öğe",
+          "description": "Yalnızca cihaz hedefleri için: düğmenin yalnızca dimmer istemcisiyle hedefin başka bir bölümünü kontrol eder: color_temperature (ayarlanabilir beyaz bir ışığın renk sıcaklığı, light modu) veya slat (bir jaluzinin lamelleri, move modu). Gerçek cihazlarda henüz doğrulanmadı."
+        },
+        "lock_seconds": {
+          "name": "Kilit süresi",
+          "description": "Yalnızca lock modu için: düğmeden gelen bir kilidin kaç saniye süreceği (0 veya boş: düğme kilidi açana kadar). Gerçek cihazlarda henüz doğrulanmadı."
+        },
+        "room_area": {
+          "name": "Alana göre oda",
+          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+        },
+        "scene_entity": {
+          "name": "Sahne varlığı",
+          "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Düğme işlevini kaldır",
+      "description": "Bir buton düğmesini işlevsiz bırakır: düğmenin bir cihaza, ağ geçidine veya bir odaya olan bağlantısı kaldırılır (uygulamadaki “İşlev yok”). Yanıt olarak, gönderdiği mesajlardan kaçının cihazlarca uygulandığını, mesh dışa aktarımının yazılıp yazılmadığını ve hangi cihazların değiştiğini döndürür; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "key_entity": {
+          "name": "Düğme",
+          "description": "Düğmenin buton olay varlığı."
+        },
+        "key_device": {
+          "name": "Düğme cihazı",
+          "description": "Düğmeyi barındıran buton cihazı (birden fazla düğmesi varsa “Düğme harfi” ile birlikte kullanın)."
+        },
+        "key": {
+          "name": "Düğme harfi",
+          "description": "Cihazın hangi düğmesi: A, B, C veya D; bir mini aktüatörün girişi için E1 veya E2."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Sahne oluştur",
+      "description": "Mesh dışa aktarımında boş bir sahne oluşturur (cihazlara hiçbir şey gönderilmez). Cihazları “Sahneye kaydet” ile sahneye kaydedin. Home Assistant ona uygulamanın aralığındaki en yüksek boş sahne numarasını verir: uygulama, bir dosyayı içe aktarana kadar sahneyi görmez ve kendi oluşturacağı sonraki sahneye en düşük boş numarayı verir. İstenirse yanıt olarak sahne numarasını döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Yeni sahnenin adı."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Sahneyi yeniden adlandır",
+      "description": "Mesh dışa aktarımındaki bir sahneyi yeniden adlandırır (cihazlara hiçbir şey gönderilmez). Yalnızca yöneticiler için.",
+      "fields": {
+        "scene": {
+          "name": "Sahne",
+          "description": "Sahnenin mevcut adı veya numarası."
+        },
+        "new_name": {
+          "name": "Yeni ad",
+          "description": "Yeni ad."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "scene_entity": {
+          "name": "Sahne varlığı",
+          "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Sahneye kaydet",
+      "description": "JUNG HOME ışıklarının, prizlerinin, jaluzilerinin ve termostatlarının mevcut durumunu, uygulamadaki “cihazı sahneye kaydet” gibi bir sahneye kaydeder: önce cihazları sahnenin onları bırakması gereken duruma getirin, ardından bu eylemi çağırın. Her cihaz durumunu sahnenin altında (Scene Store), JUNG'un buna ait açıklamasıyla birlikte saklar ve mesh dışa aktarımı üyeyi kaydeder. Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Bir durum verilirse (eylem, parlaklık, renk sıcaklığı, sıcaklık) her cihaz önce bu duruma getirilir ve duruma ulaşması beklenir; konum verilen bir jaluzi hareket ettirilmez, sahne bu konumu onun için kaydeder. Yalnızca yöneticiler için.",
+      "fields": {
+        "scene": {
+          "name": "Sahne",
+          "description": "Sahnenin adı veya numarası (“Sahne oluştur” ile ya da uygulamada oluşturulmuş)."
+        },
+        "action": {
+          "name": "Eylem",
+          "description": "Kaydetmeden önce ışıkları ve prizleri açar veya kapatır."
+        },
+        "brightness_pct": {
+          "name": "Parlaklık",
+          "description": "Kaydetmeden önce ışıkları bu parlaklığa ayarlar (eylem bu durumda “açık” olur)."
+        },
+        "color_temp_kelvin": {
+          "name": "Renk sıcaklığı",
+          "description": "Kaydetmeden önce ayarlanabilir beyaz ışıkları bu renk sıcaklığına ayarlar."
+        },
+        "position": {
+          "name": "Konum",
+          "description": "Sahnenin bir jaluziyi götüreceği konum: 0 kapalı, 100 açık."
+        },
+        "tilt_position": {
+          "name": "Eğim konumu",
+          "description": "Sahnenin bir jaluzinin lamellerini götüreceği konum; belirtilmezse jaluzinin konumu."
+        },
+        "temperature": {
+          "name": "Sıcaklık",
+          "description": "Kaydetmeden önce termostatları bu sıcaklığa ayarlar."
+        },
+        "scene_entity": {
+          "name": "Sahne varlığı",
+          "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Kaydedilecek durum",
+          "description": "Önce cihazları bu duruma getirir; boş bırakılırsa cihazların mevcut durumu kaydedilir."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Sahneden çıkar",
+      "description": "JUNG HOME ışıklarını, prizlerini, jaluzilerini ve termostatlarını bir sahneden çıkarır: her cihaz sahneyi unutur (Scene Delete) ve mesh dışa aktarımı üyeyi kaldırır. Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. Yalnızca yöneticiler için.",
+      "fields": {
+        "scene": {
+          "name": "Sahne",
+          "description": "Sahnenin adı veya numarası."
+        },
+        "scene_entity": {
+          "name": "Sahne varlığı",
+          "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Sahneyi sil",
+      "description": "Bir sahneyi siler: sahneyi saklayan her cihaz onu unutur, bu cihazların sahneyi çağıran düğmeleri bağlantılarını kaybeder ve sahne mesh dışa aktarımından kaldırılır. Home Assistant bunu entegrasyonu yeniden yüklemeden devralır. İstenirse yanıt olarak “Bir cihaz yanıt vermese bile” ile atlanan cihazları (bu seçenek “Onayla” gerektirir) ve düğme mesajlarının uygulanma sonucunu döndürür; “Deneme çalıştırması” ile neyi göndereceğini ve neyi değiştireceğini döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "scene": {
+          "name": "Sahne",
+          "description": "Silinecek sahnenin adı veya numarası."
+        },
+        "force": {
+          "name": "Bir cihaz yanıt vermese bile",
+          "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        },
+        "scene_entity": {
+          "name": "Sahne varlığı",
+          "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        },
+        "confirm": {
+          "name": "Onayla",
+          "description": "“Bir cihaz yanıt vermese bile” ile birlikte gereklidir: sahneyi tutmaya devam eden bir cihaza buradan sahneyi unutturmak mümkün değildir. Deneme çalıştırması için gerekmez."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Kullanılmayan sahneleri sil",
+      "description": "Her cihazın sahne belleğini okur ve mesh dışa aktarımının bilmediği sahneleri (ne uygulamanın bir sahnesi ne de uygulamadaki bir zamanlayıcının sahnesi olanları) listeler ya da siler; uygulamanın, zamanlayıcı listesi açıldığında yaptığı gibi. Aksi belirtilmedikçe bir deneme çalıştırmasıdır. Ağ geçidiyle yalnızca ağ geçidinin güncel dışa aktarımı üzerinde çalışır; bir dosyadan kurulmuş bir ağda silme işlemi için “Mesh dışa aktarımı güncel” veya silinecek numaralar gerekir. Yanıt olarak numaraları cihaz başına döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca silinecek numaraları listeler; hiçbir şey silinmez. Varsayılan olarak açıktır."
+        },
+        "numbers": {
+          "name": "Sahne numaraları",
+          "description": "Yalnızca bu sahne numaralarını siler (hiçbiri mesh dışa aktarımındaki bir sahne olmamalıdır)."
+        },
+        "confirm_stale_export": {
+          "name": "Mesh dışa aktarımı güncel",
+          "description": "Bir dosyadan kurulmuş bir ağ için: dosya, dışa aktarıldıktan sonra oluşturulanlar dahil uygulamanın tüm sahnelerini içerir. Bu seçenek olmadan yalnızca belirtilen numaralar silinir."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Ağ geçidini eşitle",
+      "description": "Home Assistant'ın kullandığı mesh dışa aktarımını, uygulamanın her değişiklikten sonra yaptığı gibi JUNG HOME ağ geçidine iletir. Dışa aktarımı yeniden yazan her eylemden sonra otomatik olarak çalışır; “dışa aktarım ağ geçidine iletilmedi” onarımından sonra yeniden denemek için veya dosyayı kendiniz düzenledikten sonra çağırın. Yalnızca yöneticiler için.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Zamanlamaları al",
+      "description": "JUNG HOME yüklerinin kendi başına çalıştırdığı zamanlamaları okur (uygulamanın Otomasyon sayfası): yük başına en fazla 16 yuva; her biri belirli hafta günlerinde bir saat, gün doğumu veya gün batımı tetikleyicisi ile yükün o anda ne yapacağını içerir. Yanıt olarak varlık başına kullanılan yuvaları, “Zamanlama oluştur” eyleminin aldığı alanlarla döndürür."
+    },
+    "create_schedule": {
+      "name": "Zamanlama oluştur",
+      "description": "Hedeflenen her JUNG HOME yükünün ilk boş yuvasına bir zamanlama yazar; yük bunu ardından Home Assistant olmadan kendi başına çalıştırır. Gün doğumu veya gün batımı zamanlaması önce düğüme Home Assistant'ın ev konumunu gönderir. Yanıt olarak varlık başına kullanılan yuvayı döndürür. Bir cihazda test edilmedi. Yalnızca yöneticiler için.",
+      "fields": {
+        "trigger": {
+          "name": "Tetikleyici",
+          "description": "Zamanlamanın ne zaman tetikleneceği: günün belirli bir saatinde ya da gün doğumunda veya gün batımında."
+        },
+        "time": {
+          "name": "Saat",
+          "description": "Saate bağlı bir zamanlamanın günün hangi saatinde tetikleneceği."
+        },
+        "not_before": {
+          "name": "En erken",
+          "description": "Gün doğumu veya gün batımı zamanlaması bu saatten önce tetiklenmez (belirtilmezse sınır yoktur)."
+        },
+        "not_after": {
+          "name": "En geç",
+          "description": "Gün doğumu veya gün batımı zamanlaması bu saatten sonra tetiklenmez (belirtilmezse sınır yoktur)."
+        },
+        "offset": {
+          "name": "Zaman farkı",
+          "description": "Gün doğumundan veya gün batımından önceki (negatif) ya da sonraki dakika sayısı."
+        },
+        "weekdays": {
+          "name": "Hafta günleri",
+          "description": "Zamanlamanın tetiklendiği günler; belirtilmezse her gün."
+        },
+        "enabled": {
+          "name": "Etkin",
+          "description": "Zamanlamanın tetiklenip tetiklenmeyeceği; devre dışı bir zamanlama “Zamanlamayı etkinleştir” eylemini bekler."
+        },
+        "action": {
+          "name": "Eylem",
+          "description": "Bir ışığı veya prizi açar ya da kapatır."
+        },
+        "brightness_pct": {
+          "name": "Parlaklık",
+          "description": "Bir dimmerin açıldığında ulaşacağı parlaklık (eylem bu durumda “açık” olur)."
+        },
+        "color_temp_kelvin": {
+          "name": "Renk sıcaklığı",
+          "description": "Ayarlanabilir beyaz bir ışığın renk sıcaklığı, 100 K adımlarla."
+        },
+        "position": {
+          "name": "Konum",
+          "description": "Bir jaluzinin gideceği konum: 0 kapalı, 100 açık."
+        },
+        "tilt_position": {
+          "name": "Eğim konumu",
+          "description": "Bir jaluzinin lamel konumu; belirtilmezse jaluzinin konumu."
+        },
+        "temperature": {
+          "name": "Sıcaklık",
+          "description": "Bir oda termostatının hedef sıcaklığı."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Ne zaman",
+          "description": "Zamanlamanın ne zaman tetikleneceği."
+        },
+        "what": {
+          "name": "Ne",
+          "description": "Tetiklendiğinde yükün neye ayarlanacağı."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Zamanlamayı güncelle",
+      "description": "Hedeflenen her JUNG HOME yükünün kullanılan bir zamanlama yuvasını, uygulamadaki düzenleme gibi yerinde yeniden yazar; “Zamanlama oluştur” eyleminin aldığı alanlarla: hepsini yeniden verin, belirtilmeyen hiçbir şey yuvadan korunmaz. Gün doğumu veya gün batımı zamanlaması önce düğüme Home Assistant'ın ev konumunu gönderir; bir yazma başarısız olursa yuvanın eski zamanlaması geri yazılır. Gerçek cihazlarda henüz doğrulanmadı. Yalnızca yöneticiler için.",
+      "fields": {
+        "slot": {
+          "name": "Yuva",
+          "description": "Yeniden yazılacak zamanlama yuvasının numarası (0–15); “Zamanlamaları al” ve “Zamanlamalar” sensörünün listelediği şekilde."
+        },
+        "trigger": {
+          "name": "Tetikleyici",
+          "description": "Zamanlamanın ne zaman tetikleneceği: günün belirli bir saatinde ya da gün doğumunda veya gün batımında."
+        },
+        "time": {
+          "name": "Saat",
+          "description": "Saate bağlı bir zamanlamanın günün hangi saatinde tetikleneceği."
+        },
+        "not_before": {
+          "name": "En erken",
+          "description": "Gün doğumu veya gün batımı zamanlaması bu saatten önce tetiklenmez (belirtilmezse sınır yoktur)."
+        },
+        "not_after": {
+          "name": "En geç",
+          "description": "Gün doğumu veya gün batımı zamanlaması bu saatten sonra tetiklenmez (belirtilmezse sınır yoktur)."
+        },
+        "offset": {
+          "name": "Zaman farkı",
+          "description": "Gün doğumundan veya gün batımından önceki (negatif) ya da sonraki dakika sayısı."
+        },
+        "weekdays": {
+          "name": "Hafta günleri",
+          "description": "Zamanlamanın tetiklendiği günler; belirtilmezse her gün."
+        },
+        "enabled": {
+          "name": "Etkin",
+          "description": "Zamanlamanın tetiklenip tetiklenmeyeceği; devre dışı bir zamanlama “Zamanlamayı etkinleştir” eylemini bekler."
+        },
+        "action": {
+          "name": "Eylem",
+          "description": "Bir ışığı veya prizi açar ya da kapatır."
+        },
+        "brightness_pct": {
+          "name": "Parlaklık",
+          "description": "Bir dimmerin açıldığında ulaşacağı parlaklık (eylem bu durumda “açık” olur)."
+        },
+        "color_temp_kelvin": {
+          "name": "Renk sıcaklığı",
+          "description": "Ayarlanabilir beyaz bir ışığın renk sıcaklığı, 100 K adımlarla."
+        },
+        "position": {
+          "name": "Konum",
+          "description": "Bir jaluzinin gideceği konum: 0 kapalı, 100 açık."
+        },
+        "tilt_position": {
+          "name": "Eğim konumu",
+          "description": "Bir jaluzinin lamel konumu; belirtilmezse jaluzinin konumu."
+        },
+        "temperature": {
+          "name": "Sıcaklık",
+          "description": "Bir oda termostatının hedef sıcaklığı."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Ne zaman",
+          "description": "Zamanlamanın ne zaman tetikleneceği."
+        },
+        "what": {
+          "name": "Ne",
+          "description": "Tetiklendiğinde yükün neye ayarlanacağı."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Zamanlamayı etkinleştir",
+      "description": "JUNG HOME yüklerinin bir zamanlama yuvasının yeniden tetiklenmesini sağlar. Yalnızca yöneticiler için.",
+      "fields": {
+        "slot": {
+          "name": "Yuva",
+          "description": "Zamanlama yuvasının numarası (0–15); “Zamanlamaları al” ve “Zamanlamalar” sensörünün listelediği şekilde."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Zamanlamayı devre dışı bırak",
+      "description": "JUNG HOME yüklerinin bir zamanlama yuvasının, onu silmeden tetiklenmesini engeller. Yalnızca yöneticiler için.",
+      "fields": {
+        "slot": {
+          "name": "Yuva",
+          "description": "Zamanlama yuvasının numarası (0–15); “Zamanlamaları al” ve “Zamanlamalar” sensörünün listelediği şekilde."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Zamanlamayı sil",
+      "description": "JUNG HOME yüklerinin bir zamanlama yuvasını boşaltır. Yalnızca yöneticiler için.",
+      "fields": {
+        "slot": {
+          "name": "Yuva",
+          "description": "Zamanlama yuvasının numarası (0–15); “Zamanlamaları al” ve “Zamanlamalar” sensörünün listelediği şekilde."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Eşik ayarla",
+      "description": "Enerji ölçümlü bir JUNG HOME prizinin bir eşiğini ayarlar (uygulamanın Otomatik profili): prizin gücü belirtilen süre boyunca bu seviyede kalırsa priz, seçilen ışıkları ve prizleri Home Assistant olmadan kendiliğinden açar (açma eşiği) veya kapatır (kapatma eşiği). Bir cihazda test edilmedi. İstenirse yanıt olarak bağlantı mesajlarından kaçının cihazlarca uygulandığını döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "threshold": {
+          "name": "Eşik",
+          "description": "Prizin iki eşiğinden hangisinin ayarlanacağı."
+        },
+        "power": {
+          "name": "Güç",
+          "description": "W cinsinden güç seviyesi (0,1 W adımlarla); belirtilmezse prizin mevcut seviyesi."
+        },
+        "duration": {
+          "name": "Süre",
+          "description": "Gücün bu seviyede kalması gereken saniye sayısı; belirtilmezse prizin mevcut süresi."
+        },
+        "enabled": {
+          "name": "Etkin",
+          "description": "Eşiğin anahtarlama yapıp yapmayacağı; devre dışı bir eşik seviyesini ve süresini korur. Belirtilmezse eşik durumunu korur (yeni bir eşik etkindir). Diğer eşik de etkin değilken devre dışı bırakılırsa ışıkların ve prizlerin bağlantısı uygulamadaki gibi kaldırılır: etkinleştirirken cihazları yeniden belirtin."
+        },
+        "devices": {
+          "name": "Cihazlar",
+          "description": "Her iki eşiğin anahtarladığı ışıklar ve prizler; mevcut listenin yerini alır; belirtilmezse liste aynı kalır. Liste değiştiğinde mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Eşikleri sil",
+      "description": "Enerji ölçümlü bir JUNG HOME prizinin her iki eşiğini temizler ve eşiklerin anahtarladığı ışıkların ve prizlerin bağlantısını, uygulamadaki silme işlemi gibi kaldırır. Cihazların bağlantısı kaldırıldıysa Home Assistant yeniden yazılan mesh dışa aktarımını entegrasyonu yeniden yüklemeden devralır. İstenirse yanıt olarak bağlantı mesajlarından kaçının cihazlarca uygulandığını döndürür. Yalnızca yöneticiler için."
+    },
+    "audit_network": {
+      "name": "Ağı denetle",
+      "description": "Hiçbir şeyi değiştirmeden JUNG HOME cihazlarının mesh yapılandırmasında ne bulunduğunu okur — Relay, Network Transmit, Default TTL, Beacon, GATT Proxy ve Friend, her cihazın tuttuğu ağ ve uygulama anahtarları (dizine göre, asla anahtarın kendisi değil) ve her model için yayını (publication), abonelikleri ve bağlı uygulama anahtarları — ve bunu mesh dışa aktarımıyla karşılaştırır. Yanıt olarak cihaz başına ayarlarını ve bulunan her farkı döndürür ve yanıt vermeyen cihazları listeler. Tüm cihazların denetlenmesi birkaç dakika sürer; pille çalışan cihazlar uykudadır ve belirtilmedikçe atlanır.",
+      "fields": {
+        "device": {
+          "name": "Cihaz",
+          "description": "Yalnızca bu cihazın arkasındaki mesh düğümünü denetler (bir ışık, bir düğme, bir priz veya düğümün kendisi). Boş bırakılırsa şebekeden beslenen her düğüm denetlenir."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Ağı dışa aktar",
+      "description": "Home Assistant'ın kullandığı dışa aktarımı — değiştirdiği odalar, düğmeler, bağlantılar ve sahnelerle birlikte — JUNG HOME uygulamasının proje dosyası veya mesh veritabanı olarak, yedek almak ya da uygulamaya içe aktarmak için yanıt olarak döndürür. Yalnızca yöneticiler için: mesh ağının tüm anahtarlarını içerir.",
+      "fields": {
+        "flavour": {
+          "name": "Biçim",
+          "description": "Uygulamanın proje dosyası (JungHome.json) veya mesh veritabanı (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Ağ",
+          "description": "Dışa aktarılacak JUNG HOME ağı; yalnızca birden fazla ağ varsa gerekir."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Yeni cihazları bul",
+      "description": "Henüz bir ağda olmayan yakındaki JUNG cihazlarını, `add_device` eyleminin ihtiyaç duyduğu Bluetooth adresiyle listeler."
+    },
+    "add_device": {
+      "name": "Cihaz ekle (deneysel)",
+      "description": "Uygulamanın yapacağı gibi ağa yeni bir JUNG cihazı ekler: cihazı, sunduğu en güçlü yöntemle ağa katar (cihaz Static OOB sunuyorsa ve değeri verilmişse HMAC-SHA256 algoritmasıyla Static OOB, aksi halde uygulama gibi No OOB — kimlik doğrulama olmadan, işlem sürerken Bluetooth menzilindeki biri ağın anahtarlarını ele geçirebilir), cihazın bildirdiklerine göre uygulamanın kurallarıyla yapılandırır (bu, ağda zaten bulunan aynı ürüne ait bir cihazınkiyle uyuşmuyorsa reddedilir) ve dışa aktarıma kaydeder (dışa aktarım ağ geçidine iletilir). Yapılandırması başarısız olan bir cihaz, uygulamadaki gibi sıfırlanır. Cihazın öğe grupları uygulamanın aralığındaki en yüksek boş grup adreslerini alır (uygulama, bir dosyayı içe aktarana kadar cihazı görmez). Yanıt, tamamlanan adımları listeler. Girişin *Home Assistant'ın cihaz eklemesine izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için. Kimlik doğrulamalı yöntemler, yapılandırma kuralları ve sıfırlama gerçek cihazlarda henüz doğrulanmadı.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth adresi",
+          "description": "`find_new_devices` eyleminin bu cihaz için listelediği adres."
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Yeni cihazın adı."
+        },
+        "config_entry_id": {
+          "name": "Ağ",
+          "description": "Cihazın ekleneceği JUNG HOME ağı; yalnızca birden fazla ağ varsa gerekir."
+        },
+        "static_oob": {
+          "name": "Static OOB değeri",
+          "description": "Yalnızca Static OOB kimlik doğrulaması sunan bir cihaz için: üreticisinin belgelediği şekilde, onaltılık biçimde 16 veya 32 baytlık değeri (bunu sunan bilinen bir JUNG cihazı yoktur). Asla günlüğe yazılmaz. Yalnızca kimlik doğrulamalı ağa katmayı kabul eden bir cihaz bu değer olmadan reddedilir; Static OOB sunmayan bir cihaz ise bu değerle reddedilir."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Cihazı kaldır (deneysel)",
+      "description": "Bir JUNG cihazını sıfırlar (cihaz ağı unutur ve yeniden yeni bir cihaz olur) ve uygulamanın yaptığı gibi ağdan çıkarır: diğer cihazların ona olan bağlantıları kaldırılır, dışa aktarım onu kaldırılmış olarak kaydeder ve ağ geçidine iletilir. Geri alınamaz. Girişin *Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver* seçeneğini gerektirir. “Onayla” gerektirir; “Deneme çalıştırması” ile bunun yerine neyi göndereceğini ve neyi değiştireceğini yanıt olarak döndürür ve onay gerektirmez. Yalnızca yöneticiler için.",
+      "fields": {
+        "device": {
+          "name": "Cihaz",
+          "description": "Kaldırılacak JUNG cihazı (Home Assistant'taki cihazlarından herhangi biri)."
+        },
+        "force": {
+          "name": "Yanıt vermese bile",
+          "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır."
+        },
+        "confirm": {
+          "name": "Onayla",
+          "description": "Gerçekleştirmek için gereklidir: bir cihazı kaldırmak geri alınamaz. Deneme çalıştırması için gerekmez."
+        },
+        "dry_run": {
+          "name": "Deneme çalıştırması",
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Bekleyen cihazı sıfırla (deneysel)",
+      "description": "`add_device` eyleminin ağa kattığı ancak yapılandıramadığı veya kaydedemediği bir JUNG cihazını sıfırlar (*Home Assistant'ın eklediği bir cihaz kaydedilmedi* onarım sorunu bunları listeler): cihaza, yalnızca Home Assistant'ın tuttuğu cihaz anahtarıyla bir Config Node Reset gönderir; böylece cihaz yeniden yeni bir cihaz olur ve adresleri serbest bırakılır. Henüz gerçek bir cihazda denenmedi. Girişin *Home Assistant'ın cihaz eklemesine izin ver* seçeneğini gerektirir. Yalnızca yöneticiler için.",
+      "fields": {
+        "uuid": {
+          "name": "Cihaz UUID'si",
+          "description": "`add_device` veya `find_new_devices` eyleminin verdiği şekliyle cihazın UUID'si."
+        },
+        "unicast": {
+          "name": "Unicast adresi",
+          "description": "Cihazın birincil unicast adresi (onarım sorununun belirttiği şekilde onaltılık); UUID ile birlikte verilirse ikisi de eşleşmelidir."
+        },
+        "force": {
+          "name": "Yanıt vermese bile",
+          "description": "Cihaz sıfırlamayı onaylamasa da (elle sıfırlanmış veya kalıcı olarak ortadan kalkmış bir cihaz) cihazı unutur."
+        },
+        "config_entry_id": {
+          "name": "Ağ",
+          "description": "Cihazın eklendiği JUNG HOME ağı; yalnızca birden fazla ağ varsa gerekir."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Cihazın yerini bul",
+      "description": "Bir JUNG cihazının Node Identity'sini — yalnızca bu mesh ağının anahtarlarının cihazla ilişkilendirebildiği bir Bluetooth yayın paketi — en fazla bir dakika boyunca yayınlamasını ve ardından durmasını sağlar; böylece bir Bluetooth tarayıcı hangi radyonun o cihaz olduğunu ayırt edebilir. Başka hiçbir şeyi değiştirmez; cihaz zaten bir dakika sonra kendiliğinden durur. Yalnızca yöneticiler için. Gerçek cihazlarda henüz doğrulanmadı.",
+      "fields": {
+        "device": {
+          "name": "Cihaz",
+          "description": "Yeri bulunacak JUNG cihazı (Home Assistant'taki cihazlarından herhangi biri)."
+        },
+        "duration": {
+          "name": "Süre",
+          "description": "Yayın süresi saniye cinsinden, 5 ile 60 arası (cihaz 60 saniye sonra kendiliğinden durur)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Ağ geçidi istemcisini onayla",
+      "description": "JUNG HOME ağ geçidinde erişim bekleyen API istemcilerini (başka bir entegrasyon, bir betik) listeler ve adı verilen istemciyi, uygulamadaki “Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler” bölümünün yaptığı gibi onaylar. Onaylanan bir istemci, tüm mesh anahtarlarını içeren ağ dışa aktarımı dahil ağ geçidinin tüm API'sine erişir: yalnızca kendiniz başlattığınız bir istemciyi onaylayın. İstemci adı verilmezse yalnızca listeler (yanıtı açın). Erişimi iptal etmek uygulamaya kalır. Yalnızca yöneticiler için; ağ geçidinden kurulmuş bir ağ için. Gerçek cihazlarda henüz doğrulanmadı.",
+      "fields": {
+        "client": {
+          "name": "İstemci",
+          "description": "İstemcinin erişim istediği ad; `waiting` altında listelendiği şekliyle. Boş bırakılırsa hiçbir şey onaylanmaz."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Parlaklık ayarını başlat",
+      "description": "Bir JUNG HOME dimmerinin parlaklığını, çift yönlü bir tuşu basılı tutmak gibi, “Parlaklık ayarını durdur” çağrılana (veya aralığın sonuna ulaşılana) kadar artırmaya veya azaltmaya başlar. Henüz gerçek bir cihazda denenmedi.",
+      "fields": {
+        "direction": {
+          "name": "Yön",
+          "description": "Daha parlak (up) veya daha koyu (down)."
+        },
+        "speed": {
+          "name": "Hız",
+          "description": "Ne kadar hızlı: saniyede parlaklık aralığının yüzdesi (varsayılan 20: kapalıdan tam parlaklığa 5 saniyede)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Parlaklık ayarını durdur",
+      "description": "“Parlaklık ayarını başlat” ile harekete geçirilen bir JUNG HOME dimmerini o anki seviyesinde durdurur. Henüz gerçek bir cihazda denenmedi."
+    },
+    "step_dim": {
+      "name": "Parlaklığı bir adım değiştir",
+      "description": "Bir JUNG HOME dimmerini bir adım daha parlak veya daha koyu yapar. Henüz gerçek bir cihazda denenmedi.",
+      "fields": {
+        "step": {
+          "name": "Adım",
+          "description": "Parlaklık aralığının yüzdesi: pozitif daha parlak, negatif daha koyu."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Aydınlatma (açma/kapama, dimleme)",
+        "switch": "Anahtarlama (açma/kapama)",
+        "move": "Jaluzi hareketi (test edilmedi)",
+        "gateway": "Ağ geçidi (olayları bildir)",
+        "light_and_switch": "Aydınlatma ve prizler (yalnızca odalar)",
+        "lock": "Kilitle ve kilidi aç (gerçek cihazlarda henüz doğrulanmadı)",
+        "temperature": "Sıcaklık (oda termostatı, test edilmedi)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Renk sıcaklığı (gerçek cihazlarda henüz doğrulanmadı)",
+        "slat": "Lameller (gerçek cihazlarda henüz doğrulanmadı)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Günün saati",
+        "sunrise": "Gün doğumu",
+        "sunset": "Gün batımı"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Aç",
+        "off": "Kapat"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Pazartesi",
+        "tue": "Salı",
+        "wed": "Çarşamba",
+        "thu": "Perşembe",
+        "fri": "Cuma",
+        "sat": "Cumartesi",
+        "sun": "Pazar"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Açma eşiği",
+        "switch_off": "Kapatma eşiği"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Uygulamanın proje dosyası (JungHome.json)",
+        "cdb": "Mesh veritabanı (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Daha parlak",
+        "down": "Daha karanlık"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Anahtar mekanizması",
+        "two_gang_switch": "İkili anahtar mekanizması",
+        "dimming": "Dimmer mekanizması",
+        "two_gang_dimming": "İkili dimmer mekanizması",
+        "tw_dimming": "DALI mekanizması",
+        "blind": "Jaluzi mekanizması",
+        "extension": "Yardımcı istasyon mekanizması",
+        "not_available": "Mekanizma yok"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Düğme üst / alt",
+        "one_rocker": "Çift yönlü tuş",
+        "two_left_two_right": "Düğme | Düğme",
+        "one_left_two_right": "Çift yönlü tuş | Düğme",
+        "two_left_one_right": "Düğme | Çift yönlü tuş",
+        "one_left_one_right": "Çift yönlü tuş | Çift yönlü tuş"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Tekli buton",
+        "push_button_2": "İkili buton",
+        "socket_metering": "Priz (enerji ölçümlü)",
+        "socket": "Priz",
+        "switch_actuator_mini": "Tekli anahtarlama aktüatörü mini",
+        "blinds_actuator_mini": "Tekli jaluzi aktüatörü mini",
+        "wall_transmitter_1": "Tekli duvar vericisi",
+        "wall_transmitter_2": "İkili duvar vericisi",
+        "motion_detector_1m": "Hareket dedektörü 1 m",
+        "motion_detector_2m": "Hareket dedektörü 2 m",
+        "presence_detector": "Mevcudiyet dedektörü",
+        "room_thermostat": "Oda termostatı",
+        "gateway": "Ağ geçidi",
+        "switch_actuator_1_energy": "Tekli anahtarlama aktüatörü, 2 girişli, enerji ölçümlü",
+        "switch_actuator_2": "İkili anahtarlama aktüatörü, 2 girişli",
+        "dimmer_actuator": "Tekli dimmer aktüatörü, 2 girişli",
+        "blinds_actuator": "Tekli jaluzi aktüatörü PP2, 2 girişli",
+        "dali_actuator": "Tekli DALI aktüatörü, 2 girişli",
+        "mini_sensor_mains": "Mini sensör, 2 girişli, şebeke beslemeli",
+        "mini_sensor_battery": "Mini sensör, 2 girişli, pil beslemeli"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh ağı",
+        "switch": "Anahtarlamalı lamba",
+        "dimmer": "Dimlenebilir lamba",
+        "ctl": "Ayarlanabilir beyaz (DALI) lamba",
+        "blind": "Jaluzi / panjur motoru",
+        "push_buttons": "Butonlar",
+        "unknown_product": "Ürün {pid}"
+      }
+    }
+  }
+}
