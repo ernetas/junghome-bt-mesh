@@ -107,14 +107,11 @@ SAMPLE_RANDOM = h("34ae608fbbc1f2c6")
 
 
 def test_private_network_identity_hash():
-    """Mesh Protocol 1.1 §7.2.2.2.4: Hash = e(IdentityKey, Network ID ‖ Random) mod 2^64.
-
-    The specification's Private Network Identity sample data (§8.6) was not available offline when this was written,
-    so the expected Hash is the formula worked out with a raw AES block on the §8.6 inputs, not a sample value: pin it
-    to the specification's Hash once that is to hand.
-    """
+    """Mesh Protocol 1.1 §7.2.2.2.4: Hash = e(IdentityKey, Network ID ‖ Random) mod 2^64; the specification's sample
+    data §8.6.3 (Service data using Private Network Identity): Hash d30f7229ef045435, the formula agreeing."""
     nk = NetKeyMaterial.derive(SAMPLE_NETKEY)
     want = _aes(SAMPLE_IDENTITY_KEY, SAMPLE_NETWORK_ID + SAMPLE_RANDOM)[8:]
+    assert want == h("d30f7229ef045435")
     assert nk.private_network_identity(SAMPLE_RANDOM) == want
     assert nk.private_network_identity(bytes(8)) != want
     assert (
@@ -123,14 +120,14 @@ def test_private_network_identity_hash():
 
 
 def test_private_node_identity_hash():
-    """Mesh Protocol 1.1 §7.2.2.2.5: Hash = e(IdentityKey, 0x0000000000 ‖ 0x03 ‖ Random ‖ Address) mod 2^64.
-
-    Not the specification's sample Hash either (§8.6, not available offline): the formula on the §8.6 inputs. The
-    0x03 keeps it apart from the Node Identity hash of the same Random and address (`test_node_identity_hash_sample`).
-    """
+    """Mesh Protocol 1.1 §7.2.2.2.5: Hash = e(IdentityKey, 0x0000000000 ‖ 0x03 ‖ Random ‖ Address) mod 2^64; the
+    specification's sample data §8.6.4 (Service data using Private Node Identity): Hash 2c64a8cbca65bfe1 for address
+    0x1201. The 0x03 keeps it apart from the Node Identity hash of the same Random and address
+    (`test_node_identity_hash_sample`)."""
     nk = NetKeyMaterial.derive(SAMPLE_NETKEY)
     block = bytes(5) + b"\x03" + SAMPLE_RANDOM + (0x1201).to_bytes(2, "big")
     want = _aes(SAMPLE_IDENTITY_KEY, block)[8:]
+    assert want == h("2c64a8cbca65bfe1")
     assert nk.private_node_identity(SAMPLE_RANDOM, 0x1201) == want
     assert nk.private_node_identity(SAMPLE_RANDOM, 0x1202) != want
     assert want != nk.node_identity_hash(SAMPLE_RANDOM, 0x1201)

@@ -897,8 +897,9 @@ def test_parse_beacon_compares_the_authentication_value_in_constant_time(
     assert b.authenticated is False
 
 
-# Mesh Protocol 1.1 §8.4.6 sample data, Mesh Private beacon with IV Update in progress: NetKey, Random, Flags 0x02 and
-# IV Index 0x1010abcd in, the beacon out (the bytes `test_sniffer.py` decodes too)
+# Mesh Protocol 1.1 §8.4.6.1 sample data, Mesh Private beacon with IV Update in progress: NetKey, Random, Flags 0x02
+# and IV Index 0x1010abcd in, the beacon out (PrivateBeaconKey 6be76842460b2d3a5850d4698409f1bb; the bytes
+# `test_sniffer.py` decodes too)
 PRIVATE_SAMPLE_NETKEY = h("f7a2a44f8e8a8029064f173ddc1e2b00")
 PRIVATE_SAMPLE_RANDOM = h("435f18f85cf78a3121f58478a5")
 PRIVATE_SAMPLE_BEACON = h(
@@ -926,6 +927,23 @@ def test_parse_private_beacon_spec_vector():
     assert (
         parse_beacon(nk, PRIVATE_SAMPLE_BEACON) is None
     )  # not a Secure Network beacon
+
+
+def test_private_beacon_iv_update_complete_spec_vector():
+    """§8.4.6.2 (IV update complete): another NetKey and Random, Flags 0x00, IV Index 0."""
+    nk = NetKeyMaterial.derive(h("3bbb6f1fbd53e157417f308ce7aec58f"))
+    assert nk.private_beacon_key == h("ca478cdac626b7a8522d7272dd124f26")
+    beacon = h("02" + "1b998f82927535ea6f3076f422" + "ce827408ab" + "2f0ffb94cf97f881")
+    parsed = parse_private_beacon(nk, beacon)
+    assert parsed is not None
+    assert (parsed.key_refresh, parsed.iv_update, parsed.iv_index) == (
+        False,
+        False,
+        0,
+    )
+    assert NetKeyMaterial.derive(PRIVATE_SAMPLE_NETKEY).private_beacon_key == h(
+        "6be76842460b2d3a5850d4698409f1bb"
+    )
 
 
 def test_private_beacon_construction_matches_the_spec_vector():
