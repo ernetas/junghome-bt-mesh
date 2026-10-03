@@ -71,6 +71,11 @@ def _device_identity(row: dict[str, Any]) -> Any:
     return (_upper(did["nodeId"]), locs)
 
 
+def _scene_info_identity(row: dict[str, Any]) -> Any:
+    scene, device = row.get("scene"), _device_identity(row)
+    return None if scene is None or device is None else (scene, device)
+
+
 # what identifies an entry of an array, by the key the array sits under
 IDENTITY: dict[str, Callable[[dict[str, Any]], Any]] = {
     "nodes": lambda r: _upper(r.get("UUID")),
@@ -84,7 +89,8 @@ IDENTITY: dict[str, Callable[[dict[str, Any]], Any]] = {
     "userGroups": lambda r: r.get("address"),
     "elementConnectionGroups": lambda r: r.get("groupAddress"),
     "devices": _device_identity,
-    "sceneInfo": lambda r: r.get("scene"),
+    # one row per scene and app device (`SceneInfoRepositoryImpl.saveInfoFor`, review-4 F4-6)
+    "sceneInfo": _scene_info_identity,
     # one row per element in the app's tables (`docs/android/network-logic.md`: `address` + one value)
     "keyModeSceneConfigExports": lambda r: _address(r.get("elementAddress")),
     "buttonLayoutExports": lambda r: _address(r.get("elementAddress")),

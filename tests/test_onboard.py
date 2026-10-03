@@ -357,6 +357,13 @@ def test_the_template_is_a_node_with_the_advertised_insert_when_there_is_one() -
     assert template(0x0003, 0) == 0x0172  # a socket has no insert to match
 
 
+def test_the_advertised_layout_is_a_key_products_known_one() -> None:
+    """Review-4 F4-6: what goes into the new node's `buttonLayoutExports` row instead of its template's."""
+    assert onboard._advertised_layout(JungAdvertisement(1, 0x0002, 0, 5)) == 5
+    assert onboard._advertised_layout(JungAdvertisement(1, 0x0002, 0, 9)) is None
+    assert onboard._advertised_layout(JungAdvertisement(1, 0x0003, 0, 1)) is None
+
+
 async def test_add_device_refusals(
     hass: HomeAssistant,
     provisioning_entry: MockConfigEntry,

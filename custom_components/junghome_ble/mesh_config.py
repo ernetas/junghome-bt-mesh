@@ -156,6 +156,7 @@ from .jhmesh.export import (
     location_ids,
     meta_rows,
     raw_model,
+    scene_infos,
     timestamp_advanced,
     write_private,
     write_private_with_backup,
@@ -2069,12 +2070,14 @@ class MeshConfigurator:
         plan: Plan,
         name: str,
         function: int | None = None,
+        layout: int | None = None,
     ) -> DeviceCount | None:
         """Record a node Home Assistant just provisioned and commissioned (review-3 N3; `onboard.async_add_device`).
 
         On the export as it is now (the gateway's, when the app changed it meanwhile): the template's entry is
         turned into the new node's (`entry_for`), then `onboarding.record` adds it with what the node answered, its
-        element groups and its app device rows (carrying `function`, the actuator function it advertised); saved and
+        element groups, its app device rows (carrying `function`, the actuator function it advertised) and the
+        app's InsertId / ButtonLayout rows (with `layout`, the button layout it advertised); saved and
         handed to the gateway like any change. Returns the app's missing-devices check of the recorded rows
         (`onboarding.missing_devices`): None when the node has the devices its product and insert call for.
         """
@@ -2088,7 +2091,7 @@ class MeshConfigurator:
             template_now = pf.cdb.node_by_addr(template.unicast)
             assert template_now is not None
             node = record_node(
-                pf, template_now, entry_for(raw), audit, plan, name, function
+                pf, template_now, entry_for(raw), audit, plan, name, function, layout
             )
             count = missing_devices(
                 pf,
@@ -3978,8 +3981,10 @@ class MeshConfigurator:
         Per load: `Scene Store` to the node's Scene Setup Server (the SIG register — what a Scene Recall
         restores), then the JUNG `Scene Action Setup Set` with the load's action on the channel element (what the
         app shows for the member; None when the state is unknown, which leaves the vendor record alone), then the
-        export's `scenes[].addresses` (the element the Store went to, as the app's library records it). A load
-        that fails stops the call; the members stored before it are recorded (apply-and-record).
+        export's `scenes[].addresses` (the element the Store went to, as the app's library records it) and the
+        member's `meta.sceneInfo` row with the action's values, the state the load settled on (`scene_infos`;
+        unverified with the app, `ProjectFile.set_scene_info`). A load that fails stops the call; the members
+        stored before it are recorded (apply-and-record).
         """
         async with self.lock:
             pf = await self._load()
@@ -4046,14 +4051,20 @@ class MeshConfigurator:
                 ),
                 applied=applied,
             )
-        # stored: the member is recorded whatever the description write does next
+        # stored: the member is recorded whatever the description write does next; the values the app shows for
+        # it (`meta.sceneInfo`, review-4 F4-6) are the stored action's once that is in, and none before
         pf.set_scene_addresses(number, [*pf.cdb.scenes.get(number, []), store.address])
+        pf.remove_scene_info(number, element.node, element.location)
         if action is not None and has_model(element, SCENE_ACTION_SETUP):
             await self._scene_action(
                 element.address,
                 number,
                 action,
                 applied_scene_stored(store.address, number),
+            )
+        if action is not None:
+            pf.set_scene_info(
+                number, element.node, element.location, scene_infos(action)
             )
         _LOGGER.info(
             "Stored scene %d on %04X (%s)",

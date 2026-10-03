@@ -1383,6 +1383,17 @@ entities' `members` follow. A blind stores its position and slat levels (an awni
 its position), a thermostat its set-point — the app's *blinds and slats position* / *target temperature* actions;
 both are unverified on hardware.
 
+Each stored member also gets the row the app shows its stored values from (`meta.sceneInfo`, review-4 F4-6): one
+per scene and app device, rewritten in place when the device is stored again, with the values the load settled on in
+the app's units — `lightness` in percent (a switch or socket: 100 on, 0 off, the only on / off the app's import reads
+back), `colorTemperature` in Kelvin (100 K steps, 2000…10000), `blindPosition` / `slatPosition` in the JUNG percent
+(0 open … 100 closed), `temperatureValue` in °C. A device stored without its state known gets no row (an old one is
+dropped), and a load the export has no app device for (`meta.devices`) none at all. The row copies the device's
+`deviceId` as the file holds it and the layout of the rows already there, so a file the app wrote stays its own but
+for the new rows. **Unverified with the app:** the shapes come from the Android app's decompile
+(`SceneInfoRepositoryImpl`, `Infos`); no app has been seen importing a row Home Assistant wrote, the iOS app's import
+of these rows not at all — try it on a spare app install first ([on-air sweep](on-air-sweep.md), section F).
+
 ### Actions: schedules
 
 JUNG loads run schedules themselves, on the time Home Assistant sends them (see [Data updates](#data-updates)):
@@ -1412,6 +1423,12 @@ response_variable: created   # {"light.kitchen_table": {"slot": 0}}
   written inactive and made active once its action is in; a sunrise / sunset schedule is preceded by Home
   Assistant's home location (latitude, longitude, elevation), sent to the node's Location Setup Server as the app
   sends the phone's. With *Response* on, answers `{entity_id: {"slot": n}}`.
+- **`update_schedule`** — target, `slot` (0–15) and the fields of `create_schedule`, all of them given again (a
+  field left out takes its default, nothing is kept from the slot): rewrites that used slot in place, as the app's
+  edit does (review-4 F4-6) — location first for a sunrise / sunset one, the schedule inactive, its action, then
+  active. A free slot, or one the app did not write, is refused. When a write fails, the slot's old schedule and
+  action are written back (a warning in the log says when even that is not taken: the slot is then left inactive).
+  Calling it again with the same fields is harmless. Unverified on air.
 - **`enable_schedule`** / **`disable_schedule`** — target and `slot` (0–15): the slot fires again / stays in place
   without firing.
 - **`delete_schedule`** — target and `slot`: frees the slot.
@@ -1419,7 +1436,7 @@ response_variable: created   # {"light.kitchen_table": {"slot": 0}}
 Every write is confirmed from the load's answer, or read back when it stays silent; a load that did not take it,
 has no free slot, or holds nothing in the slot named fails the action (a new schedule that was not fully taken is
 freed again; it goes in inactive, so it never fires with a slot's old action). Slots a central scheduler owns are
-left out, as in the app. To change a schedule, delete it and create it again.
+left out, as in the app. To change a schedule in place, `update_schedule` it.
 
 ### Actions: thresholds
 
@@ -1717,7 +1734,10 @@ Assistant to add devices* is on (it is off by default):
    the template's relay / TTL / transmit settings, element groups, device-type groups), each step's status checked;
 4. the node's configuration is read back (the audit's Gets) and recorded in the export exactly as the node answered —
    node entry, element groups, the app's device rows copied from the template (carrying the insert the device
-   advertised, not the template's) — which is handed to the gateway like any change; the entry reloads with the new
+   advertised, not the template's), and the app's per-element InsertId and button-layout rows (`actuatorExports`,
+   `buttonLayoutExports`) where the template has them, with the insert and layout the device advertised (review-4
+   F4-6; unverified with the app: shapes from the Android decompile) — which is handed to the gateway like any
+   change; the entry reloads with the new
    device. The app's check of the number of devices a node yields follows (one for a socket, room thermostat,
    gateway, wall transmitter, mini sensor or extension insert, three for a 2-gang switch or dimmer, two otherwise):
    a difference is logged and answered as `missing_devices` (`recorded`, `expected`); the device stays added.
@@ -1726,7 +1746,10 @@ Assistant to add devices* is on (it is off by default):
 way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
 only once it confirmed, every other device's wiring to it is removed — its element groups with whoever subscribed or
 published to them, publications to its elements — its elements leave the scenes, its app device rows and room-link
-rows go, and the export keeps the node entry marked `excluded` with its addresses in `networkExclusions` (nodes still
+rows go, and so do the other rows the app keeps of it (review-4 F4-6: its scene values `sceneInfo`, the legacy timer
+rows `schedulerMetaInfo` / `timer`, its `actuatorExports` / `buttonLayoutExports`, its key-scene rows; that the app's
+re-import then shows nothing of it is unverified with the app), and the export keeps the node entry marked
+`excluded` with its addresses in `networkExclusions` (nodes still
 remember its sequence numbers, so no one may reuse them before the IV index moved on twice). `force` records the
 removal of a device that does not confirm its reset (one that is gone for good). A device can take the reset and
 lose its confirmation (review-4 W4-7): without one, Home Assistant looks for the device advertising as a new device

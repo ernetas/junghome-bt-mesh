@@ -237,6 +237,42 @@ def test_devices_are_matched_by_node_and_locations() -> None:
     assert Change(("a", Row("{}"), "b"), 1, 2).where() == "a[row].b"
 
 
+def test_scene_info_rows_are_matched_by_scene_and_device() -> None:
+    """Review-4 F4-6: Home Assistant writes a row per scene and device; one it rewrote is one change of its
+    values, carried onto the app's upload next to the app's own new row of the same scene."""
+    first = {"nodeId": "00000001-0000-4000-8000-000000000001", "locationIds": [1]}
+    second = {"nodeId": "00000002-0000-4000-8000-000000000002", "locationIds": [1]}
+    base: dict[str, Any] = {
+        "meta": {
+            "sceneInfo": [
+                {"scene": 1, "deviceId": first, "infos": {"lightness": 0}},
+                {"scene": 1, "deviceId": second, "infos": {"lightness": 0}},
+            ]
+        }
+    }
+    ours = copy.deepcopy(base)
+    ours["meta"]["sceneInfo"][1]["infos"]["lightness"] = 40
+    changes = diff_documents(base, ours)
+    assert [c.path for c in changes] == [
+        (
+            "meta",
+            "sceneInfo",
+            Key((1, ("00000002000040008000000000000002", ("1",)))),
+            "infos",
+            "lightness",
+        )
+    ]
+    theirs = copy.deepcopy(base)
+    added = {"scene": 2, "deviceId": first, "infos": {"lightness": 100}}
+    theirs["meta"]["sceneInfo"].insert(0, added)
+    _applied, conflicts = apply_changes(theirs, changes)
+    assert conflicts == []
+    assert theirs["meta"]["sceneInfo"][2]["infos"] == {"lightness": 40}
+    # a row naming no scene or no device: the rows are matched whole
+    base["meta"]["sceneInfo"].append({"scene": None, "deviceId": first})
+    assert all(type(c.path[2]) is Row for c in diff_documents(base, ours))
+
+
 def test_odd_shapes() -> None:
     assert repr(MISSING) == "MISSING"
     # an array whose entries lack the identity is a set of rows; one turned into a dict takes no row

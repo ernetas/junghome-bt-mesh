@@ -2453,29 +2453,40 @@
   },
   {
    "id": "net:export:meta.actuatorexports",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/export.py::META_KEYS"
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.clone_property_rows",
+    "custom_components/junghome_ble/jhmesh/onboarding.py::record",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node",
+    "custom_components/junghome_ble/jhmesh/merge.py::IDENTITY"
    ],
    "tests": [
+    "tests/jhmesh/test_export.py::test_property_rows_cloned_for_a_node_are_the_apps_byte_for_byte",
+    "tests/jhmesh/test_export.py::test_property_rows_follow_the_template_and_the_files_address_form",
+    "tests/jhmesh/test_onboarding.py::test_the_new_node_gets_the_apps_insert_and_layout_rows",
+    "tests/jhmesh/test_remove_node.py::test_the_rows_the_app_keeps_of_the_node_go_too",
     "tests/jhmesh/test_export.py::test_round_trip_load_write_load"
    ],
-   "missing": "carried through verbatim only: never read (the InsertId is taken from meta.devices[].deviceId), never written for a node Home Assistant adds (InsertId 0x0002 is not read on air), and a removed node's rows are not dropped",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified with the app (docs/on-air-sweep.md section F, a spare app install: import a file Home Assistant wrote and look at the result before the production install sees one): the shapes come from the Android app's decompile (domain/dto/*Export.java, Gson field order), no app has been seen importing a row Home Assistant wrote, the iOS app not at all. A node Home Assistant adds gets the rows its template (the same product) has, on the same element offsets, with the insert it advertised (review-4 F4-6, brief 33's advert data); a removed node's rows go. Not read: the InsertId comes from meta.devices[].deviceId."
   },
   {
    "id": "net:export:meta.buttonlayoutexports",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/export.py::META_KEYS"
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.clone_property_rows",
+    "custom_components/junghome_ble/jhmesh/onboarding.py::record",
+    "custom_components/junghome_ble/onboard.py::_advertised_layout",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node",
+    "custom_components/junghome_ble/jhmesh/cdb.py::_note_button_layouts"
    ],
    "tests": [
+    "tests/jhmesh/test_export.py::test_property_rows_cloned_for_a_node_are_the_apps_byte_for_byte",
+    "tests/jhmesh/test_onboarding.py::test_the_new_node_gets_the_apps_insert_and_layout_rows",
+    "tests/test_onboard.py::test_the_advertised_layout_is_a_key_products_known_one",
+    "tests/jhmesh/test_remove_node.py::test_the_rows_the_app_keeps_of_the_node_go_too",
     "tests/jhmesh/test_export.py::test_round_trip_load_write_load"
    ],
-   "missing": "carried through verbatim only: ButtonLayout 0x5001 is never read, so no row for a node Home Assistant adds, and a removed node's rows are not dropped",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified with the app (docs/on-air-sweep.md section F, a spare app install: import a file Home Assistant wrote and look at the result before the production install sees one): the shapes come from the Android app's decompile (domain/dto/*Export.java, Gson field order), no app has been seen importing a row Home Assistant wrote, the iOS app not at all. A node Home Assistant adds gets the rows its template (the same product) has, on the same element offsets, with the button layout it advertised (review-4 F4-6); a removed node's rows go; read for the key layout (Node.button_layout)."
   },
   {
    "id": "net:export:meta.devices",
@@ -2518,20 +2529,32 @@
   },
   {
    "id": "net:export:meta.sceneinfo",
-   "status": "partial",
+   "status": "implemented",
    "code": [
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_scene_info",
+    "custom_components/junghome_ble/jhmesh/export.py::scene_infos",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._store_one",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_scene",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_scene_info",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_scenes"
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_scenes",
+    "custom_components/junghome_ble/jhmesh/merge.py::IDENTITY"
    ],
    "tests": [
+    "tests/jhmesh/test_export.py::test_scene_infos_are_the_values_the_app_exports",
+    "tests/jhmesh/test_export.py::test_a_scene_info_row_written_again_is_the_apps_file_byte_for_byte",
+    "tests/jhmesh/test_export.py::test_a_new_scene_info_row_is_written_in_the_apps_style",
+    "tests/jhmesh/test_export.py::test_a_scene_info_row_in_an_ios_style_file",
+    "tests/jhmesh/test_export.py::test_scene_info_rows_need_an_app_device_and_the_app_keeps_one_per_device",
+    "tests/test_mesh_config.py::test_store_scene_records_the_values_the_app_shows",
     "tests/jhmesh/test_export.py::test_remove_scene_drops_cdb_meta_and_scene_info_rows",
     "tests/jhmesh/test_export.py::test_remove_scene_info_drops_only_that_devices_row_of_that_scene",
-    "tests/test_mesh_config.py::test_leaving_a_scene_clears_the_devices_keys_that_recall_it_and_its_scene_info"
+    "tests/test_mesh_config.py::test_leaving_a_scene_clears_the_devices_keys_that_recall_it_and_its_scene_info",
+    "tests/jhmesh/test_remove_node.py::test_the_rows_the_app_keeps_of_the_node_go_too",
+    "tests/jhmesh/test_merge.py::test_scene_info_rows_are_matched_by_scene_and_device",
+    "tests/jhmesh/test_properties_export.py::test_project_file_render_parse_render_is_stable"
    ],
-   "missing": "rows are dropped with a deleted scene and with a member leaving it (remove_scene_info), but never written when Home Assistant stores a scene (the app records the captured lightness / colour temperature / blind / slat / temperature values per device), nor dropped with a removed node (exclude_node keeps them)",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified with the app (docs/on-air-sweep.md section F, a spare app install: import a file Home Assistant wrote and look at the result before the production install sees one): the shapes come from the Android app's decompile (domain/dto/*Export.java, Gson field order), no app has been seen importing a row Home Assistant wrote, the iOS app not at all. Written by store_scene (review-4 F4-6) with the values of the action the load settled on, in the app's units (lightness %, colour temperature K in 100 K steps within 2000..10000, blind / slat JUNG %, target temperature in degrees C; a switch's on / off as lightness 100 / 0, the only on / off the app's import reads back), one row per scene and app device; dropped with a deleted scene, a member leaving it, a store whose state is unknown and a removed node."
   },
   {
    "id": "net:export:meta.scenes",
@@ -2557,7 +2580,7 @@
     "tests/jhmesh/test_export.py::test_round_trip_load_write_load"
    ],
    "class": "declined",
-   "reason": "declined with the legacy SIG scheduler: docs/roadmap.md '### Step 2 — completeness (devices the user does not own yet)', step 20: 'Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.' (also '## 1. Where we are', Network features: 'the legacy SIG scheduler (deliberately not, step 20)'). The JH scheduler (net:uc:createjhschedule and siblings) is what Home Assistant offers instead; a node HA removes keeps its rows, recorded at mgmt:flow:removedevice"
+   "reason": "declined with the legacy SIG scheduler: docs/roadmap.md '### Step 2 — completeness (devices the user does not own yet)', step 20: 'Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.' (also '## 1. Where we are', Network features: 'the legacy SIG scheduler (deliberately not, step 20)'). The JH scheduler (net:uc:createjhschedule and siblings) is what Home Assistant offers instead; a node HA removes takes its rows with it (review-4 F4-6, mgmt:flow:removedevice)"
   },
   {
    "id": "net:export:meta.timer",
@@ -2569,7 +2592,7 @@
     "tests/jhmesh/test_export.py::test_round_trip_load_write_load"
    ],
    "class": "declined",
-   "reason": "declined with the legacy SIG scheduler: docs/roadmap.md '### Step 2 — completeness (devices the user does not own yet)', step 20: 'Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.' (also '## 1. Where we are', Network features: 'the legacy SIG scheduler (deliberately not, step 20)'). The JH scheduler (net:uc:createjhschedule and siblings) is what Home Assistant offers instead; a node HA removes keeps its rows, recorded at mgmt:flow:removedevice"
+   "reason": "declined with the legacy SIG scheduler: docs/roadmap.md '### Step 2 — completeness (devices the user does not own yet)', step 20: 'Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.' (also '## 1. Where we are', Network features: 'the legacy SIG scheduler (deliberately not, step 20)'). The JH scheduler (net:uc:createjhschedule and siblings) is what Home Assistant offers instead; a node HA removes takes its rows with it (review-4 F4-6, mgmt:flow:removedevice)"
   },
   {
    "id": "net:export:meta.usergroups",
@@ -3377,20 +3400,21 @@
   },
   {
    "id": "net:uc:createjhschedule",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/schedules.py::Scheduler.create",
+    "custom_components/junghome_ble/schedules.py::Scheduler.update",
     "custom_components/junghome_ble/schedules.py::Scheduler._send_location",
-    "custom_components/junghome_ble/services.py::_create_schedule"
+    "custom_components/junghome_ble/services.py::_create_schedule",
+    "custom_components/junghome_ble/services.py::_update_schedule"
    ],
    "tests": [
     "tests/test_schedules.py::test_create_list_toggle_delete",
     "tests/test_schedules.py::test_astro_schedule_sends_the_home_location",
-    "tests/test_schedules.py::test_a_new_schedule_goes_active_after_its_action"
-   ],
-   "missing": "Create is implemented; the app's Update(schedulerIndex, ...) that rewrites an existing slot in place has no action (delete + create changes the slot)",
-   "class": "build",
-   "verify": "offline"
+    "tests/test_schedules.py::test_a_new_schedule_goes_active_after_its_action",
+    "tests/test_schedules.py::test_update_rewrites_a_slot_in_place",
+    "tests/test_schedules.py::test_a_failed_update_writes_the_old_slot_back"
+   ]
   },
   {
    "id": "net:uc:createprojectfile",
@@ -4210,10 +4234,15 @@
   },
   {
    "id": "net:uc:observesceneinfosfordevice",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "meta.sceneInfo is never written or shown per device (stored values of a device's scenes / timer scenes)",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_scene_info",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._store_one"
+   ],
+   "tests": [
+    "tests/test_mesh_config.py::test_store_scene_records_the_values_the_app_shows"
+   ],
+   "missing": "meta.sceneInfo is written for every member store_scene stores (net:export:meta.sceneinfo), so the app can show the values per device after it imports the file; Home Assistant itself does not show them per device (a scene entity lists what each member does from the devices, its members attribute)",
    "class": "build",
    "verify": "offline"
   },

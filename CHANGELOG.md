@@ -184,6 +184,11 @@
   whole sockets written earlier in the same call were reported as *nothing before it was applied*. A lost link while
   writing a threshold names the socket and the threshold. `set_threshold` checks and reads every socket before it
   writes the first one.
+- `remove_device` takes every row the app keeps of the device out of the export (review-4 F4-6): its stored scene
+  values (`sceneInfo`), the legacy timer rows (`schedulerMetaInfo`, `timer`) and the insert and key-layout caches of
+  its elements (`actuatorExports`, `buttonLayoutExports`) stayed behind for an app that imports the file. A
+  carry-over onto the app's upload matches scene-value rows by scene and device (it matched them by scene alone).
+  Unverified with the app.
 
 ### Fixed — Home Assistant
 
@@ -354,6 +359,17 @@
   elements. A key in key mode *property* is asked what it sets once per connection, and one that locks a load shows
   `connection: lock` with `connection_lock_seconds` on its event entity. Unverified on air: written from the app's
   code, logged as never tried when used; `docs/on-air-sweep.md` D9 captures the app making each link.
+- `junghome_ble.update_schedule` (administrators only) rewrites a used schedule slot of a load in place, as the
+  app's edit does (review-4 F4-6), with the fields `create_schedule` takes: the schedule goes in inactive, then its
+  action, then it is made active; when a write fails the slot's old schedule and action are written back. Deleting
+  and creating again could move the schedule to another slot. Unverified on air.
+- The app sees what Home Assistant stored in a scene (review-4 F4-6): `store_scene` writes each member's values into
+  the export's `meta.sceneInfo` as the app does — brightness, colour temperature, blind and slat position, target
+  temperature in the app's units, one row per scene and device, the values the load settled on — and a device
+  `add_device` adds gets the app's insert and key-layout rows (`actuatorExports`, `buttonLayoutExports`) from its
+  template, with the insert and layout it advertised. A file the app wrote keeps its layout and key order byte for
+  byte but for the new rows. Unverified with the app: the shapes come from the Android app's decompile and no app has
+  imported such a file yet; try it on a spare app install first (`docs/on-air-sweep.md`, section F).
 
 ### CLI tools and library
 

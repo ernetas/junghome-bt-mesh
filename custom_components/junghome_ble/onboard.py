@@ -62,7 +62,13 @@ from .jhmesh import config_messages as C
 from .jhmesh.advert import parse_manufacturer_data
 from .jhmesh.cdb import canonical_uuid
 from .jhmesh.crypto import NetKeyMaterial
-from .jhmesh.devices import INSERT_FUNCTIONS, PUSH_BUTTON_PIDS, insert_function
+from .jhmesh.devices import (
+    INSERT_FUNCTIONS,
+    KEY_LAYOUT_PIDS,
+    KEY_POSITIONS,
+    PUSH_BUTTON_PIDS,
+    insert_function,
+)
 from .jhmesh.export import (
     RENAME_MAX_LENGTH,
     AllocationCrowded,
@@ -218,6 +224,13 @@ def _advertised_insert(advert: JungAdvertisement) -> int | None:
         and advert.actuator_function_id in INSERT_FUNCTIONS
     ):
         return advert.actuator_function_id
+    return None
+
+
+def _advertised_layout(advert: JungAdvertisement) -> int | None:
+    """Return the button layout a push-button or wall transmitter advertises (`devices.KEY_POSITIONS`); else None."""
+    if advert.product_id in KEY_LAYOUT_PIDS and advert.button_layout in KEY_POSITIONS:
+        return advert.button_layout
     return None
 
 
@@ -515,6 +528,7 @@ async def async_add_device(
             plan,
             name,
             _advertised_insert(advert),
+            _advertised_layout(advert),
         )
     except HomeAssistantError as err:
         raise _failure(

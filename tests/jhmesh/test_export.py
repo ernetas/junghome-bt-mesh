@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import difflib
 import json
 import os
@@ -14,6 +15,7 @@ from typing import Any
 
 import pytest
 
+from jhmesh import vendor_models as V
 from jhmesh.cdb import CDB, InvalidExport
 from jhmesh.devices import Metadata
 from jhmesh.export import (
@@ -38,6 +40,7 @@ from jhmesh.export import (
     mac_from_uuid,
     name_length,
     now_timestamp,
+    scene_infos,
     suffixed_name,
     timestamp_advanced,
     write_private,
@@ -2037,3 +2040,220 @@ def test_a_scene_number_a_key_still_recalls_is_not_handed_out_again():
     del pf.meta["keyModeSceneConfigExports"]
     assert pf.key_scene_numbers() == set()
     assert pf.free_scene_number() == 1
+
+
+# ----------------------------------------------------------------------------- app write-backs (review-4 F4-6)
+
+ANDROID_SCENE_INFO_END = """        "infos": {
+          "lightness": 0
+        }
+      }
+    ],
+    "schedulerMetaInfo": [],"""
+
+
+@pytest.mark.parametrize(
+    ("action", "infos"),
+    [
+        (V.Action(V.ACTION_SWITCH, on=True), {"lightness": 100}),
+        (V.Action(V.ACTION_SWITCH, on=False), {"lightness": 0}),
+        (V.Action(V.ACTION_LIGHTNESS, lightness=0x8000), {"lightness": 50}),
+        (V.Action(V.ACTION_LIGHTNESS, lightness=None), {"lightness": 0}),
+        (
+            V.Action(V.ACTION_LIGHTNESS_CT, lightness=0xFFFF, temperature_k=2740),
+            {"lightness": 100, "colorTemperature": 2700},
+        ),
+        (
+            V.Action(V.ACTION_LIGHTNESS_CT, lightness=0, temperature_k=1800),
+            {"lightness": 0, "colorTemperature": 2000},
+        ),
+        (
+            V.Action(V.ACTION_LIGHTNESS_CT, lightness=0, temperature_k=12000),
+            {"lightness": 0, "colorTemperature": 10000},
+        ),
+        (V.Action(V.ACTION_LIGHTNESS_CT, lightness=0), {"lightness": 0}),
+        (
+            V.Action(V.ACTION_BLINDS, blind=-32768, slat=32767),
+            {"blindPosition": 0, "slatPosition": 100},
+        ),
+        (
+            V.Action(V.ACTION_BLINDS, blind=0, slat=None),
+            {"blindPosition": 50, "slatPosition": 50},
+        ),
+        (V.Action(V.ACTION_TEMPERATURE, temperature_c=21), {"temperatureValue": 21.0}),
+        (V.Action(V.ACTION_TEMPERATURE), {}),
+        (V.NO_ACTION, {}),
+    ],
+)
+def test_scene_infos_are_the_values_the_app_exports(
+    action: V.Action, infos: dict[str, Any]
+) -> None:
+    """Percent, Kelvin in 100 K steps within the app's range, JUNG percent, °C as a double; on / off as lightness."""
+    got = scene_infos(action)
+    assert got == infos
+    assert [type(v) for v in got.values()] == [type(v) for v in infos.values()]
+
+
+def test_a_scene_info_row_written_again_is_the_apps_file_byte_for_byte() -> None:
+    """The fixture's row (scene 1, the WC mirror stored off) is what `set_scene_info` writes for it: in place, and
+    as a new row once dropped, the file renders to the app's bytes."""
+    original = ANDROID_PATH.read_text()
+    pf = ProjectFile.load(ANDROID_PATH)
+    node = pf.cdb.node_by_addr(0x0148)
+    assert node is not None
+    off = scene_infos(V.Action(V.ACTION_SWITCH, on=False))
+    assert pf.set_scene_info(1, node, 1, off)
+    assert pf.render() == original
+    pf.remove_scene_info(1, node, 1)
+    assert pf.meta["sceneInfo"] == []
+    assert pf.set_scene_info(1, node, 1, off)
+    assert pf.render() == original
+
+
+def test_a_new_scene_info_row_is_written_in_the_apps_style() -> None:
+    """A second row: the sibling's key order, the device row's `deviceId` as the file has it, int numbers."""
+    original = ANDROID_PATH.read_text()
+    pf = ProjectFile.load(ANDROID_PATH)
+    node = pf.cdb.node_by_addr(0x0232)
+    assert node is not None
+    ctl = V.Action(V.ACTION_LIGHTNESS_CT, lightness=0x8000, temperature_k=2740)
+    assert pf.set_scene_info(2, node, 1, scene_infos(ctl))
+    row = """        "infos": {
+          "lightness": 0
+        }
+      },
+      {
+        "scene": 2,
+        "deviceId": {
+          "actuatorFunctionId": 4,
+          "locationIds": [
+            1
+          ],
+          "insertType": 2,
+          "productId": 2,
+          "nodeId": "00005EFF-FE00-5323-0000-000000000000"
+        },
+        "infos": {
+          "lightness": 50,
+          "colorTemperature": 2700
+        }
+      }
+    ],
+    "schedulerMetaInfo": [],"""
+    assert ANDROID_SCENE_INFO_END in original
+    assert pf.render() == original.replace(ANDROID_SCENE_INFO_END, row)
+    # stored again with other values: the same row, rewritten in place
+    assert pf.set_scene_info(2, node, 1, {"lightness": 10})
+    assert [r["infos"] for r in pf.meta["sceneInfo"]] == [
+        {"lightness": 0},
+        {"lightness": 10},
+    ]
+
+
+def test_a_scene_info_row_in_an_ios_style_file() -> None:
+    """A file without the list (and without a sibling): `SceneInfoExport`'s key order, the device row's `deviceId` in
+    the file's own key order, the file's compact layout — the rest of it byte for byte as it was."""
+    original = SHARE_PATH.read_text()
+    pf = ProjectFile.load(SHARE_PATH)
+    node = pf.cdb.node_by_addr(0x0148)
+    assert node is not None
+    assert "sceneInfo" not in pf.meta
+    assert pf.set_scene_info(1, node, 1, {"lightness": 100, "unknown": 1})
+    row = (
+        '"sceneInfo": [{"scene": 1, "deviceId": {"actuatorFunctionId": 0, "insertType": 2, "locationIds": [1], '
+        '"nodeId": "00005EFF-FE00-5314-0000-000000000000", "productId": 1}, "infos": {"lightness": 100}}]'
+    )
+    assert '"userGroups": []}' in original
+    expected = original.replace('"userGroups": []}', f'"userGroups": [], {row}}}')
+    assert pf.render() == expected.rstrip("\n") + "\n"
+
+
+def test_scene_info_rows_need_an_app_device_and_the_app_keeps_one_per_device() -> None:
+    pf = ProjectFile.load(ANDROID_PATH)
+    actuator = pf.cdb.node_by_addr(ACTUATOR)  # no app device row in the fixture
+    assert actuator is not None
+    before = copy.deepcopy(pf.meta["sceneInfo"])
+    assert not pf.set_scene_info(1, actuator, 1, {"lightness": 100})
+    node = pf.cdb.node_by_addr(0x0148)
+    assert node is not None
+    assert not pf.set_scene_info(1, node, 2, {"lightness": 100})  # no device there
+    assert pf.meta["sceneInfo"] == before
+    row = before[0]
+    other_scene = {**row, "scene": 2}
+    button = {**row, "deviceId": {**row["deviceId"], "locationIds": [64, 68]}}
+    pf.meta["sceneInfo"] = [row, None, other_scene, copy.deepcopy(row), button]
+    assert pf.set_scene_info(1, node, 1, {"lightness": 100})
+    assert pf.meta["sceneInfo"] == [
+        {**row, "infos": {"lightness": 100}},
+        None,
+        other_scene,
+        button,
+    ]
+
+
+def test_property_rows_cloned_for_a_node_are_the_apps_byte_for_byte() -> None:
+    """The fixture's rows of 0300 (a push-button with a dimming insert, one rocker) are what its template 0148 (a
+    switch insert) gives it with the function and layout it advertises: the file renders to the app's bytes."""
+    original = ANDROID_PATH.read_text()
+    pf = ProjectFile.load(ANDROID_PATH)
+    template, node = pf.cdb.node_by_addr(0x0148), pf.cdb.node_by_addr(DIMMER)
+    assert template is not None
+    assert node is not None
+    for key in ("actuatorExports", "buttonLayoutExports"):
+        assert pf.meta[key][-1]["elementAddress"] == DIMMER
+        pf.meta[key].pop()
+    assert pf.clone_property_rows(template, node, function=2, layout=1) == 2
+    assert pf.render() == original
+
+
+def test_property_rows_follow_the_template_and_the_files_address_form() -> None:
+    pf = ProjectFile.load(ANDROID_PATH)
+    template, node = pf.cdb.node_by_addr(0x0232), pf.cdb.node_by_addr(0x0148)
+    assert template is not None
+    assert node is not None
+    pf.meta["actuatorExports"] = [
+        {
+            "actuatorId": {"actuatorFunctionId": 4, "insertType": 2},
+            "elementAddress": "0232",
+        },
+        {
+            "actuatorId": None,
+            "elementAddress": "0236",
+        },  # beyond the new node's elements
+        None,
+    ]
+    pf.meta["buttonLayoutExports"] = [
+        {"elementAddress": 0x0233},
+        {"mode": 5, "elementAddress": 0x0232},
+    ]
+    # nothing advertised: the template's values
+    assert pf.clone_property_rows(template, node) == 3
+    assert pf.meta["actuatorExports"][3:] == [
+        {
+            "actuatorId": {"actuatorFunctionId": 4, "insertType": 2},
+            "elementAddress": "0148",
+        }
+    ]
+    assert pf.meta["buttonLayoutExports"][2:] == [
+        {"elementAddress": 0x0149},  # no mode to carry: none is made up
+        {"mode": 5, "elementAddress": 0x0148},
+    ]
+    pf.meta["actuatorExports"].append({"actuatorId": None, "elementAddress": 0x0232})
+    pf.meta["buttonLayoutExports"] = [{"elementAddress": 0x0233}]
+    assert pf.clone_property_rows(template, node, function=0, layout=1) == 3
+    assert pf.meta["actuatorExports"][-2:] == [
+        {
+            "actuatorId": {"actuatorFunctionId": 0, "insertType": 2},
+            "elementAddress": "0148",
+        },
+        {
+            "actuatorId": None,
+            "elementAddress": 0x0148,
+        },  # nothing to put the function in
+    ]
+    assert pf.meta["buttonLayoutExports"][-1] == {"elementAddress": 0x0149}
+    # a file without the lists: nothing, and no list is added
+    del pf.meta["actuatorExports"], pf.meta["buttonLayoutExports"]
+    assert pf.clone_property_rows(template, node, function=0, layout=1) == 0
+    assert "actuatorExports" not in pf.meta
+    assert "buttonLayoutExports" not in pf.meta

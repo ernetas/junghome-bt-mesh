@@ -7,7 +7,7 @@ Assistant sends it (`coordinator._send_time`); nothing about them is in the expo
 
 `Scheduler` (one per hub, `scheduler`) reads and changes an element's slots and keeps what it last read; the
 *Schedules* sensor shows that (read once per link) and the `get_schedules` … `delete_schedule` actions
-(`services.py`) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
+(`services.py`; `update_schedule` rewrites a slot in place, review-4 F4-6) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
 sends the phone's: a `Generic Location Global Set Unacknowledged` to the node's Location Setup Server (the hub
 also broadcasts it after every connection, `coordinator._send_location`).
 
@@ -489,6 +489,72 @@ class Scheduler:
                 slot=str(index),
             )
         return schedule
+
+    async def update(
+        self, address: int, index: int, data: Mapping[str, Any], action: V.Action
+    ) -> Slot:
+        """Rewrite a used slot in place, as the app's edit does (`CreateJHSchedule` with `Params.Update(index, …)`).
+
+        The same writes as `create`, to slot `index`: location (astro), schedule, action. The schedule goes in
+        inactive first and is made active once the new action is in, so the slot never fires the new times with its
+        old action. When a write fails the slot's old contents are written back, if the element lets us; else it is
+        left inactive, possibly with part of the update (a warning says so). A free slot, or one the app did not write (a
+        central scheduler's or a reserved type), is the caller's mistake. Unverified on air, like every write here.
+        """
+        async with self._locks[address]:
+            old = await self._slot(address, index)
+            if old.type not in TRIGGER_OF:
+                raise _error(
+                    "schedule_empty_slot",
+                    ServiceValidationError,
+                    address=f"{address:04X}",
+                    slot=str(index),
+                )
+            old_action = (await self._get(address, index, V.SUB_ACTION)).action
+            schedule = build_schedule(index, data)
+            inactive = replace(schedule, type=TRIGGERS[data["trigger"]][False])
+            if data["trigger"] != "time":
+                await self._send_location(address)
+            try:
+                await self._write_schedule(address, inactive.encode(), inactive)
+                await self._write_action(address, index, action)
+                if schedule.type != inactive.type:
+                    await self._write_schedule(
+                        address,
+                        V.scheduler_type_set(index, schedule.type),
+                        schedule.type,
+                    )
+            except HomeAssistantError:
+                await self._restore(address, old, old_action)
+                raise
+            slot = Slot(schedule, action)
+            self._store(address, index, slot)
+            return slot
+
+    async def _restore(
+        self, address: int, schedule: V.Schedule, action: V.Action | None
+    ) -> None:
+        """Write a slot's old schedule and action back after a failed update; warn when the element does not take it.
+
+        The schedule goes back inactive until its action is in again, as in `update`.
+        """
+        index = schedule.index
+        trigger = TRIGGER_OF[schedule.type]
+        inactive = replace(schedule, type=TRIGGERS[trigger][False])
+        try:
+            await self._write_schedule(address, inactive.encode(), inactive)
+            if action is not None:
+                await self._write_action(address, index, action)
+            if schedule.type != inactive.type:
+                await self._write_schedule(
+                    address, V.scheduler_type_set(index, schedule.type), schedule.type
+                )
+        except HomeAssistantError:
+            _LOGGER.warning(
+                "%04X: slot %d was not written back; it may hold part of the update, left inactive",
+                address,
+                index,
+            )
 
     async def set_enabled(self, address: int, index: int, enabled: bool) -> None:
         """Enable or disable a used slot: a type-only Set with its trigger's active or inactive type."""

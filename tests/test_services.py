@@ -2673,6 +2673,13 @@ ADMIN_CALLS: dict[str, dict[str, Any]] = {
         "action": "on",
         "entity_id": "light.any",
     },
+    "update_schedule": {
+        "slot": 0,
+        "trigger": "time",
+        "time": "07:00",
+        "action": "on",
+        "entity_id": "light.any",
+    },
     "enable_schedule": {"slot": 0, "entity_id": "light.any"},
     "disable_schedule": {"slot": 0, "entity_id": "light.any"},
     "delete_schedule": {"slot": 0, "entity_id": "light.any"},

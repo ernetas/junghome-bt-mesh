@@ -1,7 +1,8 @@
 """Property tests (Hypothesis) of `ProjectFile`: serialise → parse → serialise is a fixed point.
 
 Any of the three fixture exports, edited by any sequence of the room / scene / device-name / subscription
-mutators (names of any Unicode text), rendered in either flavour and in any layout the apps write (indented or
+mutators (names of any Unicode text), the app write-backs of review-4 F4-6 (a member's `sceneInfo` values, a new
+node's actuator / button-layout rows, a removed node's rows dropped), rendered in either flavour and in any layout the apps write (indented or
 compact, `": "` / `" : "` / `":"`, the inner payload wrapped or not, the header keys in any order), parses back
 to the same tree, `meta` block, views and style — and renders to the very same bytes again. The in-memory views
 the mutators keep up to date (`cdb.groups`, `cdb.scenes`, the scene / room names, subscriptions) are exactly
@@ -16,7 +17,8 @@ from typing import Any
 from hypothesis import given
 from hypothesis import strategies as st
 
-from jhmesh.export import SHARE_KEYS, Layout, ProjectFile, Style
+from jhmesh import vendor_models as V
+from jhmesh.export import SHARE_KEYS, Layout, ProjectFile, Style, scene_infos
 
 from .conftest import CDB_PATH, FIXTURES
 
@@ -42,6 +44,26 @@ layouts = st.one_of(
         st.none(),
         st.sampled_from((": ", " : ", ":")),
         st.sampled_from((",", ", ")),
+    ),
+)
+actions = st.one_of(
+    st.builds(V.Action, st.just(V.ACTION_SWITCH), on=st.booleans()),
+    st.builds(
+        V.Action,
+        st.just(V.ACTION_LIGHTNESS_CT),
+        lightness=st.integers(0, V.LIGHTNESS_MAX),
+        temperature_k=st.integers(800, 20000),
+    ),
+    st.builds(
+        V.Action,
+        st.just(V.ACTION_BLINDS),
+        blind=st.integers(V.LEVEL_MIN, V.LEVEL_MAX),
+        slat=st.integers(V.LEVEL_MIN, V.LEVEL_MAX),
+    ),
+    st.builds(
+        V.Action,
+        st.just(V.ACTION_TEMPERATURE),
+        temperature_c=st.integers(500, 3000).map(lambda c: c / 100),
     ),
 )
 styles = st.builds(
@@ -75,7 +97,6 @@ def views(pf: ProjectFile) -> dict[str, Any]:
 
 def mutate(pf: ProjectFile, data: st.DataObject) -> None:
     """A few edits the integration makes, each refused edit (a duplicate name, say) simply left out."""
-    elements = [e for n in pf.cdb.nodes for e in n.elements]
     for op in data.draw(
         st.lists(
             st.sampled_from(
@@ -88,12 +109,17 @@ def mutate(pf: ProjectFile, data: st.DataObject) -> None:
                     "remove_scene",
                     "name",
                     "sub",
+                    "scene_info",
+                    "property_rows",
+                    "exclude",
                 )
             ),
             max_size=6,
         )
     ):
         rooms, scenes = sorted(pf.user_groups()), sorted(pf.cdb.scenes)
+        # the nodes of the moment: an exclusion builds the CDB anew
+        elements = [e for n in pf.cdb.nodes for e in n.elements]
         try:
             if op == "add_group":
                 pf.add_group(data.draw(names))
@@ -129,6 +155,30 @@ def mutate(pf: ProjectFile, data: st.DataObject) -> None:
                     pf.subscribe(element, model, group)
                 else:
                     pf.unsubscribe(element, model, group)
+            elif op == "scene_info" and scenes:
+                element = data.draw(st.sampled_from(elements))
+                pf.set_scene_info(
+                    data.draw(st.sampled_from(scenes)),
+                    element.node,
+                    element.location,
+                    scene_infos(data.draw(actions)),
+                )
+            elif op == "property_rows":
+                template, node = (
+                    data.draw(st.sampled_from(pf.cdb.nodes)),
+                    data.draw(st.sampled_from(pf.cdb.nodes)),
+                )
+                pf.clone_property_rows(
+                    template,
+                    node,
+                    data.draw(st.none() | st.integers(0, 9)),
+                    data.draw(st.none() | st.integers(0, 5)),
+                )
+            elif op == "exclude" and len(pf.cdb.nodes) > 1:
+                pf.exclude_node(
+                    data.draw(st.sampled_from(pf.cdb.nodes)),
+                    data.draw(st.integers(0, 9)),
+                )
         except ValueError:
             pass
 

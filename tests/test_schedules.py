@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import replace
 from datetime import time as dt_time
 from pathlib import Path
 from types import SimpleNamespace
@@ -916,6 +917,223 @@ async def test_action_that_does_not_fit(
         err.value
     )
     assert not fake_link.scheduler.schedules
+
+
+# --------------------------------------------------------------------------- update in place (review-4 F4-6)
+
+OLD = V.Schedule(3, 3, frozenset({"mon"}), (6, 0), (6, 0), 0)
+OLD_ACTION = V.Action(V.ACTION_LIGHTNESS, lightness=V.LIGHTNESS_MAX)
+
+
+async def test_update_rewrites_a_slot_in_place(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """The app's edit: the same slot, its new schedule written inactive, then the action, then made active; an
+    astro one sends the home location first. Slots around it are left alone."""
+    hub = init_integration.runtime_data
+    hub.cdb.element(LIGHT_DIMMER).models.append(S.LOCATION_SETUP_MODEL)
+    scheduler = fake_link.scheduler
+    scheduler.schedules[LIGHT_DIMMER, 3] = OLD
+    scheduler.actions[LIGHT_DIMMER, 3] = OLD_ACTION
+    scheduler.schedules[LIGHT_DIMMER, 0] = replace(OLD, index=0)
+    handle = scheduler.handle
+    sets: list[tuple[int, int | None]] = []
+
+    def recording(element: int, is_set: bool, p: bytes) -> bytes | None:
+        answer = handle(element, is_set, p)
+        if is_set:
+            held = scheduler.schedules.get((element, p[0] & 0xF))
+            sets.append((p[0] >> 4, None if held is None else held.type))
+        return answer
+
+    dimmer = light(hass)
+    with patch.object(scheduler, "handle", recording):
+        assert (
+            await call(
+                hass,
+                "update_schedule",
+                {
+                    "entity_id": dimmer,
+                    "slot": 3,
+                    "trigger": "sunset",
+                    "offset": 10,
+                    "weekdays": ["sat", "sun"],
+                    "brightness_pct": 40,
+                },
+            )
+            is None
+        )
+    assert sets == [(V.SUB_SCHEDULE, 6), (V.SUB_ACTION, 6), (V.SUB_SCHEDULE, 7)]
+    assert scheduler.schedules[LIGHT_DIMMER, 3] == V.Schedule(
+        3, 7, frozenset({"sat", "sun"}), V.UNSET_TIME, V.UNSET_TIME, 10
+    )
+    assert scheduler.actions[LIGHT_DIMMER, 3] == V.Action(
+        V.ACTION_LIGHTNESS, lightness=round(0.4 * V.LIGHTNESS_MAX)
+    )
+    assert scheduler.schedules[LIGHT_DIMMER, 0] == replace(OLD, index=0)
+    location = M.generic_location_global_set(
+        hass.config.latitude, hass.config.longitude, int(hass.config.elevation)
+    )
+    assert (OUR_ADDRESS, LIGHT_DIMMER, location) in fake_link.sent
+    cached = S.scheduler(hass, hub).slots[LIGHT_DIMMER]
+    assert [(s.index, s.enabled) for s in cached] == [(3, True)]
+    # a timed one asked for disabled stays as written, without a location
+    sent = len(fake_link.sent)
+    await call(
+        hass,
+        "update_schedule",
+        {
+            "entity_id": dimmer,
+            "slot": 3,
+            "trigger": "time",
+            "time": "21:30",
+            "action": "off",
+            "enabled": False,
+        },
+    )
+    assert scheduler.schedules[LIGHT_DIMMER, 3] == V.Schedule(
+        3, 2, frozenset(V.DAYS), (21, 30), (21, 30), 0
+    )
+    assert not [p for _s, _d, p in fake_link.sent[sent:] if p[:1] == b"\x42"]
+
+
+@pytest.mark.parametrize("schedule_type", [None, RESERVED])
+async def test_update_of_a_free_or_foreign_slot_is_refused(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    schedule_type: int | None,
+) -> None:
+    if schedule_type is not None:
+        fake_link.scheduler.schedules[LIGHT_DIMMER, 3] = replace(
+            OLD, type=schedule_type
+        )
+    with pytest.raises(ServiceValidationError) as err:
+        await call(
+            hass,
+            "update_schedule",
+            {
+                "entity_id": light(hass),
+                "slot": 3,
+                "trigger": "time",
+                "time": "07:00",
+                "action": "on",
+            },
+        )
+    assert err.value.translation_key == "schedule_empty_slot"
+    assert err.value.translation_placeholders == {"address": "0300", "slot": "3"}
+    assert (LIGHT_DIMMER, 3) not in fake_link.scheduler.actions
+
+
+async def test_a_failed_update_writes_the_old_slot_back(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_scheduler: None,
+) -> None:
+    """The new action is not taken: the slot gets its old schedule and action back, active as it was."""
+    scheduler = fake_link.scheduler
+    scheduler.schedules[LIGHT_DIMMER, 3] = OLD
+    scheduler.actions[LIGHT_DIMMER, 3] = OLD_ACTION
+    handle = scheduler.handle
+    refused: list[bytes] = []
+
+    def first_action_ignored(element: int, is_set: bool, p: bytes) -> bytes | None:
+        if is_set and p[0] >> 4 == V.SUB_ACTION and not refused:
+            refused.append(p)
+            return None
+        return handle(element, is_set, p)
+
+    with (
+        patch.object(scheduler, "handle", first_action_ignored),
+        pytest.raises(HomeAssistantError) as err,
+    ):
+        await call(
+            hass,
+            "update_schedule",
+            {
+                "entity_id": light(hass),
+                "slot": 3,
+                "trigger": "time",
+                "time": "22:00",
+                "action": "off",
+            },
+        )
+    assert err.value.translation_key == "schedule_not_applied"
+    assert scheduler.schedules[LIGHT_DIMMER, 3] == OLD
+    assert scheduler.actions[LIGHT_DIMMER, 3] == OLD_ACTION
+
+
+async def test_a_slot_that_cannot_be_written_back_is_warned_about(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_scheduler: None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The new action is not taken, and nothing is after it: the slot holds the new schedule, inactive, and a
+    warning says so."""
+    scheduler = fake_link.scheduler
+    scheduler.schedules[LIGHT_DIMMER, 3] = OLD
+    scheduler.actions[LIGHT_DIMMER, 3] = OLD_ACTION
+    scheduler.ignore_sets = {V.SUB_ACTION}
+    handle = scheduler.handle
+
+    def deaf_after_the_action(element: int, is_set: bool, p: bytes) -> bytes | None:
+        if is_set and p[0] >> 4 == V.SUB_ACTION:
+            scheduler.ignore_sets.add(V.SUB_SCHEDULE)
+        return handle(element, is_set, p)
+
+    with (
+        patch.object(scheduler, "handle", deaf_after_the_action),
+        pytest.raises(HomeAssistantError),
+    ):
+        await call(
+            hass,
+            "update_schedule",
+            {
+                "entity_id": light(hass),
+                "slot": 3,
+                "trigger": "time",
+                "time": "22:00",
+                "action": "off",
+            },
+        )
+    assert "0300: slot 3 was not written back" in caplog.text
+    assert scheduler.schedules[LIGHT_DIMMER, 3] == V.Schedule(
+        3, 2, frozenset(V.DAYS), (22, 0), (22, 0), 0
+    )
+
+
+async def test_update_checks_every_loads_action_first(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    socket = entity_id(hass, "switch", UID_SOCKET)
+    fake_link.scheduler.schedules[SOCKET, 3] = replace(OLD)
+    with pytest.raises(ServiceValidationError) as err:
+        await call(
+            hass,
+            "update_schedule",
+            {
+                "entity_id": [light(hass), socket],
+                "slot": 3,
+                "trigger": "time",
+                "time": "07:00",
+                "brightness_pct": 50,
+            },
+        )
+    assert err.value.translation_key == "schedule_action_not_applicable"
+    assert fake_link.scheduler.schedules[SOCKET, 3] == OLD
+
+
+def test_update_schema() -> None:
+    """The fields of create_schedule, checked alike, and the slot."""
+    data = {"entity_id": "light.x", "trigger": "time", "time": "07:00"}
+    with pytest.raises(vol.Invalid, match="slot"):
+        services.UPDATE_SCHEDULE_SCHEMA(data)
+    with pytest.raises(vol.Invalid, match="offset go with"):
+        services.UPDATE_SCHEDULE_SCHEMA({**data, "slot": 1, "offset": 5})
+    assert services.UPDATE_SCHEDULE_SCHEMA({**data, "slot": "15"})["slot"] == 15
 
 
 @pytest.mark.parametrize(

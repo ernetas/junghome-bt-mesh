@@ -169,13 +169,16 @@ def record(
     plan: Plan,
     name: str,
     function: int | None = None,
+    layout: int | None = None,
 ) -> Node:
     """Put the new node into the export: its entry, its element groups, its app device rows, what it holds.
 
     Every publication, subscription list and AppKey binding comes from the node's answers to the read-back
     (`audit.NodeAudit.models`), not from the plan: the file then says what the node holds even where the plan and
     the node disagree. A model whose Get went unanswered keeps the empty value `node_entry` gave it. `function`:
-    the actuator function the device advertised, for its device rows (`ProjectFile.clone_device_rows`).
+    the actuator function the device advertised, for its device rows (`ProjectFile.clone_device_rows`); with
+    `layout`, the button layout it advertised, also for the app's per-element InsertId and ButtonLayout rows
+    (`ProjectFile.clone_property_rows`, review-4 F4-6).
     """
     node = pf.add_node_entry(entry, [(g.address, g.name) for g in plan.groups])
     for row in audit.models:
@@ -188,6 +191,7 @@ def record(
         if row.node_app_keys is not None:
             model = next(m for m in element.raw_models if m["modelId"] == row.model)
             model["bind"] = list(row.node_app_keys)
+    pf.clone_property_rows(template, node, function, layout)
     if not pf.clone_device_rows(template, node, name, function):
         # a template the app has no device row for (an export without `meta`): one device on the primary element,
         # with the advertised function rather than the one guessed from the composition

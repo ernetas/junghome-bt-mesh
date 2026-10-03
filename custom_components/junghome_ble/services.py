@@ -23,7 +23,7 @@ reloaded hub's link, which connects in the background.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
@@ -145,6 +145,7 @@ SERVICE_DELETE_UNUSED_SCENES = "delete_unused_scenes"
 SERVICE_SYNC_GATEWAY = "sync_gateway"
 SERVICE_GET_SCHEDULES = "get_schedules"
 SERVICE_CREATE_SCHEDULE = "create_schedule"
+SERVICE_UPDATE_SCHEDULE = "update_schedule"
 SERVICE_ENABLE_SCHEDULE = "enable_schedule"
 SERVICE_DISABLE_SCHEDULE = "disable_schedule"
 SERVICE_DELETE_SCHEDULE = "delete_schedule"
@@ -500,6 +501,17 @@ CREATE_SCHEDULE_SCHEMA = vol.All(
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
     _schedule_trigger_fields,
 )
+# the app's edit (`Params.Update(index, …)`): a used slot rewritten with what create_schedule takes, checked alike
+UPDATE_SCHEDULE_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            vol.Required(ATTR_SLOT): vol.All(vol.Coerce(int), vol.Range(min=0, max=15)),
+            **_CREATE_SCHEDULE_FIELDS,
+        }
+    ),
+    cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    _schedule_trigger_fields,
+)
 
 
 @dataclass(frozen=True)
@@ -568,6 +580,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         (SERVICE_SYNC_GATEWAY, _sync_gateway, SYNC_GATEWAY_SCHEMA),
         (SERVICE_GET_SCHEDULES, _get_schedules, GET_SCHEDULES_SCHEMA),
         (SERVICE_CREATE_SCHEDULE, _create_schedule, CREATE_SCHEDULE_SCHEMA),
+        (SERVICE_UPDATE_SCHEDULE, _update_schedule, UPDATE_SCHEDULE_SCHEMA),
         (SERVICE_ENABLE_SCHEDULE, _enable_schedule, ENABLE_SCHEDULE_SCHEMA),
         (SERVICE_DISABLE_SCHEDULE, _disable_schedule, DISABLE_SCHEDULE_SCHEMA),
         (SERVICE_DELETE_SCHEDULE, _delete_schedule, DELETE_SCHEDULE_SCHEMA),
@@ -1586,15 +1599,23 @@ async def _get_schedules(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
     return await _on_schedules(hass, await _schedule_loads(hass, call), read)
 
 
-async def _create_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Write the schedule into each load's first free slot; answers `{entity_id: {"slot": n}}` when asked."""
-    loads = await _schedule_loads(hass, call)
+def _schedule_actions(
+    loads: dict[str, list[ScheduleLoad]], data: Mapping[str, Any]
+) -> dict[str, V.Action]:
+    """Return each load's slot action from the call's fields, every load checked before anything goes on air."""
     actions: dict[str, V.Action] = {}
     for load in (load for mine in loads.values() for load in mine):
         try:
-            actions[load.name] = schedule_action(load.kind, call.data)
+            actions[load.name] = schedule_action(load.kind, data)
         except ActionError as err:
             raise _validation(err.key, name=load.name, **err.placeholders) from err
+    return actions
+
+
+async def _create_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Write the schedule into each load's first free slot; answers `{entity_id: {"slot": n}}` when asked."""
+    loads = await _schedule_loads(hass, call)
+    actions = _schedule_actions(loads, call.data)
 
     async def free_slot(on: Scheduler, load: ScheduleLoad) -> None:
         await on.free_slot(load.address)
@@ -1627,6 +1648,23 @@ async def _create_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
             },
         ) from err
     return results if call.return_response else None
+
+
+async def _update_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Rewrite slot `slot` of each load in place (review-4 F4-6), the action checked for every load first.
+
+    A load failing after others took the change leaves nothing to warn about, unlike a create: calling again
+    writes the same slots with the same contents. Unverified on air.
+    """
+    index: int = call.data[ATTR_SLOT]
+    loads = await _schedule_loads(hass, call)
+    actions = _schedule_actions(loads, call.data)
+
+    async def update(on: Scheduler, load: ScheduleLoad) -> None:
+        await on.update(load.address, index, call.data, actions[load.name])
+
+    await _on_schedules(hass, loads, update)
+    return None
 
 
 async def _enable_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:

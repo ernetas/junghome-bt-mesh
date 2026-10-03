@@ -200,10 +200,10 @@ JUNG's code is under `de/jung/junghome/**` with class names intact; Nordic's lib
 - [x] Roadmap step 12, scenes: `create_scene` / `store_scene` / `remove_from_scene` / `rename_scene` / `delete_scene`
       actions (Scene Store + JUNG Scene Action Setup + export write-back, verified live), scene entities list what every
       member does
-- [x] Roadmap step 13, schedules: `get_schedules` / `create_schedule` / `enable_schedule` / `disable_schedule` /
-      `delete_schedule` on the loads' own JH Scheduler (time, sunrise, sunset; the home location sent for astro
-      schedules) and a *Schedules* sensor per load; metering-socket thresholds (`set_threshold` / `delete_threshold`,
-      two sensors per socket) — not yet tried on a device
+- [x] Roadmap step 13, schedules: `get_schedules` / `create_schedule` / `update_schedule` / `enable_schedule` /
+      `disable_schedule` / `delete_schedule` on the loads' own JH Scheduler (time, sunrise, sunset; the home location
+      sent for astro schedules) and a *Schedules* sensor per load; metering-socket thresholds (`set_threshold` /
+      `delete_threshold`, two sensors per socket) — not yet tried on a device
 - [x] Roadmap step 14, gateway sync: every rewritten export is handed to the gateway as the app does (`sync_gateway`
       retries), and an entry set up from the gateway fetches the gateway's export by itself when an unknown node of the
       mesh advertises — new devices appear without user action (quality scale `dynamic-devices` done)

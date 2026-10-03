@@ -349,6 +349,9 @@
     "create_schedule": {
       "service": "mdi:calendar-plus"
     },
+    "update_schedule": {
+      "service": "mdi:calendar-edit"
+    },
     "enable_schedule": {
       "service": "mdi:calendar-check"
     },

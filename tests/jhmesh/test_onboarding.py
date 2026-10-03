@@ -353,6 +353,33 @@ def test_a_template_without_rows_gets_one_with_the_advertised_function(
     assert [r["deviceId"]["actuatorFunctionId"] for r in _rows_of(pf, other)] == [4]
 
 
+def test_the_new_node_gets_the_apps_insert_and_layout_rows(cdb: CDB) -> None:
+    """Review-4 F4-6: the template's `actuatorExports` / `buttonLayoutExports` rows, on the new node's own element,
+    with the insert and the layout it advertised; without an advert, the template's."""
+    pf = ProjectFile.load(FIXTURES / "JungHome-android.json")
+    template = pf.cdb.node_by_addr(0x0148)
+    assert template is not None
+    raw = next(n for n in pf.net["nodes"] if n["unicastAddress"] == "0148")
+    entry = node_entry(raw, uuid=NEW_UUID, unicast=0x7F00, dev_key=NEW_KEY, name="Hall")
+    plan = commission.Plan(0x7F00, len(template.elements), 0x0148, [], [])
+    audit = A.NodeAudit(node=0x7F00, name="Hall", answered=True)
+    record(pf, template, entry, audit, plan, "Hall", 2, 0)
+    assert pf.meta["actuatorExports"][-1] == {
+        "actuatorId": {"actuatorFunctionId": 2, "insertType": 2},
+        "elementAddress": 0x7F00,
+    }
+    assert pf.meta["buttonLayoutExports"][-1] == {"mode": 0, "elementAddress": 0x7F00}
+    other = "11111111-2222-4333-8444-666666666666"
+    entry = node_entry(raw, uuid=other, unicast=0x7E00, dev_key=NEW_KEY, name="Den")
+    plan = commission.Plan(0x7E00, len(template.elements), 0x0148, [], [])
+    record(pf, template, entry, audit, plan, "Den")
+    assert pf.meta["actuatorExports"][-1] == {
+        "actuatorId": {"actuatorFunctionId": 0, "insertType": 2},
+        "elementAddress": 0x7E00,
+    }
+    assert pf.meta["buttonLayoutExports"][-1] == {"mode": 1, "elementAddress": 0x7E00}
+
+
 # ----------------------------------------------------------------------------- the client's part (review-4 D2, P4-6)
 
 

@@ -119,3 +119,63 @@ def test_an_element_group_known_only_from_meta_goes_too() -> None:
     pf.remove_node(node, iv_index=7)
     assert 0xC061 not in pf.cdb.groups
     assert pf.meta["elementConnectionGroups"] == [stale]
+
+
+def test_the_rows_the_app_keeps_of_the_node_go_too() -> None:
+    """Review-4 F4-6: its scene values, SIG timer rows and the InsertId / ButtonLayout caches of its elements go
+    with it; another node's rows, a row naming no node and an odd entry stay, written back in the app's bytes."""
+    path = FIXTURES / "JungHome-android.json"
+    pf = ProjectFile.load(path)
+    node = pf.cdb.node_by_addr(0x0148)
+    assert node is not None
+    mine = pf.meta["sceneInfo"][0]["deviceId"]  # the fixture's row is 0148's
+    other = {**mine, "nodeId": "00005EFF-FE00-5330-0000-000000000000"}
+    pf.meta["schedulerMetaInfo"] = [
+        {"schedulerIndex": 0, "deviceId": mine, "action": 1, "scene": 0},
+        {"schedulerIndex": 0, "deviceId": other, "action": 1, "scene": 0},
+        {"schedulerIndex": 1},
+        None,
+    ]
+    pf.meta["timer"] = [{"id": "a", "index": 0, "deviceId": mine}]
+    pf.remove_node(node, iv_index=0)
+    assert pf.meta["sceneInfo"] == []
+    assert pf.meta["schedulerMetaInfo"] == [
+        {"schedulerIndex": 0, "deviceId": other, "action": 1, "scene": 0},
+        {"schedulerIndex": 1},
+        None,
+    ]
+    assert pf.meta["timer"] == []
+    assert [r["elementAddress"] for r in pf.meta["actuatorExports"]] == [562, 768]
+    assert [r["elementAddress"] for r in pf.meta["buttonLayoutExports"]] == [562, 768]
+    # what stays is as the app wrote it: its rows of 0232, byte for byte
+    text = pf.render()
+    for row in (
+        """      {
+        "actuatorId": {
+          "actuatorFunctionId": 4,
+          "insertType": 2
+        },
+        "elementAddress": 562
+      },""",
+        """      {
+        "mode": 5,
+        "elementAddress": 562
+      },""",
+    ):
+        assert row in path.read_text()
+        assert row in text
+
+
+def test_a_file_without_those_lists_gets_none() -> None:
+    pf = ProjectFile.load(FIXTURES / "JungHome.json")
+    node = pf.cdb.node_by_addr(0x0148)
+    assert node is not None
+    pf.remove_node(node, iv_index=0)
+    for key in (
+        "sceneInfo",
+        "schedulerMetaInfo",
+        "timer",
+        "actuatorExports",
+        "buttonLayoutExports",
+    ):
+        assert key not in pf.meta

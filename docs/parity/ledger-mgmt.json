@@ -5164,18 +5164,19 @@
   },
   {
    "id": "mgmt:flow:removedevice",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
    ],
    "tests": [
     "tests/jhmesh/test_remove_node.py::test_a_removed_node_leaves_no_wiring_behind",
-    "tests/jhmesh/test_remove_node.py::test_room_links_to_it_go_and_a_file_without_key_scene_rows_is_fine"
+    "tests/jhmesh/test_remove_node.py::test_room_links_to_it_go_and_a_file_without_key_scene_rows_is_fine",
+    "tests/jhmesh/test_remove_node.py::test_the_rows_the_app_keeps_of_the_node_go_too",
+    "tests/jhmesh/test_remove_node.py::test_a_file_without_those_lists_gets_none"
    ],
-   "missing": "element groups, publications to it, scenes, device rows, room-link and key-scene rows go and the node is excluded; the node's schedulerMetaInfo / timer meta rows are not removed. To build: ProjectFile edit + test.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (a spare device, docs/on-air-sweep.md section F) and unverified with the app (the same section: re-import the file into a spare app install and check the device is gone everywhere). Element groups, publications to it, scenes, device rows, room-link and key-scene rows go, and so do its sceneInfo, schedulerMetaInfo, timer, actuatorExports and buttonLayoutExports rows (review-4 F4-6); the node is excluded."
   },
   {
    "id": "mgmt:flow:removeinvaliddevices",

@@ -2606,6 +2606,39 @@ async def test_store_scene_stores_writes_the_action_and_records_the_member(
     assert bench.reload().cdb.scenes[2] == [DALI_LOAD, SOCKET_NODE]
 
 
+async def test_store_scene_records_the_values_the_app_shows(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """Review-4 F4-6: the member's `meta.sceneInfo` row carries the stored action's values in the app's units, one
+    row per scene and device; a store whose state is unknown leaves no stale row, a load without an app device none."""
+    ctl = V.Action(V.ACTION_LIGHTNESS_CT, lightness=0x8000, temperature_k=3000)
+    assert await bench.configurator.store_scene("All off", DALI_LOAD, ctl)
+    rows = bench.reload().meta["sceneInfo"]
+    assert rows[0]["scene"] == 1  # the app's row of 0148 stays
+    assert rows[1] == {
+        "scene": 2,
+        "deviceId": {
+            "actuatorFunctionId": 4,
+            "locationIds": [1],
+            "insertType": 2,
+            "productId": 2,
+            "nodeId": "00005EFF-FE00-5323-0000-000000000000",
+        },
+        "infos": {"lightness": 50, "colorTemperature": 3000},
+    }
+    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)  # stored again
+    assert [r["infos"] for r in bench.reload().meta["sceneInfo"]] == [
+        {"lightness": 0},
+        {"lightness": 100},
+    ]
+    assert await bench.configurator.store_scene(2, DALI_LOAD, None)
+    assert [r["scene"] for r in bench.reload().meta["sceneInfo"]] == [1]
+    # the 2-channel actuator has no app device in the file: nothing to show its values on
+    scenes.registers[0x0400] = []
+    assert await bench.configurator.store_scene(2, 0x0400, ON)
+    assert [r["scene"] for r in bench.reload().meta["sceneInfo"]] == [1]
+
+
 async def test_store_scene_reads_back_when_the_node_publishes_instead_of_replying(
     tmp_path: Path, fast: FastAsyncio
 ) -> None:

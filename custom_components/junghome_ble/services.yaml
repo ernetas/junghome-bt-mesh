@@ -457,6 +457,117 @@ create_schedule:
           step: 0.5
           unit_of_measurement: "°C"
 
+update_schedule:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    slot:
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: box
+    trigger:
+      required: true
+      example: "time"
+      selector:
+        select:
+          translation_key: schedule_trigger
+          options:
+            - time
+            - sunrise
+            - sunset
+    time:
+      example: "07:30:00"
+      selector:
+        time:
+    not_before:
+      example: "06:00:00"
+      selector:
+        time:
+    not_after:
+      example: "08:00:00"
+      selector:
+        time:
+    offset:
+      example: -15
+      selector:
+        number:
+          min: -128
+          max: 127
+          unit_of_measurement: min
+          mode: box
+    weekdays:
+      example: '["mon", "tue", "wed", "thu", "fri"]'
+      selector:
+        select:
+          multiple: true
+          translation_key: weekday
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+    enabled:
+      default: true
+      selector:
+        boolean:
+    action:
+      example: "on"
+      selector:
+        select:
+          translation_key: schedule_action
+          options:
+            - "on"
+            - "off"
+    brightness_pct:
+      example: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    color_temp_kelvin:
+      example: 3000
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 2000
+          max: 10000
+    position:
+      example: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    tilt_position:
+      example: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    temperature:
+      example: 21
+      selector:
+        number:
+          min: 5
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+
 enable_schedule:
   target:
     entity:

@@ -28,12 +28,13 @@ import copy
 import hashlib
 import json
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+from . import vendor_models as V
 from .cdb import (
     CDB,
     Element,
@@ -127,6 +128,18 @@ ACTUATOR_SWITCH, ACTUATOR_2G_SWITCH, ACTUATOR_DIMMING, ACTUATOR_2G_DIMMING = 0, 
 ACTUATOR_TW_DIMMING, ACTUATOR_BLIND, ACTUATOR_NOT_AVAILABLE = 4, 5, 7
 ACTUATOR_RTR, ACTUATOR_GATEWAY = 8, 9
 INSERT_NONE, INSERT_GENERIC = 1, 2
+# the `infos` of a `meta.sceneInfo` row, in the order of `Infos`' fields (`domain/dto/Infos.java`; Gson writes them
+# so and leaves a null one out), and the colour temperatures the app's export can hold (`p097i9/d.java`)
+SCENE_INFO_FIELDS = (
+    "blindPosition",
+    "slatPosition",
+    "lightness",
+    "colorTemperature",
+    "temperatureValue",
+)
+SCENE_INFO_KELVIN = (2000, 10000)
+# the app's per-element caches of a node's InsertId and ButtonLayout (`MeshPropertyExport`), one row per element
+PROPERTY_ROW_KEYS = ("actuatorExports", "buttonLayoutExports")
 
 _EUI64 = re.compile(
     r"^([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})FF-FE([0-9A-F]{2})-([0-9A-F]{2})([0-9A-F]{2})-0000-000000000000$"
@@ -467,6 +480,55 @@ def guess_actuator_function(node: Node) -> int:  # noqa: PLR0911  # one branch p
 def guess_insert_type(node: Node) -> int:
     """2 GenericInsert for push-buttons, 1 NoInsert for sockets / mini actuators / the gateway."""
     return INSERT_GENERIC if node.pid in PUSH_BUTTON_PIDS else INSERT_NONE
+
+
+def scene_infos(action: V.Action) -> dict[str, int | float]:
+    """Return the `infos` of the `meta.sceneInfo` row of a load stored in a scene with `action`.
+
+    The values the app captures from a device as it stores it (`M7/i.java`), converted as its export does
+    (`SceneInfoRepositoryImpl.java`): lightness in percent, colour temperature in Kelvin (100 K steps, 2000..10000),
+    a blind's and its slats' position in the JUNG percent (0 open .. 100 closed, as the cover converts a level),
+    a target temperature in °C. A switch insert or a socket holds no lightness in the app; its on / off goes in
+    as lightness 100 / 0, the one value the app's import turns back into on / off (`lightness > 0`). An action
+    without values (none, an unknown code) gives no field.
+    """
+    out: dict[str, int | float] = {}
+    if action.code == V.ACTION_SWITCH:
+        out["lightness"] = 100 if action.on else 0
+    elif action.code in (V.ACTION_LIGHTNESS, V.ACTION_LIGHTNESS_CT):
+        out["lightness"] = round((action.lightness or 0) * 100 / V.LIGHTNESS_MAX)
+        if action.code == V.ACTION_LIGHTNESS_CT and action.temperature_k is not None:
+            low, high = SCENE_INFO_KELVIN
+            out["colorTemperature"] = max(
+                low, min(high, round(action.temperature_k / 100) * 100)
+            )
+    elif action.code == V.ACTION_BLINDS:
+        out["blindPosition"] = _jung_percent(action.blind)
+        out["slatPosition"] = _jung_percent(action.slat)
+    elif action.code == V.ACTION_TEMPERATURE and action.temperature_c is not None:
+        out["temperatureValue"] = float(action.temperature_c)
+    return out
+
+
+def _jung_percent(level: int | None) -> int:
+    """Return the JUNG percent (0 open .. 100 closed) of a Generic Level, rounded as `cover.level_to_closedness`."""
+    span = V.LEVEL_MAX - V.LEVEL_MIN
+    return max(0, min(100, round(((level or 0) - V.LEVEL_MIN) * 100 / span)))
+
+
+def row_node(row: Any) -> str | None:
+    """Return the canonical node UUID a `meta` row's `deviceId` names; None for a row without one."""
+    did = row.get("deviceId") if isinstance(row, dict) else None
+    if not isinstance(did, dict) or did.get("nodeId") is None:
+        return None
+    return canonical_uuid(str(did["nodeId"]))
+
+
+def names_device(row: Any, node: Node, location: int) -> bool:
+    """Whether a `meta` row's `deviceId` is the app device of `node` that has `location` (one of its `locationIds`)."""
+    return row_node(row) == node.uuid and location in (
+        location_ids(row["deviceId"].get("locationIds")) or []
+    )
 
 
 def _ordered_like(template: Any, entry: dict[str, Any]) -> dict[str, Any]:
@@ -1291,20 +1353,61 @@ class ProjectFile:
         """
         if "sceneInfo" not in self.meta:
             return
-
-        def names_device(row: dict[str, Any]) -> bool:
-            did = row.get("deviceId")
-            return (
-                isinstance(did, dict)
-                and canonical_uuid(str(did.get("nodeId", ""))) == node.uuid
-                and location in (location_ids(did.get("locationIds")) or [])
-            )
-
         self.meta["sceneInfo"] = [
             row
             for row in self._meta("sceneInfo")
-            if keeps_row(row, "scene", number) or not names_device(row)
+            if keeps_row(row, "scene", number) or not names_device(row, node, location)
         ]
+
+    def set_scene_info(
+        self, number: int, node: Node, location: int, infos: Mapping[str, int | float]
+    ) -> bool:
+        """Record the values scene `number` holds for the app device of `node` that has `location` (`meta.sceneInfo`).
+
+        What the app's *store device in scene* writes last (`SceneInfoRepositoryImpl.saveInfoFor`): one row per
+        scene and device, replaced in place when there is one. The row's `deviceId` is a copy of the device row's
+        (its key order and values as the file has them), `infos` holds the fields given (`scene_infos`) in the order
+        of `Infos` or of a sibling row's, and a new row takes a sibling's key order, else `SceneInfoExport`'s
+        (`scene`, `deviceId`, `infos`) with the scene number an int as Gson writes it. False, and nothing written,
+        when the node has no app device with that location: the app would show the row on no device. The shapes
+        come from the Android app's decompile; unverified with the app: no app has been seen importing a row Home
+        Assistant wrote, and the iOS app's import of these rows is not known at all.
+        """
+        device = next(
+            (
+                d
+                for d in self.device_rows(node)
+                if location in (location_ids(d["deviceId"].get("locationIds")) or [])
+            ),
+            None,
+        )
+        if device is None:
+            return False
+        rows = self._meta("sceneInfo")
+        template = _first(meta_rows(rows))
+        fields = {k: infos[k] for k in SCENE_INFO_FIELDS if k in infos}
+        row = _ordered_like(
+            template,
+            {
+                "scene": number,
+                "deviceId": copy.deepcopy(device["deviceId"]),
+                "infos": _ordered_like(template and template.get("infos"), fields),
+            },
+        )
+        mine = [
+            i
+            for i, r in enumerate(rows)
+            if not keeps_row(r, "scene", number) and names_device(r, node, location)
+        ]
+        if not mine:
+            rows.append(row)
+            return True
+        rows[mine[0]] = row
+        for i in reversed(
+            mine[1:]
+        ):  # a second row of the same device: the app keeps one
+            del rows[i]
+        return True
 
     # ------------------------------------------------------------------ device names (§8.3 row 8)
     def device_names(self) -> list[str]:
@@ -1420,7 +1523,7 @@ class ProjectFile:
 
         Its element groups go (`remove_group`: whoever subscribed or published to them is unwired), and so does any
         other node's publication to one of its elements; its elements leave every scene, its app device rows, room
-        link rows and key scene rows go. The node entry stays, marked `excluded`, and its addresses join
+        link rows, key scene rows and every other row the app keeps of it go (`exclude_node`). The node entry stays, marked `excluded`, and its addresses join
         `networkExclusions` under the current IV index (the Nordic library the app uses, `BaseMeshNetwork.java`):
         nodes still remember its sequence numbers, so nobody may take them before the IV index moved on twice.
         Edits addressed to the node itself are left out of the list: it has been reset. The part about the node
@@ -1450,8 +1553,11 @@ class ProjectFile:
         """Record `node` as reset and out of the network, leaving every other node's wiring to it as the file has it.
 
         The part of `remove_node` that holds once the node confirmed its reset, whatever the others still hold:
-        its elements leave every scene, its app device rows, room link rows and key scene rows go, the entry is
-        marked `excluded` and its addresses join `networkExclusions` under `iv_index`. The record of a removal
+        its elements leave every scene, its app device rows, room link rows and key scene rows go, and so do the
+        rows the app keeps per device or element of it (review-4 F4-6: `sceneInfo`, `schedulerMetaInfo`, `timer`,
+        `actuatorExports`, `buttonLayoutExports`; a list the file lacks stays absent); the entry is marked
+        `excluded` and its addresses join `networkExclusions` under `iv_index`. That a re-import of such a file
+        leaves the app no row of the node is unverified with the app. The record of a removal
         whose unwiring stopped part-way is this plus the edits the others accepted; the element groups and
         publications left point at a node that no longer answers, and stay listed so nothing new reuses them.
         """
@@ -1474,14 +1580,10 @@ class ProjectFile:
                 dev["cachedGroupConnectionMetadata"] = [
                     c for c in cached if as_int(c.get("elementAddress")) not in own
                 ]
-        if "keyModeSceneConfigExports" in self.meta:
-            self.meta["keyModeSceneConfigExports"] = [
-                row
-                for row in self._meta("keyModeSceneConfigExports")
-                if not (
-                    isinstance(row, dict) and as_int(row.get("elementAddress")) in own
-                )
-            ]
+        for key in ("sceneInfo", "schedulerMetaInfo", "timer"):
+            self._drop_rows(key, lambda row: row_node(row) == node.uuid)
+        for key in ("keyModeSceneConfigExports", *PROPERTY_ROW_KEYS):
+            self._drop_rows(key, lambda row: as_int(row.get("elementAddress")) in own)
         entry = next(
             n
             for n in self.net["nodes"]
@@ -1502,6 +1604,13 @@ class ProjectFile:
             exclusions.append(row)
         row["addresses"] += [hexaddr(a) for a in sorted(own)]
         self.cdb = CDB.from_network(self.net, self.meta)
+
+    def _drop_rows(self, key: str, drop: Callable[[dict[str, Any]], bool]) -> None:
+        """Remove the object rows of `meta[key]` that `drop` picks; a list the file lacks is not added."""
+        if key in self.meta:
+            self.meta[key] = [
+                r for r in self._meta(key) if not (isinstance(r, dict) and drop(r))
+            ]
 
     def device_rows(self, node: Node) -> list[dict[str, Any]]:
         """Return the app device rows (`meta.devices`) of `node`: the app's logical devices of it."""
@@ -1536,6 +1645,46 @@ class ProjectFile:
                 clone["cachedGroupConnectionMetadata"] = []
             self._meta("devices").append(clone)
         return len(rows)
+
+    def clone_property_rows(
+        self,
+        template: Node,
+        node: Node,
+        function: int | None = None,
+        layout: int | None = None,
+    ) -> int:
+        """Give `node` the `actuatorExports` / `buttonLayoutExports` rows `template` has, on the same elements.
+
+        The app reads a node's InsertId (`0x0002`: actuator function, insert type) and, for keys, its ButtonLayout
+        (`0x5001`) when it adds it, keeps them per element and exports them (`MeshPropertyExport`). A node Home
+        Assistant adds gets the rows the file holds for its template, the same product, at the same element offsets
+        (review-4 F4-6), with what the node advertised (`function`, `layout`: brief 33's advert data) in place of
+        the template's values. A template without such rows gives none: the app keeps none for it, or the file is
+        one that leaves the list out. Returns how many rows were added. The shapes come from the Android app's
+        decompile; unverified with the app: no app has been seen importing a row Home Assistant wrote.
+        """
+        offsets = {e.address: i for i, e in enumerate(template.elements)}
+        added = 0
+        for key in PROPERTY_ROW_KEYS:
+            if key not in self.meta:
+                continue
+            rows = self._meta(key)
+            for row in meta_rows(list(rows)):
+                index = offsets.get(as_int(row.get("elementAddress")) or -1)
+                if index is None or index >= len(node.elements):
+                    continue
+                clone = copy.deepcopy(row)
+                clone["elementAddress"] = _addr_like(
+                    row.get("elementAddress"), node.elements[index].address
+                )
+                actuator = clone.get("actuatorId")
+                if function is not None and isinstance(actuator, dict):
+                    actuator["actuatorFunctionId"] = function
+                if layout is not None and "mode" in clone:
+                    clone["mode"] = layout
+                rows.append(clone)
+                added += 1
+        return added
 
     # ------------------------------------------------------------------ serialisation
     def touch(self, now: datetime | None = None) -> str:

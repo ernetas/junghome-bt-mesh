@@ -1881,6 +1881,68 @@
         }
       }
     },
+    "update_schedule": {
+      "name": "Update schedule",
+      "description": "Rewrites a used schedule slot of each targeted JUNG HOME load in place, as the app's edit does, with the fields Create schedule takes: give them all again, nothing left out is kept from the slot. A sunrise or sunset schedule first sends the node Home Assistant's home location; when a write fails, the slot's old schedule is written back. Unverified on air. Administrators only.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Number of the schedule slot (0–15) to rewrite, as Get schedules and the Schedules sensor list it."
+        },
+        "trigger": {
+          "name": "Trigger",
+          "description": "When the schedule fires: at a time of day, or at sunrise or sunset."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Time of day of a time schedule."
+        },
+        "not_before": {
+          "name": "Not before",
+          "description": "A sunrise or sunset schedule fires no earlier than this time (open when left out)."
+        },
+        "not_after": {
+          "name": "Not after",
+          "description": "A sunrise or sunset schedule fires no later than this time (open when left out)."
+        },
+        "offset": {
+          "name": "Offset",
+          "description": "Minutes before (negative) or after sunrise or sunset."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Days the schedule fires on; every day when left out."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Whether the schedule fires; a disabled one waits for Enable schedule."
+        },
+        "action": {
+          "name": "Action",
+          "description": "Switch a light or socket on or off."
+        },
+        "brightness_pct": {
+          "name": "Brightness",
+          "description": "Brightness a dimmer switches on to (the action is then on)."
+        },
+        "color_temp_kelvin": {
+          "name": "Color temperature",
+          "description": "Colour temperature of a tunable-white light, in 100 K steps."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Position a blind moves to: 0 closed, 100 open."
+        },
+        "tilt_position": {
+          "name": "Tilt position",
+          "description": "Slat position of a blind; the blind position when left out."
+        },
+        "temperature": {
+          "name": "Temperature",
+          "description": "Target temperature of a room thermostat."
+        }
+      }
+    },
     "enable_schedule": {
       "name": "Enable schedule",
       "description": "Lets a schedule slot of JUNG HOME loads fire again. Administrators only.",
