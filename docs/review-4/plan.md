@@ -460,6 +460,13 @@ Dependencies (hard unless marked *soft*):
   the load never changed. **Fixed:** a Status answers an acknowledged load Set only when it shows the requested state
   (present, or target while transitioning, within the load's step) or no other request waits for it; the Set is sent
   again otherwise. The soak fails on the case for seeds 27, 4, 5 and 14; unverified on air.
+- **Wave 7 (briefs 28–29) and D32: done.** D23 configuration changes followed in place, a reload only as the fallback
+  (28, decision M5 taken as the full option); Mesh 1.1 private beacons and identities, the specification's sample
+  data pinned (29); D32 a Status that does not show a Set's state no longer confirms it.
+- **Wave 8 (briefs 30–33): done.** The on-air sweep checklist `docs/on-air-sweep.md` and `tools/on_air.py`, which
+  lists any "unverified on air" marker the checklist misses (30); transitions built and off until the probe in the
+  checklist's B8 (31); `update_entity` reads the device, config values re-read per link (32); inserts and key layouts
+  from the adverts, also kept when the export is followed in place (33).
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -467,4 +474,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 28–67 are TODO.
+Every other finding, every low item and briefs 34–67 are TODO; the on-air sweep is the maintainer's.
