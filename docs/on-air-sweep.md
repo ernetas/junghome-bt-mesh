@@ -112,6 +112,8 @@ pass removed the markers of the checks that passed.
 | [B5](#b5--holds-of-a-rocker-wired-to-a-dimmer) | Holds of a rocker wired to a dimmer | such a rocker | dimmer level | **yes** |
 | [B6](#b6--link-loss-grace-re-send-short-links) | Link-loss grace, re-send, short-link penalty | ≥ 2 proxy nodes | nothing kept | — |
 | [B7](#b7--a-plan-to-an-unreachable-device-is-refused) | Plan refused for an unreachable device | a light on its own breaker | power of one light | — |
+| [B8](#b8--transitions-probe-f4-1) | Transitions probe: which loads fade | DALI, dimmer, switch insert, a scene | load states | **yes** |
+| [B9](#b9--homeassistantupdate_entity-reads-the-device) | *update entity* reads the device | a light, a push-button, the app | a setting, restored | — |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
 | [C3](#c3--lock-function-of-a-load-0x0009) | Lock function of a light (`0x0009`) | a light + its key | timed lock | **yes** |
@@ -123,6 +125,7 @@ pass removed the markers of the checks that passed.
 | [D4](#d4--delete_unused_scenes-and-an-app-scene) | `delete_unused_scenes` and an app scene | the app | app scene, removed | — |
 | [D5](#d5--sensor-values-for-iot-systems) | *Sensor values for IoT systems* | metering socket | publication, restored | — |
 | [D6](#d6--both-sides-changed-merge-optional) | Both-changed merge (optional) | gateway, the app, a firewall rule | room names, restored | — |
+| [D7](#d7--configuration-changes-without-a-reload) | Configuration changes without a reload | a light, a key | a room and a key, undone | — |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -303,6 +306,43 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 - **Pass:** the action fails at once with *Not sent: … count as unreachable*, naming the device; the export is
   unchanged (no reload).
 - **Markers:** `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._send`.
+
+### B8 · Transitions probe (F4-1)
+
+- **Checks:** review-4 F4-1 — which JUNG loads fade when a Set carries a transition time (neither the app nor the
+  gateway ever sends one). Home Assistant's transition support is built but switched off until this runs:
+  `light.TRANSITION_KINDS` is empty and `scene.SCENE_TRANSITIONS` is off (`docs/hidden-features.md` §11).
+- **Needs:** the DALI tunable-white light, a dimmer insert, a switch insert, a harmless scene; a person watching the
+  light. **Safety:** the loads change; set them back.
+- **Do:** with `tools/mesh_poc.py listen` running, on each of the three loads:
+  `tools/mesh_poc.py lightness <element> 6553 --transition 3`, then `... lightness <element> 65535 --transition 3`;
+  `tools/mesh_poc.py ctl <element> 65535 2700 --transition 3` (DALI only); `tools/mesh_poc.py set <element> off
+  --transition 3`, then `... on --transition 3`; `tools/mesh_poc.py scene FFFF <scene> --transition 3`. Only if a
+  Lightness transition is ignored: `tools/mesh_poc.py delta <element> -16384 --transition 3`.
+- **Capture:** each status: does it carry `target=… remaining=…`, does a final status follow at the end, or is the
+  Set unanswered (a timeout means that kind stays out).
+- **Pass:** per kind, the light fades over about 3 s and the statuses show the target and remaining time. Write the
+  results into `docs/hidden-features.md` §11, then list the kinds that fade in `TRANSITION_KINDS` (and turn
+  `SCENE_TRANSITIONS` on if the scene faded). Key-scene transitions (`0x5002`) stay a separate decision.
+- **Markers:** `custom_components/junghome_ble/light.py::TRANSITION_KINDS`,
+  `custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub._reread_after_transition`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.central_command`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl_temperature`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene`, `msg:op:8202`, `msg:op:824c`,
+  `msg:op:825e`, `msg:op:8264`, `msg:op:8242`, `msg:op:8243`.
+
+### B9 · `homeassistant.update_entity` reads the device
+
+- **Checks:** review-4 H4-10 / F4-7 — *update entity* sends a fresh Get (a light's state, a parameter's property)
+  instead of showing the cached value; at most one request per value and device every 2 s.
+- **Needs:** a light, a push-button, the app. **Safety:** a setting changes in the app and is set back.
+- **Do:** change a push-button's LED colour (or a light's run-on time) in the app; in Home Assistant run
+  `homeassistant.update_entity` on that entity; then on a light whose state you changed with its own key.
+- **Capture:** `--src <ha>`: one Get per update, none for a second update within 2 s.
+- **Pass:** the entity shows the app's new value at once; the light its real state. Set the value back.
+- **Markers:** none of its own on these loads (the code is marked only for the hardware in [F](#f--not-checkable-here)).
 
 ## C · Settings, changed and set back
 
@@ -525,6 +565,21 @@ starting state restored; the app shows Home Assistant's changes only once it tak
 - **Markers:** `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._adopt`,
   `custom_components/junghome_ble/jhmesh/merge.py::<module>`.
 
+### D7 · Configuration changes without a reload
+
+- **Checks:** review-4 D23 / H4-1 — `create_room`, `set_room`, `rename_room`, `assign_key` and the scene actions update
+  the running hub in place: no entity passes through `unavailable` / `unknown`, the Bluetooth link stays up, nothing
+  is read over the mesh again.
+- **Needs:** a light, a push-button key. **Safety:** a room and a key's wiring change; undo both in the sitting.
+- **Do:** `junghome_ble.create_room` (a throw-away name, `create: true` where asked), `set_room` a light into it,
+  `rename_room` it, `assign_key` a rocker to that light; then undo: `set_room` the light back, restore the key's old
+  connection, `delete_room` the throw-away room.
+- **Capture:** the light's history in Home Assistant, the *Link state* sensor (enable it if needed) and
+  `--src <ha>`.
+- **Pass:** the light's history shows no gap or `unavailable`; the link does not drop; only the Config messages of the
+  change go out, no wave of state Gets. A change that cannot be followed in place reloads (debug log: the reason).
+- **Markers:** `custom_components/junghome_ble/model_update.py::<module>`.
+
 ## E · Credentials, sequence numbers and keys
 
 **Not fully reversible.** Each item says what stays changed. Leave them for last, and skip any you would rather not
@@ -591,9 +646,9 @@ spend.
 | Why | Markers |
 |---|---|
 | **Energy puck** (none): its meter, counters, reset, energy history | `custom_components/junghome_ble/jhmesh/devices.py::meter_element`, `custom_components/junghome_ble/jhmesh/devices.py::Light`, `custom_components/junghome_ble/coordinator.py::SENSOR_READINGS`, `custom_components/junghome_ble/coordinator.py::PROPERTY_POWER_ON_TIME`, `custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption`, `custom_components/junghome_ble/button.py::<module>`, `custom_components/junghome_ble/energy_history.py::<module>`, `custom_components/junghome_ble/sensor.py::<module>` (puck part) |
-| **Blinds** (none): cover, lock function select, wind alarm, reference run, *All blinds*, scenes | `custom_components/junghome_ble/cover.py::<module>`, `custom_components/junghome_ble/cover.py::JungHomeAllBlinds`, `custom_components/junghome_ble/const.py::COVER_LEVEL_OPEN`, `custom_components/junghome_ble/select.py::JungHomeLockFunction`, `custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm`, `custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun`, `custom_components/junghome_ble/services.py::_store_scene` |
-| **Room thermostats** (none): climate, window, *All thermostats*, key lock bits 3 / 4 | `custom_components/junghome_ble/climate.py::<module>`, `custom_components/junghome_ble/climate.py::JungHomeAllThermostats`, `custom_components/junghome_ble/binary_sensor.py::JungHomeRtrWindow`, `ui:vm:roomtemperatureviewmodel.changemode` |
-| **Detectors** (none): walking test, illuminance, continuous on / off | `custom_components/junghome_ble/switch.py::JungHomeWalkingTest`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance`, `custom_components/junghome_ble/sensor.py::JungHomeForcedOff`, `custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE` |
+| **Blinds** (none): cover, lock function select, wind alarm, reference run, *All blinds*, scenes, *update entity* | `custom_components/junghome_ble/cover.py::JungHomeCover._update_read`, `custom_components/junghome_ble/cover.py::<module>`, `custom_components/junghome_ble/cover.py::JungHomeAllBlinds`, `custom_components/junghome_ble/const.py::COVER_LEVEL_OPEN`, `custom_components/junghome_ble/select.py::JungHomeLockFunction`, `custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm`, `custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun`, `custom_components/junghome_ble/services.py::_store_scene` |
+| **Room thermostats** (none): climate, window, *All thermostats*, key lock bits 3 / 4, *update entity* | `custom_components/junghome_ble/climate.py::JungHomeClimate._update_read`, `custom_components/junghome_ble/climate.py::<module>`, `custom_components/junghome_ble/climate.py::JungHomeAllThermostats`, `custom_components/junghome_ble/binary_sensor.py::JungHomeRtrWindow`, `ui:vm:roomtemperatureviewmodel.changemode` |
+| **Detectors** (none): walking test, illuminance, continuous on / off, *update entity* | `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now`, `custom_components/junghome_ble/switch.py::JungHomeWalkingTest`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance`, `custom_components/junghome_ble/sensor.py::JungHomeForcedOff`, `custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE` |
 | **Battery nodes** (none): keep-awake, how long a transmitter stays awake | `custom_components/junghome_ble/keep_awake.py::<module>` |
 | **Mesh 1.1 privacy**: the installation's devices do not use it | `custom_components/junghome_ble/config_flow.py::proxy_in_range`, `custom_components/junghome_ble/jhmesh/client.py::classify_proxy_advert`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon` |
 | **A spare device** (none): `add_device`, `remove_device`, `reset_pending_device`, the vault, its key refresh (D2, D11, D15, D20, W4-7) | `custom_components/junghome_ble/onboard.py::<module>`, `custom_components/junghome_ble/onboard.py::_keep_key`, `custom_components/junghome_ble/onboard.py::async_reset_pending_device`, `custom_components/junghome_ble/services.py::_reset_pending_device`, `custom_components/junghome_ble/jhmesh/provisioning.py::<module>`, `custom_components/junghome_ble/jhmesh/provisioning.py::provision`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_unconfirmed`, `custom_components/junghome_ble/vault_refresh.py::<module>`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config`, `custom_components/junghome_ble/strings.json::issues.pending_device.description`, `custom_components/junghome_ble/strings.json::issues.vault_unwritable.description`, `custom_components/junghome_ble/strings.json::issues.vault_key_refresh_lagging.description`, `custom_components/junghome_ble/strings.json::services.reset_pending_device.description`, `msg:op:8016`, `msg:op:8045`, `net:alloc:element-group` |
