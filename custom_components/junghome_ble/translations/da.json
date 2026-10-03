@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME via Bluetooth",
+        "description": "Home Assistant tilslutter sig dit JUNG HOME-mesh direkte via Bluetooth ved hjælp af netværkseksporten fra JUNG HOME-appen, som indeholder mesh-nøglerne. Vælg, hvor eksporten kommer fra.",
+        "menu_options": {
+          "gateway": "Hent den fra JUNG HOME Gateway",
+          "upload": "Upload appens eksportfil",
+          "path": "Brug en fil på Home Assistant-værten"
+        },
+        "data": {
+          "cdb_path": "Mesh-eksportfil",
+          "metadata_dir": "Appens metadatamappe",
+          "unicast": "Vores unicast-adresse"
+        },
+        "data_description": {
+          "cdb_path": "Absolut sti på Home Assistant-værten, f.eks. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valgfrit, kun til `MeshNetwork.json` fra en iOS-sikkerhedskopi: appens mappe `Application Support` med `device_metadata.json` og `scene_metadata.json`, så entiteterne får de navne, du har givet dem i appen. `JungHome.json` indeholder allerede navnene.",
+          "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Er dette din JUNG HOME-installation?",
+        "description": "En Bluetooth Mesh-proxy fra netværket {network_id} er inden for rækkevidde. Home Assistant tilbyder alle Bluetooth Mesh-netværk, den ser, også fra andre mærker — for eksempel naboens lamper. Fortsæt kun, hvis dette er din JUNG HOME-installation; derefter bliver du bedt om appens mesh-eksport."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME Gateway fundet",
+        "description": "En JUNG HOME Gateway melder sig på {host}. Fortsæt for at hente JUNG HOME-appens netværkseksport fra den: Du indtaster derefter dens netværksnøglekodeord eller godkender en adgangsanmodning i appen. Ligesom for en adresse, du selv indtaster, fastgøres dens certifikat ved første kontakt, før der sendes noget. Opsætning fra den fundne gateway er endnu ikke afprøvet på rigtige enheder."
+      },
+      "gateway": {
+        "title": "Hent eksporten fra JUNG HOME Gateway",
+        "description": "Gatewayen har en kopi af appens netværkseksport. Indtast dens adresse og enten dens netværksnøglekodeord (fra JUNG HOME-appen) for øjeblikkelig adgang, eller lad kodeordet være tomt, og godkend adgangsanmodningen i appen, når du fortsætter (Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger, inden for tre minutter; den vises som “{user_name}”). Eksporten gemmes under `junghome_ble/` i Home Assistants konfigurationsmappe. Den indeholder alle mesh-nøgler ligesom eksporten fra telefonen — hold sikkerhedskopier af den mappe private.",
+        "data": {
+          "gateway_host": "Gateway-adresse",
+          "gateway_password": "Netværksnøglekodeord"
+        },
+        "data_description": {
+          "gateway_host": "IP-adresse eller værtsnavn på JUNG HOME Gateway. En gateway, som Home Assistant har fundet på netværket, er allerede udfyldt. Ellers virker standardværdien `junghome.local` på mange netværk, eller brug dens IP-adresse (vises i appen under Indstillinger → Gateway).",
+          "gateway_password": "Valgfrit. Med det giver gatewayen adgang med det samme; uden det godkender du anmodningen i appen."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanceret",
+            "description": "Behold standardværdien, medmindre en anden Home Assistant eller repositoriets kommandolinjeværktøjer også tilslutter sig denne installation: hver af dem skal have sin egen adresse.",
+            "data": {
+              "unicast": "Vores unicast-adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Venter på godkendelse i JUNG HOME-appen"
+      },
+      "gateway_refetch": {
+        "title": "Hent eksporten igen",
+        "description": "Henter den aktuelle netværkseksport fra gatewayen på {host} med den gemte adgang. Hvis gatewayen ikke længere accepterer den, bliver du bedt om at godkende en ny adgangsanmodning i appen.",
+        "sections": {
+          "advanced": {
+            "name": "Avanceret",
+            "description": "Behold standardværdien, medmindre en anden Home Assistant eller repositoriets kommandolinjeværktøjer også tilslutter sig denne installation: hver af dem skal have sin egen adresse.",
+            "data": {
+              "unicast": "Vores unicast-adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Upload appens eksportfil",
+        "description": "Åbn Projekt → Del via fil i JUNG HOME-appen, og send dig selv den `JungHome.json`, der oprettes, og upload den så her. Den gemmes under `junghome_ble/` i Home Assistants konfigurationsmappe. Den indeholder alle mesh-nøgler — hold sikkerhedskopier af den mappe private.",
+        "data": {
+          "export_file": "Mesh-eksportfil"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanceret",
+            "description": "Behold standardværdien, medmindre en anden Home Assistant eller repositoriets kommandolinjeværktøjer også tilslutter sig denne installation: hver af dem skal have sin egen adresse.",
+            "data": {
+              "unicast": "Vores unicast-adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Brug en fil på Home Assistant-værten",
+        "description": "Kopiér først appens `JungHome.json` (Projekt → Del via fil; indeholder dine enhedsnavne) eller `MeshNetwork.json` (iOS-sikkerhedskopi) til Home Assistant-værten, og indtast dens sti.",
+        "data": {
+          "cdb_path": "Mesh-eksportfil",
+          "metadata_dir": "Appens metadatamappe"
+        },
+        "data_description": {
+          "cdb_path": "Absolut sti på Home Assistant-værten, f.eks. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valgfrit, kun til `MeshNetwork.json` fra en iOS-sikkerhedskopi: appens mappe `Application Support` med `device_metadata.json` og `scene_metadata.json`, så entiteterne får de navne, du har givet dem i appen. `JungHome.json` indeholder allerede navnene."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avanceret",
+            "description": "Behold standardværdien, medmindre en anden Home Assistant eller repositoriets kommandolinjeværktøjer også tilslutter sig denne installation: hver af dem skal have sin egen adresse.",
+            "data": {
+              "unicast": "Vores unicast-adresse"
+            },
+            "data_description": {
+              "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Opdater JUNG HOME-mesh-eksporten",
+        "description": "Brug dette efter at have klargjort eller omforbundet enheder igen i JUNG HOME-appen, eller efter en key refresh: Angiv en ny eksport af det samme netværk. Enheder, der er forsvundet fra eksporten, fjernes. Home Assistants egen mesh-adresse kan ændres samtidig.",
+        "menu_options": {
+          "gateway_refetch": "Hent den igen fra gatewayen på {host}",
+          "gateway": "Hent den fra JUNG HOME Gateway",
+          "upload": "Upload appens eksportfil",
+          "path": "Brug en fil på Home Assistant-værten",
+          "import_gateway": "Importér entiteterne fra JUNG HOME Gateway-integrationen",
+          "areas": "Skift, hvilket område hvert rums enheder kommer i"
+        },
+        "data": {
+          "cdb_path": "Mesh-eksportfil",
+          "metadata_dir": "Appens metadatamappe",
+          "unicast": "Vores unicast-adresse"
+        },
+        "data_description": {
+          "cdb_path": "Absolut sti på Home Assistant-værten, f.eks. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valgfrit, kun til `MeshNetwork.json` fra en iOS-sikkerhedskopi: appens mappe `Application Support` med `device_metadata.json` og `scene_metadata.json`, så entiteterne får de navne, du har givet dem i appen. `JungHome.json` indeholder allerede navnene.",
+          "unicast": "Hexadecimal mesh-adresse, som Home Assistant bruger som node (0001–7FFF). Den må ikke bruges af en anden node; standardværdien ligger uden for appens interval."
+        }
+      },
+      "import_gateway": {
+        "title": "Importér fra JUNG HOME Gateway-integrationen",
+        "description": "JUNG HOME Gateway-integrationen (`junghome`) er sat op ved siden af denne. Dens entiteter kan overtages her, så deres entitets-ID'er, navne, områder, etiketter og recorder-historik fortsætter med Bluetooth Mesh-integrationen. Der matches på enhedsnavn (navnet fra JUNG HOME-appen) og entitetstype; kun entiteter i denne integration, som du endnu ikke har omdøbt eller tilpasset, erstattes.\n\n**{count} entiteter flyttes** (gateway-entitet → erstatter):\n{matched}\n\n**Beholdes som de er** (allerede tilpasset her; gatewayens bliver, hvor den er):\n{customised}\n\n**Intet modstykke hos gatewayen** (forbliver som de er):\n{unmatched}\n\n**Gateway-entiteter uden modstykke her** (forbliver hos gateway-posten):\n{gateway_only}\n\nNår du sender, stoppes begge integrationer, entiteterne flyttes, området, det tilpassede navn og etiketterne for hver matchet gateway-enhed kopieres til den tilsvarende enhed her, gateway-posten deaktiveres, og denne genindlæses. Slet gateway-posten bagefter."
+      },
+      "gateway_certificate": {
+        "title": "Gatewayens certifikat er ændret",
+        "description": "JUNG HOME Gateway på {host} præsenterer nu certifikatet {observed}; posten registrerede {expected}. Fortsæt kun, hvis du selv har udskiftet gatewayen eller dens certifikat — ellers svarer en anden enhed på dit netværk som gatewayen."
+      },
+      "reauth_confirm": {
+        "title": "Giv Home Assistant adgang til gatewayen igen",
+        "description": "JUNG HOME Gateway på {host} accepterer ikke længere den adgang, Home Assistant registrerede for mesh'et {title} (den blev sandsynligvis fjernet i JUNG HOME-appen under Indstillinger → Gateway → Adgangstilladelser). Enhederne fungerer fortsat via Bluetooth; kun overdragelsen af Home Assistants ændringer til gatewayen er stoppet. Indtast gatewayens netværksnøglekodeord (fra JUNG HOME-appen) for øjeblikkelig adgang, eller lad det være tomt, og godkend adgangsanmodningen i appen, når du fortsætter (Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger, inden for tre minutter; den vises som “{user_name}”). Kun adgangen fornyes: eksporten hentes ikke igen.",
+        "data": {
+          "gateway_password": "Netværksnøglekodeord"
+        },
+        "data_description": {
+          "gateway_password": "Valgfrit. Med det giver gatewayen adgang med det samme; uden det godkender du anmodningen i appen. Det gemmes ikke."
+        }
+      },
+      "areas": {
+        "title": "Rum og områder",
+        "description": "Vælg Home Assistant-området for hvert rum i JUNG HOME-appen. Et rum er forudfyldt med området med samme navn eller det område, der har rummets navn som alias. Lad et rum være tomt for at få et område opkaldt efter rummet (oprettes, hvis der ikke findes et). Enheder uden eget rum får også ét: en trykknaps knapper rummet for belastningen ved siden af dem, en vægsenders det rum, dens knapper styrer. Fra menuen Genkonfigurer flyttes de enheder, der stadig er i det område, det tidligere valg gav dem; en enhed, du selv har placeret i et andet område, flyttes aldrig.",
+        "data": {
+          "assign_areas": "Placér JUNG HOME-enhederne i områder"
+        },
+        "data_description": {
+          "assign_areas": "Fra: Nye enheder starter uden område, og rummene nedenfor ignoreres."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Åbn JUNG HOME-appen, og godkend adgangsanmodningen “{user_name}” under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger. Gatewayen på {host} venter op til tre minutter."
+    },
+    "error": {
+      "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+      "not_a_directory": "Metadatastien er ikke en mappe.",
+      "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+      "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+      "address_in_use": "Den adresse tilhører en node i mesh'et; vælg en ubrugt.",
+      "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+      "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+      "network_mismatch": "Eksporten tilhører et andet mesh-netværk end det, der blev fundet.",
+      "mesh_already_configured": "Dette mesh er allerede sat op som en anden post (dets netværksnøgle er sandsynligvis blevet fornyet, siden Home Assistant sidst så det). Brug den posts Genkonfigurer i stedet for at tilføje en ny.",
+      "invalid_host": "Indtast gatewayens IP-adresse eller værtsnavn.",
+      "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+      "invalid_auth": "Gatewayen afviste netværksnøglekodeordet.",
+      "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+      "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+      "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+      "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+      "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+      "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen.",
+      "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+      "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0."
+    },
+    "abort": {
+      "already_configured": "Dette mesh-netværk er allerede konfigureret.",
+      "already_in_progress": "En opsætning af dette mesh-netværk er allerede i gang.",
+      "not_supported": "Denne Bluetooth-enhed er ikke en Mesh-proxy.",
+      "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+      "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først.",
+      "reconfigure_successful": "Mesh-eksporten blev opdateret.",
+      "no_gateway_entry": "JUNG HOME Gateway-integrationen er ikke sat op; der er intet at importere.",
+      "nothing_to_import": "Der er ingen gateway-entitet tilbage at overtage. Entiteter i denne integration uden modstykke:\n{unmatched}\n\nGateway-entiteter uden modstykke her:\n{gateway_only}",
+      "import_successful": "{count} entiteter blev overtaget fra JUNG HOME Gateway-integrationen:\n{matched}\n\nBeholdt som de var (allerede tilpasset her):\n{customised}\n\nUden modstykke hos gatewayen:\n{unmatched}\n\nStadig hos gateway-posten:\n{gateway_only}\n\nGateway-posten er deaktiveret; slet den under Indstillinger → Enheder og tjenester → JUNG HOME, når alt ser rigtigt ud.",
+      "certificate_vouched_by_mesh": "JUNG HOME Gateway på {host} præsenterer certifikatet {observed}, men gateway-noden gik i god for {expected} via mesh'et. Der blev ikke sendt noget til den adresse: en anden enhed på dit netværk svarer sandsynligvis som gatewayen. Hvis du selv har udskiftet gatewayen eller dens certifikat, så genkonfigurer igen, mens Home Assistant er forbundet til mesh'et: gateway-noden rapporterer så det nye certifikat.",
+      "import_unload_failed": "{title} kunne ikke stoppes, så intet blev importeret; alle poster, som importen havde stoppet, sættes op igen. Tjek loggen, og prøv derefter importen igen.",
+      "reauth_successful": "JUNG HOME Gateway accepterer Home Assistant igen. Ændringer foretaget i Home Assistant i mellemtiden når frem med den næste ændring, eller med det samme med handlingen Synkroniser gateway.",
+      "areas_updated": "Rummenes områder er gemt; {count} enheder blev flyttet til deres rums nye område.",
+      "not_loaded": "Integrationen kører ikke: sæt den op igen først.",
+      "not_junghome_gateway": "Denne enhed melder sig ikke som JUNG HOME Gateway (ingen producent JUNG eller intet serienummer).",
+      "not_ipv4_address": "Gatewayen annoncerede ingen IPv4-adresse. Tilføj integrationen manuelt, og indtast gatewayens adresse."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Indstillinger for JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Rapportér først klik, når et dobbeltklik er udelukket",
+          "heartbeats": "Node-heartbeats (markér en tavs enhed som utilgængelig)",
+          "allow_provisioning": "Tillad Home Assistant at tilføje og fjerne enheder (eksperimentelt)",
+          "provisioner_identity": "Skriv Home Assistant ind i netværkets fil som provisioner (eksperimentelt, ikke afprøvet med appen)",
+          "follow_app": "Følg ændringer foretaget i JUNG HOME-appen",
+          "gateway_check": "Kontrollér gatewayens eksport hver sjette time",
+          "sync_areas": "Flyt enheder med, når deres JUNG-rum ændres"
+        },
+        "data_description": {
+          "click_delay": "En `click`-hændelse holdes tilbage i et halvt sekund og droppes, hvis et andet klik følger, så et dobbelttryk kun udløser `double_click`. Fra: hvert tryk udløser `click` med det samme, og det andet tryk i et dobbelttryk udløser også `double_click`.",
+          "heartbeats": "Hver netdrevet enhed bliver bedt om at sende et heartbeat til Home Assistant hvert 64. sekund (en standard Bluetooth Mesh-indstilling, som JUNG-appen lader være slået fra). En enhed, der ikke sender noget i omkring tre et halvt minut, får sine entiteter markeret som utilgængelige, indtil den høres igen. Når dette slås fra, får enhederne besked på at stoppe (igen ved næste forbindelse, hvis de ikke alle kunne nås på én gang); slå det fra, før du fjerner integrationen, som ikke kan give dem besked bagefter.",
+          "allow_provisioning": "Lader handlingen `junghome_ble.add_device` klargøre en ny JUNG-enhed og konfigurere den, som appen ville, efter forbillede af en enhed af samme produkt, der allerede er i netværket, og `junghome_ble.remove_device` nulstille en enhed og tage den ud af netværket. Endnu ikke afprøvet på rigtige enheder: prøv det først med en reserveenhed. Tilføjelse giver enheden netværkets nøgler; fjernelse kan ikke fortrydes.",
+          "provisioner_identity": "Hver fil, som Home Assistant skriver eller giver gatewayen, får en provisioner-post for Home Assistant med egne adresseintervaller uden for appens og med Home Assistants adresse inden for dem, og de enheder, som Home Assistant har tilføjet, og som appens fil mangler, lægges tilbage. Rum, scener og enheder, som Home Assistant opretter, får så deres adresser fra dens egne intervaller. Ingen JUNG-app har importeret sådan en fil endnu: prøv det på en reserveinstallation af appen (importér filen fra `junghome_ble.export_network`), før din egen app eller gateway ser den. Fra: filerne skrives præcis som uden den.",
+          "follow_app": "Når telefonen med JUNG HOME-appen høres på mesh'et, henter en post, der er sat op fra gatewayen, gatewayens eksport nogle minutter efter, at telefonen er blevet stille (højst hvert 15. minut), og overtager den, hvis den er ændret: enheder, rum, scener og knapkoblinger, der er ændret i appen, når Home Assistant uden Genkonfigurer. En post, der er sat op fra en fil, viser i stedet en reparationsmeddelelse, når appen er set ændre en enheds konfiguration. Der sendes intet på mesh'et for det. Endnu ikke afprøvet på rigtige enheder.",
+          "gateway_check": "En post, der er sat op fra gatewayen, beder gatewayen om dens eksport hver sjette time og overtager den, hvis den er ændret, hvilket fanger det, appen ændrede, mens Home Assistant ikke hørte telefonen. Én anmodning til gatewayen; der sendes intet på mesh'et. Ingen virkning på en post, der er sat op fra en fil.",
+          "sync_areas": "Når en enhed skifter rum i appen (når Home Assistant følger den nye eksport) eller via en rumhandling, flytter den også til det nye rums område — medmindre du selv har placeret den i et område. Fra: en enhed bliver i det område, den startede i. Endnu ikke afprøvet på rigtige enheder."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh-forbindelse"
+      },
+      "motion": {
+        "name": "Bevægelse"
+      },
+      "occupancy": {
+        "name": "Tilstedeværelse"
+      },
+      "fault": {
+        "name": "Fejl"
+      },
+      "wind_alarm": {
+        "name": "Vindalarm"
+      },
+      "reference_run_active": {
+        "name": "Referencekørsel"
+      },
+      "gateway_api_available": {
+        "name": "API tilgængelig"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Klient venter på godkendelse"
+      },
+      "gateway_network_problem": {
+        "name": "Netværksproblem"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth-mesh-problem"
+      },
+      "gateway_cloud_problem": {
+        "name": "Cloud-problem"
+      },
+      "gateway_cloud_connected": {
+        "name": "Cloud-forbindelse"
+      },
+      "window_open": {
+        "name": "Vindue åbent"
+      },
+      "input_state": {
+        "name": "Indgangstilstand"
+      },
+      "input_state_key": {
+        "name": "Indgangstilstand {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Automatikfunktion"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Knap {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dobbeltklik",
+              "hold_start": "Hold nede startet",
+              "hold_end": "Hold nede sluppet",
+              "press_on": "Trykket til / op",
+              "press_off": "Trykket fra / ned",
+              "scene": "Scene aktiveret",
+              "dim": "Dæmpning"
+            }
+          },
+          "connection": {
+            "name": "Kobling",
+            "state": {
+              "device": "Enhed",
+              "room": "Rum",
+              "scene": "Scene",
+              "gateway": "Gateway",
+              "group": "Gruppe",
+              "none": "Ingen"
+            }
+          },
+          "reason": {
+            "name": "Årsag til slut på hold nede",
+            "state": {
+              "timeout": "Intet slip hørt i tide",
+              "link_lost": "Forbindelse mistet",
+              "stopped": "Integration stoppet"
+            }
+          },
+          "position": {
+            "name": "Position",
+            "state": {
+              "top": "Top",
+              "bottom": "Bund",
+              "rocker": "Vippe",
+              "left_top": "Venstre, top",
+              "left_bottom": "Venstre, bund",
+              "right_top": "Højre, top",
+              "right_bottom": "Højre, bund",
+              "left_rocker": "Venstre vippe",
+              "right_rocker": "Højre vippe"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Indgang {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dobbeltklik",
+              "hold_start": "Hold nede startet",
+              "hold_end": "Hold nede sluppet",
+              "press_on": "Trykket til / op",
+              "press_off": "Trykket fra / ned",
+              "scene": "Scene aktiveret",
+              "dim": "Dæmpning"
+            }
+          },
+          "connection": {
+            "name": "Kobling",
+            "state": {
+              "device": "Enhed",
+              "room": "Rum",
+              "scene": "Scene",
+              "gateway": "Gateway",
+              "group": "Gruppe",
+              "none": "Ingen"
+            }
+          },
+          "reason": {
+            "name": "Årsag til slut på hold nede",
+            "state": {
+              "timeout": "Intet slip hørt i tide",
+              "link_lost": "Forbindelse mistet",
+              "stopped": "Integration stoppet"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Effekt"
+      },
+      "voltage": {
+        "name": "Spænding"
+      },
+      "current": {
+        "name": "Strøm"
+      },
+      "energy": {
+        "name": "Energi"
+      },
+      "energy_resettable": {
+        "name": "Energi siden nulstilling"
+      },
+      "energy_since_on": {
+        "name": "Energi siden tænding"
+      },
+      "power_on_time": {
+        "name": "Driftstid"
+      },
+      "proxy_node": {
+        "name": "Proxy-node"
+      },
+      "link_state": {
+        "name": "Forbindelsestilstand",
+        "state": {
+          "bluetooth_off": "Ingen Bluetooth",
+          "searching": "Søger efter en proxy-node",
+          "connecting": "Opretter forbindelse",
+          "updating": "Forbundet, opdaterer enhedstilstande",
+          "connected": "Forbundet",
+          "failed": "Forbindelse mislykkedes",
+          "disconnected": "Afbrudt"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Utilgængelige enheder",
+        "state_attributes": {
+          "devices": {
+            "name": "Enheder"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh-oversigt",
+        "state_attributes": {
+          "nodes": {
+            "name": "Noder"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Belysningsstyrke"
+      },
+      "battery": {
+        "name": "Batteri"
+      },
+      "installed": {
+        "name": "Installeret"
+      },
+      "key_mode": {
+        "name": "Knaptilstand",
+        "state": {
+          "light": "Lys",
+          "move": "Afskærmning",
+          "scene": "Scene",
+          "property": "Egenskab",
+          "rtr": "Temperatur",
+          "switch": "Kontakt",
+          "gateway": "Gateway"
+        }
+      },
+      "key_mode_key": {
+        "name": "Knaptilstand {key}",
+        "state": {
+          "light": "Lys",
+          "move": "Afskærmning",
+          "scene": "Scene",
+          "property": "Egenskab",
+          "rtr": "Temperatur",
+          "switch": "Kontakt",
+          "gateway": "Gateway"
+        }
+      },
+      "schedules": {
+        "name": "Tidsplaner"
+      },
+      "scenes": {
+        "name": "Scener"
+      },
+      "switch_off_at": {
+        "name": "Slukker kl."
+      },
+      "switch_on_threshold": {
+        "name": "Tændingstærskel"
+      },
+      "switch_off_threshold": {
+        "name": "Slukningstærskel"
+      },
+      "last_seen": {
+        "name": "Sidst set"
+      },
+      "rssi": {
+        "name": "Signalstyrke"
+      },
+      "hops": {
+        "name": "Hop"
+      },
+      "last_restart": {
+        "name": "Seneste genstart"
+      },
+      "clock_offset": {
+        "name": "Urafvigelse"
+      },
+      "iv_index": {
+        "name": "IV-indeks"
+      },
+      "sequence_used": {
+        "name": "Brugte sekvensnumre"
+      },
+      "mesh_sequence_used": {
+        "name": "Brugte sekvensnumre i mesh'et"
+      },
+      "switching_cycles": {
+        "name": "Koblingscyklusser"
+      },
+      "power_on_cycles": {
+        "name": "Tændingscyklusser"
+      },
+      "gateway_ip": {
+        "name": "IP-adresse"
+      },
+      "gateway_firmware": {
+        "name": "Firmwareversion"
+      },
+      "gateway_firmware_build": {
+        "name": "Firmware-build"
+      },
+      "gateway_serial": {
+        "name": "Serienummer"
+      },
+      "gateway_access_requests": {
+        "name": "Adgangsanmodninger",
+        "state_attributes": {
+          "clients": {
+            "name": "Klienter"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API-klienter",
+        "state_attributes": {
+          "clients": {
+            "name": "Klienter"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Fejllog",
+        "state_attributes": {
+          "entries": {
+            "name": "Poster"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Seneste eksport-upload"
+      },
+      "forced_off": {
+        "name": "Konstant tændt/slukket",
+        "state": {
+          "inactive": "Inaktiv",
+          "off": "Konstant slukket",
+          "on": "Konstant tændt"
+        }
+      },
+      "sleep_mode": {
+        "name": "Dvaletilstand",
+        "state": {
+          "awake": "Vågen",
+          "asleep": "Sover"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referencekørsel"
+      },
+      "identify": {
+        "name": "Identificer"
+      },
+      "clear_faults": {
+        "name": "Ryd fejl"
+      },
+      "reset_consumption": {
+        "name": "Nulstil forbrug"
+      },
+      "fetch_gateway_export": {
+        "name": "Hent eksport fra gateway"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Afskærmningsposition efter netspændingens tilbagevenden"
+      },
+      "blind_ventilation_position": {
+        "name": "Ventilationsposition"
+      },
+      "color_temp_max": {
+        "name": "Maksimal farvetemperatur"
+      },
+      "color_temp_min": {
+        "name": "Minimal farvetemperatur"
+      },
+      "comfort_temperature": {
+        "name": "Komforttemperatur"
+      },
+      "default_color_temp": {
+        "name": "Farvetemperatur ved tænding"
+      },
+      "default_lightness": {
+        "name": "Lysstyrke ved tænding"
+      },
+      "eco_temperature": {
+        "name": "ECO-temperatur"
+      },
+      "frost_protection_temperature": {
+        "name": "Frostsikringstemperatur"
+      },
+      "lightness_max": {
+        "name": "Maksimal lysstyrke"
+      },
+      "lightness_min": {
+        "name": "Minimal lysstyrke"
+      },
+      "lock_time_limit": {
+        "name": "Tidsgrænse for spærring"
+      },
+      "motor_reversal_time": {
+        "name": "Minimal reverseringstid for motor"
+      },
+      "off_delay": {
+        "name": "Slukkeforsinkelse"
+      },
+      "on_delay": {
+        "name": "Tændingsforsinkelse"
+      },
+      "pir_sensor_a": {
+        "name": "Aktiveringsområde A"
+      },
+      "pir_sensor_b": {
+        "name": "Aktiveringsområde B"
+      },
+      "pir_sensor_c": {
+        "name": "Aktiveringsområde C"
+      },
+      "repetition_time": {
+        "name": "Gentagelsestid"
+      },
+      "running_time": {
+        "name": "Køretid"
+      },
+      "sensor_offset": {
+        "name": "Forskydning for temperaturføler"
+      },
+      "slat_position_on_power": {
+        "name": "Lamelposition efter netspændingens tilbagevenden"
+      },
+      "slat_ventilation_position": {
+        "name": "Ventilationsposition lameller"
+      },
+      "slats_move_time": {
+        "name": "Omstillingstid for lameller"
+      },
+      "switch_blocking_time": {
+        "name": "Minimal tid mellem koblinger"
+      },
+      "switch_on_brightness": {
+        "name": "Lysstyrketærskel"
+      },
+      "timed_on_duration": {
+        "name": "Efterløbstid"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Driftstilstand",
+        "state": {
+          "blinds": "Persienne (med lameller)",
+          "shutter": "Rulleskodde (uden lameller)",
+          "awning": "Markise"
+        }
+      },
+      "controller_type": {
+        "name": "Regulatorudgang",
+        "state": {
+          "pi_control": "Pulsbreddemoduleret (PWM)",
+          "two_point_control": "Topunktsregulering"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Driftstilstand",
+        "state": {
+          "guard": "Monteringssted",
+          "presence": "Rummets lysstyrke"
+        }
+      },
+      "dim_mode": {
+        "name": "Dæmpningsprincip",
+        "state": {
+          "leading_edge": "Fasestyring forkant (RL)",
+          "trailing_edge": "Fasestyring bagkant (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Driftstilstand",
+        "state": {
+          "none": "Ingen",
+          "comfort": "Komfort",
+          "eco": "ECO",
+          "frost": "Frostsikring"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Faldende flanke",
+        "state": {
+          "no_reaction": "Ingen reaktion",
+          "on": "Tænd",
+          "off": "Sluk",
+          "toggle": "Skift"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Faldende flanke {key}",
+        "state": {
+          "no_reaction": "Ingen reaktion",
+          "on": "Tænd",
+          "off": "Sluk",
+          "toggle": "Skift"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Stigende flanke",
+        "state": {
+          "no_reaction": "Ingen reaktion",
+          "on": "Tænd",
+          "off": "Sluk",
+          "toggle": "Skift"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Stigende flanke {key}",
+        "state": {
+          "no_reaction": "Ingen reaktion",
+          "on": "Tænd",
+          "off": "Sluk",
+          "toggle": "Skift"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED-farve (slukket)",
+        "state": {
+          "red": "Rød",
+          "green": "Grøn",
+          "white": "Hvid",
+          "blue": "Blå",
+          "violet": "Violet",
+          "orange": "Orange",
+          "yellow": "Gul",
+          "cyan": "Cyan",
+          "no_color": "Ingen farve"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED-farve (slukket) {key}",
+        "state": {
+          "red": "Rød",
+          "green": "Grøn",
+          "white": "Hvid",
+          "blue": "Blå",
+          "violet": "Violet",
+          "orange": "Orange",
+          "yellow": "Gul",
+          "cyan": "Cyan",
+          "no_color": "Ingen farve"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED-farve (tændt)",
+        "state": {
+          "red": "Rød",
+          "green": "Grøn",
+          "white": "Hvid",
+          "blue": "Blå",
+          "violet": "Violet",
+          "orange": "Orange",
+          "yellow": "Gul",
+          "cyan": "Cyan",
+          "no_color": "Ingen farve"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED-farve (tændt) {key}",
+        "state": {
+          "red": "Rød",
+          "green": "Grøn",
+          "white": "Hvid",
+          "blue": "Blå",
+          "violet": "Violet",
+          "orange": "Orange",
+          "yellow": "Gul",
+          "cyan": "Cyan",
+          "no_color": "Ingen farve"
+        }
+      },
+      "main_page": {
+        "name": "Lokal visning",
+        "state": {
+          "target_temperature": "Ønsket temperatur",
+          "current_temperature": "Faktisk temperatur",
+          "clock": "Tidspunkt"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Adfærd efter netspændingens tilbagevenden",
+        "state": {
+          "no_reaction": "Ingen reaktion",
+          "move_up": "Kør op til 0 %",
+          "move_down": "Kør ned til 100 %",
+          "stop": "Stop",
+          "move_to_stored_position": "Gemt position",
+          "position_for_network_failure": "Position ved netsvigt"
+        }
+      },
+      "operation_site": {
+        "name": "Anvendelsessted",
+        "state": {
+          "indoor": "Indendørs",
+          "outdoor": "Udendørs"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Adfærd efter strømmens tilbagevenden",
+        "state": {
+          "off": "Slukket",
+          "on": "Tændt",
+          "restore": "Forrige tilstand"
+        }
+      },
+      "sensor_selection": {
+        "name": "Temperaturføler",
+        "state": {
+          "internal": "Rum",
+          "external": "Gulv",
+          "internal_and_external": "Rum og gulv"
+        }
+      },
+      "valve_output": {
+        "name": "Ventiltilpasning",
+        "state": {
+          "normally_closed": "NC - strømløst lukket",
+          "normally_open": "NO - strømløst åben"
+        }
+      },
+      "lock_function": {
+        "name": "Spærrefunktion",
+        "state": {
+          "unlocked": "Ulåst",
+          "keep_state": "Spærret (hold position)",
+          "lockout_protection": "Udelåsningsbeskyttelse",
+          "wind_alarm": "Vindalarm"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Alle stikkontakter"
+      },
+      "room_sockets": {
+        "name": "Alle stikkontakter i {room}"
+      },
+      "automatic_dst": {
+        "name": "Automatisk sommertid"
+      },
+      "backlight_auto_off": {
+        "name": "Sluk skærmen automatisk"
+      },
+      "blinds_invert_output": {
+        "name": "Omvendt drift"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Dagdrift"
+      },
+      "dim_to_warm": {
+        "name": "Varm dæmpning"
+      },
+      "input_edge_mode": {
+        "name": "Flankeevaluering"
+      },
+      "input_edge_mode_key": {
+        "name": "Flankeevaluering {key}"
+      },
+      "invert_output": {
+        "name": "Invertér koblingsudgang"
+      },
+      "led_colour_sync": {
+        "name": "Synkronisér LED-farver"
+      },
+      "led_night_mode": {
+        "name": "LED-nattilstand"
+      },
+      "lock": {
+        "name": "Spærring",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Spærretilstand",
+            "state": {
+              "keep_state": "Hold aktuel tilstand",
+              "lockout_protection": "Udelåsningsbeskyttelse",
+              "wind_alarm": "Vindalarm",
+              "enforced_value": "Påtvunget tilstand"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Tidsgrænse for spærring"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Manuel slukning under efterløbstid"
+      },
+      "prewarning": {
+        "name": "Slukningsadvarsel"
+      },
+      "scheduler_enabled": {
+        "name": "Automatisk drift"
+      },
+      "status_led": {
+        "name": "Status-LED"
+      },
+      "status_led_key": {
+        "name": "Status-LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Reduceret berøringsfølsomhed"
+      },
+      "use_last_lightness": {
+        "name": "Brug forrige lysstyrke"
+      },
+      "sensor_publication": {
+        "name": "Sensorværdier til IoT-systemer"
+      },
+      "local_devices_lock": {
+        "name": "Spær betjening"
+      },
+      "factory_reset_time_limit": {
+        "name": "Spær fabriksnulstilling"
+      },
+      "key_lock": {
+        "name": "Knaplås"
+      },
+      "configuration_lock": {
+        "name": "Spær konfiguration på enheden"
+      },
+      "walking_test": {
+        "name": "Gangtest"
+      },
+      "time_keeper": {
+        "name": "Tidsgiver"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Driftstilstand",
+            "state": {
+              "blinds": "Persienner (med lameller)",
+              "shutter": "Rulleskodde",
+              "awning": "Markise",
+              "unknown": "Ukendt"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Alle persienner"
+      },
+      "room_blinds": {
+        "name": "Alle persienner i {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Frostsikring"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Alle termostater"
+      },
+      "room_thermostats": {
+        "name": "Alle termostater i {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Alle lys"
+      },
+      "room_lights": {
+        "name": "Alle lys i {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Knap A {subtype}",
+      "b": "Knap B {subtype}",
+      "c": "Knap C {subtype}",
+      "d": "Knap D {subtype}",
+      "e1": "Indgang E1 {subtype}",
+      "e2": "Indgang E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "klikket",
+      "double_click": "dobbeltklikket",
+      "hold_start": "hold nede startet",
+      "hold_end": "hold nede sluppet",
+      "press_on": "trykket til / op",
+      "press_off": "trykket fra / ned",
+      "scene": "aktiverede en scene",
+      "dim": "dæmper",
+      "click_up": "klikket (øverste halvdel)",
+      "click_down": "klikket (nederste halvdel)",
+      "double_click_up": "dobbeltklikket (øverste halvdel)",
+      "double_click_down": "dobbeltklikket (nederste halvdel)",
+      "hold_start_up": "hold nede startet (øverste halvdel)",
+      "hold_start_down": "hold nede startet (nederste halvdel)",
+      "hold_end_up": "hold nede sluppet (øverste halvdel)",
+      "hold_end_down": "hold nede sluppet (nederste halvdel)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Kommandoen kunne ikke sendes til JUNG-mesh'et; ingen proxy-node er forbundet."
+    },
+    "no_answer": {
+      "message": "JUNG-enheden svarede ikke; kommandoen kan alligevel være udført og kontrolleres igen ved næste forbindelse."
+    },
+    "device_not_reachable": {
+      "message": "{entity} svarede ikke på kommandoen (3 forsøg på 9 s); den er muligvis ikke udført. Hvis resten af mesh'et stadig svarer, vises enheden som utilgængelig, indtil den høres igen: kontrollér, at den har strøm."
+    },
+    "cannot_load": {
+      "message": "Mesh-eksporten {path} kunne ikke læses."
+    },
+    "no_proxy_visible": {
+      "message": "Ingen node i JUNG-mesh'et er synlig via Bluetooth endnu."
+    },
+    "export_keys_stale": {
+      "message": "Enheder i JUNG-mesh'et er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i eksporten: nøglerne blev fornyet, efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, og brug det under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant har ingen Bluetooth-adapter eller -proxy, der kan oprette forbindelse: JUNG-mesh'et kan ikke nås."
+    },
+    "duplicate_mesh": {
+      "message": "{others} kører allerede dette JUNG HOME-mesh; der kan kun indlæses én post pr. mesh. Fjern en af de to poster."
+    },
+    "seq_store_not_written": {
+      "message": "Sekvensnummerregistreringen fra en ældre version kunne ikke gemmes i mesh'ets lager (`.storage/junghome_ble.seq.*`); kontrollér, at der kan skrives til konfigurationsmappen."
+    },
+    "seq_floor_not_written": {
+      "message": "Sekvensnummerregistreringen blev gendannet fra en sikkerhedskopi, og dens bundgrænse (`.storage/junghome_ble.seq.*.floor`) kunne ikke skrives, før der blev sprunget frem; kontrollér, at der kan skrives til konfigurationsmappen."
+    },
+    "service_entry_not_loaded": {
+      "message": "JUNG HOME-mesh-integrationen er ikke indlæst (eller genindlæses); prøv igen om et øjeblik."
+    },
+    "service_not_connected": {
+      "message": "JUNG HOME-mesh'et er ikke forbundet; prøv igen, når en proxy-node er inden for rækkevidde."
+    },
+    "service_entry_ambiguous": {
+      "message": "Der er konfigureret mere end ét JUNG HOME-mesh-netværk; angiv mesh-netværket (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} er ikke en enhed eller entitet i et JUNG HOME-mesh."
+    },
+    "service_not_a_load": {
+      "message": "{name} er ikke en JUNG HOME-enhed, som denne handling virker på."
+    },
+    "service_not_a_key": {
+      "message": "{name} er ikke en knap på en JUNG HOME-trykknap."
+    },
+    "service_key_required": {
+      "message": "{name} har knapperne {keys}; angiv bogstavet for den ønskede knap."
+    },
+    "service_unknown_key": {
+      "message": "{name} har ingen knap {letter} (den har {keys})."
+    },
+    "service_no_loads": {
+      "message": "Målet nævner hverken et JUNG HOME-lys eller en stikkontakt."
+    },
+    "service_target_other_network": {
+      "message": "Knappen og dens mål tilhører forskellige mesh-netværk."
+    },
+    "service_unknown_element": {
+      "message": "Elementet {address} findes ikke i mesh-eksporten."
+    },
+    "service_no_room": {
+      "message": "Der er intet rum med navnet {room} i mesh-eksporten."
+    },
+    "service_room_exists": {
+      "message": "Et rum med navnet {room} findes allerede."
+    },
+    "service_room_key_drives_load": {
+      "message": "Ikke taget ud af rummet {room}: {device} styres af {button} via den knaps kobling til rummet, og når den forlader rummet, kobles den også fra knappen. Kør handlingen igen med Også hvis en knap styrer den, eller giv knappen en anden funktion først."
+    },
+    "service_invalid_room_name": {
+      "message": "Et rum skal have et navn."
+    },
+    "service_no_mode": {
+      "message": "Ingen knaptilstand passer til elementet {address}; angiv tilstanden."
+    },
+    "service_invalid_mode": {
+      "message": "Tilstanden {mode} kan ikke bruges med målet {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Knappen {address} har ingen klientmodel til tilstanden {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Et målelement gælder kun for en knap, der er koblet til en enhed, ikke til et rum eller en scene."
+    },
+    "service_target_element_missing": {
+      "message": "Målet {target} har intet {target_element}-element, som en knap kunne styre."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "En spærretid gælder kun for tilstanden spær, fra 0 til 65535 sekunder."
+    },
+    "service_lock_unsupported": {
+      "message": "En knap kan ikke spærre målet {target}: kun et lys eller en stikkontakt kan spærres fra en knap."
+    },
+    "service_no_element_group": {
+      "message": "Elementet {address} har ingen elementgruppe: JUNG HOME-appen har aldrig koblet det. Kobl det én gang i appen først."
+    },
+    "service_one_target": {
+      "message": "Angiv præcis ét mål: en enhed, en entitet, et rum eller en scene."
+    },
+    "service_config_refused": {
+      "message": "Noden {node} afviste {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Noden {node} svarede ikke på {message}; har den strøm, og er den inden for rækkevidde? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Ikke sendt: {nodes} svarede ikke på Home Assistants seneste anmodning og regnes som utilgængelige (deres entiteter er utilgængelige), så planen ville stoppe ved deres første besked. Kontrollér, at de har strøm og er inden for rækkevidde, og kør handlingen igen, når de svarer. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Noden {node} kører på batteri og svarede ikke på {message}: den sover. Tryk på en af dens knapper for at vække den, og kør så handlingen igen med det samme. Hvis den heller ikke reagerer på et tryk, er batteriet som regel fladt: udskift det. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Knappen {address} overtog ikke knaptilstanden {mode}; dens koblinger blev konfigureret og er registreret i mesh-eksporten — kør handlingen igen med det samme mål for at indstille tilstanden."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Knappen {address} overtog ikke scenen {scene}; den udsender sine scenekald til alle enheder, og det er registreret i mesh-eksporten — kør handlingen igen med den samme scene for at indstille den."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Knappen {address} overtog ikke sin spærrefunktion (egenskab {property}); dens koblinger blev konfigureret og er registreret i mesh-eksporten — kør handlingen igen med det samme mål for at indstille den."
+    },
+    "service_export_newer": {
+      "message": "Mesh-eksporten {path} blev ændret uden for Home Assistant (af JUNG HOME-appen eller manuelt), efter Home Assistant indlæste den. Eksportér projektet fra appen igen, erstat filen (Genkonfigurer), og prøv igen."
+    },
+    "service_export_load_failed": {
+      "message": "Mesh-eksporten {path} kunne ikke læses: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Mesh-eksporten {path} kunne ikke skrives: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} kan ikke tage den værdi: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostaten har ikke rapporteret sin {preset}-temperatur endnu; prøv igen om et øjeblik."
+    },
+    "led_colour_unknown": {
+      "message": "LED-farverne for {entity} kendes ikke endnu; enheden svarede ikke på aflæsningen."
+    },
+    "service_room_name_reserved": {
+      "message": "“{name}” er et navn, som mesh'et reserverer til interne grupper; vælg et andet rumnavn."
+    },
+    "service_name_blank": {
+      "message": "Et navn må ikke være tomt."
+    },
+    "service_name_too_long": {
+      "message": "JUNG HOME-appen kan ikke omdøbe til “{name}”: dens omdøbning tager højst {max_length} tegn."
+    },
+    "service_name_not_allowed": {
+      "message": "JUNG HOME-appen afviser navnet “{name}”: den opfatter et %-tegn som starten på en pladsholder (kun %% og %n accepteres)."
+    },
+    "service_room_range_full": {
+      "message": "Der er ingen ledig gruppeadresse tilbage i appens interval; slet først et ubrugt rum i JUNG HOME-appen."
+    },
+    "gateway_certificate_changed": {
+      "message": "JUNG HOME Gateway på {host} præsenterer et andet certifikat end det registrerede ({expected} vs. {observed}). Hvis gatewayen eller dens certifikat bevidst er blevet udskiftet, så genkonfigurer posten."
+    },
+    "service_ambiguous_scene": {
+      "message": "“{scene}” er både et scenenummer og navnet på en anden scene; omdøb den scene, så de kan skelnes."
+    },
+    "service_unknown_scene": {
+      "message": "Der findes ingen scene “{scene}” i mesh-eksporten; angiv scenens navn, som JUNG HOME-appen viser det, eller dens nummer."
+    },
+    "service_scene_exists": {
+      "message": "En scene med navnet “{scene}” findes allerede."
+    },
+    "service_scene_range_full": {
+      "message": "Der er intet ledigt scenenummer tilbage i appens interval; slet først en ubrugt scene."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant giver nye rum de højeste ledige gruppeadresser i appens interval, så appens egne næste rum ikke får de samme; der er kun {free} ledige adresser tilbage under den næste, og appen ville snart nå den. Slet ubrugte rum, eller slå indstillingen for provisioner-identitet til, som giver Home Assistant sit eget interval."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant giver nye scener de højeste ledige scenenumre i appens interval, så appens egne næste scener ikke får de samme; der er kun {free} ledige numre tilbage under det næste, og appen ville snart nå det. Slet ubrugte scener, eller slå indstillingen for provisioner-identitet til, som giver Home Assistant sit eget interval."
+    },
+    "add_device_groups_crowded": {
+      "message": "Den nye enheds elementgrupper ville tage de højeste ledige gruppeadresser i appens interval, men der er kun {free} ledige adresser tilbage under dem, og appens egne næste rum ville snart nå dem. Slet ubrugte rum, eller slå indstillingen for provisioner-identitet til, som giver Home Assistant sit eget interval."
+    },
+    "service_not_a_scene_element": {
+      "message": "Elementet {address} kan ikke gemme scener (det har ingen Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Enheden {address} gemte ikke scenen {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Enheden {address} har ikke plads til scenen {scene}: den har allerede {capacity} scener, inklusive timerscener. Fjern den først fra en anden scene. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Enheden {address} har stadig scenen {scene} efter sletningen ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "JUNG HOME Gateway udleverede ikke sin eksport, og denne handling har brug for den: den kopi, Home Assistant har, mangler måske det, JUNG HOME-appen har ændret siden. Prøv igen, når gatewayen svarer (loggen siger, hvorfor den ikke gjorde det)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Dette netværk blev sat op fra en fil, som muligvis mangler scener, der er oprettet i JUNG HOME-appen, siden den blev eksporteret; at slette de scenenumre, filen ikke kender, ville slette de scener fra alle enheder. Lav først en prøvekørsel, og sammenlign de numre, den viser, med appen; slet derefter med “Mesh-eksporten er aktuel” slået til, eller angiv de numre, der skal slettes."
+    },
+    "service_unused_scenes_known": {
+      "message": "Scenenumrene {numbers} er scener i mesh-eksporten; slet dem med Slet scene."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Enheden {address} gemte scenen {scene}, men overtog ikke scenebeskrivelsen (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Tilstanden for {address} kendes ikke, så scenen {scene} ville blive gemt uden sin scenebeskrivelse, og hvis en anden kanal på enheden så blev taget ud af scenen, ville denne også falde ud. Angiv den tilstand, der skal gemmes (eller betjen enheden én gang), og prøv igen. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Dette netværk blev ikke sat op fra en JUNG HOME Gateway (ingen gateway-adresse og token i posten); genkonfigurer posten fra gatewayen for at synkronisere det."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Gatewayen på {host} overtog ikke eksporten: {error}."
+    },
+    "service_send_failed": {
+      "message": "Forbindelsen til JUNG-mesh'et blev afbrudt, mens {message} blev sendt til noden {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Noden {node} findes i mesh-eksporten {path}, men ikke i det netværk, Home Assistant tidligere indlæste fra den; genindlæs integrationen (Indstillinger → Enheder og tjenester → JUNG HOME → Genindlæs), så den følger eksporten, og prøv igen. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "JUNG HOME Gateway på {host} har en nyere eksport ({gateway}) end den fil, Home Assistant ville uploade ({file}); en upload ville slette det, JUNG HOME-appen har ændret siden. Den næste ændring i Home Assistant overtager gatewayens eksport og fører Home Assistants egne ændringer over på den. Hvis denne fejl kommer igen (en post uden kopi af appens seneste upload kan ikke skelne dem), så hent gatewayens eksport igen (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer; den fil, den erstatter, beholdes ved siden af som `.pre-reconfigure`), og gentag derefter ændringen i Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "JUNG HOME Gateway på {host} svarede kun med den nøgne enhedsdatabase (ingen enhedsnavne eller rumkoblinger); at overtage den ville slette dem fra den fil, Home Assistant har. Prøv igen, når gatewayen ikke længere er optaget, eller hent appens eksport igen."
+    },
+    "identify_no_answer": {
+      "message": "JUNG-enheden svarede ikke på identifikationsanmodningen; har den strøm, og er den inden for rækkevidde?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} er ikke et JUNG HOME-mesh-netværk; angiv config_entry_id for et sådant (eller udelad den, når kun ét er konfigureret)."
+    },
+    "service_all_not_supported": {
+      "message": "Denne handling accepterer ikke entity_id: all; angiv de lys, stikkontakter, enheder, områder eller etiketter, den gælder for."
+    },
+    "edge_detection_unknown": {
+      "message": "Flankeevalueringen for {entity} kendes ikke endnu; indgangen svarede ikke på aflæsningen."
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG-stikkontakten nulstillede ikke sin tæller {property}; den rapporterer stadig en anden værdi end 0."
+    },
+    "setup_state_unknown": {
+      "message": "Den aktuelle indstilling for {entity} kendes ikke endnu; enheden svarede ikke på aflæsningen."
+    },
+    "setting_no_answer": {
+      "message": "JUNG-enheden svarede hverken på ændringen af {entity} eller på tilbagelæsningen; den kan alligevel have overtaget den nye værdi. Har den strøm, og er den inden for rækkevidde?"
+    },
+    "setting_asleep": {
+      "message": "Batterienheden for {entity} svarede ikke: den sover. Tryk på en af dens knapper for at vække den, og foretag så ændringen igen med det samme. Hvis den heller ikke reagerer på et tryk, er batteriet som regel fladt: udskift det."
+    },
+    "setting_not_applied": {
+      "message": "JUNG-enheden overtog ikke den nye værdi for {entity}; den rapporterer stadig en anden."
+    },
+    "setting_not_supported": {
+      "message": "JUNG-enheden har ikke indstillingen for {entity}: den besvarede ændringen uden en værdi."
+    },
+    "schedule_no_reply": {
+      "message": "JUNG-enheden {address} svarede ikke om sine tidsplaner."
+    },
+    "schedule_not_applied": {
+      "message": "JUNG-enheden {address} overtog ikke ændringen af tidsplanpladsen {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Alle 16 tidsplanpladser på JUNG-enheden {address} er i brug; slet først en."
+    },
+    "schedule_empty_slot": {
+      "message": "Tidsplanpladsen {slot} på JUNG-enheden {address} indeholder ingen tidsplan."
+    },
+    "schedule_not_supported": {
+      "message": "{name} kører ingen egne tidsplaner."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Tidsplanen blev allerede skrevet til {created}: slet den der, før du kalder igen, ellers kører de enheder den to gange."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Tidsplanen passer ikke til {name}: {fields} gælder ikke for den."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Tidsplanen passer ikke til {name}: en termostat skal have en temperatur."
+    },
+    "schedule_action_needs_position": {
+      "message": "Tidsplanen passer ikke til {name}: en persienne skal have en position."
+    },
+    "schedule_action_needs_action": {
+      "message": "Tidsplanen passer ikke til {name}: den skal have en handling (til eller fra)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Tidsplanen passer ikke til {name}: en lysstyrke hører til handlingen til."
+    },
+    "threshold_not_supported": {
+      "message": "{name} er ikke en JUNG HOME-stikkontakt med energimåling og tærskler."
+    },
+    "threshold_incomplete": {
+      "message": "{name} har ingen tærskel at ændre (eller svarede ikke): angiv både effekt og varighed."
+    },
+    "threshold_not_applied": {
+      "message": "JUNG-stikkontakten {address} overtog ikke sin {which}-tærskel. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "{which}-tærsklen kunne ikke sendes til JUNG-stikkontakten {address}; ingen proxy-node er forbundet. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Stikkontakten og de enheder, dens tærskler skal styre, tilhører forskellige mesh-netværk."
+    },
+    "scene_state_not_applicable": {
+      "message": "Tilstanden passer ikke til {name}: {fields} gælder ikke for den."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Tilstanden passer ikke til {name}: en termostat skal have en temperatur."
+    },
+    "scene_state_needs_position": {
+      "message": "Tilstanden passer ikke til {name}: en persienne skal have en position."
+    },
+    "scene_state_needs_action": {
+      "message": "Tilstanden passer ikke til {name}: den skal have en handling (til eller fra)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Tilstanden passer ikke til {name}: en lysstyrke hører til handlingen til."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} rapporterede ikke den nye tilstand i tide; scenen blev ikke gemt."
+    },
+    "service_gateway_token_rejected": {
+      "message": "JUNG HOME Gateway på {host} accepterer ikke længere Home Assistants adgang, så eksporten blev ikke overdraget til den. Giv adgang igen via den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og kør så dette igen."
+    },
+    "seq_store_lost": {
+      "message": "Sekvensnummerregistreringen for adressen {unicast} er tabt; Home Assistant genbruger ikke numre, som mesh'et har set. Åbn reparationen for at fortsætte forbi dem."
+    },
+    "address_in_use": {
+      "message": "En node i mesh'et optager Home Assistants adresse {unicast}; genkonfigurer integrationen med en ledig ({suggestion} er ledig)."
+    },
+    "add_device_not_allowed": {
+      "message": "Tilføjelse og fjernelse af enheder er slået fra for dette netværk: slå først *Tillad Home Assistant at tilføje og fjerne enheder (eksperimentelt)* til i integrationens indstillinger."
+    },
+    "add_device_not_found": {
+      "message": "Ingen ny JUNG-enhed annoncerer på {address}; kør `find_new_devices`, og brug en adresse, den viser."
+    },
+    "add_device_not_jung": {
+      "message": "Enheden på {address} oplyser ikke, at den er en JUNG-enhed."
+    },
+    "add_device_no_template": {
+      "message": "Der er endnu ingen enhed af produktet {product} i netværket: tilføj den første med JUNG HOME-appen; Home Assistant kopierer så dens konfiguration."
+    },
+    "add_device_no_address": {
+      "message": "Der er intet ledigt adresseinterval tilbage til den nye enhed uden for provisionernes intervaller."
+    },
+    "provisioner_identity_failed": {
+      "message": "Home Assistants provisioner-post kunne ikke flettes ind i eksporten ({error}); intet blev ændret. Se loggen."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant kan ikke få sine egne adresseintervaller i dette netværk: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Kunne ikke oprette forbindelse til den nye enhed: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Klargøring af den nye enhed mislykkedes: {error}. Den er stadig ny; prøv igen."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Klargøringen af den nye enhed på {unicast} blev ikke bekræftet ({error}). Den kan have modtaget netværkets nøgler, så Home Assistant beholder den som afventende: nulstil den med handlingen `junghome_ble.reset_pending_device` (unicast {unicast}; tilføj `force`, hvis den ikke svarer, da en enhed, der aldrig fik sine nøgler, ikke kan), og tilføj den så igen. Dens adresser forbliver reserveret indtil da."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Den nye enheds nøgle kunne ikke gemmes i Home Assistants boks ({error}), så klargøringen stoppede, før enheden modtog noget: den er stadig ny, og intet blev reserveret til den på {unicast}. Frigør plads, eller reparer lageret, og prøv så igen."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Enheden blev klargjort på {unicast}, men dens konfiguration mislykkedes ved trin {step} ({error}), og den bekræftede ikke en nulstilling. Appen kender den ikke: nulstil den med handlingen `junghome_ble.reset_pending_device` (unicast {unicast}), og tilføj den så igen. Dens adresser forbliver reserveret indtil da."
+    },
+    "add_device_record_failed": {
+      "message": "Enheden blev konfigureret, men ikke registreret på {unicast} ({error}). Appen kender den ikke: nulstil den med handlingen `junghome_ble.reset_pending_device` (unicast {unicast}), og tilføj den så igen. Dens adresser forbliver reserveret indtil da."
+    },
+    "add_device_no_beacon": {
+      "message": "Netværkets IV-indeks er endnu ikke bekræftet på den aktuelle Bluetooth-forbindelse (der er ikke kommet et netværksbeacon på den), og den nye enhed ville beholde et forkert. Vent på den næste forbindelse til en JUNG-enhed, og prøv igen."
+    },
+    "add_device_key_refresh": {
+      "message": "JUNG HOME-appen er ved at forny netværksnøglen (key refresh fase 1): en enhed, der tilføjes nu, ville få den nøgle, der er ved at blive udfaset. Afslut nøglefornyelsen i appen (Home Assistant følger den), og prøv så igen."
+    },
+    "add_device_name_too_long": {
+      "message": "Navnet “{name}” er længere, end JUNG HOME-appen tillader for en enhed: højst {max_length} tegn."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Ingen enhed, som Home Assistant har klargjort uden at registrere den, kendes som {device}; reparationen *En enhed, som Home Assistant har tilføjet, er ikke registreret* viser adresserne på dem, der findes."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "En anden enhed i netværket er på {unicast} nu, så der blev ikke sendt nogen nulstilling, og intet blev ændret. Brug `force` for at glemme den afventende enhed på den adresse (nulstil den manuelt, hvis den stadig findes)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Enheden på {unicast} bekræftede ikke sin nulstilling; intet blev ændret. Brug `force` til en enhed, der blev nulstillet manuelt eller er væk for altid."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Nulstillingen kunne ikke sendes til enheden på {unicast} ({error}); intet blev ændret."
+    },
+    "remove_device_gateway": {
+      "message": "Gatewayen kan ikke fjernes på denne måde."
+    },
+    "remove_device_mesh": {
+      "message": "Angiv en JUNG-enhed, ikke netværket."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Enheden {address} bekræftede ikke sin nulstilling og blev ikke set annoncere som ny enhed bagefter. Den kan alligevel være nulstillet (bekræftelsen kan gå tabt, og måske er ingen Bluetooth-scanner inden for dens rækkevidde), eller den fik ikke nulstillingen; mesh-eksporten er uændret. Kør handlingen igen, eller brug `force`, hvis enheden er væk for altid."
+    },
+    "remove_device_proxy": {
+      "message": "Enheden {address} er den proxy-node, Home Assistant er forbundet igennem: nulstillingen ville afslutte den forbindelse, bekræftelsen kommer tilbage på. Vent, til Home Assistant forbinder via en anden enhed (sensoren Proxy-node), eller brug `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Enhedsspærringen for {entity} kendes ikke endnu; enheden svarede ikke på aflæsningen."
+    },
+    "cover_locked": {
+      "message": "{entity} er spærret og ignorerer kommandoer, indtil den låses op (med dens kontakt Spærring eller dens Spærrefunktion)."
+    },
+    "cover_wind_alarm": {
+      "message": "En vindalarm holder {entity} fast; den ignorerer kommandoer, indtil alarmen er afsluttet (med dens Spærrefunktion eller dens kontakt Spærring)."
+    },
+    "load_locked": {
+      "message": "{entity} er spærret (i JUNG HOME-appen, af en knap eller af dens kontakt Spærring) og beholder sin tilstand, indtil den låses op."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} er ikke en JUNG HOME-lysdæmper: kun lysdæmpere og DALI-tunable-white-kanaler kan dæmpes på denne måde."
+    },
+    "locate_no_answer": {
+      "message": "JUNG-enheden {node} svarede ikke på anmodningen om at annoncere sin identitet; har den strøm, og er den inden for rækkevidde? En batterienhed sover og svarer kun, mens den er vågen."
+    },
+    "locate_refused": {
+      "message": "JUNG-enheden {node} afviste at annoncere sin identitet: {status}."
+    },
+    "locate_not_supported": {
+      "message": "JUNG-enheden {node} kan ikke annoncere sin identitet (Node Identity understøttes ikke)."
+    },
+    "approve_no_gateway": {
+      "message": "Dette netværk blev ikke sat op fra en JUNG HOME Gateway (ingen gateway-adresse og token i posten): der er ingen gateway at godkende klienter på."
+    },
+    "approve_gateway_distrusted": {
+      "message": "JUNG HOME Gateway på {host} blev ikke spurgt: {error}. Intet blev godkendt."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "JUNG HOME Gateway på {host} accepterer ikke længere Home Assistants adgang, så intet blev godkendt. Giv adgang igen via den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og kør så dette igen."
+    },
+    "approve_client_not_waiting": {
+      "message": "Ingen API-klient ved navn “{client}” venter på adgang ved gatewayen (venter: {waiting}). Intet blev godkendt."
+    },
+    "approve_gateway_busy": {
+      "message": "JUNG HOME Gateway på {host} er optaget af en anden konfigurationsanmodning; prøv igen om et minut. Intet blev godkendt."
+    },
+    "approve_gateway_failed": {
+      "message": "JUNG HOME Gateway på {host} gjorde ikke det, den blev bedt om: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant opdaterer ikke JUNG-firmware: opdater enheden med JUNG HOME-appen."
+    },
+    "add_device_node_not_configured": {
+      "message": "Den nye enhed på {unicast} kunne ikke konfigureres ved trin {step} ({error}). Home Assistant nulstillede den, som JUNG HOME-appen gør, og den bekræftede: den er en ny enhed igen, og intet er reserveret til den. En enhed, der ikke er det produkt eller den indsats, den annoncerer, afvises på denne måde; ellers kan du tilføje den igen."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Klargøringen af den nye enhed på {unicast} blev ikke bekræftet ({error}). Home Assistant nulstillede den, og den bekræftede: den er en ny enhed igen, og intet er reserveret til den. Prøv igen."
+    },
+    "time_keeper_role_failed": {
+      "message": "Enheden på {address} overtog ikke sin tidsrolle ({error}). Udgivelsen fra dens Time Server er allerede ændret: skift tidsgiveren igen, når enheden svarer."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} styres af rumtermostaten {thermostats} (koblet i JUNG HOME-appen) og betjenes ikke manuelt, ligesom i appen."
+    },
+    "load_forced_short": {
+      "message": "Melderen for {entity} holder den tændt eller slukket (konstant tændt / slukket): sæt melderens kontakt for automatisk drift i midterpositionen for at afslutte det."
+    },
+    "load_forced_on_button": {
+      "message": "Melderen for {entity} holder den tændt (konstant TIL): tryk på melderens ON-knap for at afslutte det."
+    },
+    "load_forced_off_button": {
+      "message": "Melderen for {entity} holder den slukket (konstant FRA): tryk på melderens OFF-knap for at afslutte det."
+    },
+    "load_forced_on_presence": {
+      "message": "Melderen for {entity} holder den tændt (konstant TIL): melderens programmeringsknap afslutter det."
+    },
+    "load_forced_off_presence": {
+      "message": "Melderen for {entity} holder den slukket (konstant FRA): melderens programmeringsknap afslutter det."
+    },
+    "cover_slats_open": {
+      "message": "{entity} er helt åben: dens lameller kan først bevæges, når den er kørt ned, ligesom i JUNG HOME-appen."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} kører boost: vælg en anden forudindstilling for at afslutte boost, før du indstiller en temperatur, ligesom i JUNG HOME-appen."
+    },
+    "service_detector_device_only": {
+      "message": "Melderen {address} kan kun styre én enhed: angiv et lys, en stikkontakt eller en enhed som mål, ikke et rum eller en scene."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Melderen {address} kan ikke styre et mål i tilstanden {mode}: en melder har ingen knaptilstand, så den betjener kun et lys, en stikkontakt eller en persienne i den tilstand, målet giver, uden spærrefunktion, rumtermostat, gateway eller målelement."
+    },
+    "gateway_fetch_refused": {
+      "message": "Eksporten blev ikke hentet fra JUNG HOME Gateway på {host}: {error}. Intet blev ændret; reparationsmeddelelserne fortæller, hvad du skal gøre."
+    },
+    "service_unknown_area": {
+      "message": "Der er intet område med id'et {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} er ikke en scene i et JUNG HOME-netværk."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Fjernelse af en enhed kan ikke fortrydes: tilføj \"confirm: true\" til kaldet for at udføre den (eller \"dry_run: true\" for at se, hvad den ville gøre)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Sletning af en scene, selv hvis en enhed ikke svarer, efterlader den enhed med scenen: tilføj \"confirm: true\" til kaldet for at udføre den (eller \"dry_run: true\" for at se, hvad den ville gøre)."
+    },
+    "plan_key_device": {
+      "message": "{key} styrer nu {target}; {messages} beskeder"
+    },
+    "plan_key_room": {
+      "message": "{key} styrer nu rummet {room}; {messages} beskeder"
+    },
+    "plan_key_scene": {
+      "message": "{key} aktiverer nu scenen {scene}; {messages} beskeder"
+    },
+    "plan_key_cleared": {
+      "message": "{key} har nu ingen funktion; {messages} beskeder"
+    },
+    "plan_room_joined": {
+      "message": "{devices} nu i rummet {room}; {messages} beskeder"
+    },
+    "plan_room_left": {
+      "message": "{devices} taget ud af rummet {room}; {messages} beskeder"
+    },
+    "plan_room_deleted": {
+      "message": "Rummet {room} slettet; {messages} beskeder"
+    },
+    "plan_device_removed": {
+      "message": "{device} fjernet fra netværket; {messages} beskeder til de andre enheder"
+    },
+    "plan_scene_deleted": {
+      "message": "Scenen {scene} slettet; {messages} beskeder"
+    },
+    "plan_finished": {
+      "message": "{action} fuldført; {messages} beskeder"
+    },
+    "plan_stopped": {
+      "message": "{action} stoppet efter {applied} af {total} beskeder: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} blev annulleret efter {applied} af {total} beskeder; mesh-eksporten registrerer, hvad der blev anvendt"
+    },
+    "logbook_scene_from_key": {
+      "message": "aktiverede scenen {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "intet slip hørt i tide"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "forbindelse mistet"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integration stoppet"
+    },
+    "logbook_scene_number": {
+      "message": "Scene {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scene"
+    },
+    "logbook_recalled": {
+      "message": "blev aktiveret"
+    },
+    "logbook_recalled_by": {
+      "message": "blev aktiveret af {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "JUNG HOME-enheder mangler i eksporten",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hent eksporten fra gatewayen igen",
+            "description": "{count} enhed(er) i JUNG HOME-mesh'et {title} annoncerer sig via Bluetooth, men er ikke i den eksport, Home Assistant indlæste: {devices}. De blev tilføjet til installationen (eller klargjort igen), efter den eksport blev lavet, så Home Assistant har ingen entiteter for dem. Bekræft for at hente den aktuelle eksport fra JUNG HOME Gateway på {host} med den adgang, Home Assistant allerede har, kontrollere den og sætte integrationen op igen ud fra den, som Genkonfigurer → Hent den igen fra gatewayen gør; den eksport, den erstatter, beholdes som kopi (`.pre-reconfigure`). Problemet forsvinder, når den nye eksport indeholder dem. Endnu ikke afprøvet på rigtige enheder."
+          },
+          "upload": {
+            "title": "Indlæs en ny eksport",
+            "description": "{count} enhed(er) i JUNG HOME-mesh'et {title} annoncerer sig via Bluetooth, men er ikke i den eksport, Home Assistant indlæste: {devices}. De blev tilføjet til installationen (eller klargjort igen), efter den eksport blev lavet, så Home Assistant har ingen entiteter for dem. Eksportér netværket fra JUNG HOME-appen (Projekt → Del via fil), og upload filen her: Home Assistant kontrollerer den, gemmer den under `junghome_ble/` i sin konfigurationsmappe (den indeholder alle mesh-nøgler) og sætter integrationen op igen ud fra den; den eksport, den erstatter, beholdes som kopi. En post, der læste sin eksport fra en sti på værten, bruger derefter den uploadede kopi — for at beholde stien skal du i stedet kopiere den nye fil dertil og bruge Genkonfigurer. Problemet forsvinder, når den nye eksport indeholder dem. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "export_file": "Mesh-eksportfil"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "I den nye eksport har en node Home Assistants adresse, så posten kan ikke bruge den. Giv først Home Assistant en ledig adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), og indlæs så eksporten der.",
+          "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+          "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+          "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+          "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+          "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+          "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+          "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+          "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0.",
+          "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+          "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+          "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+          "not_a_directory": "Metadatastien er ikke en mappe.",
+          "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+          "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+          "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "no_gateway_pin": "Home Assistant har ingen adgang eller intet certifikat registreret for gatewayen {host}, så den sender intet til den: intet blev ændret. Hent i stedet eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor gatewayens certifikat kan kontrolleres.",
+          "certificate_changed": "Gatewayen på {host} præsenterer et andet certifikat end det, Home Assistant fastgjorde for den: intet blev sendt til den, og intet blev ændret. Hvis du har udskiftet gatewayen eller dens certifikat, så hent eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor det nye certifikat kan kontrolleres; ellers svarer en anden enhed på dit netværk muligvis som gatewayen.",
+          "token_rejected": "Gatewayen på {host} accepterer ikke længere Home Assistants adgang: intet blev ændret. Følg den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og reparer så dette problem igen.",
+          "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+          "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "JUNG HOME-enheder mangler i eksporten",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hent eksporten fra gatewayen igen",
+            "description": "{count} enhed(er) i JUNG HOME-mesh'et {title} annoncerer sig via Bluetooth, men er ikke i den eksport, Home Assistant indlæste: {devices}. De blev tilføjet til installationen (eller klargjort igen), efter den eksport blev lavet, så Home Assistant har endnu ingen entiteter for dem. Home Assistant beder gatewayen om dens aktuelle eksport og overtager den af sig selv, når den indeholder dem. Bekræft for at hente den aktuelle eksport fra JUNG HOME Gateway på {host} med den adgang, Home Assistant allerede har, kontrollere den og sætte integrationen op igen ud fra den, som Genkonfigurer → Hent den igen fra gatewayen gør; den eksport, den erstatter, beholdes som kopi (`.pre-reconfigure`). Hvis problemet bliver, kender gatewayens eksport dem heller ikke: åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader sit projekt), og reparer så igen. Endnu ikke afprøvet på rigtige enheder."
+          },
+          "upload": {
+            "title": "Indlæs en ny eksport",
+            "description": "{count} enhed(er) i JUNG HOME-mesh'et {title} annoncerer sig via Bluetooth, men er ikke i den eksport, Home Assistant indlæste: {devices}. De blev tilføjet til installationen (eller klargjort igen), efter den eksport blev lavet, så Home Assistant har endnu ingen entiteter for dem. Home Assistant beder gatewayen om dens aktuelle eksport og overtager den af sig selv, når den indeholder dem. Eksportér netværket fra JUNG HOME-appen (Projekt → Del via fil), og upload filen her: Home Assistant kontrollerer den, gemmer den under `junghome_ble/` i sin konfigurationsmappe (den indeholder alle mesh-nøgler) og sætter integrationen op igen ud fra den; den eksport, den erstatter, beholdes som kopi. En post, der læste sin eksport fra en sti på værten, bruger derefter den uploadede kopi — for at beholde stien skal du i stedet kopiere den nye fil dertil og bruge Genkonfigurer. Hvis problemet bliver, kender gatewayens eksport dem heller ikke: åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader sit projekt), og reparer så igen. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "export_file": "Mesh-eksportfil"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "I den nye eksport har en node Home Assistants adresse, så posten kan ikke bruge den. Giv først Home Assistant en ledig adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), og indlæs så eksporten der.",
+          "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+          "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+          "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+          "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+          "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+          "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+          "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+          "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0.",
+          "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+          "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+          "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+          "not_a_directory": "Metadatastien er ikke en mappe.",
+          "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+          "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+          "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "no_gateway_pin": "Home Assistant har ingen adgang eller intet certifikat registreret for gatewayen {host}, så den sender intet til den: intet blev ændret. Hent i stedet eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor gatewayens certifikat kan kontrolleres.",
+          "certificate_changed": "Gatewayen på {host} præsenterer et andet certifikat end det, Home Assistant fastgjorde for den: intet blev sendt til den, og intet blev ændret. Hvis du har udskiftet gatewayen eller dens certifikat, så hent eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor det nye certifikat kan kontrolleres; ellers svarer en anden enhed på dit netværk muligvis som gatewayen.",
+          "token_rejected": "Gatewayen på {host} accepterer ikke længere Home Assistants adgang: intet blev ændret. Følg den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og reparer så dette problem igen.",
+          "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+          "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "JUNG HOME-appen har ændret installationen",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hent eksporten fra gatewayen igen",
+            "description": "JUNG HOME-appen blev set ændre konfigurationen af en enhed i mesh'et {title} (en knapkobling, et rum, en scene eller en enhedsindstilling), så den eksport, Home Assistant indlæste, passer måske ikke længere til installationen: det, der blev ændret i appen, er endnu ikke i Home Assistant. Bekræft for at hente den aktuelle eksport fra JUNG HOME Gateway på {host} med den adgang, Home Assistant allerede har, kontrollere den og sætte integrationen op igen ud fra den, som Genkonfigurer → Hent den igen fra gatewayen gør; den eksport, den erstatter, beholdes som kopi (`.pre-reconfigure`). Endnu ikke afprøvet på rigtige enheder."
+          },
+          "upload": {
+            "title": "Indlæs en ny eksport",
+            "description": "JUNG HOME-appen blev set ændre konfigurationen af en enhed i mesh'et {title} (en knapkobling, et rum, en scene eller en enhedsindstilling), så den eksport, Home Assistant indlæste, passer måske ikke længere til installationen: det, der blev ændret i appen, er endnu ikke i Home Assistant. Når du er færdig i appen, så eksportér netværket fra den (Projekt → Del via fil), og upload filen her: Home Assistant kontrollerer den, gemmer den under `junghome_ble/` i sin konfigurationsmappe (den indeholder alle mesh-nøgler) og sætter integrationen op igen ud fra den; den eksport, den erstatter, beholdes som kopi. En post, der læste sin eksport fra en sti på værten, bruger derefter den uploadede kopi — for at beholde stien skal du i stedet kopiere den nye fil dertil og bruge Genkonfigurer, hvilket også fjerner denne meddelelse. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "export_file": "Mesh-eksportfil"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "I den nye eksport har en node Home Assistants adresse, så posten kan ikke bruge den. Giv først Home Assistant en ledig adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), og indlæs så eksporten der.",
+          "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+          "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+          "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+          "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+          "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+          "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+          "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+          "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0.",
+          "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+          "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+          "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+          "not_a_directory": "Metadatastien er ikke en mappe.",
+          "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+          "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+          "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "no_gateway_pin": "Home Assistant har ingen adgang eller intet certifikat registreret for gatewayen {host}, så den sender intet til den: intet blev ændret. Hent i stedet eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor gatewayens certifikat kan kontrolleres.",
+          "certificate_changed": "Gatewayen på {host} præsenterer et andet certifikat end det, Home Assistant fastgjorde for den: intet blev sendt til den, og intet blev ændret. Hvis du har udskiftet gatewayen eller dens certifikat, så hent eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor det nye certifikat kan kontrolleres; ellers svarer en anden enhed på dit netværk muligvis som gatewayen.",
+          "token_rejected": "Gatewayen på {host} accepterer ikke længere Home Assistants adgang: intet blev ændret. Følg den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og reparer så dette problem igen.",
+          "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+          "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "JUNG HOME-trykknapper med en anden indsats end i eksporten",
+      "description": "{devices}: disse trykknapper i JUNG HOME-mesh'et {title} annoncerer en anden indsats end den i den eksport, Home Assistant indlæste (eksport → enhed). Indsatsen blev udskiftet, efter den eksport blev lavet, så Home Assistant og appen viser måske den forkerte slags belastning for dem. Kontrollér enhederne i JUNG HOME-appen, eksportér netværket igen, og opdater denne integration (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer); problemet forsvinder, når eksporten nævner de indsatser, enhederne annoncerer. Endnu ikke afprøvet på rigtige enheder."
+    },
+    "node_clock_wrong": {
+      "title": "JUNG HOME-enheder med forkert ur",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Send tiden nu",
+            "description": "{devices}: disse enheder i JUNG HOME-mesh'et {title} kan køre tidsplaner (tidsstyret eller solopgangs-/solnedgangsstyret kobling), og deres ur går forkert: ingen tid, mere end et minut fra Home Assistants, eller en anden tidszoneforskydning end den, Home Assistant sendte dem. Deres tidsplaner kører på det forkerte tidspunkt, indtil de får tiden igen. Home Assistant sender den efter hver forbindelse og én gang om dagen; bekræft for at sende den nu og spørge disse enheder igen. Problemet forsvinder, når de svarer med den rigtige tid. Hvis det kommer igen, så kontrollér Home Assistants tidszone (Indstillinger → System → Generelt), og om enhederne kan nås. Endnu ikke afprøvet på rigtige enheder."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "not_connected": "Home Assistant har ingen forbindelse til mesh'et lige nu. Prøv igen, når der er forbindelse."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "JUNG HOME-mesh'ets nøgler ændres",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hent eksporten fra gatewayen igen",
+            "description": "Mesh'et {title} annoncerede en key refresh, hvis nye netværksnøgle Home Assistant ikke hørte blive uddelt (en key refresh, den ser fra starten, følges og giver ingen meddelelse). Når den er fuldført, er nøglerne i den eksport, Home Assistant bruger, ikke længere gyldige, og styringen holder op. Lad først nøglefornyelsen blive færdig i JUNG HOME-appen. Bekræft for at hente den aktuelle eksport fra JUNG HOME Gateway på {host} med den adgang, Home Assistant allerede har, kontrollere den og sætte integrationen op igen ud fra den, som Genkonfigurer → Hent den igen fra gatewayen gør; den eksport, den erstatter, beholdes som kopi (`.pre-reconfigure`). Endnu ikke afprøvet på rigtige enheder."
+          },
+          "upload": {
+            "title": "Indlæs en ny eksport",
+            "description": "Mesh'et {title} annoncerede en key refresh, hvis nye netværksnøgle Home Assistant ikke hørte blive uddelt (en key refresh, den ser fra starten, følges og giver ingen meddelelse). Når den er fuldført, er nøglerne i den eksport, Home Assistant bruger, ikke længere gyldige, og styringen holder op. Lad først nøglefornyelsen blive færdig i JUNG HOME-appen. Eksportér netværket fra JUNG HOME-appen (Projekt → Del via fil), og upload filen her: Home Assistant kontrollerer den, gemmer den under `junghome_ble/` i sin konfigurationsmappe (den indeholder alle mesh-nøgler) og sætter integrationen op igen ud fra den; den eksport, den erstatter, beholdes som kopi. En post, der læste sin eksport fra en sti på værten, bruger derefter den uploadede kopi — for at beholde stien skal du i stedet kopiere den nye fil dertil og bruge Genkonfigurer. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "export_file": "Mesh-eksportfil"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "I den nye eksport har en node Home Assistants adresse, så posten kan ikke bruge den. Giv først Home Assistant en ledig adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), og indlæs så eksporten der.",
+          "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+          "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+          "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+          "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+          "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+          "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+          "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+          "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0.",
+          "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+          "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+          "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+          "not_a_directory": "Metadatastien er ikke en mappe.",
+          "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+          "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+          "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "no_gateway_pin": "Home Assistant har ingen adgang eller intet certifikat registreret for gatewayen {host}, så den sender intet til den: intet blev ændret. Hent i stedet eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor gatewayens certifikat kan kontrolleres.",
+          "certificate_changed": "Gatewayen på {host} præsenterer et andet certifikat end det, Home Assistant fastgjorde for den: intet blev sendt til den, og intet blev ændret. Hvis du har udskiftet gatewayen eller dens certifikat, så hent eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor det nye certifikat kan kontrolleres; ellers svarer en anden enhed på dit netværk muligvis som gatewayen.",
+          "token_rejected": "Gatewayen på {host} accepterer ikke længere Home Assistants adgang: intet blev ændret. Følg den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og reparer så dette problem igen.",
+          "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+          "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME-enheder ignorerer Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Spring frem forbi de numre, enhederne kender",
+            "description": "Home Assistant hører JUNG HOME-mesh'et {title} via sin proxy-node, men ikke én enhed svarede på dens tilstandsanmodninger. Noderne kasserer Home Assistants beskeder som gentagelser. To årsager er sandsynlige: denne integrations sekvensnummerlager (`.storage/junghome_ble.*`) er gået tabt eller gendannet fra en ældre sikkerhedskopi, så Home Assistant nu sender sekvensnumre, som noderne allerede har set; eller en anden mesh-klient (for eksempel værktøjet `mesh_poc.py`) sender med den samme unicast-adresse {unicast}. Giv enten Home Assistant en ny, ubrugt adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse, og sørg for, at ingen anden klient bruger den), eller, hvis lageret er gået tabt eller gendannet (og ingen anden klient bruger adressen), bekræft for at lade Home Assistant springe sine sekvensnumre 1 048 576 frem og oprette forbindelse igen. Gendan ikke sekvensnummerlageret fra en sikkerhedskopi for at løse dette: en ældre kopi gentager kun numre, enhederne allerede har set. Problemet forsvinder af sig selv, så snart en enhed svarer Home Assistant igen."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "En anden klient bruger Home Assistants JUNG HOME-adresse",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Spring forbi den anden klients sekvensnumre",
+            "description": "Home Assistant modtog en besked fra JUNG HOME-mesh'et {title}, sendt fra sin egen unicast-adresse {unicast} med et sekvensnummer, den aldrig har brugt: en anden mesh-klient sender med den samme adresse — en anden Home Assistant-installation, værktøjet `mesh_poc.py` konfigureret med denne adresse, eller en kopi af denne installation startet et andet sted. To afsendere på én adresse genbruger hinandens sekvensnumre, og enhederne kasserer alt, der ligger under den anden klients, så Home Assistant sender intet til mesh'et, indtil dette er repareret (kommandoer mislykkes, tilstande opdateres ikke). Stop den anden klient, eller giv den eller Home Assistant en anden ubrugt adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse). Bekræft derefter for at lade Home Assistant fortsætte sine sekvensnumre forbi dem, den anden klient blev set med, og sende igen. Hvis den anden klient bliver ved med at sende fra denne adresse, kommer problemet igen. Gendan ikke sekvensnummerlageret fra en sikkerhedskopi for at løse dette. Endnu ikke afprøvet på rigtige enheder: en anden klient på Home Assistants adresse er kun blevet simuleret."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "En anden klient bruger stadig Home Assistants JUNG HOME-adresse",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Spring forbi den anden klients sekvensnumre igen",
+            "description": "Home Assistant sprang forbi sekvensnumrene for en anden mesh-klient på sin adresse {unicast} i JUNG HOME-mesh'et {title}, og den anden klient har siden sendt fra den adresse igen: den kører stadig. At springe frem hjælper ikke, så længe den gør det. Giv Home Assistant en ny, ubrugt unicast-adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), eller stop den anden klient, eller flyt den til en anden adresse. Indtil da sender Home Assistant intet til mesh'et. Bekræft først, når den anden klient ikke længere bruger denne adresse: Home Assistant fortsætter så igen forbi dens numre og genoptager afsendelsen. Endnu ikke afprøvet på rigtige enheder: en anden klient på Home Assistants adresse er kun blevet simuleret."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Ingen Bluetooth til JUNG HOME-mesh'et",
+      "description": "JUNG HOME-mesh'et {title} nås via Bluetooth, men Home Assistant har ingen Bluetooth-adapter eller -proxy tilbage, der kan oprette forbindelse: adapteren er slået fra, frakoblet eller defekt, eller alle ESPHome Bluetooth-proxyer med aktive forbindelser er offline. Alle enheder i mesh'et er utilgængelige, indtil en er tilbage. Tjek Indstillinger → Enheder og tjenester → Bluetooth. Problemet forsvinder, så snart en Bluetooth-adapter eller -proxy er tilgængelig igen."
+    },
+    "duplicate_mesh": {
+      "title": "To poster dækker det samme JUNG HOME-mesh",
+      "description": "{title} og {others} er begge sat op til det samme JUNG HOME-mesh. De deler dets sekvensnummertællere (`.storage/junghome_ble.seq.*`), så kun én af dem kan køre: {others} kører, og {title} blev ikke startet. Fjern en af disse poster (Indstillinger → Enheder og tjenester); hvis du fjerner {others}, så genindlæs {title} bagefter."
+    },
+    "gateway_import": {
+      "title": "Overtag entiteterne fra JUNG HOME Gateway-integrationen",
+      "description": "JUNG HOME Gateway-integrationen er sat op ved siden af Bluetooth Mesh-integrationen {title}, så hvert lys, hver stikkontakt, hver knap og hver scene findes to gange. Flyt gateway-entiteterne hertil — de beholder deres entitets-ID'er, navne, områder og historik — under Indstillinger → Enheder og tjenester → JUNG HOME (Bluetooth Mesh) → Genkonfigurer → Importér entiteterne fra JUNG HOME Gateway-integrationen, og slet så gateway-posten. Ignorer dette problem, hvis du vil beholde begge."
+    },
+    "export_stale": {
+      "title": "JUNG HOME-mesh'ets nøgler er ændret",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hent eksporten fra gatewayen igen",
+            "description": "Home Assistant er forbundet til en node i JUNG HOME-mesh'et {title}, men intet af det, den hører, kan dekrypteres med nøglerne fra eksporten: hver netværksbesked og nodens beacon fejler godkendelsen. Mesh'et fuldførte en key refresh (en “nøglefornyelse” i JUNG HOME-appen), efter den eksport blev lavet, så filen er forældet. Bekræft for at hente den aktuelle eksport fra JUNG HOME Gateway på {host} med den adgang, Home Assistant allerede har, kontrollere den og sætte integrationen op igen ud fra den, som Genkonfigurer → Hent den igen fra gatewayen gør; den eksport, den erstatter, beholdes som kopi (`.pre-reconfigure`). Problemet forsvinder, så snart en besked kan dekrypteres igen. Endnu ikke afprøvet på rigtige enheder."
+          },
+          "upload": {
+            "title": "Indlæs en ny eksport",
+            "description": "Home Assistant er forbundet til en node i JUNG HOME-mesh'et {title}, men intet af det, den hører, kan dekrypteres med nøglerne fra eksporten: hver netværksbesked og nodens beacon fejler godkendelsen. Mesh'et fuldførte en key refresh (en “nøglefornyelse” i JUNG HOME-appen), efter den eksport blev lavet, så filen er forældet. Eksportér netværket fra JUNG HOME-appen (Projekt → Del via fil), og upload filen her: Home Assistant kontrollerer den, gemmer den under `junghome_ble/` i sin konfigurationsmappe (den indeholder alle mesh-nøgler) og sætter integrationen op igen ud fra den; den eksport, den erstatter, beholdes som kopi. En post, der læste sin eksport fra en sti på værten, bruger derefter den uploadede kopi — for at beholde stien skal du i stedet kopiere den nye fil dertil og bruge Genkonfigurer. Problemet forsvinder, så snart en besked kan dekrypteres igen. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "export_file": "Mesh-eksportfil"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` fra appen (Del via fil) eller `MeshNetwork.json` fra en iOS-sikkerhedskopi."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "I den nye eksport har en node Home Assistants adresse, så posten kan ikke bruge den. Giv først Home Assistant en ledig adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse), og indlæs så eksporten der.",
+          "cannot_connect": "Gatewayen kunne ikke nås på den adresse.",
+          "cannot_load": "Mesh-eksporten kunne ikke læses. Kontrollér, at filen er appens JSON-eksport (og for en sti, at stien er korrekt).",
+          "cannot_store": "Eksporten kunne ikke skrives til Home Assistants konfigurationsmappe.",
+          "export_keys_stale": "Enheder i dette mesh er synlige via Bluetooth, men ingen af dem annoncerer netværksnøglen i denne eksport: netværkets nøgler blev fornyet (en key refresh i JUNG HOME-appen), efter eksporten blev lavet. Eksportér netværket igen fra JUNG HOME-appen, eller hent det igen fra gatewayen, og brug den fil.",
+          "gateway_error": "Gatewayen svarede med en fejl. Kontrollér dens status i JUNG HOME-appen, og prøv igen.",
+          "gateway_busy": "Gatewayen er optaget af en anden konfigurationsanmodning. Prøv igen om et minut.",
+          "invalid_address": "Adressen skal være hexadecimal mellem 0001 og 7FFF.",
+          "invalid_export": "Filen er ikke en JUNG HOME-mesh-eksport (eller den er beskadiget): den skal indeholde netværket med dets nøgler, noder og én netværksnøgle på indeks 0.",
+          "invalid_metadata": "Metadatamappen indeholder ikke appens device_metadata.json og scene_metadata.json i den forventede form.",
+          "no_project": "Gatewayen har ingen netværkseksport. Åbn JUNG HOME-appen én gang, mens den er forbundet til gatewayen (den uploader projektet automatisk), og sørg for, at gatewayens firmware er 2.1 eller nyere.",
+          "no_proxy_visible": "Ingen node i dette mesh-netværk er i øjeblikket synlig via Bluetooth. Sørg for, at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er inden for rækkevidde af en netdrevet JUNG-enhed.",
+          "not_a_directory": "Metadatastien er ikke en mappe.",
+          "not_approved": "Adgangsanmodningen blev ikke godkendt i appen i tide. Send igen, og godkend den under Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger.",
+          "token_rejected": "Gatewayen accepterer ikke længere den gemte adgang. Send igen for at anmode om adgang på ny.",
+          "upload_failed": "Den uploadede fil kunne ikke behandles. Prøv at uploade den igen."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "no_gateway_pin": "Home Assistant har ingen adgang eller intet certifikat registreret for gatewayen {host}, så den sender intet til den: intet blev ændret. Hent i stedet eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor gatewayens certifikat kan kontrolleres.",
+          "certificate_changed": "Gatewayen på {host} præsenterer et andet certifikat end det, Home Assistant fastgjorde for den: intet blev sendt til den, og intet blev ændret. Hvis du har udskiftet gatewayen eller dens certifikat, så hent eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, hvor det nye certifikat kan kontrolleres; ellers svarer en anden enhed på dit netværk muligvis som gatewayen.",
+          "token_rejected": "Gatewayen på {host} accepterer ikke længere Home Assistants adgang: intet blev ændret. Følg den nye godkendelse, Home Assistant beder om (Indstillinger → Enheder og tjenester), og reparer så dette problem igen.",
+          "network_mismatch": "Eksporten tilhører et andet mesh-netværk end denne post.",
+          "mesh_already_configured": "Dette mesh er allerede sat op som en anden post; to poster for ét mesh ville dele dets sekvensnumre. Genkonfigurer den post i stedet, eller fjern den først."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "JUNG HOME Gateways certifikat er ændret",
+      "description": "JUNG HOME Gateway på {host} matcher ikke længere det TLS-certifikat, Home Assistant fastgjorde for den: værten præsenterer et andet certifikat, eller gateway-noden rapporterer et andet via mesh'et. Home Assistant er holdt op med at bruge gatewayen (intet adgangstoken og ingen eksport sendes dertil); enhederne fungerer fortsat via Bluetooth. Hvis du har udskiftet gatewayen eller dens certifikat, så åbn Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer, og hent eksporten fra gatewayen igen; ellers svarer en anden enhed på dit netværk muligvis som gatewayen — kontrollér dit netværk."
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME-eksport ikke overdraget til gatewayen",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Overdrag eksporten til gatewayen",
+            "description": "Home Assistant ændrede JUNG HOME-installationen (et rum, en knapkobling eller en scene) og omskrev sin mesh-eksport, men JUNG HOME Gateway på {host} overtog ikke den nye eksport: {error}. Indtil den gør det, viser gatewayen og appen den gamle tilstand — og appens næste ændring ville overskrive Home Assistants. Home Assistant prøver igen to gange med 15 sekunders mellemrum, ligesom appen. Kontrollér, at gatewayen kan nås, og bekræft så for at overdrage eksporten nu, som handlingen Synkroniser gateway (`junghome_ble.sync_gateway`) gør: den afviser, når gatewayen har ændringer, som Home Assistant ikke har set, og som en upload ville slette. Problemet forsvinder, når en upload lykkes. Endnu ikke afprøvet på rigtige enheder."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "not_loaded": "Den JUNG HOME-post, som dette problem hører til, kører ikke lige nu. Prøv igen, når den er sat op.",
+          "sync_failed": "Eksporten blev ikke overdraget til gatewayen: {error} Problemet består; reparer det igen, når årsagen er væk."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "En JUNG HOME-ændring på {title} blev afbrudt",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "En JUNG HOME-ændring blev afbrudt",
+            "description": "Home Assistant stoppede midt i {action}: {accepted} af dens {total} konfigurationsbeskeder havde nået enhederne. De er nu registreret i mesh-eksporten, så eksporten siger, hvad enhederne indeholder. Kør handlingen igen med det samme mål for at fuldføre den. Med en JUNG HOME Gateway overdrages den registrerede eksport til den ved næste ændring eller med handlingen `junghome_ble.sync_gateway`. Bekræft for at afvise denne meddelelse."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Enhedsnavn ikke givet videre til JUNG HOME-appen",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Omdøb enheden",
+            "description": "{device} blev omdøbt i Home Assistant til “{name}”, et navn, som JUNG HOME-appen afviser: et navn må ikke være tomt eller længere end 30 tegn, og appen opfatter et %-tegn som starten på en pladsholder (kun %% og %n accepteres). Mesh-eksporten og appen beholder enhedens gamle navn. Indtast et navn, som appen accepterer: Home Assistant giver enheden det navn og giver det videre til eksporten (og med en gateway til appen) som ved enhver omdøbning. Problemet forsvinder, når navnet er givet videre. Endnu ikke afprøvet på rigtige enheder.",
+            "data": {
+              "name": "Navn"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Et navn må ikke være tomt.",
+          "name_not_allowed": "Appen opfatter et %-tegn som starten på en pladsholder: kun %% og %n accepteres.",
+          "name_too_long": "Appen accepterer navne på højst 30 tegn."
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "not_loaded": "Den JUNG HOME-post, som dette problem hører til, kører ikke lige nu. Prøv igen, når den er sat op.",
+          "device_gone": "Den enhed, som dette problem nævner, findes ikke længere i Home Assistant."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Enheder, som Home Assistant har tilføjet, gik glip af den nye netværksnøgle",
+      "description": "JUNG HOME-appen fornyede netværksnøglen for mesh'et {title}, og Home Assistant fulgte fornyelsen til ende. Appen kender ikke de enheder, Home Assistant har tilføjet, så Home Assistant giver dem selv den nye nøgle, men enheden/enhederne på {addresses} bekræftede den ikke. Sørg for, at de har strøm og er inden for rækkevidde: Home Assistant prøver igen ved hver ny Bluetooth-forbindelse. En enhed, der aldrig modtog den nye nøgle, kan ikke længere nås: fabriksnulstil den, og tilføj den så igen (fjern den først fra Home Assistant med `junghome_ble.remove_device` eller `junghome_ble.reset_pending_device`, med `force`). Endnu ikke afprøvet på en rigtig enhed. Problemet forsvinder, når alle sådanne enheder har bekræftet."
+    },
+    "pending_device": {
+      "title": "En enhed, som Home Assistant har tilføjet, er ikke registreret",
+      "description": "Home Assistant klargjorde en JUNG-enhed i mesh'et {title} med `junghome_ble.add_device`, men dens konfiguration eller registrering i eksporten mislykkedes: enheden på {addresses} har netværkets nøgler, JUNG HOME-appen og eksporten kender den ikke, og dens adresser og elementgrupper forbliver reserveret, så ingen anden enhed får dem. Nulstil den med handlingen `junghome_ble.reset_pending_device` (dens unicast-adresse), og tilføj den igen; for en enhed, du allerede har nulstillet manuelt, eller en, der er væk, skal du bruge `force`. Endnu ikke afprøvet på en rigtig enhed. Problemet forsvinder, når der ikke er flere sådanne enheder."
+    },
+    "vault_unwritable": {
+      "title": "JUNG HOME-enhedsnøgler kan ikke gemmes",
+      "description": "Home Assistant kunne ikke skrive sin boks for mesh'et {title} ({path}; seneste fejl: {error}) under tilføjelsen af enheden på {address}. Boksen indeholder enhedsnøglerne for de enheder, Home Assistant tilføjer, og som intet andet har, før eksporten registrerer dem, så enheden blev ikke klargjort: den modtog intet og er stadig ny. Det betyder som regel, at disken er fuld, eller at dens filsystem er blevet genmonteret skrivebeskyttet, ofte på grund af et svigtende SD-kort. Frigør plads, eller reparer lageret (et filsystem, der er genmonteret skrivebeskyttet, kræver som regel en genstart af værten), og tilføj så enheden igen; undlad at redigere, slette eller erstatte boksens filer. Endnu ikke afprøvet på en rigtig enhed. Problemet forsvinder af sig selv, så snart en skrivning til boksen lykkes."
+    },
+    "carry_over_conflict": {
+      "title": "JUNG HOME-appen overskrev en ændring, Home Assistant foretog på {title}",
+      "description": "Home Assistant overtog den eksport, JUNG HOME-appen sidst gav gatewayen, og førte sine egne ændringer over på den, men appen havde i mellemtiden ændret de samme poster. Appens version beholdes for: {paths}. Enhederne har muligvis stadig det, Home Assistant havde skrevet: {held}. Kontrollér de rum, scener og koblinger i appen og i Home Assistant, og indstil dem igen fra den ene side. Appen ser ikke, hvad Home Assistant tilføjer, før den importerer en fil. Problemet forsvinder ved næste overtagelse af gatewayens eksport, der ikke har en sådan konflikt."
+    },
+    "scene_held": {
+      "title": "Enheder har stadig en slettet JUNG HOME-scene på {title}",
+      "description": "En scene blev slettet med “Også hvis en enhed ikke svarer”, mens nogle af dens enheder ikke kunne nås eller afviste; de har den stadig og aktiverer den med enhver scene med det nummer. Scenenummer: enheder — {members}. Home Assistant giver ingen ny scene disse numre. Når enhederne kan nås igen, så kør handlingen Slet ubrugte scener med “Prøvekørsel” slået fra: den sletter disse numre fra dem, og problemet forsvinder."
+    },
+    "gateway_token_rejected": {
+      "title": "JUNG HOME Gateway accepterer ikke længere Home Assistant",
+      "description": "JUNG HOME Gateway på {host} afviser den adgang, Home Assistant registrerede for mesh'et {title} (den blev sandsynligvis fjernet i JUNG HOME-appen under Indstillinger → Gateway → Adgangstilladelser). Home Assistant bliver ved med at ændre rum, knapkoblinger og scener i sin egen eksport, men overdrager den ikke længere til gatewayen, så appen ser ikke de ændringer; enhederne fungerer fortsat. Home Assistant beder om adgang igen: følg dens anmodning om at godkende JUNG HOME igen (Indstillinger → Enheder og tjenester; Reparationer viser det også som udløbet godkendelse), og indtast gatewayens netværksnøglekodeord, eller godkend den nye adgangsanmodning i appen. Problemet forsvinder, når gatewayen accepterer Home Assistant igen; handlingen Synkroniser gateway overdrager så de ændringer, der er foretaget siden."
+    },
+    "seq_store_lost": {
+      "title": "Sekvensnumre for JUNG HOME-mesh'et {title} er tabt",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Fortsæt forbi de numre, der allerede er sendt",
+            "description": "Denne integrations sekvensnummerlager (`.storage/junghome_ble.seq.*`) har ingen brugbar registrering for Home Assistants adresse {unicast}, selvom den adresse har sendt før. At starte forfra ved 0 ville genbruge sekvensnumre, enhederne allerede har set: de ville ignorere Home Assistant, og hvert genbrugt nummer svækker mesh'ets kryptering. At gendanne lageret fra en sikkerhedskopi gør det samme — en ældre kopi gentager hvert nummer, der er sendt, siden den blev taget — så gendan ikke `junghome_ble.seq.*`-filer. Bekræft for at lade Home Assistant fortsætte 1 048 576 numre forbi den sidste værdi, den stadig kan læse (4 194 304 forbi den bundgrænse, den fører sammen med tælleren i `junghome_ble.seq.*.floor`, eller forbi 0, når ingen er tilbage), og sætte integrationen op igen."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "floor_not_written": "Sekvensnummerets bundgrænse (`.storage/junghome_ble.seq.*.floor`) kunne ikke skrives: intet blev ændret, og integrationen forbliver stoppet. Kontrollér disken, som Home Assistants konfiguration ligger på, og reparer så problemet igen."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "JUNG HOME-sekvensnumre kan ikke gemmes",
+      "description": "Home Assistant har ikke kunnet skrive sekvensnummerlageret for mesh'et {title} i over et minut ({path}; seneste fejl: {error}). Hver besked til enhederne bærer et nyt sekvensnummer, og Home Assistant sender kun numre, den har gemt, så en genstart aldrig gentager et: indtil en skrivning lykkes, sender den intet til mesh'et — kommandoer mislykkes, og tilstanden opdateres ikke. Det betyder som regel, at disken er fuld, eller at dens filsystem er blevet genmonteret skrivebeskyttet, ofte på grund af et svigtende SD-kort. Frigør plads, eller reparer lageret (et filsystem, der er genmonteret skrivebeskyttet, kræver som regel en genstart af værten); undlad at redigere, slette eller erstatte lagerets filer. Problemet forsvinder af sig selv, så snart en skrivning lykkes og afsendelsen genoptages."
+    },
+    "address_in_use": {
+      "title": "Home Assistants JUNG HOME-adresse er optaget",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Flyt Home Assistant til {suggestion}",
+            "description": "I eksporten af mesh'et {title} optager en node den unicast-adresse {unicast}, som Home Assistant sender fra. Begge ville blive opfattet som én afsender: enhederne kasserer den ene som gentagelse, og svar går til den forkerte. Bekræft for at give Home Assistant den ledige adresse {suggestion} og sætte integrationen op igen, som Genkonfigurer → Avanceret → Vores unicast-adresse gør. Sørg for, at ingen anden mesh-klient (denne integrations kommandolinjeværktøjer, en anden Home Assistant) sender fra {suggestion}. Sekvensnumre føres pr. adresse: den nye fortsætter sin egen registrering eller starter langt nok fremme, når Home Assistant ikke har nogen for den, så intet nummer sendes to gange. Endnu ikke afprøvet på rigtige enheder."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "cannot_load": "Postens eksport kunne ikke læses, så der kan ikke findes en ledig adresse: intet blev ændret. Indlæs en ny eksport under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer.",
+          "no_free_address": "Eksporten efterlader ingen ledig adresse til Home Assistant: intet blev ændret. Kontrollér eksporten under Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer.",
+          "address_taken": "{suggestion} er ikke længere ledig i eksporten (den er ændret i mellemtiden): intet blev ændret. Reparer problemet igen for at få et nyt forslag."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Home Assistants JUNG HOME-adresse kan blive uddelt",
+      "description": "Den unicast-adresse {unicast}, som Home Assistant sender fra i mesh'et {title}, ligger inden for adresseintervallet for en af appens provisionere eller blev brugt af en fjernet node. Den virker, indtil appen klargør en node der; flyt Home Assistant til en ledig adresse inden da (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse; {suggestion} er ledig)."
+    },
+    "sequence_space_low": {
+      "title": "JUNG HOME-mesh'ets sekvensnumre er ved at slippe op",
+      "description": "I mesh'et {title} har {source} brugt {percent} % af sekvensnumrene for IV-indeks {iv_index}. Hver afsender stopper ved slutningen af det interval, indtil mesh'et går over til det næste IV-indeks (en IV Update), som JUNG HOME Gateway starter af sig selv; Home Assistant følger den, men starter ikke selv en. Hold gatewayen strømforsynet og forbundet til mesh'et; uden en gateway stopper mesh'et, når en afsender løber tør. Problemet forsvinder af sig selv efter opdateringen."
+    },
+    "iv_index_mismatch": {
+      "title": "JUNG HOME-mesh'et er på et andet IV-indeks",
+      "description": "Mesh'et {title} er på IV-indeks {mesh}, Home Assistants sekvensnummerlager på {ours}: for langt fra hinanden til, at Home Assistant kan følge med (den følger mesh'et op til 42 frem, højst én gang hver 192. time, og aldrig tilbage). Enhederne ignorerer Home Assistant i mellemtiden. Det sker, når Home Assistant har været væk under mange IV-opdateringer, når dens lager (`.storage/junghome_ble.seq.*`) tilhører et andet mesh, eller når beacons forfalsket med netværksnøglen har skubbet den frem. Giv Home Assistant en ny unicast-adresse (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer → Avanceret → Vores unicast-adresse): den starter der fra mesh'ets IV-indeks. Gendan ikke lageret fra en sikkerhedskopi, og rediger det ikke: en ældre eller redigeret registrering gentager sekvensnumre, enhederne allerede har set, og den næste start overskriver alligevel en manuel redigering. Problemet forsvinder af sig selv, når et beacon inden for rækkevidde ankommer."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant er foran JUNG HOME-mesh'ets IV-indeks",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Gå tilbage til mesh'ets IV-indeks",
+            "description": "Mesh'et {title} er på IV-indeks {mesh}, Home Assistants sekvensnummerlager på {ours} — foran det, hvilket mesh'et aldrig er: enhederne ignorerer Home Assistant, og den kan ikke følge et mesh, der er bagud. Det sker, når dens lager (`.storage/junghome_ble.seq.*`) tilhører et andet mesh, eller når beacons forfalsket med netværksnøglen har skubbet den frem. Bekræft for at sætte Home Assistant tilbage til mesh'ets IV-indeks og sætte integrationen op igen: dens sekvensnumre fortsætter over alle numre, den har sendt fra det indeks og frem, så intet bruges to gange. Gendan ikke i stedet lageret fra en sikkerhedskopi, og rediger det ikke: en ældre eller redigeret registrering gentager numre, enhederne allerede har set. Den anden vej tilbage er en ny unicast-adresse til Home Assistant (Indstillinger → Enheder og tjenester → JUNG HOME → Genkonfigurer). Endnu ikke afprøvet på rigtige enheder: et IV-indeks foran mesh'et er ikke set på et rigtigt mesh."
+          }
+        },
+        "abort": {
+          "entry_gone": "Den JUNG HOME-post, som dette problem hører til, er ikke længere sat op.",
+          "iv_index_not_ahead": "Home Assistant er ikke længere uden for rækkevidde foran mesh'et, eller dens IV-tilstand er ændret, siden problemet blev rejst: intet blev ændret. Hvis problemet kommer igen, så reparer det igen.",
+          "seq_store_not_written": "Sekvensnummerets bundgrænse (`.storage/junghome_ble.seq.*.floor`) kunne ikke skrives: intet blev ændret. Kontrollér disken, som Home Assistants konfiguration ligger på, og reparer så problemet igen."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME-pucks har ingen tidsgiver",
+      "description": "Mesh'et {title} har JUNG-aktuatorpucks af den ældre type ({pucks}): de får deres tid fra en tidsgiver, en netdrevet enhed, der videresender tiden til dem. Ingen enhed i mesh'et er en, så puckenes timere går skævt. Slå kontakten *Tidsgiver* til (en konfigurationsentitet, deaktiveret som standard) på én enhed, der altid har strøm, f.eks. en stikkontakt eller en mini-aktuator; JUNG HOME-appen vælger selv en, når den konfigurerer en puck. Endnu ikke afprøvet på rigtige enheder. Problemet forsvinder, når en enhed er tidsgiver."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Angiv rum",
+      "description": "Placerer JUNG HOME-lys og -stikkontakter i et rum i mesh'et (appens “area”). Et rum, der ikke findes endnu, oprettes kun med “Opret rummet”, så et fejlindtastet navn afvises. Enheden forlader alle andre rum; knapper, der allerede er koblet til rummet, begynder at styre den. Mesh-eksporten omskrives, og Home Assistant følger den uden at genindlæse integrationen. Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "room": {
+          "name": "Rum",
+          "description": "Navnet på rummet i JUNG HOME-appen."
+        },
+        "create": {
+          "name": "Opret rummet",
+          "description": "Opret rummet, når mesh'et ikke har et rum med det navn. Fra: et ukendt navn afvises."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Føj til rum",
+      "description": "Placerer JUNG HOME-lys, -stikkontakter og -persienner også i et rum i mesh'et: de bliver i de rum, de er i, da appen lader en enhed være i flere rum. Et rum, der ikke findes endnu, oprettes kun med “Opret rummet”. Knapper, der allerede er koblet til rummet, begynder at styre dem. Mesh-eksporten omskrives, og Home Assistant følger den uden at genindlæse integrationen. Endnu ikke afprøvet på rigtige enheder. Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "room": {
+          "name": "Rum",
+          "description": "Navnet på rummet i JUNG HOME-appen."
+        },
+        "create": {
+          "name": "Opret rummet",
+          "description": "Opret rummet, når mesh'et ikke har et rum med det navn. Fra: et ukendt navn afvises."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Fjern fra rum",
+      "description": "Tager JUNG HOME-lys, -stikkontakter og -persienner ud af et rum i mesh'et; de bliver i deres andre rum, og en enhed kan ende i intet rum. En enhed, som en knap styrer via sin kobling til rummet, afvises, medmindre “Også hvis en knap styrer den” er slået til: når den forlader rummet, kobles den også fra den knap. Mesh-eksporten omskrives, og Home Assistant følger den uden at genindlæse integrationen. Endnu ikke afprøvet på rigtige enheder. Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "room": {
+          "name": "Rum",
+          "description": "Navnet på rummet i JUNG HOME-appen."
+        },
+        "force": {
+          "name": "Også hvis en knap styrer den",
+          "description": "Tag enheden ud af rummet, selvom en knap koblet til rummet styrer den; knappen holder op med at styre den."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Opret rum",
+      "description": "Opretter et tomt rum i mesh-eksporten (intet sendes til enhederne). Home Assistant giver det den højeste ledige gruppeadresse i appens interval: appen ser det ikke, før den importerer en fil, og giver sit eget næste rum den laveste ledige. Svarer med rummets gruppeadresse, når der bedes om det. Kun for administratorer.",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Navnet på det nye rum."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Omdøb rum",
+      "description": "Omdøber et rum i mesh-eksporten (intet sendes til enhederne). Kun for administratorer.",
+      "fields": {
+        "room": {
+          "name": "Rum",
+          "description": "Rummets nuværende navn."
+        },
+        "new_name": {
+          "name": "Nyt navn",
+          "description": "Det nye navn."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Slet rum",
+      "description": "Sletter et rum: dets enheder forlader det, knapper koblet til rummet mister deres funktion, og rummet fjernes fra mesh-eksporten. Selve enhederne kan fortsat betjenes. Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "room": {
+          "name": "Rum",
+          "description": "Navnet på det rum, der skal slettes."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Tildel knap",
+      "description": "Kobler en trykknaps knap eller en melder til et lys, en stikkontakt, en persienne, en rumtermostat, gatewayen, et rum eller en scene, præcis som JUNG HOME-appens knapkobling gør: knappens tidligere kobling fjernes, knappen forbindes med målet, og dens knaptilstand indstilles (en melder har ingen og styrer kun én enhed). Mesh-eksporten omskrives, og Home Assistant følger den uden at genindlæse integrationen. En melder som kilde og temperaturtilstanden er endnu ikke afprøvet på rigtige enheder. Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "key_entity": {
+          "name": "Knap",
+          "description": "Knappens hændelsesentitet eller en entitet fra en melder."
+        },
+        "key_device": {
+          "name": "Knapenhed",
+          "description": "Trykknapenheden med knappen (brug sammen med “Knapbogstav”, når den har flere knapper) eller en melder."
+        },
+        "key": {
+          "name": "Knapbogstav",
+          "description": "Hvilken knap på enheden: A, B, C eller D; E1 eller E2 for en indgang på en mini-aktuator."
+        },
+        "target_entity": {
+          "name": "Målentitet",
+          "description": "Det lys, den stikkontakt, persienne eller rumtermostat, som knappen skal styre."
+        },
+        "target_device": {
+          "name": "Målenhed",
+          "description": "Den enhed, knappen skal styre: et lys, en stikkontakt eller gatewayen (knappen rapporterer så klik, dobbeltklik og hold nede til Home Assistant)."
+        },
+        "room": {
+          "name": "Målrum",
+          "description": "Det rum, hvis lys eller stikkontakter knappen skal styre."
+        },
+        "scene": {
+          "name": "Målscene",
+          "description": "Den scene, knappen skal aktivere på alle enheder, efter nummer eller navn (knaptilstand scene; lad “Tilstand” være tom). Endnu ikke afprøvet på en rigtig enhed."
+        },
+        "mode": {
+          "name": "Tilstand",
+          "description": "Hvad knappen gør: light (til/fra og dæmpning), switch (til/fra), move (persienner; utestet), gateway (rapportering af hændelser), lock (op-/til-siden spærrer et lys eller en stikkontakt i dens aktuelle tilstand, ned-/fra-siden låser den op; endnu ikke afprøvet på rigtige enheder), temperature (en rumtermostats sætpunkt; endnu ikke afprøvet på rigtige enheder) eller for rum light_and_switch (lys og stikkontakter sammen). Hvis den er tom, følger tilstanden målet."
+        },
+        "target_element": {
+          "name": "Målelement",
+          "description": "Kun enhedsmål: styr en anden del af målet med knappens dæmpningsklient alene, color_temperature (farvetemperaturen for et tunable-white-lys, tilstand light) eller slat (lamellerne på en persienne, tilstand move). Endnu ikke afprøvet på rigtige enheder."
+        },
+        "lock_seconds": {
+          "name": "Spærretid",
+          "description": "Kun tilstanden lock: hvor længe en spærring fra knappen varer, i sekunder (0 eller tom: indtil knappen ophæver den). Endnu ikke afprøvet på rigtige enheder."
+        },
+        "room_area": {
+          "name": "Rum via område",
+          "description": "I stedet for at skrive rummets navn: det område, der hedder det samme som rummet."
+        },
+        "scene_entity": {
+          "name": "Sceneentitet",
+          "description": "I stedet for at skrive scenens navn eller nummer: dens sceneentitet."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Ryd knapfunktion",
+      "description": "Giver en trykknaps knap ingen funktion: dens kobling til en enhed, gatewayen eller et rum fjernes (appens “Ingen funktion”). Svarer, hvor mange af dens beskeder enhederne anvendte, om mesh-eksporten blev skrevet, og hvilke enheder der blev ændret; med “Prøvekørsel” i stedet, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "key_entity": {
+          "name": "Knap",
+          "description": "Knappens hændelsesentitet."
+        },
+        "key_device": {
+          "name": "Knapenhed",
+          "description": "Trykknapenheden med knappen (brug sammen med “Knapbogstav”, når den har flere knapper)."
+        },
+        "key": {
+          "name": "Knapbogstav",
+          "description": "Hvilken knap på enheden: A, B, C eller D; E1 eller E2 for en indgang på en mini-aktuator."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Opret scene",
+      "description": "Opretter en tom scene i mesh-eksporten (intet sendes til enhederne). Gem enheder i den med “Gem scene”. Home Assistant giver den det højeste ledige scenenummer i appens interval: appen ser den ikke, før den importerer en fil, og giver sin egen næste scene det laveste ledige. Svarer med scenenummeret, når der bedes om det. Kun for administratorer.",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Navnet på den nye scene."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Omdøb scene",
+      "description": "Omdøber en scene i mesh-eksporten (intet sendes til enhederne). Kun for administratorer.",
+      "fields": {
+        "scene": {
+          "name": "Scene",
+          "description": "Scenens nuværende navn eller nummer."
+        },
+        "new_name": {
+          "name": "Nyt navn",
+          "description": "Det nye navn."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "scene_entity": {
+          "name": "Sceneentitet",
+          "description": "I stedet for at skrive scenens navn eller nummer: dens sceneentitet."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Gem scene",
+      "description": "Gemmer den aktuelle tilstand for JUNG HOME-lys, -stikkontakter, -persienner og -termostater i en scene, som appens “gem enhed i scene” gør: indstil først enhederne, som scenen skal efterlade dem, og kald så dette. Hver enhed gemmer sin tilstand under scenen (Scene Store) sammen med JUNG-beskrivelsen af den, og mesh-eksporten registrerer medlemmet. Home Assistant følger den uden at genindlæse integrationen. Med en angivet tilstand (handling, lysstyrke, farvetemperatur, temperatur) sættes hver enhed først til den, og der ventes, til den er nået; en persienne med en angivet position flyttes ikke, scenen gemmer den position for den. Kun for administratorer.",
+      "fields": {
+        "scene": {
+          "name": "Scene",
+          "description": "Scenens navn eller nummer (oprettet med “Opret scene” eller i appen)."
+        },
+        "action": {
+          "name": "Handling",
+          "description": "Tænd eller sluk lysene og stikkontakterne, før der gemmes."
+        },
+        "brightness_pct": {
+          "name": "Lysstyrke",
+          "description": "Dæmp lysene til denne lysstyrke, før der gemmes (handlingen er så til)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farvetemperatur",
+          "description": "Sæt tunable-white-lysene til denne farvetemperatur, før der gemmes."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Position, som scenen kører en persienne til: 0 lukket, 100 åben."
+        },
+        "tilt_position": {
+          "name": "Lamelposition",
+          "description": "Lamelposition, som scenen kører en persienne til; persiennens position, når den udelades."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Sæt termostaterne til denne temperatur, før der gemmes."
+        },
+        "scene_entity": {
+          "name": "Sceneentitet",
+          "description": "I stedet for at skrive scenens navn eller nummer: dens sceneentitet."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Tilstand, der skal gemmes",
+          "description": "Sæt først enhederne til denne tilstand; hvis den er tom, gemmes deres aktuelle tilstand."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Fjern fra scene",
+      "description": "Tager JUNG HOME-lys, -stikkontakter, -persienner og -termostater ud af en scene: hver enhed glemmer scenen (Scene Delete), og mesh-eksporten fjerner medlemmet. Home Assistant følger den uden at genindlæse integrationen. Kun for administratorer.",
+      "fields": {
+        "scene": {
+          "name": "Scene",
+          "description": "Scenens navn eller nummer."
+        },
+        "scene_entity": {
+          "name": "Sceneentitet",
+          "description": "I stedet for at skrive scenens navn eller nummer: dens sceneentitet."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Slet scene",
+      "description": "Sletter en scene: hver enhed, der har gemt den, glemmer den, knapperne på de enheder, der aktiverer den, mister deres koblinger, og scenen fjernes fra mesh-eksporten. Home Assistant følger den uden at genindlæse integrationen. Svarer, når der bedes om det, med de enheder, der blev sprunget over med “Også hvis en enhed ikke svarer” (som kræver “Bekræft”), og hvad knappernes beskeder anvendte; med “Prøvekørsel”, hvad den ville sende og ændre. Kun for administratorer.",
+      "fields": {
+        "scene": {
+          "name": "Scene",
+          "description": "Navnet eller nummeret på den scene, der skal slettes."
+        },
+        "force": {
+          "name": "Også hvis en enhed ikke svarer",
+          "description": "Slet scenen fra mesh-eksporten, selvom en enhed, der har gemt den, ikke kan nås eller afviser (appens “Slet alligevel”). Den enhed beholder scenen, indtil “Slet ubrugte scener” fjerner den; en reparationsmeddelelse nævner den, og ingen ny scene får dens nummer i mellemtiden."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        },
+        "scene_entity": {
+          "name": "Sceneentitet",
+          "description": "I stedet for at skrive scenens navn eller nummer: dens sceneentitet."
+        },
+        "confirm": {
+          "name": "Bekræft",
+          "description": "Nødvendig med “Også hvis en enhed ikke svarer”: en enhed, der beholder scenen, kan ikke herfra bringes til at glemme den. Ikke nødvendig for en prøvekørsel."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Slet ubrugte scener",
+      "description": "Læser hver enheds sceneregister og viser eller sletter de scener, mesh-eksporten ikke kender (hverken en scene eller en timerscene i appen), som appen gør, når dens timerliste åbnes. En prøvekørsel, medmindre andet er angivet. Med en gateway virker den kun på gatewayens aktuelle eksport; på et netværk, der er sat op fra en fil, kræver sletning “Mesh-eksporten er aktuel” eller de numre, der skal slettes. Svarer med numrene pr. enhed. Kun for administratorer.",
+      "fields": {
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Vis kun de numre, der ville blive slettet; intet slettes. Slået til som standard."
+        },
+        "numbers": {
+          "name": "Scenenumre",
+          "description": "Slet kun disse scenenumre (ingen af dem en scene i mesh-eksporten)."
+        },
+        "confirm_stale_export": {
+          "name": "Mesh-eksporten er aktuel",
+          "description": "For et netværk, der er sat op fra en fil: filen indeholder alle appens scener, også dem, der er oprettet, siden den blev eksporteret. Uden dette slettes kun de angivne numre."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Synkroniser gateway",
+      "description": "Overdrager den mesh-eksport, Home Assistant bruger, til JUNG HOME Gateway, som appen gør efter hver ændring. Kører automatisk efter hver handling, der omskriver eksporten; kald den for at prøve igen efter reparationen “eksport ikke overdraget til gatewayen”, eller efter du selv har redigeret filen. Kun for administratorer.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Hent tidsplaner",
+      "description": "Læser de tidsplaner, JUNG HOME-forbrugere selv kører (appens side Automatisering): op til 16 pladser pr. forbruger, hver med en udløser på et tidspunkt, ved solopgang eller solnedgang på bestemte ugedage, og hvad forbrugeren så gør. Svarer pr. entitet med dens brugte pladser i de felter, “Opret tidsplan” tager imod."
+    },
+    "create_schedule": {
+      "name": "Opret tidsplan",
+      "description": "Skriver en tidsplan på den første ledige plads i hver valgt JUNG HOME-forbruger, som så kører den selv, uden Home Assistant. En tidsplan ved solopgang eller solnedgang sender først noden Home Assistants hjemsted. Svarer pr. entitet med den brugte plads. Ikke testet på en enhed. Kun for administratorer.",
+      "fields": {
+        "trigger": {
+          "name": "Udløser",
+          "description": "Hvornår tidsplanen udløses: på et tidspunkt eller ved solopgang eller solnedgang."
+        },
+        "time": {
+          "name": "Tidspunkt",
+          "description": "Tidspunkt for en tidsstyret tidsplan."
+        },
+        "not_before": {
+          "name": "Ikke før",
+          "description": "En tidsplan ved solopgang eller solnedgang udløses ikke tidligere end dette tidspunkt (åben, når den udelades)."
+        },
+        "not_after": {
+          "name": "Ikke efter",
+          "description": "En tidsplan ved solopgang eller solnedgang udløses ikke senere end dette tidspunkt (åben, når den udelades)."
+        },
+        "offset": {
+          "name": "Forskydning",
+          "description": "Minutter før (negativ) eller efter solopgang eller solnedgang."
+        },
+        "weekdays": {
+          "name": "Ugedage",
+          "description": "Dage, hvor tidsplanen udløses; hver dag, når den udelades."
+        },
+        "enabled": {
+          "name": "Aktiveret",
+          "description": "Om tidsplanen udløses; en deaktiveret venter på “Aktivér tidsplan”."
+        },
+        "action": {
+          "name": "Handling",
+          "description": "Tænd eller sluk et lys eller en stikkontakt."
+        },
+        "brightness_pct": {
+          "name": "Lysstyrke",
+          "description": "Lysstyrke, som en lysdæmper tænder til (handlingen er så til)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farvetemperatur",
+          "description": "Farvetemperatur for et tunable-white-lys i trin på 100 K."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Position, som en persienne kører til: 0 lukket, 100 åben."
+        },
+        "tilt_position": {
+          "name": "Lamelposition",
+          "description": "Lamelposition for en persienne; persiennens position, når den udelades."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Ønsket temperatur for en rumtermostat."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Hvornår",
+          "description": "Hvornår tidsplanen udløses."
+        },
+        "what": {
+          "name": "Hvad",
+          "description": "Hvad forbrugeren sættes til, når den udløses."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Opdater tidsplan",
+      "description": "Omskriver en brugt tidsplanplads i hver valgt JUNG HOME-forbruger på stedet, som appens redigering gør, med de felter, “Opret tidsplan” tager imod: angiv dem alle igen, intet udeladt beholdes fra pladsen. En tidsplan ved solopgang eller solnedgang sender først noden Home Assistants hjemsted; når en skrivning mislykkes, skrives pladsens gamle tidsplan tilbage. Endnu ikke afprøvet på rigtige enheder. Kun for administratorer.",
+      "fields": {
+        "slot": {
+          "name": "Plads",
+          "description": "Nummeret på den tidsplanplads (0–15), der skal omskrives, som “Hent tidsplaner” og sensoren “Tidsplaner” viser den."
+        },
+        "trigger": {
+          "name": "Udløser",
+          "description": "Hvornår tidsplanen udløses: på et tidspunkt eller ved solopgang eller solnedgang."
+        },
+        "time": {
+          "name": "Tidspunkt",
+          "description": "Tidspunkt for en tidsstyret tidsplan."
+        },
+        "not_before": {
+          "name": "Ikke før",
+          "description": "En tidsplan ved solopgang eller solnedgang udløses ikke tidligere end dette tidspunkt (åben, når den udelades)."
+        },
+        "not_after": {
+          "name": "Ikke efter",
+          "description": "En tidsplan ved solopgang eller solnedgang udløses ikke senere end dette tidspunkt (åben, når den udelades)."
+        },
+        "offset": {
+          "name": "Forskydning",
+          "description": "Minutter før (negativ) eller efter solopgang eller solnedgang."
+        },
+        "weekdays": {
+          "name": "Ugedage",
+          "description": "Dage, hvor tidsplanen udløses; hver dag, når den udelades."
+        },
+        "enabled": {
+          "name": "Aktiveret",
+          "description": "Om tidsplanen udløses; en deaktiveret venter på “Aktivér tidsplan”."
+        },
+        "action": {
+          "name": "Handling",
+          "description": "Tænd eller sluk et lys eller en stikkontakt."
+        },
+        "brightness_pct": {
+          "name": "Lysstyrke",
+          "description": "Lysstyrke, som en lysdæmper tænder til (handlingen er så til)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farvetemperatur",
+          "description": "Farvetemperatur for et tunable-white-lys i trin på 100 K."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Position, som en persienne kører til: 0 lukket, 100 åben."
+        },
+        "tilt_position": {
+          "name": "Lamelposition",
+          "description": "Lamelposition for en persienne; persiennens position, når den udelades."
+        },
+        "temperature": {
+          "name": "Temperatur",
+          "description": "Ønsket temperatur for en rumtermostat."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Hvornår",
+          "description": "Hvornår tidsplanen udløses."
+        },
+        "what": {
+          "name": "Hvad",
+          "description": "Hvad forbrugeren sættes til, når den udløses."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Aktivér tidsplan",
+      "description": "Lader en tidsplanplads i JUNG HOME-forbrugere udløses igen. Kun for administratorer.",
+      "fields": {
+        "slot": {
+          "name": "Plads",
+          "description": "Nummeret på tidsplanpladsen (0–15), som “Hent tidsplaner” og sensoren “Tidsplaner” viser den."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Deaktiver tidsplan",
+      "description": "Forhindrer en tidsplanplads i JUNG HOME-forbrugere i at udløses uden at slette den. Kun for administratorer.",
+      "fields": {
+        "slot": {
+          "name": "Plads",
+          "description": "Nummeret på tidsplanpladsen (0–15), som “Hent tidsplaner” og sensoren “Tidsplaner” viser den."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Slet tidsplan",
+      "description": "Frigør en tidsplanplads i JUNG HOME-forbrugere. Kun for administratorer.",
+      "fields": {
+        "slot": {
+          "name": "Plads",
+          "description": "Nummeret på tidsplanpladsen (0–15), som “Hent tidsplaner” og sensoren “Tidsplaner” viser den."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Angiv tærskel",
+      "description": "Angiver en tærskel for en JUNG HOME-stikkontakt med energimåling, appens profil Automatisk: når stikkontaktens effekt holder sig på niveauet i varigheden, tænder (tændingstærskel) eller slukker (slukningstærskel) den selv de valgte lys og stikkontakter, uden Home Assistant. Ikke testet på en enhed. Svarer, når der bedes om det, hvor mange af koblingsbeskederne enhederne anvendte. Kun for administratorer.",
+      "fields": {
+        "threshold": {
+          "name": "Tærskel",
+          "description": "Hvilken af stikkontaktens to tærskler der skal angives."
+        },
+        "power": {
+          "name": "Effekt",
+          "description": "Effektniveau i W (trin på 0,1 W); stikkontaktens aktuelle niveau, når det udelades."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Sekunder, effekten skal holde sig på niveauet; stikkontaktens aktuelle varighed, når den udelades."
+        },
+        "enabled": {
+          "name": "Aktiveret",
+          "description": "Om tærsklen kobler; en deaktiveret beholder sit niveau og sin varighed. Udeladt beholder tærsklen sin tilstand (en ny er aktiveret). Deaktiveret, mens den anden tærskel heller ikke er aktiv, kobles lysene og stikkontakterne fra som i appen: angiv enhederne igen, når du aktiverer den."
+        },
+        "devices": {
+          "name": "Enheder",
+          "description": "De lys og stikkontakter, begge tærskler kobler, og som erstatter den aktuelle liste; udeladt forbliver listen. Mesh-eksporten omskrives, når den ændres, og Home Assistant følger den uden at genindlæse integrationen."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Slet tærskler",
+      "description": "Rydder begge tærskler for en JUNG HOME-stikkontakt med energimåling og kobler de lys og stikkontakter fra, som de styrede, som appens sletning gør. Home Assistant følger den omskrevne mesh-eksport uden at genindlæse integrationen, når enheder blev koblet fra. Svarer, når der bedes om det, hvor mange af koblingsbeskederne enhederne anvendte. Kun for administratorer."
+    },
+    "audit_network": {
+      "name": "Kontrollér netværk",
+      "description": "Læser, uden at ændre noget, hvad JUNG HOME-enhedernes mesh-konfiguration indeholder — relay, network transmit, standard-TTL, beacon, GATT-proxy og friend, de netværks- og applikationsnøgler, hver enhed har (efter indeks, aldrig en nøgle), og for hver model dens udgivelse, abonnementer og bundne applikationsnøgler — og sammenligner det med mesh-eksporten. Svarer pr. enhed med dens indstillinger og hver fundet forskel og viser de enheder, der ikke svarede. Kontrol af alle enheder tager et par minutter; batterienheder sover og springes over, medmindre de er angivet.",
+      "fields": {
+        "device": {
+          "name": "Enhed",
+          "description": "Kontrollér kun mesh-noden bag denne enhed (et lys, en knap, en stikkontakt eller selve noden). Hvis den er tom, kontrolleres alle netdrevne noder."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Eksportér netværk",
+      "description": "Svarer med den eksport, Home Assistant bruger — med de rum, nøgler, koblinger og scener, den har ændret — som JUNG HOME-appens delingsfil eller som mesh-databasen, til en sikkerhedskopi eller til import i appen. Kun for administratorer: den indeholder alle mesh'ets nøgler.",
+      "fields": {
+        "flavour": {
+          "name": "Format",
+          "description": "Appens delingsfil (JungHome.json) eller mesh-databasen (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Netværk",
+          "description": "Det JUNG HOME-netværk, der skal eksporteres; kun nødvendigt, når der er flere."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Find nye enheder",
+      "description": "Viser de JUNG-enheder i nærheden, der endnu ikke er i et netværk, med den Bluetooth-adresse, `add_device` skal bruge."
+    },
+    "add_device": {
+      "name": "Tilføj enhed (eksperimentelt)",
+      "description": "Tilføjer en ny JUNG-enhed til netværket, som appen ville: klargør den med den stærkeste metode, enheden tilbyder (Static OOB, når den tilbyder det og dens værdi er angivet, HMAC-SHA256-algoritmen, ellers No OOB som appen — uden godkendelse kan nogen inden for Bluetooth-rækkevidde opsnappe netværkets nøgler, mens det kører), konfigurerer den efter appens regler ud fra det, enheden rapporterer (afvises, hvis det ikke er det, en enhed af samme produkt, der allerede er i netværket, har), og registrerer den i eksporten (overdraget til gatewayen). En enhed, hvis konfiguration mislykkes, nulstilles, som appen gør. Dens elementgrupper får de højeste ledige gruppeadresser i appens interval (appen ser ikke enheden, før den importerer en fil). Svaret viser de udførte trin. Kræver postens indstilling *Tillad Home Assistant at tilføje enheder*. Kun for administratorer. De godkendte metoder, konfigurationsreglerne og nulstillingen er endnu ikke afprøvet på rigtige enheder.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth-adresse",
+          "description": "Den adresse, `find_new_devices` viser for enheden."
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Den nye enheds navn."
+        },
+        "config_entry_id": {
+          "name": "Netværk",
+          "description": "Det JUNG HOME-netværk, den skal tilføjes til; kun nødvendigt, når der er flere."
+        },
+        "static_oob": {
+          "name": "Static OOB-værdi",
+          "description": "Kun til en enhed, der tilbyder Static OOB-godkendelse: dens værdi på 16 eller 32 byte i hexadecimal, som producenten dokumenterer den (ingen JUNG-enhed vides at tilbyde det). Logges aldrig. En enhed, der kun tager imod godkendt klargøring, afvises uden den, og en enhed, der ikke tilbyder det, afvises med den."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Fjern enhed (eksperimentelt)",
+      "description": "Nulstiller en JUNG-enhed (den glemmer netværket og bliver en ny enhed igen) og tager den ud af netværket, som appen gør: andre enheders koblinger til den fjernes, eksporten registrerer den som fjernet og overdrages til gatewayen. Kan ikke fortrydes. Kræver postens indstilling *Tillad Home Assistant at tilføje og fjerne enheder*. Kræver “Bekræft”; med “Prøvekørsel” svarer den i stedet, hvad den ville sende og ændre, og kræver ingen bekræftelse. Kun for administratorer.",
+      "fields": {
+        "device": {
+          "name": "Enhed",
+          "description": "Den JUNG-enhed, der skal fjernes (en hvilken som helst af dens enheder i Home Assistant)."
+        },
+        "force": {
+          "name": "Også hvis den ikke svarer",
+          "description": "Fjern den fra netværkets registreringer, selvom den ikke bekræfter nulstillingen (en enhed, der er væk for altid), eller selvom Home Assistant er forbundet gennem den."
+        },
+        "confirm": {
+          "name": "Bekræft",
+          "description": "Nødvendig for at udføre det: fjernelse af en enhed kan ikke fortrydes. Ikke nødvendig for en prøvekørsel."
+        },
+        "dry_run": {
+          "name": "Prøvekørsel",
+          "description": "Svar kun, hvad der ville blive sendt, og hvordan mesh-eksporten ville ændre sig (bed om svaret); intet sendes, skrives eller overtages fra gatewayen."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Nulstil afventende enhed (eksperimentelt)",
+      "description": "Nulstiller en JUNG-enhed, som `add_device` klargjorde, men ikke kunne konfigurere eller registrere (reparationen *En enhed, som Home Assistant har tilføjet, er ikke registreret* viser dem): sender den en Config Node Reset med den enhedsnøgle, kun Home Assistant har, så den bliver en ny enhed igen, og frigør dens adresser. Endnu ikke afprøvet på en rigtig enhed. Kræver postens indstilling *Tillad Home Assistant at tilføje enheder*. Kun for administratorer.",
+      "fields": {
+        "uuid": {
+          "name": "Enheds-UUID",
+          "description": "Enhedens UUID, som `add_device` eller `find_new_devices` angav det."
+        },
+        "unicast": {
+          "name": "Unicast-adresse",
+          "description": "Enhedens primære unicast-adresse (hexadecimal, som reparationen nævner den); sammen med UUID'et skal begge passe."
+        },
+        "force": {
+          "name": "Også hvis den ikke svarer",
+          "description": "Glem enheden, selvom den ikke bekræfter nulstillingen (en, der er nulstillet manuelt, eller som er væk for altid)."
+        },
+        "config_entry_id": {
+          "name": "Netværk",
+          "description": "Det JUNG HOME-netværk, enheden blev tilføjet til; kun nødvendigt, når der er flere."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Find enhed",
+      "description": "Får en JUNG-enhed til at annoncere sin Node Identity — en Bluetooth-annoncering, som kun dette mesh' nøgler knytter til enheden — i op til et minut og så stoppe, så en Bluetooth-scanner kan se, hvilken radio der er den enhed. Ændrer intet andet; enheden stopper alligevel af sig selv efter et minut. Kun for administratorer. Endnu ikke afprøvet på rigtige enheder.",
+      "fields": {
+        "device": {
+          "name": "Enhed",
+          "description": "Den JUNG-enhed, der skal findes (en hvilken som helst af dens enheder i Home Assistant)."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Sekunder med annoncering, 5 til 60 (en enhed stopper af sig selv efter 60)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Godkend gateway-klient",
+      "description": "Viser de API-klienter, der venter på adgang ved JUNG HOME Gateway (en anden integration, et script), og godkender den angivne, som appens Indstillinger → Gateway → Adgangstilladelser → Åbne anmodninger gør. En godkendt klient får gatewayens hele API, inklusive netværkseksporten med alle mesh-nøgler: godkend kun en klient, du selv har startet. Uden et klientnavn viser den dem kun (slå svaret til). Tilbagekaldelse af adgang sker fortsat i appen. Kun for administratorer, for et netværk, der er sat op fra gatewayen. Endnu ikke afprøvet på rigtige enheder.",
+      "fields": {
+        "client": {
+          "name": "Klient",
+          "description": "Det navn, klienten beder om adgang som, præcis som det står under `waiting`. Hvis det er tomt, godkendes intet."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Start dæmpning",
+      "description": "Starter op- eller neddæmpning af en JUNG HOME-lysdæmper, som når en vippe holdes nede, indtil “Stop dæmpning” (eller enden af intervallet). Endnu ikke afprøvet på en rigtig enhed.",
+      "fields": {
+        "direction": {
+          "name": "Retning",
+          "description": "Lysere (op) eller mørkere (ned)."
+        },
+        "speed": {
+          "name": "Hastighed",
+          "description": "Hvor hurtigt, i procent af lysstyrkeintervallet pr. sekund (standard 20: fra slukket til fuld på 5 sekunder)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Stop dæmpning",
+      "description": "Stopper en JUNG HOME-lysdæmper, som “Start dæmpning” har sat i gang, der hvor den er nu. Endnu ikke afprøvet på en rigtig enhed."
+    },
+    "step_dim": {
+      "name": "Dæmp et trin",
+      "description": "Gør en JUNG HOME-lysdæmper et trin lysere eller mørkere. Endnu ikke afprøvet på en rigtig enhed.",
+      "fields": {
+        "step": {
+          "name": "Trin",
+          "description": "Procent af lysstyrkeintervallet: positiv lysere, negativ mørkere."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Lys (til/fra, dæmpning)",
+        "switch": "Kontakt (til/fra)",
+        "move": "Persienner (utestet)",
+        "gateway": "Gateway (rapportér hændelser)",
+        "light_and_switch": "Lys og stikkontakter (kun rum)",
+        "lock": "Spær og lås op (endnu ikke afprøvet på rigtige enheder)",
+        "temperature": "Temperatur (rumtermostat, utestet)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Farvetemperatur (endnu ikke afprøvet på rigtige enheder)",
+        "slat": "Lameller (endnu ikke afprøvet på rigtige enheder)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Tidspunkt",
+        "sunrise": "Solopgang",
+        "sunset": "Solnedgang"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Til",
+        "off": "Fra"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Mandag",
+        "tue": "Tirsdag",
+        "wed": "Onsdag",
+        "thu": "Torsdag",
+        "fri": "Fredag",
+        "sat": "Lørdag",
+        "sun": "Søndag"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Tændingstærskel",
+        "switch_off": "Slukningstærskel"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Appens delingsfil (JungHome.json)",
+        "cdb": "Mesh-database (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Lysere",
+        "down": "Mørkere"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Afbryderindsats",
+        "two_gang_switch": "Afbryderindsats, dobbelt",
+        "dimming": "Lysdæmperindsats",
+        "two_gang_dimming": "Lysdæmperindsats, dobbelt",
+        "tw_dimming": "DALI-indsats",
+        "blind": "Persienneindsats",
+        "extension": "Sidestationsindsats",
+        "not_available": "Ingen indsats"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Knap top / bund",
+        "one_rocker": "Vippe",
+        "two_left_two_right": "Knap | Knap",
+        "one_left_two_right": "Vippe | Knap",
+        "two_left_one_right": "Knap | Vippe",
+        "one_left_one_right": "Vippe | Vippe"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Trykknap, enkelt",
+        "push_button_2": "Trykknap, dobbelt",
+        "socket_metering": "Stikkontakt (med energimåling)",
+        "socket": "Stikkontakt",
+        "switch_actuator_mini": "Kontaktaktuator, enkelt, mini",
+        "blinds_actuator_mini": "Persienneaktuator, enkelt, mini",
+        "wall_transmitter_1": "Vægsender, enkelt",
+        "wall_transmitter_2": "Vægsender, dobbelt",
+        "motion_detector_1m": "Bevægelsesmelder 1 m",
+        "motion_detector_2m": "Bevægelsesmelder 2 m",
+        "presence_detector": "Tilstedeværelsesmelder",
+        "room_thermostat": "Rumtermostat",
+        "gateway": "Gateway",
+        "switch_actuator_1_energy": "Kontaktaktuator, enkelt, 2 indgange, energimåling",
+        "switch_actuator_2": "Kontaktaktuator, dobbelt, 2 indgange",
+        "dimmer_actuator": "Lysdæmperaktuator, enkelt, 2 indgange",
+        "blinds_actuator": "Persienneaktuator PP2, enkelt, 2 indgange",
+        "dali_actuator": "DALI-aktuator, enkelt, 2 indgange",
+        "mini_sensor_mains": "Mini-sensor, 2 indgange, netdrevet",
+        "mini_sensor_battery": "Mini-sensor, 2 indgange, batteri"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh-netværk",
+        "switch": "Tænd/sluk-lys",
+        "dimmer": "Dæmpbart lys",
+        "ctl": "Tunable-white-lys (DALI)",
+        "blind": "Persienne- / rulleskoddemotor",
+        "push_buttons": "Trykknapper",
+        "unknown_product": "Produkt {pid}"
+      }
+    }
+  }
+}
