@@ -289,7 +289,7 @@ jobs:
       - name: hassfest
         # No release tags since 2020; pinned to the master commit (Renovate moves the SHA along the
         # repository's default branch, which is master there).
-        uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
+        uses: home-assistant/actions/hassfest@06749dd8c0b54f350bc69c8752456cee498808a3 # master
       - name: HACS validation
         # hacs/action is a one-line wrapper (action.yml) around the docker image ghcr.io/hacs/action:main, so pinning
         # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
