@@ -4,7 +4,7 @@
     tools/on_air.py                      # every marker: path:line: symbol [kind] text
     tools/on_air.py --kind air           # only one kind of phrase (air, hardware, app)
     tools/on_air.py --json               # one JSON object per marker (path, line, symbol, kind, text, cite)
-    tools/on_air.py docs/ha-integration.md custom_components/junghome_ble/coordinator.py   # only these
+    tools/on_air.py docs/user custom_components/junghome_ble/coordinator.py   # only these
     tools/on_air.py --uncovered docs/on-air-sweep.md   # markers outside the docs the checklist does not cite
 
 What counts as a marker: the phrases the conventions use for behaviour nobody has seen working on an installation
@@ -38,12 +38,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tools import parity
 
 ROOT = Path(__file__).resolve().parent.parent
-# where markers live: the code, the user and developer docs, the ledger and the unreleased changelog section; the
-# review plans, briefs and gap analyses are records of their time, and the sweep's own checklist quotes the phrases
+# where markers live: the code, the reference, the user guide, the developer notes, the German quick start, the ledger
+# and the unreleased changelog section; the review plans, briefs, gap analyses and the research index are records of
+# their time, and the sweep's own checklist quotes the phrases
 SCAN = (
     "custom_components/junghome_ble",
     "tools",
     "docs/ha-integration.md",
+    "docs/user",
+    "docs/dev",
+    "docs/de",
     "docs/parity",
     "CHANGELOG.md",
 )

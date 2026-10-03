@@ -1,9 +1,11 @@
 """Registry snapshots: what the integration registers for every synthetic fixture network.
 
 The `.ambr` files under `tests/snapshots/` pin it, at two depths. `test_registry_identity` covers every fixture
-network (the base one, blinds, RTR, detectors, puck and the Android share export): per entity its unique id,
-platform, translation key, category and `disabled_by`, per device its identifiers, connections and `via_device`
-— what a user's installation keys its entities, automations and dashboards on. Most of those devices are
+network (the base one, blinds, RTR, detectors, puck, the Android share export, and the base network's share export
+set up from the gateway, which adds the gateway's REST status entities): per entity its unique id, platform,
+translation key, category and `disabled_by`, per device its identifiers, connections and `via_device` — what a
+user's installation keys its entities, automations and dashboards on, and what `tools/gen_entity_reference.py`
+builds the user guide's entity reference from. Most of those devices are
 "unverified on air" (no blind, RTR, detector or puck has been captured), so a unique id changed there would
 otherwise orphan every user's entities unseen. The base network is also pinned in full, per platform: names,
 capabilities, device classes and the state after the initial refresh; device names, models and serial numbers.
@@ -18,6 +20,7 @@ disabled, so an `entity_registry_enabled_default` change is a reviewed diff too.
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -34,17 +37,26 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
+    CONF_GATEWAY_FINGERPRINT,
+    CONF_GATEWAY_HOST,
+    CONF_GATEWAY_PIN_SOURCE,
+    CONF_GATEWAY_SYNCED,
+    CONF_GATEWAY_TOKEN,
     CONF_METADATA_DIR,
+    CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
+    PIN_FROM_MESH,
     PLATFORMS,
 )
 from custom_components.junghome_ble.jhmesh.cdb import CDB
+from custom_components.junghome_ble.mesh_config import export_digest
 
 from .conftest import (
     CDB_PATH,
     FIXTURES,
     META_DIR,
+    SHARE_EXPORT_PATH,
     FakeProxyLink,
     settle,
     setup_entry,
@@ -69,6 +81,21 @@ NETWORKS: dict[str, tuple[Path, str | None]] = {
     "detectors": (FIXTURES / "MeshNetwork-detectors.json", None),
     "puck": (FIXTURES / "MeshNetwork-puck.json", META_DIR),
     "android": (FIXTURES / "JungHome-android.json", None),
+    "gateway": (Path(SHARE_EXPORT_PATH), None),
+}
+# the networks whose entry is set up from the gateway, as the config flow stores one (no REST call is made: the
+# gateway's status entities start disabled, so nothing polls)
+GATEWAY_SOURCED: dict[str, dict[str, Any]] = {
+    "gateway": {
+        CONF_SOURCE: "gateway",
+        CONF_GATEWAY_SYNCED: export_digest(
+            json.loads(Path(SHARE_EXPORT_PATH).read_text(encoding="utf-8"))
+        ),
+        CONF_GATEWAY_HOST: "junghome.local",
+        CONF_GATEWAY_TOKEN: "tok.en",
+        CONF_GATEWAY_FINGERPRINT: "ab" * 32,
+        CONF_GATEWAY_PIN_SOURCE: PIN_FROM_MESH,
+    },
 }
 
 
@@ -198,9 +225,10 @@ async def test_registry_identity(
     shutil.copy(source, path)
     # the fake's nodes are this network's (every fixture network has the same NetKey and AppKey)
     fake_link.cdb = CDB.load(path)
-    data = {CONF_CDB_PATH: str(path), CONF_UNICAST: "0D00"}
+    data: dict[str, Any] = {CONF_CDB_PATH: str(path), CONF_UNICAST: "0D00"}
     if metadata is not None:
         data[CONF_METADATA_DIR] = metadata
+    data.update(GATEWAY_SOURCED.get(network, {}))
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="JUNG HOME mesh test",

@@ -60,4 +60,4 @@ Constant moves break module-level patch targets; grep the tests for each moved n
 ## Files touched
 
 New `jhmesh/plan.py`, `jhmesh/commission.py`, `jhmesh/export.py`, `configurator/*`, new `protocols.py`, new `data.py`,
-`const.py` and its consumers, tests (patch targets, layer test), `CHANGELOG.md`, `docs/ha-integration.md` (module table).
+`const.py` and its consumers, tests (patch targets, layer test), `CHANGELOG.md`, `docs/dev/architecture.md` (module table).

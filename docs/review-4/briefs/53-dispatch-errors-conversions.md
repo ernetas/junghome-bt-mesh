@@ -69,4 +69,4 @@ None. 58 builds on `dispatch.py`.
 ## Files touched
 
 New `dispatch.py`, `errors.py`, `conversions.py`; `binary_sensor.py`, `climate.py`, `cover.py`, `button.py`,
-`entity.py`, `scene.py`; new `tests/test_errors.py`; `CHANGELOG.md`; `docs/ha-integration.md` (module table).
+`entity.py`, `scene.py`; new `tests/test_errors.py`; `CHANGELOG.md`; `docs/dev/architecture.md` (module table).

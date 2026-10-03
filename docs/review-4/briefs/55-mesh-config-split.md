@@ -68,4 +68,4 @@ None within wave 15. Lands after 49 (last behaviour change). 62 builds on it.
 
 `mesh_config.py`, new `configurator/{__init__,plan,wiring,store,executor,rooms,scenes,thresholds}.py`,
 `tests/test_mesh_config.py` (patch targets), new `tests/test_configurator_plan.py`, `CHANGELOG.md`,
-`docs/ha-integration.md` (module table).
+`docs/dev/architecture.md` (module table).

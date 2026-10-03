@@ -68,5 +68,5 @@ installation.
 ## Files touched
 
 New `.github/workflows/nightly.yml`, new `tools/trace_to_fixture.py`, new `tests/traces/`, new `tests/test_traces.py`,
-new `tests/test_trace_converter.py`, `tests/upgrade/`, `pyproject.toml`, `CHANGELOG.md`, `docs/ha-integration.md`
+new `tests/test_trace_converter.py`, `tests/upgrade/`, `pyproject.toml`, `CHANGELOG.md`, `docs/dev/testing.md`
 (testing notes).

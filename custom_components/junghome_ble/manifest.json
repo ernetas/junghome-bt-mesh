@@ -11,7 +11,7 @@
   "codeowners": ["@ernetas"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters", "file_upload"],
-  "documentation": "https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/ha-integration.md",
+  "documentation": "https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/README.md",
   "integration_type": "hub",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/ernetas/junghome-bt-mesh/issues",

@@ -302,12 +302,12 @@ notes), so what users must know goes there — the move of the sequence-number s
   live key; the report now prints `[redacted]`), but it still carries the real node EUI-64s / MACs, the phone's
   provisioner UUID and the room names of the maintainer's installation. The test fixtures no longer share any of
   them (regenerated the same day with fake EUI-64s over the IANA documentation-block MACs and a fixed fake
-  provisioner UUID — `README.md`'s Tests paragraph, `docs/ha-integration.md`'s developer notes; verified none of
+  provisioner UUID — `docs/dev/testing.md`, *Synthetic fixtures* and *Test infrastructure*; verified none of
   the 31 real identifiers in this document appear anywhere under `tests/`), so nothing here blocks on the
   fixtures any more: either regenerate this document from a faked dump before going public or accept that these
   identifiers are public (they are not secrets — nothing authenticates on a MAC — but they are personal).
-- [ ] `README.md` layout line for `ios/` and the "never publish" notes stay: the backup itself is git-ignored and was
-  never tracked (`git log --all -- ios android` is empty).
+- [ ] The layout line for `ios/` (now in `docs/dev/architecture.md`) and the "never publish" notes stay: the
+  backup itself is git-ignored and was never tracked (`git log --all -- ios android` is empty).
 
 ## 4. Verified on air vs. still to capture
 

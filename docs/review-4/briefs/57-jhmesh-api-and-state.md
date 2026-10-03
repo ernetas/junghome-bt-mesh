@@ -60,4 +60,4 @@ None within wave 15 (52 keeps importing from `jhmesh.client`). 61 and 62 build o
 
 `jhmesh/client.py`, new `jhmesh/state.py`, every `jhmesh/*.py` (`__all__`), `jhmesh/__init__.py`, new
 `tests/jhmesh/test_api_surface.py`, `tests/jhmesh/*` patch targets, `CHANGELOG.md`, `README-pypi.md` (API note),
-`docs/ha-integration.md` (module table).
+`docs/dev/architecture.md` (module table).

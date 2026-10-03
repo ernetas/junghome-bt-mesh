@@ -69,4 +69,4 @@ Stop ordering; timers capturing bound methods; module-level patch targets that m
 
 `coordinator.py`, new `hub/{__init__,liveness,energy,clock,export_watch,refresh,issues,link,lifecycle,gestures}.py`,
 `hub_gestures.py` (moved), `diagnostics.py`, `tests/test_coordinator.py` split into per-component modules,
-`tests/conftest.py` (patch targets), `CHANGELOG.md`, `docs/ha-integration.md` (module table).
+`tests/conftest.py` (patch targets), `CHANGELOG.md`, `docs/dev/architecture.md` (module table).

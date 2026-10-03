@@ -2470,7 +2470,7 @@
     "tests/jhmesh/test_pdu.py::test_proxy_config_builders"
    ],
    "class": "declined",
-   "reason": "Declined: Home Assistant never narrows its proxy's filter. It keeps the empty reject list (receive everything) for a link's whole life (docs/ha-integration.md: the link sets the proxy filter to *blacklist, empty*) and commissions new nodes through that link (jhmesh/commission.py NOT_COVERED, first entry), so the app's address lists ({node, 0xFFFF, provisioner} during setup, {node, 0xFFFF} after) have no use. The builder exists and is tested, without the app's byte-cast quirk, but no flow sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Proxy filter address lists'."
+   "reason": "Declined: Home Assistant never narrows its proxy's filter. It keeps the empty reject list (receive everything) for a link's whole life (docs/dev/architecture.md, Behaviour worth knowing: the link sets the proxy filter to *blacklist, empty*) and commissions new nodes through that link (jhmesh/commission.py NOT_COVERED, first entry), so the app's address lists ({node, 0xFFFF, provisioner} during setup, {node, 0xFFFF} after) have no use. The builder exists and is tested, without the app's byte-cast quirk, but no flow sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Proxy filter address lists'."
   },
   {
    "id": "msg:proxy:02",

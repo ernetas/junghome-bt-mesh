@@ -1,7 +1,8 @@
 # On-air verification sweep
 
 What review 4 brief 30 asks the maintainer to check on the installation, in one sitting: every behaviour the code,
-`docs/ha-integration.md`, the unreleased `CHANGELOG.md` section and the parity ledger still call *unverified on air*
+`docs/ha-integration.md` (with the user guide `docs/user/` and the developer notes `docs/dev/` that grew out of
+it), the unreleased `CHANGELOG.md` section and the parity ledger still call *unverified on air*
 (or *not yet tried on a real device*) and that this installation can settle, with the steps, what to capture, what
 counts as a pass, the hardware it needs and whether it is safe to undo. The rest is listed under
 [Not checkable here](#f--not-checkable-here) with the reason.

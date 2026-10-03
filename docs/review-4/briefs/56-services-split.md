@@ -57,4 +57,4 @@ None within wave 15. Lands after 49. Adopt 53's `mesh_errors` at the two `send_f
 ## Files touched
 
 `services.py`, new `actions/{__init__,common,rooms,keys,scenes,schedules,thresholds,devices,audit}.py`,
-`tests/test_services.py` (patch targets), `CHANGELOG.md`, `docs/ha-integration.md` (module table).
+`tests/test_services.py` (patch targets), `CHANGELOG.md`, `docs/dev/architecture.md` (module table).

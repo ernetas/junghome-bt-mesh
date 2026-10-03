@@ -60,4 +60,4 @@ None (wave 15 runs 52–57 in parallel with re-exports). Brief 32 and 36 must ha
 ## Files touched
 
 `config_entities.py`, new `properties/__init__.py`, `properties/targets.py`, `properties/reader.py`, tests with patch
-targets, `CHANGELOG.md`, `docs/ha-integration.md` (module table).
+targets, `CHANGELOG.md`, `docs/dev/architecture.md` (module table).

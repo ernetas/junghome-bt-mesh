@@ -309,8 +309,17 @@ def test_committed_tree_lists_the_brief_rows(committed: list[on_air.Marker]) -> 
 def test_committed_tree_skips_released_history_and_the_checklist(
     committed: list[on_air.Marker],
 ) -> None:
-    assert {m.path for m in committed} >= {"CHANGELOG.md", "docs/ha-integration.md"}
-    assert "docs/on-air-sweep.md" not in {m.path for m in committed}
+    paths = {m.path for m in committed}
+    assert paths >= {
+        "CHANGELOG.md",
+        "docs/ha-integration.md",
+        "docs/user/buttons-and-automations.md",  # the free-rocker recipe
+        "docs/dev/architecture.md",  # the developer notes moved out of the reference
+    }
+    assert "docs/on-air-sweep.md" not in paths
+    assert (
+        "docs/research/README.md" not in paths
+    )  # the project's log: a record, like the review plans
     lines = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
     released = [
         n

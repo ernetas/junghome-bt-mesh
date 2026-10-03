@@ -63,4 +63,4 @@ Handler order on shared opcodes; cancel handles after the move.
 ## Files touched
 
 `coordinator.py`, new `hub_gestures.py`, `tests/test_coordinator.py`, `tests/test_event.py`, `CHANGELOG.md`,
-`docs/ha-integration.md` (module table).
+`docs/dev/architecture.md` (module table).

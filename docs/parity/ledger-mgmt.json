@@ -2290,7 +2290,7 @@
     "tests/jhmesh/test_client.py::test_receive_segmented_partial_ack_when_last_segment_arrives_first",
     "tests/jhmesh/test_client.py::test_receive_segmented_group_message_is_not_acked"
    ],
-   "missing": "no acknowledgment timer: we ack at once when the message completes or when its last segment arrives with gaps (docs/ha-integration.md, developer notes, describes this but records no reason to differ); the app (Nordic) arms a 150 + 50*TTL ms block-ack timer on the first segment, so a message whose last segment is lost is acked by the app but not by us until the sender retransmits the last segment. To build: timer in _on_segment, tested with a virtual clock (tests/sim/clock.py).",
+   "missing": "no acknowledgment timer: we ack at once when the message completes or when its last segment arrives with gaps (docs/dev/architecture.md, Behaviour worth knowing, describes this but records no reason to differ); the app (Nordic) arms a 150 + 50*TTL ms block-ack timer on the first segment, so a message whose last segment is lost is acked by the app but not by us until the sender retransmits the last segment. To build: timer in _on_segment, tested with a virtual clock (tests/sim/clock.py).",
    "class": "build",
    "verify": "offline"
   },

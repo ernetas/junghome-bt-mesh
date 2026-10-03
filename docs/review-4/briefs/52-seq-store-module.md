@@ -72,4 +72,4 @@ Regression only: after the cherry-pick, the hub connects, lights answer, no `pdu
 ## Files touched
 
 `custom_components/junghome_ble/coordinator.py`, new `seq_store.py`, new `node_info.py`, `tests/test_seq_store.py`
-(patch targets), `CHANGELOG.md` (Internal bullet), `docs/ha-integration.md` (module table).
+(patch targets), `CHANGELOG.md` (Internal bullet), `docs/dev/architecture.md` (module table).
