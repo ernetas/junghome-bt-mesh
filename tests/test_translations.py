@@ -39,6 +39,7 @@ from custom_components.junghome_ble import (
     const,
     light,
     mesh_config,
+    repairs,
     schedules,
     services,
 )
@@ -55,6 +56,7 @@ from custom_components.junghome_ble.device_trigger import (
     TRIGGER_TYPES,
 )
 from custom_components.junghome_ble.event import EVENT_TYPES
+from custom_components.junghome_ble.jhmesh import export as export_module
 from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.properties import BLIND_MODE
@@ -272,7 +274,9 @@ def test_service_error_keys_exist(strings: dict[str, Any]) -> None:
 def test_issue_keys_exist(strings: dict[str, Any]) -> None:
     """Every `ISSUE_*` constant of `const.py` names a repair-issue translation."""
     issues = {
-        name: value for name, value in vars(const).items() if name.startswith("ISSUE_")
+        name: value
+        for name, value in vars(const).items()
+        if name.startswith("ISSUE_") and isinstance(value, str)  # not ISSUE_LEARN_MORE
     }
     assert {ISSUE_KEY_REFRESH, ISSUE_PDUS_DROPPED} <= set(issues.values())
     unknown = sorted(
@@ -450,6 +454,8 @@ def test_config_flow_keys_exist(strings: dict[str, Any]) -> None:
     )
 
     aborts = {m.group("key") for m in FLOW_ABORT.finditer(source)}
+    # the reconfigure's end answers its abort reason (`async_replace_export`, shared with the repairs)
+    aborts |= _returned(config_flow.async_replace_export)
     assert aborts, "no abort reasons found (regex out of date?)"
     assert aborts <= set(config["abort"]) | set(options.get("abort", {})), (
         f"abort reasons without a translation: {sorted(aborts - set(config['abort']))}"
@@ -486,6 +492,68 @@ def test_config_flow_keys_exist(strings: dict[str, Any]) -> None:
     assert option_keys == set(options["step"]["init"]["data"]), (
         "options form fields vs strings.options.step.init.data"
     )
+
+
+def _returned(function: Any) -> set[str]:
+    """The string literals `function` returns (an error key, an abort reason)."""
+    return {m.group("key") for m in FLOW_RETURN.finditer(inspect.getsource(function))}
+
+
+def _fix_flow_keys(flow: type) -> tuple[set[str], set[str], set[str], set[str]]:
+    """(steps, form fields, errors, abort reasons) a fix flow of `repairs.py` can show.
+
+    With the config flow's helpers it runs (review-4 U4-5: a new export is checked by the config flow's own code).
+    """
+    source = inspect.getsource(flow)
+    steps = {m.group("ref").strip('"') for m in FLOW_STEP.finditer(source)}
+    fields = {getattr(repairs, m.group("ref")) for m in FLOW_FIELD.finditer(source)}
+    errors = {m.group("key") for m in FLOW_ERROR.finditer(source)}
+    aborts = {m.group("key") for m in FLOW_ABORT.finditer(source)}
+    if flow is repairs.NewExportFlow:
+        for helper in (
+            config_flow.validate_input,
+            config_flow.async_take_upload,
+            config_flow.async_fetch_to_store,
+        ):
+            errors |= {
+                m.group("key") for m in FLOW_ERROR.finditer(inspect.getsource(helper))
+            }
+        errors |= _returned(config_flow._gateway_error_key)
+        aborts |= _returned(config_flow.async_replace_export) - {repairs.RECONFIGURED}
+    if flow is repairs.DeviceNameFlow:
+        errors |= {f"name_{reason}" for reason in export_module._NAME_ERRORS}
+    return steps, fields, errors, aborts
+
+
+# the translation keys an issue is raised with besides its own (`const.py`: the same issue id, another wording)
+ISSUE_WORDINGS = {const.ISSUE_UNKNOWN_NODES: (const.ISSUE_UNKNOWN_NODES_GATEWAY,)}
+
+
+@pytest.mark.parametrize("prefix", sorted(repairs.FIX_FLOWS))
+def test_fix_flow_keys_exist(strings: dict[str, Any], prefix: str) -> None:
+    """Every step, field, error and abort reason the review-4 U4-5 fix flows show has a translation, in every wording.
+
+    A fixable issue's text is its fix flow's (hassfest allows a `description` or a `fix_flow`, not both).
+    """
+    steps, fields, errors, aborts = _fix_flow_keys(repairs.FIX_FLOWS[prefix])
+    assert steps, "no step ids found (regex out of date?)"
+    assert aborts, "no abort reasons found (regex out of date?)"
+    for key in (prefix, *ISSUE_WORDINGS.get(prefix, ())):
+        issue = strings["issues"][key]
+        assert "description" not in issue, key
+        fix_flow = issue["fix_flow"]
+        assert steps <= set(fix_flow["step"]), key
+        for step in steps:
+            assert fix_flow["step"][step]["title"], (key, step)
+            assert fix_flow["step"][step]["description"], (key, step)
+        shown = {f for step in fix_flow["step"].values() for f in step.get("data", {})}
+        assert fields <= shown, (key, sorted(fields - shown))
+        translated_errors = set(fix_flow.get("error", {}))
+        assert errors <= translated_errors, (key, sorted(errors - translated_errors))
+        assert aborts <= set(fix_flow["abort"]), (
+            key,
+            sorted(aborts - set(fix_flow["abort"])),
+        )
 
 
 def test_config_entity_keys_exist(strings: dict[str, Any]) -> None:

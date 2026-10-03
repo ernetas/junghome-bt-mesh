@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
 
-from .const import DOMAIN, ISSUE_VAULT_KEY_REFRESH
+from .const import DOMAIN, ISSUE_VAULT_KEY_REFRESH, learn_more_url
 from .jhmesh.vaultrefresh import carry, target_of, wanted
 
 if TYPE_CHECKING:
@@ -133,6 +133,7 @@ class VaultKeyRefresh:
             is_fixable=False,
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_VAULT_KEY_REFRESH,
+            learn_more_url=learn_more_url(ISSUE_VAULT_KEY_REFRESH),
             translation_placeholders={
                 "title": self._hub.entry.title,
                 "addresses": ", ".join(f"{a:04X}" for a in lagging),

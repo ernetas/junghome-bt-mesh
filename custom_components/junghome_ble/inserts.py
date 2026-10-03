@@ -33,7 +33,13 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.translation import async_get_translations
 
 from . import const
-from .const import DOMAIN, ISSUE_INSERT_MISMATCH, NODE_INFO_INSERT, SIGNAL_UPDATE
+from .const import (
+    DOMAIN,
+    ISSUE_INSERT_MISMATCH,
+    NODE_INFO_INSERT,
+    SIGNAL_UPDATE,
+    learn_more_url,
+)
 from .entity import product_name, update_buttons_devices, update_node_device
 from .jhmesh import messages as M
 from .jhmesh import properties as P
@@ -262,6 +268,7 @@ class NodeInserts:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_INSERT_MISMATCH,
+            learn_more_url=learn_more_url(ISSUE_INSERT_MISMATCH),
             translation_placeholders={
                 "title": self.hub.entry.title,
                 "devices": ", ".join(

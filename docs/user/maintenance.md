@@ -61,8 +61,10 @@ More in the [reference](../ha-integration.md#troubleshooting).
 
 ## Repair notices
 
-Home Assistant shows these under *Settings → System → Repairs*. Most clear themselves once the cause is gone; some
-have a **Submit** button that fixes it. Each entry links to the full explanation in the reference.
+Home Assistant shows these under *Settings → System → Repairs*. Each notice's *Learn more* link opens its entry
+below; each entry says what the notice means, what to do, and links to the full explanation in the reference. Most
+clear themselves once the cause is gone. Those that can be fixed in place have a **Submit** button: the notice
+explains what it will do, and nothing changes until you confirm.
 
 ### The export and the devices
 
@@ -70,7 +72,8 @@ have a **Submit** button that fixes it. Each entry links to the full explanation
 
 A device of your installation is new to Home Assistant: it was added in the app after the export was made. Set up
 from the gateway, Home Assistant fetches the new export by itself; if the notice stays, open the app once while it is
-connected to the gateway. Set up from a file: export again and *Reconfigure*.
+connected to the gateway. **Submit** loads the new export: set up from the gateway, it fetches it again; set up from
+a file, it asks you to upload the app's new export (*Project → Share via file*). **Unverified on air.**
 [Details](../ha-integration.md#repair-issue-jung-home-devices-missing-from-the-export)
 
 #### JUNG HOME push-buttons with another insert than in the export
@@ -80,18 +83,20 @@ A push-button's insert was replaced (a dimmer instead of a switch, say). Check i
 
 #### Device name not passed on to the JUNG HOME app
 
-You gave a device a name the app does not accept (empty, over 30 characters, or with a `%` sign). Rename it again.
+You gave a device a name the app does not accept (empty, over 30 characters, or with a `%` sign). **Submit** asks
+for another name and checks it before anything changes; renaming the device again works too. **Unverified on air.**
 [Details](../ha-integration.md#repair-issue-device-name-not-passed-on-to-the-jung-home-app)
 
 #### Take over the JUNG HOME Gateway integration's entities
 
 The gateway integration is set up too, so everything exists twice. Take its entities over, or ignore the notice.
 See [Changing the installation](changing-the-installation.md#coming-from-the-gateway-integration).
+[Details](../ha-integration.md#repair-issue-take-over-the-jung-home-gateway-integrations-entities)
 
 #### Two entries cover the same JUNG HOME mesh
 
-The same installation was added twice; only one entry can run. Delete one of them.
-[Details](../ha-integration.md#this-mesh-is-already-set-up-as-another-entry)
+The same installation was added twice; only one entry can run. Delete one of them; if you deleted the one that
+was running, reload the other. [Details](../ha-integration.md#repair-issue-two-entries-cover-the-same-jung-home-mesh)
 
 ### Changes made from Home Assistant
 
@@ -114,8 +119,9 @@ with *Dry run* off. [Details](../ha-integration.md#repair-issue-devices-still-ho
 #### JUNG HOME export not handed to the gateway
 
 A change could not be passed to the gateway. Home Assistant tries twice more; if the notice stays, check that the
-gateway is reachable and run *Sync gateway* (`junghome_ble.sync_gateway`).
-[Details](../ha-integration.md#actions-rooms-and-key-connections)
+gateway is reachable, then **Submit** the notice: it hands the export over as *Sync gateway*
+(`junghome_ble.sync_gateway`) does. **Unverified on air.**
+[Details](../ha-integration.md#repair-issue-jung-home-export-not-handed-to-the-gateway)
 
 ### The gateway
 
@@ -154,25 +160,30 @@ Assistant another address.) [Details](../ha-integration.md#repair-issue-another-
 
 #### Home Assistant's JUNG HOME address is taken
 
-A device of the installation has Home Assistant's address. Give Home Assistant the free address the notice suggests,
-under *Reconfigure → Our unicast address*.
+A device of the installation has Home Assistant's address, so the integration does not start. **Submit** moves
+Home Assistant to the free address the notice suggests and starts it again (the same as *Reconfigure → Our unicast
+address*); make sure nothing else, such as the command-line tools, sends from that address. **Unverified on air.**
+[Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-is-taken)
 
 #### Home Assistant's JUNG HOME address may be handed out
 
 Home Assistant's address lies where the app may put a new device later. It works until then; move Home Assistant to
 the free address the notice suggests, under *Reconfigure*.
+[Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-may-be-handed-out)
 
 ### Keys and security
 
 #### JUNG HOME mesh keys are changing
 
-A key renewal is running that Home Assistant did not see start. Let it finish in the app, export the network again
-and *Reconfigure*. [Details](../ha-integration.md#repair-issue-jung-home-mesh-keys-are-changing)
+A key renewal is running that Home Assistant did not see start. Let it finish in the app, then **Submit** the
+notice: it loads the new export, fetched from the gateway again or uploaded (**unverified on air**); *Reconfigure*
+does the same. [Details](../ha-integration.md#repair-issue-jung-home-mesh-keys-are-changing)
 
 #### JUNG HOME mesh keys have changed
 
-The network key was renewed while Home Assistant was not running; nothing can be read any more. Export the network
-again and *Reconfigure*. [Details](../ha-integration.md#repair-issue-jung-home-mesh-keys-have-changed)
+The network key was renewed while Home Assistant was not running; nothing can be read any more. **Submit** loads
+the new export, fetched from the gateway again or uploaded (**unverified on air**); *Reconfigure* does the same.
+[Details](../ha-integration.md#repair-issue-jung-home-mesh-keys-have-changed)
 
 ### Sequence numbers
 
@@ -181,8 +192,9 @@ configuration folder. Never restore that store (`.storage/junghome_ble.seq.*`) f
 
 #### Sequence numbers of the JUNG HOME mesh … lost
 
-The counter store has no usable record for Home Assistant's address. Submit the notice: Home Assistant continues far
-past every number it may have used. [Details](../ha-integration.md#known-limitations)
+The counter store has no usable record for Home Assistant's address, so the integration does not start. **Submit**
+the notice: Home Assistant continues far past every number it may have used and starts again.
+[Details](../ha-integration.md#repair-issue-sequence-numbers-of-the-jung-home-mesh--lost)
 
 #### JUNG HOME sequence numbers cannot be saved
 
@@ -192,7 +204,8 @@ Free up space or repair the storage. [Details](../ha-integration.md#repair-issue
 #### JUNG HOME mesh sequence numbers running low
 
 A device of the installation has used most of its numbers; the JUNG HOME Gateway starts the switch to new ones by
-itself. Keep the gateway powered and connected. [Details](../ha-integration.md#sensor)
+itself. Keep the gateway powered and connected.
+[Details](../ha-integration.md#repair-issue-jung-home-mesh-sequence-numbers-running-low)
 
 #### JUNG HOME mesh is at another IV index
 

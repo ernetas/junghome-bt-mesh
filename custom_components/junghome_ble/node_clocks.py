@@ -43,6 +43,7 @@ from .const import (
     SCHEDULER_MODEL,
     SCHEDULERS,
     SIGNAL_NODE,
+    learn_more_url,
 )
 from .entity import health_nodes
 from .jhmesh import messages as M
@@ -226,6 +227,7 @@ class NodeClocks:
             is_fixable=True,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_NODE_CLOCK_WRONG,
+            learn_more_url=learn_more_url(ISSUE_NODE_CLOCK_WRONG),
             translation_placeholders={
                 "title": self.hub.entry.title,
                 "devices": ", ".join(

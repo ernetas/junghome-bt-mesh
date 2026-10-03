@@ -147,6 +147,7 @@ from .const import (
     TIME_SET_INTERVAL,
     UNREACHABLE_RECHECK,
     UNREACHABLE_REPROBE,
+    learn_more_url,
 )
 from .energy_history import async_backfill, floor_hour
 from .entity import PRODUCT_NAMES, update_node_device
@@ -1190,6 +1191,7 @@ def _report_seq_store_lost(
         is_persistent=False,
         severity=ir.IssueSeverity.ERROR,
         translation_key=ISSUE_SEQ_STORE_LOST,
+        learn_more_url=learn_more_url(ISSUE_SEQ_STORE_LOST),
         translation_placeholders={"title": entry.title, "unicast": key},
         data={"entry_id": entry.entry_id, "mesh_uuid": mesh_uuid, "unicast": key},
     )
@@ -1679,6 +1681,7 @@ class HAState(LocalState):
             is_persistent=False,
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_SEQ_STORE_UNWRITABLE,
+            learn_more_url=learn_more_url(ISSUE_SEQ_STORE_UNWRITABLE),
             translation_placeholders={
                 "title": entry.title,
                 "path": path,
@@ -1893,6 +1896,7 @@ def _refuse_duplicate_mesh(
         is_fixable=False,
         severity=ir.IssueSeverity.ERROR,
         translation_key=ISSUE_DUPLICATE_MESH,
+        learn_more_url=learn_more_url(ISSUE_DUPLICATE_MESH),
         translation_placeholders={"title": entry.title, "others": other.title},
     )
     raise ConfigEntryError(
@@ -3023,9 +3027,11 @@ class JungHomeHub:
             self.hass,
             DOMAIN,
             issue_id(self.entry, ISSUE_UNKNOWN_NODES),
-            is_fixable=False,
+            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
+            data={"entry_id": self.entry.entry_id},
             severity=ir.IssueSeverity.WARNING,
             translation_key=key,
+            learn_more_url=learn_more_url(key),
             translation_placeholders=placeholders,
         )
 
@@ -3162,6 +3168,7 @@ class JungHomeHub:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_GATEWAY_CERTIFICATE,
+            learn_more_url=learn_more_url(ISSUE_GATEWAY_CERTIFICATE),
             translation_placeholders={
                 "host": str(self.entry.data.get(CONF_GATEWAY_HOST) or "")
             },
@@ -3522,6 +3529,7 @@ class JungHomeHub:
             is_fixable=False,
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_BLUETOOTH_UNAVAILABLE,
+            learn_more_url=learn_more_url(ISSUE_BLUETOOTH_UNAVAILABLE),
             translation_placeholders={"title": self.entry.title},
         )
 
@@ -4803,6 +4811,7 @@ class JungHomeHub:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_SEQUENCE_SPACE_LOW,
+            learn_more_url=learn_more_url(ISSUE_SEQUENCE_SPACE_LOW),
             translation_placeholders={
                 "title": self.entry.title,
                 "source": f"{node.name} {src:04X}"
@@ -5318,6 +5327,7 @@ class JungHomeHub:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_TIME_KEEPER_MISSING,
+            learn_more_url=learn_more_url(ISSUE_TIME_KEEPER_MISSING),
             translation_placeholders={
                 "title": self.entry.title,
                 "pucks": ", ".join(f"{a:04X}" for a in pucks),
@@ -5812,15 +5822,15 @@ class JungHomeHub:
             state.iv_index,
         )
         fixable = state.can_rewind_to(network)  # behind us, and the record knows enough
+        translation_key = ISSUE_IV_INDEX_AHEAD if fixable else ISSUE_IV_INDEX_MISMATCH
         ir.async_create_issue(
             self.hass,
             DOMAIN,
             key,
             is_fixable=fixable,
             severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_IV_INDEX_AHEAD
-            if fixable
-            else ISSUE_IV_INDEX_MISMATCH,
+            translation_key=translation_key,
+            learn_more_url=learn_more_url(translation_key),
             translation_placeholders={
                 "title": self.entry.title,
                 "mesh": str(network),
@@ -5906,9 +5916,11 @@ class JungHomeHub:
             self.hass,
             DOMAIN,
             issue_id(self.entry, ISSUE_EXPORT_STALE),
-            is_fixable=False,
+            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
+            data={"entry_id": self.entry.entry_id},
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_EXPORT_STALE,
+            learn_more_url=learn_more_url(ISSUE_EXPORT_STALE),
             translation_placeholders={"title": self.entry.title},
         )
 
@@ -5953,9 +5965,11 @@ class JungHomeHub:
             self.hass,
             DOMAIN,
             issue_id(self.entry, ISSUE_KEY_REFRESH),
-            is_fixable=False,
+            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
+            data={"entry_id": self.entry.entry_id},
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_KEY_REFRESH,
+            learn_more_url=learn_more_url(ISSUE_KEY_REFRESH),
             translation_placeholders={"title": self.entry.title},
         )
 
@@ -5998,6 +6012,7 @@ class JungHomeHub:
             data={"entry_id": self.entry.entry_id},
             severity=ir.IssueSeverity.ERROR,
             translation_key=ISSUE_PDUS_DROPPED,
+            learn_more_url=learn_more_url(ISSUE_PDUS_DROPPED),
             translation_placeholders={
                 "title": self.entry.title,
                 "unicast": f"{self.proxy.state.src:04X}",
@@ -6031,6 +6046,11 @@ class JungHomeHub:
 
         The same issue id either way (`ISSUE_ADDRESS_SHARED_AGAIN` is only its other translation key).
         """
+        translation_key = (
+            ISSUE_ADDRESS_SHARED_AGAIN
+            if self._address_shared_skipped
+            else ISSUE_ADDRESS_SHARED
+        )
         ir.async_create_issue(
             self.hass,
             DOMAIN,
@@ -6038,9 +6058,8 @@ class JungHomeHub:
             is_fixable=True,
             data={"entry_id": self.entry.entry_id},
             severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_ADDRESS_SHARED_AGAIN
-            if self._address_shared_skipped
-            else ISSUE_ADDRESS_SHARED,
+            translation_key=translation_key,
+            learn_more_url=learn_more_url(translation_key),
             translation_placeholders={
                 "title": self.entry.title,
                 "unicast": f"{self.state.src:04X}",

@@ -49,7 +49,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import slugify
 
-from .const import DOMAIN, GATEWAY_DOMAIN, ISSUE_GATEWAY_IMPORT
+from .const import DOMAIN, GATEWAY_DOMAIN, ISSUE_GATEWAY_IMPORT, learn_more_url
 from .jhmesh.devices import BUTTON_LETTERS
 
 if TYPE_CHECKING:
@@ -422,6 +422,7 @@ def async_update_gateway_issue(hass: HomeAssistant, entry: ConfigEntry) -> None:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_GATEWAY_IMPORT,
+            learn_more_url=learn_more_url(ISSUE_GATEWAY_IMPORT),
             translation_placeholders={"title": entry.title},
         )
     else:

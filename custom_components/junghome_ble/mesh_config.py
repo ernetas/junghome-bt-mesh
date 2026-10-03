@@ -97,6 +97,7 @@ from .const import (
     OPTION_PROVISIONER_IDENTITY,
     SERVICE_LINK_WAIT,
     SIGNAL_GATEWAY_SYNCED,
+    learn_more_url,
 )
 from .coordinator import issue_id
 from .gateway_api import (
@@ -1267,6 +1268,7 @@ class MeshConfigurator:
             is_fixable=True,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_PLAN_INTERRUPTED,
+            learn_more_url=learn_more_url(ISSUE_PLAN_INTERRUPTED),
             translation_placeholders={
                 "title": self.hub.entry.title,
                 "action": action,
@@ -1313,6 +1315,7 @@ class MeshConfigurator:
             is_persistent=True,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_SCENE_HELD,
+            learn_more_url=learn_more_url(ISSUE_SCENE_HELD),
             translation_placeholders={
                 "title": self.hub.entry.title,
                 "members": "; ".join(
@@ -1624,9 +1627,11 @@ class MeshConfigurator:
                 self.hub.hass,
                 DOMAIN,
                 issue_id(self.hub.entry, ISSUE_GATEWAY_SYNC),
-                is_fixable=False,
+                is_fixable=True,  # its repair runs `sync_gateway` (`repairs.GatewaySyncFlow`)
+                data={"entry_id": self.hub.entry.entry_id},
                 severity=ir.IssueSeverity.WARNING,
                 translation_key=ISSUE_GATEWAY_SYNC,
+                learn_more_url=learn_more_url(ISSUE_GATEWAY_SYNC),
                 translation_placeholders={"host": api.host, "error": str(err)},
             )
             if raise_on_failure:
@@ -1661,9 +1666,11 @@ class MeshConfigurator:
             self.hub.hass,
             DOMAIN,
             issue_id(self.hub.entry, ISSUE_GATEWAY_SYNC),
-            is_fixable=False,
+            is_fixable=True,
+            data={"entry_id": self.hub.entry.entry_id},
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_GATEWAY_SYNC,
+            learn_more_url=learn_more_url(ISSUE_GATEWAY_SYNC),
             translation_placeholders={"host": api.host, "error": cause},
         )
         if raise_on_failure:
@@ -1693,6 +1700,7 @@ class MeshConfigurator:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_GATEWAY_TOKEN,
+            learn_more_url=learn_more_url(ISSUE_GATEWAY_TOKEN),
             translation_placeholders={"host": api.host, "title": entry.title},
         )
         if first:
@@ -1998,6 +2006,7 @@ class MeshConfigurator:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_CARRY_OVER_CONFLICT,
+            learn_more_url=learn_more_url(ISSUE_CARRY_OVER_CONFLICT),
             translation_placeholders={
                 "title": self.hub.entry.title,
                 "paths": ", ".join(paths),

@@ -31,6 +31,11 @@ The reconfigure menu also offers the import from the JUNG HOME Gateway integrati
 as a form, applied on confirmation. Options (`JungHomeOptionsFlow`) hold the runtime behaviour switches; a change
 reloads the entry through the update listener (`__init__._async_entry_updated`), which also reloads a loaded entry
 after a reconfiguration changed what the hub is built from.
+
+The steps of a new export for an existing entry are module functions, shared with the repairs that load one
+(`repairs.NewExportFlow`, review-4 U4-5): taking an upload in (`async_take_upload`), fetching from the gateway
+(`async_fetch_to_store`, pinned by `async_known_pin`), checking it (`async_validate_stored`) and the reconfigure's end
+(`async_replace_export`).
 """
 
 from __future__ import annotations
@@ -529,6 +534,252 @@ async def configured_mesh_uuid(hass: HomeAssistant, entry: ConfigEntry) -> str |
     return cdb.mesh_uuid
 
 
+# ---- a new export for an entry: the reconfigure's, and the repairs' that ask for one (`repairs.NewExportFlow`)
+
+
+def incoming_path(hass: HomeAssistant, flow_id: str) -> Path:
+    """Where the flow `flow_id` keeps a fetched or uploaded export until it passes (`.incoming-<flow id>.json`)."""
+    return Path(hass.config.path(STORAGE_DIR, f".incoming-{flow_id}.json"))
+
+
+def export_path(hass: HomeAssistant, mesh_uuid: str) -> Path:
+    """Where a fetched or uploaded export of the mesh `mesh_uuid` lives: `<config>/junghome_ble/<MESH UUID>.json`."""
+    # `CDB.from_network` accepts a mesh UUID only in canonical form: the file name never holds anything else
+    assert UUID_PATTERN.fullmatch(mesh_uuid)
+    return Path(hass.config.path(STORAGE_DIR, f"{mesh_uuid.upper()}.json"))
+
+
+async def async_take_upload(hass: HomeAssistant, file_id: str, incoming: Path) -> None:
+    """Move the uploaded file `file_id` to `incoming` in our store, before anything that can fail checks it.
+
+    The upload holds every key of the mesh: out of Home Assistant's upload folder first, whatever comes next. A copy
+    that failed half-way is deleted (`upload_failed`).
+    """
+    try:
+        await hass.async_add_executor_job(_copy_upload, hass, file_id, incoming)
+    except (OSError, ValueError) as err:
+        await hass.async_add_executor_job(_discard, incoming)
+        raise _FormError({"base": "upload_failed"}) from err
+
+
+async def async_validate_stored(
+    hass: HomeAssistant, incoming: Path, unicast: str
+) -> CDB:
+    """Validate a fetched or uploaded export in our store (`validate_input`); deleted again unless it passes."""
+    try:
+        cdb, errors = await validate_input(
+            hass,
+            {
+                CONF_CDB_PATH: str(incoming),
+                CONF_METADATA_DIR: "",
+                CONF_UNICAST: unicast,
+            },
+        )
+        if cdb is None or errors:
+            raise _FormError(errors)
+    except BaseException:
+        await hass.async_add_executor_job(_discard, incoming)
+        raise
+    return cdb
+
+
+async def async_fetch_to_store(
+    hass: HomeAssistant, api: JungHomeGatewayApi, incoming: Path, unicast: str
+) -> tuple[dict[str, Any], CDB]:
+    """Fetch the gateway's export with the token `api` holds into `incoming` and validate it; (document, network).
+
+    The gateway's errors pass through (the caller decides: a new access request, the certificate step, an abort);
+    a file that cannot be stored (`cannot_store`) or does not validate is deleted again.
+    """
+    doc = await api.fetch_project()
+    try:
+        await hass.async_add_executor_job(
+            _write_private, incoming, json.dumps(doc).encode()
+        )
+    except OSError as err:
+        await hass.async_add_executor_job(_discard, incoming)
+        raise _FormError({"base": "cannot_store"}) from err
+    return doc, await async_validate_stored(hass, incoming, unicast)
+
+
+def gateway_entry_data(
+    api: JungHomeGatewayApi, unicast: str, pin_source: str, doc: dict[str, Any]
+) -> dict[str, Any]:
+    """Return the entry data of an export fetched with `api` (host, token, pin), as the gateway holds it (`doc`)."""
+    return {
+        CONF_SOURCE: SOURCE_GATEWAY,
+        CONF_METADATA_DIR: "",
+        CONF_UNICAST: unicast,
+        CONF_GATEWAY_HOST: api.host,
+        CONF_GATEWAY_TOKEN: api.token,
+        CONF_GATEWAY_FINGERPRINT: api.fingerprint,
+        CONF_GATEWAY_PIN_SOURCE: pin_source,
+        CONF_GATEWAY_SYNCED: export_digest(doc),
+    }
+
+
+async def async_known_pin(
+    hass: HomeAssistant, entry: ConfigEntry | None, host: str
+) -> tuple[str, str, str] | None:
+    """(fingerprint, pin source, where it came from) of the certificate `host` must present; None when none is known.
+
+    In order of trust: what the gateway node reports over the mesh (`entry`'s hub is connected; the mesh is
+    authenticated with the AppKey), then what `entry` recorded at its last fetch from this host — with the source
+    it recorded, so one the mesh vouched for stays so. Nothing is sent to `host`.
+    """
+    if entry is None:
+        return None
+    if entry.state is ConfigEntryState.LOADED and (
+        fingerprint := await async_read_mesh_fingerprint(entry.runtime_data)
+    ):
+        return fingerprint, PIN_FROM_MESH, "the gateway node over the mesh"
+    if entry.data.get(CONF_GATEWAY_HOST) == host and (
+        fingerprint := normalize_fingerprint(entry.data.get(CONF_GATEWAY_FINGERPRINT))
+    ):
+        source = str(entry.data.get(CONF_GATEWAY_PIN_SOURCE) or PIN_FROM_USER)
+        return fingerprint, source, "the entry"
+    return None
+
+
+async def _mesh_uuid_taken(
+    hass: HomeAssistant, mesh_uuid: str, *, exclude: str | None = None
+) -> bool:
+    """Return True when another entry already belongs to this mesh (by mesh UUID, which survives a key refresh).
+
+    The unique id above is the Network ID, which a key refresh changes: without this check, fetching or
+    uploading the same mesh's (refreshed) export through "Add integration" instead of the existing entry's
+    Reconfigure would create a second entry for it. Two entries sharing a mesh would then also share its
+    sequence-number store (`coordinator.seq_store`, keyed on the mesh UUID) — each holding its own stale
+    in-memory copy of the other addresses' records (`HAState._addresses`, loaded once) and overwriting them
+    with that stale copy on every save, which can roll a sibling entry's counter backwards on its next load.
+    One entry per mesh avoids the race outright; point the user at Reconfigure instead.
+    """
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if (
+            entry.entry_id == exclude
+        ):  # the entry being reconfigured is not "another" one
+            continue
+        known = await configured_mesh_uuid(hass, entry)
+        if known is not None and known.lower() == mesh_uuid.lower():
+            return True
+    return False
+
+
+async def _async_keep_incoming(
+    hass: HomeAssistant, incoming: Path, data: dict[str, Any], cdb: CDB
+) -> None:
+    """Give a validated fetched/uploaded export its final name and point the entry data at it.
+
+    The export it replaces, if any, is kept beside it (`pre_reconfigure_path`).
+    """
+    final = export_path(hass, cdb.mesh_uuid)
+    await hass.async_add_executor_job(_replace_keeping, incoming, final)
+    data[CONF_CDB_PATH] = str(final)
+
+
+async def _async_forget_replaced_export(
+    hass: HomeAssistant, entry: ConfigEntry, data: dict[str, Any]
+) -> None:
+    """Delete the export the integration had stored for `entry` when the reconfigure moved away from it.
+
+    A fetched or uploaded export has just replaced whatever was at its path: the merge base kept beside it
+    (`app_copy_path`, the app's upload before this one) is stale, and `MeshConfigurator._carry_over` would
+    take all the app changed since for Home Assistant's own changes. It goes too; the next save keeps the
+    export now on disk as the base (`MeshConfigurator._keep_app_copy`).
+    """
+    if data.get(CONF_SOURCE) in (SOURCE_GATEWAY, SOURCE_UPLOAD):
+        await hass.async_add_executor_job(_discard, app_copy_path(data[CONF_CDB_PATH]))
+    if entry.data.get(CONF_SOURCE) not in (SOURCE_GATEWAY, SOURCE_UPLOAD):
+        return
+    old = Path(entry.data[CONF_CDB_PATH])
+    if old == Path(data[CONF_CDB_PATH]):
+        return  # the same mesh fetched or uploaded again: replaced in place
+    await hass.async_add_executor_job(forget_stored_export, old)
+
+
+@callback
+def async_update_and_reload(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    updated: dict[str, Any],
+    unique_id: str | None = None,
+) -> None:
+    """Store `updated` as `entry`'s data and have the entry set up again from it, once.
+
+    Home Assistant wants the update listener to reload: a loaded entry's listener (`__init__._async_entry_updated`)
+    starts eagerly from inside `async_update_entry` and reloads the entry when the data the hub is built from
+    changed, so decide *before* the update whether it will. An entry that failed to set up has no listener, and an
+    export fetched or uploaded again lands in the same file, so the data may be unchanged although the export (a
+    key refresh) is new: those are reloaded here.
+    """
+    loaded = entry.state is ConfigEntryState.LOADED
+    listener_reloads = loaded and hub_data(entry.data) != hub_data(updated)
+    if unique_id is None:
+        hass.config_entries.async_update_entry(entry, data=updated)
+    else:
+        hass.config_entries.async_update_entry(entry, unique_id=unique_id, data=updated)
+    if not listener_reloads:
+        hass.config_entries.async_schedule_reload(entry.entry_id)
+
+
+async def async_replace_export(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    data: dict[str, Any],
+    cdb: CDB,
+    incoming: Path | None,
+    *,
+    keep_flow: str | None = None,
+) -> str:
+    """Point the existing `entry` at a new, validated export of its mesh and set it up again; the abort reason.
+
+    `reconfigure_successful`, or the refusal: `network_mismatch` (another mesh than the entry's) and
+    `mesh_already_configured` (an entry whose own mesh is unknown — a legacy entry with its export gone — could
+    otherwise take over a mesh another entry owns, and two entries on one mesh share its sequence-number store).
+    A fetched or uploaded file (`incoming`) is moved to its final name, or deleted whatever stops this. `keep_flow`
+    is the reconfigure flow asking, which must not abort itself.
+    """
+    try:
+        network_id = cdb.net_keys[0].network_id
+        data[CONF_MESH_UUID] = cdb.mesh_uuid
+        known = await configured_mesh_uuid(hass, entry)
+        if known is not None and known.lower() != cdb.mesh_uuid.lower():
+            return "network_mismatch"
+        if known is None and await _mesh_uuid_taken(
+            hass, cdb.mesh_uuid, exclude=entry.entry_id
+        ):
+            return "mesh_already_configured"
+        # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it
+        # started, and an ignored entry holding it (H4-4)
+        await async_release_network_id(
+            hass, entry, network_id.hex(), keep_flow=keep_flow
+        )
+        if incoming is not None:
+            await _async_keep_incoming(hass, incoming, data, cdb)
+            incoming = None
+        # discovery recognises the mesh by the new export from its next setup on
+        forget_known_mesh(hass, entry.entry_id)
+        await _async_forget_replaced_export(hass, entry, data)
+        if CONF_GATEWAY_SYNCED in data:
+            # fetched from the gateway: both hold this export now (`mesh_config.GatewaySync`, before the reload)
+            await gateway_sync(hass, entry.entry_id).async_seed(
+                entry, data[CONF_GATEWAY_SYNCED]
+            )
+        # the gateway repairs are about the entry's old pin and token; the reload checks the new ones
+        for issue in (
+            certificate_issue_id(entry.entry_id),
+            issue_id(entry, ISSUE_GATEWAY_TOKEN),
+        ):
+            ir.async_delete_issue(hass, DOMAIN, issue)
+        async_update_and_reload(
+            hass, entry, {**entry.data, **data}, unique_id=network_id.hex()
+        )
+        return "reconfigure_successful"
+    finally:
+        if incoming is not None:
+            await hass.async_add_executor_job(_discard, incoming)
+
+
 class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Set up a mesh from its app export, started by the user or by Bluetooth discovery of a proxy."""
 
@@ -680,14 +931,12 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 # out of Home Assistant's upload folder before anything can fail: the file holds every key
                 incoming = self._incoming_path()
-                self._incoming = incoming
                 try:
-                    await self.hass.async_add_executor_job(
-                        _copy_upload, self.hass, user_input[CONF_EXPORT_FILE], incoming
+                    await async_take_upload(
+                        self.hass, user_input[CONF_EXPORT_FILE], incoming
                     )
-                except (OSError, ValueError) as err:
-                    await self._async_discard_incoming()
-                    raise _FormError({"base": "upload_failed"}) from err
+                finally:
+                    self._incoming = incoming  # its removal deletes a copy left behind
                 if _parse_unicast(user_input[CONF_UNICAST]) is None:
                     await self._async_discard_incoming()
                     raise _FormError({CONF_UNICAST: "invalid_address"})
@@ -954,27 +1203,16 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         if self._fingerprint is not None:
             return
-        fingerprint = await self._async_mesh_fingerprint()
-        source, self._pin_source = "the gateway node over the mesh", PIN_FROM_MESH
-        entry = self._flow_entry()
-        if fingerprint is None and entry is not None:
-            if entry.data.get(CONF_GATEWAY_HOST) == host:
-                fingerprint = normalize_fingerprint(
-                    entry.data.get(CONF_GATEWAY_FINGERPRINT)
-                )
-                # as the entry recorded it: one the mesh vouched for stays so
-                source = "the entry"
-                self._pin_source = str(
-                    entry.data.get(CONF_GATEWAY_PIN_SOURCE) or PIN_FROM_USER
-                )
-        if fingerprint is None:
+        known = await async_known_pin(self.hass, self._flow_entry(), host)
+        if known is None:
             try:
-                fingerprint = await async_learn_fingerprint(
+                learned = await async_learn_fingerprint(
                     async_get_clientsession(self.hass, verify_ssl=False), host
                 )
             except (TimeoutError, aiohttp.ClientError) as err:
                 raise _FormError({"base": "cannot_connect"}) from err
-            source, self._pin_source = "first contact", PIN_FROM_USER
+            known = (learned, PIN_FROM_USER, "first contact")
+        fingerprint, self._pin_source, source = known
         _LOGGER.debug(
             "gateway %s: certificate pinned from %s (%s)",
             host,
@@ -982,13 +1220,6 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             format_fingerprint(fingerprint),
         )
         self._fingerprint = fingerprint
-
-    async def _async_mesh_fingerprint(self) -> str | None:
-        """Read the gateway's certificate from its mesh node, when the entry being reconfigured or reauthenticated is connected."""
-        entry = self._flow_entry()
-        if entry is None or entry.state is not ConfigEntryState.LOADED:
-            return None
-        return await async_read_mesh_fingerprint(entry.runtime_data)
 
     def _flow_entry(self) -> ConfigEntry | None:
         """Return the entry this flow works on: the one being reconfigured or reauthenticated; None for a new setup."""
@@ -1170,8 +1401,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Fetch the export with the token in hand, store and validate it, finish the flow."""
         assert self._host is not None
         api = self._api()
+        incoming = self._incoming_path()
         try:
-            doc = await api.fetch_project()
+            doc, cdb = await async_fetch_to_store(
+                self.hass, api, incoming, self._unicast
+            )
         except GatewayCertificateMismatch as err:
             raise _CertificateChanged(err) from err
         except GatewayAuthError as err:
@@ -1181,29 +1415,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             raise _FormError({"base": _gateway_error_key(err)}) from err
         except GatewayError as err:
             raise _FormError({"base": _gateway_error_key(err)}) from err
+        finally:
+            self._incoming = incoming  # its removal deletes a copy left behind
         assert self._token is not None
-        incoming = self._incoming_path()
-        self._incoming = incoming
-        try:
-            await self.hass.async_add_executor_job(
-                _write_private, incoming, json.dumps(doc).encode()
-            )
-        except OSError as err:
-            await self._async_discard_incoming()
-            raise _FormError({"base": "cannot_store"}) from err
-        cdb = await self._async_validate_incoming(incoming, self._unicast)
         return await self._async_finish(
-            {
-                CONF_SOURCE: SOURCE_GATEWAY,
-                CONF_METADATA_DIR: "",
-                CONF_UNICAST: self._unicast,
-                CONF_GATEWAY_HOST: self._host,
-                CONF_GATEWAY_TOKEN: self._token,
-                CONF_GATEWAY_FINGERPRINT: self._fingerprint,
-                CONF_GATEWAY_PIN_SOURCE: self._pin_source,
-                CONF_GATEWAY_SYNCED: export_digest(doc),
-            },
-            cdb,
+            gateway_entry_data(api, self._unicast, self._pin_source, doc), cdb
         )
 
     # ------------------------------------------------------------------ shared tail
@@ -1221,14 +1437,7 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         return GATEWAY_DEFAULT_HOST
 
     def _incoming_path(self) -> Path:
-        return Path(
-            self.hass.config.path(STORAGE_DIR, f".incoming-{self.flow_id}.json")
-        )
-
-    def _export_path(self, mesh_uuid: str) -> Path:
-        # `CDB.from_network` accepts a mesh UUID only in canonical form: the file name never holds anything else
-        assert UUID_PATTERN.fullmatch(mesh_uuid)
-        return Path(self.hass.config.path(STORAGE_DIR, f"{mesh_uuid.upper()}.json"))
+        return incoming_path(self.hass, self.flow_id)
 
     async def _async_validate(self, data: dict[str, Any]) -> CDB:
         cdb, errors = await validate_input(self.hass, data)
@@ -1238,18 +1447,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_validate_incoming(self, incoming: Path, unicast: str) -> CDB:
         """Validate a file in our store; it is deleted again unless it passes (whatever went wrong)."""
-        self._incoming = incoming
-        try:
-            return await self._async_validate(
-                {
-                    CONF_CDB_PATH: str(incoming),
-                    CONF_METADATA_DIR: "",
-                    CONF_UNICAST: unicast,
-                }
-            )
-        except BaseException:
-            await self._async_discard_incoming()
-            raise
+        self._incoming = incoming  # deleted again unless it passes; the flow's removal sees to a cancellation
+        return await async_validate_stored(self.hass, incoming, unicast)
 
     async def _async_discard_incoming(self) -> None:
         if self._incoming is not None:
@@ -1257,16 +1456,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             self._incoming = None
 
     async def _async_keep_incoming(self, data: dict[str, Any], cdb: CDB) -> None:
-        """Give a validated fetched/uploaded export its final name and point the entry data at it.
-
-        The export it replaces, if any, is kept beside it (`pre_reconfigure_path`).
-        """
+        """Give a validated fetched/uploaded export of a new entry its final name (`_async_keep_incoming`)."""
         if self._incoming is None:
             return
-        final = self._export_path(cdb.mesh_uuid)
-        await self.hass.async_add_executor_job(_replace_keeping, self._incoming, final)
+        await _async_keep_incoming(self.hass, self._incoming, data, cdb)
         self._incoming = None
-        data[CONF_CDB_PATH] = str(final)
 
     async def _async_finish(self, data: dict[str, Any], cdb: CDB) -> ConfigFlowResult:
         """Identity checks, then create the entry or update (and reload) the one being reconfigured.
@@ -1285,53 +1479,16 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         network_id = cdb.net_keys[0].network_id
         data[CONF_MESH_UUID] = cdb.mesh_uuid
         if self.source == SOURCE_RECONFIGURE:
-            entry = self._get_reconfigure_entry()
-            known = await configured_mesh_uuid(self.hass, entry)
-            if known is not None and known.lower() != cdb.mesh_uuid.lower():
-                await self._async_discard_incoming()
-                return self.async_abort(reason="network_mismatch")
-            # an entry whose own mesh is unknown (a legacy entry with its export gone) could otherwise take over a
-            # mesh another entry owns, and two entries on one mesh share its sequence-number store
-            if known is None and await self._mesh_uuid_taken(
-                cdb.mesh_uuid, exclude=entry.entry_id
-            ):
-                await self._async_discard_incoming()
-                return self.async_abort(reason="mesh_already_configured")
-            # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it
-            # started, and an ignored entry holding it (H4-4)
-            await async_release_network_id(
-                self.hass, entry, network_id.hex(), keep_flow=self.flow_id
+            incoming, self._incoming = self._incoming, None
+            reason = await async_replace_export(
+                self.hass,
+                self._get_reconfigure_entry(),
+                data,
+                cdb,
+                incoming,
+                keep_flow=self.flow_id,
             )
-            await self._async_keep_incoming(data, cdb)
-            # discovery recognises the mesh by the new export from its next setup on
-            forget_known_mesh(self.hass, entry.entry_id)
-            await self._async_forget_replaced_export(entry, data)
-            if CONF_GATEWAY_SYNCED in data:
-                # fetched from the gateway: both hold this export now (`mesh_config.GatewaySync`, before the reload)
-                await gateway_sync(self.hass, entry.entry_id).async_seed(
-                    entry, data[CONF_GATEWAY_SYNCED]
-                )
-            # the gateway repairs are about the entry's old pin and token; the reload checks the new ones
-            for issue in (
-                certificate_issue_id(entry.entry_id),
-                issue_id(entry, ISSUE_GATEWAY_TOKEN),
-            ):
-                ir.async_delete_issue(self.hass, DOMAIN, issue)
-            # Home Assistant wants the update listener to reload: a loaded entry's listener
-            # (`__init__._async_entry_updated`) starts eagerly from inside `async_update_entry` and reloads the
-            # entry when the data the hub is built from changed, so decide *before* the update whether it will.
-            # An entry that failed to set up has no listener, and an export fetched or uploaded again lands in
-            # the same file, so the data may be unchanged although the export (a key refresh) is new: those are
-            # reloaded here.
-            loaded = entry.state is ConfigEntryState.LOADED
-            updated = {**entry.data, **data}
-            listener_reloads = loaded and hub_data(entry.data) != hub_data(updated)
-            self.hass.config_entries.async_update_entry(
-                entry, unique_id=network_id.hex(), data=updated
-            )
-            if not listener_reloads:
-                self.hass.config_entries.async_schedule_reload(entry.entry_id)
-            return self.async_abort(reason="reconfigure_successful")
+            return self.async_abort(reason=reason)
         if self._discovered_network_id and network_id != self._discovered_network_id:
             raise _FormError({"base": "network_mismatch"})
         # not `raise_on_progress`: a proxy in range leaves a discovery flow of this very mesh pending, which must
@@ -1340,56 +1497,12 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         # the Network ID just cleared is derived from the NetKey and changes on a key refresh: re-check the mesh
         # UUID, which does not, so a refreshed export of an already-configured mesh cannot found a second entry
-        if await self._mesh_uuid_taken(cdb.mesh_uuid):
+        if await _mesh_uuid_taken(self.hass, cdb.mesh_uuid):
             raise _FormError({"base": "mesh_already_configured"})
         await self._async_keep_incoming(data, cdb)
         return self.async_create_entry(
             title=f"JUNG HOME mesh {cdb.mesh_uuid[:8]}", data=data
         )
-
-    async def _mesh_uuid_taken(
-        self, mesh_uuid: str, *, exclude: str | None = None
-    ) -> bool:
-        """Return True when another entry already belongs to this mesh (by mesh UUID, which survives a key refresh).
-
-        The unique id above is the Network ID, which a key refresh changes: without this check, fetching or
-        uploading the same mesh's (refreshed) export through "Add integration" instead of the existing entry's
-        Reconfigure would create a second entry for it. Two entries sharing a mesh would then also share its
-        sequence-number store (`coordinator.seq_store`, keyed on the mesh UUID) — each holding its own stale
-        in-memory copy of the other addresses' records (`HAState._addresses`, loaded once) and overwriting them
-        with that stale copy on every save, which can roll a sibling entry's counter backwards on its next load.
-        One entry per mesh avoids the race outright; point the user at Reconfigure instead.
-        """
-        for entry in self.hass.config_entries.async_entries(DOMAIN):
-            if (
-                entry.entry_id == exclude
-            ):  # the entry being reconfigured is not "another" one
-                continue
-            known = await configured_mesh_uuid(self.hass, entry)
-            if known is not None and known.lower() == mesh_uuid.lower():
-                return True
-        return False
-
-    async def _async_forget_replaced_export(
-        self, entry: ConfigEntry, data: dict[str, Any]
-    ) -> None:
-        """Delete the export the integration had stored for `entry` when the reconfigure moved away from it.
-
-        A fetched or uploaded export has just replaced whatever was at its path: the merge base kept beside it
-        (`app_copy_path`, the app's upload before this one) is stale, and `MeshConfigurator._carry_over` would
-        take all the app changed since for Home Assistant's own changes. It goes too; the next save keeps the
-        export now on disk as the base (`MeshConfigurator._keep_app_copy`).
-        """
-        if data.get(CONF_SOURCE) in (SOURCE_GATEWAY, SOURCE_UPLOAD):
-            await self.hass.async_add_executor_job(
-                _discard, app_copy_path(data[CONF_CDB_PATH])
-            )
-        if entry.data.get(CONF_SOURCE) not in (SOURCE_GATEWAY, SOURCE_UPLOAD):
-            return
-        old = Path(entry.data[CONF_CDB_PATH])
-        if old == Path(data[CONF_CDB_PATH]):
-            return  # the same mesh fetched or uploaded again: replaced in place
-        await self.hass.async_add_executor_job(forget_stored_export, old)
 
 
 class JungHomeOptionsFlow(OptionsFlow):

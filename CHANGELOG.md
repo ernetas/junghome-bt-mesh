@@ -435,6 +435,17 @@
   devices**: a *Sleep mode* sensor (diagnostic, disabled by default), and an asleep device's error adds that one
   reacting to no key press usually has an empty battery.
 
+- Repairs that fix, and a *Learn more* link on every repair (review-4 U4-5, report 5 brief F, U4 F6). Each of the
+  integration's repair issues now links to its entry on the user guide's maintenance page, and the reference has a
+  troubleshooting section for every one of them. Six more repairs fix their cause in place once confirmed: *JUNG HOME
+  export not handed to the gateway* hands the export over as *Sync gateway* does; *Home Assistant's JUNG HOME address
+  is taken* moves Home Assistant to the free address it names (a new address continues or starts its own
+  sequence-number record, so no number is sent twice); *JUNG HOME devices missing from the export*, *JUNG HOME mesh
+  keys have changed* and *JUNG HOME mesh keys are changing* load a new export — fetched from the gateway again with
+  the access and certificate pin the entry holds, or, for an entry set up from a file, uploaded in the repair (an
+  entry that read a path on the host uses the uploaded copy from then on); *Device name not passed on to the JUNG HOME
+  app* asks for a name the app accepts. Unverified on air.
+
 ### CLI tools and library
 
 - `jhmesh.config_messages` builds Config NetKey Get, AppKey Get, Friend Get and Node Identity Get / Set, and decodes

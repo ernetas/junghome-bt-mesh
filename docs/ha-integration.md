@@ -1028,6 +1028,17 @@ A fetched or uploaded export replaces the file the integration keeps for the ent
 beside it as `<export>.pre-reconfigure` (owner-only, it holds the mesh keys) until the next reconfigure, so rooms,
 scenes and key connections Home Assistant had made — which the devices still use — can be looked up there.
 
+The repair issues that mean the export is out of date — *JUNG HOME devices missing from the export*, *JUNG HOME mesh
+keys have changed* and *JUNG HOME mesh keys are changing* — do the same from their **Submit** button (unverified on
+air). An entry set up from the gateway fetches the export again after a confirmation, with the access and the
+certificate pin it holds (the gateway node's report over the mesh first): a gateway presenting another certificate,
+or refusing the access, aborts the repair with nothing sent or changed — vouching for a new certificate and
+requesting access anew are Reconfigure's and the re-authentication's. Any other entry asks for the app's file: it is
+taken out of Home Assistant's upload folder before anything checks it (it holds every key) and deleted again unless it
+passes, and an entry that read its export from a path on the host uses the uploaded copy from then on (to keep the
+path, copy the new file there and use Reconfigure). Home Assistant's address stays as it is. The export goes through
+the same checks as here, the replaced one is kept as `.pre-reconfigure`, and the entry is set up again.
+
 The integration reloads with the new export. Devices that are no longer in the export are removed automatically,
 together with their entities; devices that keep their node identity keep their entity IDs and history, because devices
 are keyed by the node's MAC address, not by its mesh address. A device that has disappeared from the export can also be
@@ -1990,6 +2001,15 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
 
 ## Troubleshooting
 
+Every repair issue of this integration has a *Learn more* link to its entry on the user guide's
+[maintenance page](user/maintenance.md#repair-notices) (as published on GitHub), and each has a section below. Some
+fix themselves in place: **Submit** skips the sequence numbers ahead (*sequence numbers lost*, *devices ignore Home
+Assistant*, *another client uses Home Assistant's address*, *Home Assistant is ahead of the mesh's IV index*), sends
+the time (*devices with a wrong clock*), and — new in 1.1, unverified on air — hands the export to the gateway
+(*export not handed to the gateway*), moves Home Assistant to a free address (*address is taken*), loads a new export
+(*devices missing from the export*, *mesh keys have changed*, *mesh keys are changing*) or takes another device name
+(*device name not passed on*). Each changes something only once confirmed.
+
 ### "No node of this mesh network is currently visible over Bluetooth"
 
 Shown in the configuration dialog, or the entry stays in *Retrying setup*. The Network ID derived from the export's
@@ -2118,6 +2138,7 @@ did not hear being handed out (a refresh it sees from the start is followed and 
 app, export the network again and update the file through **Reconfigure**.
 The issue disappears when the integration starts again (with the new export, or — if no key renewal was made in the
 app — after a reload; the flag is not authenticated, so a forged beacon can raise it too).
+Once the renewal finished in the app, the repair can load the new export itself (**Submit**, see [Reconfiguration](#reconfiguration)).
 
 ### Repair issue "JUNG HOME mesh keys have changed"
 
@@ -2127,7 +2148,7 @@ after the export was made (typically while Home Assistant was not running, so th
 was never seen). Export the network again from the JUNG HOME app and update the file through **Reconfigure**. The
 issue clears as soon as a message decrypts, or when the integration starts with the new export. It is only raised
 after 20 undecryptable messages on one link with nothing decodable in between, so a foreign mesh in range or a node
-the export does not know does not trigger it.
+the export does not know does not trigger it. The repair loads the new export itself (**Submit**, see [Reconfiguration](#reconfiguration)).
 
 ### Repair issue "JUNG HOME devices missing from the export"
 
@@ -2143,7 +2164,8 @@ over without a reload — the device appears without any action, its loads are a
 that is up, and the issue clears. For an entry set up
 from a file, or when the gateway's export does not know the device either (open the app once while it is connected
 to the gateway so it uploads), export again from the app and update the integration (**Reconfigure**); the issue is
-cleared when the new export loads and is raised again only for nodes still missing from it.
+cleared when the new export loads and is raised again only for nodes still missing from it. The repair loads the
+new export itself (**Submit**, see [Reconfiguration](#reconfiguration)): fetched from the gateway again, or uploaded.
 
 ### Repair issue "JUNG HOME push-buttons with another insert than in the export"
 
@@ -2250,6 +2272,25 @@ while it keeps sending. Do not restore the sequence-number store from a backup t
 simulated; to check it, run `tools/mesh_poc.py` with `--source` set to Home Assistant's address for a single command
 and look for the issue, and do not leave two clients on one address longer than that.
 
+### Repair issue "Sequence numbers of the JUNG HOME mesh … lost"
+
+The setup is refused: Home Assistant's address has sent before (the store's floor or the other copy says so), but
+neither copy of its sequence-number record (`.storage/junghome_ble.seq.<mesh uuid>` and its `.backup`) is usable.
+Starting from 0 would repeat numbers the devices already saw — they would ignore Home Assistant, and a reused number
+weakens the mesh's encryption. **Submit** continues 2^20 numbers past the last value still readable (2^22 past the
+floor, or past 0, when none is left), writing the floor first, and sets the entry up again; when that write does not
+land the repair aborts and nothing changes. Do not restore the store from a backup instead: an older copy repeats every
+number sent since it was taken (see *The sequence-number store must be kept* under
+[Known limitations](#known-limitations)).
+
+### Repair issue "JUNG HOME mesh sequence numbers running low"
+
+A sender of the mesh — a device, the app or Home Assistant, named in the issue — has used three quarters of the
+sequence numbers of the current IV index (the *Mesh sequence numbers used* sensor, [Sensor](#sensor)). Every sender
+stops at the end of that space until the mesh moves to the next IV index, an IV Update the JUNG HOME Gateway starts
+on its own; Home Assistant follows one but never starts it. Keep the gateway powered and connected to the mesh; without
+a gateway the mesh stops once a sender runs out. The issue clears itself after the update.
+
 ### Repair issue "JUNG HOME sequence numbers cannot be saved"
 
 Every message Home Assistant sends carries a new sequence number, and it only sends numbers its store
@@ -2286,6 +2327,26 @@ refused with *sequence numbers lost*), and a hand edit is overwritten at the nex
 a backup either: an older record repeats numbers the devices already saw. The issue clears itself when a beacon within
 reach arrives.
 
+### Repair issue "Home Assistant's JUNG HOME address is taken"
+
+A node of the export has the unicast address Home Assistant sends from — the app provisioned a device there after
+Home Assistant's address was chosen. Both would be taken for one sender (the devices drop one as a replay, answers
+go astray), so the setup is refused (an export with such a node taken over at runtime reloads the entry into the same
+refusal). **Submit**
+(unverified on air) moves Home Assistant to the free address the issue names — worked out from the export on disk
+when the repair opens (`CDB.suggest_unicast`) and checked again before it is used — and sets the entry up again, as
+*Reconfigure → Our unicast address* would. The sequence-number store keeps one record per address: the new address
+continues its own record, or starts 2^20 in when Home Assistant has none for it but has sent from another (see
+*Known limitations*), so no number is sent twice. Make sure no other client (the command-line tools, another Home
+Assistant) sends from the new address.
+
+### Repair issue "Home Assistant's JUNG HOME address may be handed out"
+
+Home Assistant's address lies inside the address range of one of the app's provisioners, or a removed node used it:
+it keeps working until the app provisions a device there. Move Home Assistant to the free address the issue names
+before that, under **Reconfigure → Our unicast address**. The issue is checked at every setup and with every export
+taken over.
+
 ### Entities go unavailable every few minutes
 
 If the proxy node stops forwarding traffic (a rebooting node keeps a stale GATT link, a proxy hiccup), the
@@ -2309,7 +2370,8 @@ A device was renamed in Home Assistant to a name the JUNG HOME app refuses: a bl
 characters the app's rename takes, or one with a `%` sign the app would take for the start of a placeholder (anything
 but `%%` and `%n`). Home Assistant keeps the name,
 the app and the mesh export keep the old one. Rename the device again; the issue clears with the next rename that is
-passed on.
+passed on. **Submit** asks for another name, checked by the app's rules on the form, and names the device with it;
+the rename is then passed on like any other and clears the issue (unverified on air).
 
 ### Repair issue "A device Home Assistant added is not recorded"
 
@@ -2358,6 +2420,30 @@ The question is asked once per outage (and again when the integration is reloade
 old way still works: **Reconfigure → Fetch it again from the gateway** requests access anew and loads the gateway's
 current export, which replaces Home Assistant's file (kept as `.pre-reconfigure`). The re-authentication is
 *unverified on air*.
+
+### Repair issue "JUNG HOME export not handed to the gateway"
+
+A change Home Assistant made (a room, a key connection, a scene) is on the devices and in its export, but the gateway
+did not take the new export: it could not be reached or checked, it answered with an error, or it holds changes Home
+Assistant has not seen (uploading would erase them; the next change takes them over first). The issue names the
+cause. Home Assistant tries twice more, 15 s apart; until an upload goes through, the app shows the old state and its
+next change would overwrite Home Assistant's. **Submit** (unverified on air) hands the export to the gateway as
+`junghome_ble.sync_gateway` does — with the same refusal when the gateway holds unseen changes — and aborts with the
+cause when it does not go through; the issue clears with the first upload that does. See
+[Actions: rooms and key connections](#actions-rooms-and-key-connections).
+
+### Repair issue "Take over the JUNG HOME Gateway integration's entities"
+
+The JUNG HOME Gateway integration is set up and enabled next to this one, so every light, socket, key and scene exists
+twice. Take its entities over under **Reconfigure → Import the entities of the JUNG HOME Gateway integration** (see
+[Migrating from the gateway integration](#migrating-from-the-gateway-integration)), then delete the gateway entry; or
+ignore the issue to keep both. It clears once no enabled gateway entry is left.
+
+### Repair issue "Two entries cover the same JUNG HOME mesh"
+
+Two entries of this integration belong to one mesh (an older version or a hand edit let a second one in): they would
+share its sequence-number store, so only the one already running is started. Remove one of them; if you removed the
+running one, reload the other. See [This mesh is already set up as another entry](#this-mesh-is-already-set-up-as-another-entry).
 
 ### "The access request was not approved in time"
 

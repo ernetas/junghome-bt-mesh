@@ -2498,7 +2498,8 @@ async def test_key_refresh_beacon_raises_a_repair_issue(
     issue = find_issue(hass, ISSUE_KEY_REFRESH)
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.ERROR
-    assert not issue.is_fixable
+    assert issue.is_fixable  # by a new export (`repairs.NewExportFlow`)
+    assert issue.data == {"entry_id": init_integration.entry_id}
     assert issue.translation_key == ISSUE_KEY_REFRESH
     assert issue.translation_placeholders == {"title": "JUNG HOME mesh test"}
 
@@ -3674,7 +3675,7 @@ async def test_undecryptable_traffic_alone_raises_the_export_stale_repair(
     issue = find_issue(hass, ISSUE_EXPORT_STALE)
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.ERROR
-    assert not issue.is_fixable
+    assert issue.is_fixable  # by a new export (`repairs.NewExportFlow`)
     assert issue.translation_key == ISSUE_EXPORT_STALE
     assert issue.translation_placeholders == {"title": "JUNG HOME mesh test"}
     assert (
@@ -4617,7 +4618,7 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         "devices": "Push-button 2-gang 30:FB:10:00:00:9E",
     }
     assert set(issue.translation_placeholders) == issue_text_placeholders(
-        ISSUE_UNKNOWN_NODES
+        ISSUE_UNKNOWN_NODES, "upload"
     )
     assert (
         "30:FB:10:00:00:9E belongs to this mesh but is not in the export (Push-button 2-gang 30:FB:10:00:00:9E)"
@@ -4655,10 +4656,11 @@ STRINGS_JSON = (
 )
 
 
-def issue_text_placeholders(key: str) -> set[str]:
-    """The placeholders the `key` repair's title and description use (strings.json)."""
+def issue_text_placeholders(key: str, step: str) -> set[str]:
+    """The placeholders the `key` repair's title and the fix flow's first step (`step`) use (strings.json)."""
     issue = json.loads(STRINGS_JSON.read_text())["issues"][key]
-    return set(re.findall(r"\{(\w+)\}", issue["title"] + issue["description"]))
+    text = issue["title"] + issue["fix_flow"]["step"][step]["description"]
+    return set(re.findall(r"\{(\w+)\}", text))
 
 
 async def test_unknown_node_issue_is_gone_after_a_reload_with_it_in_the_export(
@@ -4985,7 +4987,7 @@ async def test_unknown_node_fetches_the_gateways_export_and_follows_it(
             "host": "junghome.local",
         }
         assert set(issue.translation_placeholders) == issue_text_placeholders(
-            ISSUE_UNKNOWN_NODES_GATEWAY
+            ISSUE_UNKNOWN_NODES_GATEWAY, "gateway_refetch"
         )
         await hass.async_block_till_done()
         await wait_until(

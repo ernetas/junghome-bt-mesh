@@ -48,6 +48,7 @@ from .const import (
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
+    learn_more_url,
 )
 from .coordinator import (
     async_apply_followed_key_refresh,
@@ -349,9 +350,12 @@ def check_our_address(
             hass,
             DOMAIN,
             issue_id(entry, issue_key),
-            is_fixable=False,
+            # taken: its repair moves Home Assistant to the suggested address (`repairs.FreeAddressFlow`)
+            is_fixable=in_use,
+            data={"entry_id": entry.entry_id} if in_use else None,
             severity=ir.IssueSeverity.ERROR if in_use else ir.IssueSeverity.WARNING,
             translation_key=issue_key,
+            learn_more_url=learn_more_url(issue_key),
             translation_placeholders=placeholders,
         )
     if in_use:

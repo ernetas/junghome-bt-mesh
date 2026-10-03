@@ -64,6 +64,7 @@ from .const import (
     ISSUE_PENDING_DEVICE,
     ISSUE_VAULT_UNWRITABLE,
     NODE_BOOT_DELAY,
+    learn_more_url,
 )
 from .coordinator import issue_id
 from .jhmesh import commission
@@ -390,6 +391,7 @@ async def _keep_key(
         is_persistent=False,
         severity=ir.IssueSeverity.ERROR,
         translation_key=ISSUE_VAULT_UNWRITABLE,
+        learn_more_url=learn_more_url(ISSUE_VAULT_UNWRITABLE),
         translation_placeholders={
             "title": entry.title,
             "address": address,
@@ -820,6 +822,7 @@ def async_update_pending_issue(
         is_fixable=False,
         severity=ir.IssueSeverity.WARNING,
         translation_key=ISSUE_PENDING_DEVICE,
+        learn_more_url=learn_more_url(ISSUE_PENDING_DEVICE),
         translation_placeholders={
             "title": entry.title,
             "addresses": ", ".join(f"{a:04X}" for a in pending),

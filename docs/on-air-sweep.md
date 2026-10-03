@@ -129,6 +129,7 @@ pass removed the markers of the checks that passed.
 | [C4](#c4--mini-actuator-inputs-f10) | Mini-actuator inputs (F10) | an input with a contact | setting, restored | **yes** |
 | [C5](#c5--schedules) | Schedules, node clock and location | a light | a schedule slot, freed | — |
 | [C6](#c6--firmware-only-properties-set-and-restored-brief-36) | Firmware-only properties, set and restored | DALI insert, socket meter, a key, a light | settings, restored | **yes** |
+| [C7](#c7--repairs-that-fix-u4-5) | Repairs that fix: gateway sync, a device name, a fetch | gateway, a light, a firewall rule | a device name, restored | — |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
 | [D2](#d2--key--scene-f15) | Key → scene (F15) | push-button key, harmless scene | key wiring, restored | **yes** |
 | [D3](#d3--rooms-and-scenes-allocated-from-the-top) | Rooms and scenes allocated from the top | a light, the app | room / scene, removed | — |
@@ -673,6 +674,30 @@ Each item writes a device setting and restores the value noted in [0](#note-what
 - **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status`,
   `custom_components/junghome_ble/sensor.py::JungHomeSwitchOffAt`.
 
+### C7 · Repairs that fix (U4-5)
+
+- **Checks:** review-4 U4-5 (brief 44) — the repairs that offer their fix: *JUNG HOME export not handed to the
+  gateway* hands the export to the gateway on **Submit**, *Device name not passed on to the JUNG HOME app* asks for
+  another name, *JUNG HOME devices missing from the export* on a gateway entry fetches the export again; each repair's
+  *Learn more* opens its entry on the user guide's maintenance page.
+- **Needs:** a gateway entry; a firewall rule that blocks Home Assistant from the gateway for a minute (as D6); a
+  light; optionally a device added in the app. **Safety:** the gateway receives the export Home Assistant already
+  holds; the device name is set back; nothing new goes on air.
+- **Do:**
+  1. Block the gateway and run *Sync gateway* (`junghome_ble.sync_gateway`): the action fails and the repair
+     appears. Open it and follow *Learn more*. Unblock the gateway, then **Submit** the repair.
+  2. Rename `<light>`'s device in Home Assistant to `50% off`: the device-name repair appears. Open it, enter
+     `100%` (refused on the form), then the light's old name, and **Submit**.
+  3. Optional, only when a device is added in the app anyway: if *JUNG HOME devices missing from the export* stays
+     after Home Assistant's own fetch, open it and **Submit**.
+- **Pass:** 1: the repair clears and the log says *Handed the mesh export to the gateway*; 2: the repair clears and
+  the app shows the old name; 3: the entry is set up again from the gateway's export (the replaced one kept as
+  `.pre-reconfigure`), the device's entities appear and the repair clears. The links open the right headings.
+- **Markers:** `custom_components/junghome_ble/repairs.py::GatewaySyncFlow`, `custom_components/junghome_ble/repairs.py::DeviceNameFlow`, `custom_components/junghome_ble/repairs.py::NewExportFlow`,
+  `custom_components/junghome_ble/strings.json::issues.gateway_sync_failed.fix_flow.step.confirm.description`,
+  `custom_components/junghome_ble/strings.json::issues.device_name_rejected.fix_flow.step.name.description`,
+  `custom_components/junghome_ble/strings.json::issues.unknown_nodes_gateway.fix_flow.step.gateway_refetch.description`.
+
 ## D · Rewiring, undone in the sitting
 
 **These change the network's wiring and the export, upload it to the gateway and reload the entry.** Each ends with the
@@ -1003,6 +1028,7 @@ spend.
 | **PP2 pucks** (none; the *Time keeper* switch only exists in a project with one): the time keeper's publication to `FEFF`, Time Role Set, the repair (brief 40: F4-14) | `custom_components/junghome_ble/switch.py::JungHomeTimeKeeper`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_time_keeper`, `custom_components/junghome_ble/coordinator.py::JungHomeHub._report_time_keeper`, `custom_components/junghome_ble/jhmesh/messages.py::time_role_set`, `custom_components/junghome_ble/strings.json::issues.time_keeper_missing.description`, `msg:op:8239` |
 | **A spare app install**: the provisioner identity option; and the app write-backs (review-4 F4-6), shaped after the Android decompile while this installation runs the iOS app. *Open item for the maintainer:* store a scene with Home Assistant on a dimmer and the DALI light (`store_scene`), take the export (`export_network`, `flavour: share`), import it into a spare app install (never the production one: the import replaces everything) and check that the scene lists both members with the stored brightness and colour temperature; with a spare device too, check that a device `add_device` added shows its insert and key layout without the app asking it again, and that one `remove_device` removed leaves nothing behind | `custom_components/junghome_ble/strings.json::options.step.init.data.provisioner_identity`, `custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_scene_info`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.store_scenes`, `custom_components/junghome_ble/jhmesh/export.py::ProjectFile.clone_property_rows`, `custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node`, `net:export:meta.sceneinfo`, `net:export:meta.actuatorexports`, `net:export:meta.buttonlayoutexports`, `mgmt:flow:removedevice` |
 | **Another client on Home Assistant's address** (S I2): the CLI refuses Home Assistant's address by design, and a client starting below Home Assistant's counter would not even be detected; provoking it means two clients on one address, i.e. reused nonces. *Decision for the maintainer:* leave it simulated (the docs' *to check it, run `tools/mesh_poc.py` with `--source` set to Home Assistant's address* cannot be followed as written) | `custom_components/junghome_ble/strings.json::issues.address_shared.fix_flow.step.confirm.description`, `custom_components/junghome_ble/strings.json::issues.address_shared_again.fix_flow.step.confirm.description` |
+| **Repairs whose cause is not to be provoked here** (brief 44, U4-5): a node on Home Assistant's address, a key renewal Home Assistant did not follow, devices missing from an export set up from a file. The flows run in `tests/test_repairs.py` | `custom_components/junghome_ble/repairs.py::FreeAddressFlow`, `custom_components/junghome_ble/strings.json::issues.address_in_use.fix_flow.step.confirm.description`, `custom_components/junghome_ble/strings.json::issues.key_refresh.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.key_refresh.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.export_stale.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.export_stale.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes_gateway.fix_flow.step.upload.description` |
 | **Home Assistant ahead of the mesh's IV index**: never happens on its own; not to be provoked | `custom_components/junghome_ble/strings.json::issues.iv_index_ahead.fix_flow.step.confirm.description` |
 
 ## G · Already seen on air
@@ -1049,6 +1075,7 @@ citing the session and sequence number, open a regression test for each failure,
 | C4 | | | |
 | C5 | | | |
 | C6 | | | |
+| C7 | | | |
 | D1 | | | |
 | D2 | | | |
 | D3 | | | |

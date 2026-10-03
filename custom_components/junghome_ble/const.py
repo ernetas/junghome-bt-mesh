@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.util.hass_dict import HassKey
@@ -532,6 +534,54 @@ ISSUE_DUPLICATE_MESH: Final = (
     # records can roll each other back (the config flow refuses this for anything set up
     # after that check was added; an older or hand-edited installation can still have it)
 )
+# Every repair issue's *Learn more* link (review-4 U4-5): its entry on the user guide's maintenance page as GitHub
+# renders it, by translation key (an issue with two wordings has both). `tests/test_repairs.py` checks that every
+# translation key has one, that the page is the published one next to the manifest's `documentation`, and that each
+# anchor is a heading of it.
+LEARN_MORE_PAGE: Final = (
+    "https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/maintenance.md"
+)
+ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
+    {
+        ISSUE_UNKNOWN_NODES: "jung-home-devices-missing-from-the-export",
+        ISSUE_UNKNOWN_NODES_GATEWAY: "jung-home-devices-missing-from-the-export",
+        ISSUE_INSERT_MISMATCH: "jung-home-push-buttons-with-another-insert-than-in-the-export",
+        ISSUE_DEVICE_NAME: "device-name-not-passed-on-to-the-jung-home-app",
+        ISSUE_GATEWAY_IMPORT: "take-over-the-jung-home-gateway-integrations-entities",
+        ISSUE_DUPLICATE_MESH: "two-entries-cover-the-same-jung-home-mesh",
+        ISSUE_PLAN_INTERRUPTED: "a-jung-home-change-on--was-interrupted",
+        ISSUE_CARRY_OVER_CONFLICT: "the-jung-home-app-overrode-a-change-home-assistant-made-on-",
+        ISSUE_SCENE_HELD: "devices-still-hold-a-deleted-jung-home-scene-on-",
+        ISSUE_GATEWAY_SYNC: "jung-home-export-not-handed-to-the-gateway",
+        ISSUE_GATEWAY_CERTIFICATE: "jung-home-gateway-certificate-changed",
+        ISSUE_GATEWAY_TOKEN: "jung-home-gateway-no-longer-accepts-home-assistant",
+        ISSUE_BLUETOOTH_UNAVAILABLE: "no-bluetooth-for-the-jung-home-mesh",
+        ISSUE_PDUS_DROPPED: "jung-home-devices-ignore-home-assistant",
+        ISSUE_ADDRESS_SHARED: "another-client-uses-home-assistants-jung-home-address",
+        ISSUE_ADDRESS_SHARED_AGAIN: "another-client-uses-home-assistants-jung-home-address",
+        ISSUE_ADDRESS_IN_USE: "home-assistants-jung-home-address-is-taken",
+        ISSUE_ADDRESS_RESERVED: "home-assistants-jung-home-address-may-be-handed-out",
+        ISSUE_KEY_REFRESH: "jung-home-mesh-keys-are-changing",
+        ISSUE_EXPORT_STALE: "jung-home-mesh-keys-have-changed",
+        ISSUE_SEQ_STORE_LOST: "sequence-numbers-of-the-jung-home-mesh--lost",
+        ISSUE_SEQ_STORE_UNWRITABLE: "jung-home-sequence-numbers-cannot-be-saved",
+        ISSUE_SEQUENCE_SPACE_LOW: "jung-home-mesh-sequence-numbers-running-low",
+        ISSUE_IV_INDEX_MISMATCH: "jung-home-mesh-is-at-another-iv-index",
+        ISSUE_IV_INDEX_AHEAD: "jung-home-mesh-is-at-another-iv-index",
+        ISSUE_NODE_CLOCK_WRONG: "jung-home-devices-with-a-wrong-clock",
+        ISSUE_TIME_KEEPER_MISSING: "jung-home-pucks-have-no-time-keeper",
+        ISSUE_PENDING_DEVICE: "a-device-home-assistant-added-is-not-recorded",
+        ISSUE_VAULT_UNWRITABLE: "jung-home-device-keys-cannot-be-saved",
+        ISSUE_VAULT_KEY_REFRESH: "devices-home-assistant-added-missed-the-new-network-key",
+    }
+)
+
+
+def learn_more_url(translation_key: str) -> str:
+    """Return the *Learn more* link of the repair issue raised with `translation_key` (`ISSUE_LEARN_MORE`)."""
+    return f"{LEARN_MORE_PAGE}#{ISSUE_LEARN_MORE[translation_key]}"
+
+
 EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beacons on one link, with nothing decodable, before the export counts as stale
 
 # Bus events. Device triggers can only attach to something on the Home Assistant bus, so the hub publishes every

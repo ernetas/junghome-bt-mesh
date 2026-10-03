@@ -30,7 +30,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 
-from .const import DOMAIN, ISSUE_DEVICE_NAME
+from .const import DOMAIN, ISSUE_DEVICE_NAME, learn_more_url
 from .coordinator import issue_id
 from .entity import button_gang, buttons_device_id, node_identifier
 from .services import async_configure
@@ -137,9 +137,11 @@ async def async_write_name(
             hass,
             DOMAIN,
             issue,
-            is_fixable=False,
+            is_fixable=True,  # its repair asks for another name (`repairs.DeviceNameFlow`)
+            data={"entry_id": entry.entry_id, "device_id": device.id},
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_DEVICE_NAME,
+            learn_more_url=learn_more_url(ISSUE_DEVICE_NAME),
             translation_placeholders={"name": name, "device": device.name or name},
         )
         return
