@@ -38,7 +38,13 @@ from .const import (
     EVENT_SCENE_RECALLED,
     SIGNAL_SCENE_RECALLED,
 )
-from .entity import JungHomeEntity, button_gang, buttons_device_id, buttons_device_info
+from .entity import (
+    JungHomeEntity,
+    async_setup_platform,
+    button_gang,
+    buttons_device_id,
+    buttons_device_info,
+)
 from .jhmesh.devices import Button
 from .scene import scene_unique_id
 
@@ -67,16 +73,21 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one event entity per button."""
-    hub = entry.runtime_data
-    add_entities(JungHomeButtonEvent(hub, button) for button in hub.devices.buttons)
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "event", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[JungHomeButtonEvent]:
+    """Return one event entity per button."""
+    return [JungHomeButtonEvent(hub, button) for button in hub.devices.buttons]
 
 
 def connection_attributes(button: Button) -> dict[str, Any]:
     """Return what the key drives, from the export (`devices.KeyConnection`): kind, address, name / scene if known.
 
     `connection_address` is the load element, the room group or the group the key publishes to. The export is
-    what the app and the `assign_key` / `clear_key` actions wrote; the entry reloads after every such action.
+    what the app and the `assign_key` / `clear_key` actions wrote; the entity follows every such action in place
+    (`model_update`).
     """
     connection = button.connection
     if connection is None:

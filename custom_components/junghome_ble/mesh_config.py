@@ -31,8 +31,9 @@ one at a time per hub:
    gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
    kept in the entry's `GatewaySync` record (the time is the app's `gateway_last_sync`).
 
-The caller (`services.py`) then reloads the config entry, which is how the hub's device model — and with it the
-entities, their `rooms` attributes and the buttons' devices — follows the new export.
+The caller (`services.py`) then has the running hub take the new export over in place (`model_update`, review-4
+D23), which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
+devices — follows it; a change it cannot follow in place reloads the config entry, as every change did before.
 
 The message sets mirror the JUNG HOME app (`docs/android/network-logic.md` §1.5, §2.3, §2.4;
 `docs/gap-analysis/network-features.md` §1, §2, §8.3): room membership is a `Model Subscription Add` of the
@@ -988,8 +989,8 @@ async def async_remove_gateway_sync(hass: HomeAssistant, entry_id: str) -> None:
 async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
     """Await `work` to its end even when the caller is cancelled meanwhile, then pass the cancellation on (D12).
 
-    For what must not stop half-way once the mesh holds a change: the write that records it, the reload that
-    makes the device model follow it. `asyncio.shield` returns at the first cancellation and leaves the work
+    For what must not stop half-way once the mesh holds a change: the write that records it, the update (or
+    reload) that makes the device model follow it. `asyncio.shield` returns at the first cancellation and leaves the work
     running behind the caller's back — past the lock the caller holds; here the caller keeps waiting, as often
     as it is cancelled, and raises `CancelledError` once the work is done (chained to the work's own error,
     should it fail). A cancellation of the work itself (the loop shutting down) ends the wait at once.
@@ -1011,17 +1012,17 @@ async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
 class MeshConfigurator:
     """Rooms, key connections and scenes of one hub; operations are serialised by `lock`.
 
-    The mutating coroutines return True when the device model changed, which is the caller's cue to reload the
-    config entry (an adopted gateway export changes it too, see `adopted`); `create_room` touches only the file's
-    bookkeeping and returns the new room's address instead.
+    The mutating coroutines return True when the device model changed, which is the caller's cue to have the hub
+    follow the export (an adopted gateway export changes it too, see `adopted`); `create_room` touches only the
+    file's bookkeeping and returns the new room's address instead.
     """
 
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub`; nothing is loaded until an operation runs."""
         self.hub = hub
         self.lock = asyncio.Lock()
-        # whether the running operation wrote the export: `services._run` reloads the entry after a stopped plan
-        # that recorded what the mesh accepted, as after a finished one (the device model must follow the file)
+        # whether the running operation wrote the export: `services._run` has the model follow it after a stopped
+        # plan that recorded what the mesh accepted, as after a finished one (the device model must follow the file)
         self.recorded = False
         # whether it adopted the gateway's export first: the device model changed even when the change itself
         # then had nothing to do
@@ -1458,9 +1459,9 @@ class MeshConfigurator:
         refusal of ours is final: a gateway holding changes HA has not seen, a pin it contradicts, a rejected
         token — the repairs say what to do. A later change, or `sync_gateway`, supersedes a pending retry.
 
-        The retry is Home Assistant's task, not the entry's, and kept in `hass.data` by entry id: most changes
-        reload the entry right after (`services._run`), which replaces the hub and this configurator while the
-        retry waits, and would cancel a task of the entry's.
+        The retry is Home Assistant's task, not the entry's, and kept in `hass.data` by entry id: a change the hub
+        cannot follow in place reloads the entry right after (`services._run`), which replaces the hub and this
+        configurator while the retry waits, and would cancel a task of the entry's.
         """
         self.cancel_upload_retry()
         if await self._upload(pf, raise_on_failure=False) == "failed":
@@ -1795,7 +1796,7 @@ class MeshConfigurator:
         last synced means the app added, renamed or linked something HA does not know yet. Planning on HA's copy
         and uploading the result would make the gateway "rebuild its device database" without those changes — and
         the gateway would then serve an export without them. Adopting first keeps them; the plan is then
-        made on the gateway's copy (the hub's device model follows with the reload after the change). When HA's
+        made on the gateway's copy (the hub's device model follows it after the change). When HA's
         own copy changed too (an earlier upload never reached the gateway), HA's changes are carried over onto it
         all the same (`_adopt`); only without the app's previous upload to tell them apart is the change refused
         until the entry is fetched again. A gateway that must not be asked is not: the plan is
@@ -2010,9 +2011,10 @@ class MeshConfigurator:
         """Return the export as a change would plan on it now, for a plan made outside the configurator (`add_device`).
 
         What `_load` reads, under the lock: the gateway's export when only it changed since Home Assistant last
-        synced (adopted — `recorded` / `adopted` then tell `services._run` to reload even if the call fails later),
-        refused when both sides changed, else the copy on disk; with the provisioner identity on, the vault's nodes
-        merged in. The running hub's CDB is the export as of the last reload, which misses what the app added since.
+        synced (adopted — `recorded` / `adopted` then tell `services._run` to follow it even if the call fails
+        later), refused when both sides changed, else the copy on disk; with the provisioner identity on, the vault's
+        nodes merged in. The running hub's CDB is the export as the hub last took it over, which misses what the app
+        added since.
         """
         async with self.lock:
             return await self._load()
@@ -4214,8 +4216,8 @@ RELOAD_POLL = 1.0  # seconds between looks at an entry a retry found mid-reload
 async def _retry_upload(hass: HomeAssistant, entry_id: str, left: int) -> None:
     """Upload the entry's export again every `GATEWAY_UPLOAD_RETRY_DELAY` seconds, `left` times at most.
 
-    Each attempt goes through the entry's configurator of the moment (a reload after the change replaced the one
-    that failed), under its lock, with the export as it is on disk then: every later save cancels this before it
+    Each attempt goes through the entry's configurator of the moment (a reload after the change may have replaced
+    the one that failed), under its lock, with the export as it is on disk then: every later save cancels this before it
     uploads its own, so that is still the changed export. An attempt that comes while the entry is being set up
     or reloaded (its setup lock held) waits for that; an entry not loaded after all (unloaded, disabled, its
     setup failed) or an export that does not load ends the retries.

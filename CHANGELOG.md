@@ -187,6 +187,16 @@
 
 ### Fixed — Home Assistant
 
+- The room, key, scene, threshold and *Sensor values for IoT systems* actions, a device rename and the export taken
+  over from the gateway for a device the integration did not know no longer reload the integration (decision M5,
+  review-4 D23, H4-1, H I-1). Each reload removed every entity first: lights, sockets and sensors went *unavailable*,
+  then *unknown*, then back to their state — a `rename_room` that sends nothing on air included — so every `state`
+  trigger without `from:` fired again, and every enabled setting was read over the mesh once more. The running
+  integration now takes the rewritten export over in place: new entities are added, those the export no longer has
+  are removed, the others take their new names, rooms, members and key connections while keeping their states, and
+  the Bluetooth link stays up. Whatever it cannot follow with confidence (a device added or removed with Home
+  Assistant, other network keys, a device dropped or moved, an error) still reloads, logged at DEBUG with the reason.
+  Unverified on air.
 - Renaming a device whose rename took over the app's newer export from the gateway no longer holds up the reload
   that follows for 10 s (review-4 W4-10): the rename runs as a Home Assistant background task instead of one of the
   entry's, which the entry's unload waited for.

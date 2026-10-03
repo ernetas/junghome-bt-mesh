@@ -28,6 +28,7 @@ from .const import DOMAIN
 from .coordinator import CounterNotReset
 from .entity import (
     JungHomeEntity,
+    async_setup_platform,
     health_nodes,
     metered_device_info,
     node_unit_device_info,
@@ -52,8 +53,12 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the trigger-property buttons, Identify / Clear faults per mains node, Reset consumption per metered load."""
-    hub = entry.runtime_data
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "button", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[ButtonEntity]:
+    """Return the trigger-property buttons, Identify / Clear faults per mains node, Reset consumption per metered load."""
     entities: list[ButtonEntity] = [
         JungHomePropertyButton(hub, target) for target in config_targets(hub, "button")
     ]
@@ -63,7 +68,7 @@ async def async_setup_entry(
     entities += [
         JungHomeResetConsumptionButton(hub, load) for load in hub.devices.metered
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomeIdentifyButton(JungHomeEntity, ButtonEntity):

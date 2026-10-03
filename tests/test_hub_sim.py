@@ -8,6 +8,8 @@ no (SRC, IV, SEQ) twice, nothing replayed or undecryptable, nothing lost that th
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -20,9 +22,10 @@ from homeassistant.const import (
     STATE_ON,
 )
 
+from custom_components.junghome_ble.const import CONF_CDB_PATH, DOMAIN
 from custom_components.junghome_ble.jhmesh import messages as M
 
-from .conftest import setup_entry, wait_for_link, wait_until
+from .conftest import CDB_PATH, setup_entry, wait_for_link, wait_until
 from .helpers import (
     LIGHT_OUT1,
     LIGHT_SWITCH,
@@ -38,7 +41,7 @@ if TYPE_CHECKING:
     from homeassistant.core import Event, HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-    from .conftest import SimLinks
+    from .conftest import SimLinks, StateTransitions
     from .sim import Mesh, SimNode
 
 UID_LIGHT_OUT1 = f"{NODE_ACTUATOR}-0001"
@@ -144,3 +147,43 @@ async def test_every_relayed_copy_the_proxy_forwards_is_handled_once(
     assert len(changes) == 1
     assert len(got(sim_mesh.node(LIGHT_SWITCH), M.GEN_ONOFF_SET)) == 1
     assert sim_mesh.proxy(LIGHT_SWITCH).repeats_forwarded  # copies did reach the hub
+
+
+async def test_room_actions_over_the_mesh_change_no_state(
+    hass: HomeAssistant,
+    sim_mesh: Mesh,
+    sim_entry: MockConfigEntry,
+    tmp_path: Path,
+    state_transitions: StateTransitions,
+) -> None:
+    """Review-4 D23 over the simulated mesh: creating a room, moving a light into it (Config messages the node's
+    Configuration Server takes) and renaming it leave the light on — not even `last_changed` moves — on the link it
+    had, and the node now listens to the room."""
+    path = tmp_path / "MeshNetwork.json"  # a copy: the actions rewrite the export
+    shutil.copy(CDB_PATH, path)
+    sim_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        sim_entry, data={**sim_entry.data, CONF_CDB_PATH: str(path)}
+    )
+    element_state(sim_mesh, LIGHT_SWITCH).on = True
+    eid = await start(hass, sim_entry, UID_LIGHT_SWITCH)
+    before = hass.states.get(eid)
+    assert before.state == STATE_ON
+    hub = sim_entry.runtime_data
+    for service, data in (
+        ("create_room", {"name": "Attic"}),
+        ("set_room", {"entity_id": eid, "room": "Attic"}),
+        ("rename_room", {"room": "Attic", "new_name": "Loft"}),
+    ):
+        await hass.services.async_call(DOMAIN, service, data, blocking=True)
+    await hass.async_block_till_done()
+    assert sim_entry.runtime_data is hub
+    assert (hub.connected, hub.link_count) == (True, 1)
+    assert state_transitions.lost() == []
+    now = hass.states.get(eid)
+    assert (now.state, now.last_changed) == (STATE_ON, before.last_changed)
+    assert now.attributes["rooms"] == ["Loft"]
+    room = next(a for a, name in hub.devices.rooms.items() if name == "Loft")
+    servers = sim_mesh.node(LIGHT_SWITCH).servers
+    assert servers is not None
+    assert servers.subscribed(room)

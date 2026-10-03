@@ -14,15 +14,19 @@ Device identifiers (all under the integration domain, node UUIDs lower-case):
   in the same app device entry (`Metadata.entry_for`, carried as `Button.gang`), so two gangs the user gave the
   same name stay two devices. Without app metadata every key of a node falls into one gang (named after the
   node), so a node has one buttons device as before.
+
+Every platform builds its entities from the hub's device model (`build_entities`) and keeps them with the hub
+(`async_setup_platform`, `TrackedPlatform`): an action that rewrote the export then has `model_update` build them
+again from the new model and carry the change over to the running entities, rather than reload the entry.
 """
 
 from __future__ import annotations
 
-from collections.abc import Awaitable
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Self
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -48,6 +52,8 @@ from .jhmesh.advert import mac_from_uuid
 from .jhmesh.devices import BATTERY_PIDS, Blind, Light, Socket, Thermostat
 
 if TYPE_CHECKING:
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
     from .coordinator import JungHomeHub
     from .jhmesh.cdb import Node
     from .jhmesh.devices import Button, Device, MeteredLoad
@@ -410,6 +416,52 @@ def load_entity_id(hass: HomeAssistant, device: Device) -> str:
     return f"{device.address:04X}"
 
 
+# a platform's `build_entities`: every entity the hub's device model gives the platform, the disabled ones included
+type EntityBuilder = Callable[[JungHomeHub], Iterable[Entity]]
+
+
+@dataclass
+class TrackedPlatform:
+    """A platform's entities as its builder made them, kept with the hub to follow a new export in place (`model_update`).
+
+    `entities` holds every entity the builder produced, by unique id — the disabled ones too, which Home Assistant
+    never adds — and `built` what each one's constructor set (its `vars()` right after it ran): what the entity took
+    from the device model, as opposed to what it learnt since.
+    """
+
+    build: EntityBuilder
+    add: AddConfigEntryEntitiesCallback
+    entities: dict[str, Entity] = field(default_factory=dict)
+    built: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+
+def entities_by_unique_id(entities: Iterable[Entity]) -> dict[str, Entity]:
+    """Index a builder's entities by unique id (every entity of the integration has one)."""
+    out: dict[str, Entity] = {}
+    for entity in entities:
+        assert entity.unique_id is not None
+        out[entity.unique_id] = entity
+    return out
+
+
+@callback
+def async_setup_platform(
+    hub: JungHomeHub,
+    domain: str,
+    build: EntityBuilder,
+    add: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Add the entities `build` makes from the hub's model, and keep them with the hub (`TrackedPlatform`)."""
+    entities = entities_by_unique_id(build(hub))
+    hub.platforms[domain] = TrackedPlatform(
+        build,
+        add,
+        entities,
+        {unique_id: dict(vars(e)) for unique_id, e in entities.items()},
+    )
+    add(list(entities.values()))
+
+
 class JungHomeEntity(Entity):
     """Push-updated entity bound to one mesh element."""
 
@@ -451,6 +503,27 @@ class JungHomeEntity(Entity):
                 self._handle_update,
             )
         )
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """The other elements the entity follows, subscribed to once when it is added: none by default."""
+        return ()
+
+    def rebind_refusal(self, fresh: Self) -> str | None:
+        """Why the entity cannot take over the model `fresh` was built from in place; None when it can (`model_update`).
+
+        Its subscriptions go by element address, made once: an entity whose element moved, or that would follow
+        other elements now (`listened`), is set up again by a reload.
+        """
+        if fresh.address != self.address:
+            return f"its element moved from {self.address:04X} to {fresh.address:04X}"
+        if fresh.listened != self.listened:
+            return "it follows other elements now"
+        return None
+
+    @callback
+    def async_model_rebound(self) -> None:
+        """Follow what a new model changed beyond the attributes `model_update` carried over; nothing by default."""
 
     @callback
     def _handle_update(self) -> None:
@@ -551,17 +624,41 @@ class JungHomeCentralEntity(JungHomeEntity):
         """
         return self.hub.link_available
 
+    # the elements followed now, and the subscriptions that follow them (`_watch`)
+    _watching: tuple[int, ...] = ()
+    _unwatch_all: tuple[CALLBACK_TYPE, ...] = ()
+
     async def async_added_to_hass(self) -> None:
         """Also follow every watched element's state."""
         await super().async_added_to_hass()
-        for address in self.watched:
-            self.async_on_remove(
-                async_dispatcher_connect(
-                    self.hass,
-                    SIGNAL_UPDATE.format(self.hub.entry.entry_id, address),
-                    self._handle_update,
-                )
+        self._watch()
+        self.async_on_remove(self._unwatch)
+
+    @callback
+    def _watch(self) -> None:
+        """Follow the state of every element in `watched`, in place of those followed before."""
+        self._unwatch()
+        self._watching = tuple(self.watched)
+        self._unwatch_all = tuple(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_UPDATE.format(self.hub.entry.entry_id, address),
+                self._handle_update,
             )
+            for address in self._watching
+        )
+
+    @callback
+    def _unwatch(self) -> None:
+        for unsub in self._unwatch_all:
+            unsub()
+        self._unwatch_all = ()
+
+    @callback
+    def async_model_rebound(self) -> None:
+        """Follow the members of the new model: a room's loads change with `set_room`, `delete_room`, an export."""
+        if tuple(self.watched) != self._watching:
+            self._watch()
 
     def members_on(self) -> bool | None:
         """On while any member is; None until one of them has reported."""

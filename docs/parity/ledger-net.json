@@ -4869,7 +4869,7 @@
     "custom_components/junghome_ble/entity.py::room_loads",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
     "custom_components/junghome_ble/entity.py::current_room_central_ids",
-    "custom_components/junghome_ble/__init__.py::_remove_stale_devices"
+    "custom_components/junghome_ble/model_update.py::remove_stale_devices"
    ],
    "tests": [
     "tests/test_central.py::test_room_lights_dim_with_one_message_and_switch_each_light",

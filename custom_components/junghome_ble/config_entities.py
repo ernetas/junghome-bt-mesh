@@ -1304,8 +1304,9 @@ class PropertyReader:
 
         The firmware gates (`node_version`: illuminance scaling, `_candidates`, the thermostat's property set)
         need the software version and nothing else asks for it. The hub keeps what it learns across the entry's
-        reloads and on disk (`coordinator.NODE_VERSIONS`), so `_candidates` — which runs once, at setup, before any
-        read — applies it from the next setup on, a restart's included.
+        reloads and on disk (`coordinator.NODE_VERSIONS`), so `_candidates` — which runs at setup, before any read,
+        and again whenever the hub follows a changed export in place (`model_update`) — applies it from then on, a
+        restart's included.
 
         A read that got every answer is not repeated until the hub sees the node restart (`hub.restarted`: a
         firmware update restarts it; review-4 R4-5) — asked on every link, it cost a Get per node at every link-up
@@ -1740,6 +1741,17 @@ class ConfigEntity(JungHomeEntity):
             None  # `hub.link_count` of the link the read was last queued on
         )
         self._battery = target.node.pid in BATTERY_PIDS
+        # a battery node's keys, whose events say it is awake (`_on_key_event`)
+        self._keys = (
+            tuple(b.address for b in hub.devices.buttons if b.node is target.node)
+            if self._battery
+            else ()
+        )
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """A battery node's keys, whose events say it is awake; none for a mains node."""
+        return self._keys
 
     @property
     def reader(self) -> PropertyReader:
@@ -1749,12 +1761,10 @@ class ConfigEntity(JungHomeEntity):
     async def async_added_to_hass(self) -> None:
         """Subscribe to updates, then read the values once the link is up (a battery node's: its keys too)."""
         await super().async_added_to_hass()
-        if self._battery:
-            for button in self.hub.devices.buttons:
-                if button.node is self.target.node:
-                    self.async_on_remove(
-                        self.hub.add_event_listener(button.address, self._on_key_event)
-                    )
+        for address in self.listened:
+            self.async_on_remove(
+                self.hub.add_event_listener(address, self._on_key_event)
+            )
         self._maybe_read()
 
     @callback

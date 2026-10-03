@@ -100,6 +100,7 @@ from .const import (
 from .coordinator import STATUS_HANDLERS, JungHomeHub, register_status_handler
 from .entity import (
     JungHomeEntity,
+    async_setup_platform,
     button_gang,
     buttons_device_info,
     health_nodes,
@@ -150,8 +151,14 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the detectors', thermostats', inputs', nodes', blinds' and gateways' binary sensors."""
-    hub = entry.runtime_data
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(
+        entry.runtime_data, "binary_sensor", build_entities, add_entities
+    )
+
+
+def build_entities(hub: JungHomeHub) -> list[BinarySensorEntity]:
+    """Return the detectors', thermostats', inputs', nodes', blinds' and gateways' binary sensors."""
     entities: list[BinarySensorEntity] = [
         JungHomeDetectorOccupancy(hub, detector) for detector in hub.devices.detectors
     ]
@@ -180,12 +187,12 @@ async def async_setup_entry(
     entities += [
         JungHomeGatewayStatus(hub, target) for target in gateway_status_targets(hub)
     ]
-    if (polls := gateway_polls(hass, hub)) is not None:
+    if (polls := gateway_polls(hub.hass, hub)) is not None:
         entities += [
             JungHomeGatewayIndicator(polls.config, polls.node, desc)
             for desc in GATEWAY_INDICATORS
         ]
-    add_entities(entities)
+    return entities
 
 
 # ----------------------------------------------------------------------------- status handlers

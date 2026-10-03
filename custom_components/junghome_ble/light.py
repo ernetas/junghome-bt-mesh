@@ -31,6 +31,7 @@ from .const import (
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
+    async_setup_platform,
     light_device_info,
     room_loads,
 )
@@ -58,12 +59,16 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one light entity per load output, and the central *All lights* (home and per room).
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "light", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[LightEntity]:
+    """Return one light entity per load output, and the central *All lights* (home and per room).
 
     Home-wide when loads listen to the lamps' device-type group; per room for each room that has some (the app's
     area sheet).
     """
-    hub = entry.runtime_data
     entities: list[LightEntity] = [
         JungHomeLight(hub, light) for light in hub.devices.lights
     ]
@@ -73,7 +78,7 @@ async def async_setup_entry(
         JungHomeAllLights(hub, lights, room)
         for room, lights in room_loads(hub, Light).items()
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomeLight(JungHomeEntity, LightEntity):

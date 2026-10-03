@@ -108,6 +108,7 @@ from .const import (
 from .coordinator import JungHomeHub, register_status_handler
 from .entity import (
     JungHomeEntity,
+    async_setup_platform,
     blind_device_info,
     health_nodes,
     hub_device_info,
@@ -356,8 +357,16 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the meter sensors, detector illuminance, battery per battery node, key mode per key, the diagnostics."""
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
     hub = entry.runtime_data
+    drop_forced_off_selects(
+        hass, property_id_targets(hub, PROPERTY_FORCED_OFF, "forced_off")
+    )
+    async_setup_platform(hub, "sensor", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
+    """Return the meter sensors, detector illuminance, battery per battery node, key mode per key, the diagnostics."""
     mains = health_nodes(hub)
     entities: list[SensorEntity] = [
         JungHomeMeterSensor(hub, load, desc)
@@ -372,9 +381,10 @@ async def async_setup_entry(
     entities += [
         JungHomeDetectorIlluminance(hub, detector) for detector in hub.devices.detectors
     ]
-    forced_off = property_id_targets(hub, PROPERTY_FORCED_OFF, "forced_off")
-    drop_forced_off_selects(hass, forced_off)
-    entities += [JungHomeForcedOff(hub, target) for target in forced_off]
+    entities += [
+        JungHomeForcedOff(hub, target)
+        for target in property_id_targets(hub, PROPERTY_FORCED_OFF, "forced_off")
+    ]
     entities += [
         JungHomeBatterySensor(hub, node, keys) for node, keys in battery_nodes(hub)
     ]
@@ -384,7 +394,7 @@ async def async_setup_entry(
     entities += [JungHomeThreshold(hub, target) for target in threshold_targets(hub)]
     entities += [JungHomeCounterSensor(hub, target) for target in counter_targets(hub)]
     entities += [JungHomeGatewayIp(hub, target) for target in gateway_ip_targets(hub)]
-    if (polls := gateway_polls(hass, hub)) is not None:
+    if (polls := gateway_polls(hub.hass, hub)) is not None:
         entities += [
             JungHomeGatewaySensor(polls.config, polls.node, desc)
             for desc in GATEWAY_SENSORS
@@ -401,7 +411,7 @@ async def async_setup_entry(
         if desc.mains_only is False or node in mains
     ]
     entities += [JungHomeMeshDiagnostic(hub, desc) for desc in MESH_DIAGNOSTICS]
-    add_entities(entities)
+    return entities
 
 
 def drop_forced_off_selects(hass: HomeAssistant, targets: list[ValueTarget]) -> None:
@@ -995,9 +1005,9 @@ class JungHomeBatterySensor(JungHomeEntity, RestoreSensor):
         last = await self.async_get_last_sensor_data()
         if last is not None and isinstance(last.native_value, int | float):
             self._restored = int(last.native_value)
-        for key in self.keys:
+        for address in self.listened:
             self.async_on_remove(
-                self.hub.add_event_listener(key.address, self._on_key_event)
+                self.hub.add_event_listener(address, self._on_key_event)
             )
         self.async_on_remove(
             async_dispatcher_connect(
@@ -1006,6 +1016,11 @@ class JungHomeBatterySensor(JungHomeEntity, RestoreSensor):
                 self._on_battery_status,
             )
         )
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """The node's keys: any event of theirs means it is awake."""
+        return tuple(key.address for key in self.keys)
 
     @callback
     def _on_battery_status(self, status: dict[str, int | str | None]) -> None:

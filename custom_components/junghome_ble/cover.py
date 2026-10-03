@@ -67,6 +67,7 @@ from .const import (
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
+    async_setup_platform,
     blind_device_info,
     room_loads,
 )
@@ -134,12 +135,16 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one cover entity per blind, and the central *All blinds* (home and per room).
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "cover", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[CoverEntity]:
+    """Return one cover entity per blind, and the central *All blinds* (home and per room).
 
     Home-wide when blinds listen to their device-type group; per room for each room that has some (the app's area
     sheet; the slats are those of the room's blinds).
     """
-    hub = entry.runtime_data
     entities: list[CoverEntity] = [
         JungHomeCover(hub, blind) for blind in hub.devices.blinds
     ]
@@ -151,7 +156,7 @@ async def async_setup_entry(
         JungHomeAllBlinds(hub, blinds, blinds, room)
         for room, blinds in room_loads(hub, Blind).items()
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomeCover(JungHomeEntity, CoverEntity):
@@ -269,17 +274,21 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
     async def async_added_to_hass(self) -> None:
         """Subscribe to updates (the slat element's too), then read the operation mode once the link is up."""
         await super().async_added_to_hass()
-        if self.blind.slat_address is not None:
+        for address in self.listened:
             self.async_on_remove(
                 async_dispatcher_connect(
                     self.hass,
-                    SIGNAL_UPDATE.format(
-                        self.hub.entry.entry_id, self.blind.slat_address
-                    ),
+                    SIGNAL_UPDATE.format(self.hub.entry.entry_id, address),
                     self._handle_update,
                 )
             )
         self._maybe_read_mode()
+
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """The slat element, when the blind has one: its level is part of the cover's state."""
+        slat = self.blind.slat_address
+        return () if slat is None else (slat,)
 
     @callback
     def _handle_update(self) -> None:

@@ -7,13 +7,14 @@ when another device already has the name, then `meta.devices[].name` — never t
 upload to the gateway; nothing goes on air. Home Assistant gives an integration no rename hook of its own, so the
 entry follows the device registry: a user naming one of those devices (`name_by_user`) has
 `MeshConfigurator.rename_device` write the name the same way, in a Home Assistant background task rather than one
-of the entry's (the reload after an adopted export would otherwise wait for the very task running it). The name the export then holds becomes the device's
-own name and `name_by_user` is cleared, so Home Assistant shows what the app shows (a suffixed name included), and
-a later rename in the app reaches Home Assistant with the next export it loads.
+of the entry's (a reload, should the hub not follow the export in place, would otherwise wait for the very task
+running it). The name the export then holds becomes the device's own name and `name_by_user` is cleared, so Home
+Assistant shows what the app shows (a suffixed name included), and a later rename in the app reaches Home
+Assistant with the next export it loads.
 
-No proxy link is needed and the entry is not reloaded for it: the device's name is the only thing that changed,
-and the registry carries it to the entities at once (an export the configurator adopted from the gateway first
-still reloads, as after every action). A name the app would refuse leaves the export alone and raises the
+No proxy link is needed, and the hub's device model follows the new name in place (`model_update`, review-4 D23:
+the names a room entity lists, a key's connection), as after every action — an export the configurator adopted
+from the gateway first included. A name the app would refuse leaves the export alone and raises the
 `device_name_rejected` repair issue, which the next accepted rename clears; any other failure is logged. Renaming
 the mesh device, or a node device that stands for no app device (an actuator's node, the gateway), stays Home
 Assistant's alone.
@@ -98,7 +99,7 @@ def async_track_device_names(
         target = app_device(entry.runtime_data, device)
         if target is None:
             return
-        # not an entry task: a rename that adopted the gateway's export reloads the entry, and an unload waits
+        # not an entry task: a rename the hub cannot follow in place reloads the entry, and an unload waits
         # for the entry's own tasks — this one among them, which would only end after that wait (review-4 W4-10)
         hass.async_create_background_task(
             async_write_name(hass, entry, device, target.address, device.name_by_user),
@@ -122,9 +123,8 @@ async def async_write_name(
 
     async def operation(configurator: MeshConfigurator) -> bool:
         written.append(await configurator.rename_device(address, name))
-        return (
-            configurator.adopted
-        )  # a new name changes no entity; an adopted export may
+        # the model follows a name written, or an export adopted (review-4 D23)
+        return configurator.recorded or configurator.adopted
 
     issue = issue_id(entry, ISSUE_DEVICE_NAME)
     try:

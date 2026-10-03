@@ -124,6 +124,7 @@ from .conftest import (
     SHARE_EXPORT_PATH,
     STATE_GET_REPLIES,
     FakeProxyLink,
+    StateTransitions,
     make_service_info,
     settle,
     setup_entry,
@@ -4929,16 +4930,18 @@ async def test_unknown_node_leaves_a_users_export_alone(
     assert hub_of(entry)._export_refresh is None
 
 
-async def test_unknown_node_fetches_the_gateways_export_and_reloads(
+async def test_unknown_node_fetches_the_gateways_export_and_follows_it(
     hass: HomeAssistant,
     gateway_entry: MockConfigEntry,
     mock_bluetooth_env: dict[str, Any],
     network_id: bytes,
     caplog: pytest.LogCaptureFixture,
+    state_transitions: StateTransitions,
 ) -> None:
     """An entry from a gateway asks the gateway for its export when a node of our mesh is not in ours; when that
-    export lists the node it replaces the file and the entry reloads with it — the app uploads its project right
-    after provisioning, so this is how a new device shows up without the user.
+    export lists the node it replaces the file and the hub takes it over — the app uploads its project right
+    after provisioning, so this is how a new device shows up without the user. In place (review-4 D23): the link
+    stays up, no entity passes through `unavailable`, and the new node's light is there and asked for its state.
 
     It is the configurator's gateway write: the old file is kept as `.bak` and the adopted export's digest is
     recorded as synced, so the next change does not take the gateway for ahead of Home Assistant."""
@@ -4978,12 +4981,18 @@ async def test_unknown_node_fetches_the_gateways_export_and_reloads(
         await wait_for_link(hass, gateway_entry)
         await settle(hass)
     assert fetched == ["junghome.local"]
-    assert "reloading with it" in caplog.text
-    new_hub = hub_of(gateway_entry)
-    assert new_hub is not hub
-    assert new_hub.node_for_address(NEW_MAC) is not None
-    assert new_hub.node_for_address(NEW_MAC).unicast == 0x0500
+    assert "following it" in caplog.text
+    assert "reloading to follow the export" not in caplog.text
+    assert hub_of(gateway_entry) is hub
+    assert hub.link_count == 1
+    assert hub.node_for_address(NEW_MAC) is not None
+    assert hub.node_for_address(NEW_MAC).unicast == 0x0500
+    assert hub.unknown_nodes == {}
     assert find_issue(hass, ISSUE_UNKNOWN_NODES) is None
+    assert state_transitions.lost() == []
+    newcomer = hass.states.get("light.wc_newcomer_0500")
+    assert newcomer is not None
+    assert newcomer.state == "off"  # its OnOff Status answered the state read
     saved = _read_json(gateway_entry.data[CONF_CDB_PATH])
     assert saved == _export_with_new_node(share)
     path = Path(gateway_entry.data[CONF_CDB_PATH])
@@ -4991,6 +5000,39 @@ async def test_unknown_node_fetches_the_gateways_export_and_reloads(
     assert gateway_sync(hass, gateway_entry.entry_id).synced == export_digest(
         _export_with_new_node(share)
     )
+
+
+async def test_an_adopted_export_that_lists_some_unknown_nodes_leaves_the_others_reported(
+    hass: HomeAssistant,
+    gateway_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+) -> None:
+    """Followed in place (review-4 D23), the export the gateway knew takes its node off the repair; one it does not
+    list either stays on it."""
+    hub = hub_of(gateway_entry)
+    other = "30:FB:10:00:00:42"
+    hub.unknown_nodes[other] = None
+    fetch = AsyncMock(return_value=_export_with_new_node(_read_json(SHARE_EXPORT_PATH)))
+    with patch.object(JungHomeGatewayApi, "fetch_project", fetch):
+        mock_bluetooth_env["callbacks"][0](
+            make_service_info(network_id, address=NEW_MAC),
+            BluetoothChange.ADVERTISEMENT,
+        )
+        await hass.async_block_till_done()
+        await wait_until(
+            hass,
+            lambda: NEW_MAC not in hub.unknown_nodes and hub.node_for_address(NEW_MAC),
+            what="the export followed",
+        )
+    assert hub_of(gateway_entry) is hub
+    assert list(hub.unknown_nodes) == [other]
+    issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
+    assert issue is not None
+    assert (
+        issue.translation_placeholders["count"],
+        issue.translation_placeholders["devices"],
+    ) == ("1", other)
 
 
 class GatewayAnswers:
@@ -5207,7 +5249,7 @@ async def test_gateway_export_refresh_is_retried_until_the_app_uploaded(
 
     with (
         patch.object(JungHomeGatewayApi, "fetch_project", fetch),
-        patch.object(hass.config_entries, "async_reload") as reload,
+        patch.object(hub, "follow_export", AsyncMock()) as follow,
     ):
         mock_bluetooth_env["callbacks"][0](
             make_service_info(network_id, address=NEW_MAC),
@@ -5217,31 +5259,31 @@ async def test_gateway_export_refresh_is_retried_until_the_app_uploaded(
         assert hub._unsub_export_refresh is not None
         await tick(hass, freezer, coordinator.EXPORT_REFRESH_BACKOFF[0] + 1)
         await fetched(2)
-        reload.assert_not_called()
+        follow.assert_not_called()
         await tick(hass, freezer, coordinator.EXPORT_REFRESH_BACKOFF[0] + 1)
         assert fetch.await_count == 2  # the second delay is longer
         await tick(hass, freezer, coordinator.EXPORT_REFRESH_BACKOFF[1])
         await fetched(3)
         await hass.async_block_till_done()
-        reload.assert_called_once_with(gateway_entry.entry_id)
+        follow.assert_awaited_once_with()
     assert hub._unsub_export_refresh is None
 
 
-async def test_the_reload_with_the_adopted_export_waits_for_a_running_service_call(
+async def test_following_the_adopted_export_waits_for_a_running_service_call(
     hass: HomeAssistant,
     gateway_entry: MockConfigEntry,
     mock_bluetooth_env: dict[str, Any],
     network_id: bytes,
 ) -> None:
     """Review-3 W11: the unknown-node refresh reloaded the entry without the entry's lock, tearing the hub down
-    under a service call working on it. The reload now waits for the lock; once it has it, a hub the call's own
-    reload replaced meanwhile (it read the adopted export already) is not reloaded a second time."""
+    under a service call working on it. Following the adopted export now waits for the lock; once it has it, a hub
+    a reload replaced meanwhile (it read the adopted export already) does not follow it a second time."""
     hub = hub_of(gateway_entry)
     fetch = AsyncMock(return_value=_export_with_new_node(_read_json(SHARE_EXPORT_PATH)))
     lock = entry_lock(hass, gateway_entry.entry_id)
     with (
         patch.object(JungHomeGatewayApi, "fetch_project", fetch),
-        patch.object(hass.config_entries, "async_reload") as reload,
+        patch.object(hub, "follow_export", AsyncMock()) as reload,
     ):
         await lock.acquire()  # a service call is running
         mock_bluetooth_env["callbacks"][0](
@@ -5258,8 +5300,8 @@ async def test_the_reload_with_the_adopted_export_waits_for_a_running_service_ca
         reload.assert_not_called()
         lock.release()
         await hass.async_block_till_done()
-        reload.assert_called_once_with(gateway_entry.entry_id)
-        # a hub that is no longer the entry's, or an entry no longer loaded: nothing to reload
+        reload.assert_awaited_once_with()
+        # a hub that is no longer the entry's, or an entry no longer loaded: nothing to follow
         reload.reset_mock()
         with patch.object(gateway_entry, "runtime_data", object()):
             await hub._reload_for_export()

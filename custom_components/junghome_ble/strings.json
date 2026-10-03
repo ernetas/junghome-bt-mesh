@@ -1317,7 +1317,7 @@
     },
     "unknown_nodes_gateway": {
       "title": "JUNG HOME devices missing from the export",
-      "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them yet. Home Assistant asks the gateway {host} for its current export and reloads by itself when that lists them. If this issue stays, the gateway's export does not know them either: open the JUNG HOME app once while it is connected to the gateway (it uploads its project), or export the network from the app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure)."
+      "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them yet. Home Assistant asks the gateway {host} for its current export and takes it over by itself when that lists them. If this issue stays, the gateway's export does not know them either: open the JUNG HOME app once while it is connected to the gateway (it uploads its project), or export the network from the app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure)."
     },
     "key_refresh": {
       "title": "JUNG HOME mesh keys are changing",
@@ -1483,7 +1483,7 @@
   "services": {
     "set_room": {
       "name": "Set room",
-      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"). A room that does not exist yet is created only with Create the room, so a mistyped name is refused. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and the integration reloads. Administrators only.",
+      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"). A room that does not exist yet is created only with Create the room, so a mistyped name is refused. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1543,7 +1543,7 @@
     },
     "assign_key": {
       "name": "Assign key",
-      "description": "Connects a push-button key to a light, a socket, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set. The mesh export is rewritten and the integration reloads. Administrators only.",
+      "description": "Connects a push-button key to a light, a socket, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
@@ -1631,7 +1631,7 @@
     },
     "store_scene": {
       "name": "Store scene",
-      "description": "Saves the present state of JUNG HOME lights, sockets, blinds and thermostats into a scene, as the app's \"save device into scene\" does: set the devices the way the scene should leave them first, then call this. Each device stores its state under the scene (Scene Store) together with the JUNG description of it, and the mesh export records the member. The integration reloads. With a state given (action, brightness, colour temperature, temperature), each device is first set to it and waited for until it arrives; a blind given a position is not moved, the scene stores that position for it. Administrators only.",
+      "description": "Saves the present state of JUNG HOME lights, sockets, blinds and thermostats into a scene, as the app's \"save device into scene\" does: set the devices the way the scene should leave them first, then call this. Each device stores its state under the scene (Scene Store) together with the JUNG description of it, and the mesh export records the member. Home Assistant follows it without reloading the integration. With a state given (action, brightness, colour temperature, temperature), each device is first set to it and waited for until it arrives; a blind given a position is not moved, the scene stores that position for it. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1665,7 +1665,7 @@
     },
     "remove_from_scene": {
       "name": "Remove from scene",
-      "description": "Takes JUNG HOME lights, sockets, blinds and thermostats out of a scene: each device forgets the scene (Scene Delete) and the mesh export drops the member. The integration reloads. Administrators only.",
+      "description": "Takes JUNG HOME lights, sockets, blinds and thermostats out of a scene: each device forgets the scene (Scene Delete) and the mesh export drops the member. Home Assistant follows it without reloading the integration. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1675,7 +1675,7 @@
     },
     "delete_scene": {
       "name": "Delete scene",
-      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. The integration reloads. Answers the devices skipped with \"Even if a device does not answer\" when asked to. Administrators only.",
+      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. Home Assistant follows it without reloading the integration. Answers the devices skipped with \"Even if a device does not answer\" when asked to. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -1837,13 +1837,13 @@
         },
         "devices": {
           "name": "Devices",
-          "description": "The lights and sockets both thresholds switch, replacing the current list; left out, the list stays. The mesh export is rewritten and the integration reloads when it changes."
+          "description": "The lights and sockets both thresholds switch, replacing the current list; left out, the list stays. The mesh export is rewritten when it changes, and Home Assistant follows it without reloading the integration."
         }
       }
     },
     "delete_threshold": {
       "name": "Delete threshold",
-      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. The integration reloads when devices were unwired. Administrators only."
+      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. Home Assistant follows the rewritten mesh export without reloading the integration when devices were unwired. Administrators only."
     },
     "audit_network": {
       "name": "Audit network",

@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 
 env, export_source = services_env.env, services_env.export_source
 fast_timeouts = ph.fast_timeouts
+# no entity passes through `unavailable` / `unknown` here either (review-4 D23)
+no_entity_loses_its_state = services_env.no_entity_loses_its_state
 
 METER_GROUP = (
     0xC001  # the socket meter element's own group, where its Sensor Server publishes
@@ -226,6 +228,7 @@ def serve_publications(env: Env, publications: dict[int, bytes]) -> None:
     env.link.config_reply = reply
 
 
+@pytest.mark.unavailable_ok  # each answer is read by a reload of its own
 async def test_sensor_publication_is_read_from_the_node(
     hass: HomeAssistant,
     env: Env,
@@ -274,3 +277,36 @@ async def test_sensor_publication_is_read_from_the_node(
             await wait_until(hass, lambda: "no publication of" in caplog.text)
         await hass.async_block_till_done()
         assert hass.states.get(eid).state == "on"
+
+
+async def test_the_switch_asks_the_node_again_after_a_change(
+    hass: HomeAssistant, env: Env, fast_timeouts: None
+) -> None:
+    """Followed in place (review-4 D23): the switch keeps its entity and the link; what the node answered before
+    the change is dropped — the export, which recorded what the node took, shows meanwhile — and the node is asked
+    again at once, as the entity a reload made would have done."""
+    ((node, _info),) = SW.sensor_publication_nodes(env.hub)
+    registry = er.async_get(hass)
+    eid = registry.async_get_entity_id(
+        "switch", DOMAIN, f"{node.uuid.lower()}-sensor_publication"
+    )
+    assert eid is not None
+    publications = {SOCKET_SENSOR: b"\x00\x01\xc0"}  # success, publishes to its group
+    serve_publications(env, publications)
+    registry.async_update_entity(eid, disabled_by=None)
+    await hass.config_entries.async_reload(env.entry.entry_id)  # enabling it takes one
+    await settled(hass, env)
+    env.transitions.seen.clear()
+    await wait_until(hass, lambda: hass.states.get(eid).state == "on")
+    get = (SOCKET, C.model_publication_get(SOCKET_SENSOR, "1100"))
+    asked, hub = env.config_calls.count(get), env.hub
+    publications[SOCKET_SENSOR] = (
+        b"\x00\x00\x00"  # what the node answers after the change
+    )
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": eid}, blocking=True
+    )
+    await wait_until(hass, lambda: env.config_calls.count(get) > asked)
+    await wait_until(hass, lambda: hass.states.get(eid).state == "off")
+    assert env.hub is hub
+    assert services_env.runs_the_export(env)

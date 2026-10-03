@@ -43,6 +43,8 @@ if TYPE_CHECKING:
 
 mesh = ph.mesh
 env, export_source = services_env.env, services_env.export_source
+# no entity passes through `unavailable` / `unknown` here either (review-4 D23)
+no_entity_loses_its_state = services_env.no_entity_loses_its_state
 
 METER = 0x0173  # the socket's meter element: its OnOff Client switches the thresholds' loads
 METER_GROUP = 0xC001  # its element group
@@ -193,7 +195,8 @@ async def test_set_threshold_wires_and_writes(hass: HomeAssistant, env: Env) -> 
         },
     )
     await settled(hass, env)
-    assert env.hub is not hub  # the export changed: reloaded
+    assert env.hub is hub  # the export changed: the model followed it in place
+    assert services_env.runs_the_export(env)
     pf = env.reload()
     meter = pf.cdb.element(METER)
     assert pf.publication(meter, "1001") == METER_GROUP
@@ -340,11 +343,11 @@ async def test_set_threshold_same_devices_does_not_reload(
     assert env.config_calls == []
 
 
-async def test_a_later_socket_failing_still_reloads_for_an_earlier_one(
+async def test_a_later_socket_failing_still_has_the_model_follow_an_earlier_one(
     hass: HomeAssistant, env: Env
 ) -> None:
     """One call wires socket by socket, each its own plan: when the second socket fails after the first one's
-    wiring was written to the export, the entry still reloads (the device model must follow the file)."""
+    wiring was written to the export, the device model still follows the file."""
     real_sockets = svc._threshold_sockets
     real_wiring = mesh_config.MeshConfigurator.set_threshold_devices
     wired: list[int] = []
@@ -377,8 +380,8 @@ async def test_a_later_socket_failing_still_reloads_for_an_earlier_one(
             mesh_config.MeshConfigurator, "set_threshold_devices", second_fails
         ),
         patch.object(
-            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-        ) as reload,
+            svc, "async_follow_export", wraps=svc.async_follow_export
+        ) as follow,
         pytest.raises(ServiceValidationError) as err,
     ):
         await call(
@@ -395,8 +398,8 @@ async def test_a_later_socket_failing_still_reloads_for_an_earlier_one(
     assert err.value.translation_key == "threshold_not_supported"
     assert len(wired) == 2
     assert METER_GROUP in subs(env.reload(), LIGHT_DIMMER, "1000")  # the first one's
-    reload.assert_awaited_once_with(env.entry.entry_id)
-    await settled(hass, env)
+    follow.assert_awaited_once_with(hass, env.entry.entry_id, scenes=False)
+    assert services_env.runs_the_export(env)
 
 
 async def test_set_threshold_without_a_level(hass: HomeAssistant, env: Env) -> None:

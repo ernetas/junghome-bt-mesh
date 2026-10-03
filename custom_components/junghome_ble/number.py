@@ -41,7 +41,7 @@ from .const import (
     WHITE_RANGE_MAX_KELVIN,
     WHITE_RANGE_MIN_KELVIN,
 )
-from .entity import JungHomeEntity
+from .entity import JungHomeEntity, async_setup_platform
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 
@@ -101,8 +101,12 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one number entity per numeric property of every device, the lock time limit of every load, the dimmers' setup."""
-    hub = entry.runtime_data
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "number", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[NumberEntity]:
+    """Return one number entity per numeric property of every device, the lock time limit of every load, the dimmers' setup."""
     entities: list[NumberEntity] = [
         JungHomePropertyNumber(hub, target) for target in config_targets(hub, "number")
     ]
@@ -111,7 +115,7 @@ async def async_setup_entry(
         SETUP_NUMBERS[target.entity](hub, target)
         for target in setup_targets(hub, "number")
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomePropertyNumber(PropertyEntity, NumberEntity):

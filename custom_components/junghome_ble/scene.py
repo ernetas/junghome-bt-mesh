@@ -24,7 +24,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN, SIGNAL_SCENE_RECALLED, SIGNAL_SCENES
-from .entity import JungHomeEntity
+from .entity import JungHomeEntity, async_setup_platform
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -42,7 +42,10 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one scene entity per scene the app shows; drop the entities an earlier version made for timer scenes."""
+    """Add the entities of `build_entities`; drop the entities an earlier version made for timer scenes.
+
+    The entities are kept with the hub to follow a new export in place (`model_update`).
+    """
     hub = entry.runtime_data
     registry = er.async_get(hass)
     for scene in hub.devices.scenes:
@@ -52,9 +55,14 @@ async def async_setup_entry(
             )
         ):
             registry.async_remove(entity_id)
-    add_entities(
+    async_setup_platform(hub, "scene", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[JungHomeScene]:
+    """Return one scene entity per scene the app shows."""
+    return [
         JungHomeScene(hub, scene) for scene in hub.devices.scenes if not scene.timer
-    )
+    ]
 
 
 def scene_unique_id(hub: JungHomeHub, number: int) -> str:

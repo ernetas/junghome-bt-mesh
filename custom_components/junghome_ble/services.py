@@ -4,19 +4,20 @@ The services are registered once per Home Assistant run, in `async_setup` (`asyn
 registered and answer "not loaded" while no entry is loaded. A call resolves the
 Home Assistant ids it was given — device ids, entity ids, areas — to mesh elements through the registries and the
 device-identifier scheme documented in `entity.py` (`{uuid}-{location:04x}` loads, `{uuid}-{location:04x}-buttons`
-gangs of keys, `node:{uuid}` nodes), hands the operation to the hub's `MeshConfigurator`, and finally reloads the
-config entry so the device model follows the rewritten export. The schedule actions write no export: they go to
-the loads' own JH Scheduler (`schedules.py`) and reload nothing; a socket threshold is a property plus wiring
-(`thresholds.py`), and reloads only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
+gangs of keys, `node:{uuid}` nodes), hands the operation to the hub's `MeshConfigurator`, and finally has the
+running hub take the rewritten export over in place (`model_update`, review-4 D23: no entity goes `unavailable`, the
+link stays up; adding or removing a node still reloads the entry). The schedule actions write no export: they go to
+the loads' own JH Scheduler (`schedules.py`) and change no model; a socket threshold is a property plus wiring
+(`thresholds.py`), and the model follows only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
 what the nodes' Configuration Servers hold against the export and changes nothing. The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
 for administrators only (review-4 W4-9).
 
 Calls for one entry are serialised (`coordinator.ENTRY_LOCKS`, kept across reloads, taken by the unknown-node
-refresh's reload too) so a call never runs against a hub that is being torn down by the reload of the previous
-one; a call that goes on air then waits (`SERVICE_LINK_WAIT`)
-for the reloaded hub's link, which connects in the background.
+refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options
+change, a call that could not follow in place); a call that goes on air then waits (`SERVICE_LINK_WAIT`) for the
+reloaded hub's link, which connects in the background.
 """
 
 from __future__ import annotations
@@ -94,6 +95,7 @@ from .light import (
     async_stop_dim,
 )
 from .mesh_config import MODES, MeshConfigurator, run_to_end, scene_action_for
+from .model_update import async_follow_export
 from .schedules import (
     TRIGGERS,
     ActionError,
@@ -856,40 +858,53 @@ async def _run(
     operation: Callable[[MeshConfigurator], Coroutine[Any, Any, bool]],
     *,
     needs_link: bool = True,
+    reload: bool = False,
+    scenes: bool = False,
 ) -> None:
-    """Run `operation` on the entry's configurator, then reload the entry when the device model changed.
+    """Run `operation` on the entry's configurator, then have the hub follow the export when the device model changed.
 
-    An operation that goes on air (`needs_link`) first waits for the entry's proxy link: the previous call's
-    reload, or an ordinary reconnect, leaves the hub without one for as long as a real BLE connect takes.
+    The hub takes the new export over in place (`model_update`, review-4 D23): no entity goes `unavailable`, the
+    link stays up. `reload`: set the entry up again instead, for what changes the nodes the hub was built with
+    (adding or removing a node with Home Assistant). `scenes`: the operation stored or deleted scenes on the
+    devices, so their actions are read again (the export does not hold them). An operation that goes on air (`needs_link`) first waits for
+    the entry's proxy link: a reload, or an ordinary reconnect, leaves the hub without one for as long as a real
+    BLE connect takes.
     """
     async with _lock(hass, entry_id):
         configurator = _configurator(hass, entry_id)
         if needs_link:
             configurator = await _wait_for_link(hass, entry_id, configurator)
-        # the flags of this call only: a call that fails before planning must not reload for an earlier one's write
+        # the flags of this call only: a call that fails before planning must not follow an earlier one's write
         configurator.recorded = configurator.adopted = False
         try:
             changed = await operation(configurator)
         except BaseException:
             # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one (D12): the
             # device model must follow the export all the same (CFG-15), still under the lock — the cancellation
-            # (or the error) goes on once the reload is done
+            # (or the error) goes on once the model followed
             if configurator.recorded:
-                await _reload(hass, entry_id)
+                await _follow(hass, entry_id, reload=reload, scenes=scenes)
             raise
         if changed:
-            await _reload(hass, entry_id)
+            await _follow(hass, entry_id, reload=reload, scenes=scenes)
 
 
-async def _reload(hass: HomeAssistant, entry_id: str) -> None:
-    """Reload the entry after a change, to its end even when the call is cancelled meanwhile (`run_to_end`).
+async def _follow(
+    hass: HomeAssistant, entry_id: str, *, reload: bool, scenes: bool
+) -> None:
+    """Have the entry follow the export after a change, to the end even when the call is cancelled meanwhile.
 
-    A reload cut off half-way would leave the entry unloaded. While Home Assistant stops there is nothing to
-    reload for: the next start sets the entry up from the export as it was written.
+    In place (`model_update.async_follow_export`, which reloads when it cannot), or by a reload (`reload`): either
+    cut off half-way would leave the entry behind its export, or unloaded (`run_to_end`). While Home Assistant
+    stops there is nothing to follow: the next start sets the entry up from the export as it was written.
     """
     if hass.is_stopping:
         return
-    await run_to_end(hass.config_entries.async_reload(entry_id))
+    await run_to_end(
+        hass.config_entries.async_reload(entry_id)
+        if reload
+        else async_follow_export(hass, entry_id, scenes=scenes)
+    )
 
 
 async def async_configure(
@@ -899,7 +914,7 @@ async def async_configure(
     *,
     needs_link: bool = True,
 ) -> None:
-    """Run a configurator operation for an entity the way the actions run theirs: locked, on a live link, reloaded.
+    """Run a configurator operation for an entity the way the actions run theirs: locked, on a live link, followed.
 
     `needs_link=False` for an operation that sends nothing (a rename): it runs without waiting for the link.
     """
@@ -1122,7 +1137,7 @@ async def _store_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
             await configurator.store_scenes(scene, actions)
             return True
 
-        await _run(hass, entry_id, operation)
+        await _run(hass, entry_id, operation, scenes=True)
     return None
 
 
@@ -1215,7 +1230,7 @@ async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceR
             )
             return True
 
-        await _run(hass, entry_id, operation)
+        await _run(hass, entry_id, operation, scenes=True)
     return None
 
 
@@ -1235,7 +1250,7 @@ async def _delete_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespon
         )
         return True
 
-    await _run(hass, entry_id, operation)
+    await _run(hass, entry_id, operation, scenes=True)
     return (
         cast("ServiceResponse", {"skipped": skipped}) if call.return_response else None
     )
@@ -1323,7 +1338,8 @@ async def _add_device(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
         return True
 
     try:
-        await _run(hass, entry_id, operation)
+        # a new node: its vault record and its pending issue are the setup's (`model_update` leaves them to it)
+        await _run(hass, entry_id, operation, reload=True)
     finally:
         # a device provisioned but not recorded is pending now (the reload after a success clears it)
         _update_pending_issue(hass, entry_id, keepers)
@@ -1389,7 +1405,9 @@ async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         raise _validation("add_device_not_allowed")
     force = call.data[ATTR_FORCE]
     # locked, on a live link, and reloaded after a stop too: the reset is recorded even when the unwiring stops
-    await _run(hass, entry_id, lambda c: c.remove_node(unicast, force=force))
+    await _run(
+        hass, entry_id, lambda c: c.remove_node(unicast, force=force), reload=True
+    )
     return None
 
 

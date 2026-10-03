@@ -28,6 +28,7 @@ from .config_entities import (
     setup_targets,
 )
 from .const import DOMAIN
+from .entity import async_setup_platform
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 
@@ -52,8 +53,12 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one select per enumerated property and LED colour, per edge of every input, per load's power-up."""
-    hub = entry.runtime_data
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "select", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[SelectEntity]:
+    """Return one select per enumerated property and LED colour, per edge of every input, per load's power-up."""
     entities: list[SelectEntity] = []
     for target in config_targets(hub, "select"):
         if isinstance(target.spec.codec, P.RgbMode):
@@ -73,7 +78,7 @@ async def async_setup_entry(
             hub, PROPERTY_LOCK, "lock_function", enabled_default=False
         )
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomePropertySelect(PropertyEntity, SelectEntity):

@@ -12,7 +12,6 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 
@@ -66,12 +65,7 @@ from .coordinator import (
     remember_known_mesh,
 )
 from .device_names import async_track_device_names
-from .entity import (
-    current_device_identifiers,
-    current_room_central_ids,
-    register_parent_devices,
-    room_central_prefix,
-)
+from .entity import current_device_identifiers, register_parent_devices
 from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB
 from .jhmesh.client import MESH_PROXY_SERVICE
@@ -90,6 +84,7 @@ from .migration import (
     enable_now_default,
 )
 from .migration import issue_id as gateway_import_issue_id
+from .model_update import async_follow_export, check_our_address, remove_stale_devices
 from .onboard import async_clear_vault_issue, async_update_pending_issue
 from .services import (
     async_register_configurator,
@@ -189,7 +184,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     # another node's; its range, not another provisioner's
     vault = await async_vault_keeper(hass, cdb.mesh_uuid)
     await vault.async_recover(cdb, int(entry.data[CONF_UNICAST], 16))
-    _check_our_address(
+    check_our_address(
         hass, entry, cdb, int(entry.data[CONF_UNICAST], 16), vault.own_uuid
     )
 
@@ -226,7 +221,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
         hass, entry, cdb, devices, int(entry.data[CONF_UNICAST], 16)
     )
     entry.runtime_data = hub
-    _remove_stale_devices(hass, entry, hub)
+    # what an action, a rename or the unknown-node adoption has the hub follow the export with (review-4 D23)
+    hub.follow_export = partial(async_follow_export, hass, entry.entry_id)
+    remove_stale_devices(hass, entry, hub)
     drop_retired_entities(hass, retired_unique_ids(hub))
     enable_now_default(
         hass,
@@ -288,51 +285,6 @@ def _reload_once_loaded(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None
             hass.config_entries.async_schedule_reload(entry.entry_id)
 
     unsubscribe = entry.async_on_state_change(changed)
-
-
-def _check_our_address(
-    hass: HomeAssistant,
-    entry: JungHomeConfigEntry,
-    cdb: CDB,
-    unicast: int,
-    own: str | None = None,
-) -> None:
-    """Refuse an address a node of the export occupies; warn about one the app may hand out (review-3 W3).
-
-    The config flow checks the address once, but the export changes under it: the app provisions nodes and a
-    second app user gets a provisioner range of their own, which may cover Home Assistant's default address. A
-    node sending from our address makes every node drop one of us as a replay and our replies go astray, so that
-    stops the setup; an address that is merely reserved keeps working until the app uses it. `own` is Home
-    Assistant's provisioner UUID (review-3 N1): the node and the range the file records for it are ours.
-    """
-    key = f"{unicast:04X}"
-    placeholders = {"title": entry.title, "unicast": key}
-    suggestion = cdb.suggest_unicast()
-    placeholders["suggestion"] = "none" if suggestion is None else f"{suggestion:04X}"
-    in_use = unicast in cdb.used_unicasts(own)
-    reserved = not in_use and not cdb.unicast_is_free(unicast, own=own)
-    for issue_key, raised in (
-        (ISSUE_ADDRESS_IN_USE, in_use),
-        (ISSUE_ADDRESS_RESERVED, reserved),
-    ):
-        if not raised:
-            ir.async_delete_issue(hass, DOMAIN, issue_id(entry, issue_key))
-            continue
-        ir.async_create_issue(
-            hass,
-            DOMAIN,
-            issue_id(entry, issue_key),
-            is_fixable=False,
-            severity=ir.IssueSeverity.ERROR if in_use else ir.IssueSeverity.WARNING,
-            translation_key=issue_key,
-            translation_placeholders=placeholders,
-        )
-    if in_use:
-        raise ConfigEntryError(
-            translation_domain=DOMAIN,
-            translation_key="address_in_use",
-            translation_placeholders=placeholders,
-        )
 
 
 async def _async_entry_updated(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None:
@@ -457,28 +409,3 @@ async def async_remove_config_entry_device(
     if entry.state is not ConfigEntryState.LOADED:
         return True
     return not (device.identifiers & current_device_identifiers(entry.runtime_data))
-
-
-def _remove_stale_devices(
-    hass: HomeAssistant, entry: JungHomeConfigEntry, hub: JungHomeHub
-) -> None:
-    registry = dr.async_get(hass)
-    current = current_device_identifiers(hub)
-    for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
-        if not device.identifiers & current:
-            _LOGGER.info(
-                "Removing device %s, no longer in the mesh export", device.name
-            )
-            registry.async_update_device(
-                device.id, remove_config_entry_id=entry.entry_id
-            )
-    # a room's central entities sit on the mesh device, which stays: a room deleted, or left without loads of a
-    # kind, takes its own with it here
-    entities = er.async_get(hass)
-    prefix, rooms = room_central_prefix(hub), current_room_central_ids(hub)
-    for ent in er.async_entries_for_config_entry(entities, entry.entry_id):
-        if ent.unique_id.startswith(prefix) and ent.unique_id not in rooms:
-            _LOGGER.info(
-                "Removing %s, its room no longer has such loads", ent.entity_id
-            )
-            entities.async_remove(ent.entity_id)

@@ -75,6 +75,7 @@ from .coordinator import STATUS_HANDLERS, StatusHandler, register_status_handler
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
+    async_setup_platform,
     node_device_info,
     room_loads,
 )
@@ -181,12 +182,16 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one climate entity per room thermostat, and the central *All thermostats* (home and per room).
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "climate", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[ClimateEntity]:
+    """Return one climate entity per room thermostat, and the central *All thermostats* (home and per room).
 
     Home-wide when thermostats listen to their device-type group; per room for each room that has some (the app's
     area sheet).
     """
-    hub = entry.runtime_data
     entities: list[ClimateEntity] = [
         JungHomeClimate(hub, rtr) for rtr in hub.devices.thermostats
     ]
@@ -196,7 +201,7 @@ async def async_setup_entry(
         JungHomeAllThermostats(hub, rtrs, room)
         for room, rtrs in room_loads(hub, Thermostat).items()
     ]
-    add_entities(entities)
+    return entities
 
 
 class JungHomeClimate(JungHomeEntity, ClimateEntity):
@@ -264,10 +269,15 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
             if addr is not None
         }
 
+    @property
+    def listened(self) -> tuple[int, ...]:
+        """The thermostat's other elements, whose updates the entity renders too."""
+        return tuple(sorted(self.addresses - {self.address}))
+
     async def async_added_to_hass(self) -> None:
         """Subscribe to every element of the thermostat, then read its state once the link is up."""
         await super().async_added_to_hass()
-        for addr in self.addresses - {self.address}:
+        for addr in self.listened:
             self.async_on_remove(
                 async_dispatcher_connect(
                     self.hass,

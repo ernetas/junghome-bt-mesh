@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -15,6 +16,8 @@ from bleak.backends.scanner import AdvertisementData
 from habluetooth.central_manager import CentralBluetoothManager
 from habluetooth.models import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import EVENT_STATE_CHANGED, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import Event, EventStateChangedData, callback
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     get_test_config_dir,
@@ -1391,6 +1394,37 @@ async def setup_entry(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+
+
+# what an entity shows while it has no state of its own: a reload passes every entity through them (review-4 D23)
+NO_STATE = frozenset({STATE_UNAVAILABLE, STATE_UNKNOWN})
+
+
+@dataclass
+class StateTransitions:
+    """Every state change of an entity that had a state: (entity id, old state, new state), in order."""
+
+    seen: list[tuple[str, str, str]] = field(default_factory=list)
+
+    def lost(self) -> list[tuple[str, str, str]]:
+        """The changes from a state of the entity's own to `unavailable` or `unknown`: what a reload writes."""
+        return [t for t in self.seen if t[1] not in NO_STATE and t[2] in NO_STATE]
+
+
+@pytest.fixture
+def state_transitions(hass: HomeAssistant) -> Generator[StateTransitions]:
+    """Record every state change from here on (`StateTransitions`); an entity added or removed is no change."""
+    record = StateTransitions()
+
+    @callback
+    def changed(event: Event[EventStateChangedData]) -> None:
+        old, new = event.data["old_state"], event.data["new_state"]
+        if old is not None and new is not None and old.state != new.state:
+            record.seen.append((event.data["entity_id"], old.state, new.state))
+
+    unsub = hass.bus.async_listen(EVENT_STATE_CHANGED, changed)
+    yield record
+    unsub()
 
 
 @pytest.fixture

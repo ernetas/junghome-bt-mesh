@@ -13,7 +13,7 @@ import asyncio
 import base64
 import json
 import shutil
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Generator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -72,7 +72,14 @@ from custom_components.junghome_ble.jhmesh.export import (
 )
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
 
-from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link, wait_until
+from .conftest import (
+    FakeProxyLink,
+    StateTransitions,
+    settle,
+    setup_entry,
+    wait_for_link,
+    wait_until,
+)
 from .helpers import (
     LIGHT_CTL,
     LIGHT_DIMMER,
@@ -136,6 +143,8 @@ class Env:
     silent: set[bytes] = field(default_factory=set)  # Config requests nobody answers
     modes: dict[int, bytes] = field(default_factory=dict)
     hubs: list[Any] = field(default_factory=list)
+    # every state change since the setup began (`no_entity_loses_its_state`)
+    transitions: StateTransitions = field(default_factory=StateTransitions)
     # the load elements' scene registers and JUNG scene action records (element -> scenes; (element, scene) -> bytes)
     registers: dict[int, list[int]] = field(default_factory=lambda: {0x0148: [1]})
     scene_actions: dict[tuple[int, int], bytes] = field(default_factory=dict)
@@ -226,6 +235,7 @@ async def env(
     fake_link: FakeProxyLink,
     fast_sleep: list[float],
     export_source: Path,
+    state_transitions: StateTransitions,
 ) -> AsyncGenerator[Env]:
     path = tmp_path / "JungHome.json"
     shutil.copy(export_source, path)
@@ -235,7 +245,7 @@ async def env(
         unique_id="1fbd2c61a4b6e5a4",
         data={CONF_CDB_PATH: str(path), CONF_UNICAST: "0D00"},
     )
-    env = Env(entry, path, fake_link)
+    env = Env(entry, path, fake_link, transitions=state_transitions)
 
     serve_config(env, fake_link, path)
 
@@ -320,6 +330,22 @@ async def env(
         yield env
 
 
+@pytest.fixture(autouse=True)
+def no_entity_loses_its_state(
+    request: pytest.FixtureRequest, state_transitions: StateTransitions
+) -> Generator[None]:
+    """Review-4 D23: an action has the hub follow the export in place — no entity passes through `unavailable` or
+    `unknown`, as a reload made every one of them do, and the link the hub came up with is still the one it has.
+    Every test on the `env` entry, where the actions run; one that reloads or unloads the entry, or drops the
+    link, on purpose says so (`unavailable_ok`)."""
+    yield
+    if "env" in request.fixturenames and "unavailable_ok" not in request.keywords:
+        assert state_transitions.lost() == []
+        hass: HomeAssistant = request.getfixturevalue("hass")
+        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+            assert entry.runtime_data.link_count == 1
+
+
 async def call(hass: HomeAssistant, service: str, data: dict[str, Any]) -> None:
     await hass.services.async_call(DOMAIN, service, data, blocking=True)
     await hass.async_block_till_done()
@@ -344,6 +370,11 @@ async def refreshed(hass: HomeAssistant, env: Env) -> None:
     )
 
 
+def runs_the_export(env: Env) -> bool:
+    """Whether the running hub's device model is the export on disk: it followed the last change (review-4 D23)."""
+    return bool(env.hub.cdb.raw == CDB.load(env.path).raw)
+
+
 def device_id(hass: HomeAssistant, identifier: str) -> str:
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     device = dr.async_get(hass).async_get_device_by_identifier(
@@ -362,6 +393,7 @@ def subs(pf: ProjectFile, element: int, model: str) -> list[int]:
 # ----------------------------------------------------------------------------- registration
 
 
+@pytest.mark.unavailable_ok
 async def test_services_are_registered_once_and_survive_entry_unload(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -460,10 +492,12 @@ async def test_assign_key_by_event_entity_to_a_light_entity(
     ]
     assert env.modes == {ROCKER_A: b"\x00"}
     assert env.reload().publication(ROCKER_A, "1001") == DIMMER_GROUP
-    # the entry was reloaded onto the new export and is connected again
+    # the hub took the new export over in place (review-4 D23): the same hub, the link never dropped
     assert env.entry.state is ConfigEntryState.LOADED
-    assert env.hub is not old_hub
+    assert env.hub is old_hub
+    assert runs_the_export(env)
     assert env.hub.connected
+    assert env.hub.link_count == 1
     assert hass.states.get(light) is not None
 
 
@@ -706,8 +740,8 @@ async def test_assign_key_across_networks_is_refused(
 async def test_a_refused_config_status_is_a_translated_error_and_a_reload(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """The plan stops at the refusal; what was applied before it is recorded (apply-and-record), and the entry
-    reloads so the device model follows the recorded export (CFG-15)."""
+    """The plan stops at the refusal; what was applied before it is recorded (apply-and-record), and the hub's
+    device model follows the recorded export (CFG-15), in place (review-4 D23)."""
     refused = C.model_subscription_add(ROCKER_A, DIMMER_GROUP, "1003")
     env.refuse[refused] = 0x08
     hub = env.hub
@@ -727,7 +761,8 @@ async def test_a_refused_config_status_is_a_translated_error_and_a_reload(
     )
     assert env.config_calls[-1] == (DALI_NODE, refused)
     await settled(hass, env)
-    assert env.hub is not hub
+    assert env.hub is hub
+    assert runs_the_export(env)
     assert env.modes == {}
     pf = env.reload()
     assert pf.publication(ROCKER_A, "1001") == DIMMER_GROUP  # accepted: recorded
@@ -1413,6 +1448,7 @@ async def test_a_call_waits_for_the_link_of_the_reloaded_entry(
     assert 0xC011 in subs(env.reload(), LIGHT_SWITCH, "1000")
 
 
+@pytest.mark.unavailable_ok
 async def test_a_call_gives_up_when_no_link_comes(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -1450,6 +1486,7 @@ async def test_a_call_gives_up_when_no_link_comes(
     env.link.connect_errors = []
 
 
+@pytest.mark.unavailable_ok
 async def test_a_call_waits_again_when_the_hub_was_replaced_meanwhile(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -1483,6 +1520,7 @@ async def test_a_call_waits_again_when_the_hub_was_replaced_meanwhile(
     assert 0xC011 in subs(env.reload(), LIGHT_SWITCH, "1000")
 
 
+@pytest.mark.unavailable_ok
 async def test_a_call_gives_up_when_the_replaced_hub_does_not_connect_in_time(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -1514,11 +1552,11 @@ async def test_a_call_gives_up_when_the_replaced_hub_does_not_connect_in_time(
     assert env.path.read_bytes() == before
 
 
-async def test_a_stopped_plan_still_reloads_the_entry(
+async def test_a_stopped_plan_still_has_the_model_follow_the_export(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """CFG-15: a plan that stopped after recording what the mesh accepted raises, but the export changed: the
-    entry reloads so HA's device model follows it, as after a finished plan."""
+    """CFG-15: a plan that stopped after recording what the mesh accepted raises, but the export changed: HA's
+    device model follows it, as after a finished plan — in place (review-4 D23)."""
 
     async def stopped(self: Any, addresses: Any, room: str, **_kwargs: Any) -> bool:
         self.recorded = True
@@ -1526,6 +1564,9 @@ async def test_a_stopped_plan_still_reloads_the_entry(
 
     with (
         patch.object(mesh_config.MeshConfigurator, "set_rooms", stopped),
+        patch.object(
+            svc, "async_follow_export", wraps=svc.async_follow_export
+        ) as follow,
         patch.object(
             hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
         ) as reload,
@@ -1539,29 +1580,29 @@ async def test_a_stopped_plan_still_reloads_the_entry(
                 "room": "Kitchen",
             },
         )
-    reload.assert_awaited_once_with(env.entry.entry_id)
-    await settled(hass, env)
+    follow.assert_awaited_once_with(hass, env.entry.entry_id, scenes=False)
+    reload.assert_not_awaited()
 
 
 async def test_a_failed_operation_that_recorded_nothing_does_not_reload(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """CFG-15: an operation that failed before writing anything leaves the entry alone."""
+    """CFG-15: an operation that failed before writing anything leaves the entry and its model alone."""
     with (
         patch.object(
-            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-        ) as reload,
+            svc, "async_follow_export", wraps=svc.async_follow_export
+        ) as follow,
         pytest.raises(ServiceValidationError),
     ):
         await call(hass, "delete_room", {"room": "No such room"})
-    reload.assert_not_awaited()
+    follow.assert_not_awaited()
 
 
 async def test_a_failure_does_not_reload_for_what_an_earlier_call_recorded(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """`recorded` belongs to the running call: `create_room` wrote the export without a reload, and a later call
-    that fails before planning anything must not reload the entry on that account."""
+    """`recorded` belongs to the running call: `create_room` wrote the export without changing the model, and a
+    later call that fails before planning anything must not have the model follow on that account."""
     await call(hass, "create_room", {"name": "Attic"})
 
     async def refused(self: Any, addresses: Any, room: str, **_kwargs: Any) -> bool:
@@ -1570,8 +1611,8 @@ async def test_a_failure_does_not_reload_for_what_an_earlier_call_recorded(
     with (
         patch.object(mesh_config.MeshConfigurator, "set_rooms", refused),
         patch.object(
-            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-        ) as reload,
+            svc, "async_follow_export", wraps=svc.async_follow_export
+        ) as follow,
         pytest.raises(HomeAssistantError, match="refused before planning"),
     ):
         await call(
@@ -1579,35 +1620,35 @@ async def test_a_failure_does_not_reload_for_what_an_earlier_call_recorded(
             "set_room",
             {"entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH), "room": "WC"},
         )
-    reload.assert_not_awaited()
+    follow.assert_not_awaited()
 
 
 async def test_a_room_assignment_that_is_already_so_does_not_reload(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """CFG-14 through the service: `set_room` reloads only when the plan changed the device model."""
+    """CFG-14 through the service: `set_room` has the model follow only when the plan changed it."""
     target = {
         "entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH),
         "room": "Attic",
         "create": True,
     }
     with patch.object(
-        hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-    ) as reload:
+        svc, "async_follow_export", wraps=svc.async_follow_export
+    ) as follow:
         await call(hass, "set_room", target)
-        reload.assert_awaited_once_with(env.entry.entry_id)
+        follow.assert_awaited_once_with(hass, env.entry.entry_id, scenes=False)
         await settled(hass, env)
-        reload.reset_mock()
+        follow.reset_mock()
         before = env.path.read_bytes()
         await call(hass, "set_room", target)
-        reload.assert_not_awaited()
+        follow.assert_not_awaited()
     assert env.path.read_bytes() == before
 
 
-async def test_creating_a_room_reloads_when_it_adopted_the_gateways_export(
+async def test_creating_a_room_follows_the_gateways_export_it_adopted(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """A new room alone changes no device, but the gateway export adopted before it can: the entry reloads."""
+    """A new room alone changes no device, but the gateway export adopted before it can: the model follows it."""
     create_room = mesh_config.MeshConfigurator.create_room
 
     async def adopting(self: mesh_config.MeshConfigurator, name: str) -> int:
@@ -1616,14 +1657,14 @@ async def test_creating_a_room_reloads_when_it_adopted_the_gateways_export(
         return address
 
     with patch.object(
-        hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-    ) as reload:
+        svc, "async_follow_export", wraps=svc.async_follow_export
+    ) as follow:
         await call(hass, "create_room", {"name": "Attic"})
-        reload.assert_not_awaited()
+        follow.assert_not_awaited()
         with patch.object(mesh_config.MeshConfigurator, "create_room", adopting):
             await call(hass, "create_room", {"name": "Cellar"})
-        reload.assert_awaited_once_with(env.entry.entry_id)
-    await settled(hass, env)
+        follow.assert_awaited_once_with(hass, env.entry.entry_id, scenes=False)
+    assert runs_the_export(env)
 
 
 async def test_key_letter_with_a_key_entity_is_rejected(
@@ -1663,6 +1704,7 @@ async def test_a_config_entity_is_not_a_load(hass: HomeAssistant, env: Env) -> N
     assert exc.value.translation_key == "service_not_a_key"
 
 
+@pytest.mark.unavailable_ok
 async def test_a_call_follows_a_hub_replaced_while_the_link_was_down(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -1814,6 +1856,7 @@ async def test_devices_of_other_integrations_are_not_ours(
     assert env.config_calls == []
 
 
+@pytest.mark.unavailable_ok
 async def test_room_services_without_any_loaded_entry(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -2100,11 +2143,15 @@ def sync_issue(hass: HomeAssistant, env: Env) -> ir.IssueEntry | None:
 
 
 async def use_gateway(hass: HomeAssistant, env: Env) -> None:
-    """Make the entry a gateway entry; a new source is hub data, so wait for the reload it causes."""
+    """Make the entry a gateway entry; a new source is hub data, so wait for the reload it causes.
+
+    That reload is the entry update's, not an action's: the states it took away are no action's doing.
+    """
     hass.config_entries.async_update_entry(
         env.entry, data={**env.entry.data, **GATEWAY_DATA, CONF_SOURCE: "gateway"}
     )
     await settled(hass, env)
+    env.transitions.seen.clear()
 
 
 async def test_a_moved_gateway_is_followed_before_a_change(
@@ -2228,12 +2275,13 @@ async def test_every_write_back_is_handed_to_the_gateway(
         assert sync_issue(hass, env) is None
 
 
+@pytest.mark.unavailable_ok
 async def test_a_failed_upload_is_retried_across_the_reload_of_its_change(
     hass: HomeAssistant, env: Env, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Most changes reload the entry right after they are saved (`services._run`), which replaces the hub and its
-    configurator: the retry of their failed upload survives that, and goes through the new configurator with the
-    export on disk."""
+    """A change the hub cannot follow in place reloads the entry right after it is saved (`model_update`), which
+    replaces the hub and its configurator: the retry of its failed upload survives that, and goes through the new
+    configurator with the export on disk."""
     await use_gateway(hass, env)
     uploads: list[dict[str, Any]] = []
     failures: list[Exception] = []
@@ -2257,7 +2305,8 @@ async def test_a_failed_upload_is_retried_across_the_reload_of_its_change(
         assert len(uploads) == 1
         before = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
         failures.append(GatewayError("POST config: HTTP 500 (boom)"))
-        await call(hass, "rename_room", {"room": "Attic", "new_name": "Loft"})
+        with patch.object(JungHomeHub, "model_refusal", return_value="a test"):
+            await call(hass, "rename_room", {"room": "Attic", "new_name": "Loft"})
         await settled(hass, env)
         assert (
             hass.data[svc.CONFIGURATORS][env.entry.entry_id] is not before
@@ -2278,6 +2327,7 @@ async def test_a_failed_upload_is_retried_across_the_reload_of_its_change(
     assert env.entry.entry_id not in hass.data[mesh_config.UPLOAD_RETRIES]
 
 
+@pytest.mark.unavailable_ok
 async def test_sync_gateway_is_refused_without_a_usable_gateway(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -2325,10 +2375,7 @@ async def test_a_newer_export_on_the_gateway_is_adopted_before_a_change_and_bloc
 ) -> None:
     """The gateway is the source of truth for an entry set up from it: a change is planned on top of what the
     app changed since (never over it), and `sync_gateway` refuses to overwrite a newer export."""
-    hass.config_entries.async_update_entry(
-        env.entry, data={**env.entry.data, **GATEWAY_DATA, CONF_SOURCE: "gateway"}
-    )
-    await settled(hass, env)  # the source is hub data: the entry reloaded
+    await use_gateway(hass, env)
     uploads: list[dict[str, Any]] = []
     gateway_holds: list[Any] = [json.loads(ProjectFile.load(env.path).share_json())]
 
@@ -2727,12 +2774,13 @@ async def test_a_rename_that_fails_otherwise_is_logged(
     )
 
 
-async def test_a_rename_that_adopted_reloads_outside_the_entrys_tasks(
+async def test_a_rename_runs_outside_the_entrys_tasks(
     hass: HomeAssistant, env: Env
 ) -> None:
-    """Review-4 W4-10: a rename that took the gateway's export over reloads the entry. As one of the entry's tasks
-    the unload would wait for it — 10 s, as it waits for that very reload — so it is a Home Assistant background
-    task; the reload is through well within the test's call budget."""
+    """Review-4 W4-10: a rename that took the gateway's export over has the model follow it, which reloads the
+    entry when it cannot follow in place. As one of the entry's tasks the unload would wait for it — 10 s, as it
+    waits for that very reload — so it is a Home Assistant background task. Followed in place, the hub stays
+    (review-4 D23)."""
     hub = env.hub
     mirror = device_id(hass, UID_LIGHT_SWITCH)
 
@@ -2770,7 +2818,8 @@ async def test_a_rename_that_adopted_reloads_outside_the_entrys_tasks(
     assert RENAME_TASK in background
     assert RENAME_TASK not in entry_tasks
     await settled(hass, env)
-    assert env.hub is not hub  # the adopted export reloaded the entry
+    assert env.hub is hub  # the model followed the adopted export in place
+    assert runs_the_export(env)
 
 
 async def test_a_device_removed_during_its_rename_is_left_alone(
@@ -2795,8 +2844,8 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
     hass: HomeAssistant, env: Env
 ) -> None:
     """D12: a call cancelled after its plan recorded what the mesh accepted (an automation in `mode: restart`)
-    reloads the entry like a stopped one — to its end, through a second cancellation during the reload — and the
-    cancellation is never swallowed."""
+    has the model follow the export like a stopped one — to its end, through a second cancellation meanwhile —
+    and the cancellation is never swallowed."""
     reached = asyncio.Event()
     reloading = asyncio.Event()
     reload_may_end = asyncio.Event()
@@ -2808,13 +2857,12 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
         await asyncio.Event().wait()
         return True  # pragma: no cover - cancelled before
 
-    async def slow_reload(entry_id: str) -> bool:
+    async def slow_follow(_hass: HomeAssistant, entry_id: str, **_kwargs: Any) -> None:
         reloading.set()
         await reload_may_end.wait()
         reloads.append(entry_id)
-        return True
 
-    with patch.object(hass.config_entries, "async_reload", slow_reload):
+    with patch.object(svc, "async_follow_export", slow_follow):
         task = asyncio.ensure_future(
             svc._run(hass, env.entry.entry_id, recorded_then_waits, needs_link=False)
         )
@@ -2839,12 +2887,12 @@ async def test_a_cancelled_call_that_recorded_nothing_does_not_reload(
 
     with (
         patch.object(
-            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
-        ) as reload,
+            svc, "async_follow_export", wraps=svc.async_follow_export
+        ) as follow,
         pytest.raises(asyncio.CancelledError),
     ):
         await svc._run(hass, env.entry.entry_id, cancelled, needs_link=False)
-    reload.assert_not_awaited()
+    follow.assert_not_awaited()
 
 
 async def test_no_reload_while_home_assistant_stops(
@@ -2867,6 +2915,7 @@ async def test_no_reload_while_home_assistant_stops(
     reload.assert_not_awaited()
 
 
+@pytest.mark.unavailable_ok
 async def test_setup_records_a_plan_a_crash_interrupted_and_sets_up_again(
     hass: HomeAssistant, env: Env
 ) -> None:

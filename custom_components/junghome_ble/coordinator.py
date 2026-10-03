@@ -18,7 +18,7 @@ import logging
 import re
 import time
 from collections import defaultdict, deque
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Container, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from functools import partial
@@ -192,6 +192,7 @@ from .vault_refresh import VaultKeyRefresh
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
+    from .entity import TrackedPlatform
     from .gateway_status import GatewayPolls
     from .identity import VaultKeeper
     from .mesh_config import MeshConfigurator
@@ -1978,6 +1979,36 @@ def load_network(cdb_path: str, metadata_dir: str | None) -> tuple[CDB, Devices]
     return cdb, build_devices(cdb, meta)
 
 
+def _key_material(
+    cdb: CDB,
+) -> tuple[dict[int, bytes], dict[int, bytes], set[tuple[int, bytes, int]]]:
+    """Return the keys an export carries — NetKeys, AppKeys, a key refresh it caught — to compare, never to show."""
+    return (
+        {i: k.key for i, k in cdb.net_keys.items()},
+        {i: k.key for i, k in cdb.app_keys.items()},
+        {(i, k.key, phase) for i, (k, phase) in cdb.net_key_refresh.items()},
+    )
+
+
+def _node_identity(node: Node) -> tuple[int, bytes, int | None, tuple[int, ...]]:
+    """Return what the proxy client knows a node by: its address, device key, product and element addresses."""
+    return node.unicast, node.dev_key, node.pid, tuple(e.address for e in node.elements)
+
+
+def nodes_by_mac(cdb: CDB) -> dict[str, Node]:
+    """Return the export's JUNG nodes by the public MAC they advertise from, the excluded ones (being removed) too.
+
+    JUNG nodes advertise from their public MAC, which the export encodes in the node UUID (`jhmesh.advert`): the
+    node behind a Bluetooth address is known before any message is exchanged. A node the export marks excluded is no
+    device but still no stranger: its adverts must not ask for a new export.
+    """
+    return {
+        mac: n
+        for n in (*cdb.nodes, *cdb.excluded_nodes)
+        if n.pid is not None and (mac := mac_from_uuid(n.uuid)) is not None
+    }
+
+
 def hub_data(data: Mapping[str, Any]) -> dict[str, Any]:
     """Return the entry data a hub is built from (`HUB_DATA_KEYS`); the update listener reloads the entry when it changed.
 
@@ -2179,14 +2210,7 @@ class JungHomeHub:
         # elements asked for their current scene right now (`_get_current_scene_of`): their Scene Status is an
         # answer, even if the firmware publishes it to its group instead of sending it to us
         self._scene_gets: set[int] = set()
-        # JUNG nodes advertise from their public MAC, which the export encodes in the node UUID (`jhmesh.advert`):
-        # the node behind a Bluetooth address is known before any message is exchanged. A node the export marks
-        # excluded (being removed) is no device but still no stranger: its adverts must not ask for a new export.
-        self.node_by_mac: dict[str, Node] = {
-            mac: n
-            for n in (*cdb.nodes, *cdb.excluded_nodes)
-            if n.pid is not None and (mac := mac_from_uuid(n.uuid)) is not None
-        }
+        self.node_by_mac = nodes_by_mac(cdb)  # the node behind a Bluetooth address
         self._export_refresh: asyncio.Task[None] | None = (
             None  # the gateway export fetch in flight, if any
         )
@@ -2198,6 +2222,10 @@ class JungHomeHub:
         )
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
         self.configurator: MeshConfigurator | None = None
+        # the platforms' entities, by platform (`entity.async_setup_platform`), and what makes the hub follow the
+        # export after a change, in place or by a reload (`model_update.async_follow_export`, set by the setup)
+        self.platforms: dict[str, TrackedPlatform] = {}
+        self.follow_export: Callable[[], Awaitable[None]] | None = None
         # the gateway's REST status polls (`gateway_status.gateway_polls`), made by the first platform that asks
         self.gateway_polls: GatewayPolls | None = None
         # one mesh read of the gateway's certificate at a time, and a pin the gateway node contradicted (not used)
@@ -2666,6 +2694,113 @@ class JungHomeHub:
             await self.async_disable_heartbeats()
         return True
 
+    # ------------------------------------------------------------------ following the export in place (D23)
+    def model_refusal(self, cdb: CDB) -> str | None:
+        """Why the running hub cannot take over `cdb` in place (`model_update`); None when it can.
+
+        The link, the sequence numbers and the proxy client were set up for this mesh and its keys, and the client
+        knows each element's device key (`ProxyClient`): those must stay as they are. A node may be added — the
+        unknown-node adoption — but none may leave, move or be keyed anew: a node gone takes devices, pending work
+        and its client state with it, which only a reload clears. Nothing here names a key.
+        """
+        old = self.cdb
+        if cdb.mesh_uuid.lower() != old.mesh_uuid.lower():
+            return "the export is of another mesh"
+        if _key_material(cdb) != _key_material(old):
+            return "the network or application keys changed"
+        new = {n.uuid: n for n in cdb.nodes}
+        for node in old.nodes:
+            if (other := new.get(node.uuid)) is None:
+                return f"node {node.unicast:04X} left the export"
+            if _node_identity(other) != _node_identity(node):
+                return f"node {node.unicast:04X} changed its address, key or elements"
+        return None
+
+    def swap_model(self, cdb: CDB, devices: Devices) -> tuple[CDB, Devices]:
+        """Put `cdb` and `devices` in the place of the hub's model; return the ones they replaced.
+
+        Only the model itself (and the gateway polls' node, which their entities are built from): `model_update`
+        builds the platforms' entities from a new export with it and swaps back before anything else runs;
+        `async_apply_model` makes it stick.
+        """
+        previous = self.cdb, self.devices
+        self.cdb, self.devices = cdb, devices
+        if (polls := self.gateway_polls) is not None:
+            polls.node = next(
+                (n for n in cdb.nodes if n.uuid == polls.node.uuid), polls.node
+            )
+        return previous
+
+    @callback
+    def async_apply_model(
+        self, cdb: CDB, devices: Devices, *, scenes: bool = False
+    ) -> None:
+        """Take over a new device model in place of a reload (`model_update`, review-4 D23); `model_refusal` passed.
+
+        The states cache, the link and everything learnt over it stay. What a reload would have redone follows:
+        the client learns the nodes that were added (their device keys and elements), the nodes are known by MAC
+        again (a node of the unknown-node repair now in the export leaves it), the audits are of the old export and
+        go, the scene members are asked again what they do when the scenes changed — or the change stored or
+        deleted scenes on them (`scenes`), which the export does not tell (`_reread_scenes`) — and over the link of
+        the moment the new loads are asked for their state and the new mains nodes for heartbeats, as the next
+        link would have done.
+        """
+        old_cdb, old_devices = self.swap_model(cdb, devices)
+        self.proxy.cdb = cdb
+        known = {n.uuid for n in old_cdb.nodes}
+        added = [n for n in cdb.nodes if n.uuid not in known]
+        for node in added:
+            self.proxy.add_node(node)
+        self.node_by_mac = nodes_by_mac(cdb)
+        self.audits.clear()
+        if adopted := [mac for mac in self.unknown_nodes if mac in self.node_by_mac]:
+            for mac in adopted:
+                del self.unknown_nodes[mac]
+            if self.unknown_nodes:
+                self._report_unknown_nodes()
+            else:
+                self._cancel_export_refresh_timer()
+                ir.async_delete_issue(
+                    self.hass, DOMAIN, issue_id(self.entry, ISSUE_UNKNOWN_NODES)
+                )
+        if scenes or cdb.scenes != old_cdb.scenes:
+            self._reread_scenes()
+        new_loads = set(devices.by_address) - set(old_devices.by_address)
+        if self.connected and (new_loads or added):
+            self.entry.async_create_background_task(
+                self.hass, self._welcome(new_loads, added), f"{DOMAIN} new devices"
+            )
+
+    def _reread_scenes(self) -> None:
+        """Ask the scene members for their actions and current scenes again: now, or on the next link."""
+        for step in ("scene actions", "current scenes"):
+            self._connect_steps_done.pop(step, None)
+        if self.connected:
+            self.entry.async_create_background_task(
+                self.hass, self._read_scenes(), f"{DOMAIN} scene reads"
+            )
+
+    async def _read_scenes(self) -> None:
+        await self._connect_step("scene actions", self._get_scene_actions)
+        await self._connect_step("current scenes", self._get_current_scenes)
+
+    async def _welcome(self, loads: set[int], nodes: list[Node]) -> None:
+        """Ask the loads an export added for their state, and its mains nodes for heartbeats, over the current link."""
+        try:
+            await self._chunked(self._state_jobs(loads))
+        except ConnectionError as err:
+            _LOGGER.debug("state read of the new loads aborted: %s", err)
+            return
+        if (
+            self.heartbeats_enabled
+            and any(n.pid is not None and n.pid not in BATTERY_PIDS for n in nodes)
+            and (self._heartbeat_task is None or self._heartbeat_task.done())
+        ):
+            self._heartbeats_configured_at = (
+                None  # a round for every node: the new ones are among them
+            )
+            await self._configure_heartbeats()
+
     # ------------------------------------------------------------------ connection loop
     def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
         """Proxy nodes of *this* network currently advertising, strongest first.
@@ -2995,29 +3130,31 @@ class JungHomeHub:
             self._schedule_export_refresh()
             return
         _LOGGER.info(
-            "Fetched the export from the gateway %s: it lists %s; reloading with it",
+            "Fetched the export from the gateway %s: it lists %s; following it",
             self.entry.data.get(CONF_GATEWAY_HOST),
             ", ".join(found),
         )
-        # not one of the entry's background tasks: the reload unloads the entry, which cancels those
+        # not one of the entry's background tasks: a reload in its place unloads the entry, which cancels those
         self.hass.async_create_task(
-            self._reload_for_export(), f"{DOMAIN} reload with the gateway's export"
+            self._reload_for_export(), f"{DOMAIN} follow the gateway's export"
         )
 
     async def _reload_for_export(self) -> None:
-        """Reload the entry with the adopted export, under the entry's lock (`ENTRY_LOCKS`, review-3 W11).
+        """Follow the adopted export, under the entry's lock (`ENTRY_LOCKS`, review-3 W11): in place, else by a reload.
 
         A service call holds that lock while it works on this hub — waiting for its link, planning, sending — and
-        reloads the entry itself afterwards; a reload in between would tear the hub down under it. Once the lock
-        is ours, a hub that is no longer the entry's (the call's own reload read the adopted export already) or
-        an entry that is no longer loaded needs nothing more.
+        has the entry follow the export itself afterwards; a reload in between would tear the hub down under it.
+        Once the lock is ours, a hub that is no longer the entry's (a reload read the adopted export already) or an
+        entry that is no longer loaded needs nothing more. The new nodes' devices show up without a reload
+        (`model_update.async_follow_export`, review-4 D23).
         """
         async with entry_lock(self.hass, self.entry.entry_id):
             if (
                 self.entry.state is ConfigEntryState.LOADED
                 and self.entry.runtime_data is self
             ):
-                await self.hass.config_entries.async_reload(self.entry.entry_id)
+                assert self.follow_export is not None  # set by the setup
+                await self.follow_export()
 
     def _describe_unknown(self, mac: str) -> str:
         advert = self.unknown_nodes.get(mac)
@@ -3831,35 +3968,7 @@ class JungHomeHub:
         whitelist, so there *is* no other traffic to hear. Sends are otherwise fire-and-forget, so this is the only
         place to notice.
         """
-        jobs: list[Callable[[], Awaitable[None]]] = [
-            partial(self._get_state, light.address, light.kind)
-            for light in self.devices.lights
-        ]
-        jobs += [
-            partial(self._get_state, sock.address, "switch")
-            for sock in self.devices.sockets
-        ]
-        jobs += [partial(self._get_readings, load) for load in self.devices.metered]
-        jobs += [
-            partial(self._get_state, addr, "level")
-            for blind in self.devices.blinds
-            for addr in blind.level_elements
-        ]
-        jobs += [
-            partial(self._get_state, light.address, "ctl_range")
-            for light in self.devices.lights
-            if light.kind == "ctl"
-        ]
-        jobs += [
-            partial(
-                self._get_state,
-                light.temperature_address,
-                "ctl_temperature",
-                counted=False,
-            )
-            for light in self.devices.lights
-            if light.kind == "ctl" and light.temperature_address is not None
-        ]
+        jobs = self._state_jobs()
         heard, answered = self._rx_messages, self._rx_to_us
         try:
             await self._chunked(jobs)
@@ -3879,6 +3988,48 @@ class JungHomeHub:
             )
             self._report_pdus_dropped(True)
         return True
+
+    def _state_jobs(
+        self, only: Container[int] | None = None
+    ) -> list[Callable[[], Awaitable[None]]]:
+        """Return the state refresh's Gets (`_refresh_all`): of every load, or of the loads at the addresses in `only`."""
+        devices = self.devices
+        lights = [d for d in devices.lights if only is None or d.address in only]
+        jobs: list[Callable[[], Awaitable[None]]] = [
+            partial(self._get_state, light.address, light.kind) for light in lights
+        ]
+        jobs += [
+            partial(self._get_state, sock.address, "switch")
+            for sock in devices.sockets
+            if only is None or sock.address in only
+        ]
+        jobs += [
+            partial(self._get_readings, load)
+            for load in devices.metered
+            if only is None or load.address in only
+        ]
+        jobs += [
+            partial(self._get_state, addr, "level")
+            for blind in devices.blinds
+            if only is None or blind.address in only
+            for addr in blind.level_elements
+        ]
+        jobs += [
+            partial(self._get_state, light.address, "ctl_range")
+            for light in lights
+            if light.kind == "ctl"
+        ]
+        jobs += [
+            partial(
+                self._get_state,
+                light.temperature_address,
+                "ctl_temperature",
+                counted=False,
+            )
+            for light in lights
+            if light.kind == "ctl" and light.temperature_address is not None
+        ]
+        return jobs
 
     async def _chunked(self, jobs: Sequence[Callable[[], Awaitable[object]]]) -> None:
         """Run the jobs REFRESH_CHUNK at a time with a short pause in between (as the app does).

@@ -96,7 +96,9 @@ One `light` entity per output. The entity is the device, so its name is the name
   *All lights* (`mesh_address` is the room's address). These entities are deliberately not placed in the room's
   area: an action targeting the area already reaches every light in it. The dimmers taking the room-addressed
   brightness is **not yet verified on air**. When a room is deleted, or no longer has lights, its entity is removed
-  from Home Assistant with the next reload; so are a room's *All sockets / blinds / thermostats in* entities.
+  from Home Assistant as soon as the export says so (the action's own change, or the next export loaded); so are a
+  room's *All sockets / blinds / thermostats in* entities. A renamed room renames them, and a light joining or leaving
+  the room joins or leaves them, without a reload.
 - **Hold-to-dim** — dimmers and tunable-white channels can be dimmed the way a held rocker dims them, with three
   actions targeting their `light` entities (not *All lights*, not a switched light):
   **`junghome_ble.start_dim`** (`direction` `up` / `down`, optional `speed` in % of the range per second, 1–100,
@@ -421,7 +423,7 @@ without an app name share one device per node.
   to the JUNG HOME Gateway: the gesture events above), `group` (some other group) or `none` (no function) —
   `connection_address` (the load element, the room group or the group), `connection_name` (the load's, room's or
   scene's name, when the export has it) and `connection_scene` (a scene key's number, from share exports). It
-  follows the `assign_key` / `clear_key` actions, which reload the entry.
+  follows the `assign_key` / `clear_key` actions at once, without a reload.
 - A diagnostic **Key mode** sensor per key (`0x5003`, off by default: one read per key and connection) shows the
   mode the device itself holds: `light`, `move` (blinds), `scene`, `property`, `rtr` (temperature), `switch`,
   `gateway`. It is read-only; `assign_key` changes it.
@@ -561,7 +563,8 @@ project and on device software 1.3.0.0 or later): on, every Sensor Server of the
 element's own group, where the gateway and Home Assistant hear them; off, it publishes nothing (`Publication Set`
 0x0000). The state is read from the node once per connection, as the app reads it (a `Config Model Publication Get`
 of each Sensor Server: on while one publishes to any address); until the node has answered it is the export's. A
-change is Config messages and an export rewrite like the key actions, and reloads the integration. It is planned
+change is Config messages and an export rewrite like the key actions, followed without a reload; the node is asked
+for its publications again right after. It is planned
 against what the node answered: when the node publishes and the export says it does not (the app changed it since),
 switching off still sends the *Publication Set* and records it, rather than finding the export already off
 (review-4 W4-6; unverified on air). The publication parameters (TTL, no period) are inferred from the app, not captured.
@@ -654,9 +657,11 @@ land in the right Home Assistant area when you accept the suggestion.
 light, socket or blind device, a *Push-buttons* device, or the node device of a room thermostat or detector. The new
 name goes into the app's device list of the mesh export (`meta.devices[].name`; the node's own Bluetooth name stays),
 and the export is handed to the gateway, when there is one, as after every change Home Assistant makes. Nothing goes
-over Bluetooth and the entry is not reloaded — unless the gateway held a newer export of the app's, which the rename
-takes over first and which then reloads the entry like any action. The rename runs as a Home Assistant background
-task, not one of the entry's: that reload no longer waits 10 s for the rename that started it (review-4 W4-10). A name another device already has (ignoring case) gets the app's
+over Bluetooth and the integration is not reloaded: the running device model takes the new name over like any
+action's change (a newer export of the app's the gateway held, which the rename takes over first, included). The
+rename runs as a Home Assistant background task, not one of the entry's: a reload in its place (see
+[Following a change without a reload](#following-a-change-without-a-reload)) does not wait 10 s for the rename that
+started it (review-4 W4-10). A name another device already has (ignoring case) gets the app's
 number, e.g. a second *Lamp* becomes *Lamp 3*; afterwards the device is named as the app names it, and a later rename
 in the app reaches Home Assistant with the next export it loads. The app refuses a blank name and a name with a lone
 `%` sign (it takes `%` for the start of a placeholder; only `%%` and `%n` pass), and its rename takes at most 30
@@ -1078,7 +1083,8 @@ connection* screens — through these actions (Developer tools → Actions). Eve
 the app would (device-key encrypted, to the node's primary address), checks each node's answer, and **only then
 rewrites the mesh export file** the integration was configured with (atomically, keeping the previous contents
 as `<file>.bak`, `<file>.bak.1` and `<file>.bak.2`, newest first). The
-integration then reloads so devices and the `rooms` attribute follow. Nothing is written if a node refuses or stays
+integration then follows the new export without a reload, so devices and the `rooms` attribute follow at once
+([Following a change without a reload](#following-a-change-without-a-reload)). Nothing is written if a node refuses or stays
 silent; simply retry. A plan with a message to a device Home Assistant counts as unreachable — one that left a request
 unanswered, whose entities are unavailable (see
 [Troubleshooting](#one-entity-is-unavailable-or-shows-an-unknown-state)) — is refused before anything is sent, naming
@@ -1128,8 +1134,8 @@ asleep at its first message, nothing was applied (unverified on air, like the ke
 Requirements and limits: the target must have been wired once by the app (its *element group* must exist — always true
 for app-provisioned devices). Room connections are only recorded in the file with the app's `JungHome.json` share
 export; with an iOS `MeshNetwork.json` the mesh is configured but the app will not show the link and later `set_room`
-calls will not wire new members to that key (re-run `assign_key`). Each successful action reloads the integration (a
-few seconds of *unavailable*). When the entry was set up **from the gateway** (or fetched from it once), every
+calls will not wire new members to that key (re-run `assign_key`). Each successful action is followed without a
+reload: no entity goes *unavailable*. When the entry was set up **from the gateway** (or fetched from it once), every
 rewritten export is also handed to the gateway, exactly as the app does after each of its changes (`POST
 /api/junghome/config {"data": {"project_file": …}}`), so the gateway shows what Home Assistant changed. The app does
 **not** download the project from the gateway (`docs/android/network-logic.md` §6): its next upload lacks Home
@@ -1150,7 +1156,8 @@ the merge has not met the iOS app's import of such a file yet. The app itself ke
 stands, a repair issue *"JUNG HOME export not handed to the gateway"* appears (one per entry), and the upload is
 tried again twice, 15 s apart, in the background — as the app retries its own (a gateway that could not be asked or
 refused the upload: unreachable, busy, an HTTP error; not a refusal of Home Assistant's own, such as a gateway holding
-changes it has not seen), also when the change reloaded the integration. The next change's upload, or
+changes it has not seen), also when the change reloaded the integration (one it could not follow in place). The
+next change's upload, or
 **`junghome_ble.sync_gateway`**, replaces a pending retry; the
 action retries on demand (also useful after editing the file by hand). The time of the last upload that went through
 is the gateway device's *Last export upload* sensor (diagnostic, off by default; the app's "last change"). It and
@@ -1163,6 +1170,26 @@ gateway whose certificate the gateway node has not confirmed (see the security n
 accepts Home Assistant"* instead and Home Assistant asks for access again (re-authentication). An entry set up from a
 file is not synced: reconfigure it from the gateway to enable this, or re-import the file in the app — otherwise the
 next app change overwrites what Home Assistant did.
+
+### Following a change without a reload
+
+An action that changes the export — the room, key, scene, threshold and *Sensor values for IoT systems* actions, a
+device renamed in Home Assistant, and the export an entry set up from the gateway takes over for a device it did not
+know — is followed by the running integration in place (review-4 D23): the export is read again as the setup reads
+it, every platform builds its entities from it, and the change is carried over to the entities that already run —
+new ones (a new scene, a room's *All lights in*, a new device's) are added, those the export no longer gives are
+removed, and every other one takes its new name, `rooms`, members or connection while keeping what it learnt over
+the link. No entity passes through *unavailable* or *unknown*, so a `state` trigger without `from:` does not fire
+for it; the Bluetooth link stays up, and nothing is read from the devices again but what the change itself touched
+(the scene actions of a scene action, a node's sensor publications, a new device's state). Devices and their names
+follow in the device registry as after a reload.
+
+The integration still reloads — a few seconds of *unavailable* — when it cannot follow with confidence: adding or
+removing a device with Home Assistant (`add_device`, `remove_device`), an export of another mesh or with other
+network keys, a device the export dropped, moved to another address or gave another key, Home Assistant's address
+taken by a device of the export, an entity whose element changed, and any error while following; it logs why at
+DEBUG (`custom_components.junghome_ble.model_update`). Saving the options, a reconfiguration and a change of the
+data the entry was built from reload as before. Unverified on air.
 
 ### Actions: scenes
 
@@ -1234,8 +1261,9 @@ be stored again.
 Every device answers *Scene Store* / *Scene Delete* with its Scene Register (verified on air: the JUNG firmware
 replies by unicast and also publishes the register to the element's group) and the description Set with a status; a
 device that stays silent is read back, and one that refuses (*Scene Register Full*, a description not taken) aborts
-the action before the export is written. Each storing / removing action reloads the integration so the scene
-entities and their `members` follow. A blind stores its position and slat levels (an awning without slats repeats
+the action before the export is written. Each storing / removing action is followed without a reload: a new
+scene's entity appears, a deleted one's goes, and the scene members are asked again what they do, so the scene
+entities' `members` follow. A blind stores its position and slat levels (an awning without slats repeats
 its position), a thermostat its set-point — the app's *blinds and slats position* / *target temperature* actions;
 both are unverified on hardware.
 
@@ -1302,8 +1330,8 @@ data:
   Admin property Set (`0x5004` / `0x5005`), confirmed from its Status or read back, and goes out first, as in the
   app; `devices` is wiring the app does the same way (seen on air): the socket's OnOff Client (on its meter element)
   subscribes to that element's group and publishes there, then each load subscribes its JUNG User Property Server
-  (`0x0527:1013`) and its OnOff server to it, so a change of `devices` rewrites the export and reloads the
-  integration, like the key actions. A `devices` list the integration cannot wire (a load that is no light or
+  (`0x0527:1013`) and its OnOff server to it, so a change of `devices` rewrites the export, followed without a
+  reload like the key actions. A `devices` list the integration cannot wire (a load that is no light or
   socket, a meter element without its group) is refused before anything is written, so the socket keeps its
   threshold as it was.
   Disabling a threshold (`enabled: false`, no `devices`) while the socket's other one is not active either unwires
@@ -1356,7 +1384,7 @@ response_variable: audit
 A device takes three Gets per model: about a hundred for a push-button, sent five at a time like the state refresh
 after a connection, so auditing every device takes a few minutes. A device that answers none of the five
 device-wide Gets is reported unanswered and not asked about its models. The last result per device stays in the
-diagnostics until the integration reloads. Not yet run on the installation; the CLI's earlier `config audit`
+diagnostics until the integration reloads or follows a changed export. Not yet run on the installation; the CLI's earlier `config audit`
 (publications and subscriptions only) was, with the results in `docs/hidden-features.md` §9.
 
 A hop matrix (how many hops every device is from every other) is not offered: measuring it needs Heartbeat
@@ -1391,8 +1419,8 @@ Home Assistant is in the diagnostics (`heartbeats`).
   of them were, and running the same action again with the same target completes the rest. New wiring is always sent
   before the old one is cleared, so a stopped `assign_key` leaves the previous connection working. An action that is
   cancelled — an automation in `mode: restart` starting over, `script.turn_off`, Home Assistant stopping — is
-  recorded the same way before the cancellation goes on, and the entry reloads; once started, the write of the
-  export and that reload run to their end. While Home Assistant stops, the export is not handed to the gateway:
+  recorded the same way before the cancellation goes on, and the integration follows it; once started, the write
+  of the export and that update run to their end. While Home Assistant stops, the export is not handed to the gateway:
   `junghome_ble.sync_gateway`, or the next change, does it. A crash or power cut in the middle is caught up at the
   next start: while an action runs, its messages and how many of them the devices accepted are kept in
   `.storage/junghome_ble.<entry id>.plan_journal` (no key material; removed once the export records the outcome),
@@ -1756,7 +1784,9 @@ made — it has no entities here. The issue lists the devices (product and addre
 node's own advertisement). An entry set up from the gateway helps itself: it fetches the gateway's current export
 (the app uploads its project right after provisioning) and, when that export lists the device and only the
 gateway changed since Home Assistant last synced with it, replaces its file (keeping `<file>.bak`, and the replaced
-copy as `<file>.pre-adopt` until the next such replacement; the gateway's copy recorded as synced) and reloads — the device appears without any action, and the issue clears. For an entry set up
+copy as `<file>.pre-adopt` until the next such replacement; the gateway's copy recorded as synced) and takes it
+over without a reload — the device appears without any action, its loads are asked for their state over the link
+that is up, and the issue clears. For an entry set up
 from a file, or when the gateway's export does not know the device either (open the app once while it is connected
 to the gateway so it uploads), export again from the app and update the integration (**Reconfigure**); the issue is
 cleared when the new export loads and is raised again only for nodes still missing from it.
@@ -2038,6 +2068,7 @@ Layout of `custom_components/junghome_ble/`:
 | File | Role |
 |---|---|
 | `__init__.py` | Loads the export (`load_network`), refuses to set up without a visible proxy (`ConfigEntryNotReady`), prunes stale devices, starts the hub, forwards the platforms; the update listener (`_async_entry_updated`) reloads the entry when its options or the data the hub was built from (`HUB_DATA_KEYS`) changed |
+| `model_update.py` | Follows a rewritten export without a reload (review-4 D23): reads it as the setup does (`check_our_address`, `remove_stale_devices` live here), checks the running hub can take it over, rebuilds every platform's entities from it and carries the change over to the running ones; reloads when it cannot |
 | `config_flow.py` | User, Bluetooth-discovery, reconfigure and reauth steps (reauth renews the gateway token alone; plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible proxies of the mesh (`0x1828` service data, `jhmesh.client.classify_proxy_advert`: Network ID, Node Identity and their Mesh Protocol 1.1 private forms; nodes of the export under another Network ID: `export_keys_stale`, `mesh_proxies_without_match`); unique ID = Network ID; discovery also aborts on what `coordinator.KnownMesh` knows a configured mesh by (`async_known_mesh_of`) |
 | `migration.py` | Import from the gateway integration: matches our registry entries against the gateway's identity scheme (`ImportPlan`), moves them with `er.async_update_entity_platform`, copies device area / name / labels, raises the `gateway_import` issue |
 | `coordinator.py` | `JungHomeHub`: connection loop over HA's Bluetooth stack (`bleak_retry_connector.establish_connection`), state cache per element (`ElementState`), the `STATUS_HANDLERS` message table, command helpers, button gesture logic, the repair issues (`key_refresh`, `pdus_dropped` — from the Filter Status watchdog, for a filter request actually written while the store lets sends through, or an unanswered refresh —, `export_stale`); `HAState` persists the sequence numbers through `Store` (`junghome_ble.seq.<mesh uuid>`, one record per address and the mesh's followed key refresh next to them, written at once; 2 s debounce with an immediate write every 64 numbers, on an IV change and after a load; exact counter on a clean close, +512 margin only after a crash), keeps the `.floor` entry of its address up with the counter (every IV change and `SEQ_FLOOR_EVERY` numbers; nothing sent under an index it does not hold yet, nor `SEQ_SKIP_UNKNOWN` past it), starts an address without a record `SEQ_SKIP_AHEAD` in when it may have sent before (`_evidence_of_use`), holds sends back while what a restart would load lags (`SequenceStalled`, retried by `_while_seq_stalls` for `SEQ_STALL_DEADLINE`) and raises `seq_store_unwritable` after `SEQ_STALL_ISSUE_AFTER` of that, and refuses every send while another client is known to use its address (`AddressShared`, the `address_shared` repair) |
@@ -2098,7 +2129,8 @@ Behaviour worth knowing:
   gateway sends to a push-button's key is cached as that key's value (`config_entities.status_owner`).
 - Services (`services.py` → `mesh_config.py`): registered once in `async_setup`; each entry contributes a
   `MeshConfigurator` (per-hub lock). Operations plan `ProjectFile` mutations, send the Config messages over the device
-  key with `request_config`, write the KeyMode property, save the file atomically and reload the entry.
+  key with `request_config`, write the KeyMode property, save the file atomically and have the hub follow the
+  export (`model_update`).
 - Incoming messages: `_on_message` only accounts for the traffic (link watchdog, drop detection) and then looks the
   message up in `coordinator.STATUS_HANDLERS`, a table keyed by `(company id, opcode)` (`None` for SIG opcodes) that
   the `@register_status_handler(*opcodes, company_id=None)` decorator fills. One small handler per message type

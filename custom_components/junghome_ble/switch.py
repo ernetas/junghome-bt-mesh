@@ -70,6 +70,7 @@ from .const import (
 from .entity import (
     JungHomeCentralEntity,
     JungHomeEntity,
+    async_setup_platform,
     metered_device_info,
     node_device_info,
     room_loads,
@@ -111,11 +112,15 @@ async def async_setup_entry(
     entry: JungHomeConfigEntry,
     add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add one switch per socket, *All sockets* (home and per room), then every device's boolean parameters.
+    """Add the entities of `build_entities`, kept with the hub to follow a new export in place (`model_update`)."""
+    async_setup_platform(entry.runtime_data, "switch", build_entities, add_entities)
+
+
+def build_entities(hub: JungHomeHub) -> list[SwitchEntity]:
+    """Return one switch per socket, *All sockets* (home and per room), then every device's boolean parameters.
 
     Night mode, lock, edge mode, last value, sensor publication and walking test included.
     """
-    hub = entry.runtime_data
     entities: list[SwitchEntity] = [
         JungHomeSocket(hub, sock) for sock in hub.devices.sockets
     ]
@@ -153,7 +158,7 @@ async def async_setup_entry(
         JungHomeWalkingTest(hub, target)
         for target in property_id_targets(hub, PROPERTY_WALKING_TEST, "walking_test")
     ]
-    add_entities(entities)
+    return entities
 
 
 def sensor_publication_nodes(hub: JungHomeHub) -> list[tuple[Node, DeviceInfo]]:
@@ -591,8 +596,8 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
     Sensor Server, once per link through the property reader's queue; on while one of them publishes anywhere (the
     app's test: a publication address). Until the node has answered, what the export says (a Sensor Server
     publishing to its element's group). A change is the Config messages of `MeshConfigurator.set_sensor_publication`,
-    planned against the node's answer when there is one, the export rewritten and the entry reloaded, like the key
-    and room actions.
+    planned against the node's answer when there is one, the export rewritten and followed in place, like the key
+    and room actions; the node is asked again afterwards.
     """
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -684,13 +689,20 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
     async def _set(self, on: bool) -> None:
         # planned against what the node answered, which the switch shows, not only against the export (W4-6)
         unicast, live = self.node.unicast, self._published
-        await async_configure(
-            self.hass,
-            self.hub.entry.entry_id,
-            lambda configurator: configurator.set_sensor_publication(
-                unicast, on, live=live
-            ),
-        )
+        try:
+            await async_configure(
+                self.hass,
+                self.hub.entry.entry_id,
+                lambda configurator: configurator.set_sensor_publication(
+                    unicast, on, live=live
+                ),
+            )
+        finally:
+            # the node's answer was about its publications before the change, and the entity stays (no reload,
+            # review-4 D23): the export, which recorded what the node took, shows until the node is asked again
+            self._published = self._read_link = None
+            if self.platform is not None:
+                self._handle_update()
 
 
 class JungHomeAllSockets(JungHomeCentralEntity, SwitchEntity):
