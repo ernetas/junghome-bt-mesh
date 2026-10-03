@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME Bluetoothin kautta",
+        "description": "Home Assistant liittyy JUNG HOME -mesh-verkkoosi suoraan Bluetoothin kautta JUNG HOME -sovelluksen verkon viennin avulla, joka sisältää mesh-verkon avaimet. Valitse, mistä vienti haetaan.",
+        "menu_options": {
+          "gateway": "Hae se JUNG HOME -yhdyskäytävältä",
+          "upload": "Lataa sovelluksen vientitiedosto",
+          "path": "Käytä tiedostoa Home Assistant -palvelimella"
+        },
+        "data": {
+          "cdb_path": "Mesh-vientitiedosto",
+          "metadata_dir": "Sovelluksen metatietokansio",
+          "unicast": "Meidän unicast-osoitteemme"
+        },
+        "data_description": {
+          "cdb_path": "Absoluuttinen polku Home Assistant -palvelimella, esim. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valinnainen, vain iOS-varmuuskopion `MeshNetwork.json`-tiedostolle: sovelluksen `Application Support` -kansio, jossa ovat `device_metadata.json` ja `scene_metadata.json`, jotta entiteetit saavat sovelluksessa antamasi nimet. `JungHome.json` sisältää nimet jo valmiiksi.",
+          "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Onko tämä JUNG HOME -asennuksesi?",
+        "description": "Verkon {network_id} Bluetooth Mesh -välityssolmu on kantaman sisällä. Home Assistant tarjoaa jokaista näkemäänsä Bluetooth Mesh -verkkoa, myös muiden merkkien verkkoja — esimerkiksi naapurin valaisimia. Jatka vain, jos tämä on JUNG HOME -asennuksesi; sen jälkeen sinulta kysytään sovelluksen mesh-verkon vientiä."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME -yhdyskäytävä löytyi",
+        "description": "JUNG HOME -yhdyskäytävä ilmoittaa itsestään osoitteessa {host}. Jatka hakeaksesi JUNG HOME -sovelluksen verkon viennin siltä: annat sitten sen verkkoavaimen salasanan tai hyväksyt käyttöoikeuspyynnön sovelluksessa. Kuten itse kirjoittamasi osoitteen kohdalla, sen varmenne kiinnitetään ensimmäisellä yhteydellä ennen kuin mitään lähetetään. Määritystä löydetystä yhdyskäytävästä ei ole vielä varmistettu oikeilla laitteilla."
+      },
+      "gateway": {
+        "title": "Hae vienti JUNG HOME -yhdyskäytävältä",
+        "description": "Yhdyskäytävällä on kopio sovelluksen verkon viennistä. Anna sen osoite ja joko sen verkkoavaimen salasana (JUNG HOME -sovelluksesta), jolloin saat käyttöoikeuden heti, tai jätä salasana tyhjäksi ja hyväksy käyttöoikeuspyyntö sovelluksessa jatkettuasi (Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt, kolmen minuutin kuluessa; pyyntö näkyy nimellä ”{user_name}”). Vienti tallennetaan Home Assistantin määrityskansion kohtaan `junghome_ble/`. Se sisältää kaikki mesh-verkon avaimet, kuten puhelimella tehty vienti — pidä kyseisen kansion varmuuskopiot yksityisinä.",
+        "data": {
+          "gateway_host": "Yhdyskäytävän osoite",
+          "gateway_password": "Verkkoavaimen salasana"
+        },
+        "data_description": {
+          "gateway_host": "JUNG HOME -yhdyskäytävän IP-osoite tai isäntänimi. Jos Home Assistant löysi yhdyskäytävän verkosta, se on jo täytetty valmiiksi. Muuten oletusarvo `junghome.local` toimii monissa verkoissa, tai käytä yhdyskäytävän IP-osoitetta (näkyy sovelluksessa kohdassa Asetukset → Yhdyskäytävä).",
+          "gateway_password": "Valinnainen. Salasanan kanssa yhdyskäytävä myöntää käyttöoikeuden heti; ilman sitä hyväksyt pyynnön sovelluksessa."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Lisäasetukset",
+            "description": "Pidä oletusarvo, ellei myös toinen Home Assistant tai repositorion komentorivityökalut liity tähän asennukseen: kukin niistä tarvitsee oman osoitteensa.",
+            "data": {
+              "unicast": "Meidän unicast-osoitteemme"
+            },
+            "data_description": {
+              "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Odotetaan hyväksyntää JUNG HOME -sovelluksessa"
+      },
+      "gateway_refetch": {
+        "title": "Hae vienti uudelleen",
+        "description": "Hakee nykyisen verkon viennin yhdyskäytävältä {host} tallennetulla käyttöoikeudella. Jos yhdyskäytävä ei enää hyväksy sitä, sinua pyydetään hyväksymään uusi käyttöoikeuspyyntö sovelluksessa.",
+        "sections": {
+          "advanced": {
+            "name": "Lisäasetukset",
+            "description": "Pidä oletusarvo, ellei myös toinen Home Assistant tai repositorion komentorivityökalut liity tähän asennukseen: kukin niistä tarvitsee oman osoitteensa.",
+            "data": {
+              "unicast": "Meidän unicast-osoitteemme"
+            },
+            "data_description": {
+              "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Lataa sovelluksen vientitiedosto",
+        "description": "Avaa JUNG HOME -sovelluksessa Projekti → Jaa tiedostona, lähetä sen luoma `JungHome.json` itsellesi ja lataa se sitten tähän. Se tallennetaan Home Assistantin määrityskansion kohtaan `junghome_ble/`. Se sisältää kaikki mesh-verkon avaimet — pidä kyseisen kansion varmuuskopiot yksityisinä.",
+        "data": {
+          "export_file": "Mesh-vientitiedosto"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Lisäasetukset",
+            "description": "Pidä oletusarvo, ellei myös toinen Home Assistant tai repositorion komentorivityökalut liity tähän asennukseen: kukin niistä tarvitsee oman osoitteensa.",
+            "data": {
+              "unicast": "Meidän unicast-osoitteemme"
+            },
+            "data_description": {
+              "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Käytä tiedostoa Home Assistant -palvelimella",
+        "description": "Kopioi ensin sovelluksen `JungHome.json` (Projekti → Jaa tiedostona; sisältää laitteidesi nimet) tai `MeshNetwork.json` (iOS-varmuuskopio) Home Assistant -palvelimelle ja anna sen polku.",
+        "data": {
+          "cdb_path": "Mesh-vientitiedosto",
+          "metadata_dir": "Sovelluksen metatietokansio"
+        },
+        "data_description": {
+          "cdb_path": "Absoluuttinen polku Home Assistant -palvelimella, esim. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valinnainen, vain iOS-varmuuskopion `MeshNetwork.json`-tiedostolle: sovelluksen `Application Support` -kansio, jossa ovat `device_metadata.json` ja `scene_metadata.json`, jotta entiteetit saavat sovelluksessa antamasi nimet. `JungHome.json` sisältää nimet jo valmiiksi."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Lisäasetukset",
+            "description": "Pidä oletusarvo, ellei myös toinen Home Assistant tai repositorion komentorivityökalut liity tähän asennukseen: kukin niistä tarvitsee oman osoitteensa.",
+            "data": {
+              "unicast": "Meidän unicast-osoitteemme"
+            },
+            "data_description": {
+              "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Päivitä JUNG HOME -mesh-verkon vienti",
+        "description": "Käytä tätä, kun olet ottanut laitteita uudelleen käyttöön verkossa tai muuttanut niiden kytkentöjä JUNG HOME -sovelluksessa, tai avainten päivityksen jälkeen: anna saman verkon uusi vienti. Viennistä kadonneet laitteet poistetaan. Samalla voit vaihtaa Home Assistantin oman mesh-osoitteen.",
+        "menu_options": {
+          "gateway_refetch": "Hae uudelleen yhdyskäytävältä {host}",
+          "gateway": "Hae se JUNG HOME -yhdyskäytävältä",
+          "upload": "Lataa sovelluksen vientitiedosto",
+          "path": "Käytä tiedostoa Home Assistant -palvelimella",
+          "import_gateway": "Tuo JUNG HOME Gateway -integraation entiteetit",
+          "areas": "Vaihda, mille alueelle kunkin huoneen laitteet sijoitetaan"
+        },
+        "data": {
+          "cdb_path": "Mesh-vientitiedosto",
+          "metadata_dir": "Sovelluksen metatietokansio",
+          "unicast": "Meidän unicast-osoitteemme"
+        },
+        "data_description": {
+          "cdb_path": "Absoluuttinen polku Home Assistant -palvelimella, esim. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Valinnainen, vain iOS-varmuuskopion `MeshNetwork.json`-tiedostolle: sovelluksen `Application Support` -kansio, jossa ovat `device_metadata.json` ja `scene_metadata.json`, jotta entiteetit saavat sovelluksessa antamasi nimet. `JungHome.json` sisältää nimet jo valmiiksi.",
+          "unicast": "Heksadesimaalinen mesh-osoite, jota Home Assistant käyttää solmuna (0001–7FFF). Mikään muu solmu ei saa käyttää sitä; oletusarvo on sovelluksen osoitealueen ulkopuolella."
+        }
+      },
+      "import_gateway": {
+        "title": "Tuo JUNG HOME Gateway -integraatiosta",
+        "description": "JUNG HOME Gateway -integraatio (`junghome`) on määritetty tämän rinnalle. Sen entiteetit voidaan ottaa tässä haltuun, jolloin niiden entiteettitunnukset, nimet, alueet, tunnisteet ja tallennettu historia jatkuvat Bluetooth Mesh -integraatiossa. Vastineet etsitään laitteen nimen (JUNG HOME -sovelluksen nimi) ja entiteetin tyypin perusteella; vain sellaiset tämän integraation entiteetit korvataan, joita et ole vielä nimennyt uudelleen tai mukauttanut.\n\n**{count} entiteettiä siirretään** (yhdyskäytävän entiteetti → korvaa):\n{matched}\n\n**Säilytetään ennallaan** (mukautettu jo täällä; yhdyskäytävän entiteetti jää paikalleen):\n{customised}\n\n**Ei vastinetta yhdyskäytävässä** (säilyvät ennallaan):\n{unmatched}\n\n**Yhdyskäytävän entiteetit ilman vastinetta täällä** (jäävät yhdyskäytävämerkintään):\n{gateway_only}\n\nLähettäminen pysäyttää molemmat integraatiot, siirtää entiteetit, kopioi kunkin vastaavan yhdyskäytävälaitteen alueen, mukautetun nimen ja tunnisteet vastaavaan laitteeseen täällä, poistaa yhdyskäytävämerkinnän käytöstä ja lataa tämän merkinnän uudelleen. Poista yhdyskäytävämerkintä sen jälkeen."
+      },
+      "gateway_certificate": {
+        "title": "Yhdyskäytävän varmenne vaihtui",
+        "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} esittää nyt varmenteen {observed}; merkintään on tallennettu {expected}. Jatka vain, jos vaihdoit yhdyskäytävän tai sen varmenteen itse — muuten jokin toinen laite verkossasi vastaa yhdyskäytävänä."
+      },
+      "reauth_confirm": {
+        "title": "Anna Home Assistantille uudelleen käyttöoikeus yhdyskäytävään",
+        "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää hyväksy käyttöoikeutta, jonka Home Assistant rekisteröi mesh-verkolle {title} (se poistettiin todennäköisesti JUNG HOME -sovelluksessa kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet). Laitteet toimivat edelleen Bluetoothin kautta; vain Home Assistantin muutosten luovuttaminen yhdyskäytävälle on keskeytynyt. Anna yhdyskäytävän verkkoavaimen salasana (JUNG HOME -sovelluksesta), jolloin saat käyttöoikeuden heti, tai jätä se tyhjäksi ja hyväksy käyttöoikeuspyyntö sovelluksessa jatkettuasi (Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt, kolmen minuutin kuluessa; pyyntö näkyy nimellä ”{user_name}”). Vain käyttöoikeus uusitaan: vientiä ei haeta uudelleen.",
+        "data": {
+          "gateway_password": "Verkkoavaimen salasana"
+        },
+        "data_description": {
+          "gateway_password": "Valinnainen. Salasanan kanssa yhdyskäytävä myöntää käyttöoikeuden heti; ilman sitä hyväksyt pyynnön sovelluksessa. Salasanaa ei tallenneta."
+        }
+      },
+      "areas": {
+        "title": "Huoneet ja alueet",
+        "description": "Valitse Home Assistant -alue jokaiselle JUNG HOME -sovelluksen huoneelle. Huoneelle on esivalittu samanniminen alue tai alue, jolla on huoneen nimi aliaksena. Jätä huone tyhjäksi, niin käytetään huoneen mukaan nimettyä aluetta (se luodaan, jos sellaista ei ole). Myös laitteet, joilla ei ole omaa huonetta, saavat alueen: painikelaitteen painikkeet viereisen kuorman huoneen, seinälähettimen painikkeet sen huoneen, jota ne kytkevät. Määritä uudelleen -valikosta käytettynä tämä siirtää laitteet, jotka ovat yhä edellisen valinnan antamalla alueella; laitetta, jonka olet itse sijoittanut toiselle alueelle, ei koskaan siirretä.",
+        "data": {
+          "assign_areas": "Sijoita JUNG HOME -laitteet alueille"
+        },
+        "data_description": {
+          "assign_areas": "Pois päältä: uudet laitteet jäävät ilman aluetta, ja alla olevat huoneet ohitetaan."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Avaa JUNG HOME -sovellus ja hyväksy käyttöoikeuspyyntö ”{user_name}” kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt. Yhdyskäytävä osoitteessa {host} odottaa enintään kolme minuuttia."
+    },
+    "error": {
+      "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+      "not_a_directory": "Metatietopolku ei ole kansio.",
+      "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+      "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+      "address_in_use": "Osoite kuuluu mesh-verkon solmulle; valitse käyttämätön osoite.",
+      "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+      "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+      "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin löydetty verkko.",
+      "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä (sen verkkoavain on todennäköisesti päivitetty sen jälkeen, kun Home Assistant viimeksi näki sen). Käytä kyseisen merkinnän Määritä uudelleen -toimintoa uuden lisäämisen sijaan.",
+      "invalid_host": "Anna yhdyskäytävän IP-osoite tai isäntänimi.",
+      "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+      "invalid_auth": "Yhdyskäytävä hylkäsi verkkoavaimen salasanan.",
+      "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+      "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+      "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+      "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+      "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+      "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen.",
+      "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+      "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0."
+    },
+    "abort": {
+      "already_configured": "Tämä mesh-verkko on jo määritetty.",
+      "already_in_progress": "Tämän mesh-verkon määritys on jo käynnissä.",
+      "not_supported": "Tämä Bluetooth-laite ei ole mesh-välityssolmu (Mesh Proxy).",
+      "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+      "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin.",
+      "reconfigure_successful": "Mesh-verkon vienti päivitettiin.",
+      "no_gateway_entry": "JUNG HOME Gateway -integraatiota ei ole määritetty; tuotavaa ei ole.",
+      "nothing_to_import": "Haltuun otettavia yhdyskäytävän entiteettejä ei ole jäljellä. Tämän integraation entiteetit ilman vastinetta:\n{unmatched}\n\nYhdyskäytävän entiteetit ilman vastinetta täällä:\n{gateway_only}",
+      "import_successful": "JUNG HOME Gateway -integraatiosta otettiin haltuun {count} entiteettiä:\n{matched}\n\nSäilytettiin ennallaan (mukautettu jo täällä):\n{customised}\n\nIlman vastinetta yhdyskäytävässä:\n{unmatched}\n\nYhä yhdyskäytävämerkinnässä:\n{gateway_only}\n\nYhdyskäytävämerkintä on poistettu käytöstä; poista se kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME, kun kaikki näyttää oikealta.",
+      "certificate_vouched_by_mesh": "JUNG HOME -yhdyskäytävä osoitteessa {host} esittää varmenteen {observed}, mutta yhdyskäytävän solmu vahvisti mesh-verkon kautta varmenteeksi {expected}. Tähän osoitteeseen ei lähetetty mitään: jokin toinen laite verkossasi vastaa todennäköisesti yhdyskäytävänä. Jos vaihdoit yhdyskäytävän tai sen varmenteen itse, määritä uudelleen, kun Home Assistant on yhteydessä mesh-verkkoon: yhdyskäytävän solmu ilmoittaa silloin uuden varmenteen.",
+      "import_unload_failed": "Merkintää {title} ei voitu pysäyttää, joten mitään ei tuotu; jokainen tuonnin pysäyttämä merkintä käynnistetään uudelleen. Tarkista loki ja yritä tuontia sitten uudelleen.",
+      "reauth_successful": "JUNG HOME -yhdyskäytävä hyväksyy taas Home Assistantin. Home Assistantissa sillä välin tehdyt muutokset välittyvät sille seuraavan muutoksen yhteydessä tai heti toiminnolla Synkronoi yhdyskäytävä.",
+      "areas_updated": "Huoneiden alueet on tallennettu; {count} laitetta siirrettiin huoneensa uudelle alueelle.",
+      "not_loaded": "Integraatio ei ole käynnissä: käynnistä se ensin uudelleen.",
+      "not_junghome_gateway": "Tämä laite ei ilmoita olevansa JUNG HOME -yhdyskäytävä (JUNG-valmistaja tai sarjanumero puuttuu).",
+      "not_ipv4_address": "Yhdyskäytävä ei ilmoittanut IPv4-osoitetta. Lisää integraatio käsin ja anna yhdyskäytävän osoite."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME (Bluetooth Mesh) -asetukset",
+        "data": {
+          "click_delay": "Ilmoita napsautukset vasta, kun kaksoisnapsautus on suljettu pois",
+          "heartbeats": "Solmujen heartbeat-viestit (hiljainen laite merkitään ei käytettävissä olevaksi)",
+          "allow_provisioning": "Salli Home Assistantin lisätä ja poistaa laitteita (kokeellinen)",
+          "provisioner_identity": "Kirjaa Home Assistant verkon tiedostoon provisioijaksi (kokeellinen, ei varmistettu sovelluksella)",
+          "follow_app": "Seuraa JUNG HOME -sovelluksessa tehtyjä muutoksia",
+          "gateway_check": "Tarkista yhdyskäytävän vienti kuuden tunnin välein",
+          "sync_areas": "Siirrä laitteet mukana, kun niiden JUNG-huone vaihtuu"
+        },
+        "data_description": {
+          "click_delay": "`click`-tapahtumaa pidätetään puoli sekuntia, ja se hylätään, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman. Pois päältä: jokainen painallus laukaisee `click`-tapahtuman heti, ja kaksoispainalluksen toinen painallus laukaisee lisäksi `double_click`-tapahtuman.",
+          "heartbeats": "Jokaista verkkovirtakäyttöistä laitetta pyydetään lähettämään Home Assistantille heartbeat-viesti 64 sekunnin välein (Bluetooth Mesh -standardin asetus, jonka JUNG-sovellus jättää pois päältä). Jos laite ei lähetä mitään noin kolmeen ja puoleen minuuttiin, sen entiteetit merkitään ei käytettävissä oleviksi, kunnes se kuuluu taas. Kun tämä kytketään pois, laitteita pyydetään lopettamaan (uudelleen seuraavalla yhteydellä, jos kaikille ei voitu kertoa kerralla); kytke tämä pois ennen integraation poistamista, koska sen jälkeen laitteille ei voi enää kertoa.",
+          "allow_provisioning": "Sallii toiminnon `junghome_ble.add_device` ottaa uuden JUNG-laitteen käyttöön verkossa ja määrittää sen kuten sovellus, verkossa jo olevan saman tuotteen laitteen mukaan, sekä toiminnon `junghome_ble.remove_device` palauttaa laitteen tehdasasetuksiin ja poistaa sen verkosta. Ei vielä kokeiltu oikeilla laitteilla: kokeile ensin varalaitteella. Lisääminen antaa laitteelle verkon avaimet; poistoa ei voi perua.",
+          "provisioner_identity": "Jokaiseen tiedostoon, jonka Home Assistant kirjoittaa tai luovuttaa yhdyskäytävälle, lisätään Home Assistantin provisioijamerkintä, jolla on omat, sovelluksen alueista erilliset osoitealueet ja niiden sisällä Home Assistantin osoite, ja Home Assistantin lisäämät laitteet, jotka sovelluksen tiedostosta puuttuvat, palautetaan siihen. Home Assistantin luomat huoneet, tilanteet ja laitteet saavat silloin osoitteensa sen omilta alueilta. Mikään JUNG-sovellus ei ole vielä tuonut tällaista tiedostoa: kokeile sitä ensin ylimääräisessä sovellusasennuksessa (tuo toiminnon `junghome_ble.export_network` antama tiedosto), ennen kuin oma sovelluksesi tai yhdyskäytäväsi näkee sen. Pois päältä: tiedostot kirjoitetaan täsmälleen kuten ilman tätä asetusta.",
+          "follow_app": "Kun JUNG HOME -sovellusta käyttävä puhelin kuuluu mesh-verkossa, yhdyskäytävästä määritetty merkintä hakee yhdyskäytävän viennin muutama minuutti sen jälkeen, kun puhelin on hiljentynyt (enintään 15 minuutin välein), ja ottaa sen käyttöön, jos se on muuttunut: sovelluksessa muutetut laitteet, huoneet, tilanteet ja painikkeiden kytkennät välittyvät Home Assistantiin ilman Määritä uudelleen -toimintoa. Tiedostosta määritetty merkintä näyttää sen sijaan korjausilmoituksen, kun sovelluksen on havaittu muuttavan laitteen määritystä. Tätä varten mesh-verkkoon ei lähetetä mitään. Ei vielä varmistettu oikeilla laitteilla.",
+          "gateway_check": "Yhdyskäytävästä määritetty merkintä pyytää yhdyskäytävältä sen viennin kuuden tunnin välein ja ottaa sen käyttöön, jos se on muuttunut; näin huomataan sovelluksessa tehdyt muutokset silloinkin, kun Home Assistant ei kuullut puhelinta. Yksi pyyntö yhdyskäytävälle; mesh-verkkoon ei lähetetä mitään. Ei vaikutusta tiedostosta määritettyyn merkintään.",
+          "sync_areas": "Kun laite vaihtaa huonetta sovelluksessa (kun Home Assistant on ottanut uuden viennin käyttöön) tai huonetoiminnolla, se siirtyy myös uuden huoneen alueelle — ellet ole itse sijoittanut sitä jollekin alueelle. Pois päältä: laite pysyy alueella, jolla se aloitti. Ei vielä varmistettu oikeilla laitteilla."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh-yhteys"
+      },
+      "motion": {
+        "name": "Liike"
+      },
+      "occupancy": {
+        "name": "Läsnäolo"
+      },
+      "fault": {
+        "name": "Vika"
+      },
+      "wind_alarm": {
+        "name": "Tuulihälytys"
+      },
+      "reference_run_active": {
+        "name": "Referenssiajo"
+      },
+      "gateway_api_available": {
+        "name": "API käytettävissä"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Asiakas odottaa hyväksyntää"
+      },
+      "gateway_network_problem": {
+        "name": "Verkko-ongelma"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth Mesh -ongelma"
+      },
+      "gateway_cloud_problem": {
+        "name": "Pilviongelma"
+      },
+      "gateway_cloud_connected": {
+        "name": "Pilviyhteys"
+      },
+      "window_open": {
+        "name": "Ikkuna auki"
+      },
+      "input_state": {
+        "name": "Tulon tila"
+      },
+      "input_state_key": {
+        "name": "Tulon {key} tila"
+      },
+      "scheduler_function_status": {
+        "name": "Aikataulutoiminto"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Painike {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Napsautus",
+              "double_click": "Kaksoisnapsautus",
+              "hold_start": "Pito alkoi",
+              "hold_end": "Pito päättyi",
+              "press_on": "Painettu päälle / ylös",
+              "press_off": "Painettu pois / alas",
+              "scene": "Tilanne palautettu",
+              "dim": "Himmennys"
+            }
+          },
+          "connection": {
+            "name": "Kytkentä",
+            "state": {
+              "device": "Laite",
+              "room": "Huone",
+              "scene": "Tilanne",
+              "gateway": "Yhdyskäytävä",
+              "group": "Ryhmä",
+              "none": "Ei mitään"
+            }
+          },
+          "reason": {
+            "name": "Pidon päättymisen syy",
+            "state": {
+              "timeout": "Vapautusta ei kuultu ajoissa",
+              "link_lost": "Yhteys katkesi",
+              "stopped": "Integraatio pysäytetty"
+            }
+          },
+          "position": {
+            "name": "Sijainti",
+            "state": {
+              "top": "Ylhäällä",
+              "bottom": "Alhaalla",
+              "rocker": "Keinu",
+              "left_top": "Vasen, ylhäällä",
+              "left_bottom": "Vasen, alhaalla",
+              "right_top": "Oikea, ylhäällä",
+              "right_bottom": "Oikea, alhaalla",
+              "left_rocker": "Vasen keinu",
+              "right_rocker": "Oikea keinu"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Tulo {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Napsautus",
+              "double_click": "Kaksoisnapsautus",
+              "hold_start": "Pito alkoi",
+              "hold_end": "Pito päättyi",
+              "press_on": "Painettu päälle / ylös",
+              "press_off": "Painettu pois / alas",
+              "scene": "Tilanne palautettu",
+              "dim": "Himmennys"
+            }
+          },
+          "connection": {
+            "name": "Kytkentä",
+            "state": {
+              "device": "Laite",
+              "room": "Huone",
+              "scene": "Tilanne",
+              "gateway": "Yhdyskäytävä",
+              "group": "Ryhmä",
+              "none": "Ei mitään"
+            }
+          },
+          "reason": {
+            "name": "Pidon päättymisen syy",
+            "state": {
+              "timeout": "Vapautusta ei kuultu ajoissa",
+              "link_lost": "Yhteys katkesi",
+              "stopped": "Integraatio pysäytetty"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Teho"
+      },
+      "voltage": {
+        "name": "Jännite"
+      },
+      "current": {
+        "name": "Virta"
+      },
+      "energy": {
+        "name": "Energia"
+      },
+      "energy_resettable": {
+        "name": "Energia nollauksen jälkeen"
+      },
+      "energy_since_on": {
+        "name": "Energia päällekytkennän jälkeen"
+      },
+      "power_on_time": {
+        "name": "Päälläoloaika"
+      },
+      "proxy_node": {
+        "name": "Välityssolmu"
+      },
+      "link_state": {
+        "name": "Yhteyden tila",
+        "state": {
+          "bluetooth_off": "Ei Bluetoothia",
+          "searching": "Etsitään välityssolmua",
+          "connecting": "Yhdistetään",
+          "updating": "Yhdistetty, päivitetään laitteiden tiloja",
+          "connected": "Yhdistetty",
+          "failed": "Yhteys epäonnistui",
+          "disconnected": "Yhteys katkaistu"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Tavoittamattomat laitteet",
+        "state_attributes": {
+          "devices": {
+            "name": "Laitteet"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh-verkon yleiskatsaus",
+        "state_attributes": {
+          "nodes": {
+            "name": "Solmut"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Valaistusvoimakkuus"
+      },
+      "battery": {
+        "name": "Paristo"
+      },
+      "installed": {
+        "name": "Asennettu"
+      },
+      "key_mode": {
+        "name": "Painiketila",
+        "state": {
+          "light": "Valaistus",
+          "move": "Sälekaihdin",
+          "scene": "Tilanne",
+          "property": "Ominaisuus",
+          "rtr": "Lämpötila",
+          "switch": "Kytkentä",
+          "gateway": "Yhdyskäytävä"
+        }
+      },
+      "key_mode_key": {
+        "name": "Painiketila {key}",
+        "state": {
+          "light": "Valaistus",
+          "move": "Sälekaihdin",
+          "scene": "Tilanne",
+          "property": "Ominaisuus",
+          "rtr": "Lämpötila",
+          "switch": "Kytkentä",
+          "gateway": "Yhdyskäytävä"
+        }
+      },
+      "schedules": {
+        "name": "Aikataulut"
+      },
+      "scenes": {
+        "name": "Tilanteet"
+      },
+      "switch_off_at": {
+        "name": "Kytkeytyy pois"
+      },
+      "switch_on_threshold": {
+        "name": "Kytkentäkynnys"
+      },
+      "switch_off_threshold": {
+        "name": "Katkaisukynnys"
+      },
+      "last_seen": {
+        "name": "Viimeksi nähty"
+      },
+      "rssi": {
+        "name": "Signaalin voimakkuus"
+      },
+      "hops": {
+        "name": "Hypyt"
+      },
+      "last_restart": {
+        "name": "Viimeisin uudelleenkäynnistys"
+      },
+      "clock_offset": {
+        "name": "Kellon poikkeama"
+      },
+      "iv_index": {
+        "name": "IV-indeksi"
+      },
+      "sequence_used": {
+        "name": "Käytetyt järjestysnumerot"
+      },
+      "mesh_sequence_used": {
+        "name": "Mesh-verkon käytetyt järjestysnumerot"
+      },
+      "switching_cycles": {
+        "name": "Kytkentäkerrat"
+      },
+      "power_on_cycles": {
+        "name": "Päällekytkentäkerrat"
+      },
+      "gateway_ip": {
+        "name": "IP-osoite"
+      },
+      "gateway_firmware": {
+        "name": "Laiteohjelmistoversio"
+      },
+      "gateway_firmware_build": {
+        "name": "Laiteohjelmiston koontiversio"
+      },
+      "gateway_serial": {
+        "name": "Sarjanumero"
+      },
+      "gateway_access_requests": {
+        "name": "Käyttöoikeuspyynnöt",
+        "state_attributes": {
+          "clients": {
+            "name": "Asiakkaat"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API-asiakkaat",
+        "state_attributes": {
+          "clients": {
+            "name": "Asiakkaat"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Virheloki",
+        "state_attributes": {
+          "entries": {
+            "name": "Lokimerkinnät"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Viimeisin viennin lataus"
+      },
+      "forced_off": {
+        "name": "Jatkuvasti päällä / pois",
+        "state": {
+          "inactive": "Ei aktiivinen",
+          "off": "Jatkuvasti pois",
+          "on": "Jatkuvasti päällä"
+        }
+      },
+      "sleep_mode": {
+        "name": "Lepotila",
+        "state": {
+          "awake": "Hereillä",
+          "asleep": "Lepotilassa"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referenssiajo"
+      },
+      "identify": {
+        "name": "Tunnista"
+      },
+      "clear_faults": {
+        "name": "Tyhjennä viat"
+      },
+      "reset_consumption": {
+        "name": "Nollaa kulutus"
+      },
+      "fetch_gateway_export": {
+        "name": "Hae vienti yhdyskäytävältä"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Sälekaihtimen asento sähkön palautuessa"
+      },
+      "blind_ventilation_position": {
+        "name": "Tuuletusasento"
+      },
+      "color_temp_max": {
+        "name": "Suurin värilämpötila"
+      },
+      "color_temp_min": {
+        "name": "Pienin värilämpötila"
+      },
+      "comfort_temperature": {
+        "name": "Mukavuuslämpötila"
+      },
+      "default_color_temp": {
+        "name": "Päällekytkennän värilämpötila"
+      },
+      "default_lightness": {
+        "name": "Päällekytkennän kirkkaus"
+      },
+      "eco_temperature": {
+        "name": "ECO-lämpötila"
+      },
+      "frost_protection_temperature": {
+        "name": "Jäätymissuojalämpötila"
+      },
+      "lightness_max": {
+        "name": "Suurin kirkkaus"
+      },
+      "lightness_min": {
+        "name": "Pienin kirkkaus"
+      },
+      "lock_time_limit": {
+        "name": "Lukituksen aikaraja"
+      },
+      "motor_reversal_time": {
+        "name": "Moottorin pienin suunnanvaihtoaika"
+      },
+      "off_delay": {
+        "name": "Poiskytkennän viive"
+      },
+      "on_delay": {
+        "name": "Päällekytkennän viive"
+      },
+      "pir_sensor_a": {
+        "name": "Aktivointialue A"
+      },
+      "pir_sensor_b": {
+        "name": "Aktivointialue B"
+      },
+      "pir_sensor_c": {
+        "name": "Aktivointialue C"
+      },
+      "repetition_time": {
+        "name": "Toistoaika"
+      },
+      "running_time": {
+        "name": "Ajoaika"
+      },
+      "sensor_offset": {
+        "name": "Lämpötila-anturin korjaus"
+      },
+      "slat_position_on_power": {
+        "name": "Säleiden asento sähkön palautuessa"
+      },
+      "slat_ventilation_position": {
+        "name": "Säleiden tuuletusasento"
+      },
+      "slats_move_time": {
+        "name": "Säleiden kääntöaika"
+      },
+      "switch_blocking_time": {
+        "name": "Pienin kytkennän toistoaika"
+      },
+      "switch_on_brightness": {
+        "name": "Kirkkauskynnys"
+      },
+      "timed_on_duration": {
+        "name": "Jälkikäyntiaika"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Toimintatila",
+        "state": {
+          "blinds": "Sälekaihdin (säleillä)",
+          "shutter": "Rullaverho (ilman säleitä)",
+          "awning": "Markiisi"
+        }
+      },
+      "controller_type": {
+        "name": "Säätimen lähtö",
+        "state": {
+          "pi_control": "Pulssinleveysmodulaatio (PWM)",
+          "two_point_control": "Kaksipistesäätö"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Toimintatila",
+        "state": {
+          "guard": "Asennuspaikka",
+          "presence": "Huoneen kirkkaus"
+        }
+      },
+      "dim_mode": {
+        "name": "Himmennystapa",
+        "state": {
+          "leading_edge": "Etureunaohjaus (RL)",
+          "trailing_edge": "Takareunaohjaus (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Toimintatila",
+        "state": {
+          "none": "Ei mitään",
+          "comfort": "Mukavuus",
+          "eco": "ECO",
+          "frost": "Jäätymissuoja"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Laskeva reuna",
+        "state": {
+          "no_reaction": "Ei reaktiota",
+          "on": "Kytke päälle",
+          "off": "Kytke pois",
+          "toggle": "Vaihda"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Laskeva reuna {key}",
+        "state": {
+          "no_reaction": "Ei reaktiota",
+          "on": "Kytke päälle",
+          "off": "Kytke pois",
+          "toggle": "Vaihda"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Nouseva reuna",
+        "state": {
+          "no_reaction": "Ei reaktiota",
+          "on": "Kytke päälle",
+          "off": "Kytke pois",
+          "toggle": "Vaihda"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Nouseva reuna {key}",
+        "state": {
+          "no_reaction": "Ei reaktiota",
+          "on": "Kytke päälle",
+          "off": "Kytke pois",
+          "toggle": "Vaihda"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED-väri (pois)",
+        "state": {
+          "red": "Punainen",
+          "green": "Vihreä",
+          "white": "Valkoinen",
+          "blue": "Sininen",
+          "violet": "Violetti",
+          "orange": "Oranssi",
+          "yellow": "Keltainen",
+          "cyan": "Syaani",
+          "no_color": "Ei väriä"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED-väri (pois) {key}",
+        "state": {
+          "red": "Punainen",
+          "green": "Vihreä",
+          "white": "Valkoinen",
+          "blue": "Sininen",
+          "violet": "Violetti",
+          "orange": "Oranssi",
+          "yellow": "Keltainen",
+          "cyan": "Syaani",
+          "no_color": "Ei väriä"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED-väri (päällä)",
+        "state": {
+          "red": "Punainen",
+          "green": "Vihreä",
+          "white": "Valkoinen",
+          "blue": "Sininen",
+          "violet": "Violetti",
+          "orange": "Oranssi",
+          "yellow": "Keltainen",
+          "cyan": "Syaani",
+          "no_color": "Ei väriä"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED-väri (päällä) {key}",
+        "state": {
+          "red": "Punainen",
+          "green": "Vihreä",
+          "white": "Valkoinen",
+          "blue": "Sininen",
+          "violet": "Violetti",
+          "orange": "Oranssi",
+          "yellow": "Keltainen",
+          "cyan": "Syaani",
+          "no_color": "Ei väriä"
+        }
+      },
+      "main_page": {
+        "name": "Paikallinen näyttö",
+        "state": {
+          "target_temperature": "Asetuslämpötila",
+          "current_temperature": "Todellinen lämpötila",
+          "clock": "Kellonaika"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Toiminta verkkojännitteen palautuessa",
+        "state": {
+          "no_reaction": "Ei reaktiota",
+          "move_up": "Nosto 0 %:iin",
+          "move_down": "Lasku 100 %:iin",
+          "stop": "Pysäytys",
+          "move_to_stored_position": "Tallennettu asento",
+          "position_for_network_failure": "Sähkökatkon asento"
+        }
+      },
+      "operation_site": {
+        "name": "Käyttöpaikka",
+        "state": {
+          "indoor": "Sisätila",
+          "outdoor": "Ulkotila"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Toiminta sähkön palautuessa",
+        "state": {
+          "off": "Pois päältä",
+          "on": "Päällä",
+          "restore": "Edellinen tila"
+        }
+      },
+      "sensor_selection": {
+        "name": "Lämpötila-anturi",
+        "state": {
+          "internal": "Huone",
+          "external": "Lattia",
+          "internal_and_external": "Huone ja lattia"
+        }
+      },
+      "valve_output": {
+        "name": "Venttiilityyppi",
+        "state": {
+          "normally_closed": "NC - virrattomana kiinni",
+          "normally_open": "NO - virrattomana auki"
+        }
+      },
+      "lock_function": {
+        "name": "Lukitustoiminto",
+        "state": {
+          "unlocked": "Lukitsematon",
+          "keep_state": "Lukittu (pidä asento)",
+          "lockout_protection": "Uloslukitussuoja",
+          "wind_alarm": "Tuulihälytys"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Kaikki pistorasiat"
+      },
+      "room_sockets": {
+        "name": "Kaikki pistorasiat huoneessa {room}"
+      },
+      "automatic_dst": {
+        "name": "Automaattinen kesäaika"
+      },
+      "backlight_auto_off": {
+        "name": "Sammuta näyttö automaattisesti"
+      },
+      "blinds_invert_output": {
+        "name": "Käänteinen toiminta"
+      },
+      "boost_mode": {
+        "name": "Tehostus"
+      },
+      "day_mode": {
+        "name": "Päiväkäyttö"
+      },
+      "dim_to_warm": {
+        "name": "Lämmin himmennys"
+      },
+      "input_edge_mode": {
+        "name": "Reunatunnistus"
+      },
+      "input_edge_mode_key": {
+        "name": "Reunatunnistus {key}"
+      },
+      "invert_output": {
+        "name": "Käännä kytkentälähtö"
+      },
+      "led_colour_sync": {
+        "name": "Synkronoi LED-värit"
+      },
+      "led_night_mode": {
+        "name": "LED-yötila"
+      },
+      "lock": {
+        "name": "Lukitus",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Lukitustila",
+            "state": {
+              "keep_state": "Pidä nykyinen tila",
+              "lockout_protection": "Uloslukitussuoja",
+              "wind_alarm": "Tuulihälytys",
+              "enforced_value": "Pakotettu tila"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Lukituksen aikaraja"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Manuaalinen poiskytkentä jälkikäyntiaikana"
+      },
+      "prewarning": {
+        "name": "Poiskytkentävaroitus"
+      },
+      "scheduler_enabled": {
+        "name": "Automaattikäyttö"
+      },
+      "status_led": {
+        "name": "Tilan LED"
+      },
+      "status_led_key": {
+        "name": "Tilan LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Alennettu kosketusherkkyys"
+      },
+      "use_last_lightness": {
+        "name": "Käytä edellistä kirkkautta"
+      },
+      "sensor_publication": {
+        "name": "Anturiarvot IoT-järjestelmille"
+      },
+      "local_devices_lock": {
+        "name": "Lukitse käyttö"
+      },
+      "factory_reset_time_limit": {
+        "name": "Lukitse tehdasasetusten palautus"
+      },
+      "key_lock": {
+        "name": "Painikelukitus"
+      },
+      "configuration_lock": {
+        "name": "Lukitse määritys laitteessa"
+      },
+      "walking_test": {
+        "name": "Kävelytesti"
+      },
+      "time_keeper": {
+        "name": "Ajanpitäjä"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Toimintatila",
+            "state": {
+              "blinds": "Sälekaihdin (säleillä)",
+              "shutter": "Rullaverho",
+              "awning": "Markiisi",
+              "unknown": "Tuntematon"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Kaikki sälekaihtimet"
+      },
+      "room_blinds": {
+        "name": "Kaikki sälekaihtimet huoneessa {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Jäätymissuoja"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Kaikki termostaatit"
+      },
+      "room_thermostats": {
+        "name": "Kaikki termostaatit huoneessa {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Kaikki valaisimet"
+      },
+      "room_lights": {
+        "name": "Kaikki valaisimet huoneessa {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Laiteohjelmisto"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Painike A: {subtype}",
+      "b": "Painike B: {subtype}",
+      "c": "Painike C: {subtype}",
+      "d": "Painike D: {subtype}",
+      "e1": "Tulo E1: {subtype}",
+      "e2": "Tulo E2: {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "napsautettu",
+      "double_click": "kaksoisnapsautettu",
+      "hold_start": "pito alkoi",
+      "hold_end": "pito päättyi",
+      "press_on": "painettu päälle / ylös",
+      "press_off": "painettu pois / alas",
+      "scene": "palautti tilanteen",
+      "dim": "himmennys",
+      "click_up": "napsautettu (yläpuoli)",
+      "click_down": "napsautettu (alapuoli)",
+      "double_click_up": "kaksoisnapsautettu (yläpuoli)",
+      "double_click_down": "kaksoisnapsautettu (alapuoli)",
+      "hold_start_up": "pito alkoi (yläpuoli)",
+      "hold_start_down": "pito alkoi (alapuoli)",
+      "hold_end_up": "pito päättyi (yläpuoli)",
+      "hold_end_down": "pito päättyi (alapuoli)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Komentoa ei voitu lähettää JUNG-mesh-verkkoon; yhtään välityssolmua ei ole yhdistetty."
+    },
+    "no_answer": {
+      "message": "JUNG-laite ei vastannut; komento on ehkä silti suoritettu, ja se tarkistetaan uudelleen seuraavalla yhteydellä."
+    },
+    "device_not_reachable": {
+      "message": "{entity} ei vastannut komentoon (3 yritystä 9 sekunnissa); sitä ei ehkä suoritettu. Jos muu mesh-verkko vastaa yhä, laite näytetään ei käytettävissä olevana, kunnes se kuuluu taas: tarkista, että siinä on virta."
+    },
+    "cannot_load": {
+      "message": "Mesh-verkon vientiä {path} ei voitu lukea."
+    },
+    "no_proxy_visible": {
+      "message": "Yksikään JUNG-mesh-verkon solmu ei vielä näy Bluetoothin kautta."
+    },
+    "export_keys_stale": {
+      "message": "JUNG-mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta viennin verkkoavainta: avaimet uusittiin viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta ja ota se käyttöön kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistantilla ei ole yhdistettävää Bluetooth-sovitinta tai -proxya: JUNG-mesh-verkkoa ei tavoiteta."
+    },
+    "duplicate_mesh": {
+      "message": "{others} käyttää jo tätä JUNG HOME -mesh-verkkoa; kullekin mesh-verkolle voidaan ladata vain yksi merkintä. Poista toinen merkinnöistä."
+    },
+    "seq_store_not_written": {
+      "message": "Vanhemman version järjestysnumerotietuetta ei voitu tallentaa mesh-verkon varastoon (`.storage/junghome_ble.seq.*`); tarkista, että määrityskansioon voi kirjoittaa."
+    },
+    "seq_floor_not_written": {
+      "message": "Järjestysnumerotietue palautettiin varmuuskopiosta, eikä sen alarajaa (`.storage/junghome_ble.seq.*.floor`) voitu kirjoittaa ennen eteenpäin hyppäämistä; tarkista, että määrityskansioon voi kirjoittaa."
+    },
+    "service_entry_not_loaded": {
+      "message": "JUNG HOME -mesh-integraatiota ei ole ladattu (tai sitä ladataan uudelleen); yritä hetken kuluttua uudelleen."
+    },
+    "service_not_connected": {
+      "message": "JUNG HOME -mesh-verkkoon ei ole yhteyttä; yritä uudelleen, kun välityssolmu on kantaman sisällä."
+    },
+    "service_entry_ambiguous": {
+      "message": "Useampi kuin yksi JUNG HOME -mesh-verkko on määritetty; anna mesh-verkko (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} ei ole JUNG HOME -mesh-verkon laite tai entiteetti."
+    },
+    "service_not_a_load": {
+      "message": "{name} ei ole JUNG HOME -laite, johon tämä toiminto vaikuttaa."
+    },
+    "service_not_a_key": {
+      "message": "{name} ei ole JUNG HOME -painikelaitteen painike."
+    },
+    "service_key_required": {
+      "message": "Laitteessa {name} on painikkeet {keys}; anna painikkeen kirjain valitaksesi yhden."
+    },
+    "service_unknown_key": {
+      "message": "Laitteessa {name} ei ole painiketta {letter} (siinä on {keys})."
+    },
+    "service_no_loads": {
+      "message": "Kohde ei nimeä yhtään JUNG HOME -valaisinta tai -pistorasiaa."
+    },
+    "service_target_other_network": {
+      "message": "Painike ja sen kohde kuuluvat eri mesh-verkkoihin."
+    },
+    "service_unknown_element": {
+      "message": "Elementtiä {address} ei ole mesh-verkon viennissä."
+    },
+    "service_no_room": {
+      "message": "Mesh-verkon viennissä ei ole huonetta nimeltä {room}."
+    },
+    "service_room_exists": {
+      "message": "Huone nimeltä {room} on jo olemassa."
+    },
+    "service_room_key_drives_load": {
+      "message": "Ei poistettu huoneesta {room}: {button} kytkee laitetta {device} painikkeen huonekytkennän kautta, ja huoneesta poistuminen irrottaa laitteen myös painikkeesta. Suorita toiminto uudelleen Vaikka painike ohjaa sitä -asetuksella tai anna painikkeelle ensin toinen toiminto."
+    },
+    "service_invalid_room_name": {
+      "message": "Huone tarvitsee nimen."
+    },
+    "service_no_mode": {
+      "message": "Mikään painiketila ei sovi elementille {address}; anna tila."
+    },
+    "service_invalid_mode": {
+      "message": "Tilaa {mode} ei voi käyttää kohteen {target} kanssa."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Painikkeella {address} ei ole asiakasmallia tilalle {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Kohde-elementti koskee vain laitteeseen kytkettyä painiketta, ei huonetta tai tilannetta."
+    },
+    "service_target_element_missing": {
+      "message": "Kohteella {target} ei ole {target_element}-elementtiä, jota painike voisi ohjata."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Lukitusaika koskee vain tilaa lock, 0–65535 sekuntia."
+    },
+    "service_lock_unsupported": {
+      "message": "Painike ei voi lukita kohdetta {target}: painikkeella voi lukita vain valaisimen tai pistorasian."
+    },
+    "service_no_element_group": {
+      "message": "Elementillä {address} ei ole elementtiryhmää: JUNG HOME -sovellus ei ole koskaan kytkenyt sitä. Kytke se ensin kerran sovelluksessa."
+    },
+    "service_one_target": {
+      "message": "Anna täsmälleen yksi kohde: laite, entiteetti, huone tai tilanne."
+    },
+    "service_config_refused": {
+      "message": "Solmu {node} hylkäsi viestin {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Solmu {node} ei vastannut viestiin {message}; onko siinä virta ja onko se kantaman sisällä? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Ei lähetetty: {nodes} eivät vastanneet Home Assistantin viimeisimpään pyyntöön, joten niitä pidetään tavoittamattomina (niiden entiteetit eivät ole käytettävissä), ja suunnitelma pysähtyisi niiden ensimmäiseen viestiin. Tarkista, että niissä on virta ja ne ovat kantaman sisällä, ja suorita toiminto uudelleen, kun ne vastaavat. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Solmu {node} toimii paristolla eikä vastannut viestiin {message}: se on lepotilassa. Herätä se painamalla jotakin sen painiketta ja suorita toiminto heti uudelleen. Jos se ei reagoi painallukseenkaan, sen paristo on yleensä tyhjä: vaihda paristo. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Painike {address} ei ottanut käyttöön painiketilaa {mode}; sen kytkennät määritettiin ja ne on kirjattu mesh-verkon vientiin — suorita toiminto uudelleen samalla kohteella asettaaksesi tilan."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Painike {address} ei ottanut käyttöön tilannetta {scene}; se lähettää tilanteiden palautuksensa kaikille laitteille, ja tämä on kirjattu mesh-verkon vientiin — suorita toiminto uudelleen samalla tilanteella asettaaksesi sen."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Painike {address} ei ottanut käyttöön lukitustoimintoaan (ominaisuus {property}); sen kytkennät määritettiin ja ne on kirjattu mesh-verkon vientiin — suorita toiminto uudelleen samalla kohteella asettaaksesi sen."
+    },
+    "service_export_newer": {
+      "message": "Mesh-verkon vientiä {path} muutettiin Home Assistantin ulkopuolella (JUNG HOME -sovelluksella tai käsin) sen jälkeen, kun Home Assistant latasi sen. Vie projekti uudelleen sovelluksesta, korvaa tiedosto (Määritä uudelleen) ja yritä uudelleen."
+    },
+    "service_export_load_failed": {
+      "message": "Mesh-verkon vientiä {path} ei voitu lukea: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Mesh-verkon vientiä {path} ei voitu kirjoittaa: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} ei hyväksy tätä arvoa: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostaatti ei ole vielä ilmoittanut esiasetuksen {preset} lämpötilaa; yritä hetken kuluttua uudelleen."
+    },
+    "led_colour_unknown": {
+      "message": "{entity}: LED-värit eivät ole vielä tiedossa; laite ei vastannut lukupyyntöön."
+    },
+    "service_room_name_reserved": {
+      "message": "\"{name}\" on nimi, jonka mesh-verkko varaa sisäisille ryhmille; valitse huoneelle toinen nimi."
+    },
+    "service_name_blank": {
+      "message": "Nimi ei voi olla tyhjä."
+    },
+    "service_name_too_long": {
+      "message": "JUNG HOME -sovellus ei voi nimetä uudelleen nimellä \"{name}\": uudelleennimeäminen sallii enintään {max_length} merkkiä."
+    },
+    "service_name_not_allowed": {
+      "message": "JUNG HOME -sovellus ei hyväksy nimeä \"{name}\": se tulkitsee %-merkin paikkamerkin aluksi (vain %% ja %n kelpaavat)."
+    },
+    "service_room_range_full": {
+      "message": "Sovelluksen alueella ei ole enää vapaata ryhmäosoitetta; poista ensin jokin käyttämätön huone JUNG HOME -sovelluksessa."
+    },
+    "gateway_certificate_changed": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin tallennettu ({expected} vs. {observed}). Jos yhdyskäytävä tai sen varmenne vaihdettiin tarkoituksella, määritä merkintä uudelleen."
+    },
+    "service_ambiguous_scene": {
+      "message": "\"{scene}\" on sekä tilannenumero että toisen tilanteen nimi; nimeä kyseinen tilanne uudelleen, jotta ne voi erottaa toisistaan."
+    },
+    "service_unknown_scene": {
+      "message": "Mesh-verkon viennissä ei ole tilannetta \"{scene}\"; anna tilanteen nimi sellaisena kuin JUNG HOME -sovellus sen näyttää, tai sen numero."
+    },
+    "service_scene_exists": {
+      "message": "Tilanne nimeltä \"{scene}\" on jo olemassa."
+    },
+    "service_scene_range_full": {
+      "message": "Sovelluksen alueella ei ole enää vapaata tilannenumeroa; poista ensin jokin käyttämätön tilanne."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant antaa uusille huoneille sovelluksen alueen suurimmat vapaat ryhmäosoitteet, jotta sovelluksen omat seuraavat huoneet eivät saa samoja; seuraavan alapuolella on enää {free} vapaata osoitetta, ja sovellus saavuttaisi sen pian. Poista käyttämättömiä huoneita tai ota käyttöön asetus *Kirjaa Home Assistant verkon tiedostoon provisioijaksi*, joka antaa Home Assistantille oman alueen."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant antaa uusille tilanteille sovelluksen alueen suurimmat vapaat tilannenumerot, jotta sovelluksen omat seuraavat tilanteet eivät saa samoja; seuraavan alapuolella on enää {free} vapaata numeroa, ja sovellus saavuttaisi sen pian. Poista käyttämättömiä tilanteita tai ota käyttöön asetus *Kirjaa Home Assistant verkon tiedostoon provisioijaksi*, joka antaa Home Assistantille oman alueen."
+    },
+    "add_device_groups_crowded": {
+      "message": "Uuden laitteen elementtiryhmät saisivat sovelluksen alueen suurimmat vapaat ryhmäosoitteet, mutta niiden alapuolella on enää {free} vapaata osoitetta, ja sovelluksen omat seuraavat huoneet saavuttaisivat ne pian. Poista käyttämättömiä huoneita tai ota käyttöön asetus *Kirjaa Home Assistant verkon tiedostoon provisioijaksi*, joka antaa Home Assistantille oman alueen."
+    },
+    "service_not_a_scene_element": {
+      "message": "Elementti {address} ei voi tallentaa tilanteita (siltä puuttuu Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Laite {address} ei tallentanut tilannetta {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Laitteessa {address} ei ole tilaa tilanteelle {scene}: siinä on jo {capacity} tilannetta ajastintilanteet mukaan lukien. Poista se ensin jostakin toisesta tilanteesta. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Laitteessa {address} on yhä tilanne {scene} poiston jälkeen ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "JUNG HOME -yhdyskäytävä ei luovuttanut vientiään, ja tämä toiminto tarvitsee sen: Home Assistantin säilyttämästä kopiosta voi puuttua se, mitä JUNG HOME -sovelluksessa on sen jälkeen muutettu. Yritä uudelleen, kun yhdyskäytävä vastaa (lokista näkyy, miksi se ei vastannut)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Tämä verkko on määritetty tiedostosta, josta voivat puuttua JUNG HOME -sovelluksessa viennin jälkeen tehdyt tilanteet; tiedostolle tuntemattomien tilannenumeroiden poistaminen poistaisi nämä tilanteet kaikista laitteista. Tee ensin koeajo ja vertaa sen luettelemia numeroita sovellukseen, ja poista sitten \"Mesh-verkon vienti on ajan tasalla\" päällä tai nimeä poistettavat numerot."
+    },
+    "service_unused_scenes_known": {
+      "message": "Tilannenumerot {numbers} ovat mesh-verkon viennin tilanteita; poista ne Poista tilanne -toiminnolla."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Laite {address} tallensi tilanteen {scene}, mutta ei ottanut käyttöön tilanteen kuvausta (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Laitteen {address} tila ei ole tiedossa, joten tilanne {scene} tallennettaisiin ilman tilanteen kuvausta, ja laitteen toisen kanavan poistaminen tilanteesta poistaisi silloin myös tämän. Anna tallennettava tila (tai kytke laitetta kerran) ja yritä uudelleen. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Tätä verkkoa ei ole määritetty JUNG HOME -yhdyskäytävästä (merkinnässä ei ole yhdyskäytävän osoitetta eikä käyttöoikeustunnusta); määritä merkintä uudelleen yhdyskäytävästä, jotta voit synkronoida sen."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Yhdyskäytävä osoitteessa {host} ei ottanut vientiä vastaan: {error}."
+    },
+    "service_send_failed": {
+      "message": "Yhteys JUNG-mesh-verkkoon katkesi, kun viestiä {message} lähetettiin solmulle {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Solmu {node} on mesh-verkon viennissä {path}, mutta ei verkossa, jonka Home Assistant latasi siitä aiemmin; lataa integraatio uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME → Lataa uudelleen), jotta se seuraa vientiä, ja yritä sitten uudelleen. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "JUNG HOME -yhdyskäytävällä osoitteessa {host} on uudempi vienti ({gateway}) kuin tiedosto, jonka Home Assistant lataisi sille ({file}); lataaminen poistaisi sen, mitä JUNG HOME -sovelluksessa on sen jälkeen muutettu. Seuraava Home Assistantissa tehty muutos ottaa yhdyskäytävän viennin käyttöön ja siirtää Home Assistantin omat muutokset siihen. Jos tämä virhe toistuu (merkintä, jolla ei ole kopiota sovelluksen viimeisimmästä latauksesta, ei pysty erottamaan niitä), hae yhdyskäytävän vienti uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen; korvattu tiedosto säilytetään sen vieressä nimellä `.pre-reconfigure`) ja toista sitten Home Assistantissa tehty muutos."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} vastasi pelkällä laitetietokannalla (ilman laitteiden nimiä tai huonekytkentöjä); sen käyttöönotto poistaisi ne Home Assistantin säilyttämästä tiedostosta. Yritä uudelleen, kun yhdyskäytävä ei ole enää varattu, tai hae sovelluksen vienti uudelleen."
+    },
+    "identify_no_answer": {
+      "message": "JUNG-laite ei vastannut tunnistuspyyntöön; onko siinä virta ja onko se kantaman sisällä?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} ei ole JUNG HOME -mesh-verkko; anna jonkin verkon config_entry_id (tai jätä se pois, jos vain yksi on määritetty)."
+    },
+    "service_all_not_supported": {
+      "message": "Tämä toiminto ei hyväksy arvoa entity_id: all; nimeä valaisimet, pistorasiat, laitteet, alueet tai tunnisteet, joihin se kohdistuu."
+    },
+    "edge_detection_unknown": {
+      "message": "{entity}: reunatunnistus ei ole vielä tiedossa; tulo ei vastannut lukupyyntöön."
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG-pistorasia ei nollannut laskuriaan {property}; se ilmoittaa yhä muun arvon kuin 0."
+    },
+    "setup_state_unknown": {
+      "message": "{entity}: nykyinen asetus ei ole vielä tiedossa; laite ei vastannut lukupyyntöön."
+    },
+    "setting_no_answer": {
+      "message": "JUNG-laite ei vastannut asetuksen {entity} muutokseen eikä takaisinlukuun; se on ehkä silti ottanut uuden arvon käyttöön. Onko siinä virta ja onko se kantaman sisällä?"
+    },
+    "setting_asleep": {
+      "message": "Paristokäyttöinen laite ({entity}) ei vastannut: se on lepotilassa. Herätä se painamalla jotakin sen painiketta ja tee muutos heti uudelleen. Jos se ei reagoi painallukseenkaan, sen paristo on yleensä tyhjä: vaihda paristo."
+    },
+    "setting_not_applied": {
+      "message": "JUNG-laite ei ottanut käyttöön asetuksen {entity} uutta arvoa; se ilmoittaa yhä toisen arvon."
+    },
+    "setting_not_supported": {
+      "message": "JUNG-laitteessa ei ole asetusta {entity}: se vastasi muutokseen ilman arvoa."
+    },
+    "schedule_no_reply": {
+      "message": "JUNG-laite {address} ei vastannut aikataulujaan koskevaan kyselyyn."
+    },
+    "schedule_not_applied": {
+      "message": "JUNG-laite {address} ei ottanut käyttöön aikataulupaikan {slot} muutosta."
+    },
+    "schedule_slots_full": {
+      "message": "JUNG-laitteen {address} kaikki 16 aikataulupaikkaa ovat käytössä; poista ensin yksi."
+    },
+    "schedule_empty_slot": {
+      "message": "JUNG-laitteen {address} aikataulupaikassa {slot} ei ole aikataulua."
+    },
+    "schedule_not_supported": {
+      "message": "{name} ei suorita omia aikatauluja."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Aikataulu kirjoitettiin jo kohteisiin {created}: poista se niistä ennen uutta kutsua, tai nämä laitteet suorittavat sen kahdesti."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Aikataulu ei sovi kohteelle {name}: {fields} ei koske sitä."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Aikataulu ei sovi kohteelle {name}: termostaatti tarvitsee lämpötilan."
+    },
+    "schedule_action_needs_position": {
+      "message": "Aikataulu ei sovi kohteelle {name}: sälekaihdin tarvitsee asennon."
+    },
+    "schedule_action_needs_action": {
+      "message": "Aikataulu ei sovi kohteelle {name}: se tarvitsee toiminnon (päälle tai pois)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Aikataulu ei sovi kohteelle {name}: kirkkaus kuuluu toimintoon päälle."
+    },
+    "threshold_not_supported": {
+      "message": "{name} ei ole energiaa mittaava JUNG HOME -pistorasia, jossa on kynnykset."
+    },
+    "threshold_incomplete": {
+      "message": "Laitteessa {name} ei ole muutettavaa kynnystä (tai se ei vastannut): anna sekä teho että kesto."
+    },
+    "threshold_not_applied": {
+      "message": "JUNG-pistorasia {address} ei ottanut käyttöön kynnystä {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Kynnystä {which} ei voitu lähettää JUNG-pistorasialle {address}; yhtään välityssolmua ei ole yhdistetty. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Pistorasia ja laitteet, joita sen kynnysten pitäisi kytkeä, kuuluvat eri mesh-verkkoihin."
+    },
+    "scene_state_not_applicable": {
+      "message": "Tila ei sovi kohteelle {name}: {fields} ei koske sitä."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Tila ei sovi kohteelle {name}: termostaatti tarvitsee lämpötilan."
+    },
+    "scene_state_needs_position": {
+      "message": "Tila ei sovi kohteelle {name}: sälekaihdin tarvitsee asennon."
+    },
+    "scene_state_needs_action": {
+      "message": "Tila ei sovi kohteelle {name}: se tarvitsee toiminnon (päälle tai pois)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Tila ei sovi kohteelle {name}: kirkkaus kuuluu toimintoon päälle."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} ei ilmoittanut uutta tilaa ajoissa; tilannetta ei tallennettu."
+    },
+    "service_gateway_token_rejected": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta, joten vientiä ei luovutettu sille. Myönnä käyttöoikeus uudelleen Home Assistantin pyytämällä uudelleentodennuksella (Asetukset → Laitteet ja palvelut) ja suorita tämä sitten uudelleen."
+    },
+    "seq_store_lost": {
+      "message": "Osoitteen {unicast} järjestysnumerotietue on kadonnut; Home Assistant ei käytä uudelleen numeroita, jotka mesh-verkko on nähnyt. Avaa korjausilmoitus jatkaaksesi niiden yli."
+    },
+    "address_in_use": {
+      "message": "Mesh-verkon solmu käyttää Home Assistantin osoitetta {unicast}; määritä integraatio uudelleen vapaalla osoitteella ({suggestion} on vapaa)."
+    },
+    "add_device_not_allowed": {
+      "message": "Laitteiden lisääminen ja poistaminen on poissa käytöstä tässä verkossa: ota ensin integraation asetuksista käyttöön *Salli Home Assistantin lisätä ja poistaa laitteita*."
+    },
+    "add_device_not_found": {
+      "message": "Mikään uusi JUNG-laite ei mainosta itseään osoitteessa {address}; suorita `find_new_devices` ja käytä sen luettelemaa osoitetta."
+    },
+    "add_device_not_jung": {
+      "message": "Osoitteessa {address} oleva laite ei ilmoita olevansa JUNG-laite."
+    },
+    "add_device_no_template": {
+      "message": "Verkossa ei ole vielä yhtään tuotteen {product} laitetta: lisää ensimmäinen JUNG HOME -sovelluksella, niin Home Assistant kopioi sen määrityksen."
+    },
+    "add_device_no_address": {
+      "message": "Uudelle laitteelle ei ole enää vapaata osoitealuetta provisioijien alueiden ulkopuolella."
+    },
+    "provisioner_identity_failed": {
+      "message": "Home Assistantin provisioijamerkintää ei voitu yhdistää vientiin ({error}); mitään ei muutettu. Katso loki."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistantilla ei voi olla omia osoitealueita tässä verkossa: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Yhteyttä uuteen laitteeseen ei voitu muodostaa: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Uuden laitteen käyttöönotto verkossa epäonnistui: {error}. Laite on yhä uusi; yritä uudelleen."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Uuden laitteen käyttöönottoa verkossa osoitteessa {unicast} ei vahvistettu ({error}). Laite on ehkä saanut verkon avaimet, joten Home Assistant pitää sen odottavana: palauta se tehdasasetuksiin toiminnolla `junghome_ble.reset_pending_device` (unicast {unicast}; lisää `force`, jos se ei vastaa, kuten ei voi vastata laite, joka ei koskaan saanut avaimiaan) ja lisää se sitten uudelleen. Sen osoitteet pysyvät varattuina siihen asti."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Uuden laitteen avainta ei voitu tallentaa Home Assistantin avainholviin ({error}), joten käyttöönotto pysähtyi ennen kuin laite sai mitään: se on yhä uusi, eikä osoitteesta {unicast} varattu sille mitään. Vapauta tilaa tai korjaa tallennustila ja yritä sitten uudelleen."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Laite otettiin käyttöön verkossa osoitteessa {unicast}, mutta sen määritys epäonnistui vaiheessa {step} ({error}), eikä se vahvistanut tehdasasetusten palautusta. Sovellus ei tunne sitä: palauta se tehdasasetuksiin toiminnolla `junghome_ble.reset_pending_device` (unicast {unicast}) ja lisää se sitten uudelleen. Sen osoitteet pysyvät varattuina siihen asti."
+    },
+    "add_device_record_failed": {
+      "message": "Laite osoitteessa {unicast} määritettiin, mutta sitä ei kirjattu ({error}). Sovellus ei tunne sitä: palauta se tehdasasetuksiin toiminnolla `junghome_ble.reset_pending_device` (unicast {unicast}) ja lisää se sitten uudelleen. Sen osoitteet pysyvät varattuina siihen asti."
+    },
+    "add_device_no_beacon": {
+      "message": "Verkon IV-indeksiä ei ole vielä vahvistettu nykyisellä Bluetooth-yhteydellä (sen kautta ei ole saapunut verkon beaconia), ja uusi laite saisi väärän indeksin. Odota seuraavaa yhteyttä JUNG-laitteeseen ja yritä uudelleen."
+    },
+    "add_device_key_refresh": {
+      "message": "JUNG HOME -sovellus uusii verkkoavainta (avainten päivityksen vaihe 1): nyt lisätty laite saisi käytöstä poistuvan avaimen. Vie avainten uusiminen loppuun sovelluksessa (Home Assistant seuraa sitä) ja yritä sitten uudelleen."
+    },
+    "add_device_name_too_long": {
+      "message": "Nimi \"{name}\" on pidempi kuin JUNG HOME -sovellus hyväksyy laitteelle: enintään {max_length} merkkiä."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Yhtään laitetta, jonka Home Assistant otti käyttöön verkossa kirjaamatta sitä, ei tunneta nimellä {device}; korjausilmoitus *Home Assistantin lisäämää laitetta ei ole kirjattu* luettelee tällaisten laitteiden osoitteet."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Osoitteessa {unicast} on nyt verkon toinen laite, joten palautusta ei lähetetty eikä mitään muutettu. Käytä asetusta `force` unohtaaksesi tässä osoitteessa odottavan laitteen (palauta se käsin tehdasasetuksiin, jos se on yhä olemassa)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Osoitteessa {unicast} oleva laite ei vahvistanut palautusta; mitään ei muutettu. Käytä asetusta `force` laitteelle, joka on palautettu käsin tai on lopullisesti poissa."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Palautusta ei voitu lähettää osoitteessa {unicast} olevalle laitteelle ({error}); mitään ei muutettu."
+    },
+    "remove_device_gateway": {
+      "message": "Yhdyskäytävää ei voi poistaa tällä tavalla."
+    },
+    "remove_device_mesh": {
+      "message": "Nimeä JUNG-laite, älä verkkoa."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Laite {address} ei vahvistanut palautusta, eikä sen havaittu mainostavan itseään uutena laitteena sen jälkeen. Se on ehkä silti palautettu (vahvistus voi kadota, eikä sen kantamalla välttämättä ole Bluetooth-skanneria), tai se ei saanut palautuskomentoa; mesh-verkon vienti on ennallaan. Suorita toiminto uudelleen tai käytä asetusta `force`, jos laite on lopullisesti poissa."
+    },
+    "remove_device_proxy": {
+      "message": "Laite {address} on välityssolmu, jonka kautta Home Assistant on yhteydessä: sen palautus katkaisisi yhteyden, jota pitkin vahvistus palaa. Odota, kunnes Home Assistant on yhteydessä toisen laitteen kautta (Välityssolmu-anturi), tai käytä asetusta `force`."
+    },
+    "device_lock_unknown": {
+      "message": "{entity}: laitteen lukitus ei ole vielä tiedossa; laite ei vastannut lukupyyntöön."
+    },
+    "cover_locked": {
+      "message": "{entity} on lukittu ja jättää komennot huomiotta, kunnes lukitus avataan (sen Lukitus-kytkin tai Lukitustoiminto)."
+    },
+    "cover_wind_alarm": {
+      "message": "Tuulihälytys pitää kohdetta {entity} paikallaan; se jättää komennot huomiotta, kunnes hälytys päättyy (sen Lukitustoiminto tai Lukitus-kytkin)."
+    },
+    "load_locked": {
+      "message": "{entity} on lukittu (JUNG HOME -sovelluksessa, painikkeella tai sen Lukitus-kytkimellä) ja säilyttää tilansa, kunnes lukitus avataan."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} ei ole JUNG HOME -himmennin: tällä tavalla voi himmentää vain himmentimiä ja DALI-säädettävän valkoisen kanavia."
+    },
+    "locate_no_answer": {
+      "message": "JUNG-laite {node} ei vastannut pyyntöön mainostaa tunnistettaan; onko siinä virta ja onko se kantaman sisällä? Paristokäyttöinen laite on lepotilassa ja vastaa vain hereillä ollessaan."
+    },
+    "locate_refused": {
+      "message": "JUNG-laite {node} kieltäytyi mainostamasta tunnistettaan: {status}."
+    },
+    "locate_not_supported": {
+      "message": "JUNG-laite {node} ei voi mainostaa tunnistettaan (Node Identity ei ole tuettu)."
+    },
+    "approve_no_gateway": {
+      "message": "Tätä verkkoa ei ole määritetty JUNG HOME -yhdyskäytävästä (merkinnässä ei ole yhdyskäytävän osoitetta eikä käyttöoikeustunnusta): ei ole yhdyskäytävää, jolla asiakkaita voisi hyväksyä."
+    },
+    "approve_gateway_distrusted": {
+      "message": "JUNG HOME -yhdyskäytävältä osoitteessa {host} ei kysytty: {error}. Mitään ei hyväksytty."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta, joten mitään ei hyväksytty. Myönnä käyttöoikeus uudelleen Home Assistantin pyytämällä uudelleentodennuksella (Asetukset → Laitteet ja palvelut) ja suorita tämä sitten uudelleen."
+    },
+    "approve_client_not_waiting": {
+      "message": "Yhdyskäytävällä ei odota käyttöoikeutta API-asiakasta nimeltä ”{client}” (odottavat: {waiting}). Mitään ei hyväksytty."
+    },
+    "approve_gateway_busy": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} käsittelee toista määrityspyyntöä; yritä uudelleen minuutin kuluttua. Mitään ei hyväksytty."
+    },
+    "approve_gateway_failed": {
+      "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei tehnyt pyydettyä: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant ei päivitä JUNG-laitteiden laiteohjelmistoa: päivitä laite JUNG HOME -sovelluksella."
+    },
+    "add_device_node_not_configured": {
+      "message": "Uutta laitetta osoitteessa {unicast} ei voitu määrittää vaiheessa {step} ({error}). Home Assistant palautti sen tehdasasetuksiin kuten JUNG HOME -sovellus, ja laite vahvisti sen: se on taas uusi laite, eikä sille ole varattu mitään. Laite, joka ei ole mainostamansa tuote tai yksikkö, hylätään tällä tavalla; muussa tapauksessa lisää se uudelleen."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Uuden laitteen käyttöönottoa verkossa osoitteessa {unicast} ei vahvistettu ({error}). Home Assistant palautti sen tehdasasetuksiin, ja laite vahvisti sen: se on taas uusi laite, eikä sille ole varattu mitään. Yritä uudelleen."
+    },
+    "time_keeper_role_failed": {
+      "message": "Osoitteessa {address} oleva laite ei ottanut käyttöön aikarooliaan ({error}). Sen Time Serverin julkaisu muutettiin jo: vaihda ajanpitäjä uudelleen, kun laite vastaa."
+    },
+    "load_thermostat_controlled": {
+      "message": "Huonetermostaatti {thermostats} kytkee kohdetta {entity} (yhdistetty JUNG HOME -sovelluksessa), eikä sitä kytketä käsin, kuten ei sovelluksessakaan."
+    },
+    "load_forced_short": {
+      "message": "Kohteen {entity} ilmaisin pitää sen päällä tai pois (jatkuvasti päällä / pois): lopeta tämä siirtämällä ilmaisimen automaattikäytön kytkin keskiasentoon."
+    },
+    "load_forced_on_button": {
+      "message": "Kohteen {entity} ilmaisin pitää sen päällä (jatkuvasti päällä): lopeta tämä painamalla ilmaisimen ON-painiketta."
+    },
+    "load_forced_off_button": {
+      "message": "Kohteen {entity} ilmaisin pitää sen pois päältä (jatkuvasti pois): lopeta tämä painamalla ilmaisimen OFF-painiketta."
+    },
+    "load_forced_on_presence": {
+      "message": "Kohteen {entity} ilmaisin pitää sen päällä (jatkuvasti päällä): ilmaisimen ohjelmointipainike lopettaa tämän."
+    },
+    "load_forced_off_presence": {
+      "message": "Kohteen {entity} ilmaisin pitää sen pois päältä (jatkuvasti pois): ilmaisimen ohjelmointipainike lopettaa tämän."
+    },
+    "cover_slats_open": {
+      "message": "{entity} on täysin auki: sen säleitä ei voi liikuttaa ennen kuin se lasketaan, kuten JUNG HOME -sovelluksessa."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} on tehostustilassa: valitse toinen esiasetus lopettaaksesi tehostuksen ennen lämpötilan asettamista, kuten JUNG HOME -sovelluksessa."
+    },
+    "service_detector_device_only": {
+      "message": "Ilmaisin {address} voi ohjata vain yhtä laitetta: anna kohteeksi valaisin, pistorasia tai laite, ei huonetta tai tilannetta."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Ilmaisin {address} ei voi ohjata kohdetta tilassa {mode}: ilmaisimella ei ole painiketilaa, joten se kytkee vain valaisinta, pistorasiaa tai sälekaihdinta kohteen määräämässä tilassa, ilman lukitustoimintoa, huonetermostaattia, yhdyskäytävää tai kohde-elementtiä."
+    },
+    "gateway_fetch_refused": {
+      "message": "Vientiä ei haettu JUNG HOME -yhdyskäytävältä osoitteessa {host}: {error}. Mitään ei muutettu; korjausilmoitukset kertovat, mitä tehdä."
+    },
+    "service_unknown_area": {
+      "message": "Aluetta, jonka tunnus on {id}, ei ole."
+    },
+    "service_not_a_scene": {
+      "message": "{name} ei ole JUNG HOME -verkon tilanne."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Laitteen poistoa ei voi perua: lisää kutsuun \"confirm: true\" suorittaaksesi sen (tai \"dry_run: true\" nähdäksesi, mitä se tekisi)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Tilanteen poistaminen, vaikka laite ei vastaa, jättää tilanteen kyseiseen laitteeseen: lisää kutsuun \"confirm: true\" suorittaaksesi sen (tai \"dry_run: true\" nähdäksesi, mitä se tekisi)."
+    },
+    "plan_key_device": {
+      "message": "{key} ohjaa nyt kohdetta {target}; {messages} viestiä"
+    },
+    "plan_key_room": {
+      "message": "{key} ohjaa nyt huonetta {room}; {messages} viestiä"
+    },
+    "plan_key_scene": {
+      "message": "{key} palauttaa nyt tilanteen {scene}; {messages} viestiä"
+    },
+    "plan_key_cleared": {
+      "message": "{key} on nyt ilman toimintoa; {messages} viestiä"
+    },
+    "plan_room_joined": {
+      "message": "{devices} nyt huoneessa {room}; {messages} viestiä"
+    },
+    "plan_room_left": {
+      "message": "{devices} poistettu huoneesta {room}; {messages} viestiä"
+    },
+    "plan_room_deleted": {
+      "message": "Huone {room} poistettu; {messages} viestiä"
+    },
+    "plan_device_removed": {
+      "message": "{device} poistettu verkosta; {messages} viestiä muille laitteille"
+    },
+    "plan_scene_deleted": {
+      "message": "Tilanne {scene} poistettu; {messages} viestiä"
+    },
+    "plan_finished": {
+      "message": "{action} valmis; {messages} viestiä"
+    },
+    "plan_stopped": {
+      "message": "{action} pysähtyi {applied}/{total} viestin jälkeen: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} peruttiin {applied}/{total} viestin jälkeen; mesh-verkon vienti kirjaa käyttöön otetut viestit"
+    },
+    "logbook_scene_from_key": {
+      "message": "palautti tilanteen {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "vapautusta ei kuultu ajoissa"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "yhteys katkesi"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integraatio pysäytetty"
+    },
+    "logbook_scene_number": {
+      "message": "Tilanne {scene}"
+    },
+    "logbook_scene": {
+      "message": "Tilanne"
+    },
+    "logbook_recalled": {
+      "message": "palautettiin"
+    },
+    "logbook_recalled_by": {
+      "message": "palautettiin laitteella {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "JUNG HOME -laitteita puuttuu viennistä",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hae vienti uudelleen yhdyskäytävältä",
+            "description": "JUNG HOME -mesh-verkon {title} laitteita ({count}) mainostaa itseään Bluetoothin kautta, mutta ne puuttuvat Home Assistantin lataamasta viennistä: {devices}. Ne on lisätty asennukseen (tai otettu uudelleen käyttöön verkossa) viennin tekemisen jälkeen, joten Home Assistantilla ei ole niille entiteettejä. Vahvista, niin Home Assistant hakee nykyisen viennin JUNG HOME -yhdyskäytävältä osoitteessa {host} jo saamallaan käyttöoikeudella, tarkistaa sen ja määrittää integraation uudelleen sen pohjalta, kuten Määritä uudelleen → Hae uudelleen yhdyskäytävältä tekee; korvattu vienti säilytetään kopiona (`.pre-reconfigure`). Ongelma poistuu, kun uusi vienti sisältää ne. Ei vielä varmistettu oikeilla laitteilla."
+          },
+          "upload": {
+            "title": "Lataa uusi vienti",
+            "description": "JUNG HOME -mesh-verkon {title} laitteita ({count}) mainostaa itseään Bluetoothin kautta, mutta ne puuttuvat Home Assistantin lataamasta viennistä: {devices}. Ne on lisätty asennukseen (tai otettu uudelleen käyttöön verkossa) viennin tekemisen jälkeen, joten Home Assistantilla ei ole niille entiteettejä. Vie verkko JUNG HOME -sovelluksesta (Projekti → Jaa tiedostona) ja lataa tiedosto tähän: Home Assistant tarkistaa sen, säilyttää sen määrityskansionsa kohdassa `junghome_ble/` (se sisältää kaikki mesh-verkon avaimet) ja määrittää integraation uudelleen sen pohjalta; korvattu vienti säilytetään kopiona. Merkintä, joka luki vientinsä polusta palvelimella, käyttää siitä lähtien ladattua kopiota — jos haluat säilyttää polun, kopioi uusi tiedosto sen sijaan sinne ja käytä Määritä uudelleen -toimintoa. Ongelma poistuu, kun uusi vienti sisältää ne. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "export_file": "Mesh-vientitiedosto"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+          "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+          "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+          "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+          "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+          "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+          "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+          "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0.",
+          "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+          "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+          "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "not_a_directory": "Metatietopolku ei ole kansio.",
+          "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+          "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+          "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
+          "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+          "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "JUNG HOME -laitteita puuttuu viennistä",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hae vienti uudelleen yhdyskäytävältä",
+            "description": "JUNG HOME -mesh-verkon {title} laitteita ({count}) mainostaa itseään Bluetoothin kautta, mutta ne puuttuvat Home Assistantin lataamasta viennistä: {devices}. Ne on lisätty asennukseen (tai otettu uudelleen käyttöön verkossa) viennin tekemisen jälkeen, joten Home Assistantilla ei vielä ole niille entiteettejä. Home Assistant pyytää yhdyskäytävältä sen nykyisen viennin ja ottaa sen itse käyttöön, kun se sisältää ne. Vahvista, niin Home Assistant hakee nykyisen viennin JUNG HOME -yhdyskäytävältä osoitteessa {host} jo saamallaan käyttöoikeudella, tarkistaa sen ja määrittää integraation uudelleen sen pohjalta, kuten Määritä uudelleen → Hae uudelleen yhdyskäytävältä tekee; korvattu vienti säilytetään kopiona (`.pre-reconfigure`). Jos ongelma ei poistu, yhdyskäytävän vientikään ei tunne niitä: avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektinsa), ja korjaa sitten uudelleen. Ei vielä varmistettu oikeilla laitteilla."
+          },
+          "upload": {
+            "title": "Lataa uusi vienti",
+            "description": "JUNG HOME -mesh-verkon {title} laitteita ({count}) mainostaa itseään Bluetoothin kautta, mutta ne puuttuvat Home Assistantin lataamasta viennistä: {devices}. Ne on lisätty asennukseen (tai otettu uudelleen käyttöön verkossa) viennin tekemisen jälkeen, joten Home Assistantilla ei vielä ole niille entiteettejä. Home Assistant pyytää yhdyskäytävältä sen nykyisen viennin ja ottaa sen itse käyttöön, kun se sisältää ne. Vie verkko JUNG HOME -sovelluksesta (Projekti → Jaa tiedostona) ja lataa tiedosto tähän: Home Assistant tarkistaa sen, säilyttää sen määrityskansionsa kohdassa `junghome_ble/` (se sisältää kaikki mesh-verkon avaimet) ja määrittää integraation uudelleen sen pohjalta; korvattu vienti säilytetään kopiona. Merkintä, joka luki vientinsä polusta palvelimella, käyttää siitä lähtien ladattua kopiota — jos haluat säilyttää polun, kopioi uusi tiedosto sen sijaan sinne ja käytä Määritä uudelleen -toimintoa. Jos ongelma ei poistu, yhdyskäytävän vientikään ei tunne niitä: avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektinsa), ja korjaa sitten uudelleen. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "export_file": "Mesh-vientitiedosto"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+          "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+          "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+          "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+          "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+          "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+          "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+          "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0.",
+          "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+          "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+          "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "not_a_directory": "Metatietopolku ei ole kansio.",
+          "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+          "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+          "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
+          "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+          "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "JUNG HOME -sovellus muutti asennusta",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hae vienti uudelleen yhdyskäytävältä",
+            "description": "JUNG HOME -sovelluksen havaittiin muuttavan mesh-verkon {title} laitteen määritystä (painikkeen kytkentää, huonetta, tilannetta tai laitteen asetusta), joten Home Assistantin lataama vienti ei ehkä enää vastaa asennusta: sovelluksessa tehdyt muutokset eivät ole vielä Home Assistantissa. Vahvista, niin Home Assistant hakee nykyisen viennin JUNG HOME -yhdyskäytävältä osoitteessa {host} jo saamallaan käyttöoikeudella, tarkistaa sen ja määrittää integraation uudelleen sen pohjalta, kuten Määritä uudelleen → Hae uudelleen yhdyskäytävältä tekee; korvattu vienti säilytetään kopiona (`.pre-reconfigure`). Ei vielä varmistettu oikeilla laitteilla."
+          },
+          "upload": {
+            "title": "Lataa uusi vienti",
+            "description": "JUNG HOME -sovelluksen havaittiin muuttavan mesh-verkon {title} laitteen määritystä (painikkeen kytkentää, huonetta, tilannetta tai laitteen asetusta), joten Home Assistantin lataama vienti ei ehkä enää vastaa asennusta: sovelluksessa tehdyt muutokset eivät ole vielä Home Assistantissa. Kun olet valmis sovelluksessa, vie verkko siitä (Projekti → Jaa tiedostona) ja lataa tiedosto tähän: Home Assistant tarkistaa sen, säilyttää sen määrityskansionsa kohdassa `junghome_ble/` (se sisältää kaikki mesh-verkon avaimet) ja määrittää integraation uudelleen sen pohjalta; korvattu vienti säilytetään kopiona. Merkintä, joka luki vientinsä polusta palvelimella, käyttää siitä lähtien ladattua kopiota — jos haluat säilyttää polun, kopioi uusi tiedosto sen sijaan sinne ja käytä Määritä uudelleen -toimintoa, joka poistaa myös tämän ilmoituksen. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "export_file": "Mesh-vientitiedosto"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+          "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+          "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+          "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+          "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+          "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+          "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+          "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0.",
+          "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+          "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+          "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "not_a_directory": "Metatietopolku ei ole kansio.",
+          "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+          "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+          "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
+          "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+          "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "JUNG HOME -painikkeissa eri yksikkö kuin viennissä",
+      "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} painikkeet mainostavat eri yksikköä kuin Home Assistantin lataamassa viennissä on (vienti → laite). Yksikkö vaihdettiin viennin tekemisen jälkeen, joten Home Assistant ja sovellus saattavat näyttää niille väärän kuormatyypin. Tarkista laitteet JUNG HOME -sovelluksessa, vie verkko uudelleen ja päivitä tämä integraatio (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen); ongelma poistuu, kun vienti nimeää laitteiden mainostamat yksiköt. Ei vielä varmistettu oikeilla laitteilla."
+    },
+    "node_clock_wrong": {
+      "title": "JUNG HOME -laitteiden kello on väärässä",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Lähetä aika nyt",
+            "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} laitteet voivat suorittaa aikatauluja (ajastettu tai auringonnousuun / -laskuun perustuva kytkentä), ja niiden kello on väärässä: aikaa ei ole, se poikkeaa Home Assistantin ajasta yli minuutin tai aikavyöhykkeen siirtymä on eri kuin Home Assistantin niille lähettämä. Niiden aikataulut toimivat väärään aikaan, kunnes ne saavat ajan uudelleen. Home Assistant lähettää sen jokaisen yhteyden jälkeen ja kerran päivässä; vahvista lähettääksesi sen nyt ja kysyäksesi näiltä laitteilta uudelleen. Ongelma poistuu, kun ne vastaavat oikealla ajalla. Jos se palaa, tarkista Home Assistantin aikavyöhyke (Asetukset → Järjestelmä → Yleiset) ja se, tavoitetaanko laitteet. Ei vielä varmistettu oikeilla laitteilla."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "not_connected": "Home Assistantilla ei ole juuri nyt yhteyttä mesh-verkkoon. Yritä uudelleen, kun yhteys on muodostettu."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "JUNG HOME -mesh-verkon avaimet vaihtuvat",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hae vienti uudelleen yhdyskäytävältä",
+            "description": "Mesh-verkko {title} ilmoitti avainten päivityksestä, jonka uuden verkkoavaimen jakamista Home Assistant ei kuullut (alusta asti nähtyä avainten päivitystä seurataan, eikä se aiheuta ongelmaa). Kun päivitys valmistuu, Home Assistantin käyttämän viennin avaimet eivät enää kelpaa ja ohjaus lakkaa. Anna avainten uusimisen ensin valmistua JUNG HOME -sovelluksessa. Vahvista, niin Home Assistant hakee nykyisen viennin JUNG HOME -yhdyskäytävältä osoitteessa {host} jo saamallaan käyttöoikeudella, tarkistaa sen ja määrittää integraation uudelleen sen pohjalta, kuten Määritä uudelleen → Hae uudelleen yhdyskäytävältä tekee; korvattu vienti säilytetään kopiona (`.pre-reconfigure`). Ei vielä varmistettu oikeilla laitteilla."
+          },
+          "upload": {
+            "title": "Lataa uusi vienti",
+            "description": "Mesh-verkko {title} ilmoitti avainten päivityksestä, jonka uuden verkkoavaimen jakamista Home Assistant ei kuullut (alusta asti nähtyä avainten päivitystä seurataan, eikä se aiheuta ongelmaa). Kun päivitys valmistuu, Home Assistantin käyttämän viennin avaimet eivät enää kelpaa ja ohjaus lakkaa. Anna avainten uusimisen ensin valmistua JUNG HOME -sovelluksessa. Vie verkko JUNG HOME -sovelluksesta (Projekti → Jaa tiedostona) ja lataa tiedosto tähän: Home Assistant tarkistaa sen, säilyttää sen määrityskansionsa kohdassa `junghome_ble/` (se sisältää kaikki mesh-verkon avaimet) ja määrittää integraation uudelleen sen pohjalta; korvattu vienti säilytetään kopiona. Merkintä, joka luki vientinsä polusta palvelimella, käyttää siitä lähtien ladattua kopiota — jos haluat säilyttää polun, kopioi uusi tiedosto sen sijaan sinne ja käytä Määritä uudelleen -toimintoa. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "export_file": "Mesh-vientitiedosto"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+          "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+          "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+          "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+          "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+          "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+          "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+          "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0.",
+          "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+          "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+          "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "not_a_directory": "Metatietopolku ei ole kansio.",
+          "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+          "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+          "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
+          "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+          "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME -laitteet jättävät Home Assistantin huomiotta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Hyppää laitteiden tuntemien numeroiden yli",
+            "description": "Home Assistant kuulee JUNG HOME -mesh-verkon {title} välityssolmunsa kautta, mutta yksikään laite ei vastannut sen tilakyselyihin. Solmut hylkäävät Home Assistantin viestit toistoina (replay). Kaksi syytä on todennäköisiä: tämän integraation järjestysnumerovarasto (`.storage/junghome_ble.*`) katosi tai palautettiin vanhemmasta varmuuskopiosta, joten Home Assistant lähettää nyt järjestysnumeroita, jotka solmut ovat jo nähneet; tai toinen mesh-asiakas (esimerkiksi työkalu `mesh_poc.py`) lähettää samalla unicast-osoitteella {unicast}. Anna Home Assistantille joko uusi, käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme, ja varmista, ettei mikään muu asiakas käytä sitä) tai, jos varasto katosi tai palautettiin (eikä mikään muu asiakas käytä osoitetta), vahvista, niin Home Assistant hyppää järjestysnumeroissaan 1 048 576 eteenpäin ja yhdistää uudelleen. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta: vanhempi kopio vain toistaa numeroita, jotka laitteet ovat jo nähneet. Ongelma poistuu itsestään heti, kun jokin laite vastaa taas Home Assistantille."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Toinen asiakas käyttää Home Assistantin JUNG HOME -osoitetta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Hyppää toisen asiakkaan järjestysnumeroiden yli",
+            "description": "Home Assistant vastaanotti JUNG HOME -mesh-verkon {title} viestin, joka oli lähetetty sen omasta unicast-osoitteesta {unicast} järjestysnumerolla, jota se ei ole koskaan käyttänyt: toinen mesh-asiakas lähettää samalla osoitteella — toinen Home Assistant -asennus, tällä osoitteella määritetty `mesh_poc.py`-työkalu tai muualla käynnistetty kopio tästä asennuksesta. Kaksi lähettäjää samalla osoitteella käyttävät toistensa järjestysnumeroita uudelleen, ja laitteet hylkäävät kaiken toisen asiakkaan numeroita pienemmän, joten Home Assistant ei lähetä mesh-verkkoon mitään, ennen kuin tämä on korjattu (komennot epäonnistuvat, tiloja ei päivitetä). Pysäytä toinen asiakas tai anna sille tai Home Assistantille toinen käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme). Vahvista sitten, niin Home Assistant jatkaa järjestysnumeroitaan toisen asiakkaan havaittujen numeroiden yli ja lähettää taas. Jos toinen asiakas jatkaa lähettämistä tältä osoitteelta, ongelma palaa. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Toinen asiakas käyttää yhä Home Assistantin JUNG HOME -osoitetta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Hyppää uudelleen toisen asiakkaan järjestysnumeroiden yli",
+            "description": "Home Assistant hyppäsi toisen mesh-asiakkaan järjestysnumeroiden yli osoitteessaan {unicast} JUNG HOME -mesh-verkossa {title}, ja toinen asiakas on sen jälkeen lähettänyt taas tältä osoitteelta: se on yhä käynnissä. Hyppääminen ei auta niin kauan kuin se on. Anna Home Assistantille uusi, käyttämätön unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) tai pysäytä toinen asiakas tai siirrä se toiseen osoitteeseen. Siihen asti Home Assistant ei lähetä mesh-verkkoon mitään. Vahvista vasta, kun toinen asiakas ei enää käytä tätä osoitetta: Home Assistant hyppää silloin taas sen numeroiden yli ja jatkaa lähettämistä. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "JUNG HOME -mesh-verkolle ei ole Bluetoothia",
+      "description": "JUNG HOME -mesh-verkkoon {title} yhdistetään Bluetoothin kautta, mutta Home Assistantilla ei ole enää yhtään yhdistettävää Bluetooth-sovitinta tai -proxya: sovitin on kytketty pois, irrotettu tai vikaantunut, tai jokainen aktiivisia yhteyksiä tukeva ESPHome Bluetooth proxy on offline-tilassa. Kaikki mesh-verkon laitteet ovat poissa käytöstä, kunnes jokin niistä palaa. Tarkista Asetukset → Laitteet ja palvelut → Bluetooth. Ongelma poistuu heti, kun Bluetooth-sovitin tai -proxy on taas käytettävissä."
+    },
+    "duplicate_mesh": {
+      "title": "Kaksi merkintää kattaa saman JUNG HOME -mesh-verkon",
+      "description": "{title} ja {others} on molemmat määritetty samalle JUNG HOME -mesh-verkolle. Ne jakavat sen järjestysnumerolaskurit (`.storage/junghome_ble.seq.*`), joten vain toinen niistä voi olla käynnissä: {others} on käynnissä, eikä {title} käynnistetty. Poista toinen näistä merkinnöistä (Asetukset → Laitteet ja palvelut); jos poistat merkinnän {others}, lataa {title} sen jälkeen uudelleen."
+    },
+    "gateway_import": {
+      "title": "Ota JUNG HOME Gateway -integraation entiteetit haltuun",
+      "description": "JUNG HOME Gateway -integraatio on määritetty Bluetooth Mesh -integraation {title} rinnalle, joten jokainen valaisin, pistorasia, painike ja tilanne on kahteen kertaan. Siirrä yhdyskäytävän entiteetit tänne — ne säilyttävät entiteettitunnuksensa, nimensä, alueensa ja historiansa — kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME (Bluetooth Mesh) → Määritä uudelleen → Tuo JUNG HOME Gateway -integraation entiteetit ja poista sitten yhdyskäytävämerkintä. Ohita tämä ongelma, jos haluat pitää molemmat."
+    },
+    "export_stale": {
+      "title": "JUNG HOME -mesh-verkon avaimet ovat vaihtuneet",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Hae vienti uudelleen yhdyskäytävältä",
+            "description": "Home Assistant on yhteydessä JUNG HOME -mesh-verkon {title} solmuun, mutta mitään sen kuulemaa ei voi purkaa viennin avaimilla: jokaisen verkkoviestin ja solmun beaconin todennus epäonnistuu. Mesh-verkossa tehtiin avainten päivitys (JUNG HOME -sovelluksessa \"key renewal\") viennin tekemisen jälkeen, joten tiedosto on vanhentunut. Vahvista, niin Home Assistant hakee nykyisen viennin JUNG HOME -yhdyskäytävältä osoitteessa {host} jo saamallaan käyttöoikeudella, tarkistaa sen ja määrittää integraation uudelleen sen pohjalta, kuten Määritä uudelleen → Hae uudelleen yhdyskäytävältä tekee; korvattu vienti säilytetään kopiona (`.pre-reconfigure`). Ongelma poistuu heti, kun viestin salaus taas purkautuu. Ei vielä varmistettu oikeilla laitteilla."
+          },
+          "upload": {
+            "title": "Lataa uusi vienti",
+            "description": "Home Assistant on yhteydessä JUNG HOME -mesh-verkon {title} solmuun, mutta mitään sen kuulemaa ei voi purkaa viennin avaimilla: jokaisen verkkoviestin ja solmun beaconin todennus epäonnistuu. Mesh-verkossa tehtiin avainten päivitys (JUNG HOME -sovelluksessa \"key renewal\") viennin tekemisen jälkeen, joten tiedosto on vanhentunut. Vie verkko JUNG HOME -sovelluksesta (Projekti → Jaa tiedostona) ja lataa tiedosto tähän: Home Assistant tarkistaa sen, säilyttää sen määrityskansionsa kohdassa `junghome_ble/` (se sisältää kaikki mesh-verkon avaimet) ja määrittää integraation uudelleen sen pohjalta; korvattu vienti säilytetään kopiona. Merkintä, joka luki vientinsä polusta palvelimella, käyttää siitä lähtien ladattua kopiota — jos haluat säilyttää polun, kopioi uusi tiedosto sen sijaan sinne ja käytä Määritä uudelleen -toimintoa. Ongelma poistuu heti, kun viestin salaus taas purkautuu. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "export_file": "Mesh-vientitiedosto"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` sovelluksesta (Jaa tiedostona) tai `MeshNetwork.json` iOS-varmuuskopiosta."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
+          "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
+          "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
+          "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
+          "gateway_error": "Yhdyskäytävä vastasi virheellä. Tarkista sen tila JUNG HOME -sovelluksessa ja yritä uudelleen.",
+          "gateway_busy": "Yhdyskäytävä käsittelee toista määrityspyyntöä. Yritä uudelleen minuutin kuluttua.",
+          "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
+          "invalid_export": "Tiedosto ei ole JUNG HOME -mesh-verkon vienti (tai se on vioittunut): siinä on oltava verkko avaimineen ja solmuineen sekä yksi verkkoavain indeksissä 0.",
+          "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
+          "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
+          "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "not_a_directory": "Metatietopolku ei ole kansio.",
+          "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
+          "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
+          "upload_failed": "Ladattua tiedostoa ei voitu käsitellä. Yritä ladata se uudelleen."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
+          "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
+          "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "JUNG HOME -yhdyskäytävän varmenne vaihtui",
+      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää vastaa TLS-varmennetta, jonka Home Assistant kiinnitti sille: palvelin esittää toisen varmenteen tai yhdyskäytävän solmu ilmoittaa toisesta mesh-verkon kautta. Home Assistant lopetti yhdyskäytävän käytön (sinne ei lähetetä käyttöoikeustunnusta eikä vientiä); laitteet toimivat edelleen Bluetoothin kautta. Jos vaihdoit yhdyskäytävän tai sen varmenteen, avaa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen ja hae vienti uudelleen yhdyskäytävältä; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä — tarkista verkkosi."
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME -vientiä ei luovutettu yhdyskäytävälle",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Luovuta vienti yhdyskäytävälle",
+            "description": "Home Assistant muutti JUNG HOME -asennusta (huonetta, painikkeen kytkentää tai tilannetta) ja kirjoitti mesh-verkon vientinsä uudelleen, mutta JUNG HOME -yhdyskäytävä osoitteessa {host} ei ottanut uutta vientiä vastaan: {error}. Siihen asti yhdyskäytävä ja sovellus näyttävät vanhan tilan — ja sovelluksen seuraava muutos korvaisi Home Assistantin muutokset. Home Assistant yrittää uudelleen kahdesti 15 sekunnin välein, kuten sovellus. Tarkista, että yhdyskäytävä on tavoitettavissa, ja vahvista sitten luovuttaaksesi viennin nyt, kuten toiminto Synkronoi yhdyskäytävä (`junghome_ble.sync_gateway`) tekee: se kieltäytyy, jos yhdyskäytävällä on muutoksia, joita Home Assistant ei ole nähnyt ja jotka lataus poistaisi. Ongelma poistuu, kun lataus onnistuu. Ei vielä varmistettu oikeilla laitteilla."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "not_loaded": "JUNG HOME -merkintä, johon tämä ongelma kuuluu, ei ole juuri nyt käynnissä. Yritä uudelleen, kun se on määritetty.",
+          "sync_failed": "Vientiä ei luovutettu yhdyskäytävälle: {error} Ongelma jää; korjaa se uudelleen, kun syy on poistunut."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "JUNG HOME -muutos verkossa {title} keskeytyi",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "JUNG HOME -muutos keskeytyi",
+            "description": "Home Assistant pysähtyi kesken toiminnon {action}: {accepted}/{total} sen määritysviestistä oli saavuttanut laitteet. Ne on nyt kirjattu mesh-verkon vientiin, joten vienti kertoo, mitä laitteissa on. Suorita toiminto uudelleen samalla kohteella viedäksesi sen loppuun. JUNG HOME -yhdyskäytävän kanssa kirjattu vienti luovutetaan sille seuraavassa muutoksessa tai toiminnolla `junghome_ble.sync_gateway`. Vahvista ohittaaksesi tämän ilmoituksen."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Laitteen nimeä ei välitetty JUNG HOME -sovellukseen",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Nimeä laite uudelleen",
+            "description": "{device} nimettiin Home Assistantissa uudelleen nimellä \"{name}\", jota JUNG HOME -sovellus ei hyväksy: nimi ei voi olla tyhjä tai yli 30 merkkiä pitkä, ja sovellus tulkitsee %-merkin paikkamerkin aluksi (vain %% ja %n kelpaavat). Mesh-verkon vienti ja sovellus säilyttävät laitteen vanhan nimen. Anna nimi, jonka sovellus hyväksyy: Home Assistant nimeää laitteen sillä ja välittää sen vientiin (ja yhdyskäytävän kanssa sovellukseen) kuten jokaisen uudelleennimeämisen. Ongelma poistuu, kun nimi on välitetty. Ei vielä varmistettu oikeilla laitteilla.",
+            "data": {
+              "name": "Nimi"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Nimi ei voi olla tyhjä.",
+          "name_not_allowed": "Sovellus tulkitsee %-merkin paikkamerkin aluksi: vain %% ja %n kelpaavat.",
+          "name_too_long": "Sovellus hyväksyy enintään 30 merkin nimet."
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "not_loaded": "JUNG HOME -merkintä, johon tämä ongelma kuuluu, ei ole juuri nyt käynnissä. Yritä uudelleen, kun se on määritetty.",
+          "device_gone": "Tämän ongelman nimeämä laite ei ole enää Home Assistantissa."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Home Assistantin lisäämät laitteet eivät saaneet uutta verkkoavainta",
+      "description": "JUNG HOME -sovellus uusi mesh-verkon {title} verkkoavaimen, ja Home Assistant seurasi uusimista loppuun asti. Sovellus ei tunne Home Assistantin lisäämiä laitteita, joten Home Assistant antaa uuden avaimen niille itse, mutta laitteet osoitteissa {addresses} eivät vahvistaneet sitä. Varmista, että niissä on virta ja ne ovat kantaman sisällä: Home Assistant yrittää uudelleen jokaisella uudella Bluetooth-yhteydellä. Laitetta, joka ei koskaan saanut uutta avainta, ei voi enää tavoittaa: palauta sen tehdasasetukset ja lisää se uudelleen (poista se ensin Home Assistantista toiminnolla `junghome_ble.remove_device` tai `junghome_ble.reset_pending_device` asetuksella `force`). Ei vielä kokeiltu oikealla laitteella. Ongelma poistuu, kun jokainen tällainen laite on vahvistanut."
+    },
+    "pending_device": {
+      "title": "Home Assistantin lisäämää laitetta ei ole kirjattu",
+      "description": "Home Assistant otti mesh-verkon {title} JUNG-laitteen käyttöön verkossa toiminnolla `junghome_ble.add_device`, mutta sen määritys tai kirjaus vientiin epäonnistui: osoitteessa {addresses} olevalla laitteella on verkon avaimet, JUNG HOME -sovellus ja vienti eivät tunne sitä, ja sen osoitteet ja elementtiryhmät pysyvät varattuina, jottei mikään muu laite saa niitä. Palauta se toiminnolla `junghome_ble.reset_pending_device` (sen unicast-osoite) ja lisää se uudelleen; jo käsin palautetulle tai kadonneelle laitteelle käytä asetusta `force`. Ei vielä kokeiltu oikealla laitteella. Ongelma poistuu, kun tällaisia laitteita ei ole jäljellä."
+    },
+    "vault_unwritable": {
+      "title": "JUNG HOME -laiteavaimia ei voi tallentaa",
+      "description": "Home Assistant ei voinut kirjoittaa mesh-verkon {title} avainholvia ({path}; viimeisin virhe: {error}) lisätessään laitetta osoitteessa {address}. Holvi sisältää Home Assistantin lisäämien laitteiden laiteavaimet, joita kenelläkään muulla ei ole ennen kuin vienti kirjaa ne, joten laitetta ei otettu käyttöön verkossa: se ei saanut mitään ja on yhä uusi. Tämä tarkoittaa yleensä, että levy on täynnä tai sen tiedostojärjestelmä on liitetty uudelleen vain luku -tilaan, usein vikaantuvan SD-kortin vuoksi. Vapauta tilaa tai korjaa tallennustila (vain luku -tilaan uudelleen liitetty tiedostojärjestelmä vaatii yleensä palvelimen uudelleenkäynnistyksen) ja lisää laite sitten uudelleen; älä muokkaa, poista tai korvaa holvin tiedostoja. Ei vielä kokeiltu oikealla laitteella. Ongelma poistuu itsestään heti, kun holvin kirjoitus onnistuu."
+    },
+    "carry_over_conflict": {
+      "title": "JUNG HOME -sovellus kumosi Home Assistantin muutoksen verkossa {title}",
+      "description": "Home Assistant otti käyttöön viennin, jonka JUNG HOME -sovellus viimeksi luovutti yhdyskäytävälle, ja siirsi omat muutoksensa siihen, mutta sovellus oli sillä välin muuttanut samoja kohtia. Sovelluksen versio säilytetään kohteille: {paths}. Laitteissa voi yhä olla se, mitä Home Assistant oli kirjoittanut: {held}. Tarkista nämä huoneet, tilanteet ja kytkennät sovelluksessa ja Home Assistantissa ja aseta ne uudelleen yhdeltä puolelta. Sovellus ei näe Home Assistantin lisäyksiä ennen kuin se tuo tiedoston. Ongelma poistuu seuraavalla yhdyskäytävän viennin käyttöönotolla, jossa tällaista ristiriitaa ei ole."
+    },
+    "scene_held": {
+      "title": "Laitteissa on yhä poistettu JUNG HOME -tilanne verkossa {title}",
+      "description": "Tilanne poistettiin \"Vaikka laite ei vastaa\" -asetuksella, kun osaa sen laitteista ei tavoitettu tai ne kieltäytyivät; niissä on se yhä, ja ne palauttavat sen minkä tahansa saman numeron tilanteen myötä. Tilannenumero: laitteet — {members}. Home Assistant ei anna näitä numeroita uusille tilanteille. Kun laitteet ovat taas tavoitettavissa, suorita toiminto Poista käyttämättömät tilanteet \"Koeajo\" pois päältä: se poistaa niistä nämä numerot, ja ongelma poistuu."
+    },
+    "gateway_token_rejected": {
+      "title": "JUNG HOME -yhdyskäytävä ei enää hyväksy Home Assistantia",
+      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} hylkää käyttöoikeuden, jonka Home Assistant rekisteröi mesh-verkolle {title} (se poistettiin todennäköisesti JUNG HOME -sovelluksessa kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet). Home Assistant jatkaa huoneiden, painikkeiden kytkentöjen ja tilanteiden muuttamista omassa viennissään, mutta ei enää luovuta sitä yhdyskäytävälle, joten sovellus ei näe näitä muutoksia; laitteet toimivat edelleen. Home Assistant pyytää käyttöoikeutta uudelleen: noudata sen pyyntöä todentaa JUNG HOME uudelleen (Asetukset → Laitteet ja palvelut; Korjaukset näyttää sen myös vanhentuneena todennuksena) ja anna yhdyskäytävän verkkoavaimen salasana tai hyväksy uusi käyttöoikeuspyyntö sovelluksessa. Ongelma poistuu, kun yhdyskäytävä hyväksyy taas Home Assistantin; toiminto Synkronoi yhdyskäytävä luovuttaa sitten sen jälkeen tehdyt muutokset."
+    },
+    "seq_store_lost": {
+      "title": "JUNG HOME -mesh-verkon {title} järjestysnumerot kadonneet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Jatka jo lähetettyjen numeroiden yli",
+            "description": "Tämän integraation järjestysnumerovarastossa (`.storage/junghome_ble.seq.*`) ei ole käyttökelpoista tietuetta Home Assistantin osoitteelle {unicast}, vaikka siitä osoitteesta on lähetetty aiemmin. Sen aloittaminen uudelleen nollasta käyttäisi uudelleen järjestysnumeroita, jotka laitteet ovat jo nähneet: ne jättäisivät Home Assistantin huomiotta, ja jokainen uudelleen käytetty numero heikentää mesh-verkon salausta. Varaston palauttaminen varmuuskopiosta tekee saman — vanhempi kopio toistaa jokaisen sen ottamisen jälkeen lähetetyn numeron — joten älä palauta `junghome_ble.seq.*`-tiedostoja. Vahvista, niin Home Assistant jatkaa 1 048 576 numeroa viimeisen vielä luettavan arvon yli (4 194 304 sen alarajan yli, jota se pitää laskurin ohella tiedostossa `junghome_ble.seq.*.floor`, tai nollan yli, jos mitään ei ole jäljellä) ja määrittää integraation uudelleen."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "floor_not_written": "Järjestysnumeroiden alarajaa (`.storage/junghome_ble.seq.*.floor`) ei voitu kirjoittaa: mitään ei muutettu, ja integraatio pysyy pysäytettynä. Tarkista levy, jolla Home Assistantin määritys on, ja korjaa sitten ongelma uudelleen."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "JUNG HOME -järjestysnumeroita ei voi tallentaa",
+      "description": "Home Assistant ei ole pystynyt kirjoittamaan mesh-verkon {title} järjestysnumerovarastoa yli minuuttiin ({path}; viimeisin virhe: {error}). Jokainen viesti laitteille sisältää uuden järjestysnumeron, ja Home Assistant lähettää vain tallentamiaan numeroita, jotta uudelleenkäynnistys ei koskaan toista yhtäkään: kunnes kirjoitus onnistuu, se ei lähetä mesh-verkkoon mitään — komennot epäonnistuvat eikä tilaa päivitetä. Tämä tarkoittaa yleensä, että levy on täynnä tai sen tiedostojärjestelmä on liitetty uudelleen vain luku -tilaan, usein vikaantuvan SD-kortin vuoksi. Vapauta tilaa tai korjaa tallennustila (vain luku -tilaan uudelleen liitetty tiedostojärjestelmä vaatii yleensä palvelimen uudelleenkäynnistyksen); älä muokkaa, poista tai korvaa varaston tiedostoja. Ongelma poistuu itsestään heti, kun kirjoitus onnistuu ja lähettäminen jatkuu."
+    },
+    "address_in_use": {
+      "title": "Home Assistantin JUNG HOME -osoite on varattu",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Siirrä Home Assistant osoitteeseen {suggestion}",
+            "description": "Mesh-verkon {title} viennissä solmu käyttää unicast-osoitetta {unicast}, josta Home Assistant lähettää. Molempia pidettäisiin yhtenä lähettäjänä: laitteet hylkäävät toisen niistä toistona, ja vastaukset menevät väärälle. Vahvista, niin Home Assistant saa vapaan osoitteen {suggestion} ja integraatio määritetään uudelleen, kuten Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme tekee. Varmista, ettei mikään muu mesh-asiakas (tämän integraation komentorivityökalut, toinen Home Assistant) lähetä osoitteesta {suggestion}. Järjestysnumerot pidetään osoitekohtaisesti: uusi osoite jatkaa omaa tietuettaan tai aloittaa riittävän kaukaa, jos Home Assistantilla ei ole sille tietuetta, joten mitään numeroa ei lähetetä kahdesti. Ei vielä varmistettu oikeilla laitteilla."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "cannot_load": "Merkinnän vientiä ei voitu lukea, joten vapaata osoitetta ei voida selvittää: mitään ei muutettu. Lataa uusi vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen.",
+          "no_free_address": "Viennissä ei ole vapaata osoitetta Home Assistantille: mitään ei muutettu. Tarkista vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen.",
+          "address_taken": "{suggestion} ei ole enää vapaa viennissä (se muuttui sillä välin): mitään ei muutettu. Korjaa ongelma uudelleen saadaksesi uuden ehdotuksen."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Home Assistantin JUNG HOME -osoite voidaan antaa muille",
+      "description": "Unicast-osoite {unicast}, josta Home Assistant lähettää mesh-verkossa {title}, on jonkin sovelluksen provisioijan osoitealueella tai poistetun solmun käyttämä. Se toimii, kunnes sovellus ottaa sinne solmun käyttöön; siirrä Home Assistant ennen sitä vapaaseen osoitteeseen (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme; {suggestion} on vapaa)."
+    },
+    "sequence_space_low": {
+      "title": "JUNG HOME -mesh-verkon järjestysnumerot vähissä",
+      "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Jokainen lähettäjä pysähtyy tämän alueen lopussa, kunnes mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update), jonka JUNG HOME -yhdyskäytävä aloittaa itse; Home Assistant seuraa sitä mutta ei aloita sitä. Pidä yhdyskäytävä virrassa ja yhteydessä mesh-verkkoon; ilman yhdyskäytävää mesh-verkko pysähtyy, kun jokin lähettäjä käyttää numeronsa loppuun. Ongelma poistuu itsestään päivityksen jälkeen."
+    },
+    "iv_index_mismatch": {
+      "title": "JUNG HOME -mesh-verkko on eri IV-indeksissä",
+      "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours}: liian kaukana toisistaan, jotta Home Assistant voisi seurata (se seuraa mesh-verkkoa enintään 42 eteenpäin, korkeintaan kerran 192 tunnissa, eikä koskaan taaksepäin). Laitteet jättävät Home Assistantin sillä välin huomiotta. Näin käy, kun Home Assistant on ollut poissa monen IV-päivityksen ajan, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Anna Home Assistantille uusi unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme): siellä se aloittaa mesh-verkon IV-indeksistä. Älä palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa järjestysnumeroita, jotka laitteet ovat jo nähneet, ja seuraava käynnistys korvaa käsin tehdyn muokkauksen joka tapauksessa. Ongelma poistuu itsestään, kun ulottuvilla oleva beacon saapuu."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant on JUNG HOME -mesh-verkon IV-indeksiä edellä",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Palaa mesh-verkon IV-indeksiin",
+            "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours} — sen edellä, mitä mesh-verkko ei koskaan ole: laitteet jättävät Home Assistantin huomiotta, eikä se voi seurata mesh-verkkoa, joka on sen jäljessä. Näin käy, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Vahvista, niin Home Assistant palaa mesh-verkon IV-indeksiin ja integraatio määritetään uudelleen: sen järjestysnumerot jatkuvat jokaisen siitä indeksistä alkaen lähettämänsä numeron yläpuolelta, joten mitään ei käytetä kahdesti. Älä sen sijaan palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa numeroita, jotka laitteet ovat jo nähneet. Toinen tapa palata on uusi unicast-osoite Home Assistantille (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen). Ei vielä varmistettu oikeilla laitteilla: mesh-verkkoa edellä olevaa IV-indeksiä ei ole nähty oikeassa verkossa."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "iv_index_not_ahead": "Home Assistant ei ole enää ulottumattomissa mesh-verkon edellä, tai sen IV-tila on muuttunut ongelman syntymisen jälkeen: mitään ei muutettu. Jos ongelma palaa, korjaa se uudelleen.",
+          "seq_store_not_written": "Järjestysnumeroiden alarajaa (`.storage/junghome_ble.seq.*.floor`) ei voitu kirjoittaa: mitään ei muutettu. Tarkista levy, jolla Home Assistantin määritys on, ja korjaa sitten ongelma uudelleen."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME -minitoimilaitteilla ei ole ajanpitäjää",
+      "description": "Mesh-verkossa {title} on vanhemman mallin JUNG-minitoimilaitteita ({pucks}): ne saavat aikansa ajanpitäjältä, verkkovirtakäyttöiseltä laitteelta, joka välittää niille ajan. Mikään mesh-verkon laite ei ole sellainen, joten minitoimilaitteiden ajastimet ajautuvat. Kytke päälle kytkin *Ajanpitäjä* (määritysentiteetti, oletuksena pois käytöstä) yhdessä aina virrassa olevassa laitteessa, kuten pistorasiassa tai minitoimilaitteessa; JUNG HOME -sovellus valitsee sellaisen itse, kun se määrittää minitoimilaitteen. Ei vielä varmistettu oikeilla laitteilla. Ongelma poistuu, kun jokin laite on ajanpitäjä."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Aseta huone",
+      "description": "Sijoittaa JUNG HOME -valaisimet ja -pistorasiat mesh-verkon huoneeseen (sovelluksessa \"area\"). Huone, jota ei vielä ole, luodaan vain Luo huone -asetuksella, joten väärin kirjoitettu nimi hylätään. Laite poistuu kaikista muista huoneista; huoneeseen jo kytketyt painikkeet alkavat ohjata sitä. Mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "room": {
+          "name": "Huone",
+          "description": "Huoneen nimi JUNG HOME -sovelluksessa."
+        },
+        "create": {
+          "name": "Luo huone",
+          "description": "Luo huone, jos mesh-verkossa ei ole sen nimistä huonetta. Pois päältä tuntematon nimi hylätään."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Lisää huoneeseen",
+      "description": "Sijoittaa JUNG HOME -valaisimet, -pistorasiat ja -sälekaihtimet lisäksi mesh-verkon huoneeseen: ne pysyvät nykyisissä huoneissaan, koska sovellus sallii laitteen kuulua useaan huoneeseen. Huone, jota ei vielä ole, luodaan vain Luo huone -asetuksella. Huoneeseen jo kytketyt painikkeet alkavat ohjata niitä. Mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Ei vielä varmistettu oikeilla laitteilla. Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "room": {
+          "name": "Huone",
+          "description": "Huoneen nimi JUNG HOME -sovelluksessa."
+        },
+        "create": {
+          "name": "Luo huone",
+          "description": "Luo huone, jos mesh-verkossa ei ole sen nimistä huonetta. Pois päältä tuntematon nimi hylätään."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Poista huoneesta",
+      "description": "Poistaa JUNG HOME -valaisimet, -pistorasiat ja -sälekaihtimet mesh-verkon huoneesta; ne pysyvät muissa huoneissaan, ja laite voi jäädä ilman huonetta. Laite, jota painike ohjaa huoneeseen kytkentänsä kautta, hylätään, ellei Vaikka painike ohjaa sitä -asetus ole päällä: huoneesta poistuminen irrottaa sen myös siitä painikkeesta. Mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Ei vielä varmistettu oikeilla laitteilla. Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "room": {
+          "name": "Huone",
+          "description": "Huoneen nimi JUNG HOME -sovelluksessa."
+        },
+        "force": {
+          "name": "Vaikka painike ohjaa sitä",
+          "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Luo huone",
+      "description": "Luo tyhjän huoneen mesh-verkon vientiin (laitteille ei lähetetä mitään). Home Assistant antaa sille sovelluksen alueen suurimman vapaan ryhmäosoitteen: sovellus ei näe sitä ennen kuin se tuo tiedoston, ja antaa omalle seuraavalle huoneelleen pienimmän vapaan osoitteen. Palauttaa pyydettäessä huoneen ryhmäosoitteen. Vain järjestelmänvalvojille.",
+      "fields": {
+        "name": {
+          "name": "Nimi",
+          "description": "Uuden huoneen nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Nimeä huone uudelleen",
+      "description": "Nimeää huoneen uudelleen mesh-verkon viennissä (laitteille ei lähetetä mitään). Vain järjestelmänvalvojille.",
+      "fields": {
+        "room": {
+          "name": "Huone",
+          "description": "Huoneen nykyinen nimi."
+        },
+        "new_name": {
+          "name": "Uusi nimi",
+          "description": "Uusi nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Poista huone",
+      "description": "Poistaa huoneen: sen laitteet poistuvat siitä, huoneeseen kytketyt painikkeet menettävät toimintonsa ja huone poistetaan mesh-verkon viennistä. Itse laitteet toimivat edelleen. Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "room": {
+          "name": "Huone",
+          "description": "Poistettavan huoneen nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Määritä painike",
+      "description": "Kytkee painikkeen tai ilmaisimen valaisimeen, pistorasiaan, sälekaihtimeen, huonetermostaattiin, yhdyskäytävään, huoneeseen tai tilanteeseen täsmälleen kuten JUNG HOME -sovelluksen painikkeen kytkentä: painikkeen aiempi kytkentä poistetaan, painike kytketään kohteeseen ja sen painiketila asetetaan (ilmaisimella ei ole tilaa, ja se ohjaa vain yhtä laitetta). Mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Ilmaisin lähteenä ja lämpötilatila ovat vielä varmistamatta oikeilla laitteilla. Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "key_entity": {
+          "name": "Painike",
+          "description": "Painikkeen tapahtumaentiteetti tai ilmaisimen entiteetti."
+        },
+        "key_device": {
+          "name": "Painikelaite",
+          "description": "Painikelaite, johon painike kuuluu (käytä yhdessä painikkeen kirjaimen kanssa, jos laitteessa on useita painikkeita), tai ilmaisin."
+        },
+        "key": {
+          "name": "Painikkeen kirjain",
+          "description": "Mikä laitteen painike: A, B, C tai D; E1 tai E2 minitoimilaitteen tulolle."
+        },
+        "target_entity": {
+          "name": "Kohde-entiteetti",
+          "description": "Valaisin, pistorasia, sälekaihdin tai huonetermostaatti, jota painikkeen pitää ohjata."
+        },
+        "target_device": {
+          "name": "Kohdelaite",
+          "description": "Laite, jota painikkeen pitää ohjata: valaisin, pistorasia tai yhdyskäytävä (painike ilmoittaa silloin napsautukset, kaksoisnapsautukset ja pidot Home Assistantille)."
+        },
+        "room": {
+          "name": "Kohdehuone",
+          "description": "Huone, jonka valaisimia tai pistorasioita painikkeen pitää ohjata."
+        },
+        "scene": {
+          "name": "Kohdetilanne",
+          "description": "Tilanne, jonka painikkeen pitää palauttaa jokaisessa laitteessa, numeron tai nimen perusteella (painiketila scene; jätä Tila tyhjäksi). Ei vielä kokeiltu oikealla laitteella."
+        },
+        "mode": {
+          "name": "Tila",
+          "description": "Mitä painike tekee: light (päälle/pois ja himmennys), switch (päälle/pois), move (sälekaihtimet; testaamaton), gateway (tapahtumien ilmoitus), lock (ylä- / päälle-puoli lukitsee valaisimen tai pistorasian nykyiseen tilaansa, ala- / pois-puoli vapauttaa sen; ei vielä varmistettu oikeilla laitteilla), temperature (huonetermostaatin asetusarvo; ei vielä varmistettu oikeilla laitteilla) tai huoneille light_and_switch (valaisimet ja pistorasiat yhdessä). Tyhjänä tila määräytyy kohteen mukaan."
+        },
+        "target_element": {
+          "name": "Kohde-elementti",
+          "description": "Vain laitekohteille: ohjaa kohteen toista osaa pelkällä painikkeen himmennysasiakkaalla, color_temperature (säädettävän valkoisen valaisimen värilämpötila, tila light) tai slat (sälekaihtimen säleet, tila move). Ei vielä varmistettu oikeilla laitteilla."
+        },
+        "lock_seconds": {
+          "name": "Lukitusaika",
+          "description": "Vain tilassa lock: kuinka kauan painikkeen lukitus pysyy, sekunteina (0 tai tyhjä: kunnes painike vapauttaa sen). Ei vielä varmistettu oikeilla laitteilla."
+        },
+        "room_area": {
+          "name": "Huone alueen mukaan",
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+        },
+        "scene_entity": {
+          "name": "Tilanne-entiteetti",
+          "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Tyhjennä painike",
+      "description": "Jättää painikkeen ilman toimintoa: sen kytkentä laitteeseen, yhdyskäytävään tai huoneeseen poistetaan (sovelluksessa \"No function\"). Palauttaa, kuinka monta sen viestiä laitteet ottivat käyttöön, kirjoitettiinko mesh-verkon vienti ja mitkä laitteet muuttuivat; Koeajo-asetuksella sen sijaan, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "key_entity": {
+          "name": "Painike",
+          "description": "Painikkeen tapahtumaentiteetti."
+        },
+        "key_device": {
+          "name": "Painikelaite",
+          "description": "Painikelaite, johon painike kuuluu (käytä yhdessä painikkeen kirjaimen kanssa, jos laitteessa on useita painikkeita)."
+        },
+        "key": {
+          "name": "Painikkeen kirjain",
+          "description": "Mikä laitteen painike: A, B, C tai D; E1 tai E2 minitoimilaitteen tulolle."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Luo tilanne",
+      "description": "Luo tyhjän tilanteen mesh-verkon vientiin (laitteille ei lähetetä mitään). Tallenna laitteet siihen Tallenna tilanne -toiminnolla. Home Assistant antaa sille sovelluksen alueen suurimman vapaan tilannenumeron: sovellus ei näe sitä ennen kuin se tuo tiedoston, ja antaa omalle seuraavalle tilanteelleen pienimmän vapaan numeron. Palauttaa pyydettäessä tilanteen numeron. Vain järjestelmänvalvojille.",
+      "fields": {
+        "name": {
+          "name": "Nimi",
+          "description": "Uuden tilanteen nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Nimeä tilanne uudelleen",
+      "description": "Nimeää tilanteen uudelleen mesh-verkon viennissä (laitteille ei lähetetä mitään). Vain järjestelmänvalvojille.",
+      "fields": {
+        "scene": {
+          "name": "Tilanne",
+          "description": "Tilanteen nykyinen nimi tai numero."
+        },
+        "new_name": {
+          "name": "Uusi nimi",
+          "description": "Uusi nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "scene_entity": {
+          "name": "Tilanne-entiteetti",
+          "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Tallenna tilanne",
+      "description": "Tallentaa JUNG HOME -valaisimien, -pistorasioiden, -sälekaihtimien ja -termostaattien nykyisen tilan tilanteeseen, kuten sovelluksen \"save device into scene\": aseta ensin laitteet siihen tilaan, johon tilanteen pitää ne jättää, ja kutsu sitten tätä. Jokainen laite tallentaa tilansa tilanteen alle (Scene Store) yhdessä sen JUNG-kuvauksen kanssa, ja mesh-verkon vienti kirjaa jäsenen. Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Kun tila annetaan (toiminto, kirkkaus, värilämpötila, lämpötila), jokainen laite asetetaan ensin siihen ja sitä odotetaan, kunnes se on saavutettu; sälekaihdinta, jolle on annettu asento, ei liikuteta, vaan tilanne tallentaa sille kyseisen asennon. Vain järjestelmänvalvojille.",
+      "fields": {
+        "scene": {
+          "name": "Tilanne",
+          "description": "Tilanteen nimi tai numero (luotu Luo tilanne -toiminnolla tai sovelluksessa)."
+        },
+        "action": {
+          "name": "Toiminto",
+          "description": "Kytke valaisimet ja pistorasiat päälle tai pois ennen tallennusta."
+        },
+        "brightness_pct": {
+          "name": "Kirkkaus",
+          "description": "Himmennä valaisimet tähän kirkkauteen ennen tallennusta (toiminto on silloin päälle)."
+        },
+        "color_temp_kelvin": {
+          "name": "Värilämpötila",
+          "description": "Aseta säädettävän valkoisen valaisimet tähän värilämpötilaan ennen tallennusta."
+        },
+        "position": {
+          "name": "Asento",
+          "description": "Asento, johon tilanne ajaa sälekaihtimen: 0 suljettu, 100 auki."
+        },
+        "tilt_position": {
+          "name": "Kallistusasento",
+          "description": "Säleiden asento, johon tilanne ajaa sälekaihtimen; pois jätettynä sälekaihtimen asento."
+        },
+        "temperature": {
+          "name": "Lämpötila",
+          "description": "Aseta termostaatit tähän lämpötilaan ennen tallennusta."
+        },
+        "scene_entity": {
+          "name": "Tilanne-entiteetti",
+          "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Tallennettava tila",
+          "description": "Aseta laitteet ensin tähän tilaan; tyhjänä tallennetaan niiden nykyinen tila."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Poista tilanteesta",
+      "description": "Poistaa JUNG HOME -valaisimet, -pistorasiat, -sälekaihtimet ja -termostaatit tilanteesta: jokainen laite unohtaa tilanteen (Scene Delete), ja mesh-verkon vienti poistaa jäsenen. Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Vain järjestelmänvalvojille.",
+      "fields": {
+        "scene": {
+          "name": "Tilanne",
+          "description": "Tilanteen nimi tai numero."
+        },
+        "scene_entity": {
+          "name": "Tilanne-entiteetti",
+          "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Poista tilanne",
+      "description": "Poistaa tilanteen: jokainen laite, joka on tallentanut sen, unohtaa sen, näiden laitteiden sitä palauttavat painikkeet menettävät kytkentänsä ja tilanne poistetaan mesh-verkon viennistä. Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen. Palauttaa pyydettäessä laitteet, jotka ohitettiin \"Vaikka laite ei vastaa\" -asetuksella (joka vaatii Vahvista-asetuksen), ja mitä painikkeiden viestit ottivat käyttöön; Koeajo-asetuksella, mitä se lähettäisi ja muuttaisi. Vain järjestelmänvalvojille.",
+      "fields": {
+        "scene": {
+          "name": "Tilanne",
+          "description": "Poistettavan tilanteen nimi tai numero."
+        },
+        "force": {
+          "name": "Vaikka laite ei vastaa",
+          "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        },
+        "scene_entity": {
+          "name": "Tilanne-entiteetti",
+          "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        },
+        "confirm": {
+          "name": "Vahvista",
+          "description": "Tarvitaan \"Vaikka laite ei vastaa\" -asetuksen kanssa: laitetta, joka säilyttää tilanteen, ei voi täältä saada unohtamaan sitä. Ei tarvita koeajossa."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Poista käyttämättömät tilanteet",
+      "description": "Lukee jokaisen laitteen tilannerekisterin ja luettelee tai poistaa tilanteet, joita mesh-verkon vienti ei tunne (ei sovelluksen tilanne eikä sen ajastimen tilanne), kuten sovellus tekee, kun sen ajastinluettelo avataan. Koeajo, ellei toisin pyydetä. Yhdyskäytävän kanssa toimii vain yhdyskäytävän nykyisellä viennillä; tiedostosta määritetyssä verkossa poistaminen vaatii \"Mesh-verkon vienti on ajan tasalla\" -asetuksen tai poistettavat numerot. Palauttaa numerot laitteittain. Vain järjestelmänvalvojille.",
+      "fields": {
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Luettele vain numerot, jotka poistettaisiin; mitään ei poisteta. Oletuksena päällä."
+        },
+        "numbers": {
+          "name": "Tilanteiden numerot",
+          "description": "Poista vain nämä tilannenumerot (mikään niistä ei saa olla mesh-verkon viennin tilanne)."
+        },
+        "confirm_stale_export": {
+          "name": "Mesh-verkon vienti on ajan tasalla",
+          "description": "Tiedostosta määritetylle verkolle: tiedostossa on jokainen sovelluksen tilanne, myös viennin jälkeen tehdyt. Ilman tätä poistetaan vain nimetyt numerot."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Synkronoi yhdyskäytävä",
+      "description": "Luovuttaa Home Assistantin käyttämän mesh-verkon viennin JUNG HOME -yhdyskäytävälle, kuten sovellus tekee jokaisen muutoksen jälkeen. Suoritetaan automaattisesti jokaisen vientiä uudelleen kirjoittavan toiminnon jälkeen; kutsu tätä yrittääksesi uudelleen \"vientiä ei luovutettu yhdyskäytävälle\" -korjauksen jälkeen tai muokattuasi tiedostoa itse. Vain järjestelmänvalvojille.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Hae aikataulut",
+      "description": "Lukee aikataulut, joita JUNG HOME -kuormat suorittavat itse (sovelluksen Automation-sivu): enintään 16 paikkaa kuormaa kohden, kukin kellonaika-, auringonnousu- tai auringonlaskulaukaisin tiettyinä viikonpäivinä sekä se, mitä kuorma silloin tekee. Palauttaa entiteeteittäin käytetyt paikat niillä kentillä, jotka Luo aikataulu ottaa vastaan."
+    },
+    "create_schedule": {
+      "name": "Luo aikataulu",
+      "description": "Kirjoittaa aikataulun jokaisen kohteena olevan JUNG HOME -kuorman ensimmäiseen vapaaseen paikkaan, ja kuorma suorittaa sen itse ilman Home Assistantia. Auringonnousu- tai auringonlaskuaikataulu lähettää ensin solmulle Home Assistantin kodin sijainnin. Palauttaa entiteeteittäin käytetyn paikan. Ei testattu laitteella. Vain järjestelmänvalvojille.",
+      "fields": {
+        "trigger": {
+          "name": "Laukaisin",
+          "description": "Milloin aikataulu laukeaa: tiettyyn kellonaikaan tai auringonnousun tai -laskun aikaan."
+        },
+        "time": {
+          "name": "Aika",
+          "description": "Kellonaikaan perustuvan aikataulun kellonaika."
+        },
+        "not_before": {
+          "name": "Ei ennen",
+          "description": "Auringonnousu- tai auringonlaskuaikataulu laukeaa aikaisintaan tähän aikaan (pois jätettynä ei rajaa)."
+        },
+        "not_after": {
+          "name": "Ei jälkeen",
+          "description": "Auringonnousu- tai auringonlaskuaikataulu laukeaa viimeistään tähän aikaan (pois jätettynä ei rajaa)."
+        },
+        "offset": {
+          "name": "Siirtymä",
+          "description": "Minuutteja ennen (negatiivinen) tai jälkeen auringonnousun tai -laskun."
+        },
+        "weekdays": {
+          "name": "Viikonpäivät",
+          "description": "Päivät, joina aikataulu laukeaa; pois jätettynä joka päivä."
+        },
+        "enabled": {
+          "name": "Käytössä",
+          "description": "Laukeaako aikataulu; käytöstä poistettu odottaa Ota aikataulu käyttöön -toimintoa."
+        },
+        "action": {
+          "name": "Toiminto",
+          "description": "Kytke valaisin tai pistorasia päälle tai pois."
+        },
+        "brightness_pct": {
+          "name": "Kirkkaus",
+          "description": "Kirkkaus, johon himmennin kytkeytyy päälle (toiminto on silloin päälle)."
+        },
+        "color_temp_kelvin": {
+          "name": "Värilämpötila",
+          "description": "Säädettävän valkoisen valaisimen värilämpötila 100 K:n askelin."
+        },
+        "position": {
+          "name": "Asento",
+          "description": "Asento, johon sälekaihdin ajetaan: 0 suljettu, 100 auki."
+        },
+        "tilt_position": {
+          "name": "Kallistusasento",
+          "description": "Sälekaihtimen säleiden asento; pois jätettynä sälekaihtimen asento."
+        },
+        "temperature": {
+          "name": "Lämpötila",
+          "description": "Huonetermostaatin tavoitelämpötila."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Milloin",
+          "description": "Milloin aikataulu laukeaa."
+        },
+        "what": {
+          "name": "Mitä",
+          "description": "Mihin tilaan kuorma asetetaan, kun aikataulu laukeaa."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Päivitä aikataulu",
+      "description": "Kirjoittaa jokaisen kohteena olevan JUNG HOME -kuorman käytetyn aikataulupaikan uudelleen paikallaan, kuten sovelluksen muokkaus, samoilla kentillä, jotka Luo aikataulu ottaa vastaan: anna ne kaikki uudelleen, pois jätettyä ei säilytetä paikasta. Auringonnousu- tai auringonlaskuaikataulu lähettää ensin solmulle Home Assistantin kodin sijainnin; jos kirjoitus epäonnistuu, paikan vanha aikataulu kirjoitetaan takaisin. Ei vielä varmistettu oikeilla laitteilla. Vain järjestelmänvalvojille.",
+      "fields": {
+        "slot": {
+          "name": "Paikka",
+          "description": "Uudelleen kirjoitettavan aikataulupaikan numero (0–15), kuten Hae aikataulut ja Aikataulut-anturi sen luettelevat."
+        },
+        "trigger": {
+          "name": "Laukaisin",
+          "description": "Milloin aikataulu laukeaa: tiettyyn kellonaikaan tai auringonnousun tai -laskun aikaan."
+        },
+        "time": {
+          "name": "Aika",
+          "description": "Kellonaikaan perustuvan aikataulun kellonaika."
+        },
+        "not_before": {
+          "name": "Ei ennen",
+          "description": "Auringonnousu- tai auringonlaskuaikataulu laukeaa aikaisintaan tähän aikaan (pois jätettynä ei rajaa)."
+        },
+        "not_after": {
+          "name": "Ei jälkeen",
+          "description": "Auringonnousu- tai auringonlaskuaikataulu laukeaa viimeistään tähän aikaan (pois jätettynä ei rajaa)."
+        },
+        "offset": {
+          "name": "Siirtymä",
+          "description": "Minuutteja ennen (negatiivinen) tai jälkeen auringonnousun tai -laskun."
+        },
+        "weekdays": {
+          "name": "Viikonpäivät",
+          "description": "Päivät, joina aikataulu laukeaa; pois jätettynä joka päivä."
+        },
+        "enabled": {
+          "name": "Käytössä",
+          "description": "Laukeaako aikataulu; käytöstä poistettu odottaa Ota aikataulu käyttöön -toimintoa."
+        },
+        "action": {
+          "name": "Toiminto",
+          "description": "Kytke valaisin tai pistorasia päälle tai pois."
+        },
+        "brightness_pct": {
+          "name": "Kirkkaus",
+          "description": "Kirkkaus, johon himmennin kytkeytyy päälle (toiminto on silloin päälle)."
+        },
+        "color_temp_kelvin": {
+          "name": "Värilämpötila",
+          "description": "Säädettävän valkoisen valaisimen värilämpötila 100 K:n askelin."
+        },
+        "position": {
+          "name": "Asento",
+          "description": "Asento, johon sälekaihdin ajetaan: 0 suljettu, 100 auki."
+        },
+        "tilt_position": {
+          "name": "Kallistusasento",
+          "description": "Sälekaihtimen säleiden asento; pois jätettynä sälekaihtimen asento."
+        },
+        "temperature": {
+          "name": "Lämpötila",
+          "description": "Huonetermostaatin tavoitelämpötila."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Milloin",
+          "description": "Milloin aikataulu laukeaa."
+        },
+        "what": {
+          "name": "Mitä",
+          "description": "Mihin tilaan kuorma asetetaan, kun aikataulu laukeaa."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Ota aikataulu käyttöön",
+      "description": "Sallii JUNG HOME -kuormien aikataulupaikan laueta taas. Vain järjestelmänvalvojille.",
+      "fields": {
+        "slot": {
+          "name": "Paikka",
+          "description": "Aikataulupaikan numero (0–15), kuten Hae aikataulut ja Aikataulut-anturi sen luettelevat."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Poista aikataulu käytöstä",
+      "description": "Estää JUNG HOME -kuormien aikataulupaikkaa laukeamasta poistamatta sitä. Vain järjestelmänvalvojille.",
+      "fields": {
+        "slot": {
+          "name": "Paikka",
+          "description": "Aikataulupaikan numero (0–15), kuten Hae aikataulut ja Aikataulut-anturi sen luettelevat."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Poista aikataulu",
+      "description": "Vapauttaa JUNG HOME -kuormien aikataulupaikan. Vain järjestelmänvalvojille.",
+      "fields": {
+        "slot": {
+          "name": "Paikka",
+          "description": "Aikataulupaikan numero (0–15), kuten Hae aikataulut ja Aikataulut-anturi sen luettelevat."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Aseta kynnys",
+      "description": "Asettaa energiaa mittaavan JUNG HOME -pistorasian kynnyksen, sovelluksen automaattiprofiilin: kun pistorasian teho pysyy tasolla määritetyn ajan, se kytkee valitut valaisimet ja pistorasiat itse päälle (kytkentäkynnys) tai pois (katkaisukynnys) ilman Home Assistantia. Ei testattu laitteella. Palauttaa pyydettäessä, kuinka monta kytkentäviestiä laitteet ottivat käyttöön. Vain järjestelmänvalvojille.",
+      "fields": {
+        "threshold": {
+          "name": "Kynnys",
+          "description": "Kumpi pistorasian kahdesta kynnyksestä asetetaan."
+        },
+        "power": {
+          "name": "Teho",
+          "description": "Tehotaso watteina (0,1 W:n askelin); pois jätettynä pistorasian nykyinen taso."
+        },
+        "duration": {
+          "name": "Kesto",
+          "description": "Sekunnit, jotka tehon on pysyttävä tasolla; pois jätettynä pistorasian nykyinen kesto."
+        },
+        "enabled": {
+          "name": "Käytössä",
+          "description": "Kytkeekö kynnys; käytöstä poistettu säilyttää tasonsa ja kestonsa. Pois jätettynä kynnys säilyttää tilansa (uusi on käytössä). Jos se poistetaan käytöstä, kun toinenkaan kynnys ei ole aktiivinen, valaisimet ja pistorasiat irrotetaan kuten sovelluksessa: anna laitteet uudelleen, kun otat sen käyttöön."
+        },
+        "devices": {
+          "name": "Laitteet",
+          "description": "Valaisimet ja pistorasiat, joita molemmat kynnykset kytkevät; korvaa nykyisen luettelon, pois jätettynä luettelo säilyy. Kun se muuttuu, mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Poista kynnys",
+      "description": "Tyhjentää energiaa mittaavan JUNG HOME -pistorasian molemmat kynnykset ja irrottaa niiden kytkemät valaisimet ja pistorasiat, kuten sovelluksen poisto. Jos laitteita irrotettiin, Home Assistant ottaa uudelleen kirjoitetun mesh-verkon viennin käyttöön lataamatta integraatiota uudelleen. Palauttaa pyydettäessä, kuinka monta kytkentäviestiä laitteet ottivat käyttöön. Vain järjestelmänvalvojille."
+    },
+    "audit_network": {
+      "name": "Tarkasta verkko",
+      "description": "Lukee mitään muuttamatta, mitä JUNG HOME -laitteiden mesh-määritys sisältää — relay, network transmit, default TTL, beacon, GATT proxy ja friend, kunkin laitteen verkko- ja sovellusavaimet (indeksin mukaan, ei koskaan itse avainta) sekä jokaisen mallin julkaisu, tilaukset ja sidotut sovellusavaimet — ja vertaa sitä mesh-verkon vientiin. Palauttaa laitteittain asetukset ja jokaisen löydetyn eron sekä luettelee laitteet, jotka eivät vastanneet. Kaikkien laitteiden tarkastus kestää muutaman minuutin; paristokäyttöiset laitteet nukkuvat ja jätetään pois, ellei niitä nimetä.",
+      "fields": {
+        "device": {
+          "name": "Laite",
+          "description": "Tarkasta vain tämän laitteen takana oleva mesh-solmu (valaisin, painike, pistorasia tai solmu itse). Tyhjänä tarkastetaan jokainen verkkovirtakäyttöinen solmu."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Vie verkko",
+      "description": "Palauttaa Home Assistantin käyttämän viennin — sen muuttamine huoneineen, painikkeineen, kytkentöineen ja tilanteineen — JUNG HOME -sovelluksen jakotiedostona tai mesh-tietokantana varmuuskopioksi tai sovellukseen tuotavaksi. Vain järjestelmänvalvojille: se sisältää kaikki mesh-verkon avaimet.",
+      "fields": {
+        "flavour": {
+          "name": "Muoto",
+          "description": "Sovelluksen jakotiedosto (JungHome.json) tai mesh-tietokanta (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Vietävä JUNG HOME -verkko; tarvitaan vain, jos niitä on useita."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Etsi uusia laitteita",
+      "description": "Luettelee lähellä olevat JUNG-laitteet, jotka eivät vielä kuulu mihinkään verkkoon, sekä Bluetooth-osoitteen, jota `add_device` tarvitsee."
+    },
+    "add_device": {
+      "name": "Lisää laite (kokeellinen)",
+      "description": "Lisää uuden JUNG-laitteen verkkoon kuten sovellus: ottaa sen käyttöön verkossa vahvimmalla laitteen tarjoamalla menetelmällä (Static OOB, kun laite tarjoaa sitä ja sen arvo on annettu, HMAC-SHA256-algoritmilla, muuten No OOB kuten sovellus — ilman todennusta joku Bluetooth-kantaman sisällä voisi toimenpiteen aikana siepata verkon avaimet), määrittää sen sovelluksen sääntöjen mukaan laitteen ilmoittamien tietojen perusteella (hylätään, jos ne eivät vastaa sitä, mitä saman tuotteen laitteella verkossa jo on) ja kirjaa sen vientiin (joka luovutetaan yhdyskäytävälle). Laite, jonka määritys epäonnistuu, palautetaan tehdasasetuksiin kuten sovelluksessa. Sen elementtiryhmät saavat sovelluksen alueen suurimmat vapaat ryhmäosoitteet (sovellus ei näe laitetta ennen kuin se tuo tiedoston). Vastaus luettelee tehdyt vaiheet. Vaatii merkinnän *Salli Home Assistantin lisätä laitteita* -asetuksen. Vain järjestelmänvalvojille. Todennetut menetelmät, määrityssäännöt ja palautus ovat vielä varmistamatta oikeilla laitteilla.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth-osoite",
+          "description": "Osoite, jonka `find_new_devices` luettelee laitteelle."
+        },
+        "name": {
+          "name": "Nimi",
+          "description": "Uuden laitteen nimi."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "JUNG HOME -verkko, johon laite lisätään; tarvitaan vain, jos niitä on useita."
+        },
+        "static_oob": {
+          "name": "Static OOB -arvo",
+          "description": "Vain laitteelle, joka tarjoaa Static OOB -todennusta: sen 16 tai 32 tavun arvo heksadesimaalina valmistajan dokumentoimana (minkään JUNG-laitteen ei tiedetä tarjoavan sitä). Ei koskaan kirjata lokiin. Laite, joka hyväksyy vain todennetun käyttöönoton, hylätään ilman arvoa, ja laite, joka ei tarjoa sitä, hylätään arvon kanssa."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Poista laite (kokeellinen)",
+      "description": "Palauttaa JUNG-laitteen tehdasasetuksiin (se unohtaa verkon ja on taas uusi laite) ja poistaa sen verkosta kuten sovellus: muiden laitteiden kytkennät siihen poistetaan, vienti kirjaa sen poistetuksi ja luovutetaan yhdyskäytävälle. Ei voi perua. Vaatii merkinnän *Salli Home Assistantin lisätä ja poistaa laitteita* -asetuksen. Vaatii Vahvista-asetuksen; Koeajo-asetuksella se palauttaa sen sijaan, mitä se lähettäisi ja muuttaisi, eikä vahvistusta tarvita. Vain järjestelmänvalvojille.",
+      "fields": {
+        "device": {
+          "name": "Laite",
+          "description": "Poistettava JUNG-laite (mikä tahansa sen laitteista Home Assistantissa)."
+        },
+        "force": {
+          "name": "Vaikka se ei vastaa",
+          "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta."
+        },
+        "confirm": {
+          "name": "Vahvista",
+          "description": "Tarvitaan suorittamiseen: laitteen poistoa ei voi perua. Ei tarvita koeajossa."
+        },
+        "dry_run": {
+          "name": "Koeajo",
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Palauta odottava laite (kokeellinen)",
+      "description": "Palauttaa tehdasasetuksiin JUNG-laitteen, jonka `add_device` otti käyttöön verkossa mutta ei pystynyt määrittämään tai kirjaamaan (korjausilmoitus *Home Assistantin lisäämää laitetta ei ole kirjattu* luettelee ne): lähettää sille Config Node Reset -viestin laiteavaimella, joka on vain Home Assistantilla, jotta siitä tulee taas uusi laite, ja vapauttaa sen osoitteet. Ei vielä kokeiltu oikealla laitteella. Vaatii merkinnän *Salli Home Assistantin lisätä laitteita* -asetuksen. Vain järjestelmänvalvojille.",
+      "fields": {
+        "uuid": {
+          "name": "Laitteen UUID",
+          "description": "Laitteen UUID sellaisena kuin `add_device` tai `find_new_devices` sen antoi."
+        },
+        "unicast": {
+          "name": "Unicast-osoite",
+          "description": "Laitteen ensisijainen unicast-osoite (heksadesimaalina, kuten korjausilmoitus sen nimeää); UUID:n kanssa molempien on täsmättävä."
+        },
+        "force": {
+          "name": "Vaikka se ei vastaa",
+          "description": "Unohda laite, vaikka se ei vahvista palautusta (käsin palautettu tai lopullisesti poissa)."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "JUNG HOME -verkko, johon laite lisättiin; tarvitaan vain, jos niitä on useita."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Paikanna laite",
+      "description": "Saa JUNG-laitteen mainostamaan Node Identity -tunnistettaan — Bluetooth-mainosta, jonka vain tämän mesh-verkon avaimet yhdistävät laitteeseen — enintään minuutin ajan ja lopettamaan sitten, jotta Bluetooth-skanneri voi tunnistaa, mikä radio on kyseinen laite. Ei muuta mitään muuta; laite lopettaa joka tapauksessa itse minuutin kuluttua. Vain järjestelmänvalvojille. Ei vielä varmistettu oikeilla laitteilla.",
+      "fields": {
+        "device": {
+          "name": "Laite",
+          "description": "Paikannettava JUNG-laite (mikä tahansa sen laitteista Home Assistantissa)."
+        },
+        "duration": {
+          "name": "Kesto",
+          "description": "Mainostuksen kesto sekunteina, 5–60 (laite lopettaa itse 60 sekunnin jälkeen)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Hyväksy yhdyskäytävän asiakas",
+      "description": "Luettelee JUNG HOME -yhdyskäytävällä käyttöoikeutta odottavat API-asiakkaat (toinen integraatio, skripti) ja hyväksyy nimetyn, kuten sovelluksen Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt. Hyväksytty asiakas saa yhdyskäytävän koko API:n ja verkon viennin kaikkine mesh-avaimineen: hyväksy vain asiakas, jonka olet itse käynnistänyt. Ilman asiakkaan nimeä se vain luettelee asiakkaat (ota vastaus käyttöön). Käyttöoikeuden peruminen tehdään sovelluksessa. Vain järjestelmänvalvojille ja vain yhdyskäytävästä määritetylle verkolle. Ei vielä varmistettu oikeilla laitteilla.",
+      "fields": {
+        "client": {
+          "name": "Asiakas",
+          "description": "Nimi, jolla asiakas pyytää käyttöoikeutta, täsmälleen kuten se näkyy kohdassa `waiting`. Tyhjänä mitään ei hyväksytä."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Aloita himmennys",
+      "description": "Aloittaa JUNG HOME -himmentimen himmennyksen ylös- tai alaspäin, kuten keinun pohjassa pitäminen, kunnes Lopeta himmennys kutsutaan (tai alueen loppuun asti). Ei vielä kokeiltu oikealla laitteella.",
+      "fields": {
+        "direction": {
+          "name": "Suunta",
+          "description": "Kirkkaammaksi (ylös) tai himmeämmäksi (alas)."
+        },
+        "speed": {
+          "name": "Nopeus",
+          "description": "Kuinka nopeasti, prosentteina kirkkausalueesta sekunnissa (oletus 20: pois päältä täyteen 5 sekunnissa)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Lopeta himmennys",
+      "description": "Pysäyttää JUNG HOME -himmentimen, jonka Aloita himmennys pani liikkeelle, nykyiseen kohtaan. Ei vielä kokeiltu oikealla laitteella."
+    },
+    "step_dim": {
+      "name": "Himmennä askeleella",
+      "description": "Tekee JUNG HOME -himmentimestä askeleen kirkkaamman tai himmeämmän. Ei vielä kokeiltu oikealla laitteella.",
+      "fields": {
+        "step": {
+          "name": "Askel",
+          "description": "Prosentteina kirkkausalueesta: positiivinen kirkkaammaksi, negatiivinen himmeämmäksi."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Valaistus (päälle/pois, himmennys)",
+        "switch": "Kytkentä (päälle/pois)",
+        "move": "Sälekaihdin (testaamaton)",
+        "gateway": "Yhdyskäytävä (tapahtumien ilmoitus)",
+        "light_and_switch": "Valaisimet ja pistorasiat (vain huoneet)",
+        "lock": "Lukitus ja vapautus (ei vielä varmistettu oikeilla laitteilla)",
+        "temperature": "Lämpötila (huonetermostaatti, testaamaton)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Värilämpötila (ei vielä varmistettu oikeilla laitteilla)",
+        "slat": "Säleet (ei vielä varmistettu oikeilla laitteilla)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Kellonaika",
+        "sunrise": "Auringonnousu",
+        "sunset": "Auringonlasku"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Päälle",
+        "off": "Pois"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Maanantai",
+        "tue": "Tiistai",
+        "wed": "Keskiviikko",
+        "thu": "Torstai",
+        "fri": "Perjantai",
+        "sat": "Lauantai",
+        "sun": "Sunnuntai"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Kytkentäkynnys",
+        "switch_off": "Katkaisukynnys"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Sovelluksen jakotiedosto (JungHome.json)",
+        "cdb": "Mesh-tietokanta (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Kirkkaammaksi",
+        "down": "Himmeämmäksi"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Kytkinyksikkö",
+        "two_gang_switch": "2-kanavainen kytkinyksikkö",
+        "dimming": "Himmenninyksikkö",
+        "two_gang_dimming": "2-kanavainen himmenninyksikkö",
+        "tw_dimming": "DALI-yksikkö",
+        "blind": "Sälekaihdinyksikkö",
+        "extension": "Lisäkytkinyksikkö",
+        "not_available": "Ei yksikköä"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Painike ylhäällä / alhaalla",
+        "one_rocker": "Keinu",
+        "two_left_two_right": "Painike | Painike",
+        "one_left_two_right": "Keinu | Painike",
+        "two_left_one_right": "Painike | Keinu",
+        "one_left_one_right": "Keinu | Keinu"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Painike 1-osainen",
+        "push_button_2": "Painike 2-osainen",
+        "socket_metering": "Pistorasia (energiamittaus)",
+        "socket": "Pistorasia",
+        "switch_actuator_mini": "Kytkentätoimilaite 1-kanavainen mini",
+        "blinds_actuator_mini": "Sälekaihdintoimilaite 1-kanavainen mini",
+        "wall_transmitter_1": "Seinälähetin 1-osainen",
+        "wall_transmitter_2": "Seinälähetin 2-osainen",
+        "motion_detector_1m": "Liiketunnistin 1 m",
+        "motion_detector_2m": "Liiketunnistin 2 m",
+        "presence_detector": "Läsnäolotunnistin",
+        "room_thermostat": "Huonetermostaatti",
+        "gateway": "Yhdyskäytävä",
+        "switch_actuator_1_energy": "Kytkentätoimilaite 1-kanavainen, 2 tuloa, energiamittaus",
+        "switch_actuator_2": "Kytkentätoimilaite 2-kanavainen, 2 tuloa",
+        "dimmer_actuator": "Himmennintoimilaite 1-kanavainen, 2 tuloa",
+        "blinds_actuator": "Sälekaihdintoimilaite PP2 1-kanavainen, 2 tuloa",
+        "dali_actuator": "DALI-toimilaite 1-kanavainen, 2 tuloa",
+        "mini_sensor_mains": "Minianturi 2 tuloa, verkkovirta",
+        "mini_sensor_battery": "Minianturi 2 tuloa, paristo"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh -verkko",
+        "switch": "Kytkettävä valaisin",
+        "dimmer": "Himmennettävä valaisin",
+        "ctl": "Säädettävän valkoisen valaisin (DALI)",
+        "blind": "Sälekaihtimen / rullaverhon moottori",
+        "push_buttons": "Painikkeet",
+        "unknown_product": "Tuote {pid}"
+      }
+    }
+  }
+}
