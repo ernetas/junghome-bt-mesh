@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME prek Bluetootha",
+        "description": "Home Assistant se neposredno prek Bluetootha pridruži vašemu omrežju mesh JUNG HOME z izvozom omrežja iz aplikacije JUNG HOME, ki vsebuje ključe mesh. Izberite, od kod naj pride izvoz.",
+        "menu_options": {
+          "gateway": "Pridobi ga s prehoda JUNG HOME",
+          "upload": "Naloži izvozno datoteko aplikacije",
+          "path": "Uporabi datoteko na gostitelju Home Assistant"
+        },
+        "data": {
+          "cdb_path": "Datoteka izvoza mesh",
+          "metadata_dir": "Mapa z metapodatki aplikacije",
+          "unicast": "Naš naslov unicast"
+        },
+        "data_description": {
+          "cdb_path": "Absolutna pot na gostitelju Home Assistant, npr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neobvezno, samo za `MeshNetwork.json` iz varnostne kopije iOS: mapa aplikacije `Application Support` z `device_metadata.json` in `scene_metadata.json`, da entitete dobijo imena, ki ste jim jih dali v aplikaciji. `JungHome.json` imena že vsebuje.",
+          "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Je to vaša namestitev JUNG HOME?",
+        "description": "Proxy Bluetooth Mesh omrežja {network_id} je v dosegu. Home Assistant ponudi vsako omrežje Bluetooth Mesh, ki ga zazna, tudi omrežja drugih znamk — na primer sosedove luči. Nadaljujte le, če je to vaša namestitev JUNG HOME; nato boste vprašani za izvoz mesh iz aplikacije."
+      },
+      "zeroconf_confirm": {
+        "title": "Najden prehod JUNG HOME",
+        "description": "Prehod JUNG HOME se oglaša na naslovu {host}. Nadaljujte, da z njega pridobite izvoz omrežja iz aplikacije JUNG HOME: nato vnesete geslo omrežnega ključa ali odobrite zahtevo za dostop v aplikaciji. Tako kot pri naslovu, ki ga vtipkate, se njegov certifikat pripne ob prvem stiku, preden se karkoli pošlje. Nastavitev z odkritega prehoda še ni preverjena na resničnih napravah."
+      },
+      "gateway": {
+        "title": "Pridobi izvoz s prehoda JUNG HOME",
+        "description": "Prehod hrani kopijo izvoza omrežja iz aplikacije. Vnesite njegov naslov in bodisi geslo omrežnega ključa (iz aplikacije JUNG HOME) za takojšen dostop bodisi pustite geslo prazno in po nadaljevanju odobrite zahtevo za dostop v aplikaciji (Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve, v treh minutah; prikaže se kot „{user_name}“). Izvoz se shrani pod `junghome_ble/` v konfiguracijski mapi Home Assistanta. Vsebuje vse ključe mesh, tako kot izvoz s telefona — varnostne kopije te mape hranite zasebno.",
+        "data": {
+          "gateway_host": "Naslov prehoda",
+          "gateway_password": "Geslo omrežnega ključa"
+        },
+        "data_description": {
+          "gateway_host": "Naslov IP ali ime gostitelja prehoda JUNG HOME. Prehod, ki ga je Home Assistant našel v omrežju, je že vpisan. Sicer privzeti `junghome.local` deluje v mnogih omrežjih, lahko pa uporabite njegov naslov IP (prikazan v aplikaciji pod Nastavitve → Prehod).",
+          "gateway_password": "Neobvezno. Z njim prehod takoj odobri dostop; brez njega zahtevo odobrite v aplikaciji."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Napredno",
+            "description": "Ohranite privzeto vrednost, razen če se tej namestitvi pridruži tudi drug Home Assistant ali orodja ukazne vrstice iz repozitorija: vsak potrebuje svoj naslov.",
+            "data": {
+              "unicast": "Naš naslov unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Čakanje na odobritev v aplikaciji JUNG HOME"
+      },
+      "gateway_refetch": {
+        "title": "Znova pridobi izvoz",
+        "description": "S shranjenim dostopom pridobi trenutni izvoz omrežja s prehoda na naslovu {host}. Če ga prehod ne sprejema več, boste pozvani, da v aplikaciji odobrite novo zahtevo za dostop.",
+        "sections": {
+          "advanced": {
+            "name": "Napredno",
+            "description": "Ohranite privzeto vrednost, razen če se tej namestitvi pridruži tudi drug Home Assistant ali orodja ukazne vrstice iz repozitorija: vsak potrebuje svoj naslov.",
+            "data": {
+              "unicast": "Naš naslov unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Naloži izvozno datoteko aplikacije",
+        "description": "V aplikaciji JUNG HOME odprite Projekt → Deli prek datoteke in si pošljite datoteko `JungHome.json`, ki jo ustvari, nato jo naložite tukaj. Shrani se pod `junghome_ble/` v konfiguracijski mapi Home Assistanta. Vsebuje vse ključe mesh — varnostne kopije te mape hranite zasebno.",
+        "data": {
+          "export_file": "Datoteka izvoza mesh"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Napredno",
+            "description": "Ohranite privzeto vrednost, razen če se tej namestitvi pridruži tudi drug Home Assistant ali orodja ukazne vrstice iz repozitorija: vsak potrebuje svoj naslov.",
+            "data": {
+              "unicast": "Naš naslov unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Uporabi datoteko na gostitelju Home Assistant",
+        "description": "Najprej kopirajte datoteko aplikacije `JungHome.json` (Projekt → Deli prek datoteke; vsebuje imena vaših naprav) ali `MeshNetwork.json` (varnostna kopija iOS) na gostitelja Home Assistant in vnesite njeno pot.",
+        "data": {
+          "cdb_path": "Datoteka izvoza mesh",
+          "metadata_dir": "Mapa z metapodatki aplikacije"
+        },
+        "data_description": {
+          "cdb_path": "Absolutna pot na gostitelju Home Assistant, npr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neobvezno, samo za `MeshNetwork.json` iz varnostne kopije iOS: mapa aplikacije `Application Support` z `device_metadata.json` in `scene_metadata.json`, da entitete dobijo imena, ki ste jim jih dali v aplikaciji. `JungHome.json` imena že vsebuje."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Napredno",
+            "description": "Ohranite privzeto vrednost, razen če se tej namestitvi pridruži tudi drug Home Assistant ali orodja ukazne vrstice iz repozitorija: vsak potrebuje svoj naslov.",
+            "data": {
+              "unicast": "Naš naslov unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Posodobi izvoz mesh JUNG HOME",
+        "description": "To uporabite po ponovni pripravi (provisioning) ali ponovnem povezovanju naprav v aplikaciji JUNG HOME ali po osvežitvi ključev (Key Refresh): podajte nov izvoz istega omrežja. Naprave, ki so izginile iz izvoza, se odstranijo. Hkrati lahko spremenite tudi lastni naslov mesh Home Assistanta.",
+        "menu_options": {
+          "gateway_refetch": "Znova ga pridobi s prehoda na naslovu {host}",
+          "gateway": "Pridobi ga s prehoda JUNG HOME",
+          "upload": "Naloži izvozno datoteko aplikacije",
+          "path": "Uporabi datoteko na gostitelju Home Assistant",
+          "import_gateway": "Uvozi entitete integracije JUNG HOME Gateway",
+          "areas": "Spremeni, v katero območje gredo naprave posameznega prostora"
+        },
+        "data": {
+          "cdb_path": "Datoteka izvoza mesh",
+          "metadata_dir": "Mapa z metapodatki aplikacije",
+          "unicast": "Naš naslov unicast"
+        },
+        "data_description": {
+          "cdb_path": "Absolutna pot na gostitelju Home Assistant, npr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Neobvezno, samo za `MeshNetwork.json` iz varnostne kopije iOS: mapa aplikacije `Application Support` z `device_metadata.json` in `scene_metadata.json`, da entitete dobijo imena, ki ste jim jih dali v aplikaciji. `JungHome.json` imena že vsebuje.",
+          "unicast": "Šestnajstiški naslov mesh, ki ga bo Home Assistant uporabljal kot vozlišče (0001–7FFF). Ne sme ga uporabljati nobeno drugo vozlišče; privzeta vrednost je zunaj obsega aplikacije."
+        }
+      },
+      "import_gateway": {
+        "title": "Uvoz iz integracije JUNG HOME Gateway",
+        "description": "Poleg te je nastavljena integracija JUNG HOME Gateway (`junghome`). Njene entitete je mogoče prevzeti sem, tako da se njihovi ID-ji entitet, imena, območja, oznake in zgodovina snemalnika nadaljujejo z integracijo Bluetooth Mesh. Ujemanje poteka po imenu naprave (imenu iz aplikacije JUNG HOME) in vrsti entitete; zamenjajo se le entitete te integracije, ki jih še niste preimenovali ali prilagodili.\n\n**Premaknjenih bo {count} entitet** (entiteta prehoda → nadomesti):\n{matched}\n\n**Ostanejo, kot so** (tu že prilagojene; entiteta prehoda ostane, kjer je):\n{customised}\n\n**Brez ustreznice na prehodu** (ostanejo, kot so):\n{unmatched}\n\n**Entitete prehoda brez ustreznice tukaj** (ostanejo pri vnosu prehoda):\n{gateway_only}\n\nOddaja razloži obe integraciji, premakne entitete, kopira območje, ime po meri in oznake vsake ujemajoče se naprave prehoda na ustrezno napravo tukaj, onemogoči vnos prehoda in znova naloži ta vnos. Vnos prehoda nato izbrišite."
+      },
+      "gateway_certificate": {
+        "title": "Certifikat prehoda se je spremenil",
+        "description": "Prehod JUNG HOME na naslovu {host} zdaj predstavlja certifikat {observed}; vnos je zabeležil {expected}. Nadaljujte le, če ste prehod ali njegov certifikat zamenjali sami — sicer se v vašem omrežju kot prehod odziva druga naprava."
+      },
+      "reauth_confirm": {
+        "title": "Home Assistantu znova odobrite dostop do prehoda",
+        "description": "Prehod JUNG HOME na naslovu {host} ne sprejema več dostopa, ki ga je Home Assistant registriral za omrežje mesh {title} (verjetno je bil odstranjen v aplikaciji JUNG HOME pod Nastavitve → Prehod → Dovoljenja za dostop). Naprave še naprej delujejo prek Bluetootha; ustavilo se je le predajanje sprememb Home Assistanta prehodu. Vnesite geslo omrežnega ključa prehoda (iz aplikacije JUNG HOME) za takojšen dostop ali ga pustite prazno in po nadaljevanju odobrite zahtevo za dostop v aplikaciji (Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve, v treh minutah; prikaže se kot „{user_name}“). Obnovi se le dostop: izvoz se ne pridobi znova.",
+        "data": {
+          "gateway_password": "Geslo omrežnega ključa"
+        },
+        "data_description": {
+          "gateway_password": "Neobvezno. Z njim prehod takoj odobri dostop; brez njega zahtevo odobrite v aplikaciji. Ne shrani se."
+        }
+      },
+      "areas": {
+        "title": "Prostori in območja",
+        "description": "Za vsak prostor aplikacije JUNG HOME (tam imenovan „območje“) izberite območje v Home Assistantu. Prostor je vnaprej izpolnjen z območjem z enakim imenom ali z območjem, ki ima ime prostora kot vzdevek. Pustite prostor prazen, da naprave dobijo območje, poimenovano po prostoru (ustvari se, če ga še ni). Tudi naprave brez lastnega prostora ga dobijo: gumbi tipkala prostor porabnika poleg njih, gumbi stenskega oddajnika prostor, ki ga preklapljajo. Iz menija Znova konfiguriraj se s tem premaknejo naprave, ki so še v območju, ki jim ga je dala prejšnja izbira; naprava, ki ste jo sami premaknili v drugo območje, se nikoli ne premakne.",
+        "data": {
+          "assign_areas": "Razporedi naprave JUNG HOME v območja"
+        },
+        "data_description": {
+          "assign_areas": "Izklopljeno: nove naprave začnejo brez območja, prostori spodaj pa so prezrti."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Odprite aplikacijo JUNG HOME in odobrite zahtevo za dostop „{user_name}“ pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve. Prehod na naslovu {host} čaka do tri minute."
+    },
+    "error": {
+      "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+      "not_a_directory": "Pot do metapodatkov ni mapa.",
+      "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+      "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+      "address_in_use": "Ta naslov pripada vozlišču v omrežju mesh; izberite neuporabljenega.",
+      "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+      "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+      "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot tistemu, ki je bilo odkrito.",
+      "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos (njegov omrežni ključ je bil verjetno osvežen, odkar ga je Home Assistant nazadnje videl). Namesto dodajanja novega vnosa uporabite Znova konfiguriraj pri tem vnosu.",
+      "invalid_host": "Vnesite naslov IP ali ime gostitelja prehoda.",
+      "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+      "invalid_auth": "Prehod je zavrnil geslo omrežnega ključa.",
+      "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+      "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+      "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+      "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+      "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+      "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova.",
+      "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+      "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0."
+    },
+    "abort": {
+      "already_configured": "To omrežje mesh je že konfigurirano.",
+      "already_in_progress": "Nastavitev tega omrežja mesh že poteka.",
+      "not_supported": "Ta naprava Bluetooth ni Mesh Proxy.",
+      "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+      "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite.",
+      "reconfigure_successful": "Izvoz mesh je bil posodobljen.",
+      "no_gateway_entry": "Integracija JUNG HOME Gateway ni nastavljena; ničesar ni za uvoziti.",
+      "nothing_to_import": "Nobene entitete prehoda ni več za prevzem. Entitete te integracije brez ustreznice:\n{unmatched}\n\nEntitete prehoda brez ustreznice tukaj:\n{gateway_only}",
+      "import_successful": "Iz integracije JUNG HOME Gateway je bilo prevzetih {count} entitet:\n{matched}\n\nOhranjene, kot so bile (tu že prilagojene):\n{customised}\n\nBrez ustreznice na prehodu:\n{unmatched}\n\nŠe vedno pri vnosu prehoda:\n{gateway_only}\n\nVnos prehoda je bil onemogočen; ko je vse videti v redu, ga izbrišite pod Nastavitve → Naprave in storitve → JUNG HOME.",
+      "certificate_vouched_by_mesh": "Prehod JUNG HOME na naslovu {host} predstavlja certifikat {observed}, vozlišče prehoda pa je prek omrežja mesh jamčilo za {expected}. Na ta naslov ni bilo poslano nič: v vašem omrežju se kot prehod verjetno odziva druga naprava. Če ste prehod ali njegov certifikat zamenjali sami, znova konfigurirajte, medtem ko je Home Assistant povezan z omrežjem mesh: vozlišče prehoda nato sporoči novi certifikat.",
+      "import_unload_failed": "{title} ni bilo mogoče razložiti, zato ni bilo nič uvoženo; vsak vnos, ki ga je uvoz razložil, se znova nastavi. Preverite dnevnik in nato znova poskusite uvoz.",
+      "reauth_successful": "Prehod JUNG HOME znova sprejema Home Assistant. Spremembe, narejene v Home Assistantu medtem, ga dosežejo z naslednjo spremembo ali takoj z dejanjem „Sinhroniziraj prehod“.",
+      "areas_updated": "Območja prostorov so shranjena; {count} naprav je bilo premaknjenih v novo območje njihovega prostora.",
+      "not_loaded": "Integracija ne teče: najprej jo znova nastavite.",
+      "not_junghome_gateway": "Ta naprava se ne oglaša kot prehod JUNG HOME (ni proizvajalca JUNG ali ni serijske številke).",
+      "not_ipv4_address": "Prehod ni sporočil naslova IPv4. Integracijo dodajte ročno in vnesite naslov prehoda."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Klike sporoči šele, ko je dvojni klik izključen",
+          "heartbeats": "Srčni utripi vozlišč (tiho napravo označi kot nedosegljivo)",
+          "allow_provisioning": "Home Assistantu dovoli dodajanje in odstranjevanje naprav (preizkusno)",
+          "provisioner_identity": "Home Assistant zapiši v datoteko omrežja kot provisionerja (preizkusno, z aplikacijo ni preverjeno)",
+          "follow_app": "Sledi spremembam v aplikaciji JUNG HOME",
+          "gateway_check": "Vsakih šest ur preveri izvoz prehoda",
+          "sync_areas": "Premakni naprave, ko se spremeni njihov prostor JUNG"
+        },
+        "data_description": {
+          "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`.",
+          "heartbeats": "Vsaka naprava z omrežnim napajanjem je pozvana, naj Home Assistantu vsakih 64 sekund pošlje srčni utrip (standardna nastavitev Bluetooth Mesh, ki jo aplikacija JUNG pusti izklopljeno). Napravi, ki približno tri minute in pol ne pošlje ničesar, se entitete označijo kot nedosegljive, dokler je spet ne zaznamo. Izklop te možnosti napravam sporoči, naj prenehajo (ob naslednji povezavi znova, če jim tega ni bilo mogoče sporočiti vsem naenkrat); izklopite jo pred odstranitvijo integracije, ki jim tega pozneje ne more več sporočiti.",
+          "allow_provisioning": "Dejanju `junghome_ble.add_device` dovoli, da novo napravo JUNG pripravi (provisioning) in jo konfigurira, kot bi to storila aplikacija, po vzoru naprave istega izdelka, ki je že v omrežju, dejanju `junghome_ble.remove_device` pa, da napravo ponastavi in jo odstrani iz omrežja. Na resničnih napravah še ni preizkušeno: najprej poskusite z rezervno napravo. Dodajanje napravi preda ključe omrežja; odstranitve ni mogoče razveljaviti.",
+          "provisioner_identity": "Vsaka datoteka, ki jo Home Assistant zapiše ali preda prehodu, dobi vnos provisionerja za Home Assistant z lastnimi obsegi naslovov zunaj obsegov aplikacije in z naslovom Home Assistanta znotraj njih, naprave, ki jih je dodal Home Assistant in jih datoteka aplikacije nima, pa se vrnejo vanjo. Prostori, scene in naprave, ki jih ustvari Home Assistant, nato dobijo naslove iz njegovih lastnih obsegov. Nobena aplikacija JUNG še ni uvozila take datoteke: preizkusite jo na rezervni namestitvi aplikacije (uvozite datoteko iz `junghome_ble.export_network`), preden jo vidi vaša lastna aplikacija ali prehod. Izklopljeno: datoteke se zapišejo natanko tako kot brez tega.",
+          "follow_app": "Ko je telefon z aplikacijo JUNG HOME zaznan v omrežju mesh, vnos, nastavljen s prehoda, nekaj minut po tem, ko se telefon umiri, pridobi izvoz prehoda (največ vsakih 15 minut) in ga prevzame, če se je spremenil: naprave, prostori, scene in vezave gumbov, spremenjeni v aplikaciji, dosežejo Home Assistant brez ponovne konfiguracije. Vnos, nastavljen iz datoteke, namesto tega prikaže obvestilo v popravilih, ko je bilo zaznano, da je aplikacija spremenila konfiguracijo naprave. Za to se v omrežju mesh nič ne pošlje. Še ni preverjeno na resničnih napravah.",
+          "gateway_check": "Vnos, nastavljen s prehoda, vsakih šest ur od prehoda zahteva njegov izvoz in ga prevzame, če se je spremenil, s čimer ujame tisto, kar je aplikacija spremenila, medtem ko Home Assistant telefona ni zaznal. Ena zahteva prehodu; v omrežju mesh se nič ne pošlje. Na vnos, nastavljen iz datoteke, nima učinka.",
+          "sync_areas": "Ko naprava v aplikaciji (ko Home Assistant prevzame novi izvoz) ali z dejanjem za prostore zamenja prostor, se premakne tudi v območje novega prostora — razen če ste jo v območje razporedili sami. Izklopljeno: naprava ostane v območju, v katerem je začela. Še ni preverjeno na resničnih napravah."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Povezava mesh"
+      },
+      "motion": {
+        "name": "Gibanje"
+      },
+      "occupancy": {
+        "name": "Prisotnost"
+      },
+      "fault": {
+        "name": "Okvara"
+      },
+      "wind_alarm": {
+        "name": "Alarm vetra"
+      },
+      "reference_run_active": {
+        "name": "Referenčna vožnja"
+      },
+      "gateway_api_available": {
+        "name": "API na voljo"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Odjemalec čaka na odobritev"
+      },
+      "gateway_network_problem": {
+        "name": "Težava z omrežjem"
+      },
+      "gateway_mesh_problem": {
+        "name": "Težava z omrežjem Bluetooth mesh"
+      },
+      "gateway_cloud_problem": {
+        "name": "Težava z oblakom"
+      },
+      "gateway_cloud_connected": {
+        "name": "Povezava z oblakom"
+      },
+      "window_open": {
+        "name": "Odprto okno"
+      },
+      "input_state": {
+        "name": "Stanje vhoda"
+      },
+      "input_state_key": {
+        "name": "Stanje vhoda {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Funkcija urnika"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Gumb {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dvojni klik",
+              "hold_start": "Držanje začeto",
+              "hold_end": "Držanje sproščeno",
+              "press_on": "Pritisnjeno vklop / gor",
+              "press_off": "Pritisnjeno izklop / dol",
+              "scene": "Scena priklicana",
+              "dim": "Zatemnjevanje"
+            }
+          },
+          "connection": {
+            "name": "Vezava",
+            "state": {
+              "device": "Naprava",
+              "room": "Prostor",
+              "scene": "Scena",
+              "gateway": "Prehod",
+              "group": "Skupina",
+              "none": "Brez"
+            }
+          },
+          "reason": {
+            "name": "Razlog konca držanja",
+            "state": {
+              "timeout": "Sprostitev ni bila pravočasno zaznana",
+              "link_lost": "Povezava izgubljena",
+              "stopped": "Integracija ustavljena"
+            }
+          },
+          "position": {
+            "name": "Položaj",
+            "state": {
+              "top": "Zgoraj",
+              "bottom": "Spodaj",
+              "rocker": "Zibka",
+              "left_top": "Levo, zgoraj",
+              "left_bottom": "Levo, spodaj",
+              "right_top": "Desno, zgoraj",
+              "right_bottom": "Desno, spodaj",
+              "left_rocker": "Leva zibka",
+              "right_rocker": "Desna zibka"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Vhod {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dvojni klik",
+              "hold_start": "Držanje začeto",
+              "hold_end": "Držanje sproščeno",
+              "press_on": "Pritisnjeno vklop / gor",
+              "press_off": "Pritisnjeno izklop / dol",
+              "scene": "Scena priklicana",
+              "dim": "Zatemnjevanje"
+            }
+          },
+          "connection": {
+            "name": "Vezava",
+            "state": {
+              "device": "Naprava",
+              "room": "Prostor",
+              "scene": "Scena",
+              "gateway": "Prehod",
+              "group": "Skupina",
+              "none": "Brez"
+            }
+          },
+          "reason": {
+            "name": "Razlog konca držanja",
+            "state": {
+              "timeout": "Sprostitev ni bila pravočasno zaznana",
+              "link_lost": "Povezava izgubljena",
+              "stopped": "Integracija ustavljena"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Moč"
+      },
+      "voltage": {
+        "name": "Napetost"
+      },
+      "current": {
+        "name": "Tok"
+      },
+      "energy": {
+        "name": "Energija"
+      },
+      "energy_resettable": {
+        "name": "Energija od ponastavitve"
+      },
+      "energy_since_on": {
+        "name": "Energija od vklopa"
+      },
+      "power_on_time": {
+        "name": "Čas vklopa"
+      },
+      "proxy_node": {
+        "name": "Vozlišče proxy"
+      },
+      "link_state": {
+        "name": "Stanje povezave",
+        "state": {
+          "bluetooth_off": "Ni Bluetootha",
+          "searching": "Iskanje vozlišča proxy",
+          "connecting": "Povezovanje",
+          "updating": "Povezano, posodabljanje stanj naprav",
+          "connected": "Povezano",
+          "failed": "Povezava ni uspela",
+          "disconnected": "Prekinjeno"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Nedosegljive naprave",
+        "state_attributes": {
+          "devices": {
+            "name": "Naprave"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Pregled omrežja mesh",
+        "state_attributes": {
+          "nodes": {
+            "name": "Vozlišča"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Osvetljenost"
+      },
+      "battery": {
+        "name": "Baterija"
+      },
+      "installed": {
+        "name": "Nameščeno"
+      },
+      "key_mode": {
+        "name": "Način gumba",
+        "state": {
+          "light": "Razsvetljava",
+          "move": "Žaluzija",
+          "scene": "Scena",
+          "property": "Lastnost",
+          "rtr": "Temperatura",
+          "switch": "Preklapljanje",
+          "gateway": "Prehod"
+        }
+      },
+      "key_mode_key": {
+        "name": "Način gumba {key}",
+        "state": {
+          "light": "Razsvetljava",
+          "move": "Žaluzija",
+          "scene": "Scena",
+          "property": "Lastnost",
+          "rtr": "Temperatura",
+          "switch": "Preklapljanje",
+          "gateway": "Prehod"
+        }
+      },
+      "schedules": {
+        "name": "Urniki"
+      },
+      "scenes": {
+        "name": "Scene"
+      },
+      "switch_off_at": {
+        "name": "Izklopi ob"
+      },
+      "switch_on_threshold": {
+        "name": "Prag vklopa"
+      },
+      "switch_off_threshold": {
+        "name": "Prag izklopa"
+      },
+      "last_seen": {
+        "name": "Nazadnje zaznano"
+      },
+      "rssi": {
+        "name": "Moč signala"
+      },
+      "hops": {
+        "name": "Skoki"
+      },
+      "last_restart": {
+        "name": "Zadnji ponovni zagon"
+      },
+      "clock_offset": {
+        "name": "Odstopanje ure"
+      },
+      "iv_index": {
+        "name": "Indeks IV"
+      },
+      "sequence_used": {
+        "name": "Porabljene zaporedne številke"
+      },
+      "mesh_sequence_used": {
+        "name": "Porabljene zaporedne številke v omrežju mesh"
+      },
+      "switching_cycles": {
+        "name": "Preklopni cikli"
+      },
+      "power_on_cycles": {
+        "name": "Število vklopov"
+      },
+      "gateway_ip": {
+        "name": "Naslov IP"
+      },
+      "gateway_firmware": {
+        "name": "Različica strojne programske opreme"
+      },
+      "gateway_firmware_build": {
+        "name": "Gradnja strojne programske opreme"
+      },
+      "gateway_serial": {
+        "name": "Serijska številka"
+      },
+      "gateway_access_requests": {
+        "name": "Zahteve za dostop",
+        "state_attributes": {
+          "clients": {
+            "name": "Odjemalci"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "Odjemalci API",
+        "state_attributes": {
+          "clients": {
+            "name": "Odjemalci"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Dnevnik napak",
+        "state_attributes": {
+          "entries": {
+            "name": "Vnosi"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Zadnje nalaganje izvoza"
+      },
+      "forced_off": {
+        "name": "Trajni vklop/izklop",
+        "state": {
+          "inactive": "Neaktivno",
+          "off": "Trajno izklopljeno",
+          "on": "Trajno vklopljeno"
+        }
+      },
+      "sleep_mode": {
+        "name": "Način spanja",
+        "state": {
+          "awake": "Budna",
+          "asleep": "Spi"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referenčna vožnja"
+      },
+      "identify": {
+        "name": "Identificiraj"
+      },
+      "clear_faults": {
+        "name": "Počisti okvare"
+      },
+      "reset_consumption": {
+        "name": "Ponastavi porabo"
+      },
+      "fetch_gateway_export": {
+        "name": "Pridobi izvoz s prehoda"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Položaj žaluzije po vrnitvi omrežne napetosti"
+      },
+      "blind_ventilation_position": {
+        "name": "Položaj za prezračevanje"
+      },
+      "color_temp_max": {
+        "name": "Največja barvna temperatura"
+      },
+      "color_temp_min": {
+        "name": "Najmanjša barvna temperatura"
+      },
+      "comfort_temperature": {
+        "name": "Temperatura udobja"
+      },
+      "default_color_temp": {
+        "name": "Barvna temperatura ob vklopu"
+      },
+      "default_lightness": {
+        "name": "Svetlost ob vklopu"
+      },
+      "eco_temperature": {
+        "name": "Temperatura ECO"
+      },
+      "frost_protection_temperature": {
+        "name": "Temperatura zaščite pred zmrzaljo"
+      },
+      "lightness_max": {
+        "name": "Največja svetlost"
+      },
+      "lightness_min": {
+        "name": "Najmanjša svetlost"
+      },
+      "lock_time_limit": {
+        "name": "Časovna omejitev zaklepa"
+      },
+      "motor_reversal_time": {
+        "name": "Najkrajši čas preklopa smeri motorja"
+      },
+      "off_delay": {
+        "name": "Zakasnitev izklopa"
+      },
+      "on_delay": {
+        "name": "Zakasnitev vklopa"
+      },
+      "pir_sensor_a": {
+        "name": "Polje zaznavanja A"
+      },
+      "pir_sensor_b": {
+        "name": "Polje zaznavanja B"
+      },
+      "pir_sensor_c": {
+        "name": "Polje zaznavanja C"
+      },
+      "repetition_time": {
+        "name": "Čas ponavljanja"
+      },
+      "running_time": {
+        "name": "Čas vožnje"
+      },
+      "sensor_offset": {
+        "name": "Odmik temperaturnega senzorja"
+      },
+      "slat_position_on_power": {
+        "name": "Položaj lamel po vrnitvi omrežne napetosti"
+      },
+      "slat_ventilation_position": {
+        "name": "Položaj lamel za prezračevanje"
+      },
+      "slats_move_time": {
+        "name": "Čas preklopa lamel"
+      },
+      "switch_blocking_time": {
+        "name": "Najkrajši čas ponovitve preklopa"
+      },
+      "switch_on_brightness": {
+        "name": "Prag svetlosti"
+      },
+      "timed_on_duration": {
+        "name": "Čas naknadnega delovanja"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Način delovanja",
+        "state": {
+          "blinds": "Žaluzija (z lamelami)",
+          "shutter": "Roleta (brez lamel)",
+          "awning": "Tenda"
+        }
+      },
+      "controller_type": {
+        "name": "Izhod regulatorja",
+        "state": {
+          "pi_control": "Pulzno-širinska modulacija (PWM)",
+          "two_point_control": "Dvopoložajna regulacija"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Način merjenja svetlosti",
+        "state": {
+          "guard": "Mesto montaže",
+          "presence": "Svetlost v prostoru"
+        }
+      },
+      "dim_mode": {
+        "name": "Način zatemnjevanja",
+        "state": {
+          "leading_edge": "Rezanje začetka faze (RL)",
+          "trailing_edge": "Rezanje konca faze (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Način delovanja",
+        "state": {
+          "none": "Brez",
+          "comfort": "Udobje",
+          "eco": "ECO",
+          "frost": "Zaščita pred zmrzaljo"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Padajoči rob",
+        "state": {
+          "no_reaction": "Brez odziva",
+          "on": "Vklop",
+          "off": "Izklop",
+          "toggle": "Preklop"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Padajoči rob {key}",
+        "state": {
+          "no_reaction": "Brez odziva",
+          "on": "Vklop",
+          "off": "Izklop",
+          "toggle": "Preklop"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Naraščajoči rob",
+        "state": {
+          "no_reaction": "Brez odziva",
+          "on": "Vklop",
+          "off": "Izklop",
+          "toggle": "Preklop"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Naraščajoči rob {key}",
+        "state": {
+          "no_reaction": "Brez odziva",
+          "on": "Vklop",
+          "off": "Izklop",
+          "toggle": "Preklop"
+        }
+      },
+      "led_colour_off": {
+        "name": "Barva LED (izklopljeno)",
+        "state": {
+          "red": "Rdeča",
+          "green": "Zelena",
+          "white": "Bela",
+          "blue": "Modra",
+          "violet": "Vijolična",
+          "orange": "Oranžna",
+          "yellow": "Rumena",
+          "cyan": "Cian",
+          "no_color": "Brez barve"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "Barva LED (izklopljeno) {key}",
+        "state": {
+          "red": "Rdeča",
+          "green": "Zelena",
+          "white": "Bela",
+          "blue": "Modra",
+          "violet": "Vijolična",
+          "orange": "Oranžna",
+          "yellow": "Rumena",
+          "cyan": "Cian",
+          "no_color": "Brez barve"
+        }
+      },
+      "led_colour_on": {
+        "name": "Barva LED (vklopljeno)",
+        "state": {
+          "red": "Rdeča",
+          "green": "Zelena",
+          "white": "Bela",
+          "blue": "Modra",
+          "violet": "Vijolična",
+          "orange": "Oranžna",
+          "yellow": "Rumena",
+          "cyan": "Cian",
+          "no_color": "Brez barve"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "Barva LED (vklopljeno) {key}",
+        "state": {
+          "red": "Rdeča",
+          "green": "Zelena",
+          "white": "Bela",
+          "blue": "Modra",
+          "violet": "Vijolična",
+          "orange": "Oranžna",
+          "yellow": "Rumena",
+          "cyan": "Cian",
+          "no_color": "Brez barve"
+        }
+      },
+      "main_page": {
+        "name": "Lokalni prikaz",
+        "state": {
+          "target_temperature": "Nastavljena temperatura",
+          "current_temperature": "Dejanska temperatura",
+          "clock": "Ura"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Vedenje po vrnitvi omrežne napetosti",
+        "state": {
+          "no_reaction": "Brez odziva",
+          "move_up": "Dvig na 0 %",
+          "move_down": "Spust na 100 %",
+          "stop": "Ustavitev",
+          "move_to_stored_position": "Shranjen položaj",
+          "position_for_network_failure": "Položaj ob izpadu omrežja"
+        }
+      },
+      "operation_site": {
+        "name": "Mesto uporabe",
+        "state": {
+          "indoor": "Notranjost",
+          "outdoor": "Zunanjost"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Vedenje po vrnitvi napetosti",
+        "state": {
+          "off": "Izklopljeno",
+          "on": "Vklopljeno",
+          "restore": "Prejšnje stanje"
+        }
+      },
+      "sensor_selection": {
+        "name": "Temperaturni senzor",
+        "state": {
+          "internal": "Prostor",
+          "external": "Tla",
+          "internal_and_external": "Prostor in tla"
+        }
+      },
+      "valve_output": {
+        "name": "Prilagoditev ventila",
+        "state": {
+          "normally_closed": "NC - brez napetosti zaprt",
+          "normally_open": "NO - brez napetosti odprt"
+        }
+      },
+      "lock_function": {
+        "name": "Funkcija zaklepa",
+        "state": {
+          "unlocked": "Odklenjeno",
+          "keep_state": "Zaklenjeno (ohrani položaj)",
+          "lockout_protection": "Zaščita pred zaklepom zunaj",
+          "wind_alarm": "Alarm vetra"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Vse vtičnice"
+      },
+      "room_sockets": {
+        "name": "Vse vtičnice v prostoru {room}"
+      },
+      "automatic_dst": {
+        "name": "Samodejna sprememba ure"
+      },
+      "backlight_auto_off": {
+        "name": "Samodejno izklopi zaslon"
+      },
+      "blinds_invert_output": {
+        "name": "Obratno delovanje"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Dnevno delovanje"
+      },
+      "dim_to_warm": {
+        "name": "Toplo zatemnjevanje"
+      },
+      "input_edge_mode": {
+        "name": "Vrednotenje robov"
+      },
+      "input_edge_mode_key": {
+        "name": "Vrednotenje robov {key}"
+      },
+      "invert_output": {
+        "name": "Obrni preklopni izhod"
+      },
+      "led_colour_sync": {
+        "name": "Sinhroniziraj barve LED"
+      },
+      "led_night_mode": {
+        "name": "Nočni način LED"
+      },
+      "lock": {
+        "name": "Zaklep",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Način zaklepa",
+            "state": {
+              "keep_state": "Ohrani trenutno stanje",
+              "lockout_protection": "Zaščita pred zaklepom zunaj",
+              "wind_alarm": "Alarm vetra",
+              "enforced_value": "Vsiljeno stanje"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Časovna omejitev zaklepa"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Ročni izklop med časom naknadnega delovanja"
+      },
+      "prewarning": {
+        "name": "Opozorilo pred izklopom"
+      },
+      "scheduler_enabled": {
+        "name": "Samodejno delovanje"
+      },
+      "status_led": {
+        "name": "LED stanja"
+      },
+      "status_led_key": {
+        "name": "LED stanja {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Zmanjšana občutljivost na dotik"
+      },
+      "use_last_lightness": {
+        "name": "Uporabi prejšnjo svetlost"
+      },
+      "sensor_publication": {
+        "name": "Vrednosti senzorjev za sisteme IoT"
+      },
+      "local_devices_lock": {
+        "name": "Zaklep upravljanja"
+      },
+      "factory_reset_time_limit": {
+        "name": "Zaklep tovarniške ponastavitve"
+      },
+      "key_lock": {
+        "name": "Zaklep gumbov"
+      },
+      "configuration_lock": {
+        "name": "Zaklep konfiguracije na napravi"
+      },
+      "walking_test": {
+        "name": "Test hoje"
+      },
+      "time_keeper": {
+        "name": "Časovni vir"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Način delovanja",
+            "state": {
+              "blinds": "Žaluzija (z lamelami)",
+              "shutter": "Roleta",
+              "awning": "Tenda",
+              "unknown": "Neznano"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Vse žaluzije"
+      },
+      "room_blinds": {
+        "name": "Vse žaluzije v prostoru {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Zaščita pred zmrzaljo"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Vsi termostati"
+      },
+      "room_thermostats": {
+        "name": "Vsi termostati v prostoru {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Vse luči"
+      },
+      "room_lights": {
+        "name": "Vse luči v prostoru {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Strojna programska oprema"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Gumb A {subtype}",
+      "b": "Gumb B {subtype}",
+      "c": "Gumb C {subtype}",
+      "d": "Gumb D {subtype}",
+      "e1": "Vhod E1 {subtype}",
+      "e2": "Vhod E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "kliknjen",
+      "double_click": "dvakrat kliknjen",
+      "hold_start": "držanje začeto",
+      "hold_end": "držanje sproščeno",
+      "press_on": "pritisnjen vklop / gor",
+      "press_off": "pritisnjen izklop / dol",
+      "scene": "je priklical sceno",
+      "dim": "zatemnjuje",
+      "click_up": "kliknjen (zgornja polovica)",
+      "click_down": "kliknjen (spodnja polovica)",
+      "double_click_up": "dvakrat kliknjen (zgornja polovica)",
+      "double_click_down": "dvakrat kliknjen (spodnja polovica)",
+      "hold_start_up": "držanje začeto (zgornja polovica)",
+      "hold_start_down": "držanje začeto (spodnja polovica)",
+      "hold_end_up": "držanje sproščeno (zgornja polovica)",
+      "hold_end_down": "držanje sproščeno (spodnja polovica)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Ukaza ni bilo mogoče poslati v omrežje mesh JUNG; nobeno vozlišče proxy ni povezano."
+    },
+    "no_answer": {
+      "message": "Naprava JUNG se ni odzvala; ukaz je bil morda vseeno izveden in bo ob naslednji povezavi znova preverjen."
+    },
+    "device_not_reachable": {
+      "message": "{entity} se ni odzval na ukaz (3 poskusi v 9 s); morda ni bil izveden. Če se preostanek omrežja mesh še odziva, je naprava prikazana kot nedosegljiva, dokler je spet ne zaznamo: preverite, ali ima napajanje."
+    },
+    "cannot_load": {
+      "message": "Izvoza mesh {path} ni bilo mogoče prebrati."
+    },
+    "no_proxy_visible": {
+      "message": "Prek Bluetootha še ni vidno nobeno vozlišče omrežja mesh JUNG."
+    },
+    "export_keys_stale": {
+      "message": "Naprave omrežja mesh JUNG so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz izvoza: ključi so bili obnovljeni, potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME in ga uporabite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant nima adapterja ali proxyja Bluetooth, ki bi omogočal povezavo: omrežje mesh JUNG ni dosegljivo."
+    },
+    "duplicate_mesh": {
+      "message": "{others} že poganja to omrežje mesh JUNG HOME; naložen je lahko le en vnos na omrežje mesh. Odstranite enega od obeh vnosov."
+    },
+    "seq_store_not_written": {
+      "message": "Zapisa zaporednih številk starejše različice ni bilo mogoče shraniti v shrambo omrežja mesh (`.storage/junghome_ble.seq.*`); preverite, ali je v konfiguracijsko mapo mogoče pisati."
+    },
+    "seq_floor_not_written": {
+      "message": "Zapis zaporednih številk je bil obnovljen iz varnostne kopije in njegove spodnje meje (`.storage/junghome_ble.seq.*.floor`) pred preskokom naprej ni bilo mogoče zapisati; preverite, ali je v konfiguracijsko mapo mogoče pisati."
+    },
+    "service_entry_not_loaded": {
+      "message": "Integracija mesh JUNG HOME ni naložena (ali se ponovno nalaga); poskusite znova čez trenutek."
+    },
+    "service_not_connected": {
+      "message": "Omrežje mesh JUNG HOME ni povezano; poskusite znova, ko bo vozlišče proxy v dosegu."
+    },
+    "service_entry_ambiguous": {
+      "message": "Nastavljenih je več omrežij mesh JUNG HOME; podajte omrežje mesh (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} ni naprava ali entiteta omrežja mesh JUNG HOME."
+    },
+    "service_not_a_load": {
+      "message": "{name} ni naprava JUNG HOME, na kateri deluje to dejanje."
+    },
+    "service_not_a_key": {
+      "message": "{name} ni gumb tipkala JUNG HOME."
+    },
+    "service_key_required": {
+      "message": "{name} ima gumbe {keys}; za izbiro enega podajte črko gumba."
+    },
+    "service_unknown_key": {
+      "message": "{name} nima gumba {letter} (ima {keys})."
+    },
+    "service_no_loads": {
+      "message": "Cilj ne navaja nobene luči ali vtičnice JUNG HOME."
+    },
+    "service_target_other_network": {
+      "message": "Gumb in njegov cilj pripadata različnima omrežjema mesh."
+    },
+    "service_unknown_element": {
+      "message": "Elementa {address} ni v izvozu mesh."
+    },
+    "service_no_room": {
+      "message": "V izvozu mesh ni prostora z imenom {room}."
+    },
+    "service_room_exists": {
+      "message": "Prostor z imenom {room} že obstaja."
+    },
+    "service_room_key_drives_load": {
+      "message": "Ni odstranjeno iz prostora {room}: {device} preklaplja {button} prek vezave tega gumba na prostor, z odhodom iz prostora pa bi naprava izgubila tudi vezavo na gumb. Dejanje znova zaženite z možnostjo „Tudi če jo upravlja gumb“ ali gumbu najprej dodelite drugo funkcijo."
+    },
+    "service_invalid_room_name": {
+      "message": "Prostor potrebuje ime."
+    },
+    "service_no_mode": {
+      "message": "Elementu {address} ne ustreza noben način gumba; podajte način."
+    },
+    "service_invalid_mode": {
+      "message": "Načina {mode} ni mogoče uporabiti s ciljem {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Gumb {address} nima odjemalskega modela za način {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Ciljni element velja le za gumb, povezan z napravo, ne za prostor ali sceno."
+    },
+    "service_target_element_missing": {
+      "message": "Cilj {target} nima elementa {target_element}, ki bi ga gumb lahko upravljal."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Čas zaklepa velja le za način lock, od 0 do 65535 sekund."
+    },
+    "service_lock_unsupported": {
+      "message": "Gumb ne more zakleniti cilja {target}: z gumbom je mogoče zakleniti le luč ali vtičnico."
+    },
+    "service_no_element_group": {
+      "message": "Element {address} nima skupine elementov: aplikacija JUNG HOME ga ni nikoli povezala. Najprej ga enkrat povežite v aplikaciji."
+    },
+    "service_one_target": {
+      "message": "Podajte natanko en cilj: napravo, entiteto, prostor ali sceno."
+    },
+    "service_config_refused": {
+      "message": "Vozlišče {node} je zavrnilo {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Vozlišče {node} se ni odzvalo na {message}; ali ima napajanje in je v dosegu? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Ni poslano: {nodes} se niso odzvala na zadnjo zahtevo Home Assistanta in veljajo za nedosegljiva (njihove entitete niso na voljo), zato bi se načrt ustavil pri njihovem prvem sporočilu. Preverite, ali imajo napajanje in so v dosegu, in dejanje znova zaženite, ko se odzovejo. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Vozlišče {node} deluje na baterijo in se ni odzvalo na {message}: spi. Pritisnite enega od njegovih gumbov, da ga zbudite, nato takoj znova zaženite dejanje. Če se ne odzove niti na pritisk gumba, je njegova baterija običajno prazna: zamenjajte jo. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Gumb {address} ni sprejel načina gumba {mode}; njegove vezave so bile konfigurirane in so zabeležene v izvozu mesh — dejanje znova zaženite z istim ciljem, da nastavite način."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Gumb {address} ni sprejel scene {scene}; svoje priklice scen objavlja vsem napravam in to je zabeleženo v izvozu mesh — dejanje znova zaženite z isto sceno, da jo nastavite."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Gumb {address} ni sprejel svoje funkcije zaklepa (lastnost {property}); njegove vezave so bile konfigurirane in so zabeležene v izvozu mesh — dejanje znova zaženite z istim ciljem, da jo nastavite."
+    },
+    "service_export_newer": {
+      "message": "Izvoz mesh {path} je bil spremenjen zunaj Home Assistanta (v aplikaciji JUNG HOME ali ročno), potem ko ga je Home Assistant naložil. Projekt znova izvozite iz aplikacije, zamenjajte datoteko (Znova konfiguriraj) in poskusite znova."
+    },
+    "service_export_load_failed": {
+      "message": "Izvoza mesh {path} ni bilo mogoče prebrati: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Izvoza mesh {path} ni bilo mogoče zapisati: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} ne more sprejeti te vrednosti: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostat še ni sporočil svoje temperature {preset}; poskusite znova čez trenutek."
+    },
+    "led_colour_unknown": {
+      "message": "Barve LED za {entity} še niso znane; naprava se ni odzvala na branje."
+    },
+    "service_room_name_reserved": {
+      "message": "„{name}“ je ime, ki ga omrežje mesh rezervira za notranje skupine; izberite drugo ime prostora."
+    },
+    "service_name_blank": {
+      "message": "Ime ne sme biti prazno."
+    },
+    "service_name_too_long": {
+      "message": "Aplikacija JUNG HOME ne more preimenovati v „{name}“: njeno preimenovanje sprejme največ {max_length} znakov."
+    },
+    "service_name_not_allowed": {
+      "message": "Aplikacija JUNG HOME zavrne ime „{name}“: znak % razume kot začetek ograde (dovoljena sta le %% in %n)."
+    },
+    "service_room_range_full": {
+      "message": "V obsegu aplikacije ni več prostega skupinskega naslova; najprej v aplikaciji JUNG HOME izbrišite neuporabljen prostor."
+    },
+    "gateway_certificate_changed": {
+      "message": "Prehod JUNG HOME na naslovu {host} predstavlja drug certifikat od zabeleženega ({expected} proti {observed}). Če sta bila prehod ali njegov certifikat namenoma zamenjana, znova konfigurirajte vnos."
+    },
+    "service_ambiguous_scene": {
+      "message": "„{scene}“ je hkrati številka scene in ime druge scene; preimenujte tisto sceno, da ju boste lahko razlikovali."
+    },
+    "service_unknown_scene": {
+      "message": "V izvozu mesh ni scene „{scene}“; podajte ime scene, kot ga prikazuje aplikacija JUNG HOME, ali njeno številko."
+    },
+    "service_scene_exists": {
+      "message": "Scena z imenom „{scene}“ že obstaja."
+    },
+    "service_scene_range_full": {
+      "message": "V obsegu aplikacije ni več proste številke scene; najprej izbrišite neuporabljeno sceno."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant novim prostorom dodeli najvišje proste skupinske naslove iz obsega aplikacije, da naslednji prostori aplikacije ne dobijo istih; pod naslednjim so ostali le še {free} prosti naslovi in aplikacija bi ga kmalu dosegla. Izbrišite neuporabljene prostore ali vklopite možnost identitete provisionerja, ki Home Assistantu dodeli lasten obseg."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant novim scenam dodeli najvišje proste številke scen iz obsega aplikacije, da naslednje scene aplikacije ne dobijo istih; pod naslednjo so ostale le še {free} proste številke in aplikacija bi jo kmalu dosegla. Izbrišite neuporabljene scene ali vklopite možnost identitete provisionerja, ki Home Assistantu dodeli lasten obseg."
+    },
+    "add_device_groups_crowded": {
+      "message": "Skupine elementov nove naprave bi zasedle najvišje proste skupinske naslove iz obsega aplikacije, vendar so pod njimi ostali le še {free} prosti naslovi in naslednji prostori aplikacije bi jih kmalu dosegli. Izbrišite neuporabljene prostore ali vklopite možnost identitete provisionerja, ki Home Assistantu dodeli lasten obseg."
+    },
+    "service_not_a_scene_element": {
+      "message": "Element {address} ne more shranjevati scen (nima strežnika Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Naprava {address} ni shranila scene {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Naprava {address} nima prostora za sceno {scene}: hrani že {capacity} scen, vključno s scenami časovnikov. Najprej jo odstranite iz druge scene. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Naprava {address} po brisanju še vedno hrani sceno {scene} ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "Prehod JUNG HOME ni izročil svojega izvoza, to dejanje pa ga potrebuje: kopiji, ki jo hrani Home Assistant, morda manjka tisto, kar je aplikacija JUNG HOME medtem spremenila. Poskusite znova, ko se bo prehod odzval (v dnevniku piše, zakaj se ni)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "To omrežje je bilo nastavljeno iz datoteke, ki ji morda manjkajo scene, ustvarjene v aplikaciji JUNG HOME po izvozu; brisanje številk scen, ki jih datoteka ne pozna, bi te scene izbrisalo iz vseh naprav. Najprej zaženite preizkusni zagon in številke, ki jih navede, primerjajte z aplikacijo, nato brišite z vklopljeno možnostjo „Izvoz mesh je aktualen“ ali navedite številke za brisanje."
+    },
+    "service_unused_scenes_known": {
+      "message": "Številke scen {numbers} so scene izvoza mesh; te izbrišite z dejanjem „Izbriši sceno“."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Naprava {address} je shranila sceno {scene}, vendar ni sprejela opisa scene (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Stanje naprave {address} ni znano, zato bi bila scena {scene} shranjena brez opisa scene, odstranitev drugega kanala naprave iz scene pa bi nato odstranila tudi tega. Podajte stanje za shranjevanje (ali napravo enkrat preklopite) in poskusite znova. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "To omrežje ni bilo nastavljeno s prehoda JUNG HOME (v vnosu ni naslova prehoda in žetona); za sinhronizacijo vnos znova konfigurirajte s prehoda."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Prehod na naslovu {host} ni sprejel izvoza: {error}."
+    },
+    "service_send_failed": {
+      "message": "Povezava z omrežjem mesh JUNG je bila prekinjena med pošiljanjem {message} vozlišču {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Vozlišče {node} je v izvozu mesh {path}, ni pa v omrežju, ki ga je Home Assistant iz njega naložil prej; znova naložite integracijo (Nastavitve → Naprave in storitve → JUNG HOME → Ponovno naloži), da bo sledila izvozu, nato poskusite znova. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "Prehod JUNG HOME na naslovu {host} hrani novejši izvoz ({gateway}) od datoteke, ki bi jo naložil Home Assistant ({file}); nalaganje bi izbrisalo tisto, kar je aplikacija JUNG HOME medtem spremenila. Naslednja sprememba v Home Assistantu prevzame izvoz prehoda in nanj prenese lastne spremembe Home Assistanta. Če se ta napaka ponovi (vnos brez kopije zadnjega nalaganja aplikacije ju ne more razlikovati), znova pridobite izvoz prehoda (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj; datoteka, ki jo nadomesti, se ohrani poleg nje kot `.pre-reconfigure`), nato ponovite spremembo v Home Assistantu."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "Prehod JUNG HOME na naslovu {host} je odgovoril le z golo podatkovno bazo naprav (brez imen naprav ali povezav s prostori); njen prevzem bi jih izbrisal iz datoteke, ki jo hrani Home Assistant. Poskusite znova, ko prehod ne bo več zaseden, ali znova pridobite izvoz aplikacije."
+    },
+    "identify_no_answer": {
+      "message": "Naprava JUNG se ni odzvala na zahtevo za identifikacijo; ali ima napajanje in je v dosegu?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} ni omrežje mesh JUNG HOME; podajte config_entry_id enega od njih (ali ga izpustite, če je nastavljeno le eno)."
+    },
+    "service_all_not_supported": {
+      "message": "To dejanje ne sprejme entity_id: all; navedite luči, vtičnice, naprave, območja ali oznake, za katere velja."
+    },
+    "edge_detection_unknown": {
+      "message": "Vrednotenje robov za {entity} še ni znano; vhod se ni odzval na branje."
+    },
+    "reset_consumption_refused": {
+      "message": "Vtičnica JUNG ni ponastavila svojega števca {property}; še vedno sporoča vrednost, različno od 0."
+    },
+    "setup_state_unknown": {
+      "message": "Trenutna nastavitev za {entity} še ni znana; naprava se ni odzvala na branje."
+    },
+    "setting_no_answer": {
+      "message": "Naprava JUNG se ni odzvala niti na spremembo za {entity} niti na povratno branje; novo vrednost je morda vseeno sprejela. Ali ima napajanje in je v dosegu?"
+    },
+    "setting_asleep": {
+      "message": "Baterijska naprava za {entity} se ni odzvala: spi. Pritisnite enega od njenih gumbov, da jo zbudite, nato takoj znova izvedite spremembo. Če se ne odzove niti na pritisk gumba, je njena baterija običajno prazna: zamenjajte jo."
+    },
+    "setting_not_applied": {
+      "message": "Naprava JUNG ni sprejela nove vrednosti za {entity}; še vedno sporoča drugo."
+    },
+    "setting_not_supported": {
+      "message": "Naprava JUNG nima nastavitve za {entity}: na spremembo je odgovorila brez vrednosti."
+    },
+    "schedule_no_reply": {
+      "message": "Naprava JUNG {address} ni odgovorila glede svojih urnikov."
+    },
+    "schedule_not_applied": {
+      "message": "Naprava JUNG {address} ni sprejela spremembe mesta urnika {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Vseh 16 mest urnikov naprave JUNG {address} je zasedenih; najprej enega izbrišite."
+    },
+    "schedule_empty_slot": {
+      "message": "Mesto urnika {slot} naprave JUNG {address} ne vsebuje urnika."
+    },
+    "schedule_not_supported": {
+      "message": "{name} ne izvaja lastnih urnikov."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Urnik je bil že zapisan v {created}: tam ga izbrišite, preden znova pokličete, sicer ga bodo te naprave izvajale dvakrat."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Urnik ne ustreza za {name}: {fields} zanj ne velja."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Urnik ne ustreza za {name}: termostat potrebuje temperaturo."
+    },
+    "schedule_action_needs_position": {
+      "message": "Urnik ne ustreza za {name}: žaluzija potrebuje položaj."
+    },
+    "schedule_action_needs_action": {
+      "message": "Urnik ne ustreza za {name}: potrebuje dejanje (vklop ali izklop)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Urnik ne ustreza za {name}: svetlost sodi k dejanju vklop."
+    },
+    "threshold_not_supported": {
+      "message": "{name} ni merilna vtičnica JUNG HOME s pragovi."
+    },
+    "threshold_incomplete": {
+      "message": "{name} nima praga, ki bi ga bilo mogoče spremeniti (ali se ni odzvala): podajte moč in trajanje."
+    },
+    "threshold_not_applied": {
+      "message": "Vtičnica JUNG {address} ni sprejela svojega praga {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Praga {which} ni bilo mogoče poslati vtičnici JUNG {address}; nobeno vozlišče proxy ni povezano. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Vtičnica in naprave, ki naj jih preklapljajo njeni pragovi, pripadajo različnim omrežjem mesh."
+    },
+    "scene_state_not_applicable": {
+      "message": "Stanje ne ustreza za {name}: {fields} zanj ne velja."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Stanje ne ustreza za {name}: termostat potrebuje temperaturo."
+    },
+    "scene_state_needs_position": {
+      "message": "Stanje ne ustreza za {name}: žaluzija potrebuje položaj."
+    },
+    "scene_state_needs_action": {
+      "message": "Stanje ne ustreza za {name}: potrebuje dejanje (vklop ali izklop)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Stanje ne ustreza za {name}: svetlost sodi k dejanju vklop."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} ni pravočasno sporočil novega stanja; scena ni bila shranjena."
+    },
+    "service_gateway_token_rejected": {
+      "message": "Prehod JUNG HOME na naslovu {host} ne sprejema več dostopa Home Assistanta, zato mu izvoz ni bil predan. Znova odobrite dostop prek ponovnega preverjanja pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato to znova zaženite."
+    },
+    "seq_store_lost": {
+      "message": "Zapis zaporednih številk naslova {unicast} je izgubljen; Home Assistant ne bo znova uporabil številk, ki jih je omrežje mesh že videlo. Odprite težavo v popravilih, da jih preskočite."
+    },
+    "address_in_use": {
+      "message": "Vozlišče omrežja mesh zaseda naslov Home Assistanta {unicast}; integracijo znova konfigurirajte s prostim naslovom ({suggestion} je prost)."
+    },
+    "add_device_not_allowed": {
+      "message": "Dodajanje in odstranjevanje naprav je za to omrežje izklopljeno: najprej v možnostih integracije vklopite *Home Assistantu dovoli dodajanje in odstranjevanje naprav*."
+    },
+    "add_device_not_found": {
+      "message": "Nobena nova naprava JUNG ne oglašuje na naslovu {address}; zaženite `find_new_devices` in uporabite naslov, ki ga navede."
+    },
+    "add_device_not_jung": {
+      "message": "Naprava na naslovu {address} ne sporoča, da je naprava JUNG."
+    },
+    "add_device_no_template": {
+      "message": "V omrežju še ni nobene naprave izdelka {product}: prvo dodajte z aplikacijo JUNG HOME, Home Assistant pa kopira njeno konfiguracijo."
+    },
+    "add_device_no_address": {
+      "message": "Zunaj obsegov provisionerjev ni več prostega obsega naslovov za novo napravo."
+    },
+    "provisioner_identity_failed": {
+      "message": "Vnosa provisionerja Home Assistanta ni bilo mogoče združiti z izvozom ({error}); nič ni bilo spremenjeno. Glejte dnevnik."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant v tem omrežju ne more imeti lastnih obsegov naslovov: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Povezava z novo napravo ni uspela: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Priprava (provisioning) nove naprave ni uspela: {error}. Naprava je še vedno nova; poskusite znova."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Priprava (provisioning) nove naprave na naslovu {unicast} ni bila potrjena ({error}). Morda je prejela ključe omrežja, zato jo Home Assistant hrani kot čakajočo: ponastavite jo z dejanjem `junghome_ble.reset_pending_device` (unicast {unicast}; dodajte `force`, če se ne odzove, kot se ne more naprava, ki ključev ni nikoli prejela), nato jo dodajte znova. Njeni naslovi ostanejo do takrat rezervirani."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Ključa nove naprave ni bilo mogoče shraniti v trezor Home Assistanta ({error}), zato se je priprava ustavila, preden je naprava kar koli prejela: še vedno je nova in na naslovu {unicast} zanjo ni bilo nič rezervirano. Sprostite prostor ali popravite shrambo, nato poskusite znova."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Naprava je bila pripravljena (provisioning) na naslovu {unicast}, vendar njena konfiguracija ni uspela v koraku {step} ({error}), ponastavitve pa ni potrdila. Aplikacija je ne pozna: ponastavite jo z dejanjem `junghome_ble.reset_pending_device` (unicast {unicast}), nato jo dodajte znova. Njeni naslovi ostanejo do takrat rezervirani."
+    },
+    "add_device_record_failed": {
+      "message": "Naprava je bila konfigurirana, ni pa bila zabeležena na naslovu {unicast} ({error}). Aplikacija je ne pozna: ponastavite jo z dejanjem `junghome_ble.reset_pending_device` (unicast {unicast}), nato jo dodajte znova. Njeni naslovi ostanejo do takrat rezervirani."
+    },
+    "add_device_no_beacon": {
+      "message": "Indeks IV omrežja na trenutni povezavi Bluetooth še ni potrjen (nanjo ni prispel noben omrežni beacon), nova naprava pa bi obdržala napačnega. Počakajte na naslednjo povezavo z napravo JUNG in poskusite znova."
+    },
+    "add_device_key_refresh": {
+      "message": "Aplikacija JUNG HOME obnavlja omrežni ključ (osvežitev ključev, faza 1): naprava, dodana zdaj, bi dobila ključ, ki se umika. Obnovo ključa dokončajte v aplikaciji (Home Assistant ji sledi), nato poskusite znova."
+    },
+    "add_device_name_too_long": {
+      "message": "Ime „{name}“ je daljše, kot ga aplikacija JUNG HOME sprejme za napravo: največ {max_length} znakov."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Nobena naprava, ki jo je Home Assistant pripravil, ne da bi jo zabeležil, ni znana kot {device}; težava v popravilih *Naprava, ki jo je dodal Home Assistant, ni zabeležena* navaja naslove obstoječih."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Na naslovu {unicast} je zdaj druga naprava omrežja, zato ponastavitev ni bila poslana in nič ni bilo spremenjeno. Uporabite `force`, da pozabite čakajočo napravo na tem naslovu (ponastavite jo ročno, če še obstaja)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Naprava na naslovu {unicast} ni potrdila ponastavitve; nič ni bilo spremenjeno. Uporabite `force` za napravo, ki je bila ponastavljena ročno ali je dokončno izginila."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Ponastavitve ni bilo mogoče poslati napravi na naslovu {unicast} ({error}); nič ni bilo spremenjeno."
+    },
+    "remove_device_gateway": {
+      "message": "Prehoda ni mogoče odstraniti na ta način."
+    },
+    "remove_device_mesh": {
+      "message": "Navedite napravo JUNG, ne omrežja."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Naprava {address} ni potrdila ponastavitve in pozneje ni bila zaznana, da bi oglaševala kot nova naprava. Morda je bila vseeno ponastavljena (njena potrditev se lahko izgubi in v njenem dosegu morda ni nobenega skenerja Bluetooth) ali pa ponastavitve ni prejela; izvoz mesh je nespremenjen. Dejanje znova zaženite ali uporabite `force`, če je naprava dokončno izginila."
+    },
+    "remove_device_proxy": {
+      "message": "Naprava {address} je vozlišče proxy, prek katerega je povezan Home Assistant: njena ponastavitev bi prekinila povezavo, po kateri pride potrditev. Počakajte, da se Home Assistant poveže prek druge naprave (senzor „Vozlišče proxy“), ali uporabite `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Zaklep naprave za {entity} še ni znan; naprava se ni odzvala na branje."
+    },
+    "cover_locked": {
+      "message": "{entity} je zaklenjen in prezre ukaze, dokler ni odklenjen (njegovo stikalo „Zaklep“ ali „Funkcija zaklepa“)."
+    },
+    "cover_wind_alarm": {
+      "message": "{entity} zadržuje alarm vetra; prezre ukaze, dokler alarm ni končan (njegova „Funkcija zaklepa“ ali stikalo „Zaklep“)."
+    },
+    "load_locked": {
+      "message": "{entity} je zaklenjen (v aplikaciji JUNG HOME, z gumbom ali s svojim stikalom „Zaklep“) in ohrani svoje stanje, dokler ni odklenjen."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} ni zatemnilnik JUNG HOME: na ta način je mogoče zatemnjevati le zatemnilnike in kanale DALI tunable white."
+    },
+    "locate_no_answer": {
+      "message": "Naprava JUNG {node} se ni odzvala na zahtevo, naj oglašuje svojo identiteto; ali ima napajanje in je v dosegu? Baterijska naprava spi in se odziva le, ko je budna."
+    },
+    "locate_refused": {
+      "message": "Naprava JUNG {node} je zavrnila oglaševanje svoje identitete: {status}."
+    },
+    "locate_not_supported": {
+      "message": "Naprava JUNG {node} ne more oglaševati svoje identitete (Node Identity ni podprt)."
+    },
+    "approve_no_gateway": {
+      "message": "To omrežje ni bilo nastavljeno s prehoda JUNG HOME (v vnosu ni naslova prehoda in žetona): ni prehoda, na katerem bi bilo mogoče odobriti odjemalce."
+    },
+    "approve_gateway_distrusted": {
+      "message": "Prehod JUNG HOME na naslovu {host} ni bil vprašan: {error}. Nič ni bilo odobreno."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "Prehod JUNG HOME na naslovu {host} ne sprejema več dostopa Home Assistanta, zato ni bilo nič odobreno. Znova odobrite dostop prek ponovnega preverjanja pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato to znova zaženite."
+    },
+    "approve_client_not_waiting": {
+      "message": "Noben odjemalec API z imenom „{client}“ ne čaka na dostop na prehodu (čakajo: {waiting}). Nič ni bilo odobreno."
+    },
+    "approve_gateway_busy": {
+      "message": "Prehod JUNG HOME na naslovu {host} je zaseden z drugo zahtevo za konfiguracijo; poskusite znova čez minuto. Nič ni bilo odobreno."
+    },
+    "approve_gateway_failed": {
+      "message": "Prehod JUNG HOME na naslovu {host} ni storil, kar je bilo zahtevano: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant ne posodablja strojne programske opreme JUNG: napravo posodobite z aplikacijo JUNG HOME."
+    },
+    "add_device_node_not_configured": {
+      "message": "Nove naprave na naslovu {unicast} ni bilo mogoče konfigurirati v koraku {step} ({error}). Home Assistant jo je ponastavil, kot to stori aplikacija JUNG HOME, in to je potrdila: spet je nova naprava in zanjo ni nič rezervirano. Naprava, ki ni izdelek ali vložek, ki ga oglašuje, je tako zavrnjena; sicer jo dodajte znova."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Priprava (provisioning) nove naprave na naslovu {unicast} ni bila potrjena ({error}). Home Assistant jo je ponastavil in to je potrdila: spet je nova naprava in zanjo ni nič rezervirano. Poskusite znova."
+    },
+    "time_keeper_role_failed": {
+      "message": "Naprava na naslovu {address} ni prevzela svoje časovne vloge ({error}). Objava njenega Time Serverja je bila že spremenjena: ko se naprava odzove, znova preklopite časovni vir."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} preklaplja sobni termostat {thermostats} (povezan v aplikaciji JUNG HOME) in se, tako kot v aplikaciji, ne preklaplja ročno."
+    },
+    "load_forced_short": {
+      "message": "Senzor za {entity} ga drži vklopljenega ali izklopljenega (trajni vklop/izklop): za konec premaknite stikalo senzorja za samodejno delovanje v srednji položaj."
+    },
+    "load_forced_on_button": {
+      "message": "Senzor za {entity} ga drži vklopljenega (trajno ON): za konec pritisnite gumb ON na senzorju."
+    },
+    "load_forced_off_button": {
+      "message": "Senzor za {entity} ga drži izklopljenega (trajno OFF): za konec pritisnite gumb OFF na senzorju."
+    },
+    "load_forced_on_presence": {
+      "message": "Senzor za {entity} ga drži vklopljenega (trajno ON): konča ga programirni gumb senzorja."
+    },
+    "load_forced_off_presence": {
+      "message": "Senzor za {entity} ga drži izklopljenega (trajno OFF): konča ga programirni gumb senzorja."
+    },
+    "cover_slats_open": {
+      "message": "{entity} je popolnoma odprt: njegovih lamel ni mogoče premikati, dokler ni spuščen, tako kot v aplikaciji JUNG HOME."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} je v načinu boost: pred nastavitvijo temperature izberite drugo prednastavitev, da končate boost, tako kot v aplikaciji JUNG HOME."
+    },
+    "service_detector_device_only": {
+      "message": "Senzor {address} lahko upravlja le eno napravo: podajte ciljno luč, vtičnico ali napravo, ne prostora ali scene."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Senzor {address} ne more upravljati cilja v načinu {mode}: senzor nima načina gumba, zato le preklaplja luč, vtičnico ali žaluzijo v načinu, ki ga določa cilj, brez funkcije zaklepa, sobnega termostata, prehoda ali ciljnega elementa."
+    },
+    "gateway_fetch_refused": {
+      "message": "Izvoz ni bil pridobljen s prehoda JUNG HOME na naslovu {host}: {error}. Nič se ni spremenilo; obvestila v popravilih povedo, kaj storiti."
+    },
+    "service_unknown_area": {
+      "message": "Območja z ID-jem {id} ni."
+    },
+    "service_not_a_scene": {
+      "message": "{name} ni scena omrežja JUNG HOME."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Odstranitve naprave ni mogoče razveljaviti: za izvedbo klicu dodajte \"confirm: true\" (ali \"dry_run: true\", da vidite, kaj bi naredilo)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Brisanje scene, tudi če se naprava ne odzove, pusti sceno shranjeno v tej napravi: za izvedbo klicu dodajte \"confirm: true\" (ali \"dry_run: true\", da vidite, kaj bi naredilo)."
+    },
+    "plan_key_device": {
+      "message": "{key} zdaj upravlja {target}; sporočil: {messages}"
+    },
+    "plan_key_room": {
+      "message": "{key} zdaj upravlja prostor {room}; sporočil: {messages}"
+    },
+    "plan_key_scene": {
+      "message": "{key} zdaj prikliče sceno {scene}; sporočil: {messages}"
+    },
+    "plan_key_cleared": {
+      "message": "{key} zdaj nima funkcije; sporočil: {messages}"
+    },
+    "plan_room_joined": {
+      "message": "{devices} zdaj v prostoru {room}; sporočil: {messages}"
+    },
+    "plan_room_left": {
+      "message": "{devices} odstranjeno iz prostora {room}; sporočil: {messages}"
+    },
+    "plan_room_deleted": {
+      "message": "Prostor {room} izbrisan; sporočil: {messages}"
+    },
+    "plan_device_removed": {
+      "message": "{device} odstranjena iz omrežja; sporočil drugim napravam: {messages}"
+    },
+    "plan_scene_deleted": {
+      "message": "Scena {scene} izbrisana; sporočil: {messages}"
+    },
+    "plan_finished": {
+      "message": "{action} končano; sporočil: {messages}"
+    },
+    "plan_stopped": {
+      "message": "{action} ustavljeno po {applied} od {total} sporočil: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} preklicano po {applied} od {total} sporočil; izvoz mesh beleži, kaj je bilo uveljavljeno"
+    },
+    "logbook_scene_from_key": {
+      "message": "je priklical sceno {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "sprostitev ni bila pravočasno zaznana"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "povezava izgubljena"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integracija ustavljena"
+    },
+    "logbook_scene_number": {
+      "message": "Scena {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scena"
+    },
+    "logbook_recalled": {
+      "message": "je bila priklicana"
+    },
+    "logbook_recalled_by": {
+      "message": "je bila priklicana z naprave {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Naprave JUNG HOME manjkajo v izvozu",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova pridobi izvoz s prehoda",
+            "description": "Naprave omrežja mesh JUNG HOME {title} ({count}) se oglašajo prek Bluetootha, vendar jih ni v izvozu, ki ga je naložil Home Assistant: {devices}. V namestitev so bile dodane (ali znova pripravljene) po nastanku tega izvoza, zato Home Assistant zanje nima entitet. Potrdite, da s prehoda JUNG HOME na naslovu {host} z dostopom, ki ga Home Assistant že ima, pridobite trenutni izvoz, ga preverite in iz njega znova nastavite integracijo, kot to stori Znova konfiguriraj → Znova ga pridobi s prehoda; izvoz, ki ga nadomesti, se ohrani kot kopija (`.pre-reconfigure`). Težava izgine, ko jih novi izvoz navaja. Še ni preverjeno na resničnih napravah."
+          },
+          "upload": {
+            "title": "Naloži nov izvoz",
+            "description": "Naprave omrežja mesh JUNG HOME {title} ({count}) se oglašajo prek Bluetootha, vendar jih ni v izvozu, ki ga je naložil Home Assistant: {devices}. V namestitev so bile dodane (ali znova pripravljene) po nastanku tega izvoza, zato Home Assistant zanje nima entitet. Omrežje izvozite iz aplikacije JUNG HOME (Projekt → Deli prek datoteke) in datoteko naložite tukaj: Home Assistant jo preveri, jo hrani pod `junghome_ble/` v svoji konfiguracijski mapi (vsebuje vse ključe mesh) in iz nje znova nastavi integracijo; izvoz, ki ga nadomesti, se ohrani kot kopija. Vnos, ki je izvoz bral s poti na gostitelju, odslej uporablja naloženo kopijo — če želite ohraniti pot, namesto tega tja kopirajte novo datoteko in uporabite Znova konfiguriraj. Težava izgine, ko jih novi izvoz navaja. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "export_file": "Datoteka izvoza mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+          "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+          "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+          "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+          "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+          "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+          "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+          "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0.",
+          "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+          "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+          "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "not_a_directory": "Pot do metapodatkov ni mapa.",
+          "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+          "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+          "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
+          "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+          "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Naprave JUNG HOME manjkajo v izvozu",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova pridobi izvoz s prehoda",
+            "description": "Naprave omrežja mesh JUNG HOME {title} ({count}) se oglašajo prek Bluetootha, vendar jih ni v izvozu, ki ga je naložil Home Assistant: {devices}. V namestitev so bile dodane (ali znova pripravljene) po nastanku tega izvoza, zato Home Assistant zanje še nima entitet. Home Assistant prehod vpraša za trenutni izvoz in ga sam prevzame, ko jih ta navaja. Potrdite, da s prehoda JUNG HOME na naslovu {host} z dostopom, ki ga Home Assistant že ima, pridobite trenutni izvoz, ga preverite in iz njega znova nastavite integracijo, kot to stori Znova konfiguriraj → Znova ga pridobi s prehoda; izvoz, ki ga nadomesti, se ohrani kot kopija (`.pre-reconfigure`). Če težava ostane, jih ne pozna niti izvoz prehoda: enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (naloži svoj projekt), nato znova popravite. Še ni preverjeno na resničnih napravah."
+          },
+          "upload": {
+            "title": "Naloži nov izvoz",
+            "description": "Naprave omrežja mesh JUNG HOME {title} ({count}) se oglašajo prek Bluetootha, vendar jih ni v izvozu, ki ga je naložil Home Assistant: {devices}. V namestitev so bile dodane (ali znova pripravljene) po nastanku tega izvoza, zato Home Assistant zanje še nima entitet. Home Assistant prehod vpraša za trenutni izvoz in ga sam prevzame, ko jih ta navaja. Omrežje izvozite iz aplikacije JUNG HOME (Projekt → Deli prek datoteke) in datoteko naložite tukaj: Home Assistant jo preveri, jo hrani pod `junghome_ble/` v svoji konfiguracijski mapi (vsebuje vse ključe mesh) in iz nje znova nastavi integracijo; izvoz, ki ga nadomesti, se ohrani kot kopija. Vnos, ki je izvoz bral s poti na gostitelju, odslej uporablja naloženo kopijo — če želite ohraniti pot, namesto tega tja kopirajte novo datoteko in uporabite Znova konfiguriraj. Če težava ostane, jih ne pozna niti izvoz prehoda: enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (naloži svoj projekt), nato znova popravite. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "export_file": "Datoteka izvoza mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+          "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+          "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+          "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+          "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+          "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+          "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+          "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0.",
+          "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+          "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+          "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "not_a_directory": "Pot do metapodatkov ni mapa.",
+          "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+          "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+          "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
+          "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+          "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "Aplikacija JUNG HOME je spremenila namestitev",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova pridobi izvoz s prehoda",
+            "description": "Zaznano je bilo, da je aplikacija JUNG HOME spremenila konfiguracijo naprave omrežja mesh {title} (vezavo gumba, prostor, sceno ali nastavitev naprave), zato izvoz, ki ga je naložil Home Assistant, morda ne ustreza več namestitvi: tisto, kar je bilo spremenjeno v aplikaciji, še ni v Home Assistantu. Potrdite, da s prehoda JUNG HOME na naslovu {host} z dostopom, ki ga Home Assistant že ima, pridobite trenutni izvoz, ga preverite in iz njega znova nastavite integracijo, kot to stori Znova konfiguriraj → Znova ga pridobi s prehoda; izvoz, ki ga nadomesti, se ohrani kot kopija (`.pre-reconfigure`). Še ni preverjeno na resničnih napravah."
+          },
+          "upload": {
+            "title": "Naloži nov izvoz",
+            "description": "Zaznano je bilo, da je aplikacija JUNG HOME spremenila konfiguracijo naprave omrežja mesh {title} (vezavo gumba, prostor, sceno ali nastavitev naprave), zato izvoz, ki ga je naložil Home Assistant, morda ne ustreza več namestitvi: tisto, kar je bilo spremenjeno v aplikaciji, še ni v Home Assistantu. Ko v aplikaciji končate, iz nje izvozite omrežje (Projekt → Deli prek datoteke) in datoteko naložite tukaj: Home Assistant jo preveri, jo hrani pod `junghome_ble/` v svoji konfiguracijski mapi (vsebuje vse ključe mesh) in iz nje znova nastavi integracijo; izvoz, ki ga nadomesti, se ohrani kot kopija. Vnos, ki je izvoz bral s poti na gostitelju, odslej uporablja naloženo kopijo — če želite ohraniti pot, namesto tega tja kopirajte novo datoteko in uporabite Znova konfiguriraj, kar prav tako počisti to obvestilo. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "export_file": "Datoteka izvoza mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+          "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+          "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+          "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+          "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+          "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+          "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+          "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0.",
+          "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+          "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+          "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "not_a_directory": "Pot do metapodatkov ni mapa.",
+          "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+          "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+          "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
+          "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+          "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Tipkala JUNG HOME z drugim vložkom kot v izvozu",
+      "description": "{devices}: ta tipkala omrežja mesh JUNG HOME {title} oglašujejo drug vložek od tistega v izvozu, ki ga je naložil Home Assistant (izvoz → naprava). Vložek je bil zamenjan po nastanku tega izvoza, zato lahko Home Assistant in aplikacija zanje prikazujeta napačno vrsto porabnika. Preverite naprave v aplikaciji JUNG HOME, znova izvozite omrežje in posodobite to integracijo (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj); težava izgine, ko izvoz navaja vložke, ki jih naprave oglašujejo. Še ni preverjeno na resničnih napravah."
+    },
+    "node_clock_wrong": {
+      "title": "Naprave JUNG HOME z napačno uro",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Pošlji čas zdaj",
+            "description": "{devices}: te naprave omrežja mesh JUNG HOME {title} morda izvajajo urnike (časovno preklapljanje ali preklapljanje ob sončnem vzhodu / zahodu), njihova ura pa je napačna: brez časa, več kot minuto drugačna od ure Home Assistanta ali z drugačnim zamikom časovnega pasu od tistega, ki jim ga je poslal Home Assistant. Njihovi urniki se izvajajo ob napačnem času, dokler znova ne dobijo časa. Home Assistant ga pošlje po vsaki povezavi in enkrat na dan; potrdite, da ga pošljete zdaj in te naprave znova vprašate. Težava izgine, ko odgovorijo s pravilnim časom. Če se vrne, preverite časovni pas Home Assistanta (Nastavitve → Sistem → Splošno) in ali so naprave dosegljive. Še ni preverjeno na resničnih napravah."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "not_connected": "Home Assistant trenutno ni povezan z omrežjem mesh. Poskusite znova, ko bo povezan."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Ključi mesh JUNG HOME se spreminjajo",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova pridobi izvoz s prehoda",
+            "description": "Omrežje mesh {title} je napovedalo osvežitev ključev (Key Refresh), za katero Home Assistant ni zaznal razdeljevanja novega omrežnega ključa (osvežitvi ključev, ki jo vidi od začetka, sledi in ne sproži ničesar). Ko se konča, ključi v izvozu, ki ga uporablja Home Assistant, ne bodo več veljavni in upravljanje se bo ustavilo. Najprej pustite, da se obnova ključa v aplikaciji JUNG HOME konča. Potrdite, da s prehoda JUNG HOME na naslovu {host} z dostopom, ki ga Home Assistant že ima, pridobite trenutni izvoz, ga preverite in iz njega znova nastavite integracijo, kot to stori Znova konfiguriraj → Znova ga pridobi s prehoda; izvoz, ki ga nadomesti, se ohrani kot kopija (`.pre-reconfigure`). Še ni preverjeno na resničnih napravah."
+          },
+          "upload": {
+            "title": "Naloži nov izvoz",
+            "description": "Omrežje mesh {title} je napovedalo osvežitev ključev (Key Refresh), za katero Home Assistant ni zaznal razdeljevanja novega omrežnega ključa (osvežitvi ključev, ki jo vidi od začetka, sledi in ne sproži ničesar). Ko se konča, ključi v izvozu, ki ga uporablja Home Assistant, ne bodo več veljavni in upravljanje se bo ustavilo. Najprej pustite, da se obnova ključa v aplikaciji JUNG HOME konča. Omrežje izvozite iz aplikacije JUNG HOME (Projekt → Deli prek datoteke) in datoteko naložite tukaj: Home Assistant jo preveri, jo hrani pod `junghome_ble/` v svoji konfiguracijski mapi (vsebuje vse ključe mesh) in iz nje znova nastavi integracijo; izvoz, ki ga nadomesti, se ohrani kot kopija. Vnos, ki je izvoz bral s poti na gostitelju, odslej uporablja naloženo kopijo — če želite ohraniti pot, namesto tega tja kopirajte novo datoteko in uporabite Znova konfiguriraj. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "export_file": "Datoteka izvoza mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+          "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+          "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+          "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+          "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+          "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+          "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+          "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0.",
+          "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+          "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+          "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "not_a_directory": "Pot do metapodatkov ni mapa.",
+          "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+          "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+          "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
+          "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+          "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "Naprave JUNG HOME ne upoštevajo Home Assistanta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Preskoči številke, ki jih naprave poznajo",
+            "description": "Home Assistant prek svojega vozlišča proxy sliši omrežje mesh JUNG HOME {title}, vendar se na njegove zahteve po stanju ni odzvala niti ena naprava. Vozlišča zavržejo sporočila Home Assistanta kot ponovitve (replay). Verjetna sta dva vzroka: shramba zaporednih številk te integracije (`.storage/junghome_ble.*`) je bila izgubljena ali obnovljena iz starejše varnostne kopije, zato Home Assistant zdaj pošilja zaporedne številke, ki so jih vozlišča že videla; ali pa drug odjemalec mesh (na primer orodje `mesh_poc.py`) oddaja z istim naslovom unicast {unicast}. Home Assistantu dodelite nov, neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast in poskrbite, da ga ne uporablja noben drug odjemalec) ali pa, če je bila shramba izgubljena ali obnovljena (in naslova ne uporablja noben drug odjemalec), potrdite, da Home Assistant svoje zaporedne številke preskoči za 1 048 576 naprej in se znova poveže. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije: starejša kopija le ponovi številke, ki so jih naprave že videle. Težava izgine sama, takoj ko se kakšna naprava znova odzove Home Assistantu."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Drug odjemalec uporablja naslov JUNG HOME Home Assistanta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Preskoči zaporedne številke drugega odjemalca",
+            "description": "Home Assistant je prejel sporočilo omrežja mesh JUNG HOME {title}, poslano z njegovega lastnega naslova unicast {unicast} z zaporedno številko, ki je nikoli ni uporabil: drug odjemalec mesh oddaja z istim naslovom — druga namestitev Home Assistanta, orodje `mesh_poc.py`, nastavljeno s tem naslovom, ali kopija te namestitve, zagnana drugje. Dva pošiljatelja na enem naslovu ponovno uporabljata zaporedne številke drug drugega, naprave pa zavržejo vse, kar je pod številkami drugega odjemalca, zato Home Assistant v omrežje mesh ne pošilja ničesar, dokler to ni popravljeno (ukazi ne uspejo, stanja se ne osvežujejo). Ustavite drugega odjemalca ali njemu ali Home Assistantu dodelite drug neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast). Nato potrdite, da Home Assistant nadaljuje svoje zaporedne številke za tistimi, s katerimi je bil zaznan drugi odjemalec, in znova pošilja. Če drugi odjemalec še naprej pošilja s tega naslova, se težava vrne. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Drug odjemalec še vedno uporablja naslov JUNG HOME Home Assistanta",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Znova preskoči zaporedne številke drugega odjemalca",
+            "description": "Home Assistant je preskočil zaporedne številke drugega odjemalca mesh na svojem naslovu {unicast} v omrežju mesh JUNG HOME {title}, drugi odjemalec pa je od takrat znova pošiljal s tega naslova: še vedno teče. Dokler teče, preskok naprej ne pomaga. Home Assistantu dodelite nov, neuporabljen naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast) ali ustavite drugega odjemalca oziroma ga premaknite na drug naslov. Do takrat Home Assistant v omrežje mesh ne pošilja ničesar. Potrdite šele, ko drugi odjemalec tega naslova ne uporablja več: Home Assistant nato znova nadaljuje za njegovimi številkami in spet začne pošiljati. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Ni Bluetootha za omrežje mesh JUNG HOME",
+      "description": "Omrežje mesh JUNG HOME {title} je dosegljivo prek Bluetootha, vendar Home Assistantu ni ostal noben adapter ali proxy Bluetooth, ki bi omogočal povezavo: adapter je izklopljen, odklopljen ali v okvari ali pa so vsi proxyji Bluetooth ESPHome z aktivnimi povezavami brez povezave. Vse naprave omrežja mesh so nedosegljive, dokler se eden ne vrne. Preverite Nastavitve → Naprave in storitve → Bluetooth. Težava izgine, takoj ko je adapter ali proxy Bluetooth spet na voljo."
+    },
+    "duplicate_mesh": {
+      "title": "Dva vnosa pokrivata isto omrežje mesh JUNG HOME",
+      "description": "{title} in {others} sta oba nastavljena za isto omrežje mesh JUNG HOME. Delita si njegove števce zaporednih številk (`.storage/junghome_ble.seq.*`), zato lahko teče le eden: {others} teče, {title} pa ni bil zagnan. Odstranite enega od teh vnosov (Nastavitve → Naprave in storitve); če odstranite {others}, nato znova naložite {title}."
+    },
+    "gateway_import": {
+      "title": "Prevzemite entitete integracije JUNG HOME Gateway",
+      "description": "Integracija JUNG HOME Gateway je nastavljena poleg integracije Bluetooth Mesh {title}, zato vsaka luč, vtičnica, gumb in scena obstajajo dvakrat. Entitete prehoda premaknite sem — ohranijo svoje ID-je entitet, imena, območja in zgodovino — pod Nastavitve → Naprave in storitve → JUNG HOME (Bluetooth Mesh) → Znova konfiguriraj → Uvozi entitete integracije JUNG HOME Gateway, nato izbrišite vnos prehoda. To težavo prezrite, če želite obdržati obe."
+    },
+    "export_stale": {
+      "title": "Ključi mesh JUNG HOME so se spremenili",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova pridobi izvoz s prehoda",
+            "description": "Home Assistant je povezan z vozliščem omrežja mesh JUNG HOME {title}, vendar ničesar, kar sliši, ni mogoče dešifrirati s ključi iz izvoza: vsa omrežna sporočila in beacon vozlišča ne prestanejo overjanja. Omrežje mesh je po nastanku tega izvoza dokončalo osvežitev ključev (v aplikaciji JUNG HOME „obnova ključa“), zato je datoteka zastarela. Potrdite, da s prehoda JUNG HOME na naslovu {host} z dostopom, ki ga Home Assistant že ima, pridobite trenutni izvoz, ga preverite in iz njega znova nastavite integracijo, kot to stori Znova konfiguriraj → Znova ga pridobi s prehoda; izvoz, ki ga nadomesti, se ohrani kot kopija (`.pre-reconfigure`). Težava izgine, takoj ko je kakšno sporočilo spet mogoče dešifrirati. Še ni preverjeno na resničnih napravah."
+          },
+          "upload": {
+            "title": "Naloži nov izvoz",
+            "description": "Home Assistant je povezan z vozliščem omrežja mesh JUNG HOME {title}, vendar ničesar, kar sliši, ni mogoče dešifrirati s ključi iz izvoza: vsa omrežna sporočila in beacon vozlišča ne prestanejo overjanja. Omrežje mesh je po nastanku tega izvoza dokončalo osvežitev ključev (v aplikaciji JUNG HOME „obnova ključa“), zato je datoteka zastarela. Omrežje izvozite iz aplikacije JUNG HOME (Projekt → Deli prek datoteke) in datoteko naložite tukaj: Home Assistant jo preveri, jo hrani pod `junghome_ble/` v svoji konfiguracijski mapi (vsebuje vse ključe mesh) in iz nje znova nastavi integracijo; izvoz, ki ga nadomesti, se ohrani kot kopija. Vnos, ki je izvoz bral s poti na gostitelju, odslej uporablja naloženo kopijo — če želite ohraniti pot, namesto tega tja kopirajte novo datoteko in uporabite Znova konfiguriraj. Težava izgine, takoj ko je kakšno sporočilo spet mogoče dešifrirati. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "export_file": "Datoteka izvoza mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` iz aplikacije (Deli prek datoteke) ali `MeshNetwork.json` iz varnostne kopije iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
+          "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
+          "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
+          "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
+          "gateway_error": "Prehod je odgovoril z napako. Preverite njegovo stanje v aplikaciji JUNG HOME in poskusite znova.",
+          "gateway_busy": "Prehod je zaseden z drugo zahtevo za konfiguracijo. Poskusite znova čez minuto.",
+          "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
+          "invalid_export": "Datoteka ni izvoz mesh JUNG HOME (ali pa je poškodovana): vsebovati mora omrežje z njegovimi ključi, vozlišči in enim omrežnim ključem z indeksom 0.",
+          "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
+          "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
+          "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "not_a_directory": "Pot do metapodatkov ni mapa.",
+          "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
+          "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
+          "upload_failed": "Naložene datoteke ni bilo mogoče obdelati. Poskusite jo naložiti znova."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
+          "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
+          "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Certifikat prehoda JUNG HOME se je spremenil",
+      "description": "Prehod JUNG HOME na naslovu {host} se ne ujema več s certifikatom TLS, ki ga je zanj pripel Home Assistant: gostitelj predstavlja drug certifikat ali pa vozlišče prehoda prek omrežja mesh sporoča drugega. Home Assistant je prenehal uporabljati prehod (tja se ne pošiljata niti žeton za dostop niti izvoz); naprave še naprej delujejo prek Bluetootha. Če ste prehod ali njegov certifikat zamenjali, odprite Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj in znova pridobite izvoz s prehoda; sicer se v vašem omrežju kot prehod morda odziva druga naprava — preverite svoje omrežje."
+    },
+    "gateway_sync_failed": {
+      "title": "Izvoz JUNG HOME ni bil predan prehodu",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Predaj izvoz prehodu",
+            "description": "Home Assistant je spremenil namestitev JUNG HOME (prostor, vezavo gumba ali sceno) in znova zapisal svoj izvoz mesh, vendar prehod JUNG HOME na naslovu {host} novega izvoza ni sprejel: {error}. Dokler ga ne sprejme, prehod in aplikacija prikazujeta staro stanje — naslednja sprememba v aplikaciji pa bi prepisala spremembo Home Assistanta. Home Assistant poskusi še dvakrat v razmiku 15 sekund, kot to stori aplikacija. Preverite, ali je prehod dosegljiv, nato potrdite, da mu izvoz predate zdaj, kot to stori dejanje „Sinhroniziraj prehod“ (`junghome_ble.sync_gateway`): zavrne, če prehod hrani spremembe, ki jih Home Assistant ni videl in bi jih nalaganje izbrisalo. Težava izgine, ko nalaganje uspe. Še ni preverjeno na resničnih napravah."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "not_loaded": "Vnos JUNG HOME, ki mu pripada ta težava, trenutno ne teče. Poskusite znova, ko bo nastavljen.",
+          "sync_failed": "Izvoz ni bil predan prehodu: {error} Težava ostaja; znova jo popravite, ko vzrok izgine."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "Sprememba JUNG HOME na {title} je bila prekinjena",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sprememba JUNG HOME je bila prekinjena",
+            "description": "Home Assistant se je ustavil sredi dejanja {action}: {accepted} od njegovih {total} konfiguracijskih sporočil je doseglo naprave. Ta so zdaj zabeležena v izvozu mesh, tako da izvoz pove, kaj naprave hranijo. Dejanje znova zaženite z istim ciljem, da ga dokončate. S prehodom JUNG HOME mu zabeleženi izvoz preda naslednja sprememba ali dejanje `junghome_ble.sync_gateway`. Potrdite, da opustite to obvestilo."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Ime naprave ni bilo posredovano aplikaciji JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Preimenuj napravo",
+            "description": "{device} je bila v Home Assistantu preimenovana v „{name}“, ime, ki ga aplikacija JUNG HOME zavrne: ime ne sme biti prazno ali daljše od 30 znakov, aplikacija pa znak % razume kot začetek ograde (dovoljena sta le %% in %n). Izvoz mesh in aplikacija ohranita staro ime naprave. Vnesite ime, ki ga aplikacija sprejme: Home Assistant z njim poimenuje napravo in ga kot vsako preimenovanje posreduje izvozu (s prehodom pa tudi aplikaciji). Težava izgine, ko je ime posredovano. Še ni preverjeno na resničnih napravah.",
+            "data": {
+              "name": "Ime"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Ime ne sme biti prazno.",
+          "name_not_allowed": "Aplikacija znak % razume kot začetek ograde: dovoljena sta le %% in %n.",
+          "name_too_long": "Aplikacija sprejme imena z največ 30 znaki."
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "not_loaded": "Vnos JUNG HOME, ki mu pripada ta težava, trenutno ne teče. Poskusite znova, ko bo nastavljen.",
+          "device_gone": "Naprave, ki jo navaja ta težava, ni več v Home Assistantu."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Naprave, ki jih je dodal Home Assistant, niso dobile novega omrežnega ključa",
+      "description": "Aplikacija JUNG HOME je obnovila omrežni ključ omrežja mesh {title} in Home Assistant je obnovi sledil do konca. Aplikacija ne pozna naprav, ki jih je dodal Home Assistant, zato jim Home Assistant novi ključ preda sam, vendar ga naprave na naslovih {addresses} niso potrdile. Poskrbite, da imajo napajanje in so v dosegu: Home Assistant poskusi znova ob vsaki novi povezavi Bluetooth. Naprava, ki novega ključa ni nikoli prejela, ni več dosegljiva: ponastavite jo na tovarniške nastavitve in jo dodajte znova (najprej jo odstranite iz Home Assistanta z `junghome_ble.remove_device` ali `junghome_ble.reset_pending_device`, z `force`). Na resnični napravi še ni preizkušeno. Težava izgine, ko vse take naprave potrdijo."
+    },
+    "pending_device": {
+      "title": "Naprava, ki jo je dodal Home Assistant, ni zabeležena",
+      "description": "Home Assistant je z `junghome_ble.add_device` pripravil (provisioning) napravo JUNG omrežja mesh {title}, vendar njena konfiguracija ali zapis v izvoz nista uspela: naprava na naslovu {addresses} ima ključe omrežja, aplikacija JUNG HOME in izvoz je ne poznata, njeni naslovi in skupine elementov pa ostanejo rezervirani, da jih ne dobi nobena druga naprava. Ponastavite jo z dejanjem `junghome_ble.reset_pending_device` (njen naslov unicast) in jo dodajte znova; za napravo, ki ste jo že ročno ponastavili, ali za napravo, ki je izginila, uporabite `force`. Na resnični napravi še ni preizkušeno. Težava izgine, ko ne ostane nobena taka naprava."
+    },
+    "vault_unwritable": {
+      "title": "Ključev naprav JUNG HOME ni mogoče shraniti",
+      "description": "Home Assistant med dodajanjem naprave na naslovu {address} ni mogel zapisati svojega trezorja za omrežje mesh {title} ({path}; zadnja napaka: {error}). Trezor hrani ključe naprav, ki jih doda Home Assistant in ki jih nima nič drugega, dokler jih ne zabeleži izvoz, zato naprava ni bila pripravljena: ni prejela ničesar in je še vedno nova. To običajno pomeni, da je disk poln ali da je bil njegov datotečni sistem znova priklopljen samo za branje, pogosto zaradi odpovedujoče kartice SD. Sprostite prostor ali popravite shrambo (datotečni sistem, znova priklopljen samo za branje, običajno zahteva ponovni zagon gostitelja), nato napravo dodajte znova; datotek trezorja ne urejajte, brišite ali zamenjujte. Na resnični napravi še ni preizkušeno. Težava izgine sama, takoj ko zapis v trezor uspe."
+    },
+    "carry_over_conflict": {
+      "title": "Aplikacija JUNG HOME je razveljavila spremembo, ki jo je Home Assistant naredil na {title}",
+      "description": "Home Assistant je prevzel izvoz, ki ga je aplikacija JUNG HOME nazadnje predala prehodu, in nanj prenesel svoje spremembe, vendar je aplikacija medtem spremenila iste vnose. Različica aplikacije je ohranjena za: {paths}. Naprave morda še vedno hranijo, kar je zapisal Home Assistant: {held}. Te prostore, scene in vezave preverite v aplikaciji in v Home Assistantu ter jih znova nastavite z ene strani. Aplikacija ne vidi, kaj doda Home Assistant, dokler ne uvozi datoteke. Težava izgine ob naslednjem prevzemu izvoza prehoda brez takega spora."
+    },
+    "scene_held": {
+      "title": "Naprave na {title} še vedno hranijo izbrisano sceno JUNG HOME",
+      "description": "Scena je bila izbrisana z možnostjo „Tudi če se naprava ne odzove“, medtem ko nekatere njene naprave niso bile dosegljive ali so jo zavrnile; še vedno jo hranijo in jo prikličejo ob vsaki sceni s to številko. Številka scene: naprave — {members}. Home Assistant teh številk ne dodeli nobeni novi sceni. Ko so naprave spet dosegljive, zaženite dejanje „Izbriši neuporabljene scene“ z izklopljeno možnostjo „Preizkusni zagon“: iz njih izbriše te številke in težava izgine."
+    },
+    "gateway_token_rejected": {
+      "title": "Prehod JUNG HOME ne sprejema več Home Assistanta",
+      "description": "Prehod JUNG HOME na naslovu {host} zavrača dostop, ki ga je Home Assistant registriral za omrežje mesh {title} (verjetno je bil odstranjen v aplikaciji JUNG HOME pod Nastavitve → Prehod → Dovoljenja za dostop). Home Assistant še naprej spreminja prostore, vezave gumbov in scene v svojem izvozu, vendar ga ne predaja več prehodu, zato aplikacija teh sprememb ne vidi; naprave še naprej delujejo. Home Assistant znova zahteva dostop: sledite njegovi zahtevi za ponovno preverjanje pristnosti JUNG HOME (Nastavitve → Naprave in storitve; Popravila jo navajajo tudi kot poteklo preverjanje pristnosti) in vnesite geslo omrežnega ključa prehoda ali odobrite novo zahtevo za dostop v aplikaciji. Težava izgine, ko prehod znova sprejme Home Assistant; dejanje „Sinhroniziraj prehod“ nato preda spremembe, narejene medtem."
+    },
+    "seq_store_lost": {
+      "title": "Zaporedne številke omrežja mesh JUNG HOME {title} so izgubljene",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Nadaljuj za že poslanimi številkami",
+            "description": "Shramba zaporednih številk te integracije (`.storage/junghome_ble.seq.*`) nima uporabnega zapisa za naslov Home Assistanta {unicast}, čeprav je ta naslov že pošiljal. Ponoven začetek pri 0 bi znova uporabil zaporedne številke, ki so jih naprave že videle: Home Assistanta ne bi upoštevale, vsaka ponovno uporabljena številka pa oslabi šifriranje omrežja mesh. Obnova shrambe iz varnostne kopije naredi enako — starejša kopija ponovi vse številke, poslane od njenega nastanka — zato datotek `junghome_ble.seq.*` ne obnavljajte. Potrdite, da Home Assistant nadaljuje 1 048 576 številk za zadnjo vrednostjo, ki jo še lahko prebere (4 194 304 za spodnjo mejo, ki jo vodi skupaj s števcem v `junghome_ble.seq.*.floor`, ali za 0, če ne ostane nobena), in znova nastavi integracijo."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "floor_not_written": "Spodnje meje zaporednih številk (`.storage/junghome_ble.seq.*.floor`) ni bilo mogoče zapisati: nič ni bilo spremenjeno in integracija ostaja ustavljena. Preverite disk, na katerem je konfiguracija Home Assistanta, nato znova popravite težavo."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Zaporednih številk JUNG HOME ni mogoče shraniti",
+      "description": "Home Assistant že več kot minuto ne more zapisati shrambe zaporednih številk omrežja mesh {title} ({path}; zadnja napaka: {error}). Vsako sporočilo napravam nosi novo zaporedno številko, Home Assistant pa pošilja le številke, ki jih je shranil, da ponovni zagon nobene ne ponovi: dokler zapis ne uspe, v omrežje mesh ne pošilja ničesar — ukazi ne uspejo in stanje se ne osvežuje. To običajno pomeni, da je disk poln ali da je bil njegov datotečni sistem znova priklopljen samo za branje, pogosto zaradi odpovedujoče kartice SD. Sprostite prostor ali popravite shrambo (datotečni sistem, znova priklopljen samo za branje, običajno zahteva ponovni zagon gostitelja); datotek shrambe ne urejajte, brišite ali zamenjujte. Težava izgine sama, takoj ko zapis uspe in se pošiljanje nadaljuje."
+    },
+    "address_in_use": {
+      "title": "Naslov JUNG HOME Home Assistanta je zaseden",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Premakni Home Assistant na {suggestion}",
+            "description": "V izvozu omrežja mesh {title} vozlišče zaseda naslov unicast {unicast}, s katerega pošilja Home Assistant. Oba bi veljala za enega pošiljatelja: naprave enega od njiju zavržejo kot ponovitev, odgovori pa gredo napačnemu. Potrdite, da Home Assistantu dodelite prost naslov {suggestion} in znova nastavite integracijo, kot to stori Znova konfiguriraj → Napredno → Naš naslov unicast. Poskrbite, da noben drug odjemalec mesh (orodja ukazne vrstice te integracije, drug Home Assistant) ne pošilja z {suggestion}. Zaporedne številke se vodijo za vsak naslov posebej: novi naslov nadaljuje svoj zapis ali, če ga Home Assistant zanj nima, začne dovolj daleč naprej, tako da nobena številka ni poslana dvakrat. Še ni preverjeno na resničnih napravah."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "cannot_load": "Izvoza vnosa ni bilo mogoče prebrati, zato prostega naslova ni mogoče določiti: nič se ni spremenilo. Naložite nov izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj.",
+          "no_free_address": "Izvoz ne pušča nobenega prostega naslova za Home Assistant: nič se ni spremenilo. Preverite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj.",
+          "address_taken": "{suggestion} v izvozu ni več prost (izvoz se je medtem spremenil): nič se ni spremenilo. Za nov predlog znova popravite težavo."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Naslov JUNG HOME Home Assistanta bi lahko bil dodeljen",
+      "description": "Naslov unicast {unicast}, s katerega Home Assistant pošilja v omrežju mesh {title}, leži znotraj obsega naslovov enega od provisionerjev aplikacije ali pa ga je uporabljalo odstranjeno vozlišče. Deluje, dokler aplikacija tam ne pripravi vozlišča; pred tem premaknite Home Assistant na prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast; {suggestion} je prost)."
+    },
+    "sequence_space_low": {
+      "title": "Zaporedne številke omrežja mesh JUNG HOME pohajajo",
+      "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Vsak pošiljatelj se na koncu tega prostora ustavi, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update), ki ga prehod JUNG HOME sproži sam; Home Assistant mu sledi, vendar ga ne sproži. Prehod naj ostane napajan in povezan z omrežjem mesh; brez prehoda se omrežje mesh ustavi, ko nekemu pošiljatelju zmanjka številk. Težava po posodobitvi izgine sama."
+    },
+    "iv_index_mismatch": {
+      "title": "Omrežje mesh JUNG HOME je na drugem indeksu IV",
+      "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours}: preveč narazen, da bi Home Assistant lahko sledil (omrežju mesh sledi do 42 naprej, največ enkrat na 192 ur, in nikoli nazaj). Naprave medtem Home Assistanta ne upoštevajo. To se zgodi, ko Home Assistanta ni bilo med številnimi posodobitvami IV, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Home Assistantu dodelite nov naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast): tam začne pri indeksu IV omrežja mesh. Shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi zaporedne številke, ki so jih naprave že videle, naslednji zagon pa ročni popravek tako ali tako prepiše. Težava izgine sama, ko prispe beacon v dosegu."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant je pred indeksom IV omrežja mesh JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Vrni se na indeks IV omrežja mesh",
+            "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours} — pred njim, kar omrežje mesh nikoli ni: naprave Home Assistanta ne upoštevajo, ta pa ne more slediti omrežju mesh, ki je za njim. To se zgodi, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Potrdite, da Home Assistant vrnete na indeks IV omrežja mesh in znova nastavite integracijo: njegove zaporedne številke se nadaljujejo nad vsemi številkami, ki jih je poslal od tega indeksa naprej, tako da nobena ni uporabljena dvakrat. Namesto tega shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi številke, ki so jih naprave že videle. Druga pot nazaj je nov naslov unicast za Home Assistant (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj). Še ni preverjeno na resničnih napravah: indeks IV pred omrežjem mesh še ni bil zaznan na resničnem omrežju."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "iv_index_not_ahead": "Home Assistant ni več nedosegljivo daleč pred omrežjem mesh ali pa se je njegovo stanje IV spremenilo, odkar je bila težava sprožena: nič ni bilo spremenjeno. Če se težava vrne, jo znova popravite.",
+          "seq_store_not_written": "Spodnje meje zaporednih številk (`.storage/junghome_ble.seq.*.floor`) ni bilo mogoče zapisati: nič ni bilo spremenjeno. Preverite disk, na katerem je konfiguracija Home Assistanta, nato znova popravite težavo."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "Pucki JUNG HOME nimajo časovnega vira",
+      "description": "Omrežje mesh {title} ima pucke aktuatorjev JUNG starejše vrste ({pucks}): čas dobijo od časovnega vira, naprave z omrežnim napajanjem, ki jim posreduje čas. Nobena naprava omrežja mesh ni časovni vir, zato časovniki puckov odstopajo. Vklopite stikalo *Časovni vir* (konfiguracijska entiteta, privzeto onemogočena) na eni napravi, ki je vedno napajana, na primer na vtičnici ali mini aktuatorju; aplikacija JUNG HOME ga izbere sama, ko konfigurira puck. Še ni preverjeno na resničnih napravah. Težava izgine, ko je kakšna naprava časovni vir."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Nastavi prostor",
+      "description": "Luči in vtičnice JUNG HOME umesti v prostor omrežja mesh (v aplikaciji „območje“). Prostor, ki še ne obstaja, se ustvari le z možnostjo „Ustvari prostor“, zato je napačno vtipkano ime zavrnjeno. Naprava zapusti vse druge prostore; gumbi, ki so že vezani na prostor, jo začnejo upravljati. Izvoz mesh se znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije. Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "room": {
+          "name": "Prostor",
+          "description": "Ime prostora v aplikaciji JUNG HOME."
+        },
+        "create": {
+          "name": "Ustvari prostor",
+          "description": "Ustvari prostor, če ga omrežje mesh s tem imenom nima. Izklopljeno: neznano ime je zavrnjeno."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Dodaj v prostor",
+      "description": "Luči, vtičnice in žaluzije JUNG HOME dodatno umesti v prostor omrežja mesh: ostanejo v prostorih, v katerih so, saj aplikacija dovoli, da je naprava v več prostorih. Prostor, ki še ne obstaja, se ustvari le z možnostjo „Ustvari prostor“. Gumbi, ki so že vezani na prostor, jih začnejo upravljati. Izvoz mesh se znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije. Še ni preverjeno na resničnih napravah. Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "room": {
+          "name": "Prostor",
+          "description": "Ime prostora v aplikaciji JUNG HOME."
+        },
+        "create": {
+          "name": "Ustvari prostor",
+          "description": "Ustvari prostor, če ga omrežje mesh s tem imenom nima. Izklopljeno: neznano ime je zavrnjeno."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Odstrani iz prostora",
+      "description": "Luči, vtičnice in žaluzije JUNG HOME odstrani iz prostora omrežja mesh; v drugih prostorih ostanejo, naprava pa lahko ostane brez prostora. Naprava, ki jo gumb upravlja prek svoje vezave na prostor, je zavrnjena, razen če je vklopljena možnost „Tudi če jo upravlja gumb“: z odhodom iz prostora izgubi tudi vezavo na ta gumb. Izvoz mesh se znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije. Še ni preverjeno na resničnih napravah. Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "room": {
+          "name": "Prostor",
+          "description": "Ime prostora v aplikaciji JUNG HOME."
+        },
+        "force": {
+          "name": "Tudi če jo upravlja gumb",
+          "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Ustvari prostor",
+      "description": "V izvozu mesh ustvari prazen prostor (napravam se nič ne pošlje). Home Assistant mu dodeli najvišji prosti skupinski naslov iz obsega aplikacije: aplikacija ga ne vidi, dokler ne uvozi datoteke, in svojemu naslednjemu prostoru dodeli najnižjega prostega. Na zahtevo odgovori s skupinskim naslovom prostora. Samo za skrbnike.",
+      "fields": {
+        "name": {
+          "name": "Ime",
+          "description": "Ime novega prostora."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Preimenuj prostor",
+      "description": "Preimenuje prostor v izvozu mesh (napravam se nič ne pošlje). Samo za skrbnike.",
+      "fields": {
+        "room": {
+          "name": "Prostor",
+          "description": "Trenutno ime prostora."
+        },
+        "new_name": {
+          "name": "Novo ime",
+          "description": "Novo ime."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Izbriši prostor",
+      "description": "Izbriše prostor: njegove naprave ga zapustijo, gumbi, vezani na prostor, izgubijo svojo funkcijo, prostor pa je odstranjen iz izvoza mesh. Same naprave ostanejo upravljive. Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "room": {
+          "name": "Prostor",
+          "description": "Ime prostora, ki ga želite izbrisati."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Dodeli gumb",
+      "description": "Gumb tipkala ali senzor poveže z lučjo, vtičnico, žaluzijo, sobnim termostatom, prehodom, prostorom ali sceno, natanko tako kot vezava gumba v aplikaciji JUNG HOME: prejšnja vezava gumba se odstrani, gumb se poveže s ciljem in nastavi se njegov način gumba (senzor ga nima in upravlja le eno napravo). Izvoz mesh se znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije. Senzor kot vir in način temperature še nista preverjena na resničnih napravah. Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "key_entity": {
+          "name": "Gumb",
+          "description": "Entiteta dogodka gumba ali entiteta senzorja."
+        },
+        "key_device": {
+          "name": "Naprava z gumbom",
+          "description": "Tipkalo, ki ima gumb (uporabite skupaj s „Črka gumba“, če ima več gumbov), ali senzor."
+        },
+        "key": {
+          "name": "Črka gumba",
+          "description": "Kateri gumb naprave: A, B, C ali D; E1 ali E2 za vhod mini aktuatorja."
+        },
+        "target_entity": {
+          "name": "Ciljna entiteta",
+          "description": "Luč, vtičnica, žaluzija ali sobni termostat, ki naj ga gumb upravlja."
+        },
+        "target_device": {
+          "name": "Ciljna naprava",
+          "description": "Naprava, ki naj jo gumb upravlja: luč, vtičnica ali prehod (gumb nato Home Assistantu sporoča klike, dvojne klike in držanja)."
+        },
+        "room": {
+          "name": "Ciljni prostor",
+          "description": "Prostor, katerega luči ali vtičnice naj gumb upravlja."
+        },
+        "scene": {
+          "name": "Ciljna scena",
+          "description": "Scena, ki naj jo gumb prikliče na vseh napravah, po številki ali imenu (način gumba scena; „Način“ pustite prazen). Na resnični napravi še ni preizkušeno."
+        },
+        "mode": {
+          "name": "Način",
+          "description": "Kaj gumb naredi: light (vklop/izklop in zatemnjevanje), switch (vklop/izklop), move (žaluzije; nepreizkušeno), gateway (sporočanje dogodkov), lock (stran zgoraj / vklop zaklene luč ali vtičnico v trenutnem stanju, stran spodaj / izklop jo odklene; še ni preverjeno na resničnih napravah), temperature (nastavljena temperatura sobnega termostata; še ni preverjeno na resničnih napravah) ali za prostore light_and_switch (luči in vtičnice skupaj). Če ostane prazno, se način ravna po cilju."
+        },
+        "target_element": {
+          "name": "Ciljni element",
+          "description": "Samo za naprave kot cilj: z odjemalcem zatemnjevanja gumba upravlja le drug del cilja, color_temperature (barvno temperaturo luči tunable white, način light) ali slat (lamele žaluzije, način move). Še ni preverjeno na resničnih napravah."
+        },
+        "lock_seconds": {
+          "name": "Čas zaklepa",
+          "description": "Samo za način lock: kako dolgo zaklep z gumbom velja, v sekundah (0 ali prazno: dokler ga gumb ne odklene). Še ni preverjeno na resničnih napravah."
+        },
+        "room_area": {
+          "name": "Prostor prek območja",
+          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+        },
+        "scene_entity": {
+          "name": "Entiteta scene",
+          "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Počisti gumb",
+      "description": "Gumbu tipkala odvzame funkcijo: odstrani se njegova vezava na napravo, prehod ali prostor (v aplikaciji „Brez funkcije“). Odgovori, koliko svojih sporočil so naprave uveljavile, ali je bil izvoz mesh zapisan in katere naprave so se spremenile; z možnostjo „Preizkusni zagon“ pa namesto tega, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "key_entity": {
+          "name": "Gumb",
+          "description": "Entiteta dogodka gumba."
+        },
+        "key_device": {
+          "name": "Naprava z gumbom",
+          "description": "Tipkalo, ki ima gumb (uporabite skupaj s „Črka gumba“, če ima več gumbov)."
+        },
+        "key": {
+          "name": "Črka gumba",
+          "description": "Kateri gumb naprave: A, B, C ali D; E1 ali E2 za vhod mini aktuatorja."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Ustvari sceno",
+      "description": "V izvozu mesh ustvari prazno sceno (napravam se nič ne pošlje). Naprave vanjo shranite z dejanjem „Shrani sceno“. Home Assistant ji dodeli najvišjo prosto številko scene iz obsega aplikacije: aplikacija je ne vidi, dokler ne uvozi datoteke, in svoji naslednji sceni dodeli najnižjo prosto. Na zahtevo odgovori s številko scene. Samo za skrbnike.",
+      "fields": {
+        "name": {
+          "name": "Ime",
+          "description": "Ime nove scene."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Preimenuj sceno",
+      "description": "Preimenuje sceno v izvozu mesh (napravam se nič ne pošlje). Samo za skrbnike.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Trenutno ime ali številka scene."
+        },
+        "new_name": {
+          "name": "Novo ime",
+          "description": "Novo ime."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "scene_entity": {
+          "name": "Entiteta scene",
+          "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Shrani sceno",
+      "description": "Trenutno stanje luči, vtičnic, žaluzij in termostatov JUNG HOME shrani v sceno, tako kot „Shrani napravo v sceno“ v aplikaciji: naprave najprej nastavite tako, kot naj jih scena pusti, nato pokličite to dejanje. Vsaka naprava shrani svoje stanje pod sceno (Scene Store) skupaj z opisom JUNG, izvoz mesh pa zabeleži člana. Home Assistant temu sledi brez ponovnega nalaganja integracije. Če je stanje podano (dejanje, svetlost, barvna temperatura, temperatura), se vsaka naprava najprej nastavi nanj in počaka, da ga doseže; žaluzija s podanim položajem se ne premakne, scena ji ta položaj shrani. Samo za skrbnike.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Ime ali številka scene (ustvarjene z dejanjem „Ustvari sceno“ ali v aplikaciji)."
+        },
+        "action": {
+          "name": "Dejanje",
+          "description": "Pred shranjevanjem vklopi ali izklopi luči in vtičnice."
+        },
+        "brightness_pct": {
+          "name": "Svetlost",
+          "description": "Pred shranjevanjem zatemni luči na to svetlost (dejanje je tedaj vklop)."
+        },
+        "color_temp_kelvin": {
+          "name": "Barvna temperatura",
+          "description": "Pred shranjevanjem nastavi luči tunable white na to barvno temperaturo."
+        },
+        "position": {
+          "name": "Položaj",
+          "description": "Položaj, v katerega scena premakne žaluzijo: 0 zaprto, 100 odprto."
+        },
+        "tilt_position": {
+          "name": "Položaj nagiba",
+          "description": "Položaj lamel, v katerega scena premakne žaluzijo; če je izpuščen, položaj žaluzije."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Pred shranjevanjem nastavi termostate na to temperaturo."
+        },
+        "scene_entity": {
+          "name": "Entiteta scene",
+          "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Stanje za shranjevanje",
+          "description": "Naprave najprej nastavi na to stanje; če ostane prazno, se shrani njihovo trenutno stanje."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Odstrani iz scene",
+      "description": "Luči, vtičnice, žaluzije in termostate JUNG HOME odstrani iz scene: vsaka naprava pozabi sceno (Scene Delete), izvoz mesh pa odstrani člana. Home Assistant temu sledi brez ponovnega nalaganja integracije. Samo za skrbnike.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Ime ali številka scene."
+        },
+        "scene_entity": {
+          "name": "Entiteta scene",
+          "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Izbriši sceno",
+      "description": "Izbriše sceno: vsaka naprava, ki jo je shranila, jo pozabi, gumbi teh naprav, ki jo prikličejo, izgubijo svoje vezave, scena pa je odstranjena iz izvoza mesh. Home Assistant temu sledi brez ponovnega nalaganja integracije. Na zahtevo odgovori z napravami, preskočenimi z možnostjo „Tudi če se naprava ne odzove“ (ta zahteva „Potrdi“), in s tem, kaj so sporočila gumbov uveljavila; z možnostjo „Preizkusni zagon“ pa, kaj bi poslalo in spremenilo. Samo za skrbnike.",
+      "fields": {
+        "scene": {
+          "name": "Scena",
+          "description": "Ime ali številka scene, ki jo želite izbrisati."
+        },
+        "force": {
+          "name": "Tudi če se naprava ne odzove",
+          "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        },
+        "scene_entity": {
+          "name": "Entiteta scene",
+          "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        },
+        "confirm": {
+          "name": "Potrdi",
+          "description": "Potrebno z možnostjo „Tudi če se naprava ne odzove“: naprave, ki obdrži sceno, od tu ni mogoče prisiliti, da jo pozabi. Za preizkusni zagon ni potrebno."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Izbriši neuporabljene scene",
+      "description": "Prebere register scen vsake naprave in navede ali izbriše scene, ki jih izvoz mesh ne pozna (niti scena niti scena časovnika aplikacije), kot to stori aplikacija, ko odpre svoj seznam časovnikov. Če ni drugače določeno, je to preizkusni zagon. S prehodom deluje le na trenutnem izvozu prehoda; pri omrežju, nastavljenem iz datoteke, brisanje zahteva „Izvoz mesh je aktualen“ ali številke za brisanje. Odgovori s številkami za vsako napravo. Samo za skrbnike.",
+      "fields": {
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo navede številke, ki bi bile izbrisane; nič se ne izbriše. Privzeto vklopljeno."
+        },
+        "numbers": {
+          "name": "Številke scen",
+          "description": "Izbriše samo te številke scen (nobena od njih ne sme biti scena izvoza mesh)."
+        },
+        "confirm_stale_export": {
+          "name": "Izvoz mesh je aktualen",
+          "description": "Za omrežje, nastavljeno iz datoteke: datoteka vsebuje vse scene aplikacije, tudi tiste, ustvarjene po izvozu. Brez tega se izbrišejo le navedene številke."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Sinhroniziraj prehod",
+      "description": "Izvoz mesh, ki ga uporablja Home Assistant, preda prehodu JUNG HOME, kot to stori aplikacija po vsaki spremembi. Samodejno se zažene po vsakem dejanju, ki znova zapiše izvoz; pokličite ga za nov poskus po popravilu „izvoz ni predan prehodu“ ali potem, ko ste datoteko uredili sami. Samo za skrbnike.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Preberi urnike",
+      "description": "Prebere urnike, ki jih porabniki JUNG HOME izvajajo sami (stran „Avtomatizacija“ v aplikaciji): do 16 mest na porabnika, vsako s sprožilcem ob času, sončnem vzhodu ali zahodu na izbrane dneve v tednu in s tem, kaj porabnik tedaj naredi. Za vsako entiteto odgovori z zasedenimi mesti, v poljih, ki jih sprejme „Ustvari urnik“."
+    },
+    "create_schedule": {
+      "name": "Ustvari urnik",
+      "description": "Zapiše urnik v prvo prosto mesto vsakega izbranega porabnika JUNG HOME, ki ga nato izvaja sam, brez Home Assistanta. Urnik ob sončnem vzhodu ali zahodu vozlišču najprej pošlje domačo lokacijo Home Assistanta. Za vsako entiteto odgovori z uporabljenim mestom. Na napravi še ni preizkušeno. Samo za skrbnike.",
+      "fields": {
+        "trigger": {
+          "name": "Sprožilec",
+          "description": "Kdaj se urnik sproži: ob določenem času dneva ali ob sončnem vzhodu ali zahodu."
+        },
+        "time": {
+          "name": "Čas",
+          "description": "Čas dneva za časovni urnik."
+        },
+        "not_before": {
+          "name": "Ne pred",
+          "description": "Urnik ob sončnem vzhodu ali zahodu se ne sproži prej kot ob tem času (če je izpuščeno, brez omejitve)."
+        },
+        "not_after": {
+          "name": "Ne po",
+          "description": "Urnik ob sončnem vzhodu ali zahodu se ne sproži pozneje kot ob tem času (če je izpuščeno, brez omejitve)."
+        },
+        "offset": {
+          "name": "Zamik",
+          "description": "Minute pred (negativno) ali po sončnem vzhodu ali zahodu."
+        },
+        "weekdays": {
+          "name": "Dnevi v tednu",
+          "description": "Dnevi, ob katerih se urnik sproži; če je izpuščeno, vsak dan."
+        },
+        "enabled": {
+          "name": "Omogočeno",
+          "description": "Ali se urnik sproži; onemogočen urnik čaka na „Omogoči urnik“."
+        },
+        "action": {
+          "name": "Dejanje",
+          "description": "Vklopi ali izklopi luč ali vtičnico."
+        },
+        "brightness_pct": {
+          "name": "Svetlost",
+          "description": "Svetlost, na katero se zatemnilnik vklopi (dejanje je tedaj vklop)."
+        },
+        "color_temp_kelvin": {
+          "name": "Barvna temperatura",
+          "description": "Barvna temperatura luči tunable white, v korakih po 100 K."
+        },
+        "position": {
+          "name": "Položaj",
+          "description": "Položaj, v katerega se premakne žaluzija: 0 zaprto, 100 odprto."
+        },
+        "tilt_position": {
+          "name": "Položaj nagiba",
+          "description": "Položaj lamel žaluzije; če je izpuščen, položaj žaluzije."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Ciljna temperatura sobnega termostata."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kdaj",
+          "description": "Kdaj se urnik sproži."
+        },
+        "what": {
+          "name": "Kaj",
+          "description": "Na kaj se porabnik nastavi, ko se urnik sproži."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Posodobi urnik",
+      "description": "Zasedeno mesto urnika vsakega izbranega porabnika JUNG HOME prepiše na mestu, kot to stori urejanje v aplikaciji, s polji, ki jih sprejme „Ustvari urnik“: podajte jih vsa znova, nič izpuščenega se ne ohrani iz mesta. Urnik ob sončnem vzhodu ali zahodu vozlišču najprej pošlje domačo lokacijo Home Assistanta; če zapis ne uspe, se v mesto znova zapiše njegov stari urnik. Še ni preverjeno na resničnih napravah. Samo za skrbnike.",
+      "fields": {
+        "slot": {
+          "name": "Mesto",
+          "description": "Številka mesta urnika (0–15), ki ga želite prepisati, kot ga navajata „Preberi urnike“ in senzor „Urniki“."
+        },
+        "trigger": {
+          "name": "Sprožilec",
+          "description": "Kdaj se urnik sproži: ob določenem času dneva ali ob sončnem vzhodu ali zahodu."
+        },
+        "time": {
+          "name": "Čas",
+          "description": "Čas dneva za časovni urnik."
+        },
+        "not_before": {
+          "name": "Ne pred",
+          "description": "Urnik ob sončnem vzhodu ali zahodu se ne sproži prej kot ob tem času (če je izpuščeno, brez omejitve)."
+        },
+        "not_after": {
+          "name": "Ne po",
+          "description": "Urnik ob sončnem vzhodu ali zahodu se ne sproži pozneje kot ob tem času (če je izpuščeno, brez omejitve)."
+        },
+        "offset": {
+          "name": "Zamik",
+          "description": "Minute pred (negativno) ali po sončnem vzhodu ali zahodu."
+        },
+        "weekdays": {
+          "name": "Dnevi v tednu",
+          "description": "Dnevi, ob katerih se urnik sproži; če je izpuščeno, vsak dan."
+        },
+        "enabled": {
+          "name": "Omogočeno",
+          "description": "Ali se urnik sproži; onemogočen urnik čaka na „Omogoči urnik“."
+        },
+        "action": {
+          "name": "Dejanje",
+          "description": "Vklopi ali izklopi luč ali vtičnico."
+        },
+        "brightness_pct": {
+          "name": "Svetlost",
+          "description": "Svetlost, na katero se zatemnilnik vklopi (dejanje je tedaj vklop)."
+        },
+        "color_temp_kelvin": {
+          "name": "Barvna temperatura",
+          "description": "Barvna temperatura luči tunable white, v korakih po 100 K."
+        },
+        "position": {
+          "name": "Položaj",
+          "description": "Položaj, v katerega se premakne žaluzija: 0 zaprto, 100 odprto."
+        },
+        "tilt_position": {
+          "name": "Položaj nagiba",
+          "description": "Položaj lamel žaluzije; če je izpuščen, položaj žaluzije."
+        },
+        "temperature": {
+          "name": "Temperatura",
+          "description": "Ciljna temperatura sobnega termostata."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kdaj",
+          "description": "Kdaj se urnik sproži."
+        },
+        "what": {
+          "name": "Kaj",
+          "description": "Na kaj se porabnik nastavi, ko se urnik sproži."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Omogoči urnik",
+      "description": "Mestu urnika porabnikov JUNG HOME znova dovoli, da se sproži. Samo za skrbnike.",
+      "fields": {
+        "slot": {
+          "name": "Mesto",
+          "description": "Številka mesta urnika (0–15), kot ga navajata „Preberi urnike“ in senzor „Urniki“."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Onemogoči urnik",
+      "description": "Prepreči, da bi se mesto urnika porabnikov JUNG HOME sprožilo, ne da bi ga izbrisalo. Samo za skrbnike.",
+      "fields": {
+        "slot": {
+          "name": "Mesto",
+          "description": "Številka mesta urnika (0–15), kot ga navajata „Preberi urnike“ in senzor „Urniki“."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Izbriši urnik",
+      "description": "Sprosti mesto urnika porabnikov JUNG HOME. Samo za skrbnike.",
+      "fields": {
+        "slot": {
+          "name": "Mesto",
+          "description": "Številka mesta urnika (0–15), kot ga navajata „Preberi urnike“ in senzor „Urniki“."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Nastavi prag",
+      "description": "Nastavi prag merilne vtičnice JUNG HOME, profil „Samodejno“ v aplikaciji: ko moč vtičnice za določeno trajanje ostane na tej ravni, vtičnica sama, brez Home Assistanta, vklopi (prag vklopa) ali izklopi (prag izklopa) izbrane luči in vtičnice. Na napravi še ni preizkušeno. Na zahtevo odgovori, koliko sporočil vezave so naprave uveljavile. Samo za skrbnike.",
+      "fields": {
+        "threshold": {
+          "name": "Prag",
+          "description": "Katerega od obeh pragov vtičnice nastaviti."
+        },
+        "power": {
+          "name": "Moč",
+          "description": "Raven moči v W (koraki po 0,1 W); če je izpuščena, trenutna raven vtičnice."
+        },
+        "duration": {
+          "name": "Trajanje",
+          "description": "Sekunde, ko mora moč ostati na tej ravni; če je izpuščeno, trenutno trajanje vtičnice."
+        },
+        "enabled": {
+          "name": "Omogočeno",
+          "description": "Ali prag preklaplja; onemogočen prag obdrži svojo raven in trajanje. Če je izpuščeno, prag obdrži svoje stanje (nov prag je omogočen). Če je onemogočen, medtem ko tudi drugi prag ni aktiven, se luči in vtičnice odvežejo kot v aplikaciji: ob ponovnem omogočanju znova podajte naprave."
+        },
+        "devices": {
+          "name": "Naprave",
+          "description": "Luči in vtičnice, ki jih preklapljata oba praga; nadomestijo trenutni seznam, če pa so izpuščene, seznam ostane. Ko se spremeni, se izvoz mesh znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Izbriši prag",
+      "description": "Počisti oba praga merilne vtičnice JUNG HOME in odveže luči in vtičnice, ki sta jih preklapljala, kot to stori brisanje v aplikaciji. Ko so bile naprave odvezane, Home Assistant sledi znova zapisanemu izvozu mesh brez ponovnega nalaganja integracije. Na zahtevo odgovori, koliko sporočil vezave so naprave uveljavile. Samo za skrbnike."
+    },
+    "audit_network": {
+      "name": "Preveri omrežje",
+      "description": "Brez kakršnih koli sprememb prebere, kaj vsebuje konfiguracija mesh naprav JUNG HOME — relay, network transmit, privzeti TTL, beacon, GATT proxy in friend, omrežne in aplikacijske ključe, ki jih ima vsaka naprava (po indeksu, nikoli ključa samega), ter za vsak model njegovo objavo, naročnine in vezane aplikacijske ključe — in to primerja z izvozom mesh. Za vsako napravo odgovori z njenimi nastavitvami in vsako najdeno razliko ter navede naprave, ki se niso odzvale. Preverjanje vseh naprav traja nekaj minut; baterijske naprave spijo in so izpuščene, razen če so navedene.",
+      "fields": {
+        "device": {
+          "name": "Naprava",
+          "description": "Preveri samo vozlišče mesh za to napravo (luč, gumb, vtičnica ali vozlišče samo). Če ostane prazno, se preverijo vsa vozlišča z omrežnim napajanjem."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Izvozi omrežje",
+      "description": "Odgovori z izvozom, ki ga uporablja Home Assistant — s prostori, gumbi, vezavami in scenami, ki jih je spremenil — kot projektno datoteko aplikacije JUNG HOME ali kot podatkovno bazo mesh, za varnostno kopijo ali za uvoz v aplikacijo. Samo za skrbnike: vsebuje vse ključe omrežja mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Oblika",
+          "description": "Projektna datoteka aplikacije (JungHome.json) ali podatkovna baza mesh (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Omrežje",
+          "description": "Omrežje JUNG HOME za izvoz; potrebno le, če jih je več."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Poišči nove naprave",
+      "description": "Navede naprave JUNG v bližini, ki še niso v omrežju, z naslovom Bluetooth, ki ga potrebuje `add_device`."
+    },
+    "add_device": {
+      "name": "Dodaj napravo (preizkusno)",
+      "description": "Novo napravo JUNG doda v omrežje, kot bi to storila aplikacija: pripravi jo (provisioning) z najmočnejšo metodo, ki jo naprava ponuja (Static OOB, če jo ponuja in je vrednost podana, z algoritmom HMAC-SHA256, sicer kot aplikacija No OOB — brez overjanja bi lahko nekdo v dosegu Bluetootha med postopkom prestregel ključe omrežja), jo konfigurira po pravilih aplikacije glede na to, kar naprava sporoča (zavrnjeno, če to ne ustreza temu, kar ima naprava istega izdelka, ki je že v omrežju), in jo zabeleži v izvoz (ki se preda prehodu). Naprava, katere konfiguracija ne uspe, se ponastavi, kot to stori aplikacija. Njene skupine elementov dobijo najvišje proste skupinske naslove iz obsega aplikacije (aplikacija naprave ne vidi, dokler ne uvozi datoteke). Odgovor navede opravljene korake. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje naprav*. Samo za skrbnike. Overjene metode, pravila konfiguracije in ponastavitev še niso preverjeni na resničnih napravah.",
+      "fields": {
+        "address": {
+          "name": "Naslov Bluetooth",
+          "description": "Naslov, ki ga za napravo navede `find_new_devices`."
+        },
+        "name": {
+          "name": "Ime",
+          "description": "Ime nove naprave."
+        },
+        "config_entry_id": {
+          "name": "Omrežje",
+          "description": "Omrežje JUNG HOME, v katero naj se doda; potrebno le, če jih je več."
+        },
+        "static_oob": {
+          "name": "Vrednost Static OOB",
+          "description": "Samo za napravo, ki ponuja overjanje Static OOB: njena 16- ali 32-bajtna vrednost v šestnajstiškem zapisu, kot jo dokumentira njen proizvajalec (za nobeno napravo JUNG ni znano, da bi ga ponujala). Nikoli se ne beleži. Naprava, ki sprejme le overjeno pripravo (provisioning), je brez nje zavrnjena, naprava, ki je ne ponuja, pa je z njo zavrnjena."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Odstrani napravo (preizkusno)",
+      "description": "Ponastavi napravo JUNG (pozabi omrežje in znova postane nova naprava) in jo odstrani iz omrežja, kot to stori aplikacija: vezave drugih naprav nanjo se odstranijo, izvoz jo zabeleži kot odstranjeno in se preda prehodu. Tega ni mogoče razveljaviti. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje in odstranjevanje naprav*. Potrebuje „Potrdi“; z možnostjo „Preizkusni zagon“ pa namesto tega odgovori, kaj bi poslalo in spremenilo, in ga ne potrebuje. Samo za skrbnike.",
+      "fields": {
+        "device": {
+          "name": "Naprava",
+          "description": "Naprava JUNG, ki jo želite odstraniti (katera koli od njenih naprav v Home Assistantu)."
+        },
+        "force": {
+          "name": "Tudi če se ne odzove",
+          "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje."
+        },
+        "confirm": {
+          "name": "Potrdi",
+          "description": "Potrebno za izvedbo: odstranitve naprave ni mogoče razveljaviti. Za preizkusni zagon ni potrebno."
+        },
+        "dry_run": {
+          "name": "Preizkusni zagon",
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Ponastavi čakajočo napravo (preizkusno)",
+      "description": "Ponastavi napravo JUNG, ki jo je `add_device` pripravil (provisioning), a je ni mogel konfigurirati ali zabeležiti (navaja jih težava v popravilih *Naprava, ki jo je dodal Home Assistant, ni zabeležena*): pošlje ji Config Node Reset s ključem naprave, ki ga ima le Home Assistant, da znova postane nova naprava, in sprosti njene naslove. Na resnični napravi še ni preizkušeno. Potrebuje možnost vnosa *Home Assistantu dovoli dodajanje naprav*. Samo za skrbnike.",
+      "fields": {
+        "uuid": {
+          "name": "UUID naprave",
+          "description": "UUID naprave, kot ga je podal `add_device` ali `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Naslov unicast",
+          "description": "Primarni naslov unicast naprave (šestnajstiško, kot ga navaja težava v popravilih); skupaj z UUID se morata ujemati oba."
+        },
+        "force": {
+          "name": "Tudi če se ne odzove",
+          "description": "Napravo pozabi, čeprav ne potrdi ponastavitve (ročno ponastavljena ali dokončno izginila)."
+        },
+        "config_entry_id": {
+          "name": "Omrežje",
+          "description": "Omrežje JUNG HOME, v katero je bila naprava dodana; potrebno le, če jih je več."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Lociraj napravo",
+      "description": "Napravo JUNG pripravi do tega, da do ene minute oddaja svojo Node Identity — oglas Bluetooth, ki ga z napravo povežejo le ključi tega omrežja mesh — in nato preneha, tako da lahko skener Bluetooth ugotovi, kateri radio je ta naprava. Drugega ne spremeni; naprava po eni minuti tako ali tako sama preneha. Samo za skrbnike. Še ni preverjeno na resničnih napravah.",
+      "fields": {
+        "device": {
+          "name": "Naprava",
+          "description": "Naprava JUNG, ki jo želite locirati (katera koli od njenih naprav v Home Assistantu)."
+        },
+        "duration": {
+          "name": "Trajanje",
+          "description": "Sekunde oddajanja, od 5 do 60 (naprava po 60 preneha sama)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Odobri odjemalca prehoda",
+      "description": "Navede odjemalce API, ki na prehodu JUNG HOME čakajo na dostop (druga integracija, skript), in odobri navedenega, kot to stori Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve v aplikaciji. Odobreni odjemalec dobi celoten API prehoda, vključno z izvozom omrežja z vsemi ključi mesh: odobrite samo odjemalca, ki ste ga zagnali sami. Brez imena odjemalca jih samo navede (vklopite odgovor). Preklic dostopa ostaja v aplikaciji. Samo za skrbnike, za omrežje, nastavljeno s prehoda. Še ni preverjeno na resničnih napravah.",
+      "fields": {
+        "client": {
+          "name": "Odjemalec",
+          "description": "Ime, pod katerim odjemalec prosi za dostop, natanko kot je navedeno pod `waiting`. Če ostane prazno, se nič ne odobri."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Začni zatemnjevanje",
+      "description": "Začne zatemnilnik JUNG HOME posvetljevati ali zatemnjevati, kot pri držanju zibke, dokler ne sledi „Ustavi zatemnjevanje“ (ali konec obsega). Na resnični napravi še ni preizkušeno.",
+      "fields": {
+        "direction": {
+          "name": "Smer",
+          "description": "Svetleje (gor) ali temneje (dol)."
+        },
+        "speed": {
+          "name": "Hitrost",
+          "description": "Kako hitro, v odstotkih obsega svetlosti na sekundo (privzeto 20: od izklopa do polne svetlosti v 5 sekundah)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Ustavi zatemnjevanje",
+      "description": "Zatemnilnik JUNG HOME, ki ga je zagnalo „Začni zatemnjevanje“, ustavi tam, kjer je zdaj. Na resnični napravi še ni preizkušeno."
+    },
+    "step_dim": {
+      "name": "Zatemni za korak",
+      "description": "Zatemnilnik JUNG HOME za en korak posvetli ali zatemni. Na resnični napravi še ni preizkušeno.",
+      "fields": {
+        "step": {
+          "name": "Korak",
+          "description": "Odstotek obsega svetlosti: pozitivno svetleje, negativno temneje."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Razsvetljava (vklop/izklop, zatemnjevanje)",
+        "switch": "Preklapljanje (vklop/izklop)",
+        "move": "Žaluzije (nepreizkušeno)",
+        "gateway": "Prehod (sporočanje dogodkov)",
+        "light_and_switch": "Luči in vtičnice (samo prostori)",
+        "lock": "Zaklepanje in odklepanje (še ni preverjeno na resničnih napravah)",
+        "temperature": "Temperatura (sobni termostat, nepreizkušeno)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Barvna temperatura (še ni preverjeno na resničnih napravah)",
+        "slat": "Lamele (še ni preverjeno na resničnih napravah)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Čas dneva",
+        "sunrise": "Sončni vzhod",
+        "sunset": "Sončni zahod"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Vklop",
+        "off": "Izklop"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Ponedeljek",
+        "tue": "Torek",
+        "wed": "Sreda",
+        "thu": "Četrtek",
+        "fri": "Petek",
+        "sat": "Sobota",
+        "sun": "Nedelja"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Prag vklopa",
+        "switch_off": "Prag izklopa"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Projektna datoteka aplikacije (JungHome.json)",
+        "cdb": "Podatkovna baza mesh (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Svetleje",
+        "down": "Temneje"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Stikalni vložek",
+        "two_gang_switch": "Stikalni vložek, 2-kratni",
+        "dimming": "Zatemnilni vložek",
+        "two_gang_dimming": "Zatemnilni vložek, 2-kratni",
+        "tw_dimming": "Vložek DALI",
+        "blind": "Vložek za žaluzije",
+        "extension": "Vložek pomožne postaje",
+        "not_available": "Brez vložka"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Gumb zgoraj / spodaj",
+        "one_rocker": "Zibka",
+        "two_left_two_right": "Gumb | Gumb",
+        "one_left_two_right": "Zibka | Gumb",
+        "two_left_one_right": "Gumb | Zibka",
+        "one_left_one_right": "Zibka | Zibka"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Tipkalo, 1-kratno",
+        "push_button_2": "Tipkalo, 2-kratno",
+        "socket_metering": "Vtičnica (z merjenjem energije)",
+        "socket": "Vtičnica",
+        "switch_actuator_mini": "Stikalni aktuator, 1-kratni, mini",
+        "blinds_actuator_mini": "Aktuator za žaluzije, 1-kratni, mini",
+        "wall_transmitter_1": "Stenski oddajnik, 1-kratni",
+        "wall_transmitter_2": "Stenski oddajnik, 2-kratni",
+        "motion_detector_1m": "Senzor gibanja 1 m",
+        "motion_detector_2m": "Senzor gibanja 2 m",
+        "presence_detector": "Senzor prisotnosti",
+        "room_thermostat": "Sobni termostat",
+        "gateway": "Prehod",
+        "switch_actuator_1_energy": "Stikalni aktuator, 1-kratni, 2 vhoda, merjenje energije",
+        "switch_actuator_2": "Stikalni aktuator, 2-kratni, 2 vhoda",
+        "dimmer_actuator": "Zatemnilni aktuator, 1-kratni, 2 vhoda",
+        "blinds_actuator": "Aktuator za žaluzije PP2, 1-kratni, 2 vhoda",
+        "dali_actuator": "Aktuator DALI, 1-kratni, 2 vhoda",
+        "mini_sensor_mains": "Mini senzor, 2 vhoda, omrežno napajanje",
+        "mini_sensor_battery": "Mini senzor, 2 vhoda, baterijsko napajanje"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Omrežje Bluetooth Mesh",
+        "switch": "Stikalna luč",
+        "dimmer": "Zatemnilna luč",
+        "ctl": "Luč tunable white (DALI)",
+        "blind": "Pogon žaluzije / rolete",
+        "push_buttons": "Gumbi",
+        "unknown_product": "Izdelek {pid}"
+      }
+    }
+  }
+}
