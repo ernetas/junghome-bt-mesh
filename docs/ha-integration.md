@@ -1888,7 +1888,7 @@ Unverified on air.
 **`junghome_ble.find_new_devices`** lists the JUNG devices nearby that are not in a network yet (they advertise the
 Mesh Provisioning Service 0x1827): Bluetooth address, Device UUID, product id, signal. **`junghome_ble.add_device`**
 (`address`, `name`, `static_oob`; administrators only) adds one the way the app does, and only when the entry's option
-*Allow Home Assistant to add devices* is on (it is off by default):
+*Allow Home Assistant to add and remove devices* is on (it is off by default):
 
 1. the name is checked first, as the app checks one — not blank, at most 30 characters, no `%` sign but `%%` and `%n`
    — and numbered as the app numbers a name another device already has (`Hall light` → `Hall light 2`; the action's

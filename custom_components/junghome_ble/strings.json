@@ -2660,7 +2660,7 @@
     },
     "add_device": {
       "name": "Add device (experimental)",
-      "description": "Adds a new JUNG device to the network as the app would: provisions it with the strongest method the device offers (Static OOB when it offers it and its value is given, the HMAC-SHA256 algorithm, else No OOB like the app — without authentication, someone in Bluetooth range while it runs could intercept the network's keys), configures it by the app's rules from what the device reports (refused when that is not what a device of the same product already in the network has), and records it in the export (handed to the gateway). A device whose configuration fails is reset, as the app does. Its element groups take the highest free group addresses of the app's range (the app does not see the device until it imports a file). The response lists the steps done. Needs the entry's *Allow Home Assistant to add devices* option. Administrators only. The authenticated methods, the configuration rules and the reset are unverified on air.",
+      "description": "Adds a new JUNG device to the network as the app would: provisions it with the strongest method the device offers (Static OOB when it offers it and its value is given, the HMAC-SHA256 algorithm, else No OOB like the app — without authentication, someone in Bluetooth range while it runs could intercept the network's keys), configures it by the app's rules from what the device reports (refused when that is not what a device of the same product already in the network has), and records it in the export (handed to the gateway). A device whose configuration fails is reset, as the app does. Its element groups take the highest free group addresses of the app's range (the app does not see the device until it imports a file). The response lists the steps done. Needs the entry's *Allow Home Assistant to add and remove devices* option. Administrators only. The authenticated methods, the configuration rules and the reset are unverified on air.",
       "fields": {
         "address": {
           "name": "Bluetooth address",
@@ -2704,7 +2704,7 @@
     },
     "reset_pending_device": {
       "name": "Reset pending device (experimental)",
-      "description": "Resets a JUNG device that `add_device` provisioned but could not configure or record (the repair issue *A device Home Assistant added is not recorded* lists them): sends it a Config Node Reset with the device key only Home Assistant holds, so it becomes a new device again, and frees its addresses. Not yet tried on a real device. Needs the entry's *Allow Home Assistant to add devices* option. Administrators only.",
+      "description": "Resets a JUNG device that `add_device` provisioned but could not configure or record (the repair issue *A device Home Assistant added is not recorded* lists them): sends it a Config Node Reset with the device key only Home Assistant holds, so it becomes a new device again, and frees its addresses. Not yet tried on a real device. Needs the entry's *Allow Home Assistant to add and remove devices* option. Administrators only.",
       "fields": {
         "uuid": {
           "name": "Device UUID",
