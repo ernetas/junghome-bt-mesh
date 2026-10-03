@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "通过蓝牙连接 JUNG HOME",
+        "description": "Home Assistant 使用 JUNG HOME 应用的网络导出文件（其中包含 Mesh 密钥），通过蓝牙直接加入您的 JUNG HOME Mesh。请选择导出文件的来源。",
+        "menu_options": {
+          "gateway": "从 JUNG HOME 网关获取",
+          "upload": "上传应用的导出文件",
+          "path": "使用 Home Assistant 主机上的文件"
+        },
+        "data": {
+          "cdb_path": "Mesh 导出文件",
+          "metadata_dir": "应用元数据目录",
+          "unicast": "本机单播地址"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant 主机上的绝对路径，例如 `/config/junghome/JungHome.json`。",
+          "metadata_dir": "可选，仅适用于来自 iOS 备份的 `MeshNetwork.json`：应用的 `Application Support` 文件夹，其中包含 `device_metadata.json` 和 `scene_metadata.json`，以便实体获得您在应用中为其设置的名称。`JungHome.json` 已包含这些名称。",
+          "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "这是您的 JUNG HOME 系统吗？",
+        "description": "网络 {network_id} 的一个 Bluetooth Mesh 代理在范围内。Home Assistant 会提供它看到的每个 Bluetooth Mesh 网络，包括其他品牌的网络——例如邻居家的灯。仅当这是您的 JUNG HOME 系统时才继续；随后会要求您提供应用的 Mesh 导出文件。"
+      },
+      "zeroconf_confirm": {
+        "title": "已发现 JUNG HOME 网关",
+        "description": "一个 JUNG HOME 网关在 {host} 上发布了自身信息。继续即可从该网关获取 JUNG HOME 应用的网络导出文件：随后输入其网络密钥密码，或在应用中批准访问请求。与手动输入的地址一样，在发送任何内容之前，会在首次连接时固定其证书。从已发现的网关进行设置尚未在真实设备上验证。"
+      },
+      "gateway": {
+        "title": "从 JUNG HOME 网关获取导出文件",
+        "description": "网关保存着应用网络导出文件的副本。请输入其地址，并输入其网络密钥密码（来自 JUNG HOME 应用）以立即获得访问权限；或将密码留空，在继续后于应用中批准访问请求（设置 → 网关 → 访问权限 → 待处理请求，须在三分钟内完成；请求显示为“{user_name}”）。导出文件存储在 Home Assistant 配置目录下的 `junghome_ble/` 中。与手机导出的文件一样，它包含所有 Mesh 密钥——请勿公开该目录的备份。",
+        "data": {
+          "gateway_host": "网关地址",
+          "gateway_password": "网络密钥密码"
+        },
+        "data_description": {
+          "gateway_host": "JUNG HOME 网关的 IP 地址或主机名。Home Assistant 在网络中发现的网关已自动填入。否则，默认的 `junghome.local` 在许多网络中可用，也可以使用其 IP 地址（显示在应用的 设置 → 网关 下）。",
+          "gateway_password": "可选。填写后网关会立即授予访问权限；不填写则需在应用中批准请求。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "高级",
+            "description": "除非还有第二个 Home Assistant 或本仓库的命令行工具也加入此系统，否则请保留默认值：每个都需要自己的地址。",
+            "data": {
+              "unicast": "本机单播地址"
+            },
+            "data_description": {
+              "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "正在等待 JUNG HOME 应用中的批准"
+      },
+      "gateway_refetch": {
+        "title": "重新获取导出文件",
+        "description": "使用已存储的访问权限，从 {host} 处的网关获取当前的网络导出文件。如果网关不再接受该访问权限，将要求您在应用中批准新的访问请求。",
+        "sections": {
+          "advanced": {
+            "name": "高级",
+            "description": "除非还有第二个 Home Assistant 或本仓库的命令行工具也加入此系统，否则请保留默认值：每个都需要自己的地址。",
+            "data": {
+              "unicast": "本机单播地址"
+            },
+            "data_description": {
+              "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "上传应用的导出文件",
+        "description": "在 JUNG HOME 应用中打开“项目 → 通过文件共享”，将其生成的 `JungHome.json` 发送给自己，然后在此上传。该文件存储在 Home Assistant 配置目录下的 `junghome_ble/` 中。它包含所有 Mesh 密钥——请勿公开该目录的备份。",
+        "data": {
+          "export_file": "Mesh 导出文件"
+        },
+        "data_description": {
+          "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "高级",
+            "description": "除非还有第二个 Home Assistant 或本仓库的命令行工具也加入此系统，否则请保留默认值：每个都需要自己的地址。",
+            "data": {
+              "unicast": "本机单播地址"
+            },
+            "data_description": {
+              "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "使用 Home Assistant 主机上的文件",
+        "description": "请先将应用的 `JungHome.json`（“项目 → 通过文件共享”；包含您的设备名称）或 `MeshNetwork.json`（iOS 备份）复制到 Home Assistant 主机，然后输入其路径。",
+        "data": {
+          "cdb_path": "Mesh 导出文件",
+          "metadata_dir": "应用元数据目录"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant 主机上的绝对路径，例如 `/config/junghome/JungHome.json`。",
+          "metadata_dir": "可选，仅适用于来自 iOS 备份的 `MeshNetwork.json`：应用的 `Application Support` 文件夹，其中包含 `device_metadata.json` 和 `scene_metadata.json`，以便实体获得您在应用中为其设置的名称。`JungHome.json` 已包含这些名称。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "高级",
+            "description": "除非还有第二个 Home Assistant 或本仓库的命令行工具也加入此系统，否则请保留默认值：每个都需要自己的地址。",
+            "data": {
+              "unicast": "本机单播地址"
+            },
+            "data_description": {
+              "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "更新 JUNG HOME Mesh 导出文件",
+        "description": "在 JUNG HOME 应用中对设备重新配网或重新接线之后，或在密钥刷新之后使用：提供同一网络的新导出文件。从导出文件中消失的设备将被移除。Home Assistant 自身的 Mesh 地址也可同时更改。",
+        "menu_options": {
+          "gateway_refetch": "从 {host} 处的网关重新获取",
+          "gateway": "从 JUNG HOME 网关获取",
+          "upload": "上传应用的导出文件",
+          "path": "使用 Home Assistant 主机上的文件",
+          "import_gateway": "导入 JUNG HOME 网关集成的实体",
+          "areas": "更改每个房间的设备归入哪个区域"
+        },
+        "data": {
+          "cdb_path": "Mesh 导出文件",
+          "metadata_dir": "应用元数据目录",
+          "unicast": "本机单播地址"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant 主机上的绝对路径，例如 `/config/junghome/JungHome.json`。",
+          "metadata_dir": "可选，仅适用于来自 iOS 备份的 `MeshNetwork.json`：应用的 `Application Support` 文件夹，其中包含 `device_metadata.json` 和 `scene_metadata.json`，以便实体获得您在应用中为其设置的名称。`JungHome.json` 已包含这些名称。",
+          "unicast": "Home Assistant 作为节点使用的十六进制 Mesh 地址（0001–7FFF）。不得被其他节点使用；默认值位于应用的地址范围之外。"
+        }
+      },
+      "import_gateway": {
+        "title": "从 JUNG HOME 网关集成导入",
+        "description": "JUNG HOME 网关集成（`junghome`）已与本集成并行设置。可在此接管其实体，使其实体 ID、名称、区域、标签和记录器历史在 Bluetooth Mesh 集成中延续。按设备名称（JUNG HOME 应用中的名称）和实体类型进行匹配；只有本集成中您尚未重命名或自定义的实体才会被替换。\n\n**将迁移 {count} 个实体**（网关实体 → 被替换的实体）：\n{matched}\n\n**保持不变**（已在此处自定义；网关的实体保留原处）：\n{customised}\n\n**无对应的网关实体**（保持不变）：\n{unmatched}\n\n**此处无对应实体的网关实体**（保留在网关条目中）：\n{gateway_only}\n\n提交后将卸载两个集成、迁移实体、将每个匹配的网关设备的区域、自定义名称和标签复制到此处对应的设备、禁用网关条目并重新加载本条目。之后请删除网关条目。"
+      },
+      "gateway_certificate": {
+        "title": "网关证书已更改",
+        "description": "{host} 处的 JUNG HOME 网关现在出示证书 {observed}；条目记录的是 {expected}。仅当您自己更换了网关或其证书时才继续——否则就是您网络中的另一台设备在冒充网关应答。"
+      },
+      "reauth_confirm": {
+        "title": "重新授予 Home Assistant 访问网关的权限",
+        "description": "{host} 处的 JUNG HOME 网关不再接受 Home Assistant 为 Mesh {title} 注册的访问权限（可能已在 JUNG HOME 应用的 设置 → 网关 → 访问权限 下被移除）。设备通过蓝牙继续正常工作；只是 Home Assistant 的更改不再交给网关。请输入网关的网络密钥密码（来自 JUNG HOME 应用）以立即获得访问权限，或将其留空，在继续后于应用中批准访问请求（设置 → 网关 → 访问权限 → 待处理请求，须在三分钟内完成；请求显示为“{user_name}”）。只会续订访问权限：不会重新获取导出文件。",
+        "data": {
+          "gateway_password": "网络密钥密码"
+        },
+        "data_description": {
+          "gateway_password": "可选。填写后网关会立即授予访问权限；不填写则需在应用中批准请求。该密码不会被存储。"
+        }
+      },
+      "areas": {
+        "title": "房间和区域",
+        "description": "为 JUNG HOME 应用中的每个房间选择 Home Assistant 区域。房间会预先填入同名的区域，或以该房间名称为别名的区域。将房间留空，即可使用以该房间命名的区域（如不存在则会创建）。没有自己房间的设备也会分到一个房间：按钮面板的按钮分到其旁边负载所在的房间，墙面发射器分到其按钮所切换的房间。从“重新配置”菜单进行时，这会移动仍位于先前选择所分配区域中的设备；您自己放入其他区域的设备永远不会被移动。",
+        "data": {
+          "assign_areas": "将 JUNG HOME 设备分配到区域"
+        },
+        "data_description": {
+          "assign_areas": "关闭：新设备开始时不属于任何区域，并忽略下方的房间。"
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "打开 JUNG HOME 应用，在 设置 → 网关 → 访问权限 → 待处理请求 下批准访问请求“{user_name}”。{host} 处的网关最多等待三分钟。"
+    },
+    "error": {
+      "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如果使用路径，还请检查路径是否正确）。",
+      "not_a_directory": "元数据路径不是目录。",
+      "invalid_metadata": "元数据目录中没有符合预期格式的应用 device_metadata.json 和 scene_metadata.json。",
+      "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+      "address_in_use": "该地址属于 Mesh 中的某个节点；请选择一个未使用的地址。",
+      "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保有蓝牙适配器或 ESPHome Bluetooth 代理位于某个市电供电的 JUNG 设备的范围内。",
+      "export_keys_stale": "可以通过蓝牙看到此 Mesh 的设备，但没有任何设备广播此导出文件中的网络密钥：网络的密钥在导出之后已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请从 JUNG HOME 应用重新导出网络，或重新从网关获取，然后使用该文件。",
+      "network_mismatch": "该导出文件属于另一个 Mesh 网络，而非已发现的网络。",
+      "mesh_already_configured": "此 Mesh 已设置为另一个条目（自 Home Assistant 上次看到它以来，其网络密钥可能已被刷新）。请使用该条目的“重新配置”，而不要添加新条目。",
+      "invalid_host": "请输入网关的 IP 地址或主机名。",
+      "cannot_connect": "无法通过该地址访问网关。",
+      "invalid_auth": "网关拒绝了网络密钥密码。",
+      "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新请求访问。",
+      "not_approved": "未在规定时间内于应用中批准访问请求。请再次提交，并在 设置 → 网关 → 访问权限 → 待处理请求 下批准。",
+      "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（它会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+      "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+      "gateway_busy": "网关正忙于处理另一个配置请求。请在一分钟后重试。",
+      "upload_failed": "无法处理上传的文件。请尝试重新上传。",
+      "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+      "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。"
+    },
+    "abort": {
+      "already_configured": "此 Mesh 网络已配置。",
+      "already_in_progress": "此 Mesh 网络的设置已在进行中。",
+      "not_supported": "此蓝牙设备不是 Mesh 代理。",
+      "network_mismatch": "该导出文件属于另一个 Mesh 网络，而非此条目的网络。",
+      "mesh_already_configured": "此 Mesh 已设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。",
+      "reconfigure_successful": "Mesh 导出文件已更新。",
+      "no_gateway_entry": "JUNG HOME 网关集成尚未设置；没有可导入的内容。",
+      "nothing_to_import": "没有剩余可接管的网关实体。本集成中无对应实体的实体：\n{unmatched}\n\n此处无对应实体的网关实体：\n{gateway_only}",
+      "import_successful": "已从 JUNG HOME 网关集成接管 {count} 个实体：\n{matched}\n\n保持原样（已在此处自定义）：\n{customised}\n\n无对应的网关实体：\n{unmatched}\n\n仍保留在网关条目中：\n{gateway_only}\n\n网关条目已被禁用；确认一切正常后，请在 设置 → 设备与服务 → JUNG HOME 下将其删除。",
+      "certificate_vouched_by_mesh": "{host} 处的 JUNG HOME 网关出示证书 {observed}，但网关节点通过 Mesh 担保的是 {expected}。未向该地址发送任何内容：可能是您网络中的另一台设备在冒充网关应答。如果您自己更换了网关或其证书，请在 Home Assistant 连接到 Mesh 时再次重新配置：届时网关节点会报告新证书。",
+      "import_unload_failed": "无法卸载 {title}，因此未导入任何内容；导入过程中已卸载的每个条目都会重新设置。请检查日志，然后重试导入。",
+      "reauth_successful": "JUNG HOME 网关再次接受 Home Assistant。在此期间于 Home Assistant 中所做的更改会随下一次更改传送到网关，或通过“同步网关”动作立即传送。",
+      "areas_updated": "已保存各房间的区域；{count} 个设备已移至其房间的新区域。",
+      "not_loaded": "集成未在运行：请先重新设置。",
+      "not_junghome_gateway": "此设备未声明自己是 JUNG HOME 网关（没有 JUNG 制造商信息或没有序列号）。",
+      "not_ipv4_address": "网关未公布 IPv4 地址。请手动添加集成并输入网关的地址。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME（Bluetooth Mesh）选项",
+        "data": {
+          "click_delay": "排除双击后才上报点击",
+          "heartbeats": "节点心跳（将无响应的设备标记为不可用）",
+          "allow_provisioning": "允许 Home Assistant 添加和移除设备（实验性）",
+          "provisioner_identity": "将 Home Assistant 作为配网者写入网络文件（实验性，尚未与应用一起验证）",
+          "follow_app": "跟随 JUNG HOME 应用中的更改",
+          "gateway_check": "每六小时检查一次网关的导出文件",
+          "sync_areas": "设备的 JUNG 房间更改时随之移动设备"
+        },
+        "data_description": {
+          "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。",
+          "heartbeats": "会要求每个市电供电的设备每 64 秒向 Home Assistant 发送一次心跳（这是 JUNG 应用未开启的一项标准 Bluetooth Mesh 设置）。若某设备约三分半钟没有发送任何内容，其实体会被标记为不可用，直到再次收到它的消息。关闭此选项会通知设备停止发送（如果无法一次性通知所有设备，会在下次连接时再次通知）；请在移除集成之前将其关闭，因为移除之后就无法再通知设备。",
+          "allow_provisioning": "允许 `junghome_ble.add_device` 动作对新的 JUNG 设备进行配网，并参照网络中已有的同款产品设备，像应用那样对其进行配置；也允许 `junghome_ble.remove_device` 重置设备并将其移出网络。尚未在真实设备上测试：请先用一台备用设备试用。添加会将网络密钥交给该设备；移除无法撤销。",
+          "provisioner_identity": "Home Assistant 写入或交给网关的每个文件都会获得一个 Home Assistant 的配网者条目，其中包含与应用的地址范围互不重叠的独立地址范围，Home Assistant 的地址也位于其中；并且 Home Assistant 添加而应用文件中缺少的设备会被补回。之后 Home Assistant 创建的房间、场景和设备都会从其自己的范围中获取地址。目前还没有任何 JUNG 应用导入过这样的文件：在您自己的应用或网关看到它之前，请先在备用的应用安装上试用（导入由 `junghome_ble.export_network` 生成的文件）。关闭：文件的写入方式与未开启此选项时完全相同。",
+          "follow_app": "当在 Mesh 上检测到运行 JUNG HOME 应用的手机时，从网关设置的条目会在手机静默几分钟后获取网关的导出文件（最多每 15 分钟一次），并在其发生变化时接管：在应用中更改的设备、房间、场景和按钮关联无需“重新配置”即可同步到 Home Assistant。从文件设置的条目则会在发现应用更改了某个设备的配置后显示一条修复通知。此功能不会在 Mesh 上发送任何内容。尚未在真实设备上验证。",
+          "gateway_check": "从网关设置的条目每六小时向网关请求一次其导出文件，并在其发生变化时接管，从而捕获 Home Assistant 未检测到手机期间应用所做的更改。只向网关发送一个请求；不会在 Mesh 上发送任何内容。对从文件设置的条目没有影响。",
+          "sync_areas": "当设备在应用中更换房间（在 Home Assistant 跟随新的导出文件后）或通过房间动作更换房间时，它也会移至新房间的区域——除非您自己将其放入了某个区域。关闭：设备保留在其最初所在的区域。尚未在真实设备上验证。"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh 连接"
+      },
+      "motion": {
+        "name": "运动"
+      },
+      "occupancy": {
+        "name": "有人"
+      },
+      "fault": {
+        "name": "故障"
+      },
+      "wind_alarm": {
+        "name": "风力报警"
+      },
+      "reference_run_active": {
+        "name": "参考运行"
+      },
+      "gateway_api_available": {
+        "name": "API 可用"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "客户端等待批准"
+      },
+      "gateway_network_problem": {
+        "name": "网络问题"
+      },
+      "gateway_mesh_problem": {
+        "name": "蓝牙 Mesh 问题"
+      },
+      "gateway_cloud_problem": {
+        "name": "云端问题"
+      },
+      "gateway_cloud_connected": {
+        "name": "云端连接"
+      },
+      "window_open": {
+        "name": "开窗"
+      },
+      "input_state": {
+        "name": "输入状态"
+      },
+      "input_state_key": {
+        "name": "输入状态 {key}"
+      },
+      "scheduler_function_status": {
+        "name": "自动功能"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "按钮 {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "点击",
+              "double_click": "双击",
+              "hold_start": "开始长按",
+              "hold_end": "长按结束",
+              "press_on": "按下开 / 上",
+              "press_off": "按下关 / 下",
+              "scene": "已调用场景",
+              "dim": "调光"
+            }
+          },
+          "connection": {
+            "name": "关联",
+            "state": {
+              "device": "设备",
+              "room": "房间",
+              "scene": "场景",
+              "gateway": "网关",
+              "group": "组",
+              "none": "无"
+            }
+          },
+          "reason": {
+            "name": "长按结束原因",
+            "state": {
+              "timeout": "未及时收到松开信号",
+              "link_lost": "连接丢失",
+              "stopped": "集成已停止"
+            }
+          },
+          "position": {
+            "name": "位置",
+            "state": {
+              "top": "上",
+              "bottom": "下",
+              "rocker": "跷板",
+              "left_top": "左上",
+              "left_bottom": "左下",
+              "right_top": "右上",
+              "right_bottom": "右下",
+              "left_rocker": "左跷板",
+              "right_rocker": "右跷板"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "输入 {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "点击",
+              "double_click": "双击",
+              "hold_start": "开始长按",
+              "hold_end": "长按结束",
+              "press_on": "按下开 / 上",
+              "press_off": "按下关 / 下",
+              "scene": "已调用场景",
+              "dim": "调光"
+            }
+          },
+          "connection": {
+            "name": "关联",
+            "state": {
+              "device": "设备",
+              "room": "房间",
+              "scene": "场景",
+              "gateway": "网关",
+              "group": "组",
+              "none": "无"
+            }
+          },
+          "reason": {
+            "name": "长按结束原因",
+            "state": {
+              "timeout": "未及时收到松开信号",
+              "link_lost": "连接丢失",
+              "stopped": "集成已停止"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "功率"
+      },
+      "voltage": {
+        "name": "电压"
+      },
+      "current": {
+        "name": "电流"
+      },
+      "energy": {
+        "name": "能量"
+      },
+      "energy_resettable": {
+        "name": "重置以来的能量"
+      },
+      "energy_since_on": {
+        "name": "开启以来的能量"
+      },
+      "power_on_time": {
+        "name": "开启时长"
+      },
+      "proxy_node": {
+        "name": "代理节点"
+      },
+      "link_state": {
+        "name": "连接状态",
+        "state": {
+          "bluetooth_off": "无蓝牙",
+          "searching": "正在搜索代理节点",
+          "connecting": "正在连接",
+          "updating": "已连接，正在更新设备状态",
+          "connected": "已连接",
+          "failed": "连接失败",
+          "disconnected": "已断开"
+        }
+      },
+      "unreachable_devices": {
+        "name": "无法访问的设备",
+        "state_attributes": {
+          "devices": {
+            "name": "设备"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh 概览",
+        "state_attributes": {
+          "nodes": {
+            "name": "节点"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "照度"
+      },
+      "battery": {
+        "name": "电池"
+      },
+      "installed": {
+        "name": "已安装"
+      },
+      "key_mode": {
+        "name": "按钮模式",
+        "state": {
+          "light": "照明",
+          "move": "百叶窗",
+          "scene": "场景",
+          "property": "属性",
+          "rtr": "温度",
+          "switch": "开关",
+          "gateway": "网关"
+        }
+      },
+      "key_mode_key": {
+        "name": "按钮模式 {key}",
+        "state": {
+          "light": "照明",
+          "move": "百叶窗",
+          "scene": "场景",
+          "property": "属性",
+          "rtr": "温度",
+          "switch": "开关",
+          "gateway": "网关"
+        }
+      },
+      "schedules": {
+        "name": "定时计划"
+      },
+      "scenes": {
+        "name": "场景"
+      },
+      "switch_off_at": {
+        "name": "关闭时间"
+      },
+      "switch_on_threshold": {
+        "name": "开启阈值"
+      },
+      "switch_off_threshold": {
+        "name": "关闭阈值"
+      },
+      "last_seen": {
+        "name": "上次出现时间"
+      },
+      "rssi": {
+        "name": "信号强度"
+      },
+      "hops": {
+        "name": "跳数"
+      },
+      "last_restart": {
+        "name": "上次重启"
+      },
+      "clock_offset": {
+        "name": "时钟偏差"
+      },
+      "iv_index": {
+        "name": "IV index"
+      },
+      "sequence_used": {
+        "name": "已用序列号"
+      },
+      "mesh_sequence_used": {
+        "name": "Mesh 中已用序列号"
+      },
+      "switching_cycles": {
+        "name": "开关次数"
+      },
+      "power_on_cycles": {
+        "name": "通电次数"
+      },
+      "gateway_ip": {
+        "name": "IP 地址"
+      },
+      "gateway_firmware": {
+        "name": "固件版本"
+      },
+      "gateway_firmware_build": {
+        "name": "固件构建版本"
+      },
+      "gateway_serial": {
+        "name": "序列号"
+      },
+      "gateway_access_requests": {
+        "name": "访问请求",
+        "state_attributes": {
+          "clients": {
+            "name": "客户端"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API 客户端",
+        "state_attributes": {
+          "clients": {
+            "name": "客户端"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "错误日志",
+        "state_attributes": {
+          "entries": {
+            "name": "条目"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "上次上传导出文件"
+      },
+      "forced_off": {
+        "name": "常开/常关",
+        "state": {
+          "inactive": "未激活",
+          "off": "常关",
+          "on": "常开"
+        }
+      },
+      "sleep_mode": {
+        "name": "节能模式",
+        "state": {
+          "awake": "唤醒",
+          "asleep": "休眠"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "参考运行"
+      },
+      "identify": {
+        "name": "识别"
+      },
+      "clear_faults": {
+        "name": "清除故障"
+      },
+      "reset_consumption": {
+        "name": "重置用电量"
+      },
+      "fetch_gateway_export": {
+        "name": "从网关获取导出文件"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "恢复供电后的百叶窗位置"
+      },
+      "blind_ventilation_position": {
+        "name": "通风位置"
+      },
+      "color_temp_max": {
+        "name": "最高色温"
+      },
+      "color_temp_min": {
+        "name": "最低色温"
+      },
+      "comfort_temperature": {
+        "name": "舒适温度"
+      },
+      "default_color_temp": {
+        "name": "开启色温"
+      },
+      "default_lightness": {
+        "name": "开启亮度"
+      },
+      "eco_temperature": {
+        "name": "ECO 温度"
+      },
+      "frost_protection_temperature": {
+        "name": "防冻保护温度"
+      },
+      "lightness_max": {
+        "name": "最高亮度"
+      },
+      "lightness_min": {
+        "name": "最低亮度"
+      },
+      "lock_time_limit": {
+        "name": "锁定时限"
+      },
+      "motor_reversal_time": {
+        "name": "最短电机换向时间"
+      },
+      "off_delay": {
+        "name": "关闭延迟"
+      },
+      "on_delay": {
+        "name": "开启延迟"
+      },
+      "pir_sensor_a": {
+        "name": "感应范围 A"
+      },
+      "pir_sensor_b": {
+        "name": "感应范围 B"
+      },
+      "pir_sensor_c": {
+        "name": "感应范围 C"
+      },
+      "repetition_time": {
+        "name": "重复时间"
+      },
+      "running_time": {
+        "name": "运行时间"
+      },
+      "sensor_offset": {
+        "name": "温度传感器偏移"
+      },
+      "slat_position_on_power": {
+        "name": "恢复供电后的叶片位置"
+      },
+      "slat_ventilation_position": {
+        "name": "叶片通风位置"
+      },
+      "slats_move_time": {
+        "name": "叶片换向时间"
+      },
+      "switch_blocking_time": {
+        "name": "最短开关重复时间"
+      },
+      "switch_on_brightness": {
+        "name": "亮度阈值"
+      },
+      "timed_on_duration": {
+        "name": "延时时间"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "运行模式",
+        "state": {
+          "blinds": "百叶窗（带叶片）",
+          "shutter": "卷帘（不带叶片）",
+          "awning": "遮阳篷"
+        }
+      },
+      "controller_type": {
+        "name": "控制器输出",
+        "state": {
+          "pi_control": "脉宽调制（PWM）",
+          "two_point_control": "两点控制"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "亮度测量方式",
+        "state": {
+          "guard": "安装位置",
+          "presence": "室内亮度"
+        }
+      },
+      "dim_mode": {
+        "name": "调光方式",
+        "state": {
+          "leading_edge": "前沿调光（RL）",
+          "trailing_edge": "后沿调光（RC）"
+        }
+      },
+      "hvac_mode": {
+        "name": "运行方式",
+        "state": {
+          "none": "无",
+          "comfort": "舒适",
+          "eco": "ECO",
+          "frost": "防冻保护"
+        }
+      },
+      "input_edge_falling": {
+        "name": "下降沿",
+        "state": {
+          "no_reaction": "无反应",
+          "on": "开启",
+          "off": "关闭",
+          "toggle": "切换"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "下降沿 {key}",
+        "state": {
+          "no_reaction": "无反应",
+          "on": "开启",
+          "off": "关闭",
+          "toggle": "切换"
+        }
+      },
+      "input_edge_rising": {
+        "name": "上升沿",
+        "state": {
+          "no_reaction": "无反应",
+          "on": "开启",
+          "off": "关闭",
+          "toggle": "切换"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "上升沿 {key}",
+        "state": {
+          "no_reaction": "无反应",
+          "on": "开启",
+          "off": "关闭",
+          "toggle": "切换"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED 颜色（关闭时）",
+        "state": {
+          "red": "红色",
+          "green": "绿色",
+          "white": "白色",
+          "blue": "蓝色",
+          "violet": "紫色",
+          "orange": "橙色",
+          "yellow": "黄色",
+          "cyan": "青色",
+          "no_color": "无颜色"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED 颜色（关闭时）{key}",
+        "state": {
+          "red": "红色",
+          "green": "绿色",
+          "white": "白色",
+          "blue": "蓝色",
+          "violet": "紫色",
+          "orange": "橙色",
+          "yellow": "黄色",
+          "cyan": "青色",
+          "no_color": "无颜色"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED 颜色（开启时）",
+        "state": {
+          "red": "红色",
+          "green": "绿色",
+          "white": "白色",
+          "blue": "蓝色",
+          "violet": "紫色",
+          "orange": "橙色",
+          "yellow": "黄色",
+          "cyan": "青色",
+          "no_color": "无颜色"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED 颜色（开启时）{key}",
+        "state": {
+          "red": "红色",
+          "green": "绿色",
+          "white": "白色",
+          "blue": "蓝色",
+          "violet": "紫色",
+          "orange": "橙色",
+          "yellow": "黄色",
+          "cyan": "青色",
+          "no_color": "无颜色"
+        }
+      },
+      "main_page": {
+        "name": "本地显示",
+        "state": {
+          "target_temperature": "设定温度",
+          "current_temperature": "实际温度",
+          "clock": "时间"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "恢复市电后的行为",
+        "state": {
+          "no_reaction": "无反应",
+          "move_up": "上升到 0%",
+          "move_down": "下降到 100%",
+          "stop": "停止",
+          "move_to_stored_position": "已存储位置",
+          "position_for_network_failure": "断电位置"
+        }
+      },
+      "operation_site": {
+        "name": "使用场所",
+        "state": {
+          "indoor": "室内",
+          "outdoor": "室外"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "恢复供电后的行为",
+        "state": {
+          "off": "关闭",
+          "on": "开启",
+          "restore": "上一个状态"
+        }
+      },
+      "sensor_selection": {
+        "name": "温度传感器",
+        "state": {
+          "internal": "室内",
+          "external": "地板",
+          "internal_and_external": "室内和地板"
+        }
+      },
+      "valve_output": {
+        "name": "阀门调整",
+        "state": {
+          "normally_closed": "NC - 常闭",
+          "normally_open": "NO - 常开"
+        }
+      },
+      "lock_function": {
+        "name": "锁定功能",
+        "state": {
+          "unlocked": "已解锁",
+          "keep_state": "已锁定（保持位置）",
+          "lockout_protection": "防反锁保护",
+          "wind_alarm": "风力报警"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "所有插座"
+      },
+      "room_sockets": {
+        "name": "{room} 中的所有插座"
+      },
+      "automatic_dst": {
+        "name": "自动夏令时切换"
+      },
+      "backlight_auto_off": {
+        "name": "自动关闭显示屏"
+      },
+      "blinds_invert_output": {
+        "name": "反向运行"
+      },
+      "boost_mode": {
+        "name": "强劲"
+      },
+      "day_mode": {
+        "name": "白天运行"
+      },
+      "dim_to_warm": {
+        "name": "暖光调光"
+      },
+      "input_edge_mode": {
+        "name": "边沿检测"
+      },
+      "input_edge_mode_key": {
+        "name": "边沿检测 {key}"
+      },
+      "invert_output": {
+        "name": "反转开关输出"
+      },
+      "led_colour_sync": {
+        "name": "同步 LED 颜色"
+      },
+      "led_night_mode": {
+        "name": "LED 夜间模式"
+      },
+      "lock": {
+        "name": "锁定",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "锁定模式",
+            "state": {
+              "keep_state": "保持当前状态",
+              "lockout_protection": "防反锁保护",
+              "wind_alarm": "风力报警",
+              "enforced_value": "强制状态"
+            }
+          },
+          "lock_time_limit": {
+            "name": "锁定时限"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "延时时间内手动关闭"
+      },
+      "prewarning": {
+        "name": "关闭预警"
+      },
+      "scheduler_enabled": {
+        "name": "自动运行"
+      },
+      "status_led": {
+        "name": "状态指示灯"
+      },
+      "status_led_key": {
+        "name": "状态指示灯 {key}"
+      },
+      "touch_sensitivity": {
+        "name": "降低触摸灵敏度"
+      },
+      "use_last_lightness": {
+        "name": "使用上次的亮度"
+      },
+      "sensor_publication": {
+        "name": "向物联网系统提供传感器数值"
+      },
+      "local_devices_lock": {
+        "name": "锁定操作"
+      },
+      "factory_reset_time_limit": {
+        "name": "锁定恢复出厂设置"
+      },
+      "key_lock": {
+        "name": "按钮锁定"
+      },
+      "configuration_lock": {
+        "name": "锁定设备上的配置"
+      },
+      "walking_test": {
+        "name": "步行测试"
+      },
+      "time_keeper": {
+        "name": "授时节点"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "运行模式",
+            "state": {
+              "blinds": "百叶窗（带叶片）",
+              "shutter": "卷帘",
+              "awning": "遮阳篷",
+              "unknown": "未知"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "所有百叶窗"
+      },
+      "room_blinds": {
+        "name": "{room} 中的所有百叶窗"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "防冻保护"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "所有温控器"
+      },
+      "room_thermostats": {
+        "name": "{room} 中的所有温控器"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "所有灯"
+      },
+      "room_lights": {
+        "name": "{room} 中的所有灯"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "固件"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "按钮 A {subtype}",
+      "b": "按钮 B {subtype}",
+      "c": "按钮 C {subtype}",
+      "d": "按钮 D {subtype}",
+      "e1": "输入 E1 {subtype}",
+      "e2": "输入 E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "已点击",
+      "double_click": "已双击",
+      "hold_start": "开始长按",
+      "hold_end": "长按结束",
+      "press_on": "已按下开 / 上",
+      "press_off": "已按下关 / 下",
+      "scene": "已调用场景",
+      "dim": "正在调光",
+      "click_up": "已点击（上半部分）",
+      "click_down": "已点击（下半部分）",
+      "double_click_up": "已双击（上半部分）",
+      "double_click_down": "已双击（下半部分）",
+      "hold_start_up": "开始长按（上半部分）",
+      "hold_start_down": "开始长按（下半部分）",
+      "hold_end_up": "长按结束（上半部分）",
+      "hold_end_down": "长按结束（下半部分）"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "无法将命令发送到 JUNG Mesh；没有已连接的代理节点。"
+    },
+    "no_answer": {
+      "message": "JUNG 设备未应答；命令可能仍已执行，将在下次连接时再次检查。"
+    },
+    "device_not_reachable": {
+      "message": "{entity} 未应答该命令（9 秒内尝试 3 次）；命令可能未被执行。如果 Mesh 的其余部分仍有应答，该设备将显示为不可用，直到再次收到它的消息：请检查其是否通电。"
+    },
+    "cannot_load": {
+      "message": "无法读取 Mesh 导出文件 {path}。"
+    },
+    "no_proxy_visible": {
+      "message": "目前还无法通过蓝牙看到 JUNG Mesh 的任何节点。"
+    },
+    "export_keys_stale": {
+      "message": "可以通过蓝牙看到 JUNG Mesh 的设备，但没有任何设备广播导出文件中的网络密钥：密钥在导出之后已被更新。请从 JUNG HOME 应用重新导出网络，并在 设置 → 设备与服务 → JUNG HOME → 重新配置 中使用该文件。"
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant 没有可连接的蓝牙适配器或代理：无法访问 JUNG Mesh。"
+    },
+    "duplicate_mesh": {
+      "message": "{others} 已在运行此 JUNG HOME Mesh；每个 Mesh 只能加载一个条目。请移除两个条目之一。"
+    },
+    "seq_store_not_written": {
+      "message": "无法将旧版本的序列号记录保存到 Mesh 的存储（`.storage/junghome_ble.seq.*`）中；请检查配置目录是否可写。"
+    },
+    "seq_floor_not_written": {
+      "message": "序列号记录已从备份中恢复，但在向前跳过之前无法写入其下限（`.storage/junghome_ble.seq.*.floor`）；请检查配置目录是否可写。"
+    },
+    "service_entry_not_loaded": {
+      "message": "JUNG HOME Mesh 集成未加载（或正在重新加载）；请稍后重试。"
+    },
+    "service_not_connected": {
+      "message": "JUNG HOME Mesh 未连接；请在有代理节点处于范围内时重试。"
+    },
+    "service_entry_ambiguous": {
+      "message": "已配置多个 JUNG HOME Mesh 网络；请指定 Mesh 网络（config_entry_id）。"
+    },
+    "service_unknown_device": {
+      "message": "{id} 不是 JUNG HOME Mesh 的设备或实体。"
+    },
+    "service_not_a_load": {
+      "message": "{name} 不是此动作适用的 JUNG HOME 设备。"
+    },
+    "service_not_a_key": {
+      "message": "{name} 不是 JUNG HOME 按钮面板的按钮。"
+    },
+    "service_key_required": {
+      "message": "{name} 有按钮 {keys}；请提供按钮字母以选择其中一个。"
+    },
+    "service_unknown_key": {
+      "message": "{name} 没有按钮 {letter}（现有按钮：{keys}）。"
+    },
+    "service_no_loads": {
+      "message": "目标中没有 JUNG HOME 灯或插座。"
+    },
+    "service_target_other_network": {
+      "message": "按钮及其目标属于不同的 Mesh 网络。"
+    },
+    "service_unknown_element": {
+      "message": "元素 {address} 不在 Mesh 导出文件中。"
+    },
+    "service_no_room": {
+      "message": "Mesh 导出文件中没有名为 {room} 的房间。"
+    },
+    "service_room_exists": {
+      "message": "名为 {room} 的房间已存在。"
+    },
+    "service_room_key_drives_load": {
+      "message": "未从房间 {room} 中移出：{device} 由 {button} 通过该按钮与该房间的关联进行切换，离开房间也会解除它与该按钮的关联。请在开启“即使有按钮控制它”的情况下再次运行该动作，或先为该按钮分配其他功能。"
+    },
+    "service_invalid_room_name": {
+      "message": "房间需要名称。"
+    },
+    "service_no_mode": {
+      "message": "没有适合元素 {address} 的按钮模式；请提供模式。"
+    },
+    "service_invalid_mode": {
+      "message": "模式 {mode} 不能用于目标 {target}。"
+    },
+    "service_key_mode_unsupported": {
+      "message": "按钮 {address} 没有用于模式 {mode} 的客户端模型。"
+    },
+    "service_target_element_needs_device": {
+      "message": "目标元素仅适用于关联到设备的按钮，不适用于房间或场景。"
+    },
+    "service_target_element_missing": {
+      "message": "目标 {target} 没有可供按钮控制的 {target_element} 元素。"
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "锁定时间仅适用于“锁定和解锁”模式，范围为 0 到 65535 秒。"
+    },
+    "service_lock_unsupported": {
+      "message": "按钮无法锁定目标 {target}：只有灯或插座可以通过按钮锁定。"
+    },
+    "service_no_element_group": {
+      "message": "元素 {address} 没有元素组：JUNG HOME 应用从未为其建立关联。请先在应用中关联一次。"
+    },
+    "service_one_target": {
+      "message": "请恰好指定一个目标：一个设备、一个实体、一个房间或一个场景。"
+    },
+    "service_config_refused": {
+      "message": "节点 {node} 拒绝了 {message}：{status}。{applied}"
+    },
+    "service_no_reply": {
+      "message": "节点 {node} 未应答 {message}；它是否已通电并处于范围内？{applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "未发送：{nodes} 未应答 Home Assistant 的上一次请求，被视为无法访问（其实体不可用），因此该计划会在发给它们的第一条消息处停止。请检查它们是否已通电并处于范围内，待其应答后再次运行该动作。{applied}"
+    },
+    "service_node_asleep": {
+      "message": "节点 {node} 由电池供电，未应答 {message}：它处于休眠状态。请按下它的一个按钮将其唤醒，然后立即再次运行该动作。如果它对按键也没有反应，通常是电池没电了：请更换电池。{applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "按钮 {address} 未接受按钮模式 {mode}；其关联已配置并记录在 Mesh 导出文件中——请以相同目标再次运行该动作以设置该模式。"
+    },
+    "service_key_scene_not_applied": {
+      "message": "按钮 {address} 未接受场景 {scene}；它会将其场景调用发布到所有设备，这一点已记录在 Mesh 导出文件中——请以相同场景再次运行该动作以完成设置。"
+    },
+    "service_key_lock_not_applied": {
+      "message": "按钮 {address} 未接受其锁定功能（属性 {property}）；其关联已配置并记录在 Mesh 导出文件中——请以相同目标再次运行该动作以完成设置。"
+    },
+    "service_export_newer": {
+      "message": "Home Assistant 加载 Mesh 导出文件 {path} 之后，该文件在 Home Assistant 之外（被 JUNG HOME 应用或手动）进行了更改。请从应用重新导出项目，替换该文件（重新配置）后重试。"
+    },
+    "service_export_load_failed": {
+      "message": "无法读取 Mesh 导出文件 {path}：{error}"
+    },
+    "service_export_write_failed": {
+      "message": "无法写入 Mesh 导出文件 {path}：{error}"
+    },
+    "value_rejected": {
+      "message": "{entity} 无法接受该值：{error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "温控器尚未报告其 {preset} 温度；请稍后重试。"
+    },
+    "led_colour_unknown": {
+      "message": "{entity} 的 LED 颜色尚未知；设备未应答读取请求。"
+    },
+    "service_room_name_reserved": {
+      "message": "“{name}”是 Mesh 为内部组保留的名称；请选择其他房间名称。"
+    },
+    "service_name_blank": {
+      "message": "名称不能为空。"
+    },
+    "service_name_too_long": {
+      "message": "JUNG HOME 应用无法重命名为“{name}”：其重命名最多接受 {max_length} 个字符。"
+    },
+    "service_name_not_allowed": {
+      "message": "JUNG HOME 应用拒绝名称“{name}”：它会将 % 符号视为占位符的开头（只有 %% 和 %n 可以通过）。"
+    },
+    "service_room_range_full": {
+      "message": "应用的地址范围中已没有空闲的组地址；请先在 JUNG HOME 应用中删除一个未使用的房间。"
+    },
+    "gateway_certificate_changed": {
+      "message": "{host} 处的 JUNG HOME 网关出示的证书与记录的证书不同（{expected} 与 {observed}）。如果网关或其证书是有意更换的，请重新配置该条目。"
+    },
+    "service_ambiguous_scene": {
+      "message": "“{scene}”既是一个场景编号，又是另一个场景的名称；请重命名该场景以便区分。"
+    },
+    "service_unknown_scene": {
+      "message": "Mesh 导出文件中不存在场景“{scene}”；请输入 JUNG HOME 应用中显示的场景名称或其编号。"
+    },
+    "service_scene_exists": {
+      "message": "名为“{scene}”的场景已存在。"
+    },
+    "service_scene_range_full": {
+      "message": "应用的范围中已没有空闲的场景编号；请先删除一个未使用的场景。"
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant 会为新房间分配应用范围中最高的空闲组地址，以免应用自己接下来创建的房间获得相同的地址；在下一个这样的地址之下只剩 {free} 个空闲地址，应用很快就会达到该地址。请删除未使用的房间，或开启“配网者身份”选项，为 Home Assistant 提供独立的地址范围。"
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant 会为新场景分配应用范围中最高的空闲场景编号，以免应用自己接下来创建的场景获得相同的编号；在下一个这样的编号之下只剩 {free} 个空闲编号，应用很快就会达到该编号。请删除未使用的场景，或开启“配网者身份”选项，为 Home Assistant 提供独立的范围。"
+    },
+    "add_device_groups_crowded": {
+      "message": "新设备的元素组将占用应用范围中最高的空闲组地址，但其下方只剩 {free} 个空闲地址，应用自己接下来创建的房间很快就会达到这些地址。请删除未使用的房间，或开启“配网者身份”选项，为 Home Assistant 提供独立的地址范围。"
+    },
+    "service_not_a_scene_element": {
+      "message": "元素 {address} 无法保存场景（它没有 Scene Setup Server）。"
+    },
+    "service_scene_not_stored": {
+      "message": "设备 {address} 未保存场景 {scene}（{status}）。{applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "设备 {address} 已无空间容纳场景 {scene}：它已保存 {capacity} 个场景（包括定时场景）。请先将其从另一个场景中移除。{applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "删除后，设备 {address} 仍保留着场景 {scene}（{status}）。{applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "JUNG HOME 网关未提供其导出文件，而此动作需要该文件：Home Assistant 保存的副本可能缺少 JUNG HOME 应用此后所做的更改。请在网关应答后重试（日志中记录了网关未提供的原因）。"
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "此网络是从文件设置的，该文件可能缺少导出之后在 JUNG HOME 应用中创建的场景；删除文件中未知的场景编号会将这些场景从所有设备中删除。请先进行一次试运行，并对照应用检查其列出的编号，然后在开启“Mesh 导出文件是最新的”的情况下删除，或指定要删除的编号。"
+    },
+    "service_unused_scenes_known": {
+      "message": "场景编号 {numbers} 是 Mesh 导出文件中的场景；请使用“删除场景”删除它们。"
+    },
+    "service_scene_action_not_applied": {
+      "message": "设备 {address} 已保存场景 {scene}，但未接受场景描述（Scene Action Setup）。{applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "{address} 的状态未知，因此场景 {scene} 会在没有场景描述的情况下被保存，之后若将该设备的另一个通道移出场景，这个通道也会随之被移除。请提供要保存的状态（或先切换一次该设备），然后重试。{applied}"
+    },
+    "service_no_gateway": {
+      "message": "此网络不是从 JUNG HOME 网关设置的（条目中没有网关地址和令牌）；请从网关重新配置该条目以进行同步。"
+    },
+    "service_gateway_sync_failed": {
+      "message": "{host} 处的网关未接受导出文件：{error}。"
+    },
+    "service_send_failed": {
+      "message": "向节点 {node} 发送 {message} 时，与 JUNG Mesh 的连接丢失。{applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "节点 {node} 存在于 Mesh 导出文件 {path} 中，但不在 Home Assistant 先前从该文件加载的网络中；请重新加载集成（设置 → 设备与服务 → JUNG HOME → 重新加载），使其跟随导出文件，然后重试。{applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "{host} 处的 JUNG HOME 网关保存的导出文件（{gateway}）比 Home Assistant 将要上传的文件（{file}）更新；上传会抹去 JUNG HOME 应用此后所做的更改。在 Home Assistant 中进行的下一次更改会接管网关的导出文件，并将 Home Assistant 自身的更改应用到其上。如果此错误再次出现（没有应用上次上传副本的条目无法区分两者），请重新获取网关的导出文件（设置 → 设备与服务 → JUNG HOME → 重新配置；被替换的文件会以 `.pre-reconfigure` 保留在其旁边），然后重复在 Home Assistant 中所做的更改。"
+    },
+    "service_gateway_export_incomplete": {
+      "message": "{host} 处的 JUNG HOME 网关只返回了单纯的设备数据库（没有设备名称或房间关联）；采用它会从 Home Assistant 保存的文件中抹去这些信息。请在网关不再繁忙时重试，或重新获取应用的导出文件。"
+    },
+    "identify_no_answer": {
+      "message": "JUNG 设备未应答识别请求；它是否已通电并处于范围内？"
+    },
+    "service_unknown_entry": {
+      "message": "{id} 不是 JUNG HOME Mesh 网络；请传入某个 Mesh 网络的 config_entry_id（如果只配置了一个，可将其省略）。"
+    },
+    "service_all_not_supported": {
+      "message": "此动作不接受 entity_id: all；请指定其适用的灯、插座、设备、区域或标签。"
+    },
+    "edge_detection_unknown": {
+      "message": "{entity} 的边沿检测尚未知；输入未应答读取请求。"
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG 插座未重置其计数器 {property}；它仍报告一个非 0 的值。"
+    },
+    "setup_state_unknown": {
+      "message": "{entity} 的当前设置尚未知；设备未应答读取请求。"
+    },
+    "setting_no_answer": {
+      "message": "JUNG 设备既未应答 {entity} 的更改，也未应答回读请求；它可能仍已接受新值。它是否已通电并处于范围内？"
+    },
+    "setting_asleep": {
+      "message": "{entity} 所属的电池供电设备未应答：它处于休眠状态。请按下它的一个按钮将其唤醒，然后立即再次进行更改。如果它对按键也没有反应，通常是电池没电了：请更换电池。"
+    },
+    "setting_not_applied": {
+      "message": "JUNG 设备未接受 {entity} 的新值；它仍报告另一个值。"
+    },
+    "setting_not_supported": {
+      "message": "JUNG 设备没有 {entity} 的这项设置：它对更改的应答中不含任何值。"
+    },
+    "schedule_no_reply": {
+      "message": "JUNG 设备 {address} 未应答有关其定时计划的请求。"
+    },
+    "schedule_not_applied": {
+      "message": "JUNG 设备 {address} 未接受对定时计划存储位 {slot} 的更改。"
+    },
+    "schedule_slots_full": {
+      "message": "JUNG 设备 {address} 的全部 16 个定时计划存储位均已使用；请先删除一个。"
+    },
+    "schedule_empty_slot": {
+      "message": "JUNG 设备 {address} 的定时计划存储位 {slot} 中没有定时计划。"
+    },
+    "schedule_not_supported": {
+      "message": "{name} 不运行自己的定时计划。"
+    },
+    "schedule_partly_created": {
+      "message": "{error}。该定时计划已写入 {created}：再次调用之前请先在那里将其删除，否则这些设备会执行两次。"
+    },
+    "schedule_action_not_applicable": {
+      "message": "该定时计划不适用于 {name}：{fields} 不适用于它。"
+    },
+    "schedule_action_needs_temperature": {
+      "message": "该定时计划不适用于 {name}：温控器需要一个温度。"
+    },
+    "schedule_action_needs_position": {
+      "message": "该定时计划不适用于 {name}：百叶窗需要位置。"
+    },
+    "schedule_action_needs_action": {
+      "message": "该定时计划不适用于 {name}：需要一个动作（开或关）。"
+    },
+    "schedule_action_brightness_off": {
+      "message": "该定时计划不适用于 {name}：亮度只能与动作“开”搭配使用。"
+    },
+    "threshold_not_supported": {
+      "message": "{name} 不是带阈值的 JUNG HOME 计量插座。"
+    },
+    "threshold_incomplete": {
+      "message": "{name} 中没有可更改的阈值（或未应答）：请同时提供功率和持续时间。"
+    },
+    "threshold_not_applied": {
+      "message": "JUNG 插座 {address} 未接受其 {which} 阈值。{applied}"
+    },
+    "threshold_send_failed": {
+      "message": "无法将 {which} 阈值发送到 JUNG 插座 {address}；没有已连接的代理节点。{applied}"
+    },
+    "threshold_other_network": {
+      "message": "该插座与其阈值应切换的设备属于不同的 Mesh 网络。"
+    },
+    "scene_state_not_applicable": {
+      "message": "该状态不适用于 {name}：{fields} 不适用于它。"
+    },
+    "scene_state_needs_temperature": {
+      "message": "该状态不适用于 {name}：温控器需要一个温度。"
+    },
+    "scene_state_needs_position": {
+      "message": "该状态不适用于 {name}：百叶窗需要位置。"
+    },
+    "scene_state_needs_action": {
+      "message": "该状态不适用于 {name}：需要一个动作（开或关）。"
+    },
+    "scene_state_brightness_off": {
+      "message": "该状态不适用于 {name}：亮度只能与动作“开”搭配使用。"
+    },
+    "scene_state_not_reached": {
+      "message": "{name} 未及时报告新状态；场景未保存。"
+    },
+    "service_gateway_token_rejected": {
+      "message": "{host} 处的 JUNG HOME 网关不再接受 Home Assistant 的访问权限，因此导出文件未交给网关。请通过 Home Assistant 要求的重新认证（设置 → 设备与服务）再次授予访问权限，然后再次运行。"
+    },
+    "seq_store_lost": {
+      "message": "地址 {unicast} 的序列号记录已丢失；Home Assistant 不会重复使用 Mesh 已见过的序列号。请打开修复问题，从这些序列号之后继续。"
+    },
+    "address_in_use": {
+      "message": "Mesh 中的一个节点占用了 Home Assistant 的地址 {unicast}；请使用一个空闲地址重新配置集成（{suggestion} 即为空闲地址）。"
+    },
+    "add_device_not_allowed": {
+      "message": "此网络已关闭添加和移除设备：请先在集成的选项中开启 *允许 Home Assistant 添加和移除设备*。"
+    },
+    "add_device_not_found": {
+      "message": "没有新的 JUNG 设备在 {address} 广播；请运行 `find_new_devices` 并使用其列出的地址。"
+    },
+    "add_device_not_jung": {
+      "message": "{address} 处的设备未表明自己是 JUNG 设备。"
+    },
+    "add_device_no_template": {
+      "message": "网络中还没有产品 {product} 的设备：请使用 JUNG HOME 应用添加第一台，Home Assistant 会复制其配置。"
+    },
+    "add_device_no_address": {
+      "message": "在配网者的地址范围之外，已没有可供新设备使用的空闲地址范围。"
+    },
+    "provisioner_identity_failed": {
+      "message": "无法将 Home Assistant 的配网者条目合并到导出文件中（{error}）；未作任何更改。请查看日志。"
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant 无法在此网络中拥有自己的地址范围：{error}。"
+    },
+    "add_device_connect_failed": {
+      "message": "无法连接到新设备：{error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "新设备配网失败：{error}。它仍是新设备；请重试。"
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "新设备在 {unicast} 的配网未得到确认（{error}）。它可能已收到网络密钥，因此 Home Assistant 将其保留为待处理设备：请使用动作 `junghome_ble.reset_pending_device` 将其重置（单播地址 {unicast}；如果它未应答，请添加 `force`，因为从未获得密钥的设备无法应答），然后重新添加。在此之前，其地址会保持预留。"
+    },
+    "add_device_vault_unwritable": {
+      "message": "无法将新设备的密钥保存到 Home Assistant 的密钥库中（{error}），因此配网在设备收到任何内容之前就已停止：它仍是新设备，也没有在 {unicast} 为其预留任何内容。请释放空间或修复存储，然后重试。"
+    },
+    "add_device_commissioning_failed": {
+      "message": "设备已在 {unicast} 完成配网，但其配置在步骤 {step} 失败（{error}），且未确认重置。应用不知道该设备：请使用动作 `junghome_ble.reset_pending_device`（单播地址 {unicast}）将其重置，然后重新添加。在此之前，其地址会保持预留。"
+    },
+    "add_device_record_failed": {
+      "message": "设备已配置，但未在 {unicast} 记录（{error}）。应用不知道该设备：请使用动作 `junghome_ble.reset_pending_device`（单播地址 {unicast}）将其重置，然后重新添加。在此之前，其地址会保持预留。"
+    },
+    "add_device_no_beacon": {
+      "message": "网络的 IV index 尚未在当前蓝牙连接上得到确认（该连接上尚未收到网络信标），新设备将会保留错误的 IV index。请等待下一次与 JUNG 设备的连接，然后重试。"
+    },
+    "add_device_key_refresh": {
+      "message": "JUNG HOME 应用正在更新网络密钥（密钥刷新阶段 1）：现在添加的设备会获得即将停用的密钥。请在应用中完成密钥更新（Home Assistant 会跟随），然后重试。"
+    },
+    "add_device_name_too_long": {
+      "message": "名称“{name}”超出了 JUNG HOME 应用对设备名称的长度限制：最多 {max_length} 个字符。"
+    },
+    "reset_pending_device_unknown": {
+      "message": "在 Home Assistant 已配网但未记录的设备中，没有一个被识别为 {device}；修复问题 *Home Assistant 添加的某个设备未被记录* 列出了这些设备的地址。"
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "网络中的另一台设备现在位于 {unicast}，因此未发送重置，也未作任何更改。请使用 `force` 忘记该地址上的待处理设备（如果它仍然存在，请手动将其重置）。"
+    },
+    "reset_pending_device_no_answer": {
+      "message": "{unicast} 处的设备未确认重置；未作任何更改。对于已手动重置或已永久消失的设备，请使用 `force`。"
+    },
+    "reset_pending_device_send_failed": {
+      "message": "无法将重置发送到 {unicast} 处的设备（{error}）；未作任何更改。"
+    },
+    "remove_device_gateway": {
+      "message": "无法以这种方式移除网关。"
+    },
+    "remove_device_mesh": {
+      "message": "请指定一个 JUNG 设备，而不是网络。"
+    },
+    "remove_device_unconfirmed": {
+      "message": "设备 {address} 未确认重置，之后也未发现它作为新设备进行广播。它可能仍已被重置（其确认可能丢失，且其范围内可能没有蓝牙扫描器），也可能未收到重置；Mesh 导出文件未更改。请再次运行该动作，如果设备已永久消失，请使用 `force`。"
+    },
+    "remove_device_proxy": {
+      "message": "设备 {address} 是 Home Assistant 当前连接所经由的代理节点：重置它会断开传回确认所需的连接。请等待 Home Assistant 通过另一台设备连接（“代理节点”传感器），或使用 `force`。"
+    },
+    "device_lock_unknown": {
+      "message": "{entity} 的设备锁定状态尚未知；设备未应答读取请求。"
+    },
+    "cover_locked": {
+      "message": "{entity} 已锁定，在解锁之前会忽略命令（通过其“锁定”开关或“锁定功能”）。"
+    },
+    "cover_wind_alarm": {
+      "message": "{entity} 处于风力报警状态；在报警解除之前会忽略命令（通过其“锁定功能”或“锁定”开关）。"
+    },
+    "load_locked": {
+      "message": "{entity} 已被锁定（在 JUNG HOME 应用中、通过按钮或通过其“锁定”开关），在解锁之前会保持其状态。"
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} 不是 JUNG HOME 调光器：只有调光器和 DALI 可调白光通道可以通过这种方式调光。"
+    },
+    "locate_no_answer": {
+      "message": "JUNG 设备 {node} 未应答广播其身份的请求；它是否已通电并处于范围内？电池供电设备处于休眠状态，只在唤醒时应答。"
+    },
+    "locate_refused": {
+      "message": "JUNG 设备 {node} 拒绝广播其身份：{status}。"
+    },
+    "locate_not_supported": {
+      "message": "JUNG 设备 {node} 无法广播其身份（不支持 Node Identity）。"
+    },
+    "approve_no_gateway": {
+      "message": "此网络不是从 JUNG HOME 网关设置的（条目中没有网关地址和令牌）：没有可用于批准客户端的网关。"
+    },
+    "approve_gateway_distrusted": {
+      "message": "未向 {host} 处的 JUNG HOME 网关发出请求：{error}。未批准任何内容。"
+    },
+    "approve_gateway_token_rejected": {
+      "message": "{host} 处的 JUNG HOME 网关不再接受 Home Assistant 的访问权限，因此未批准任何内容。请通过 Home Assistant 要求的重新认证（设置 → 设备与服务）再次授予访问权限，然后再次运行。"
+    },
+    "approve_client_not_waiting": {
+      "message": "没有名为“{client}”的 API 客户端正在网关处等待访问（等待中：{waiting}）。未批准任何内容。"
+    },
+    "approve_gateway_busy": {
+      "message": "{host} 处的 JUNG HOME 网关正忙于处理另一个配置请求；请在一分钟后重试。未批准任何内容。"
+    },
+    "approve_gateway_failed": {
+      "message": "{host} 处的 JUNG HOME 网关未执行所请求的操作：{error}。"
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant 不更新 JUNG 固件：请使用 JUNG HOME 应用更新该设备。"
+    },
+    "add_device_node_not_configured": {
+      "message": "无法在步骤 {step} 配置 {unicast} 处的新设备（{error}）。Home Assistant 已像 JUNG HOME 应用那样将其重置，且设备已确认：它再次成为新设备，也没有为其预留任何内容。如果设备并非其广播的产品或嵌件，就会以这种方式被拒绝；否则请重新添加。"
+    },
+    "add_device_provisioning_reset": {
+      "message": "新设备在 {unicast} 的配网未得到确认（{error}）。Home Assistant 已将其重置，且设备已确认：它再次成为新设备，也没有为其预留任何内容。请重试。"
+    },
+    "time_keeper_role_failed": {
+      "message": "{address} 处的设备未接受其时间角色（{error}）。其 Time Server 的发布已被更改：请在设备应答后再次切换授时节点。"
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} 由室内温控器 {thermostats}（在 JUNG HOME 应用中关联）开关，与应用中一样，不能手动开关。"
+    },
+    "load_forced_short": {
+      "message": "{entity} 的传感器使其保持开启或关闭（常开/常关）：请将传感器上用于自动运行的开关拨到中间位置以结束此状态。"
+    },
+    "load_forced_on_button": {
+      "message": "{entity} 的传感器使其保持开启（常开）：请按传感器的 ON 按钮以结束此状态。"
+    },
+    "load_forced_off_button": {
+      "message": "{entity} 的传感器使其保持关闭（常关）：请按传感器的 OFF 按钮以结束此状态。"
+    },
+    "load_forced_on_presence": {
+      "message": "{entity} 的传感器使其保持开启（常开）：按传感器的编程按钮可结束此状态。"
+    },
+    "load_forced_off_presence": {
+      "message": "{entity} 的传感器使其保持关闭（常关）：按传感器的编程按钮可结束此状态。"
+    },
+    "cover_slats_open": {
+      "message": "{entity} 已完全打开：与 JUNG HOME 应用中一样，需先将其降下才能调节叶片。"
+    },
+    "thermostat_boosting": {
+      "message": "{entity} 正处于强劲模式：与 JUNG HOME 应用中一样，设置温度前请先选择其他预设以结束强劲模式。"
+    },
+    "service_detector_device_only": {
+      "message": "传感器 {address} 只能控制一个设备：请指定目标灯、插座或设备，而不是房间或场景。"
+    },
+    "service_detector_mode_unsupported": {
+      "message": "传感器 {address} 无法以模式 {mode} 控制目标：传感器没有按钮模式，因此只能按目标所给的模式开关灯、插座或百叶窗，不支持锁定功能、室内温控器、网关或目标元素。"
+    },
+    "gateway_fetch_refused": {
+      "message": "未从 {host} 处的 JUNG HOME 网关获取导出文件：{error}。未做任何更改；修复通知会说明如何处理。"
+    },
+    "service_unknown_area": {
+      "message": "不存在 ID 为 {id} 的区域。"
+    },
+    "service_not_a_scene": {
+      "message": "{name} 不是 JUNG HOME 网络的场景。"
+    },
+    "remove_device_needs_confirm": {
+      "message": "移除设备后无法撤销：请在调用中添加“confirm: true”以执行（或添加“dry_run: true”以查看其将执行的操作）。"
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "即使某个设备未响应也删除场景，会使该设备仍保留该场景：请在调用中添加“confirm: true”以执行（或添加“dry_run: true”以查看其将执行的操作）。"
+    },
+    "plan_key_device": {
+      "message": "{key} 现在控制 {target}；{messages} 条消息"
+    },
+    "plan_key_room": {
+      "message": "{key} 现在控制房间 {room}；{messages} 条消息"
+    },
+    "plan_key_scene": {
+      "message": "{key} 现在调用场景 {scene}；{messages} 条消息"
+    },
+    "plan_key_cleared": {
+      "message": "{key} 现在没有功能；{messages} 条消息"
+    },
+    "plan_room_joined": {
+      "message": "{devices} 现在位于房间 {room}；{messages} 条消息"
+    },
+    "plan_room_left": {
+      "message": "{devices} 已移出房间 {room}；{messages} 条消息"
+    },
+    "plan_room_deleted": {
+      "message": "房间 {room} 已删除；{messages} 条消息"
+    },
+    "plan_device_removed": {
+      "message": "{device} 已从网络中移除；向其他设备发送了 {messages} 条消息"
+    },
+    "plan_scene_deleted": {
+      "message": "场景 {scene} 已删除；{messages} 条消息"
+    },
+    "plan_finished": {
+      "message": "{action} 已完成；{messages} 条消息"
+    },
+    "plan_stopped": {
+      "message": "{action} 在已应用 {total} 条消息中的 {applied} 条后停止：{error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} 在已应用 {total} 条消息中的 {applied} 条后被取消；Mesh 导出文件记录了已应用的内容"
+    },
+    "logbook_scene_from_key": {
+      "message": "调用了场景 {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "未及时收到松开信号"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "连接丢失"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "集成已停止"
+    },
+    "logbook_scene_number": {
+      "message": "场景 {scene}"
+    },
+    "logbook_scene": {
+      "message": "场景"
+    },
+    "logbook_recalled": {
+      "message": "已被调用"
+    },
+    "logbook_recalled_by": {
+      "message": "已被 {device} 调用"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "导出文件中缺少 JUNG HOME 设备",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "从网关重新获取导出文件",
+            "description": "JUNG HOME Mesh {title} 中有 {count} 个设备正在通过蓝牙广播，但不在 Home Assistant 已加载的导出文件中：{devices}。这些设备是在该导出文件生成之后添加到系统中（或重新配网）的，因此 Home Assistant 中没有它们的实体。确认后，Home Assistant 将使用其已有的访问权限从 {host} 处的 JUNG HOME 网关获取当前导出文件，进行检查并据此重新设置集成，与“重新配置 → 从 {host} 处的网关重新获取”的作用相同；被替换的导出文件会保留一份副本（`.pre-reconfigure`）。新的导出文件列出这些设备后，此问题即会清除。尚未在真实设备上验证。"
+          },
+          "upload": {
+            "title": "加载新的导出文件",
+            "description": "JUNG HOME Mesh {title} 中有 {count} 个设备正在通过蓝牙广播，但不在 Home Assistant 已加载的导出文件中：{devices}。这些设备是在该导出文件生成之后添加到系统中（或重新配网）的，因此 Home Assistant 中没有它们的实体。请从 JUNG HOME 应用导出网络（“项目 → 通过文件共享”），并在此处上传该文件：Home Assistant 会检查该文件，将其保存在配置目录的 `junghome_ble/` 下（该文件包含所有 Mesh 密钥），并据此重新设置集成；被替换的导出文件会保留一份副本。从主机上的路径读取导出文件的条目此后将改用上传的副本——如需保留该路径，请改为将新文件复制到该路径并使用“重新配置”。新的导出文件列出这些设备后，此问题即会清除。尚未在真实设备上验证。",
+            "data": {
+              "export_file": "Mesh 导出文件"
+            },
+            "data_description": {
+              "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "cannot_connect": "无法通过该地址访问网关。",
+          "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
+          "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+          "export_keys_stale": "此 Mesh 的设备可通过蓝牙看到，但没有一个设备在广播此导出文件中的网络密钥：导出文件生成之后，网络的密钥已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请重新从 JUNG HOME 应用导出网络，或再次从网关获取，然后使用该文件。",
+          "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+          "gateway_busy": "网关正忙于处理另一个配置请求。请一分钟后重试。",
+          "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+          "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。",
+          "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
+          "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+          "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "not_a_directory": "元数据路径不是目录。",
+          "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
+          "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
+          "upload_failed": "无法处理上传的文件。请尝试重新上传。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
+          "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
+          "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "导出文件中缺少 JUNG HOME 设备",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "从网关重新获取导出文件",
+            "description": "JUNG HOME Mesh {title} 中有 {count} 个设备正在通过蓝牙广播，但不在 Home Assistant 已加载的导出文件中：{devices}。这些设备是在该导出文件生成之后添加到系统中（或重新配网）的，因此 Home Assistant 中还没有它们的实体。Home Assistant 会向网关请求其当前导出文件，若其中列出了这些设备，便会自动采用。确认后，Home Assistant 将使用其已有的访问权限从 {host} 处的 JUNG HOME 网关获取当前导出文件，进行检查并据此重新设置集成，与“重新配置 → 从 {host} 处的网关重新获取”的作用相同；被替换的导出文件会保留一份副本（`.pre-reconfigure`）。如果此问题仍然存在，说明网关的导出文件中也没有这些设备：请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会上传其项目），然后再次修复。尚未在真实设备上验证。"
+          },
+          "upload": {
+            "title": "加载新的导出文件",
+            "description": "JUNG HOME Mesh {title} 中有 {count} 个设备正在通过蓝牙广播，但不在 Home Assistant 已加载的导出文件中：{devices}。这些设备是在该导出文件生成之后添加到系统中（或重新配网）的，因此 Home Assistant 中还没有它们的实体。Home Assistant 会向网关请求其当前导出文件，若其中列出了这些设备，便会自动采用。请从 JUNG HOME 应用导出网络（“项目 → 通过文件共享”），并在此处上传该文件：Home Assistant 会检查该文件，将其保存在配置目录的 `junghome_ble/` 下（该文件包含所有 Mesh 密钥），并据此重新设置集成；被替换的导出文件会保留一份副本。从主机上的路径读取导出文件的条目此后将改用上传的副本——如需保留该路径，请改为将新文件复制到该路径并使用“重新配置”。如果此问题仍然存在，说明网关的导出文件中也没有这些设备：请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会上传其项目），然后再次修复。尚未在真实设备上验证。",
+            "data": {
+              "export_file": "Mesh 导出文件"
+            },
+            "data_description": {
+              "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "cannot_connect": "无法通过该地址访问网关。",
+          "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
+          "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+          "export_keys_stale": "此 Mesh 的设备可通过蓝牙看到，但没有一个设备在广播此导出文件中的网络密钥：导出文件生成之后，网络的密钥已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请重新从 JUNG HOME 应用导出网络，或再次从网关获取，然后使用该文件。",
+          "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+          "gateway_busy": "网关正忙于处理另一个配置请求。请一分钟后重试。",
+          "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+          "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。",
+          "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
+          "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+          "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "not_a_directory": "元数据路径不是目录。",
+          "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
+          "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
+          "upload_failed": "无法处理上传的文件。请尝试重新上传。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
+          "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
+          "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
+        }
+      }
+    },
+    "app_changed": {
+      "title": "JUNG HOME 应用更改了系统",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "从网关重新获取导出文件",
+            "description": "检测到 JUNG HOME 应用更改了 Mesh {title} 中某个设备的配置（按钮关联、房间、场景或设备设置），因此 Home Assistant 已加载的导出文件可能不再与系统一致：在应用中所做的更改尚未同步到 Home Assistant。确认后，Home Assistant 将使用其已有的访问权限从 {host} 处的 JUNG HOME 网关获取当前导出文件，进行检查并据此重新设置集成，与“重新配置 → 从 {host} 处的网关重新获取”的作用相同；被替换的导出文件会保留一份副本（`.pre-reconfigure`）。尚未在真实设备上验证。"
+          },
+          "upload": {
+            "title": "加载新的导出文件",
+            "description": "检测到 JUNG HOME 应用更改了 Mesh {title} 中某个设备的配置（按钮关联、房间、场景或设备设置），因此 Home Assistant 已加载的导出文件可能不再与系统一致：在应用中所做的更改尚未同步到 Home Assistant。在应用中完成操作后，请从应用导出网络（“项目 → 通过文件共享”），并在此处上传该文件：Home Assistant 会检查该文件，将其保存在配置目录的 `junghome_ble/` 下（该文件包含所有 Mesh 密钥），并据此重新设置集成；被替换的导出文件会保留一份副本。从主机上的路径读取导出文件的条目此后将改用上传的副本——如需保留该路径，请改为将新文件复制到该路径并使用“重新配置”，这也会清除此通知。尚未在真实设备上验证。",
+            "data": {
+              "export_file": "Mesh 导出文件"
+            },
+            "data_description": {
+              "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "cannot_connect": "无法通过该地址访问网关。",
+          "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
+          "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+          "export_keys_stale": "此 Mesh 的设备可通过蓝牙看到，但没有一个设备在广播此导出文件中的网络密钥：导出文件生成之后，网络的密钥已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请重新从 JUNG HOME 应用导出网络，或再次从网关获取，然后使用该文件。",
+          "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+          "gateway_busy": "网关正忙于处理另一个配置请求。请一分钟后重试。",
+          "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+          "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。",
+          "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
+          "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+          "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "not_a_directory": "元数据路径不是目录。",
+          "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
+          "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
+          "upload_failed": "无法处理上传的文件。请尝试重新上传。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
+          "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
+          "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "嵌件与导出文件不一致的 JUNG HOME 按钮面板",
+      "description": "{devices}：JUNG HOME Mesh {title} 中的这些按钮面板广播的嵌件与 Home Assistant 已加载的导出文件中的不同（导出文件 → 设备）。嵌件是在该导出文件生成之后更换的，因此 Home Assistant 和应用可能会为其显示错误的负载类型。请在 JUNG HOME 应用中检查这些设备，重新导出网络并更新此集成（设置 → 设备与服务 → JUNG HOME → 重新配置）；导出文件中列出的嵌件与设备广播的一致后，此问题即会清除。尚未在真实设备上验证。"
+    },
+    "node_clock_wrong": {
+      "title": "时钟错误的 JUNG HOME 设备",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "立即发送时间",
+            "description": "{devices}：JUNG HOME Mesh {title} 中的这些设备可能运行定时计划（按时间或按日出/日落开关），但它们的时钟不正确：没有时间、与 Home Assistant 的时间相差超过一分钟，或时区偏移与 Home Assistant 发送给它们的不同。在重新获得时间之前，它们的定时计划会在错误的时间运行。Home Assistant 会在每次连接后以及每天一次发送时间；确认后将立即发送时间并再次询问这些设备。这些设备返回正确的时间后，此问题即会清除。如果问题再次出现，请检查 Home Assistant 的时区（设置 → 系统 → 常规）以及这些设备是否可以访问。尚未在真实设备上验证。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "not_connected": "Home Assistant 目前未连接到 Mesh。请在连接后重试。"
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "JUNG HOME Mesh 密钥正在更改",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "从网关重新获取导出文件",
+            "description": "Mesh {title} 宣布了一次密钥刷新，但 Home Assistant 未监听到其新网络密钥的分发（若 Home Assistant 从一开始就看到密钥刷新，会跟随进行，不会产生任何问题）。刷新完成后，Home Assistant 所用导出文件中的密钥将失效，控制将停止。请先在 JUNG HOME 应用中完成密钥更新。确认后，Home Assistant 将使用其已有的访问权限从 {host} 处的 JUNG HOME 网关获取当前导出文件，进行检查并据此重新设置集成，与“重新配置 → 从 {host} 处的网关重新获取”的作用相同；被替换的导出文件会保留一份副本（`.pre-reconfigure`）。尚未在真实设备上验证。"
+          },
+          "upload": {
+            "title": "加载新的导出文件",
+            "description": "Mesh {title} 宣布了一次密钥刷新，但 Home Assistant 未监听到其新网络密钥的分发（若 Home Assistant 从一开始就看到密钥刷新，会跟随进行，不会产生任何问题）。刷新完成后，Home Assistant 所用导出文件中的密钥将失效，控制将停止。请先在 JUNG HOME 应用中完成密钥更新。请从 JUNG HOME 应用导出网络（“项目 → 通过文件共享”），并在此处上传该文件：Home Assistant 会检查该文件，将其保存在配置目录的 `junghome_ble/` 下（该文件包含所有 Mesh 密钥），并据此重新设置集成；被替换的导出文件会保留一份副本。从主机上的路径读取导出文件的条目此后将改用上传的副本——如需保留该路径，请改为将新文件复制到该路径并使用“重新配置”。尚未在真实设备上验证。",
+            "data": {
+              "export_file": "Mesh 导出文件"
+            },
+            "data_description": {
+              "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "cannot_connect": "无法通过该地址访问网关。",
+          "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
+          "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+          "export_keys_stale": "此 Mesh 的设备可通过蓝牙看到，但没有一个设备在广播此导出文件中的网络密钥：导出文件生成之后，网络的密钥已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请重新从 JUNG HOME 应用导出网络，或再次从网关获取，然后使用该文件。",
+          "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+          "gateway_busy": "网关正忙于处理另一个配置请求。请一分钟后重试。",
+          "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+          "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。",
+          "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
+          "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+          "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "not_a_directory": "元数据路径不是目录。",
+          "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
+          "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
+          "upload_failed": "无法处理上传的文件。请尝试重新上传。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
+          "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
+          "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME 设备忽略 Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "跳过设备已知的序列号",
+            "description": "Home Assistant 能通过代理节点收到 JUNG HOME Mesh {title} 的消息，但没有任何设备响应其状态请求。节点将 Home Assistant 的消息当作重放消息丢弃。可能有两个原因：此集成的序列号存储（`.storage/junghome_ble.*`）丢失或从较旧的备份中恢复，因此 Home Assistant 现在发送的是节点已见过的序列号；或者另一个 Mesh 客户端（例如 `mesh_poc.py` 工具）正在使用相同的单播地址 {unicast} 发送消息。请为 Home Assistant 指定一个新的、未使用的地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址，并确保没有其他客户端使用该地址）；或者，如果存储已丢失或已恢复（且没有其他客户端使用该地址），请确认，让 Home Assistant 将其序列号向前跳过 1,048,576 并重新连接。不要通过从备份恢复序列号存储来解决此问题：较旧的副本只会重复设备已见过的序列号。一旦有设备再次响应 Home Assistant，此问题会自动清除。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。"
+        }
+      }
+    },
+    "address_shared": {
+      "title": "另一个客户端正在使用 Home Assistant 的 JUNG HOME 地址",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "跳过另一个客户端的序列号",
+            "description": "Home Assistant 收到了 JUNG HOME Mesh {title} 中一条从其自身单播地址 {unicast} 发出的消息，其序列号是 Home Assistant 从未使用过的：另一个 Mesh 客户端正在使用相同的地址发送——可能是第二个 Home Assistant 实例、配置了此地址的 `mesh_poc.py` 工具，或在别处启动的此实例的副本。同一地址上的两个发送方会重复使用彼此的序列号，而设备会丢弃低于另一客户端序列号的所有消息，因此在修复之前，Home Assistant 不会向 Mesh 发送任何内容（命令会失败，状态不会刷新）。请停止另一个客户端，或为它或 Home Assistant 指定另一个未使用的地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址）。然后确认，让 Home Assistant 将其序列号推进到已观察到的另一客户端所用序列号之后，并重新发送。如果另一个客户端继续从此地址发送，此问题会再次出现。不要通过从备份恢复序列号存储来解决此问题。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。"
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "另一个客户端仍在使用 Home Assistant 的 JUNG HOME 地址",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "再次跳过另一个客户端的序列号",
+            "description": "Home Assistant 已跳过 JUNG HOME Mesh {title} 中与其共用地址 {unicast} 的另一个 Mesh 客户端的序列号，但此后另一个客户端又从该地址发送了消息：它仍在运行。只要它仍在运行，向前跳过就无济于事。请为 Home Assistant 指定一个新的、未使用的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），或停止另一个客户端，或将其改用另一个地址。在此之前，Home Assistant 不会向 Mesh 发送任何内容。请仅在另一个客户端不再使用此地址后再确认：届时 Home Assistant 会再次跳过其序列号并恢复发送。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。"
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "JUNG HOME Mesh 没有可用的蓝牙",
+      "description": "JUNG HOME Mesh {title} 需通过蓝牙访问，但 Home Assistant 已没有可连接的蓝牙适配器或代理：适配器已关闭、已拔出或发生故障，或者所有支持主动连接的 ESPHome 蓝牙代理均已离线。在其中一个恢复之前，该 Mesh 的所有设备均不可用。请检查 设置 → 设备与服务 → Bluetooth。蓝牙适配器或代理再次可用后，此问题即会清除。"
+    },
+    "duplicate_mesh": {
+      "title": "两个条目对应同一个 JUNG HOME Mesh",
+      "description": "{title} 和 {others} 都被设置为同一个 JUNG HOME Mesh。它们共用该 Mesh 的序列号计数器（`.storage/junghome_ble.seq.*`），因此只能运行其中一个：{others} 正在运行，{title} 未启动。请移除其中一个条目（设置 → 设备与服务）；如果移除 {others}，之后请重新加载 {title}。"
+    },
+    "gateway_import": {
+      "title": "接管 JUNG HOME 网关集成的实体",
+      "description": "JUNG HOME 网关集成与 Bluetooth Mesh 集成 {title} 同时处于设置状态，因此每个灯、插座、按钮和场景都存在两份。请在 设置 → 设备与服务 → JUNG HOME (Bluetooth Mesh) → 重新配置 → 导入 JUNG HOME 网关集成的实体 中将网关实体移到此处——它们会保留实体 ID、名称、区域和历史记录——然后删除网关条目。如果您想保留两者，请忽略此问题。"
+    },
+    "export_stale": {
+      "title": "JUNG HOME Mesh 密钥已更改",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "从网关重新获取导出文件",
+            "description": "Home Assistant 已连接到 JUNG HOME Mesh {title} 的一个节点，但收到的任何内容都无法用导出文件中的密钥解密：每条网络消息和该节点的信标都未通过认证。导出文件生成之后，该 Mesh 完成了一次密钥刷新（在 JUNG HOME 应用中称为“密钥更新”），因此该文件已过时。确认后，Home Assistant 将使用其已有的访问权限从 {host} 处的 JUNG HOME 网关获取当前导出文件，进行检查并据此重新设置集成，与“重新配置 → 从 {host} 处的网关重新获取”的作用相同；被替换的导出文件会保留一份副本（`.pre-reconfigure`）。一旦有消息能再次解密，此问题即会清除。尚未在真实设备上验证。"
+          },
+          "upload": {
+            "title": "加载新的导出文件",
+            "description": "Home Assistant 已连接到 JUNG HOME Mesh {title} 的一个节点，但收到的任何内容都无法用导出文件中的密钥解密：每条网络消息和该节点的信标都未通过认证。导出文件生成之后，该 Mesh 完成了一次密钥刷新（在 JUNG HOME 应用中称为“密钥更新”），因此该文件已过时。请从 JUNG HOME 应用导出网络（“项目 → 通过文件共享”），并在此处上传该文件：Home Assistant 会检查该文件，将其保存在配置目录的 `junghome_ble/` 下（该文件包含所有 Mesh 密钥），并据此重新设置集成；被替换的导出文件会保留一份副本。从主机上的路径读取导出文件的条目此后将改用上传的副本——如需保留该路径，请改为将新文件复制到该路径并使用“重新配置”。一旦有消息能再次解密，此问题即会清除。尚未在真实设备上验证。",
+            "data": {
+              "export_file": "Mesh 导出文件"
+            },
+            "data_description": {
+              "export_file": "来自应用（“通过文件共享”）的 `JungHome.json`，或来自 iOS 备份的 `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "cannot_connect": "无法通过该地址访问网关。",
+          "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
+          "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
+          "export_keys_stale": "此 Mesh 的设备可通过蓝牙看到，但没有一个设备在广播此导出文件中的网络密钥：导出文件生成之后，网络的密钥已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请重新从 JUNG HOME 应用导出网络，或再次从网关获取，然后使用该文件。",
+          "gateway_error": "网关返回了错误。请在 JUNG HOME 应用中检查其状态，然后重试。",
+          "gateway_busy": "网关正忙于处理另一个配置请求。请一分钟后重试。",
+          "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
+          "invalid_export": "该文件不是 JUNG HOME Mesh 导出文件（或已损坏）：它必须包含网络及其密钥、节点，以及一个索引为 0 的网络密钥。",
+          "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
+          "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
+          "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "not_a_directory": "元数据路径不是目录。",
+          "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
+          "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
+          "upload_failed": "无法处理上传的文件。请尝试重新上传。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
+          "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
+          "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "JUNG HOME 网关证书已更改",
+      "description": "{host} 处的 JUNG HOME 网关与 Home Assistant 为其固定的 TLS 证书不再匹配：该主机出示了另一个证书，或网关节点通过 Mesh 报告了另一个证书。Home Assistant 已停止使用该网关（不会向其发送访问令牌和导出文件）；设备将继续通过蓝牙工作。如果您更换了网关或其证书，请打开 设置 → 设备与服务 → JUNG HOME → 重新配置，并再次从网关获取导出文件；否则，可能是您网络中的另一台设备在冒充网关应答——请检查您的网络。"
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME 导出文件未交给网关",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "将导出文件交给网关",
+            "description": "Home Assistant 更改了 JUNG HOME 系统（房间、按钮关联或场景）并重写了其 Mesh 导出文件，但 {host} 处的 JUNG HOME 网关未接受新的导出文件：{error}。在网关接受之前，网关和应用显示的都是旧状态——而应用的下一次更改会覆盖 Home Assistant 的更改。Home Assistant 会像应用一样再重试两次，间隔 15 秒。请检查网关是否可访问，然后确认以立即将导出文件交给网关，与动作“同步网关”（`junghome_ble.sync_gateway`）的作用相同：如果网关中有 Home Assistant 尚未看到的更改，该操作会拒绝执行，因为上传会将这些更改抹除。上传成功后，此问题即会清除。尚未在真实设备上验证。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "not_loaded": "此问题所属的 JUNG HOME 条目当前未运行。请在其设置完成后重试。",
+          "sync_failed": "导出文件未交给网关：{error} 此问题仍然存在；请在原因消除后再次修复。"
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "{title} 上的一项 JUNG HOME 更改被中断",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "一项 JUNG HOME 更改被中断",
+            "description": "Home Assistant 在执行 {action} 的过程中停止：其 {total} 条配置消息中已有 {accepted} 条到达设备。这些消息现已记录在 Mesh 导出文件中，因此导出文件反映了设备所保存的内容。请对同一目标再次运行该动作以完成它。如有 JUNG HOME 网关，记录后的导出文件会在下一次更改时或通过动作 `junghome_ble.sync_gateway` 交给网关。确认以关闭此通知。"
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "设备名称未传递到 JUNG HOME 应用",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "重命名设备",
+            "description": "{device} 在 Home Assistant 中被重命名为“{name}”，但 JUNG HOME 应用不接受此名称：名称不能为空，也不能超过 30 个字符，且应用会将 % 符号视为占位符的开头（只有 %% 和 %n 可以通过）。Mesh 导出文件和应用仍保留该设备的旧名称。请输入应用接受的名称：Home Assistant 会用它为设备命名，并像每次重命名一样将其传递到导出文件（如有网关，还会传递到应用）。名称传递完成后，此问题即会清除。尚未在真实设备上验证。",
+            "data": {
+              "name": "名称"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "名称不能为空。",
+          "name_not_allowed": "应用会将 % 符号视为占位符的开头：只有 %% 和 %n 可以通过。",
+          "name_too_long": "应用只接受最多 30 个字符的名称。"
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再设置。",
+          "not_loaded": "此问题所属的 JUNG HOME 条目当前未运行。请在其设置完成后重试。",
+          "device_gone": "此问题所指的设备已不在 Home Assistant 中。"
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Home Assistant 添加的设备错过了新的网络密钥",
+      "description": "JUNG HOME 应用更新了 Mesh {title} 的网络密钥，Home Assistant 也已跟随此次更新直至完成。应用不知道 Home Assistant 添加的设备，因此 Home Assistant 会自行将新密钥交给这些设备，但位于 {addresses} 的设备没有确认。请确保它们已通电且在范围内：Home Assistant 会在每次新的蓝牙连接时重试。从未收到新密钥的设备将无法再访问：请将其恢复出厂设置，然后重新添加（先使用 `junghome_ble.remove_device` 或 `junghome_ble.reset_pending_device` 并启用 `force` 将其从 Home Assistant 中移除）。尚未在真实设备上尝试。当每个此类设备都确认后，此问题即会清除。"
+    },
+    "pending_device": {
+      "title": "Home Assistant 添加的某个设备未被记录",
+      "description": "Home Assistant 使用 `junghome_ble.add_device` 为 Mesh {title} 配网了一个 JUNG 设备，但其配置或在导出文件中的记录失败：位于 {addresses} 的设备拥有网络的密钥，而 JUNG HOME 应用和导出文件都不知道它，其地址和元素组仍保持预留，以免分配给其他设备。请使用动作 `junghome_ble.reset_pending_device`（填写其单播地址）将其重置，然后重新添加；对于已手动重置的设备或已不存在的设备，请使用 `force`。尚未在真实设备上尝试。当不再有此类设备时，此问题即会清除。"
+    },
+    "vault_unwritable": {
+      "title": "无法保存 JUNG HOME 设备密钥",
+      "description": "Home Assistant 在添加位于 {address} 的设备时，无法写入 Mesh {title} 的密钥库（{path}；最后一个错误：{error}）。密钥库保存着 Home Assistant 所添加设备的设备密钥，在导出文件记录它们之前，其他任何地方都没有这些密钥，因此该设备未被配网：它没有收到任何内容，仍然是新设备。这通常意味着磁盘已满，或其文件系统被重新挂载为只读，常见原因是 SD 卡故障。请释放空间或修复存储（重新挂载为只读的文件系统通常需要重启主机），然后重新添加该设备；请勿编辑、删除或替换密钥库的文件。尚未在真实设备上尝试。一旦成功写入密钥库，此问题即会自动清除。"
+    },
+    "carry_over_conflict": {
+      "title": "JUNG HOME 应用覆盖了 Home Assistant 在 {title} 上所做的一项更改",
+      "description": "Home Assistant 接管了 JUNG HOME 应用最近一次交给网关的导出文件，并将自己的更改转移到其中，但应用在此期间更改了相同的条目。以下内容保留了应用的版本：{paths}。设备可能仍保存着 Home Assistant 写入的内容：{held}。请在应用和 Home Assistant 中检查这些房间、场景和关联，并从其中一方重新设置。应用在导入文件之前看不到 Home Assistant 添加的内容。下一次接管网关的导出文件且没有此类冲突时，此问题即会清除。"
+    },
+    "scene_held": {
+      "title": "{title} 上的设备仍保留着一个已删除的 JUNG HOME 场景",
+      "description": "一个场景在启用“即使有设备未应答”的情况下被删除，而其部分设备无法访问或拒绝了删除；这些设备仍保存着该场景，并会在调用任何具有该编号的场景时调用它。场景编号：设备 — {members}。Home Assistant 不会将这些编号分配给新场景。当这些设备重新可访问时，请在关闭“试运行”的情况下运行动作“删除未使用的场景”：它会从这些设备中删除这些编号，此问题随即清除。"
+    },
+    "gateway_token_rejected": {
+      "title": "JUNG HOME 网关不再接受 Home Assistant",
+      "description": "位于 {host} 的 JUNG HOME 网关拒绝了 Home Assistant 为 Mesh {title} 注册的访问权限（可能已在 JUNG HOME 应用的 设置 → 网关 → 访问权限 下被移除）。Home Assistant 仍会在自己的导出文件中更改房间、按钮关联和场景，但不再将其交给网关，因此应用看不到这些更改；设备仍正常工作。Home Assistant 会再次请求访问权限：请按照其重新验证 JUNG HOME 的请求操作（设置 → 设备与服务；“修复”中也会将其列为身份验证已过期），并输入网关的网络密钥密码，或在应用中批准新的访问请求。一旦网关再次接受 Home Assistant，此问题即会清除；之后动作“同步网关”会交出此后所做的更改。"
+    },
+    "seq_store_lost": {
+      "title": "JUNG HOME Mesh {title} 的序列号已丢失",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "从已发送的序列号之后继续",
+            "description": "此集成的序列号存储（`.storage/junghome_ble.seq.*`）中没有 Home Assistant 地址 {unicast} 的可用记录，尽管该地址之前发送过消息。从 0 重新开始会重复使用设备已经见过的序列号：设备会忽略 Home Assistant，并且每个被重复使用的序列号都会削弱 Mesh 的加密。从备份恢复该存储也会造成同样的后果——旧副本会重复自其创建以来发送过的每个序列号——因此请勿恢复 `junghome_ble.seq.*` 文件。确认后，Home Assistant 将从其仍能读取的最后一个值之后跳过 1 048 576 个序列号继续（若没有剩余可读值，则从其随计数器一同维护在 `junghome_ble.seq.*.floor` 中的下限之后跳过 4 194 304 个，或从 0 之后跳过），并重新设置此集成。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再设置。",
+          "floor_not_written": "无法写入序列号下限（`.storage/junghome_ble.seq.*.floor`）：未做任何更改，此集成仍处于停止状态。请检查 Home Assistant 配置所在的磁盘，然后再次修复此问题。"
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "无法保存 JUNG HOME 序列号",
+      "description": "Home Assistant 已超过一分钟无法写入 Mesh {title} 的序列号存储（{path}；最后一个错误：{error}）。发往设备的每条消息都带有一个新的序列号，而 Home Assistant 只发送已保存的序列号，以确保重启后绝不会重复使用：在写入成功之前，它不会向 Mesh 发送任何内容——命令会失败，状态也不会刷新。这通常意味着磁盘已满，或其文件系统被重新挂载为只读，常见原因是 SD 卡故障。请释放空间或修复存储（重新挂载为只读的文件系统通常需要重启主机）；请勿编辑、删除或替换该存储的文件。一旦写入成功并恢复发送，此问题即会自动清除。"
+    },
+    "address_in_use": {
+      "title": "Home Assistant 的 JUNG HOME 地址已被占用",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "将 Home Assistant 移至 {suggestion}",
+            "description": "在 Mesh {title} 的导出文件中，有一个节点占用了 Home Assistant 用于发送的单播地址 {unicast}。两者会被视为同一个发送方：设备会将其中一方的消息当作重放而丢弃，应答也会发给错误的一方。确认后，将为 Home Assistant 分配空闲地址 {suggestion} 并重新设置此集成，效果与 重新配置 → 高级 → 本机单播地址 相同。请确保没有其他 Mesh 客户端（此集成的命令行工具、另一个 Home Assistant）从 {suggestion} 发送。序列号按地址分别保存：新地址会延续其自身的记录；如果 Home Assistant 没有该地址的记录，则从足够靠后的位置开始，因此不会有序列号被发送两次。尚未在真实设备上验证。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再设置。",
+          "cannot_load": "无法读取该条目的导出文件，因此无法确定空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME → 重新配置 下加载新的导出文件。",
+          "no_free_address": "导出文件中没有可供 Home Assistant 使用的空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME → 重新配置 下检查导出文件。",
+          "address_taken": "{suggestion} 在导出文件中已不再空闲（导出文件在此期间已更改）：未做任何更改。请再次修复此问题以获取新的建议地址。"
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Home Assistant 的 JUNG HOME 地址可能会被分配出去",
+      "description": "Home Assistant 在 Mesh {title} 中用于发送的单播地址 {unicast} 位于应用某个配网者的地址范围内，或曾被一个已移除的节点使用。在应用于该地址配网一个节点之前，它仍可正常工作；请在此之前将 Home Assistant 迁移到空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址；{suggestion} 是空闲的）。"
+    },
+    "sequence_space_low": {
+      "title": "JUNG HOME Mesh 序列号即将用尽",
+      "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。每个发送方在用尽该空间后都会停止发送，直到 Mesh 切换到下一个 IV index（即 IV Update），这由 JUNG HOME 网关自行发起；Home Assistant 会跟随但不会主动发起。请保持网关通电并连接到 Mesh；没有网关时，一旦有发送方用尽序列号，Mesh 就会停止工作。更新完成后，此问题即会自动清除。"
+    },
+    "iv_index_mismatch": {
+      "title": "JUNG HOME Mesh 处于另一个 IV index",
+      "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}：两者相差太远，Home Assistant 无法跟随（它最多跟随 Mesh 领先 42，最多每 192 小时一次，且从不后退）。在此期间，设备会忽略 Home Assistant。这种情况发生在 Home Assistant 错过了多次 IV Update、其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。请为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址）：它将在该地址上从 Mesh 的 IV index 开始。请勿从备份恢复该存储，也不要编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号，而且下次启动时手动编辑的内容无论如何都会被覆盖。当收到范围内可跟随的信标时，此问题即会自动清除。"
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant 领先于 JUNG HOME Mesh 的 IV index",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "返回 Mesh 的 IV index",
+            "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}——领先于 Mesh，而 Mesh 本身从不会出现这种情况：设备会忽略 Home Assistant，而它也无法跟随一个落后于自己的 Mesh。这种情况发生在其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。确认后，Home Assistant 将回到 Mesh 的 IV index 并重新设置此集成：其序列号将从它自该 index 起发送过的所有序列号之上继续，因此不会有序列号被使用两次。也请勿改为从备份恢复该存储或编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号。另一种恢复方式是为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置）。尚未在真实设备上验证：IV index 领先于 Mesh 的情况尚未在真实 Mesh 上出现过。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再设置。",
+          "iv_index_not_ahead": "Home Assistant 已不再领先于 Mesh 到无法跟随的程度，或者自此问题提出以来其 IV 状态已发生变化：未做任何更改。如果此问题再次出现，请再次修复。",
+          "seq_store_not_written": "无法写入序列号下限（`.storage/junghome_ble.seq.*.floor`）：未做任何更改。请检查 Home Assistant 配置所在的磁盘，然后再次修复此问题。"
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME 嵌入式执行器没有授时节点",
+      "description": "Mesh {title} 中有较旧类型的 JUNG 嵌入式执行器（{pucks}）：它们从授时节点获取时间，授时节点是一个市电供电的设备，负责将时间转发给它们。Mesh 中没有任何设备担任授时节点，因此这些嵌入式执行器的定时器会产生偏差。请在一个始终通电的设备（例如插座或迷你执行器）上打开开关 *授时节点*（一个配置实体，默认禁用）；JUNG HOME 应用在配置嵌入式执行器时会自行选择一个。尚未在真实设备上验证。一旦有设备成为授时节点，此问题即会清除。"
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "设置房间",
+      "description": "将 JUNG HOME 灯和插座放入 Mesh 的一个房间（即应用中的“区域”）。尚不存在的房间只有在启用“创建房间”时才会被创建，因此输错的名称会被拒绝。设备会离开其他所有房间；已关联到该房间的按钮会开始控制它。Mesh 导出文件会被重写，Home Assistant 无需重新加载集成即可跟随更新。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "room": {
+          "name": "房间",
+          "description": "JUNG HOME 应用中房间的名称。"
+        },
+        "create": {
+          "name": "创建房间",
+          "description": "当 Mesh 中没有该名称的房间时创建它。关闭时，未知名称会被拒绝。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "添加到房间",
+      "description": "将 JUNG HOME 灯、插座和百叶窗也放入 Mesh 的一个房间：它们仍保留在原有房间中，因为应用允许一个设备属于多个房间。尚不存在的房间只有在启用“创建房间”时才会被创建。已关联到该房间的按钮会开始控制它们。Mesh 导出文件会被重写，Home Assistant 无需重新加载集成即可跟随更新。尚未在真实设备上验证。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "room": {
+          "name": "房间",
+          "description": "JUNG HOME 应用中房间的名称。"
+        },
+        "create": {
+          "name": "创建房间",
+          "description": "当 Mesh 中没有该名称的房间时创建它。关闭时，未知名称会被拒绝。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "从房间中移除",
+      "description": "将 JUNG HOME 灯、插座和百叶窗从 Mesh 的一个房间中移出；它们仍保留在其他房间中，设备也可能最终不属于任何房间。某个按钮通过其与该房间的关联而控制的设备会被拒绝，除非启用“即使有按钮控制它”：离开该房间也会解除它与该按钮的连接。Mesh 导出文件会被重写，Home Assistant 无需重新加载集成即可跟随更新。尚未在真实设备上验证。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "room": {
+          "name": "房间",
+          "description": "JUNG HOME 应用中房间的名称。"
+        },
+        "force": {
+          "name": "即使有按钮控制它",
+          "description": "即使有关联到该房间的按钮在控制该设备，也将其移出房间；该按钮将不再控制它。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "create_room": {
+      "name": "创建房间",
+      "description": "在 Mesh 导出文件中创建一个空房间（不会向设备发送任何内容）。Home Assistant 会为其分配应用地址范围内最高的空闲组地址：应用在导入文件之前看不到它，并会为自己的下一个房间分配最低的空闲组地址。请求时返回该房间的组地址。仅限管理员。",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "新房间的名称。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "rename_room": {
+      "name": "重命名房间",
+      "description": "在 Mesh 导出文件中重命名一个房间（不会向设备发送任何内容）。仅限管理员。",
+      "fields": {
+        "room": {
+          "name": "房间",
+          "description": "房间的当前名称。"
+        },
+        "new_name": {
+          "name": "新名称",
+          "description": "新名称。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        }
+      }
+    },
+    "delete_room": {
+      "name": "删除房间",
+      "description": "删除一个房间：其设备离开该房间，关联到该房间的按钮失去功能，该房间也会从 Mesh 导出文件中移除。设备本身仍可正常操作。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "room": {
+          "name": "房间",
+          "description": "要删除的房间的名称。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "assign_key": {
+      "name": "分配按钮",
+      "description": "将按钮面板的按钮或传感器关联到灯、插座、百叶窗、室内温控器、网关、房间或场景，与 JUNG HOME 应用的按钮关联完全相同：移除该按钮之前的关联，将按钮连接到目标，并设置其按钮模式（传感器没有按钮模式，且只能控制一个设备）。Mesh 导出文件会被重写，Home Assistant 无需重新加载集成即可跟随更新。以传感器作为来源以及温度模式尚未在真实设备上验证。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "key_entity": {
+          "name": "按钮",
+          "description": "该按钮的按钮事件实体，或传感器的实体。"
+        },
+        "key_device": {
+          "name": "按钮设备",
+          "description": "带有该按钮的按钮面板设备（当它有多个按钮时，与“按钮字母”一起使用），或传感器。"
+        },
+        "key": {
+          "name": "按钮字母",
+          "description": "设备的哪个按钮：A、B、C 或 D；迷你执行器的输入为 E1 或 E2。"
+        },
+        "target_entity": {
+          "name": "目标实体",
+          "description": "该按钮应控制的灯、插座、百叶窗或室内温控器。"
+        },
+        "target_device": {
+          "name": "目标设备",
+          "description": "该按钮应控制的设备：灯、插座或网关（此时按钮会将点击、双击和长按上报给 Home Assistant）。"
+        },
+        "room": {
+          "name": "目标房间",
+          "description": "该按钮应控制其灯或插座的房间。"
+        },
+        "scene": {
+          "name": "目标场景",
+          "description": "该按钮应在每个设备上调用的场景，按编号或名称指定（按钮模式为场景；请将“模式”留空）。尚未在真实设备上尝试。"
+        },
+        "mode": {
+          "name": "模式",
+          "description": "按钮的作用：light（开/关和调光）、switch（开/关）、move（百叶窗；未测试）、gateway（上报事件）、lock（上/开一侧将灯或插座锁定在当前状态，下/关一侧解除锁定；尚未在真实设备上验证）、temperature（室内温控器的设定温度；尚未在真实设备上验证），或者对房间使用 light_and_switch（灯和插座一起）。留空时，模式取决于目标。"
+        },
+        "target_element": {
+          "name": "目标元素",
+          "description": "仅适用于以设备为目标：仅用按钮的调光客户端控制目标的另一个部分，color_temperature（可调白光灯的色温，模式 light）或 slat（百叶窗的叶片，模式 move）。尚未在真实设备上验证。"
+        },
+        "lock_seconds": {
+          "name": "锁定时间",
+          "description": "仅适用于 lock 模式：按钮施加的锁定持续多长时间，以秒为单位（0 或留空：直到按钮将其解锁）。尚未在真实设备上验证。"
+        },
+        "room_area": {
+          "name": "按区域指定房间",
+          "description": "代替输入房间名称：选择与该房间同名的区域。"
+        },
+        "scene_entity": {
+          "name": "场景实体",
+          "description": "代替输入场景名称或编号：选择其场景实体。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "clear_key": {
+      "name": "清除按钮功能",
+      "description": "使按钮面板的按钮不再具有任何功能：移除其与设备、网关或房间的关联（即应用中的“无功能”）。返回设备应用了多少条消息、Mesh 导出文件是否已写入以及哪些设备发生了更改；启用“试运行”时，则改为返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "key_entity": {
+          "name": "按钮",
+          "description": "该按钮的按钮事件实体。"
+        },
+        "key_device": {
+          "name": "按钮设备",
+          "description": "带有该按钮的按钮面板设备（当它有多个按钮时，与“按钮字母”一起使用）。"
+        },
+        "key": {
+          "name": "按钮字母",
+          "description": "设备的哪个按钮：A、B、C 或 D；迷你执行器的输入为 E1 或 E2。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "create_scene": {
+      "name": "创建场景",
+      "description": "在 Mesh 导出文件中创建一个空场景（不会向设备发送任何内容）。请使用“保存场景”将设备保存到其中。Home Assistant 会为其分配应用范围内最高的空闲场景编号：应用在导入文件之前看不到它，并会为自己的下一个场景分配最低的空闲编号。请求时返回场景编号。仅限管理员。",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "新场景的名称。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "重命名场景",
+      "description": "在 Mesh 导出文件中重命名一个场景（不会向设备发送任何内容）。仅限管理员。",
+      "fields": {
+        "scene": {
+          "name": "场景",
+          "description": "场景的当前名称或编号。"
+        },
+        "new_name": {
+          "name": "新名称",
+          "description": "新名称。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "scene_entity": {
+          "name": "场景实体",
+          "description": "代替输入场景名称或编号：选择其场景实体。"
+        }
+      }
+    },
+    "store_scene": {
+      "name": "保存场景",
+      "description": "将 JUNG HOME 灯、插座、百叶窗和温控器的当前状态保存到场景中，与应用的“将设备保存到场景”相同：先将设备设置为场景应使其达到的状态，然后调用此动作。每个设备会将其状态保存在该场景下（Scene Store），并附带 JUNG 对该状态的描述，Mesh 导出文件也会记录该成员。Home Assistant 无需重新加载集成即可跟随更新。如果给定了状态（动作、亮度、色温、温度），会先将每个设备设为该状态，并等待其到达；给定了位置的百叶窗不会移动，场景会为其保存该位置。仅限管理员。",
+      "fields": {
+        "scene": {
+          "name": "场景",
+          "description": "场景的名称或编号（通过“创建场景”或在应用中创建）。"
+        },
+        "action": {
+          "name": "动作",
+          "description": "保存前打开或关闭灯和插座。"
+        },
+        "brightness_pct": {
+          "name": "亮度",
+          "description": "保存前将灯调到此亮度（此时动作为“开”）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温",
+          "description": "保存前将可调白光灯设为此色温。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "场景将百叶窗移动到的位置：0 为关闭，100 为打开。"
+        },
+        "tilt_position": {
+          "name": "倾斜位置",
+          "description": "场景将百叶窗移动到的叶片位置；未填写时使用百叶窗位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "保存前将温控器设为此温度。"
+        },
+        "scene_entity": {
+          "name": "场景实体",
+          "description": "代替输入场景名称或编号：选择其场景实体。"
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "要保存的状态",
+          "description": "先将设备设为此状态；留空时，保存其当前状态。"
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "从场景中移除",
+      "description": "将 JUNG HOME 灯、插座、百叶窗和温控器从场景中移除：每个设备会忘记该场景（Scene Delete），Mesh 导出文件也会删除该成员。Home Assistant 无需重新加载集成即可跟随更新。仅限管理员。",
+      "fields": {
+        "scene": {
+          "name": "场景",
+          "description": "场景的名称或编号。"
+        },
+        "scene_entity": {
+          "name": "场景实体",
+          "description": "代替输入场景名称或编号：选择其场景实体。"
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "删除场景",
+      "description": "删除一个场景：保存了它的每个设备都会忘记它，这些设备中调用它的按钮会失去其关联，该场景也会从 Mesh 导出文件中移除。Home Assistant 无需重新加载集成即可跟随更新。请求时返回因“即使有设备未应答”（需要“确认”）而跳过的设备，以及按钮相关消息的应用情况；启用“试运行”时，返回将会发送和更改的内容。仅限管理员。",
+      "fields": {
+        "scene": {
+          "name": "场景",
+          "description": "要删除的场景的名称或编号。"
+        },
+        "force": {
+          "name": "即使有设备未应答",
+          "description": "即使保存了该场景的某个设备无法访问或拒绝删除，也从 Mesh 导出文件中删除该场景（即应用中的“仍然删除”）。该设备会保留此场景，直到“删除未使用的场景”将其删除；一个修复问题会列出该设备，在此期间新场景不会获得其编号。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        },
+        "scene_entity": {
+          "name": "场景实体",
+          "description": "代替输入场景名称或编号：选择其场景实体。"
+        },
+        "confirm": {
+          "name": "确认",
+          "description": "与“即使有设备未应答”一起使用时必需：无法从此处让保留该场景的设备忘记它。试运行时不需要。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "删除未使用的场景",
+      "description": "读取每个设备的场景寄存器，并列出或删除 Mesh 导出文件不知道的场景（既不是应用的场景，也不是应用定时器的场景），与应用在打开其定时器列表时的做法相同。除非另有指定，否则仅为试运行。如有网关，它只基于网关的当前导出文件工作；对于从文件设置的网络，删除需要启用“Mesh 导出文件是最新的”或指定要删除的编号。返回每个设备的编号。仅限管理员。",
+      "fields": {
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅列出将被删除的编号；不会删除任何内容。默认开启。"
+        },
+        "numbers": {
+          "name": "场景编号",
+          "description": "仅删除这些场景编号（其中任何一个都不能是 Mesh 导出文件中的场景）。"
+        },
+        "confirm_stale_export": {
+          "name": "Mesh 导出文件是最新的",
+          "description": "适用于从文件设置的网络：该文件包含应用的所有场景，包括自导出以来新建的场景。不启用时，只会删除指定的编号。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "同步网关",
+      "description": "将 Home Assistant 使用的 Mesh 导出文件交给 JUNG HOME 网关，与应用在每次更改后的做法相同。在每个重写导出文件的动作之后自动运行；在出现“导出文件未交给网关”修复问题后，或在您自行编辑该文件后，可调用它进行重试。仅限管理员。",
+      "fields": {
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "获取定时计划",
+      "description": "读取 JUNG HOME 负载设备自行运行的定时计划（即应用的“自动化”页面）：每个负载设备最多 16 个存储位，每个存储位是在某些星期几按时刻、日出或日落触发，并附带负载设备届时执行的操作。按实体返回其已使用的存储位，字段格式与“创建定时计划”所用的相同。"
+    },
+    "create_schedule": {
+      "name": "创建定时计划",
+      "description": "将定时计划写入每个目标 JUNG HOME 负载设备的第一个空闲存储位，之后由负载设备自行运行，无需 Home Assistant。日出或日落定时计划会先向节点发送 Home Assistant 的家庭位置。按实体返回所用的存储位。尚未在设备上测试。仅限管理员。",
+      "fields": {
+        "trigger": {
+          "name": "触发器",
+          "description": "定时计划何时触发：在某个时刻，或在日出或日落时。"
+        },
+        "time": {
+          "name": "时间",
+          "description": "按时间触发的定时计划的时刻。"
+        },
+        "not_before": {
+          "name": "不早于",
+          "description": "日出或日落定时计划不早于此时间触发（未填写时不限制）。"
+        },
+        "not_after": {
+          "name": "不晚于",
+          "description": "日出或日落定时计划不晚于此时间触发（未填写时不限制）。"
+        },
+        "offset": {
+          "name": "偏移",
+          "description": "日出或日落之前（负数）或之后的分钟数。"
+        },
+        "weekdays": {
+          "name": "星期",
+          "description": "定时计划触发的日期；留空则为每天。"
+        },
+        "enabled": {
+          "name": "已启用",
+          "description": "定时计划是否触发；已禁用的定时计划会等待“启用定时计划”。"
+        },
+        "action": {
+          "name": "动作",
+          "description": "打开或关闭灯或插座。"
+        },
+        "brightness_pct": {
+          "name": "亮度",
+          "description": "调光器开启时的亮度（此时动作为“开”）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温",
+          "description": "可调白光灯的色温，以 100 K 为步长。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "百叶窗移动到的位置：0 为关闭，100 为打开。"
+        },
+        "tilt_position": {
+          "name": "倾斜位置",
+          "description": "百叶窗的叶片位置；留空则使用百叶窗位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "室内温控器的目标温度。"
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "何时",
+          "description": "定时计划何时触发。"
+        },
+        "what": {
+          "name": "执行内容",
+          "description": "触发时负载被设为的状态。"
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "更新定时计划",
+      "description": "像应用的编辑功能一样，就地重写每个目标 JUNG HOME 负载设备的一个已使用的定时计划存储位，使用与“创建定时计划”相同的字段：请全部重新填写，未填写的内容不会从该存储位保留。日出或日落定时计划会先向节点发送 Home Assistant 的家庭位置；写入失败时，会将该存储位原来的定时计划写回。尚未在真实设备上验证。仅限管理员。",
+      "fields": {
+        "slot": {
+          "name": "存储位",
+          "description": "要重写的定时计划存储位编号（0–15），与“获取定时计划”和“定时计划”传感器列出的编号一致。"
+        },
+        "trigger": {
+          "name": "触发器",
+          "description": "定时计划何时触发：在某个时刻，或在日出或日落时。"
+        },
+        "time": {
+          "name": "时间",
+          "description": "按时间触发的定时计划的时刻。"
+        },
+        "not_before": {
+          "name": "不早于",
+          "description": "日出或日落定时计划不早于此时间触发（未填写时不限制）。"
+        },
+        "not_after": {
+          "name": "不晚于",
+          "description": "日出或日落定时计划不晚于此时间触发（未填写时不限制）。"
+        },
+        "offset": {
+          "name": "偏移",
+          "description": "日出或日落之前（负数）或之后的分钟数。"
+        },
+        "weekdays": {
+          "name": "星期",
+          "description": "定时计划触发的日期；留空则为每天。"
+        },
+        "enabled": {
+          "name": "已启用",
+          "description": "定时计划是否触发；已禁用的定时计划会等待“启用定时计划”。"
+        },
+        "action": {
+          "name": "动作",
+          "description": "打开或关闭灯或插座。"
+        },
+        "brightness_pct": {
+          "name": "亮度",
+          "description": "调光器开启时的亮度（此时动作为“开”）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温",
+          "description": "可调白光灯的色温，以 100 K 为步长。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "百叶窗移动到的位置：0 为关闭，100 为打开。"
+        },
+        "tilt_position": {
+          "name": "倾斜位置",
+          "description": "百叶窗的叶片位置；留空则使用百叶窗位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "室内温控器的目标温度。"
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "何时",
+          "description": "定时计划何时触发。"
+        },
+        "what": {
+          "name": "执行内容",
+          "description": "触发时负载被设为的状态。"
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "启用定时计划",
+      "description": "让 JUNG HOME 负载设备的一个定时计划存储位重新触发。仅限管理员。",
+      "fields": {
+        "slot": {
+          "name": "存储位",
+          "description": "定时计划存储位编号（0–15），与“获取定时计划”和“定时计划”传感器列出的编号一致。"
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "禁用定时计划",
+      "description": "阻止 JUNG HOME 负载设备的一个定时计划存储位触发，但不删除它。仅限管理员。",
+      "fields": {
+        "slot": {
+          "name": "存储位",
+          "description": "定时计划存储位编号（0–15），与“获取定时计划”和“定时计划”传感器列出的编号一致。"
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "删除定时计划",
+      "description": "释放 JUNG HOME 负载设备的一个定时计划存储位。仅限管理员。",
+      "fields": {
+        "slot": {
+          "name": "存储位",
+          "description": "定时计划存储位编号（0–15），与“获取定时计划”和“定时计划”传感器列出的编号一致。"
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "设置阈值",
+      "description": "设置 JUNG HOME 计量插座的一个阈值，即应用中的“自动”配置：当插座的功率在设定时长内保持在该水平时，它会自行开启（开启阈值）或关闭（关闭阈值）所选的灯和插座，无需 Home Assistant。尚未在设备上测试。请求时返回设备应用了多少条连接消息。仅限管理员。",
+      "fields": {
+        "threshold": {
+          "name": "阈值",
+          "description": "要设置插座两个阈值中的哪一个。"
+        },
+        "power": {
+          "name": "功率",
+          "description": "功率水平，单位 W（步长 0.1 W）；未填写时使用插座当前的水平。"
+        },
+        "duration": {
+          "name": "持续时间",
+          "description": "功率必须保持在该水平的秒数；未填写时使用插座当前的持续时间。"
+        },
+        "enabled": {
+          "name": "已启用",
+          "description": "阈值是否进行开关；已禁用的阈值会保留其水平和持续时间。未填写时，阈值保持其状态（新阈值为已启用）。如果在另一个阈值也未激活时禁用，灯和插座会像在应用中一样被解除连接：启用时请重新指定这些设备。"
+        },
+        "devices": {
+          "name": "设备",
+          "description": "两个阈值所开关的灯和插座，将替换当前列表；未填写时，列表保持不变。列表更改时会重写 Mesh 导出文件，Home Assistant 无需重新加载集成即可跟随更新。"
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "删除阈值",
+      "description": "清除 JUNG HOME 计量插座的两个阈值，并解除它们所开关的灯和插座的连接，与应用的删除操作相同。设备被解除连接时，Home Assistant 无需重新加载集成即可跟随重写后的 Mesh 导出文件。请求时返回设备应用了多少条连接消息。仅限管理员。"
+    },
+    "audit_network": {
+      "name": "审核网络",
+      "description": "在不做任何更改的情况下，读取 JUNG HOME 设备的 Mesh 配置内容——中继（Relay）、网络传输（Network Transmit）、默认 TTL、信标（Beacon）、GATT 代理和 Friend、每个设备持有的网络密钥和应用密钥（按索引，绝不包含密钥本身），以及每个模型的发布、订阅和绑定的应用密钥——并将其与 Mesh 导出文件进行比较。按设备返回其设置和发现的每处差异，并列出未应答的设备。审核所有设备需要几分钟；电池供电的设备处于休眠状态，除非指定，否则会被跳过。",
+      "fields": {
+        "device": {
+          "name": "设备",
+          "description": "仅审核此设备背后的 Mesh 节点（灯、按钮、插座或节点本身）。留空时，审核每个市电供电的节点。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "export_network": {
+      "name": "导出网络",
+      "description": "以 JUNG HOME 应用的共享文件或 Mesh 数据库的形式返回 Home Assistant 使用的导出文件——包含它更改过的房间、按钮、关联和场景——用于备份或导入应用。仅限管理员：其中包含 Mesh 的所有密钥。",
+      "fields": {
+        "flavour": {
+          "name": "格式",
+          "description": "应用的共享文件（JungHome.json）或 Mesh 数据库（MeshNetwork.json）。"
+        },
+        "config_entry_id": {
+          "name": "网络",
+          "description": "要导出的 JUNG HOME 网络；仅在有多个网络时需要。"
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "查找新设备",
+      "description": "列出附近尚未加入网络的 JUNG 设备，以及 `add_device` 所需的蓝牙地址。"
+    },
+    "add_device": {
+      "name": "添加设备（实验性）",
+      "description": "像应用一样将新的 JUNG 设备添加到网络：使用设备提供的最强方式为其配网（如果设备提供 Static OOB 且给定了其值，则使用 Static OOB 和 HMAC-SHA256 算法，否则像应用一样使用 No OOB——没有身份验证时，在此过程中处于蓝牙范围内的人可能截获网络的密钥），根据设备上报的信息按应用的规则对其进行配置（如果与网络中已有的同一产品设备不一致，则拒绝），并将其记录到导出文件中（交给网关）。配置失败的设备会像在应用中一样被重置。其元素组会获得应用地址范围内最高的空闲组地址（应用在导入文件之前看不到该设备）。响应会列出已完成的步骤。需要启用该条目的选项 *允许 Home Assistant 添加设备*。仅限管理员。经过身份验证的配网方式、配置规则和重置尚未在真实设备上验证。",
+      "fields": {
+        "address": {
+          "name": "蓝牙地址",
+          "description": "`find_new_devices` 为该设备列出的地址。"
+        },
+        "name": {
+          "name": "名称",
+          "description": "新设备的名称。"
+        },
+        "config_entry_id": {
+          "name": "网络",
+          "description": "要将其添加到的 JUNG HOME 网络；仅在有多个网络时需要。"
+        },
+        "static_oob": {
+          "name": "静态 OOB 值",
+          "description": "仅适用于提供 Static OOB 身份验证的设备：其 16 或 32 字节的值，以十六进制表示，按制造商文档中的说明填写（目前未知有任何 JUNG 设备提供此方式）。绝不会写入日志。只接受经过身份验证的配网的设备，在未提供此值时会被拒绝；不提供此方式的设备，在提供此值时会被拒绝。"
+        }
+      }
+    },
+    "remove_device": {
+      "name": "移除设备（实验性）",
+      "description": "重置一个 JUNG 设备（它会忘记网络，重新成为新设备），并像应用一样将其从网络中移除：移除其他设备与它的关联，导出文件将其记录为已移除并交给网关。此操作无法撤销。需要启用该条目的选项 *允许 Home Assistant 添加和移除设备*。需要“确认”；启用“试运行”时，则改为返回将会发送和更改的内容，且无需确认。仅限管理员。",
+      "fields": {
+        "device": {
+          "name": "设备",
+          "description": "要移除的 JUNG 设备（它在 Home Assistant 中的任意一个设备）。"
+        },
+        "force": {
+          "name": "即使其未应答",
+          "description": "即使它未确认重置（已永久消失的设备），或 Home Assistant 正通过它连接，也将其从网络记录中移除。"
+        },
+        "confirm": {
+          "name": "确认",
+          "description": "执行时必需：移除设备无法撤销。试运行时不需要。"
+        },
+        "dry_run": {
+          "name": "试运行",
+          "description": "仅返回将会发送的内容以及 Mesh 导出文件将如何更改（请求响应）；不会发送、写入任何内容，也不会从网关接管任何内容。"
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "重置待处理设备（实验性）",
+      "description": "重置一个由 `add_device` 配网、但未能配置或记录的 JUNG 设备（修复问题 *Home Assistant 添加的某个设备未被记录* 会列出它们）：使用只有 Home Assistant 持有的设备密钥向其发送 Config Node Reset，使其重新成为新设备，并释放其地址。尚未在真实设备上尝试。需要启用该条目的选项 *允许 Home Assistant 添加设备*。仅限管理员。",
+      "fields": {
+        "uuid": {
+          "name": "设备 UUID",
+          "description": "设备的 UUID，与 `add_device` 或 `find_new_devices` 给出的一致。"
+        },
+        "unicast": {
+          "name": "单播地址",
+          "description": "设备的主单播地址（十六进制，与修复问题中列出的一致）；同时提供 UUID 时，两者必须匹配。"
+        },
+        "force": {
+          "name": "即使其未应答",
+          "description": "即使设备未确认重置（已手动重置，或已永久消失），也忘记该设备。"
+        },
+        "config_entry_id": {
+          "name": "网络",
+          "description": "设备被添加到的 JUNG HOME 网络；仅在有多个网络时需要。"
+        }
+      }
+    },
+    "locate_node": {
+      "name": "定位设备",
+      "description": "让一个 JUNG 设备广播其 Node Identity——一种只有此 Mesh 的密钥才能将其与该设备对应起来的蓝牙广播——最长一分钟后停止，以便蓝牙扫描器分辨哪个无线电信号属于该设备。不会更改其他任何内容；设备无论如何都会在一分钟后自行停止。仅限管理员。尚未在真实设备上验证。",
+      "fields": {
+        "device": {
+          "name": "设备",
+          "description": "要定位的 JUNG 设备（它在 Home Assistant 中的任意一个设备）。"
+        },
+        "duration": {
+          "name": "持续时间",
+          "description": "广播的秒数，5 到 60（设备在 60 秒后会自行停止）。"
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "批准网关客户端",
+      "description": "列出在 JUNG HOME 网关处等待访问的 API 客户端（另一个集成、一个脚本），并批准指定的客户端，与应用的 设置 → 网关 → 访问权限 → 待处理请求 相同。获批的客户端将获得网关的全部 API，包括含有所有 Mesh 密钥的网络导出文件：只批准您自己启动的客户端。未提供客户端名称时，仅列出这些客户端（请开启响应）。撤销访问权限仍需在应用中进行。仅限管理员，适用于从网关设置的网络。尚未在真实设备上验证。",
+      "fields": {
+        "client": {
+          "name": "客户端",
+          "description": "客户端请求访问时使用的名称，须与 `waiting` 下列出的完全一致。留空时，不会批准任何客户端。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "start_dim": {
+      "name": "开始调光",
+      "description": "开始将 JUNG HOME 调光器调亮或调暗，就像按住跷板一样，直到“停止调光”（或到达范围的尽头）。尚未在真实设备上尝试。",
+      "fields": {
+        "direction": {
+          "name": "方向",
+          "description": "调亮（上）或调暗（下）。"
+        },
+        "speed": {
+          "name": "速度",
+          "description": "速度，以每秒占亮度范围的百分比表示（默认 20：从关闭到最亮需要 5 秒）。"
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "停止调光",
+      "description": "让由“开始调光”启动的 JUNG HOME 调光器停在当前位置。尚未在真实设备上尝试。"
+    },
+    "step_dim": {
+      "name": "单步调光",
+      "description": "将 JUNG HOME 调光器调亮或调暗一个步长。尚未在真实设备上尝试。",
+      "fields": {
+        "step": {
+          "name": "步长",
+          "description": "亮度范围的百分比：正值调亮，负值调暗。"
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "照明（开/关、调光）",
+        "switch": "开关（开/关）",
+        "move": "百叶窗（未测试）",
+        "gateway": "网关（上报事件）",
+        "light_and_switch": "灯和插座（仅限房间）",
+        "lock": "锁定和解锁（尚未在真实设备上验证）",
+        "temperature": "温度（室内温控器，未测试）"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "色温（尚未在真实设备上验证）",
+        "slat": "叶片（尚未在真实设备上验证）"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "时刻",
+        "sunrise": "日出",
+        "sunset": "日落"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "开",
+        "off": "关"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "星期一",
+        "tue": "星期二",
+        "wed": "星期三",
+        "thu": "星期四",
+        "fri": "星期五",
+        "sat": "星期六",
+        "sun": "星期日"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "开启阈值",
+        "switch_off": "关闭阈值"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "应用共享文件（JungHome.json）",
+        "cdb": "Mesh 数据库（MeshNetwork.json）"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "调亮",
+        "down": "调暗"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "开关嵌件",
+        "two_gang_switch": "双联开关嵌件",
+        "dimming": "调光嵌件",
+        "two_gang_dimming": "双联调光嵌件",
+        "tw_dimming": "DALI 嵌件",
+        "blind": "百叶窗嵌件",
+        "extension": "副控嵌件",
+        "not_available": "无嵌件"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "按钮 上 / 下",
+        "one_rocker": "跷板",
+        "two_left_two_right": "按钮 | 按钮",
+        "one_left_two_right": "跷板 | 按钮",
+        "two_left_one_right": "按钮 | 跷板",
+        "one_left_one_right": "跷板 | 跷板"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "单联按钮面板",
+        "push_button_2": "双联按钮面板",
+        "socket_metering": "插座（电能计量）",
+        "socket": "插座",
+        "switch_actuator_mini": "单联迷你开关执行器",
+        "blinds_actuator_mini": "单联迷你百叶窗执行器",
+        "wall_transmitter_1": "单联墙面发射器",
+        "wall_transmitter_2": "双联墙面发射器",
+        "motion_detector_1m": "运动传感器 1 m",
+        "motion_detector_2m": "运动传感器 2 m",
+        "presence_detector": "人体存在传感器",
+        "room_thermostat": "室内温控器",
+        "gateway": "网关",
+        "switch_actuator_1_energy": "单联开关执行器，2 路输入，电能计量",
+        "switch_actuator_2": "双联开关执行器，2 路输入",
+        "dimmer_actuator": "单联调光执行器，2 路输入",
+        "blinds_actuator": "单联 PP2 百叶窗执行器，2 路输入",
+        "dali_actuator": "单联 DALI 执行器，2 路输入",
+        "mini_sensor_mains": "迷你传感器，2 路输入，市电供电",
+        "mini_sensor_battery": "迷你传感器，2 路输入，电池供电"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh 网络",
+        "switch": "开关灯",
+        "dimmer": "可调光灯",
+        "ctl": "可调白光（DALI）灯",
+        "blind": "百叶窗 / 卷帘驱动器",
+        "push_buttons": "按钮",
+        "unknown_product": "产品 {pid}"
+      }
+    }
+  }
+}
