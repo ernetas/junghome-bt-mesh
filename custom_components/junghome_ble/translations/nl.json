@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME via Bluetooth",
+        "description": "Home Assistant neemt rechtstreeks via Bluetooth deel aan je JUNG HOME-mesh met behulp van de netwerkexport van de JUNG HOME-app, die de mesh-sleutels bevat. Kies waar de export vandaan komt.",
+        "menu_options": {
+          "gateway": "Ophalen van de JUNG HOME Gateway",
+          "upload": "Het exportbestand van de app uploaden",
+          "path": "Een bestand op de Home Assistant-host gebruiken"
+        },
+        "data": {
+          "cdb_path": "Mesh-exportbestand",
+          "metadata_dir": "Metadatamap van de app",
+          "unicast": "Ons unicast-adres"
+        },
+        "data_description": {
+          "cdb_path": "Absoluut pad op de Home Assistant-host, bijv. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Optioneel, alleen voor `MeshNetwork.json` uit een iOS-back-up: de map `Application Support` van de app met `device_metadata.json` en `scene_metadata.json`, zodat entiteiten de namen krijgen die je ze in de app hebt gegeven. `JungHome.json` bevat de namen al.",
+          "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Is dit je JUNG HOME-installatie?",
+        "description": "Een Bluetooth Mesh-proxy van netwerk {network_id} is binnen bereik. Home Assistant biedt elk Bluetooth Mesh-netwerk aan dat het ziet, ook die van andere merken — bijvoorbeeld de lampen van een buur. Ga alleen verder als dit je JUNG HOME-installatie is; daarna wordt je om de mesh-export van de app gevraagd."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME Gateway gevonden",
+        "description": "Een JUNG HOME Gateway meldt zich op {host}. Ga verder om de netwerkexport van de JUNG HOME-app ervan op te halen: je voert dan het netwerksleutelwachtwoord in of keurt een toegangsverzoek goed in de app. Net als bij een adres dat je zelf invoert, wordt het certificaat bij het eerste contact vastgepind voordat er iets wordt verzonden. Instellen vanaf de gevonden gateway is nog niet op echte apparaten geverifieerd."
+      },
+      "gateway": {
+        "title": "De export ophalen van de JUNG HOME Gateway",
+        "description": "De gateway bewaart een kopie van de netwerkexport van de app. Voer het adres in en ofwel het netwerksleutelwachtwoord (uit de JUNG HOME-app) voor directe toegang, of laat het wachtwoord leeg en keur na het doorgaan het toegangsverzoek goed in de app (Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken, binnen drie minuten; het verschijnt als “{user_name}”). De export wordt opgeslagen onder `junghome_ble/` in de configuratiemap van Home Assistant. Hij bevat alle mesh-sleutels, net als de export van de telefoon — houd back-ups van die map privé.",
+        "data": {
+          "gateway_host": "Gateway-adres",
+          "gateway_password": "Netwerksleutelwachtwoord"
+        },
+        "data_description": {
+          "gateway_host": "IP-adres of hostnaam van de JUNG HOME Gateway. Een gateway die Home Assistant in het netwerk heeft gevonden, is al ingevuld. Anders werkt de standaardwaarde `junghome.local` in veel netwerken, of gebruik het IP-adres (te zien in de app onder Instellingen → Gateway).",
+          "gateway_password": "Optioneel. Hiermee geeft de gateway direct toegang; zonder wachtwoord keur je het verzoek goed in de app."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Geavanceerd",
+            "description": "Laat de standaardwaarde staan, tenzij een tweede Home Assistant of de opdrachtregeltools van de repository ook aan deze installatie deelnemen: elk heeft een eigen adres nodig.",
+            "data": {
+              "unicast": "Ons unicast-adres"
+            },
+            "data_description": {
+              "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Wachten op goedkeuring in de JUNG HOME-app"
+      },
+      "gateway_refetch": {
+        "title": "De export opnieuw ophalen",
+        "description": "Haalt de actuele netwerkexport op van de gateway op {host} met de opgeslagen toegang. Als de gateway die niet meer accepteert, wordt je gevraagd een nieuw toegangsverzoek in de app goed te keuren.",
+        "sections": {
+          "advanced": {
+            "name": "Geavanceerd",
+            "description": "Laat de standaardwaarde staan, tenzij een tweede Home Assistant of de opdrachtregeltools van de repository ook aan deze installatie deelnemen: elk heeft een eigen adres nodig.",
+            "data": {
+              "unicast": "Ons unicast-adres"
+            },
+            "data_description": {
+              "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Het exportbestand van de app uploaden",
+        "description": "Open in de JUNG HOME-app Project → Delen via bestand en stuur jezelf de `JungHome.json` die daarbij wordt gemaakt; upload hem dan hier. Hij wordt opgeslagen onder `junghome_ble/` in de configuratiemap van Home Assistant. Hij bevat alle mesh-sleutels — houd back-ups van die map privé.",
+        "data": {
+          "export_file": "Mesh-exportbestand"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Geavanceerd",
+            "description": "Laat de standaardwaarde staan, tenzij een tweede Home Assistant of de opdrachtregeltools van de repository ook aan deze installatie deelnemen: elk heeft een eigen adres nodig.",
+            "data": {
+              "unicast": "Ons unicast-adres"
+            },
+            "data_description": {
+              "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Een bestand op de Home Assistant-host gebruiken",
+        "description": "Kopieer eerst de `JungHome.json` van de app (Project → Delen via bestand; bevat je apparaatnamen) of `MeshNetwork.json` (iOS-back-up) naar de Home Assistant-host en voer het pad in.",
+        "data": {
+          "cdb_path": "Mesh-exportbestand",
+          "metadata_dir": "Metadatamap van de app"
+        },
+        "data_description": {
+          "cdb_path": "Absoluut pad op de Home Assistant-host, bijv. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Optioneel, alleen voor `MeshNetwork.json` uit een iOS-back-up: de map `Application Support` van de app met `device_metadata.json` en `scene_metadata.json`, zodat entiteiten de namen krijgen die je ze in de app hebt gegeven. `JungHome.json` bevat de namen al."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Geavanceerd",
+            "description": "Laat de standaardwaarde staan, tenzij een tweede Home Assistant of de opdrachtregeltools van de repository ook aan deze installatie deelnemen: elk heeft een eigen adres nodig.",
+            "data": {
+              "unicast": "Ons unicast-adres"
+            },
+            "data_description": {
+              "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "De JUNG HOME-mesh-export bijwerken",
+        "description": "Gebruik dit na het opnieuw inleren of opnieuw bedraden van apparaten in de JUNG HOME-app, of na een key refresh: lever een nieuwe export van hetzelfde netwerk. Apparaten die uit de export zijn verdwenen, worden verwijderd. Het eigen mesh-adres van Home Assistant kan tegelijk worden gewijzigd.",
+        "menu_options": {
+          "gateway_refetch": "Opnieuw ophalen van de gateway op {host}",
+          "gateway": "Ophalen van de JUNG HOME Gateway",
+          "upload": "Het exportbestand van de app uploaden",
+          "path": "Een bestand op de Home Assistant-host gebruiken",
+          "import_gateway": "De entiteiten van de JUNG HOME Gateway-integratie importeren",
+          "areas": "Wijzigen naar welke ruimte de apparaten van elke kamer gaan"
+        },
+        "data": {
+          "cdb_path": "Mesh-exportbestand",
+          "metadata_dir": "Metadatamap van de app",
+          "unicast": "Ons unicast-adres"
+        },
+        "data_description": {
+          "cdb_path": "Absoluut pad op de Home Assistant-host, bijv. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Optioneel, alleen voor `MeshNetwork.json` uit een iOS-back-up: de map `Application Support` van de app met `device_metadata.json` en `scene_metadata.json`, zodat entiteiten de namen krijgen die je ze in de app hebt gegeven. `JungHome.json` bevat de namen al.",
+          "unicast": "Hexadecimaal mesh-adres dat Home Assistant als node gebruikt (0001–7FFF). Het mag niet door een andere node worden gebruikt; de standaardwaarde ligt buiten het bereik van de app."
+        }
+      },
+      "import_gateway": {
+        "title": "Importeren uit de JUNG HOME Gateway-integratie",
+        "description": "De JUNG HOME Gateway-integratie (`junghome`) is naast deze ingesteld. Haar entiteiten kunnen hier worden overgenomen, zodat hun entiteit-ID's, namen, ruimtes, labels en recordergeschiedenis doorlopen met de Bluetooth Mesh-integratie. Er wordt gekoppeld op apparaatnaam (de naam uit de JUNG HOME-app) en entiteitstype; alleen entiteiten van deze integratie die je nog niet hebt hernoemd of aangepast, worden vervangen.\n\n**{count} entiteiten worden verplaatst** (gateway-entiteit → vervangt):\n{matched}\n\n**Blijven zoals ze zijn** (hier al aangepast; die van de gateway blijft waar hij is):\n{customised}\n\n**Geen tegenhanger bij de gateway** (blijven zoals ze zijn):\n{unmatched}\n\n**Gateway-entiteiten zonder tegenhanger hier** (blijven bij het gateway-item):\n{gateway_only}\n\nBij verzenden worden beide integraties ontladen, de entiteiten verplaatst, de ruimte, aangepaste naam en labels van elk gekoppeld gateway-apparaat naar het overeenkomende apparaat hier gekopieerd, het gateway-item uitgeschakeld en dit item herladen. Verwijder daarna het gateway-item."
+      },
+      "gateway_certificate": {
+        "title": "Gateway-certificaat gewijzigd",
+        "description": "De JUNG HOME Gateway op {host} toont nu certificaat {observed}; het item had {expected} vastgelegd. Ga alleen verder als je de gateway of het certificaat zelf hebt vervangen — anders antwoordt een ander apparaat in je netwerk als de gateway."
+      },
+      "reauth_confirm": {
+        "title": "Home Assistant opnieuw toegang geven tot de gateway",
+        "description": "De JUNG HOME Gateway op {host} accepteert de toegang niet meer die Home Assistant voor de mesh {title} heeft geregistreerd (waarschijnlijk verwijderd in de JUNG HOME-app onder Instellingen → Gateway → Toegangsrechten). De apparaten blijven via Bluetooth werken; alleen het doorgeven van wijzigingen van Home Assistant aan de gateway is gestopt. Voer het netwerksleutelwachtwoord van de gateway in (uit de JUNG HOME-app) voor directe toegang, of laat het leeg en keur na het doorgaan het toegangsverzoek goed in de app (Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken, binnen drie minuten; het verschijnt als “{user_name}”). Alleen de toegang wordt vernieuwd: de export wordt niet opnieuw opgehaald.",
+        "data": {
+          "gateway_password": "Netwerksleutelwachtwoord"
+        },
+        "data_description": {
+          "gateway_password": "Optioneel. Hiermee geeft de gateway direct toegang; zonder wachtwoord keur je het verzoek goed in de app. Het wordt niet opgeslagen."
+        }
+      },
+      "areas": {
+        "title": "Kamers en ruimtes",
+        "description": "Kies voor elke kamer uit de JUNG HOME-app de ruimte in Home Assistant. Vooraf ingevuld is de ruimte met dezelfde naam, of de ruimte die de naam van de kamer als alias heeft. Laat een kamer leeg om een ruimte met de naam van de kamer te krijgen (die wordt aangemaakt als er geen is). Apparaten zonder eigen kamer krijgen er ook een: de knoppen van een drukknop de kamer van de belasting ernaast, die van een wandzender de kamer die zijn knoppen schakelen. Vanuit het menu Herconfigureren worden de apparaten verplaatst die nog in de ruimte staan die de vorige keuze ze gaf; een apparaat dat je zelf in een andere ruimte hebt gezet, wordt nooit verplaatst.",
+        "data": {
+          "assign_areas": "De JUNG HOME-apparaten in ruimtes plaatsen"
+        },
+        "data_description": {
+          "assign_areas": "Uit: nieuwe apparaten beginnen zonder ruimte en de kamers hieronder worden genegeerd."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Open de JUNG HOME-app en keur het toegangsverzoek “{user_name}” goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken. De gateway op {host} wacht maximaal drie minuten."
+    },
+    "error": {
+      "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+      "not_a_directory": "Het metadatapad is geen map.",
+      "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+      "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+      "address_in_use": "Dat adres hoort bij een node in de mesh; kies een ongebruikt adres.",
+      "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+      "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+      "network_mismatch": "De export hoort bij een ander mesh-netwerk dan het gevonden netwerk.",
+      "mesh_already_configured": "Deze mesh is al ingesteld als een ander item (de netwerksleutel is waarschijnlijk vernieuwd sinds Home Assistant hem het laatst zag). Gebruik Herconfigureren van dat item in plaats van een nieuw item toe te voegen.",
+      "invalid_host": "Voer het IP-adres of de hostnaam van de gateway in.",
+      "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+      "invalid_auth": "De gateway heeft het netwerksleutelwachtwoord geweigerd.",
+      "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+      "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+      "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+      "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+      "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+      "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden.",
+      "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+      "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0."
+    },
+    "abort": {
+      "already_configured": "Dit mesh-netwerk is al geconfigureerd.",
+      "already_in_progress": "Het instellen van dit mesh-netwerk is al bezig.",
+      "not_supported": "Dit Bluetooth-apparaat is geen Mesh-proxy.",
+      "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+      "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst.",
+      "reconfigure_successful": "De mesh-export is bijgewerkt.",
+      "no_gateway_entry": "De JUNG HOME Gateway-integratie is niet ingesteld; er is niets te importeren.",
+      "nothing_to_import": "Er is geen gateway-entiteit meer over om over te nemen. Entiteiten van deze integratie zonder tegenhanger:\n{unmatched}\n\nGateway-entiteiten zonder tegenhanger hier:\n{gateway_only}",
+      "import_successful": "{count} entiteiten zijn overgenomen van de JUNG HOME Gateway-integratie:\n{matched}\n\nGebleven zoals ze waren (hier al aangepast):\n{customised}\n\nZonder tegenhanger bij de gateway:\n{unmatched}\n\nNog bij het gateway-item:\n{gateway_only}\n\nHet gateway-item is uitgeschakeld; verwijder het onder Instellingen → Apparaten & diensten → JUNG HOME zodra alles klopt.",
+      "certificate_vouched_by_mesh": "De JUNG HOME Gateway op {host} toont certificaat {observed}, maar de gateway-node stond via de mesh in voor {expected}. Er is niets naar dat adres verzonden: waarschijnlijk antwoordt een ander apparaat in je netwerk als de gateway. Als je de gateway of het certificaat zelf hebt vervangen, herconfigureer dan opnieuw terwijl Home Assistant met de mesh verbonden is: de gateway-node meldt dan het nieuwe certificaat.",
+      "import_unload_failed": "{title} kon niet worden ontladen, dus er is niets geïmporteerd; elk item dat de import had ontladen, wordt opnieuw ingesteld. Controleer het logboek en probeer de import daarna opnieuw.",
+      "reauth_successful": "De JUNG HOME Gateway accepteert Home Assistant weer. Wijzigingen die intussen in Home Assistant zijn gemaakt, bereiken hem met de volgende wijziging, of meteen met de actie Gateway synchroniseren.",
+      "areas_updated": "De ruimtes van de kamers zijn opgeslagen; {count} apparaten zijn naar de nieuwe ruimte van hun kamer verplaatst.",
+      "not_loaded": "De integratie draait niet: stel haar eerst opnieuw in.",
+      "not_junghome_gateway": "Dit apparaat meldt zich niet als JUNG HOME Gateway (geen fabrikant JUNG of geen serienummer).",
+      "not_ipv4_address": "De gateway heeft geen IPv4-adres gemeld. Voeg de integratie handmatig toe en voer het adres van de gateway in."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opties voor JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Klikken pas melden als een dubbelklik is uitgesloten",
+          "heartbeats": "Heartbeats van nodes (een stil apparaat als niet beschikbaar markeren)",
+          "allow_provisioning": "Home Assistant toestaan apparaten toe te voegen en te verwijderen (experimenteel)",
+          "provisioner_identity": "Home Assistant als provisioner in het bestand van het netwerk schrijven (experimenteel, niet geverifieerd met de app)",
+          "follow_app": "Wijzigingen in de JUNG HOME-app volgen",
+          "gateway_check": "De export van de gateway elke zes uur controleren",
+          "sync_areas": "Apparaten mee verplaatsen als hun JUNG-kamer verandert"
+        },
+        "data_description": {
+          "click_delay": "Een `click`-gebeurtenis wordt een halve seconde vastgehouden en vervalt als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt. Uit: elke druk vuurt meteen `click` af en de tweede druk van een dubbele druk vuurt ook `double_click` af.",
+          "heartbeats": "Elk apparaat op netstroom wordt gevraagd om elke 64 seconden een heartbeat naar Home Assistant te sturen (een standaard Bluetooth Mesh-instelling die de JUNG-app uit laat). Van een apparaat dat ongeveer drieënhalve minuut niets stuurt, worden de entiteiten als niet beschikbaar gemarkeerd tot het weer wordt gehoord. Uitschakelen vertelt de apparaten te stoppen (opnieuw bij de volgende verbinding als ze niet allemaal tegelijk bereikt konden worden); schakel het uit voordat je de integratie verwijdert, want daarna kan die het ze niet meer vertellen.",
+          "allow_provisioning": "Laat de actie `junghome_ble.add_device` een nieuw JUNG-apparaat inleren en het configureren zoals de app zou doen, naar het voorbeeld van een apparaat van hetzelfde product dat al in het netwerk zit, en `junghome_ble.remove_device` een apparaat resetten en uit het netwerk halen. Nog niet op echte apparaten geprobeerd: probeer het eerst met een reserveapparaat. Toevoegen geeft het apparaat de sleutels van het netwerk; verwijderen kan niet ongedaan worden gemaakt.",
+          "provisioner_identity": "Elk bestand dat Home Assistant schrijft of aan de gateway geeft, krijgt een provisioner-item voor Home Assistant, met eigen adresbereiken die vrij zijn van die van de app en met het adres van Home Assistant erbinnen, en de apparaten die Home Assistant heeft toegevoegd en die in het bestand van de app ontbreken, worden teruggezet. Kamers, scènes en apparaten die Home Assistant aanmaakt, nemen hun adressen dan uit diens eigen bereiken. Nog geen enkele JUNG-app heeft zo'n bestand geïmporteerd: probeer het op een reserve-installatie van de app (importeer het bestand van `junghome_ble.export_network`) voordat je eigen app of gateway het ziet. Uit: de bestanden worden precies zo geschreven als zonder deze optie.",
+          "follow_app": "Als de telefoon met de JUNG HOME-app op de mesh wordt gehoord, haalt een item dat vanaf de gateway is ingesteld de export van de gateway op, een paar minuten nadat de telefoon stil is geworden (hoogstens elke 15 minuten), en neemt hem over als hij is gewijzigd: apparaten, kamers, scènes en knopkoppelingen die in de app zijn gewijzigd, bereiken Home Assistant zonder Herconfigureren. Een item dat vanuit een bestand is ingesteld, toont in plaats daarvan een reparatiemelding zodra de app is gezien terwijl die de configuratie van een apparaat wijzigde. Hiervoor wordt niets op de mesh verzonden. Nog niet op echte apparaten geverifieerd.",
+          "gateway_check": "Een item dat vanaf de gateway is ingesteld, vraagt de gateway elke zes uur om zijn export en neemt die over als hij is gewijzigd; zo wordt opgevangen wat de app heeft gewijzigd terwijl Home Assistant de telefoon niet hoorde. Eén verzoek aan de gateway; er wordt niets op de mesh verzonden. Geen effect op een item dat vanuit een bestand is ingesteld.",
+          "sync_areas": "Als een apparaat in de app van kamer verandert (zodra Home Assistant de nieuwe export volgt) of via een kameractie, gaat het ook naar de ruimte van de nieuwe kamer — tenzij je het zelf in een ruimte hebt gezet. Uit: een apparaat blijft in de ruimte waarin het begon. Nog niet op echte apparaten geverifieerd."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh-verbinding"
+      },
+      "motion": {
+        "name": "Beweging"
+      },
+      "occupancy": {
+        "name": "Aanwezigheid"
+      },
+      "fault": {
+        "name": "Storing"
+      },
+      "wind_alarm": {
+        "name": "Windalarm"
+      },
+      "reference_run_active": {
+        "name": "Referentierit"
+      },
+      "gateway_api_available": {
+        "name": "API beschikbaar"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Client wacht op goedkeuring"
+      },
+      "gateway_network_problem": {
+        "name": "Netwerkprobleem"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth-mesh-probleem"
+      },
+      "gateway_cloud_problem": {
+        "name": "Cloudprobleem"
+      },
+      "gateway_cloud_connected": {
+        "name": "Cloudverbinding"
+      },
+      "window_open": {
+        "name": "Raam open"
+      },
+      "input_state": {
+        "name": "Ingangstoestand"
+      },
+      "input_state_key": {
+        "name": "Ingangstoestand {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Automaatfunctie"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Knop {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dubbelklik",
+              "hold_start": "Vasthouden gestart",
+              "hold_end": "Vasthouden beëindigd",
+              "press_on": "Aan / omhoog gedrukt",
+              "press_off": "Uit / omlaag gedrukt",
+              "scene": "Scène opgeroepen",
+              "dim": "Dimmen"
+            }
+          },
+          "connection": {
+            "name": "Koppeling",
+            "state": {
+              "device": "Apparaat",
+              "room": "Kamer",
+              "scene": "Scène",
+              "gateway": "Gateway",
+              "group": "Groep",
+              "none": "Geen"
+            }
+          },
+          "reason": {
+            "name": "Reden einde vasthouden",
+            "state": {
+              "timeout": "Loslaten niet op tijd gehoord",
+              "link_lost": "Verbinding verloren",
+              "stopped": "Integratie gestopt"
+            }
+          },
+          "position": {
+            "name": "Positie",
+            "state": {
+              "top": "Boven",
+              "bottom": "Onder",
+              "rocker": "Wip",
+              "left_top": "Links, boven",
+              "left_bottom": "Links, onder",
+              "right_top": "Rechts, boven",
+              "right_bottom": "Rechts, onder",
+              "left_rocker": "Linkerwip",
+              "right_rocker": "Rechterwip"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Ingang {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Klik",
+              "double_click": "Dubbelklik",
+              "hold_start": "Vasthouden gestart",
+              "hold_end": "Vasthouden beëindigd",
+              "press_on": "Aan / omhoog gedrukt",
+              "press_off": "Uit / omlaag gedrukt",
+              "scene": "Scène opgeroepen",
+              "dim": "Dimmen"
+            }
+          },
+          "connection": {
+            "name": "Koppeling",
+            "state": {
+              "device": "Apparaat",
+              "room": "Kamer",
+              "scene": "Scène",
+              "gateway": "Gateway",
+              "group": "Groep",
+              "none": "Geen"
+            }
+          },
+          "reason": {
+            "name": "Reden einde vasthouden",
+            "state": {
+              "timeout": "Loslaten niet op tijd gehoord",
+              "link_lost": "Verbinding verloren",
+              "stopped": "Integratie gestopt"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Vermogen"
+      },
+      "voltage": {
+        "name": "Spanning"
+      },
+      "current": {
+        "name": "Stroom"
+      },
+      "energy": {
+        "name": "Energie"
+      },
+      "energy_resettable": {
+        "name": "Energie sinds reset"
+      },
+      "energy_since_on": {
+        "name": "Energie sinds inschakelen"
+      },
+      "power_on_time": {
+        "name": "Inschakelduur"
+      },
+      "proxy_node": {
+        "name": "Proxy-node"
+      },
+      "link_state": {
+        "name": "Verbindingsstatus",
+        "state": {
+          "bluetooth_off": "Geen Bluetooth",
+          "searching": "Zoeken naar een proxy-node",
+          "connecting": "Verbinden",
+          "updating": "Verbonden, apparaatstatussen worden bijgewerkt",
+          "connected": "Verbonden",
+          "failed": "Verbinding mislukt",
+          "disconnected": "Verbroken"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Onbereikbare apparaten",
+        "state_attributes": {
+          "devices": {
+            "name": "Apparaten"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh-overzicht",
+        "state_attributes": {
+          "nodes": {
+            "name": "Nodes"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Verlichtingssterkte"
+      },
+      "battery": {
+        "name": "Batterij"
+      },
+      "installed": {
+        "name": "Geïnstalleerd"
+      },
+      "key_mode": {
+        "name": "Knopmodus",
+        "state": {
+          "light": "Verlichting",
+          "move": "Zonwering",
+          "scene": "Scène",
+          "property": "Eigenschap",
+          "rtr": "Temperatuur",
+          "switch": "Schakelen",
+          "gateway": "Gateway"
+        }
+      },
+      "key_mode_key": {
+        "name": "Knopmodus {key}",
+        "state": {
+          "light": "Verlichting",
+          "move": "Zonwering",
+          "scene": "Scène",
+          "property": "Eigenschap",
+          "rtr": "Temperatuur",
+          "switch": "Schakelen",
+          "gateway": "Gateway"
+        }
+      },
+      "schedules": {
+        "name": "Schakelprogramma's"
+      },
+      "scenes": {
+        "name": "Scènes"
+      },
+      "switch_off_at": {
+        "name": "Schakelt uit om"
+      },
+      "switch_on_threshold": {
+        "name": "Inschakeldrempel"
+      },
+      "switch_off_threshold": {
+        "name": "Uitschakeldrempel"
+      },
+      "last_seen": {
+        "name": "Laatst gezien"
+      },
+      "rssi": {
+        "name": "Signaalsterkte"
+      },
+      "hops": {
+        "name": "Hops"
+      },
+      "last_restart": {
+        "name": "Laatste herstart"
+      },
+      "clock_offset": {
+        "name": "Klokafwijking"
+      },
+      "iv_index": {
+        "name": "IV-index"
+      },
+      "sequence_used": {
+        "name": "Gebruikte volgnummers"
+      },
+      "mesh_sequence_used": {
+        "name": "Gebruikte volgnummers in de mesh"
+      },
+      "switching_cycles": {
+        "name": "Schakelcycli"
+      },
+      "power_on_cycles": {
+        "name": "Inschakelcycli"
+      },
+      "gateway_ip": {
+        "name": "IP-adres"
+      },
+      "gateway_firmware": {
+        "name": "Firmwareversie"
+      },
+      "gateway_firmware_build": {
+        "name": "Firmware-build"
+      },
+      "gateway_serial": {
+        "name": "Serienummer"
+      },
+      "gateway_access_requests": {
+        "name": "Toegangsverzoeken",
+        "state_attributes": {
+          "clients": {
+            "name": "Clients"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API-clients",
+        "state_attributes": {
+          "clients": {
+            "name": "Clients"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Foutenlogboek",
+        "state_attributes": {
+          "entries": {
+            "name": "Items"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Laatste export-upload"
+      },
+      "forced_off": {
+        "name": "Continu aan/uit",
+        "state": {
+          "inactive": "Inactief",
+          "off": "Continu uit",
+          "on": "Continu aan"
+        }
+      },
+      "sleep_mode": {
+        "name": "Slaapstand",
+        "state": {
+          "awake": "Wakker",
+          "asleep": "Slapend"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referentierit"
+      },
+      "identify": {
+        "name": "Identificeren"
+      },
+      "clear_faults": {
+        "name": "Storingen wissen"
+      },
+      "reset_consumption": {
+        "name": "Verbruik resetten"
+      },
+      "fetch_gateway_export": {
+        "name": "Export ophalen van gateway"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Positie zonwering na terugkeer netspanning"
+      },
+      "blind_ventilation_position": {
+        "name": "Ventilatiepositie"
+      },
+      "color_temp_max": {
+        "name": "Maximale kleurtemperatuur"
+      },
+      "color_temp_min": {
+        "name": "Minimale kleurtemperatuur"
+      },
+      "comfort_temperature": {
+        "name": "Comforttemperatuur"
+      },
+      "default_color_temp": {
+        "name": "Inschakelkleurtemperatuur"
+      },
+      "default_lightness": {
+        "name": "Inschakelhelderheid"
+      },
+      "eco_temperature": {
+        "name": "ECO-temperatuur"
+      },
+      "frost_protection_temperature": {
+        "name": "Vorstbeveiligingstemperatuur"
+      },
+      "lightness_max": {
+        "name": "Maximale helderheid"
+      },
+      "lightness_min": {
+        "name": "Minimale helderheid"
+      },
+      "lock_time_limit": {
+        "name": "Tijdslimiet vergrendeling"
+      },
+      "motor_reversal_time": {
+        "name": "Minimale omkeertijd motor"
+      },
+      "off_delay": {
+        "name": "Uitschakelvertraging"
+      },
+      "on_delay": {
+        "name": "Inschakelvertraging"
+      },
+      "pir_sensor_a": {
+        "name": "Activeringsgebied A"
+      },
+      "pir_sensor_b": {
+        "name": "Activeringsgebied B"
+      },
+      "pir_sensor_c": {
+        "name": "Activeringsgebied C"
+      },
+      "repetition_time": {
+        "name": "Herhalingstijd"
+      },
+      "running_time": {
+        "name": "Looptijd"
+      },
+      "sensor_offset": {
+        "name": "Offset temperatuursensor"
+      },
+      "slat_position_on_power": {
+        "name": "Lamellenstand na terugkeer netspanning"
+      },
+      "slat_ventilation_position": {
+        "name": "Ventilatiepositie lamellen"
+      },
+      "slats_move_time": {
+        "name": "Omsteltijd lamellen"
+      },
+      "switch_blocking_time": {
+        "name": "Minimale schakelherhalingstijd"
+      },
+      "switch_on_brightness": {
+        "name": "Helderheidsdrempel"
+      },
+      "timed_on_duration": {
+        "name": "Nalooptijd"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Bedrijfsmodus",
+        "state": {
+          "blinds": "Jaloezie (met lamellen)",
+          "shutter": "Rolluik (zonder lamellen)",
+          "awning": "Zonnescherm"
+        }
+      },
+      "controller_type": {
+        "name": "Regelaaruitgang",
+        "state": {
+          "pi_control": "Pulsbreedtegemoduleerd (PWM)",
+          "two_point_control": "Tweepuntsregeling"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Bedrijfsmodus",
+        "state": {
+          "guard": "Montageplaats",
+          "presence": "Helderheid van de kamer"
+        }
+      },
+      "dim_mode": {
+        "name": "Dimprincipe",
+        "state": {
+          "leading_edge": "Fase-aansnijding (RL)",
+          "trailing_edge": "Fase-afsnijding (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Bedrijfsmodus",
+        "state": {
+          "none": "Geen",
+          "comfort": "Comfort",
+          "eco": "ECO",
+          "frost": "Vorstbeveiliging"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Dalende flank",
+        "state": {
+          "no_reaction": "Geen reactie",
+          "on": "Inschakelen",
+          "off": "Uitschakelen",
+          "toggle": "Omschakelen"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Dalende flank {key}",
+        "state": {
+          "no_reaction": "Geen reactie",
+          "on": "Inschakelen",
+          "off": "Uitschakelen",
+          "toggle": "Omschakelen"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Stijgende flank",
+        "state": {
+          "no_reaction": "Geen reactie",
+          "on": "Inschakelen",
+          "off": "Uitschakelen",
+          "toggle": "Omschakelen"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Stijgende flank {key}",
+        "state": {
+          "no_reaction": "Geen reactie",
+          "on": "Inschakelen",
+          "off": "Uitschakelen",
+          "toggle": "Omschakelen"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED-kleur (uitgeschakeld)",
+        "state": {
+          "red": "Rood",
+          "green": "Groen",
+          "white": "Wit",
+          "blue": "Blauw",
+          "violet": "Violet",
+          "orange": "Oranje",
+          "yellow": "Geel",
+          "cyan": "Cyaan",
+          "no_color": "Geen kleur"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED-kleur (uitgeschakeld) {key}",
+        "state": {
+          "red": "Rood",
+          "green": "Groen",
+          "white": "Wit",
+          "blue": "Blauw",
+          "violet": "Violet",
+          "orange": "Oranje",
+          "yellow": "Geel",
+          "cyan": "Cyaan",
+          "no_color": "Geen kleur"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED-kleur (ingeschakeld)",
+        "state": {
+          "red": "Rood",
+          "green": "Groen",
+          "white": "Wit",
+          "blue": "Blauw",
+          "violet": "Violet",
+          "orange": "Oranje",
+          "yellow": "Geel",
+          "cyan": "Cyaan",
+          "no_color": "Geen kleur"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED-kleur (ingeschakeld) {key}",
+        "state": {
+          "red": "Rood",
+          "green": "Groen",
+          "white": "Wit",
+          "blue": "Blauw",
+          "violet": "Violet",
+          "orange": "Oranje",
+          "yellow": "Geel",
+          "cyan": "Cyaan",
+          "no_color": "Geen kleur"
+        }
+      },
+      "main_page": {
+        "name": "Lokale weergave",
+        "state": {
+          "target_temperature": "Gewenste temperatuur",
+          "current_temperature": "Werkelijke temperatuur",
+          "clock": "Tijd"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Gedrag na terugkeer netspanning",
+        "state": {
+          "no_reaction": "Geen reactie",
+          "move_up": "Omhoog naar 0 %",
+          "move_down": "Omlaag naar 100 %",
+          "stop": "Stop",
+          "move_to_stored_position": "Opgeslagen positie",
+          "position_for_network_failure": "Positie bij netuitval"
+        }
+      },
+      "operation_site": {
+        "name": "Plaats van gebruik",
+        "state": {
+          "indoor": "Binnen",
+          "outdoor": "Buiten"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Gedrag na terugkeer netspanning",
+        "state": {
+          "off": "Uitgeschakeld",
+          "on": "Ingeschakeld",
+          "restore": "Vorige toestand"
+        }
+      },
+      "sensor_selection": {
+        "name": "Temperatuursensor",
+        "state": {
+          "internal": "Kamer",
+          "external": "Vloer",
+          "internal_and_external": "Kamer en vloer"
+        }
+      },
+      "valve_output": {
+        "name": "Klepaanpassing",
+        "state": {
+          "normally_closed": "NC - stroomloos gesloten",
+          "normally_open": "NO - stroomloos open"
+        }
+      },
+      "lock_function": {
+        "name": "Vergrendelfunctie",
+        "state": {
+          "unlocked": "Ontgrendeld",
+          "keep_state": "Vergrendeld (positie behouden)",
+          "lockout_protection": "Buitensluitbeveiliging",
+          "wind_alarm": "Windalarm"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Alle stopcontacten"
+      },
+      "room_sockets": {
+        "name": "Alle stopcontacten in {room}"
+      },
+      "automatic_dst": {
+        "name": "Automatische zomer-/wintertijd"
+      },
+      "backlight_auto_off": {
+        "name": "Display automatisch uitschakelen"
+      },
+      "blinds_invert_output": {
+        "name": "Omgekeerde werking"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Dagbedrijf"
+      },
+      "dim_to_warm": {
+        "name": "Warm dimmen"
+      },
+      "input_edge_mode": {
+        "name": "Flankevaluatie"
+      },
+      "input_edge_mode_key": {
+        "name": "Flankevaluatie {key}"
+      },
+      "invert_output": {
+        "name": "Schakeluitgang omkeren"
+      },
+      "led_colour_sync": {
+        "name": "LED-kleuren synchroniseren"
+      },
+      "led_night_mode": {
+        "name": "LED-nachtmodus"
+      },
+      "lock": {
+        "name": "Vergrendeling",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Vergrendelmodus",
+            "state": {
+              "keep_state": "Huidige toestand behouden",
+              "lockout_protection": "Buitensluitbeveiliging",
+              "wind_alarm": "Windalarm",
+              "enforced_value": "Afgedwongen toestand"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Tijdslimiet vergrendeling"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Handmatig uitschakelen tijdens nalooptijd"
+      },
+      "prewarning": {
+        "name": "Uitschakelwaarschuwing"
+      },
+      "scheduler_enabled": {
+        "name": "Automatisch bedrijf"
+      },
+      "status_led": {
+        "name": "Status-LED"
+      },
+      "status_led_key": {
+        "name": "Status-LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Verminderde aanraakgevoeligheid"
+      },
+      "use_last_lightness": {
+        "name": "Vorige helderheid gebruiken"
+      },
+      "sensor_publication": {
+        "name": "Sensorwaarden voor IoT-systemen"
+      },
+      "local_devices_lock": {
+        "name": "Bediening vergrendelen"
+      },
+      "factory_reset_time_limit": {
+        "name": "Fabrieksreset vergrendelen"
+      },
+      "key_lock": {
+        "name": "Knopvergrendeling"
+      },
+      "configuration_lock": {
+        "name": "Configuratie op het apparaat vergrendelen"
+      },
+      "walking_test": {
+        "name": "Looptest"
+      },
+      "time_keeper": {
+        "name": "Tijdgever"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Bedrijfsmodus",
+            "state": {
+              "blinds": "Jaloezie (met lamellen)",
+              "shutter": "Rolluik",
+              "awning": "Zonnescherm",
+              "unknown": "Onbekend"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Alle zonwering"
+      },
+      "room_blinds": {
+        "name": "Alle zonwering in {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Vorstbeveiliging"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Alle thermostaten"
+      },
+      "room_thermostats": {
+        "name": "Alle thermostaten in {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Alle lampen"
+      },
+      "room_lights": {
+        "name": "Alle lampen in {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Knop A {subtype}",
+      "b": "Knop B {subtype}",
+      "c": "Knop C {subtype}",
+      "d": "Knop D {subtype}",
+      "e1": "Ingang E1 {subtype}",
+      "e2": "Ingang E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "geklikt",
+      "double_click": "dubbelgeklikt",
+      "hold_start": "vasthouden gestart",
+      "hold_end": "vasthouden beëindigd",
+      "press_on": "aan / omhoog gedrukt",
+      "press_off": "uit / omlaag gedrukt",
+      "scene": "heeft een scène opgeroepen",
+      "dim": "dimt",
+      "click_up": "geklikt (bovenste helft)",
+      "click_down": "geklikt (onderste helft)",
+      "double_click_up": "dubbelgeklikt (bovenste helft)",
+      "double_click_down": "dubbelgeklikt (onderste helft)",
+      "hold_start_up": "vasthouden gestart (bovenste helft)",
+      "hold_start_down": "vasthouden gestart (onderste helft)",
+      "hold_end_up": "vasthouden beëindigd (bovenste helft)",
+      "hold_end_down": "vasthouden beëindigd (onderste helft)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "De opdracht kon niet naar de JUNG-mesh worden verzonden; er is geen proxy-node verbonden."
+    },
+    "no_answer": {
+      "message": "Het JUNG-apparaat antwoordde niet; de opdracht is mogelijk toch uitgevoerd en wordt bij de volgende verbinding opnieuw gecontroleerd."
+    },
+    "device_not_reachable": {
+      "message": "{entity} heeft niet op de opdracht geantwoord (3 pogingen in 9 s); die is mogelijk niet uitgevoerd. Als de rest van de mesh nog antwoordt, wordt het apparaat als niet beschikbaar getoond tot het weer van zich laat horen: controleer of het stroom heeft."
+    },
+    "cannot_load": {
+      "message": "De mesh-export {path} kon niet worden gelezen."
+    },
+    "no_proxy_visible": {
+      "message": "Er is nog geen node van de JUNG-mesh zichtbaar via Bluetooth."
+    },
+    "export_keys_stale": {
+      "message": "Apparaten van de JUNG-mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit de export: de sleutels zijn vernieuwd nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app en gebruik het onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant heeft geen verbindbare Bluetooth-adapter of -proxy: de JUNG-mesh is niet bereikbaar."
+    },
+    "duplicate_mesh": {
+      "message": "{others} gebruikt deze JUNG HOME-mesh al; per mesh kan maar één item worden geladen. Verwijder een van de twee items."
+    },
+    "seq_store_not_written": {
+      "message": "Het volgnummerrecord van een oudere versie kon niet in de opslag van de mesh worden bewaard (`.storage/junghome_ble.seq.*`); controleer of de configuratiemap beschrijfbaar is."
+    },
+    "seq_floor_not_written": {
+      "message": "Het volgnummerrecord is hersteld uit een back-up en de ondergrens ervan (`.storage/junghome_ble.seq.*.floor`) kon niet worden geschreven voordat er vooruit werd gesprongen; controleer of de configuratiemap beschrijfbaar is."
+    },
+    "service_entry_not_loaded": {
+      "message": "De JUNG HOME-mesh-integratie is niet geladen (of wordt herladen); probeer het zo meteen opnieuw."
+    },
+    "service_not_connected": {
+      "message": "De JUNG HOME-mesh is niet verbonden; probeer het opnieuw als er een proxy-node binnen bereik is."
+    },
+    "service_entry_ambiguous": {
+      "message": "Er is meer dan één JUNG HOME-mesh-netwerk geconfigureerd; geef het mesh-netwerk op (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} is geen apparaat of entiteit van een JUNG HOME-mesh."
+    },
+    "service_not_a_load": {
+      "message": "{name} is geen JUNG HOME-apparaat waarop deze actie werkt."
+    },
+    "service_not_a_key": {
+      "message": "{name} is geen knop van een JUNG HOME-drukknop."
+    },
+    "service_key_required": {
+      "message": "{name} heeft de knoppen {keys}; geef de letter van de gewenste knop op."
+    },
+    "service_unknown_key": {
+      "message": "{name} heeft geen knop {letter} (wel: {keys})."
+    },
+    "service_no_loads": {
+      "message": "Het doel noemt geen JUNG HOME-lamp of -stopcontact."
+    },
+    "service_target_other_network": {
+      "message": "De knop en het doel ervan horen bij verschillende mesh-netwerken."
+    },
+    "service_unknown_element": {
+      "message": "Element {address} staat niet in de mesh-export."
+    },
+    "service_no_room": {
+      "message": "Er is geen kamer met de naam {room} in de mesh-export."
+    },
+    "service_room_exists": {
+      "message": "Er bestaat al een kamer met de naam {room}."
+    },
+    "service_room_key_drives_load": {
+      "message": "Niet uit kamer {room} gehaald: {device} wordt door {button} geschakeld via de koppeling van die knop met de kamer, en de kamer verlaten ontkoppelt het ook van de knop. Voer de actie opnieuw uit met Ook als een knop het aanstuurt, of geef de knop eerst een andere functie."
+    },
+    "service_invalid_room_name": {
+      "message": "Een kamer heeft een naam nodig."
+    },
+    "service_no_mode": {
+      "message": "Geen enkele knopmodus past bij element {address}; geef de modus op."
+    },
+    "service_invalid_mode": {
+      "message": "Modus {mode} kan niet worden gebruikt met doel {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Knop {address} heeft geen clientmodel voor modus {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Een doelelement geldt alleen voor een knop die met een apparaat is gekoppeld, niet met een kamer of een scène."
+    },
+    "service_target_element_missing": {
+      "message": "Doel {target} heeft geen {target_element}-element dat een knop zou kunnen aansturen."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Een vergrendeltijd geldt alleen voor de modus vergrendelen, van 0 tot 65535 seconden."
+    },
+    "service_lock_unsupported": {
+      "message": "Een knop kan doel {target} niet vergrendelen: alleen een lamp of een stopcontact kan via een knop worden vergrendeld."
+    },
+    "service_no_element_group": {
+      "message": "Element {address} heeft geen elementgroep: de JUNG HOME-app heeft het nooit gekoppeld. Koppel het eerst één keer in de app."
+    },
+    "service_one_target": {
+      "message": "Geef precies één doel op: een apparaat, een entiteit, een kamer of een scène."
+    },
+    "service_config_refused": {
+      "message": "Node {node} weigerde {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Node {node} heeft niet geantwoord op {message}; heeft hij stroom en is hij binnen bereik? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Niet verzonden: {nodes} hebben niet geantwoord op het laatste verzoek van Home Assistant en gelden als onbereikbaar (hun entiteiten zijn niet beschikbaar), dus het plan zou bij hun eerste bericht stoppen. Controleer of ze stroom hebben en binnen bereik zijn, en voer de actie opnieuw uit zodra ze antwoorden. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Node {node} werkt op een batterij en heeft niet geantwoord op {message}: hij slaapt. Druk op een van zijn knoppen om hem te wekken en voer de actie dan meteen opnieuw uit. Als hij ook niet op een knopdruk reageert, is de batterij meestal leeg: vervang hem. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Knop {address} heeft knopmodus {mode} niet overgenomen; de koppelingen zijn geconfigureerd en in de mesh-export vastgelegd — voer de actie opnieuw uit met hetzelfde doel om de modus in te stellen."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Knop {address} heeft scène {scene} niet overgenomen; hij publiceert zijn scèneoproepen naar alle apparaten en dat is in de mesh-export vastgelegd — voer de actie opnieuw uit met dezelfde scène om haar in te stellen."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Knop {address} heeft zijn vergrendelfunctie (eigenschap {property}) niet overgenomen; de koppelingen zijn geconfigureerd en in de mesh-export vastgelegd — voer de actie opnieuw uit met hetzelfde doel om hem in te stellen."
+    },
+    "service_export_newer": {
+      "message": "De mesh-export {path} is buiten Home Assistant gewijzigd (door de JUNG HOME-app of handmatig) nadat Home Assistant hem had geladen. Exporteer het project opnieuw vanuit de app, vervang het bestand (Herconfigureren) en probeer het opnieuw."
+    },
+    "service_export_load_failed": {
+      "message": "De mesh-export {path} kon niet worden gelezen: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "De mesh-export {path} kon niet worden geschreven: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} kan die waarde niet aannemen: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "De thermostaat heeft zijn {preset}-temperatuur nog niet gemeld; probeer het zo meteen opnieuw."
+    },
+    "led_colour_unknown": {
+      "message": "De LED-kleuren van {entity} zijn nog niet bekend; het apparaat heeft niet op het uitlezen geantwoord."
+    },
+    "service_room_name_reserved": {
+      "message": "“{name}” is een naam die de mesh voor interne groepen reserveert; kies een andere kamernaam."
+    },
+    "service_name_blank": {
+      "message": "Een naam mag niet leeg zijn."
+    },
+    "service_name_too_long": {
+      "message": "De JUNG HOME-app kan niet hernoemen naar “{name}”: een naam mag daar hoogstens {max_length} tekens hebben."
+    },
+    "service_name_not_allowed": {
+      "message": "De JUNG HOME-app weigert de naam “{name}”: hij ziet een %-teken als het begin van een placeholder (alleen %% en %n zijn toegestaan)."
+    },
+    "service_room_range_full": {
+      "message": "Er is geen vrij groepsadres meer in het bereik van de app; verwijder eerst een ongebruikte kamer in de JUNG HOME-app."
+    },
+    "gateway_certificate_changed": {
+      "message": "De JUNG HOME Gateway op {host} toont een ander certificaat dan het vastgelegde ({expected} vs. {observed}). Als de gateway of het certificaat bewust is vervangen, herconfigureer het item dan."
+    },
+    "service_ambiguous_scene": {
+      "message": "“{scene}” is zowel een scènenummer als de naam van een andere scène; hernoem die scène zodat ze te onderscheiden zijn."
+    },
+    "service_unknown_scene": {
+      "message": "Er bestaat geen scène “{scene}” in de mesh-export; geef de naam van de scène op zoals de JUNG HOME-app hem toont, of haar nummer."
+    },
+    "service_scene_exists": {
+      "message": "Er bestaat al een scène met de naam “{scene}”."
+    },
+    "service_scene_range_full": {
+      "message": "Er is geen vrij scènenummer meer in het bereik van de app; verwijder eerst een ongebruikte scène."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant geeft nieuwe kamers de hoogste vrije groepsadressen uit het bereik van de app, zodat de volgende eigen kamers van de app niet dezelfde krijgen; er zijn nog maar {free} vrije adressen onder de volgende over, en de app zou die binnenkort bereiken. Verwijder ongebruikte kamers, of schakel de optie voor de provisioner-identiteit in, die Home Assistant een eigen bereik geeft."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant geeft nieuwe scènes de hoogste vrije scènenummers uit het bereik van de app, zodat de volgende eigen scènes van de app niet dezelfde krijgen; er zijn nog maar {free} vrije nummers onder het volgende over, en de app zou dat binnenkort bereiken. Verwijder ongebruikte scènes, of schakel de optie voor de provisioner-identiteit in, die Home Assistant een eigen bereik geeft."
+    },
+    "add_device_groups_crowded": {
+      "message": "De elementgroepen van het nieuwe apparaat zouden de hoogste vrije groepsadressen uit het bereik van de app innemen, maar er zijn nog maar {free} vrije adressen onder over, en de volgende eigen kamers van de app zouden ze binnenkort bereiken. Verwijder ongebruikte kamers, of schakel de optie voor de provisioner-identiteit in, die Home Assistant een eigen bereik geeft."
+    },
+    "service_not_a_scene_element": {
+      "message": "Element {address} kan geen scènes opslaan (het heeft geen Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Apparaat {address} heeft scène {scene} niet opgeslagen ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Apparaat {address} heeft geen plaats voor scène {scene}: het bewaart al {capacity} scènes, timerscènes inbegrepen. Verwijder het eerst uit een andere scène. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Apparaat {address} bewaart scène {scene} na het verwijderen nog steeds ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "De JUNG HOME Gateway heeft zijn export niet afgegeven, en deze actie heeft die nodig: de kopie die Home Assistant bewaart, mist mogelijk wat de JUNG HOME-app sindsdien heeft gewijzigd. Probeer het opnieuw als de gateway antwoordt (het logboek zegt waarom hij dat niet deed)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Dit netwerk is vanuit een bestand ingesteld, waarin scènes kunnen ontbreken die sinds de export in de JUNG HOME-app zijn gemaakt; de scènenummers verwijderen die het bestand niet kent, zou die scènes van elk apparaat verwijderen. Doe eerst een proefrun en vergelijk de nummers die hij toont met de app; verwijder daarna met “De mesh-export is actueel” ingeschakeld, of noem de nummers die verwijderd moeten worden."
+    },
+    "service_unused_scenes_known": {
+      "message": "De scènenummers {numbers} zijn scènes uit de mesh-export; verwijder die met Scène verwijderen."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Apparaat {address} heeft scène {scene} opgeslagen, maar de scènebeschrijving (Scene Action Setup) niet overgenomen. {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "De toestand van {address} is niet bekend, dus scène {scene} zou zonder scènebeschrijving worden opgeslagen, en een ander kanaal van het apparaat uit de scène halen zou deze dan ook laten vallen. Geef de op te slaan toestand op (of schakel het apparaat één keer) en probeer het opnieuw. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Dit netwerk is niet vanaf een JUNG HOME Gateway ingesteld (geen gateway-adres en token in het item); herconfigureer het item vanaf de gateway om het te synchroniseren."
+    },
+    "service_gateway_sync_failed": {
+      "message": "De gateway op {host} heeft de export niet overgenomen: {error}."
+    },
+    "service_send_failed": {
+      "message": "De verbinding met de JUNG-mesh is verbroken terwijl {message} naar node {node} werd verzonden. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Node {node} staat in de mesh-export {path}, maar niet in het netwerk dat Home Assistant er eerder uit heeft geladen; herlaad de integratie (Instellingen → Apparaten & diensten → JUNG HOME → Herladen) zodat ze de export volgt, en probeer het dan opnieuw. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "De JUNG HOME Gateway op {host} heeft een nieuwere export ({gateway}) dan het bestand dat Home Assistant zou uploaden ({file}); uploaden zou wissen wat de JUNG HOME-app sindsdien heeft gewijzigd. De volgende wijziging in Home Assistant neemt de export van de gateway over en zet de eigen wijzigingen van Home Assistant erop. Als deze fout terugkomt (een item zonder kopie van de laatste upload van de app kan ze niet uit elkaar houden), haal dan de export van de gateway opnieuw op (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren; het bestand dat hij vervangt, blijft ernaast bewaard als `.pre-reconfigure`) en herhaal daarna de wijziging in Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "De JUNG HOME Gateway op {host} antwoordde alleen met de kale apparaatdatabase (geen apparaatnamen of kamerkoppelingen); die overnemen zou ze wissen uit het bestand dat Home Assistant bewaart. Probeer het opnieuw als de gateway niet meer bezig is, of haal de export van de app opnieuw op."
+    },
+    "identify_no_answer": {
+      "message": "Het JUNG-apparaat heeft niet op het identificatieverzoek geantwoord; heeft het stroom en is het binnen bereik?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} is geen JUNG HOME-mesh-netwerk; geef de config_entry_id van zo'n netwerk op (of laat hem weg als er maar één is geconfigureerd)."
+    },
+    "service_all_not_supported": {
+      "message": "Deze actie accepteert geen entity_id: all; noem de lampen, stopcontacten, apparaten, ruimtes of labels waarvoor ze geldt."
+    },
+    "edge_detection_unknown": {
+      "message": "De flankevaluatie van {entity} is nog niet bekend; de ingang heeft niet op het uitlezen geantwoord."
+    },
+    "reset_consumption_refused": {
+      "message": "Het JUNG-stopcontact heeft zijn teller {property} niet gereset; het meldt nog steeds een waarde ongelijk aan 0."
+    },
+    "setup_state_unknown": {
+      "message": "De huidige instelling van {entity} is nog niet bekend; het apparaat heeft niet op het uitlezen geantwoord."
+    },
+    "setting_no_answer": {
+      "message": "Het JUNG-apparaat heeft noch op de wijziging van {entity} noch op het teruglezen geantwoord; het heeft de nieuwe waarde mogelijk toch overgenomen. Heeft het stroom en is het binnen bereik?"
+    },
+    "setting_asleep": {
+      "message": "Het batterijapparaat van {entity} heeft niet geantwoord: het slaapt. Druk op een van zijn knoppen om het te wekken en voer de wijziging dan meteen opnieuw uit. Als het ook niet op een knopdruk reageert, is de batterij meestal leeg: vervang hem."
+    },
+    "setting_not_applied": {
+      "message": "Het JUNG-apparaat heeft de nieuwe waarde van {entity} niet overgenomen; het meldt nog steeds een andere."
+    },
+    "setting_not_supported": {
+      "message": "Het JUNG-apparaat heeft de instelling van {entity} niet: het beantwoordde de wijziging zonder waarde."
+    },
+    "schedule_no_reply": {
+      "message": "Het JUNG-apparaat {address} heeft niet geantwoord over zijn schakelprogramma's."
+    },
+    "schedule_not_applied": {
+      "message": "Het JUNG-apparaat {address} heeft de wijziging van programmageheugenplaats {slot} niet overgenomen."
+    },
+    "schedule_slots_full": {
+      "message": "Alle 16 programmageheugenplaatsen van het JUNG-apparaat {address} zijn in gebruik; verwijder er eerst een."
+    },
+    "schedule_empty_slot": {
+      "message": "Programmageheugenplaats {slot} van het JUNG-apparaat {address} bevat geen schakelprogramma."
+    },
+    "schedule_not_supported": {
+      "message": "{name} voert geen eigen schakelprogramma's uit."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Het schakelprogramma is al naar {created} geschreven: verwijder het daar voordat je de actie opnieuw aanroept, anders voeren die apparaten het twee keer uit."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Het schakelprogramma past niet bij {name}: {fields} geldt er niet voor."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Het schakelprogramma past niet bij {name}: een thermostaat heeft een temperatuur nodig."
+    },
+    "schedule_action_needs_position": {
+      "message": "Het schakelprogramma past niet bij {name}: een jaloezie heeft een positie nodig."
+    },
+    "schedule_action_needs_action": {
+      "message": "Het schakelprogramma past niet bij {name}: het heeft een actie nodig (aan of uit)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Het schakelprogramma past niet bij {name}: een helderheid hoort bij de actie aan."
+    },
+    "threshold_not_supported": {
+      "message": "{name} is geen JUNG HOME-stopcontact met energiemeting en drempels."
+    },
+    "threshold_incomplete": {
+      "message": "{name} heeft geen drempel om te wijzigen (of heeft niet geantwoord): geef zowel vermogen als duur op."
+    },
+    "threshold_not_applied": {
+      "message": "Het JUNG-stopcontact {address} heeft zijn {which}-drempel niet overgenomen. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "De {which}-drempel kon niet naar het JUNG-stopcontact {address} worden verzonden; er is geen proxy-node verbonden. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Het stopcontact en de apparaten die zijn drempels moeten schakelen, horen bij verschillende mesh-netwerken."
+    },
+    "scene_state_not_applicable": {
+      "message": "De toestand past niet bij {name}: {fields} geldt er niet voor."
+    },
+    "scene_state_needs_temperature": {
+      "message": "De toestand past niet bij {name}: een thermostaat heeft een temperatuur nodig."
+    },
+    "scene_state_needs_position": {
+      "message": "De toestand past niet bij {name}: een jaloezie heeft een positie nodig."
+    },
+    "scene_state_needs_action": {
+      "message": "De toestand past niet bij {name}: hij heeft een actie nodig (aan of uit)."
+    },
+    "scene_state_brightness_off": {
+      "message": "De toestand past niet bij {name}: een helderheid hoort bij de actie aan."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} heeft de nieuwe toestand niet op tijd gemeld; de scène is niet opgeslagen."
+    },
+    "service_gateway_token_rejected": {
+      "message": "De JUNG HOME Gateway op {host} accepteert de toegang van Home Assistant niet meer, dus de export is niet aan hem doorgegeven. Geef opnieuw toegang via de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en voer dit daarna opnieuw uit."
+    },
+    "seq_store_lost": {
+      "message": "Het volgnummerrecord van adres {unicast} is verloren; Home Assistant hergebruikt geen nummers die de mesh al heeft gezien. Open de reparatie om voorbij die nummers verder te gaan."
+    },
+    "address_in_use": {
+      "message": "Een node van de mesh bezet het adres {unicast} van Home Assistant; herconfigureer de integratie met een vrij adres ({suggestion} is vrij)."
+    },
+    "add_device_not_allowed": {
+      "message": "Apparaten toevoegen en verwijderen staat uit voor dit netwerk: schakel eerst *Home Assistant toestaan apparaten toe te voegen en te verwijderen* in bij de opties van de integratie."
+    },
+    "add_device_not_found": {
+      "message": "Er adverteert geen nieuw JUNG-apparaat op {address}; voer `find_new_devices` uit en gebruik een adres uit de lijst."
+    },
+    "add_device_not_jung": {
+      "message": "Het apparaat op {address} meldt niet dat het een JUNG-apparaat is."
+    },
+    "add_device_no_template": {
+      "message": "Er is nog geen apparaat van product {product} in het netwerk: voeg het eerste toe met de JUNG HOME-app; Home Assistant kopieert dan de configuratie ervan."
+    },
+    "add_device_no_address": {
+      "message": "Er is buiten de bereiken van de provisioners geen vrij adresbereik meer voor het nieuwe apparaat."
+    },
+    "provisioner_identity_failed": {
+      "message": "Het provisioner-item van Home Assistant kon niet in de export worden samengevoegd ({error}); er is niets gewijzigd. Zie het logboek."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant kan in dit netwerk geen eigen adresbereiken krijgen: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Kan geen verbinding maken met het nieuwe apparaat: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Het inleren van het nieuwe apparaat is mislukt: {error}. Het is nog steeds nieuw; probeer het opnieuw."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Het inleren van het nieuwe apparaat op {unicast} is niet bevestigd ({error}). Het kan de sleutels van het netwerk hebben ontvangen, dus Home Assistant houdt het als in behandeling: reset het met de actie `junghome_ble.reset_pending_device` (unicast {unicast}; voeg `force` toe als het niet antwoordt, want een apparaat dat zijn sleutels nooit kreeg, kan dat niet) en voeg het daarna opnieuw toe. De adressen blijven tot dan gereserveerd."
+    },
+    "add_device_vault_unwritable": {
+      "message": "De sleutel van het nieuwe apparaat kon niet in de kluis van Home Assistant worden opgeslagen ({error}), dus het inleren is gestopt voordat het apparaat iets ontving: het is nog steeds nieuw en er is niets voor gereserveerd op {unicast}. Maak schijfruimte vrij of herstel de opslag en probeer het dan opnieuw."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Het apparaat is ingeleerd op {unicast}, maar de configuratie ervan mislukte bij stap {step} ({error}) en het heeft geen reset bevestigd. De app kent het niet: reset het met de actie `junghome_ble.reset_pending_device` (unicast {unicast}) en voeg het daarna opnieuw toe. De adressen blijven tot dan gereserveerd."
+    },
+    "add_device_record_failed": {
+      "message": "Het apparaat is geconfigureerd, maar niet vastgelegd op {unicast} ({error}). De app kent het niet: reset het met de actie `junghome_ble.reset_pending_device` (unicast {unicast}) en voeg het daarna opnieuw toe. De adressen blijven tot dan gereserveerd."
+    },
+    "add_device_no_beacon": {
+      "message": "De IV-index van het netwerk is op de huidige Bluetooth-verbinding nog niet bevestigd (er is nog geen netwerkbeacon op binnengekomen), en het nieuwe apparaat zou een verkeerde bewaren. Wacht op de volgende verbinding met een JUNG-apparaat en probeer het opnieuw."
+    },
+    "add_device_key_refresh": {
+      "message": "De JUNG HOME-app vernieuwt de netwerksleutel (key refresh fase 1): een apparaat dat nu wordt toegevoegd, zou de sleutel krijgen die wordt uitgefaseerd. Rond de sleutelvernieuwing af in de app (Home Assistant volgt die) en probeer het dan opnieuw."
+    },
+    "add_device_name_too_long": {
+      "message": "De naam “{name}” is langer dan de JUNG HOME-app voor een apparaat toestaat: hoogstens {max_length} tekens."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Er is geen apparaat bekend als {device} dat Home Assistant heeft ingeleerd zonder het vast te leggen; de reparatie *Een apparaat dat Home Assistant heeft toegevoegd, is niet vastgelegd* toont de adressen van de apparaten die er zijn."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Er zit nu een ander apparaat van het netwerk op {unicast}, dus er is geen reset verzonden en niets gewijzigd. Gebruik `force` om het apparaat in behandeling op dat adres te vergeten (reset het handmatig als het nog bestaat)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Het apparaat op {unicast} heeft zijn reset niet bevestigd; er is niets gewijzigd. Gebruik `force` voor een apparaat dat handmatig is gereset of definitief weg is."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "De reset kon niet naar het apparaat op {unicast} worden verzonden ({error}); er is niets gewijzigd."
+    },
+    "remove_device_gateway": {
+      "message": "De gateway kan niet op deze manier worden verwijderd."
+    },
+    "remove_device_mesh": {
+      "message": "Noem een JUNG-apparaat, niet het netwerk."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Apparaat {address} heeft zijn reset niet bevestigd en is daarna niet gezien terwijl het als nieuw apparaat adverteerde. Het kan toch gereset zijn (de bevestiging kan verloren gaan, en misschien is er geen Bluetooth-scanner binnen bereik), of het heeft de reset niet gekregen; de mesh-export is ongewijzigd. Voer de actie opnieuw uit, of gebruik `force` als het apparaat definitief weg is."
+    },
+    "remove_device_proxy": {
+      "message": "Apparaat {address} is de proxy-node waarmee Home Assistant verbonden is: de reset ervan zou de verbinding beëindigen waarover de bevestiging terugkomt. Wacht tot Home Assistant via een ander apparaat verbindt (de sensor Proxy-node), of gebruik `force`."
+    },
+    "device_lock_unknown": {
+      "message": "De apparaatvergrendeling van {entity} is nog niet bekend; het apparaat heeft niet op het uitlezen geantwoord."
+    },
+    "cover_locked": {
+      "message": "{entity} is vergrendeld en negeert opdrachten tot het wordt ontgrendeld (met zijn schakelaar Vergrendeling of zijn Vergrendelfunctie)."
+    },
+    "cover_wind_alarm": {
+      "message": "Een windalarm houdt {entity} vast; het negeert opdrachten tot het alarm is beëindigd (met zijn Vergrendelfunctie of zijn schakelaar Vergrendeling)."
+    },
+    "load_locked": {
+      "message": "{entity} is vergrendeld (in de JUNG HOME-app, door een knop of door zijn schakelaar Vergrendeling) en behoudt zijn toestand tot het wordt ontgrendeld."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} is geen JUNG HOME-dimmer: alleen dimmers en DALI-tunable-white-kanalen kunnen op deze manier worden gedimd."
+    },
+    "locate_no_answer": {
+      "message": "Het JUNG-apparaat {node} heeft niet geantwoord op het verzoek zijn identiteit te adverteren; heeft het stroom en is het binnen bereik? Een batterijapparaat slaapt en antwoordt alleen als het wakker is."
+    },
+    "locate_refused": {
+      "message": "Het JUNG-apparaat {node} weigerde zijn identiteit te adverteren: {status}."
+    },
+    "locate_not_supported": {
+      "message": "Het JUNG-apparaat {node} kan zijn identiteit niet adverteren (Node Identity wordt niet ondersteund)."
+    },
+    "approve_no_gateway": {
+      "message": "Dit netwerk is niet vanaf een JUNG HOME Gateway ingesteld (geen gateway-adres en token in het item): er is geen gateway om clients bij goed te keuren."
+    },
+    "approve_gateway_distrusted": {
+      "message": "De JUNG HOME Gateway op {host} is niet gevraagd: {error}. Er is niets goedgekeurd."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "De JUNG HOME Gateway op {host} accepteert de toegang van Home Assistant niet meer, dus er is niets goedgekeurd. Geef opnieuw toegang via de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en voer dit daarna opnieuw uit."
+    },
+    "approve_client_not_waiting": {
+      "message": "Er wacht geen API-client met de naam “{client}” op toegang bij de gateway (wachtend: {waiting}). Er is niets goedgekeurd."
+    },
+    "approve_gateway_busy": {
+      "message": "De JUNG HOME Gateway op {host} is bezig met een ander configuratieverzoek; probeer het over een minuut opnieuw. Er is niets goedgekeurd."
+    },
+    "approve_gateway_failed": {
+      "message": "De JUNG HOME Gateway op {host} heeft niet gedaan wat werd gevraagd: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant werkt geen JUNG-firmware bij: werk het apparaat bij met de JUNG HOME-app."
+    },
+    "add_device_node_not_configured": {
+      "message": "Het nieuwe apparaat op {unicast} kon niet worden geconfigureerd bij stap {step} ({error}). Home Assistant heeft het gereset, zoals de JUNG HOME-app doet, en het heeft dat bevestigd: het is weer een nieuw apparaat en er is niets voor gereserveerd. Een apparaat dat niet het product of de inzet is die het adverteert, wordt zo geweigerd; voeg het anders opnieuw toe."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Het inleren van het nieuwe apparaat op {unicast} is niet bevestigd ({error}). Home Assistant heeft het gereset en het heeft dat bevestigd: het is weer een nieuw apparaat en er is niets voor gereserveerd. Probeer het opnieuw."
+    },
+    "time_keeper_role_failed": {
+      "message": "Het apparaat op {address} heeft zijn tijdrol niet overgenomen ({error}). De publicatie van zijn Time Server is al gewijzigd: schakel de tijdgever opnieuw zodra het apparaat antwoordt."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} wordt geschakeld door de kamerthermostaat {thermostats} (gekoppeld in de JUNG HOME-app) en wordt, net als in de app, niet handmatig geschakeld."
+    },
+    "load_forced_short": {
+      "message": "De melder van {entity} houdt het aan of uit (continu aan / continu uit): zet de schakelaar voor automatisch bedrijf van de melder in de middelste stand om dat te beëindigen."
+    },
+    "load_forced_on_button": {
+      "message": "De melder van {entity} houdt het aan (continu AAN): druk op de ON-knop van de melder om dat te beëindigen."
+    },
+    "load_forced_off_button": {
+      "message": "De melder van {entity} houdt het uit (continu UIT): druk op de OFF-knop van de melder om dat te beëindigen."
+    },
+    "load_forced_on_presence": {
+      "message": "De melder van {entity} houdt het aan (continu AAN): de programmeerknop van de melder beëindigt dat."
+    },
+    "load_forced_off_presence": {
+      "message": "De melder van {entity} houdt het uit (continu UIT): de programmeerknop van de melder beëindigt dat."
+    },
+    "cover_slats_open": {
+      "message": "{entity} is volledig open: de lamellen kunnen pas worden bewogen als hij is neergelaten, net als in de JUNG HOME-app."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} staat in boost: kies een andere voorinstelling om de boost te beëindigen voordat je een temperatuur instelt, net als in de JUNG HOME-app."
+    },
+    "service_detector_device_only": {
+      "message": "Melder {address} kan maar één apparaat aansturen: geef als doel een lamp, stopcontact of apparaat op, geen kamer of scène."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Melder {address} kan geen doel aansturen in modus {mode}: een melder heeft geen knopmodus, dus hij schakelt alleen een lamp, een stopcontact of een jaloezie in de modus die het doel bepaalt, zonder vergrendelfunctie, kamerthermostaat, gateway of doelelement."
+    },
+    "gateway_fetch_refused": {
+      "message": "De export is niet opgehaald van de JUNG HOME Gateway op {host}: {error}. Er is niets veranderd; de reparatiemeldingen zeggen wat je moet doen."
+    },
+    "service_unknown_area": {
+      "message": "Er is geen ruimte met de id {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} is geen scène van een JUNG HOME-netwerk."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Een apparaat verwijderen kan niet ongedaan worden gemaakt: voeg \"confirm: true\" aan de aanroep toe om het uit te voeren (of \"dry_run: true\" om te zien wat het zou doen)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Een scène verwijderen, ook als een apparaat niet antwoordt, laat dat apparaat met de scène achter: voeg \"confirm: true\" aan de aanroep toe om het uit te voeren (of \"dry_run: true\" om te zien wat het zou doen)."
+    },
+    "plan_key_device": {
+      "message": "{key} stuurt nu {target} aan; {messages} berichten"
+    },
+    "plan_key_room": {
+      "message": "{key} stuurt nu kamer {room} aan; {messages} berichten"
+    },
+    "plan_key_scene": {
+      "message": "{key} roept nu scène {scene} op; {messages} berichten"
+    },
+    "plan_key_cleared": {
+      "message": "{key} heeft nu geen functie; {messages} berichten"
+    },
+    "plan_room_joined": {
+      "message": "{devices} nu in kamer {room}; {messages} berichten"
+    },
+    "plan_room_left": {
+      "message": "{devices} uit kamer {room} gehaald; {messages} berichten"
+    },
+    "plan_room_deleted": {
+      "message": "Kamer {room} verwijderd; {messages} berichten"
+    },
+    "plan_device_removed": {
+      "message": "{device} uit het netwerk verwijderd; {messages} berichten aan de andere apparaten"
+    },
+    "plan_scene_deleted": {
+      "message": "Scène {scene} verwijderd; {messages} berichten"
+    },
+    "plan_finished": {
+      "message": "{action} voltooid; {messages} berichten"
+    },
+    "plan_stopped": {
+      "message": "{action} gestopt na {applied} van {total} berichten: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} is geannuleerd na {applied} van {total} berichten; de mesh-export legt vast wat is toegepast"
+    },
+    "logbook_scene_from_key": {
+      "message": "heeft scène {scene} opgeroepen"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "loslaten niet op tijd gehoord"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "verbinding verloren"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integratie gestopt"
+    },
+    "logbook_scene_number": {
+      "message": "Scène {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scène"
+    },
+    "logbook_recalled": {
+      "message": "is opgeroepen"
+    },
+    "logbook_recalled_by": {
+      "message": "is opgeroepen door {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "JUNG HOME-apparaten ontbreken in de export",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "De export opnieuw ophalen van de gateway",
+            "description": "{count} apparaat/apparaten van de JUNG HOME-mesh {title} adverteren zich via Bluetooth, maar staan niet in de export die Home Assistant heeft geladen: {devices}. Ze zijn aan de installatie toegevoegd (of opnieuw ingeleerd) nadat die export is gemaakt, dus Home Assistant heeft geen entiteiten voor ze. Bevestig om de actuele export op te halen van de JUNG HOME Gateway op {host} met de toegang die Home Assistant al heeft, hem te controleren en de integratie er opnieuw mee in te stellen, zoals Herconfigureren → Opnieuw ophalen van de gateway doet; de export die hij vervangt, wordt als kopie bewaard (`.pre-reconfigure`). Het probleem verdwijnt zodra de nieuwe export ze bevat. Nog niet op echte apparaten geverifieerd."
+          },
+          "upload": {
+            "title": "Een nieuwe export laden",
+            "description": "{count} apparaat/apparaten van de JUNG HOME-mesh {title} adverteren zich via Bluetooth, maar staan niet in de export die Home Assistant heeft geladen: {devices}. Ze zijn aan de installatie toegevoegd (of opnieuw ingeleerd) nadat die export is gemaakt, dus Home Assistant heeft geen entiteiten voor ze. Exporteer het netwerk vanuit de JUNG HOME-app (Project → Delen via bestand) en upload het bestand hier: Home Assistant controleert het, bewaart het onder `junghome_ble/` in zijn configuratiemap (het bevat alle mesh-sleutels) en stelt de integratie er opnieuw mee in; de export die het vervangt, wordt als kopie bewaard. Een item dat zijn export van een pad op de host las, gebruikt vanaf dan de geüploade kopie — om het pad te behouden, kopieer je het nieuwe bestand in plaats daarvan daarheen en gebruik je Herconfigureren. Het probleem verdwijnt zodra de nieuwe export ze bevat. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "export_file": "Mesh-exportbestand"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In de nieuwe export heeft een node het adres van Home Assistant, dus het item kan hem niet gebruiken. Geef Home Assistant eerst een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres) en laad de export daar.",
+          "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+          "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+          "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+          "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+          "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+          "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+          "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+          "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0.",
+          "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+          "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+          "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "not_a_directory": "Het metadatapad is geen map.",
+          "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+          "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+          "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "no_gateway_pin": "Home Assistant heeft geen toegang of geen certificaat vastgelegd voor de gateway {host}, dus het stuurt hem niets: er is niets veranderd. Haal de export in plaats daarvan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het certificaat van de gateway kan worden gecontroleerd.",
+          "certificate_changed": "De gateway op {host} toont een ander certificaat dan het certificaat dat Home Assistant ervoor heeft vastgepind: er is niets naar verzonden en niets veranderd. Als je de gateway of het certificaat hebt vervangen, haal de export dan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het nieuwe certificaat kan worden gecontroleerd; anders antwoordt er mogelijk een ander apparaat in je netwerk als de gateway.",
+          "token_rejected": "De gateway op {host} accepteert de toegang van Home Assistant niet meer: er is niets veranderd. Volg de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en repareer dit probleem daarna opnieuw.",
+          "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+          "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "JUNG HOME-apparaten ontbreken in de export",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "De export opnieuw ophalen van de gateway",
+            "description": "{count} apparaat/apparaten van de JUNG HOME-mesh {title} adverteren zich via Bluetooth, maar staan niet in de export die Home Assistant heeft geladen: {devices}. Ze zijn aan de installatie toegevoegd (of opnieuw ingeleerd) nadat die export is gemaakt, dus Home Assistant heeft nog geen entiteiten voor ze. Home Assistant vraagt de gateway om zijn actuele export en neemt die vanzelf over zodra ze erin staan. Bevestig om de actuele export op te halen van de JUNG HOME Gateway op {host} met de toegang die Home Assistant al heeft, hem te controleren en de integratie er opnieuw mee in te stellen, zoals Herconfigureren → Opnieuw ophalen van de gateway doet; de export die hij vervangt, wordt als kopie bewaard (`.pre-reconfigure`). Als het probleem blijft, kent ook de export van de gateway ze niet: open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt dan zijn project) en repareer daarna opnieuw. Nog niet op echte apparaten geverifieerd."
+          },
+          "upload": {
+            "title": "Een nieuwe export laden",
+            "description": "{count} apparaat/apparaten van de JUNG HOME-mesh {title} adverteren zich via Bluetooth, maar staan niet in de export die Home Assistant heeft geladen: {devices}. Ze zijn aan de installatie toegevoegd (of opnieuw ingeleerd) nadat die export is gemaakt, dus Home Assistant heeft nog geen entiteiten voor ze. Home Assistant vraagt de gateway om zijn actuele export en neemt die vanzelf over zodra ze erin staan. Exporteer het netwerk vanuit de JUNG HOME-app (Project → Delen via bestand) en upload het bestand hier: Home Assistant controleert het, bewaart het onder `junghome_ble/` in zijn configuratiemap (het bevat alle mesh-sleutels) en stelt de integratie er opnieuw mee in; de export die het vervangt, wordt als kopie bewaard. Een item dat zijn export van een pad op de host las, gebruikt vanaf dan de geüploade kopie — om het pad te behouden, kopieer je het nieuwe bestand in plaats daarvan daarheen en gebruik je Herconfigureren. Als het probleem blijft, kent ook de export van de gateway ze niet: open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt dan zijn project) en repareer daarna opnieuw. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "export_file": "Mesh-exportbestand"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In de nieuwe export heeft een node het adres van Home Assistant, dus het item kan hem niet gebruiken. Geef Home Assistant eerst een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres) en laad de export daar.",
+          "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+          "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+          "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+          "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+          "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+          "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+          "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+          "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0.",
+          "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+          "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+          "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "not_a_directory": "Het metadatapad is geen map.",
+          "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+          "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+          "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "no_gateway_pin": "Home Assistant heeft geen toegang of geen certificaat vastgelegd voor de gateway {host}, dus het stuurt hem niets: er is niets veranderd. Haal de export in plaats daarvan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het certificaat van de gateway kan worden gecontroleerd.",
+          "certificate_changed": "De gateway op {host} toont een ander certificaat dan het certificaat dat Home Assistant ervoor heeft vastgepind: er is niets naar verzonden en niets veranderd. Als je de gateway of het certificaat hebt vervangen, haal de export dan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het nieuwe certificaat kan worden gecontroleerd; anders antwoordt er mogelijk een ander apparaat in je netwerk als de gateway.",
+          "token_rejected": "De gateway op {host} accepteert de toegang van Home Assistant niet meer: er is niets veranderd. Volg de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en repareer dit probleem daarna opnieuw.",
+          "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+          "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "De JUNG HOME-app heeft de installatie gewijzigd",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "De export opnieuw ophalen van de gateway",
+            "description": "De JUNG HOME-app is gezien terwijl die de configuratie van een apparaat van de mesh {title} wijzigde (een knopkoppeling, een kamer, een scène of een apparaatinstelling), dus de export die Home Assistant heeft geladen, past mogelijk niet meer bij de installatie: wat in de app is gewijzigd, staat nog niet in Home Assistant. Bevestig om de actuele export op te halen van de JUNG HOME Gateway op {host} met de toegang die Home Assistant al heeft, hem te controleren en de integratie er opnieuw mee in te stellen, zoals Herconfigureren → Opnieuw ophalen van de gateway doet; de export die hij vervangt, wordt als kopie bewaard (`.pre-reconfigure`). Nog niet op echte apparaten geverifieerd."
+          },
+          "upload": {
+            "title": "Een nieuwe export laden",
+            "description": "De JUNG HOME-app is gezien terwijl die de configuratie van een apparaat van de mesh {title} wijzigde (een knopkoppeling, een kamer, een scène of een apparaatinstelling), dus de export die Home Assistant heeft geladen, past mogelijk niet meer bij de installatie: wat in de app is gewijzigd, staat nog niet in Home Assistant. Als je klaar bent in de app, exporteer je het netwerk daaruit (Project → Delen via bestand) en upload je het bestand hier: Home Assistant controleert het, bewaart het onder `junghome_ble/` in zijn configuratiemap (het bevat alle mesh-sleutels) en stelt de integratie er opnieuw mee in; de export die het vervangt, wordt als kopie bewaard. Een item dat zijn export van een pad op de host las, gebruikt vanaf dan de geüploade kopie — om het pad te behouden, kopieer je het nieuwe bestand in plaats daarvan daarheen en gebruik je Herconfigureren, wat deze melding ook wist. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "export_file": "Mesh-exportbestand"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In de nieuwe export heeft een node het adres van Home Assistant, dus het item kan hem niet gebruiken. Geef Home Assistant eerst een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres) en laad de export daar.",
+          "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+          "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+          "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+          "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+          "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+          "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+          "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+          "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0.",
+          "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+          "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+          "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "not_a_directory": "Het metadatapad is geen map.",
+          "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+          "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+          "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "no_gateway_pin": "Home Assistant heeft geen toegang of geen certificaat vastgelegd voor de gateway {host}, dus het stuurt hem niets: er is niets veranderd. Haal de export in plaats daarvan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het certificaat van de gateway kan worden gecontroleerd.",
+          "certificate_changed": "De gateway op {host} toont een ander certificaat dan het certificaat dat Home Assistant ervoor heeft vastgepind: er is niets naar verzonden en niets veranderd. Als je de gateway of het certificaat hebt vervangen, haal de export dan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het nieuwe certificaat kan worden gecontroleerd; anders antwoordt er mogelijk een ander apparaat in je netwerk als de gateway.",
+          "token_rejected": "De gateway op {host} accepteert de toegang van Home Assistant niet meer: er is niets veranderd. Volg de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en repareer dit probleem daarna opnieuw.",
+          "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+          "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "JUNG HOME-drukknoppen met een andere inzet dan in de export",
+      "description": "{devices}: deze drukknoppen van de JUNG HOME-mesh {title} adverteren een andere inzet dan die in de export die Home Assistant heeft geladen (export → apparaat). De inzet is vervangen nadat die export is gemaakt, dus Home Assistant en de app tonen mogelijk het verkeerde soort belasting voor ze. Controleer de apparaten in de JUNG HOME-app, exporteer het netwerk opnieuw en werk deze integratie bij (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren); het probleem verdwijnt zodra de export de inzetten noemt die de apparaten adverteren. Nog niet op echte apparaten geverifieerd."
+    },
+    "node_clock_wrong": {
+      "title": "JUNG HOME-apparaten met een verkeerde klok",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "De tijd nu verzenden",
+            "description": "{devices}: deze apparaten van de JUNG HOME-mesh {title} kunnen schakelprogramma's uitvoeren (schakelen op tijd of op zonsopgang / zonsondergang), en hun klok klopt niet: geen tijd, meer dan een minuut afwijkend van die van Home Assistant, of een andere tijdzoneverschuiving dan Home Assistant ze heeft gestuurd. Hun schakelprogramma's lopen op het verkeerde moment tot ze de tijd weer krijgen. Home Assistant stuurt die na elke verbinding en eenmaal per dag; bevestig om hem nu te sturen en deze apparaten opnieuw te vragen. Het probleem verdwijnt zodra ze met de juiste tijd antwoorden. Als het terugkomt, controleer dan de tijdzone van Home Assistant (Instellingen → Systeem → Algemeen) en of de apparaten bereikbaar zijn. Nog niet op echte apparaten geverifieerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "not_connected": "Home Assistant heeft op dit moment geen verbinding met de mesh. Probeer het opnieuw zodra er verbinding is."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "De sleutels van de JUNG HOME-mesh veranderen",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "De export opnieuw ophalen van de gateway",
+            "description": "De mesh {title} heeft een key refresh aangekondigd waarvan Home Assistant de nieuwe netwerksleutel niet heeft horen uitdelen (een key refresh die het vanaf het begin ziet, wordt gevolgd en geeft geen melding). Zodra die is voltooid, zijn de sleutels in de export die Home Assistant gebruikt niet meer geldig en stopt de bediening. Laat de sleutelvernieuwing eerst afronden in de JUNG HOME-app. Bevestig om de actuele export op te halen van de JUNG HOME Gateway op {host} met de toegang die Home Assistant al heeft, hem te controleren en de integratie er opnieuw mee in te stellen, zoals Herconfigureren → Opnieuw ophalen van de gateway doet; de export die hij vervangt, wordt als kopie bewaard (`.pre-reconfigure`). Nog niet op echte apparaten geverifieerd."
+          },
+          "upload": {
+            "title": "Een nieuwe export laden",
+            "description": "De mesh {title} heeft een key refresh aangekondigd waarvan Home Assistant de nieuwe netwerksleutel niet heeft horen uitdelen (een key refresh die het vanaf het begin ziet, wordt gevolgd en geeft geen melding). Zodra die is voltooid, zijn de sleutels in de export die Home Assistant gebruikt niet meer geldig en stopt de bediening. Laat de sleutelvernieuwing eerst afronden in de JUNG HOME-app. Exporteer het netwerk vanuit de JUNG HOME-app (Project → Delen via bestand) en upload het bestand hier: Home Assistant controleert het, bewaart het onder `junghome_ble/` in zijn configuratiemap (het bevat alle mesh-sleutels) en stelt de integratie er opnieuw mee in; de export die het vervangt, wordt als kopie bewaard. Een item dat zijn export van een pad op de host las, gebruikt vanaf dan de geüploade kopie — om het pad te behouden, kopieer je het nieuwe bestand in plaats daarvan daarheen en gebruik je Herconfigureren. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "export_file": "Mesh-exportbestand"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In de nieuwe export heeft een node het adres van Home Assistant, dus het item kan hem niet gebruiken. Geef Home Assistant eerst een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres) en laad de export daar.",
+          "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+          "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+          "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+          "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+          "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+          "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+          "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+          "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0.",
+          "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+          "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+          "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "not_a_directory": "Het metadatapad is geen map.",
+          "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+          "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+          "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "no_gateway_pin": "Home Assistant heeft geen toegang of geen certificaat vastgelegd voor de gateway {host}, dus het stuurt hem niets: er is niets veranderd. Haal de export in plaats daarvan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het certificaat van de gateway kan worden gecontroleerd.",
+          "certificate_changed": "De gateway op {host} toont een ander certificaat dan het certificaat dat Home Assistant ervoor heeft vastgepind: er is niets naar verzonden en niets veranderd. Als je de gateway of het certificaat hebt vervangen, haal de export dan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het nieuwe certificaat kan worden gecontroleerd; anders antwoordt er mogelijk een ander apparaat in je netwerk als de gateway.",
+          "token_rejected": "De gateway op {host} accepteert de toegang van Home Assistant niet meer: er is niets veranderd. Volg de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en repareer dit probleem daarna opnieuw.",
+          "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+          "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME-apparaten negeren Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Vooruitspringen voorbij de nummers die de apparaten kennen",
+            "description": "Home Assistant hoort de JUNG HOME-mesh {title} via zijn proxy-node, maar geen enkel apparaat heeft op zijn statusverzoeken geantwoord. De nodes verwerpen de berichten van Home Assistant als herhalingen. Twee oorzaken zijn waarschijnlijk: de volgnummeropslag van deze integratie (`.storage/junghome_ble.*`) is verloren gegaan of hersteld uit een oudere back-up, zodat Home Assistant nu volgnummers stuurt die de nodes al hebben gezien; of een andere mesh-client (bijvoorbeeld de tool `mesh_poc.py`) zendt met hetzelfde unicast-adres {unicast}. Geef Home Assistant ofwel een nieuw, ongebruikt adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres, en zorg dat geen andere client het gebruikt) of, als de opslag verloren is gegaan of hersteld (en geen andere client het adres gebruikt), bevestig om Home Assistant zijn volgnummers 1 048 576 vooruit te laten springen en opnieuw te verbinden. Herstel de volgnummeropslag niet uit een back-up om dit op te lossen: een oudere kopie herhaalt alleen nummers die de apparaten al hebben gezien. Het probleem verdwijnt vanzelf zodra een apparaat Home Assistant weer antwoordt."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Een andere client gebruikt het JUNG HOME-adres van Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Voorbij de volgnummers van de andere client springen",
+            "description": "Home Assistant heeft een bericht van de JUNG HOME-mesh {title} ontvangen dat vanaf zijn eigen unicast-adres {unicast} is verzonden met een volgnummer dat het nooit heeft gebruikt: een andere mesh-client zendt met hetzelfde adres — een tweede Home Assistant-installatie, de tool `mesh_poc.py` geconfigureerd met dit adres, of een kopie van deze installatie die elders is gestart. Twee zenders op één adres hergebruiken elkaars volgnummers, en de apparaten verwerpen alles wat onder dat van de andere client ligt, dus Home Assistant stuurt niets naar de mesh tot dit is gerepareerd (opdrachten mislukken, statussen worden niet vernieuwd). Stop de andere client, of geef die of Home Assistant een ander ongebruikt adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres). Bevestig daarna om Home Assistant zijn volgnummers te laten voortzetten voorbij die waarmee de andere client is gezien en weer te laten verzenden. Als de andere client vanaf dit adres blijft zenden, komt het probleem terug. Herstel de volgnummeropslag niet uit een back-up om dit op te lossen. Nog niet op echte apparaten geverifieerd: een tweede client op het adres van Home Assistant is alleen gesimuleerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Een andere client gebruikt nog steeds het JUNG HOME-adres van Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Opnieuw voorbij de volgnummers van de andere client springen",
+            "description": "Home Assistant is voorbij de volgnummers gesprongen van een andere mesh-client op zijn adres {unicast} in de JUNG HOME-mesh {title}, en de andere client heeft sindsdien weer vanaf dat adres verzonden: hij draait nog steeds. Vooruitspringen helpt niet zolang dat zo is. Geef Home Assistant een nieuw, ongebruikt unicast-adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres), of stop de andere client of zet hem op een ander adres. Tot dan stuurt Home Assistant niets naar de mesh. Bevestig pas als de andere client dit adres niet meer gebruikt: Home Assistant gaat dan opnieuw voorbij zijn nummers verder en hervat het verzenden. Nog niet op echte apparaten geverifieerd: een tweede client op het adres van Home Assistant is alleen gesimuleerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Geen Bluetooth voor de JUNG HOME-mesh",
+      "description": "De JUNG HOME-mesh {title} wordt via Bluetooth bereikt, maar Home Assistant heeft geen verbindbare Bluetooth-adapter of -proxy meer: de adapter is uitgeschakeld, losgekoppeld of defect, of elke ESPHome Bluetooth-proxy met actieve verbindingen is offline. Alle apparaten van de mesh zijn niet beschikbaar tot er een terug is. Controleer Instellingen → Apparaten & diensten → Bluetooth. Het probleem verdwijnt zodra er weer een Bluetooth-adapter of -proxy beschikbaar is."
+    },
+    "duplicate_mesh": {
+      "title": "Twee items voor dezelfde JUNG HOME-mesh",
+      "description": "{title} en {others} zijn allebei ingesteld voor dezelfde JUNG HOME-mesh. Ze delen de volgnummertellers ervan (`.storage/junghome_ble.seq.*`), dus maar één van beide kan draaien: {others} draait en {title} is niet gestart. Verwijder een van deze items (Instellingen → Apparaten & diensten); als je {others} verwijdert, herlaad {title} daarna."
+    },
+    "gateway_import": {
+      "title": "De entiteiten van de JUNG HOME Gateway-integratie overnemen",
+      "description": "De JUNG HOME Gateway-integratie is ingesteld naast de Bluetooth Mesh-integratie {title}, dus elke lamp, elk stopcontact, elke knop en elke scène bestaat twee keer. Verplaats de gateway-entiteiten hierheen — ze behouden hun entiteit-ID's, namen, ruimtes en geschiedenis — onder Instellingen → Apparaten & diensten → JUNG HOME (Bluetooth Mesh) → Herconfigureren → De entiteiten van de JUNG HOME Gateway-integratie importeren, en verwijder daarna het gateway-item. Negeer dit probleem als je beide wilt houden."
+    },
+    "export_stale": {
+      "title": "De sleutels van de JUNG HOME-mesh zijn gewijzigd",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "De export opnieuw ophalen van de gateway",
+            "description": "Home Assistant is verbonden met een node van de JUNG HOME-mesh {title}, maar niets wat het hoort, kan worden ontsleuteld met de sleutels uit de export: elk netwerkbericht en de beacon van de node falen bij de authenticatie. De mesh heeft een key refresh voltooid (een “sleutelvernieuwing” in de JUNG HOME-app) nadat die export is gemaakt, dus het bestand is verouderd. Bevestig om de actuele export op te halen van de JUNG HOME Gateway op {host} met de toegang die Home Assistant al heeft, hem te controleren en de integratie er opnieuw mee in te stellen, zoals Herconfigureren → Opnieuw ophalen van de gateway doet; de export die hij vervangt, wordt als kopie bewaard (`.pre-reconfigure`). Het probleem verdwijnt zodra er weer een bericht wordt ontsleuteld. Nog niet op echte apparaten geverifieerd."
+          },
+          "upload": {
+            "title": "Een nieuwe export laden",
+            "description": "Home Assistant is verbonden met een node van de JUNG HOME-mesh {title}, maar niets wat het hoort, kan worden ontsleuteld met de sleutels uit de export: elk netwerkbericht en de beacon van de node falen bij de authenticatie. De mesh heeft een key refresh voltooid (een “sleutelvernieuwing” in de JUNG HOME-app) nadat die export is gemaakt, dus het bestand is verouderd. Exporteer het netwerk vanuit de JUNG HOME-app (Project → Delen via bestand) en upload het bestand hier: Home Assistant controleert het, bewaart het onder `junghome_ble/` in zijn configuratiemap (het bevat alle mesh-sleutels) en stelt de integratie er opnieuw mee in; de export die het vervangt, wordt als kopie bewaard. Een item dat zijn export van een pad op de host las, gebruikt vanaf dan de geüploade kopie — om het pad te behouden, kopieer je het nieuwe bestand in plaats daarvan daarheen en gebruik je Herconfigureren. Het probleem verdwijnt zodra er weer een bericht wordt ontsleuteld. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "export_file": "Mesh-exportbestand"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` uit de app (Delen via bestand) of `MeshNetwork.json` uit een iOS-back-up."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In de nieuwe export heeft een node het adres van Home Assistant, dus het item kan hem niet gebruiken. Geef Home Assistant eerst een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres) en laad de export daar.",
+          "cannot_connect": "De gateway was op dat adres niet bereikbaar.",
+          "cannot_load": "De mesh-export kon niet worden gelezen. Controleer of het bestand de JSON-export van de app is (en, bij een pad, of het pad klopt).",
+          "cannot_store": "De export kon niet naar de configuratiemap van Home Assistant worden geschreven.",
+          "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
+          "gateway_error": "De gateway antwoordde met een fout. Controleer de status in de JUNG HOME-app en probeer het opnieuw.",
+          "gateway_busy": "De gateway is bezig met een ander configuratieverzoek. Probeer het over een minuut opnieuw.",
+          "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
+          "invalid_export": "Het bestand is geen JUNG HOME-mesh-export (of het is beschadigd): het moet het netwerk bevatten met zijn sleutels, nodes en één netwerksleutel op index 0.",
+          "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
+          "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
+          "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "not_a_directory": "Het metadatapad is geen map.",
+          "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
+          "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
+          "upload_failed": "Het geüploade bestand kon niet worden verwerkt. Probeer het opnieuw te uploaden."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "no_gateway_pin": "Home Assistant heeft geen toegang of geen certificaat vastgelegd voor de gateway {host}, dus het stuurt hem niets: er is niets veranderd. Haal de export in plaats daarvan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het certificaat van de gateway kan worden gecontroleerd.",
+          "certificate_changed": "De gateway op {host} toont een ander certificaat dan het certificaat dat Home Assistant ervoor heeft vastgepind: er is niets naar verzonden en niets veranderd. Als je de gateway of het certificaat hebt vervangen, haal de export dan op onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren, waar het nieuwe certificaat kan worden gecontroleerd; anders antwoordt er mogelijk een ander apparaat in je netwerk als de gateway.",
+          "token_rejected": "De gateway op {host} accepteert de toegang van Home Assistant niet meer: er is niets veranderd. Volg de herauthenticatie waar Home Assistant om vraagt (Instellingen → Apparaten & diensten) en repareer dit probleem daarna opnieuw.",
+          "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
+          "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Certificaat van de JUNG HOME Gateway gewijzigd",
+      "description": "De JUNG HOME Gateway op {host} komt niet meer overeen met het TLS-certificaat dat Home Assistant ervoor heeft vastgepind: de host toont een ander certificaat, of de gateway-node meldt via de mesh een ander. Home Assistant gebruikt de gateway niet meer (er wordt geen toegangstoken en geen export naartoe gestuurd); apparaten blijven via Bluetooth werken. Als je de gateway of het certificaat hebt vervangen, open dan Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren en haal de export opnieuw op van de gateway; anders antwoordt mogelijk een ander apparaat in je netwerk als de gateway — controleer je netwerk."
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME-export niet aan de gateway doorgegeven",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "De export aan de gateway doorgeven",
+            "description": "Home Assistant heeft de JUNG HOME-installatie gewijzigd (een kamer, knopkoppeling of scène) en zijn mesh-export herschreven, maar de JUNG HOME Gateway op {host} heeft de nieuwe export niet overgenomen: {error}. Tot dat gebeurt, tonen de gateway en de app de oude toestand — en de volgende wijziging in de app zou die van Home Assistant overschrijven. Home Assistant probeert het nog twee keer, met 15 seconden ertussen, zoals de app doet. Controleer of de gateway bereikbaar is en bevestig dan om hem de export nu door te geven, zoals de actie Gateway synchroniseren (`junghome_ble.sync_gateway`) doet: die weigert als de gateway wijzigingen bevat die Home Assistant niet heeft gezien, want uploaden zou die wissen. Het probleem verdwijnt als een upload slaagt. Nog niet op echte apparaten geverifieerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "not_loaded": "Het JUNG HOME-item waar dit probleem bij hoort, draait op dit moment niet. Probeer het opnieuw zodra het is ingesteld.",
+          "sync_failed": "De export is niet aan de gateway doorgegeven: {error} Het probleem blijft; repareer het opnieuw zodra de oorzaak weg is."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "Een JUNG HOME-wijziging aan {title} is onderbroken",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Een JUNG HOME-wijziging is onderbroken",
+            "description": "Home Assistant is gestopt midden in {action}: {accepted} van de {total} configuratieberichten hadden de apparaten bereikt. Die zijn nu in de mesh-export vastgelegd, dus de export zegt wat de apparaten bevatten. Voer de actie opnieuw uit met hetzelfde doel om haar af te maken. Met een JUNG HOME Gateway wordt de vastgelegde export eraan doorgegeven door de volgende wijziging of door de actie `junghome_ble.sync_gateway`. Bevestig om deze melding te sluiten."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Apparaatnaam niet doorgegeven aan de JUNG HOME-app",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Het apparaat hernoemen",
+            "description": "{device} is in Home Assistant hernoemd naar “{name}”, een naam die de JUNG HOME-app weigert: een naam mag niet leeg of langer dan 30 tekens zijn, en de app ziet een %-teken als het begin van een placeholder (alleen %% en %n zijn toegestaan). De mesh-export en de app houden de oude naam van het apparaat. Voer een naam in die de app accepteert: Home Assistant geeft het apparaat die naam en geeft hem door aan de export (en met een gateway aan de app), zoals bij elke hernoeming. Het probleem verdwijnt als de naam is doorgegeven. Nog niet op echte apparaten geverifieerd.",
+            "data": {
+              "name": "Naam"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Een naam mag niet leeg zijn.",
+          "name_not_allowed": "De app ziet een %-teken als het begin van een placeholder: alleen %% en %n zijn toegestaan.",
+          "name_too_long": "De app accepteert namen van hoogstens 30 tekens."
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "not_loaded": "Het JUNG HOME-item waar dit probleem bij hoort, draait op dit moment niet. Probeer het opnieuw zodra het is ingesteld.",
+          "device_gone": "Het apparaat dat dit probleem noemt, staat niet meer in Home Assistant."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Apparaten die Home Assistant heeft toegevoegd, hebben de nieuwe netwerksleutel gemist",
+      "description": "De JUNG HOME-app heeft de netwerksleutel van de mesh {title} vernieuwd, en Home Assistant heeft de vernieuwing tot het einde gevolgd. De app kent de apparaten niet die Home Assistant heeft toegevoegd, dus Home Assistant geeft ze zelf de nieuwe sleutel, maar het apparaat/de apparaten op {addresses} hebben die niet bevestigd. Zorg dat ze stroom hebben en binnen bereik zijn: Home Assistant probeert het bij elke nieuwe Bluetooth-verbinding opnieuw. Een apparaat dat de nieuwe sleutel nooit heeft ontvangen, is niet meer bereikbaar: zet het terug naar de fabrieksinstellingen en voeg het daarna opnieuw toe (verwijder het eerst uit Home Assistant met `junghome_ble.remove_device` of `junghome_ble.reset_pending_device`, met `force`). Nog niet op een echt apparaat geprobeerd. Het probleem verdwijnt als elk zo'n apparaat heeft bevestigd."
+    },
+    "pending_device": {
+      "title": "Een apparaat dat Home Assistant heeft toegevoegd, is niet vastgelegd",
+      "description": "Home Assistant heeft een JUNG-apparaat van de mesh {title} ingeleerd met `junghome_ble.add_device`, maar de configuratie of het vastleggen in de export is mislukt: het apparaat op {addresses} heeft de sleutels van het netwerk, de JUNG HOME-app en de export kennen het niet, en de adressen en elementgroepen ervan blijven gereserveerd zodat geen ander apparaat ze krijgt. Reset het met de actie `junghome_ble.reset_pending_device` (het unicast-adres ervan) en voeg het opnieuw toe; gebruik `force` voor een apparaat dat je al handmatig hebt gereset, of een dat weg is. Nog niet op een echt apparaat geprobeerd. Het probleem verdwijnt als er geen zo'n apparaat meer over is."
+    },
+    "vault_unwritable": {
+      "title": "Apparaatsleutels van JUNG HOME kunnen niet worden opgeslagen",
+      "description": "Home Assistant kon zijn kluis voor de mesh {title} niet schrijven ({path}; laatste fout: {error}) bij het toevoegen van het apparaat op {address}. De kluis bevat de apparaatsleutels van de apparaten die Home Assistant toevoegt, die niets anders heeft totdat de export ze vastlegt, dus het apparaat is niet ingeleerd: het heeft niets ontvangen en is nog steeds nieuw. Dit betekent meestal dat de schijf vol is of dat het bestandssysteem alleen-lezen opnieuw is gekoppeld, vaak door een falende SD-kaart. Maak schijfruimte vrij of herstel de opslag (een bestandssysteem dat alleen-lezen opnieuw is gekoppeld, vereist meestal een herstart van de host) en voeg het apparaat daarna opnieuw toe; bewerk, verwijder of vervang de bestanden van de kluis niet. Nog niet op een echt apparaat geprobeerd. Het probleem verdwijnt vanzelf zodra het schrijven van de kluis lukt."
+    },
+    "carry_over_conflict": {
+      "title": "De JUNG HOME-app heeft een wijziging van Home Assistant aan {title} overschreven",
+      "description": "Home Assistant heeft de export overgenomen die de JUNG HOME-app het laatst aan de gateway gaf en zijn eigen wijzigingen erop gezet, maar de app had intussen dezelfde items gewijzigd. De versie van de app is behouden voor: {paths}. De apparaten bevatten mogelijk nog wat Home Assistant had geschreven: {held}. Controleer die kamers, scènes en koppelingen in de app en in Home Assistant, en stel ze vanaf één kant opnieuw in. De app ziet niet wat Home Assistant toevoegt, totdat hij een bestand importeert. Het probleem verdwijnt bij de volgende overname van de export van de gateway zonder zo'n conflict."
+    },
+    "scene_held": {
+      "title": "Apparaten bevatten nog een verwijderde JUNG HOME-scène op {title}",
+      "description": "Een scène is verwijderd met “Ook als een apparaat niet antwoordt” terwijl sommige van haar apparaten niet bereikbaar waren of weigerden; ze bevatten haar nog en roepen haar op bij elke scène met dat nummer. Scènenummer: apparaten — {members}. Home Assistant geeft geen nieuwe scène deze nummers. Als de apparaten weer bereikbaar zijn, voer dan de actie Ongebruikte scènes verwijderen uit met “Proefrun” uit: die verwijdert deze nummers van ze en het probleem verdwijnt."
+    },
+    "gateway_token_rejected": {
+      "title": "De JUNG HOME Gateway accepteert Home Assistant niet meer",
+      "description": "De JUNG HOME Gateway op {host} weigert de toegang die Home Assistant voor de mesh {title} heeft geregistreerd (waarschijnlijk verwijderd in de JUNG HOME-app onder Instellingen → Gateway → Toegangsrechten). Home Assistant blijft kamers, knopkoppelingen en scènes in zijn eigen export wijzigen, maar geeft die niet meer aan de gateway door, dus de app ziet die wijzigingen niet; de apparaten blijven werken. Home Assistant vraagt opnieuw om toegang: volg zijn verzoek om JUNG HOME opnieuw te authenticeren (Instellingen → Apparaten & diensten; Reparaties toont het ook als verlopen authenticatie) en voer het netwerksleutelwachtwoord van de gateway in of keur het nieuwe toegangsverzoek goed in de app. Het probleem verdwijnt zodra de gateway Home Assistant weer accepteert; de actie Gateway synchroniseren geeft dan de sindsdien gemaakte wijzigingen door."
+    },
+    "seq_store_lost": {
+      "title": "Volgnummers van de JUNG HOME-mesh {title} verloren",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Verdergaan voorbij de al verzonden nummers",
+            "description": "De volgnummeropslag van deze integratie (`.storage/junghome_ble.seq.*`) bevat geen bruikbaar record voor het adres {unicast} van Home Assistant, hoewel dat adres al eerder heeft verzonden. Opnieuw bij 0 beginnen zou volgnummers hergebruiken die de apparaten al hebben gezien: ze zouden Home Assistant negeren, en elk hergebruikt nummer verzwakt de versleuteling van de mesh. De opslag uit een back-up herstellen doet hetzelfde — een oudere kopie herhaalt elk nummer dat sinds het maken ervan is verzonden — dus herstel geen `junghome_ble.seq.*`-bestanden. Bevestig om Home Assistant 1 048 576 nummers voorbij de laatste waarde te laten verdergaan die het nog kan lezen (4 194 304 voorbij de ondergrens die het samen met de teller bijhoudt in `junghome_ble.seq.*.floor`, of voorbij 0 als er geen meer is) en de integratie opnieuw in te stellen."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "floor_not_written": "De volgnummerondergrens (`.storage/junghome_ble.seq.*.floor`) kon niet worden geschreven: er is niets gewijzigd en de integratie blijft gestopt. Controleer de schijf waarop de configuratie van Home Assistant staat en repareer het probleem daarna opnieuw."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Volgnummers van JUNG HOME kunnen niet worden opgeslagen",
+      "description": "Home Assistant kan de volgnummeropslag van de mesh {title} al meer dan een minuut niet schrijven ({path}; laatste fout: {error}). Elk bericht aan de apparaten draagt een nieuw volgnummer, en Home Assistant verstuurt alleen nummers die het heeft opgeslagen, zodat een herstart er nooit een herhaalt: tot het schrijven lukt, stuurt het niets naar de mesh — opdrachten mislukken en de status wordt niet vernieuwd. Dit betekent meestal dat de schijf vol is of dat het bestandssysteem alleen-lezen opnieuw is gekoppeld, vaak door een falende SD-kaart. Maak schijfruimte vrij of herstel de opslag (een bestandssysteem dat alleen-lezen opnieuw is gekoppeld, vereist meestal een herstart van de host); bewerk, verwijder of vervang de bestanden van de opslag niet. Het probleem verdwijnt vanzelf zodra het schrijven lukt en het verzenden wordt hervat."
+    },
+    "address_in_use": {
+      "title": "Het JUNG HOME-adres van Home Assistant is bezet",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Home Assistant naar {suggestion} verplaatsen",
+            "description": "In de export van de mesh {title} bezet een node het unicast-adres {unicast} waarvan Home Assistant verzendt. Beide zouden voor één zender worden aangezien: de apparaten verwerpen een van beide als herhaling, en antwoorden gaan naar de verkeerde. Bevestig om Home Assistant het vrije adres {suggestion} te geven en de integratie opnieuw in te stellen, zoals Herconfigureren → Geavanceerd → Ons unicast-adres doet. Zorg dat geen andere mesh-client (de opdrachtregeltools van deze integratie, een andere Home Assistant) vanaf {suggestion} verzendt. Volgnummers worden per adres bijgehouden: het nieuwe adres zet zijn eigen record voort, of begint ver genoeg als Home Assistant er geen voor heeft, zodat geen nummer twee keer wordt verzonden. Nog niet op echte apparaten geverifieerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "cannot_load": "De export van het item kon niet worden gelezen, dus er kan geen vrij adres worden bepaald: er is niets veranderd. Laad een nieuwe export onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren.",
+          "no_free_address": "De export laat geen adres vrij voor Home Assistant: er is niets veranderd. Controleer de export onder Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren.",
+          "address_taken": "{suggestion} is niet meer vrij in de export (die is intussen gewijzigd): er is niets veranderd. Repareer het probleem opnieuw voor een nieuw voorstel."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Het JUNG HOME-adres van Home Assistant kan worden uitgedeeld",
+      "description": "Het unicast-adres {unicast} waarvan Home Assistant in de mesh {title} verzendt, ligt binnen het adresbereik van een van de provisioners van de app, of werd gebruikt door een verwijderde node. Het blijft werken tot de app daar een node inleert; verplaats Home Assistant vóór die tijd naar een vrij adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres; {suggestion} is vrij)."
+    },
+    "sequence_space_low": {
+      "title": "Volgnummers van de JUNG HOME-mesh raken op",
+      "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Elke zender stopt aan het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update), die de JUNG HOME Gateway zelf start; Home Assistant volgt die, maar start er zelf geen. Houd de gateway van stroom voorzien en verbonden met de mesh; zonder gateway stopt de mesh zodra een zender zonder nummers zit. Het probleem verdwijnt vanzelf na de update."
+    },
+    "iv_index_mismatch": {
+      "title": "De JUNG HOME-mesh staat op een andere IV-index",
+      "description": "De mesh {title} staat op IV-index {mesh}, de volgnummeropslag van Home Assistant op {ours}: te ver uit elkaar voor Home Assistant om te volgen (het volgt de mesh tot 42 vooruit, hoogstens eens per 192 uur, en nooit terug). De apparaten negeren Home Assistant intussen. Dit gebeurt als Home Assistant weg was tijdens veel IV-updates, als zijn opslag (`.storage/junghome_ble.seq.*`) bij een andere mesh hoort, of als beacons die met de netwerksleutel zijn vervalst hem vooruit hebben geduwd. Geef Home Assistant een nieuw unicast-adres (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren → Geavanceerd → Ons unicast-adres): daar begint het bij de IV-index van de mesh. Herstel de opslag niet uit een back-up en bewerk hem niet: een ouder of bewerkt record herhaalt volgnummers die de apparaten al hebben gezien, en de volgende start overschrijft een handmatige bewerking toch. Het probleem verdwijnt vanzelf als er een beacon binnen bereik binnenkomt."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant loopt voor op de IV-index van de JUNG HOME-mesh",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Terug naar de IV-index van de mesh",
+            "description": "De mesh {title} staat op IV-index {mesh}, de volgnummeropslag van Home Assistant op {ours} — daarvoor, wat de mesh nooit is: de apparaten negeren Home Assistant, en het kan geen mesh volgen die achterloopt. Dit gebeurt als zijn opslag (`.storage/junghome_ble.seq.*`) bij een andere mesh hoort, of als beacons die met de netwerksleutel zijn vervalst hem vooruit hebben geduwd. Bevestig om Home Assistant terug te zetten naar de IV-index van de mesh en de integratie opnieuw in te stellen: de volgnummers gaan verder boven elk nummer dat het vanaf die index heeft verzonden, zodat er geen twee keer wordt gebruikt. Herstel de opslag in plaats daarvan niet uit een back-up en bewerk hem niet: een ouder of bewerkt record herhaalt nummers die de apparaten al hebben gezien. De andere weg terug is een nieuw unicast-adres voor Home Assistant (Instellingen → Apparaten & diensten → JUNG HOME → Herconfigureren). Nog niet op echte apparaten geverifieerd: een IV-index die voorloopt op de mesh is nog niet op een echte mesh gezien."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "iv_index_not_ahead": "Home Assistant loopt niet meer onbereikbaar voor op de mesh, of zijn IV-toestand is gewijzigd sinds het probleem is gemeld: er is niets gewijzigd. Als het probleem terugkomt, repareer het dan opnieuw.",
+          "seq_store_not_written": "De volgnummerondergrens (`.storage/junghome_ble.seq.*.floor`) kon niet worden geschreven: er is niets gewijzigd. Controleer de schijf waarop de configuratie van Home Assistant staat en repareer het probleem daarna opnieuw."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME-pucks hebben geen tijdgever",
+      "description": "De mesh {title} heeft JUNG-puck-actoren van het oudere type ({pucks}): die krijgen hun tijd van een tijdgever, een apparaat op netstroom dat de tijd aan ze doorgeeft. Geen enkel apparaat van de mesh is er een, dus de timers van de pucks lopen uit de pas. Schakel de schakelaar *Tijdgever* in (een configuratie-entiteit, standaard uitgeschakeld) van één apparaat dat altijd stroom heeft, zoals een stopcontact of een mini-actor; de JUNG HOME-app kiest er zelf een als hij een puck configureert. Nog niet op echte apparaten geverifieerd. Het probleem verdwijnt zodra een apparaat de tijdgever is."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Kamer instellen",
+      "description": "Plaatst JUNG HOME-lampen en -stopcontacten in een kamer van de mesh (de “area” van de app). Een kamer die nog niet bestaat, wordt alleen aangemaakt met “Kamer aanmaken”, zodat een verkeerd getypte naam wordt geweigerd. Het apparaat verlaat elke andere kamer; knoppen die al met de kamer zijn gekoppeld, sturen het vanaf dan mee aan. De mesh-export wordt herschreven en Home Assistant volgt die zonder de integratie te herladen. Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "room": {
+          "name": "Kamer",
+          "description": "Naam van de kamer in de JUNG HOME-app."
+        },
+        "create": {
+          "name": "Kamer aanmaken",
+          "description": "Maakt de kamer aan als de mesh geen kamer met die naam heeft. Uit: een onbekende naam wordt geweigerd."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Aan kamer toevoegen",
+      "description": "Plaatst JUNG HOME-lampen, -stopcontacten en -jaloezieën ook in een kamer van de mesh: ze blijven in de kamers waarin ze al staan, omdat de app een apparaat in meerdere kamers laat staan. Een kamer die nog niet bestaat, wordt alleen aangemaakt met “Kamer aanmaken”. Knoppen die al met de kamer zijn gekoppeld, sturen ze vanaf dan mee aan. De mesh-export wordt herschreven en Home Assistant volgt die zonder de integratie te herladen. Nog niet op echte apparaten geverifieerd. Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "room": {
+          "name": "Kamer",
+          "description": "Naam van de kamer in de JUNG HOME-app."
+        },
+        "create": {
+          "name": "Kamer aanmaken",
+          "description": "Maakt de kamer aan als de mesh geen kamer met die naam heeft. Uit: een onbekende naam wordt geweigerd."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Uit kamer verwijderen",
+      "description": "Haalt JUNG HOME-lampen, -stopcontacten en -jaloezieën uit een kamer van de mesh; ze blijven in hun andere kamers, en een apparaat kan in geen enkele kamer terechtkomen. Een apparaat dat een knop via zijn koppeling met de kamer aanstuurt, wordt geweigerd tenzij “Ook als een knop het aanstuurt” aan staat: de kamer verlaten ontkoppelt het dan ook van die knop. De mesh-export wordt herschreven en Home Assistant volgt die zonder de integratie te herladen. Nog niet op echte apparaten geverifieerd. Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "room": {
+          "name": "Kamer",
+          "description": "Naam van de kamer in de JUNG HOME-app."
+        },
+        "force": {
+          "name": "Ook als een knop het aanstuurt",
+          "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Kamer aanmaken",
+      "description": "Maakt een lege kamer aan in de mesh-export (er wordt niets naar de apparaten verzonden). Home Assistant geeft haar het hoogste vrije groepsadres uit het bereik van de app: de app ziet haar pas als hij een bestand importeert, en geeft zijn eigen volgende kamer het laagste vrije adres. Antwoordt op verzoek het groepsadres van de kamer. Alleen voor beheerders.",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "Naam van de nieuwe kamer."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Kamer hernoemen",
+      "description": "Hernoemt een kamer in de mesh-export (er wordt niets naar de apparaten verzonden). Alleen voor beheerders.",
+      "fields": {
+        "room": {
+          "name": "Kamer",
+          "description": "Huidige naam van de kamer."
+        },
+        "new_name": {
+          "name": "Nieuwe naam",
+          "description": "De nieuwe naam."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Kamer verwijderen",
+      "description": "Verwijdert een kamer: de apparaten verlaten haar, knoppen die met de kamer zijn gekoppeld verliezen hun functie, en de kamer wordt uit de mesh-export verwijderd. De apparaten zelf blijven bedienbaar. Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "room": {
+          "name": "Kamer",
+          "description": "Naam van de te verwijderen kamer."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Knop koppelen",
+      "description": "Koppelt een knop van een drukknop of een melder aan een lamp, een stopcontact, een jaloezie, een kamerthermostaat, de gateway, een kamer of een scène, precies zoals de knopkoppeling van de JUNG HOME-app: de vorige koppeling van de knop wordt verwijderd, de knop wordt met het doel verbonden en zijn knopmodus wordt ingesteld (een melder heeft er geen en stuurt maar één apparaat aan). De mesh-export wordt herschreven en Home Assistant volgt die zonder de integratie te herladen. Een melder als bron en de temperatuurmodus zijn nog niet op echte apparaten geverifieerd. Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "key_entity": {
+          "name": "Knop",
+          "description": "De knopgebeurtenis-entiteit van de knop, of een entiteit van een melder."
+        },
+        "key_device": {
+          "name": "Knopapparaat",
+          "description": "Het drukknopapparaat met de knop (samen met “Knopletter” als het meerdere knoppen heeft), of een melder."
+        },
+        "key": {
+          "name": "Knopletter",
+          "description": "Welke knop van het apparaat: A, B, C of D; E1 of E2 voor een ingang van een mini-actor."
+        },
+        "target_entity": {
+          "name": "Doelentiteit",
+          "description": "De lamp, het stopcontact, de jaloezie of de kamerthermostaat die de knop moet bedienen."
+        },
+        "target_device": {
+          "name": "Doelapparaat",
+          "description": "Het apparaat dat de knop moet bedienen: een lamp, een stopcontact, of de gateway (de knop meldt dan klikken, dubbelklikken en vasthouden aan Home Assistant)."
+        },
+        "room": {
+          "name": "Doelkamer",
+          "description": "De kamer waarvan de knop de lampen of stopcontacten moet bedienen."
+        },
+        "scene": {
+          "name": "Doelscène",
+          "description": "De scène die de knop op elk apparaat moet oproepen, op nummer of op naam (knopmodus scène; laat “Modus” leeg). Nog niet op een echt apparaat geprobeerd."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Wat de knop doet: light (aan/uit en dimmen), switch (aan/uit), move (zonwering; ongetest), gateway (gebeurtenissen melden), lock (de kant omhoog / aan vergrendelt een lamp of stopcontact in zijn huidige toestand, de kant omlaag / uit ontgrendelt hem; nog niet op echte apparaten geverifieerd), temperature (het setpoint van een kamerthermostaat; nog niet op echte apparaten geverifieerd), of voor kamers light_and_switch (lampen en stopcontacten samen). Leeg gelaten volgt de modus het doel."
+        },
+        "target_element": {
+          "name": "Doelelement",
+          "description": "Alleen voor apparaatdoelen: stuur met alleen de dimclient van de knop een ander deel van het doel aan, color_temperature (de kleurtemperatuur van een tunable-white-lamp, modus light) of slat (de lamellen van een jaloezie, modus move). Nog niet op echte apparaten geverifieerd."
+        },
+        "lock_seconds": {
+          "name": "Vergrendeltijd",
+          "description": "Alleen modus lock: hoe lang een vergrendeling door de knop duurt, in seconden (0 of leeg: tot de knop haar opheft). Nog niet op echte apparaten geverifieerd."
+        },
+        "room_area": {
+          "name": "Kamer via ruimte",
+          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+        },
+        "scene_entity": {
+          "name": "Scène-entiteit",
+          "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Knopfunctie wissen",
+      "description": "Geeft een knop van een drukknop geen functie: de koppeling met een apparaat, de gateway of een kamer wordt verwijderd (“Geen functie” in de app). Antwoordt hoeveel van zijn berichten de apparaten hebben toegepast, of de mesh-export is geschreven en welke apparaten zijn gewijzigd; met “Proefrun” in plaats daarvan wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "key_entity": {
+          "name": "Knop",
+          "description": "De knopgebeurtenis-entiteit van de knop."
+        },
+        "key_device": {
+          "name": "Knopapparaat",
+          "description": "Het drukknopapparaat met de knop (samen met “Knopletter” als het meerdere knoppen heeft)."
+        },
+        "key": {
+          "name": "Knopletter",
+          "description": "Welke knop van het apparaat: A, B, C of D; E1 of E2 voor een ingang van een mini-actor."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Scène aanmaken",
+      "description": "Maakt een lege scène aan in de mesh-export (er wordt niets naar de apparaten verzonden). Sla er apparaten in op met “Scène opslaan”. Home Assistant geeft haar het hoogste vrije scènenummer uit het bereik van de app: de app ziet haar pas als hij een bestand importeert, en geeft zijn eigen volgende scène het laagste vrije nummer. Antwoordt op verzoek met het scènenummer. Alleen voor beheerders.",
+      "fields": {
+        "name": {
+          "name": "Naam",
+          "description": "Naam van de nieuwe scène."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Scène hernoemen",
+      "description": "Hernoemt een scène in de mesh-export (er wordt niets naar de apparaten verzonden). Alleen voor beheerders.",
+      "fields": {
+        "scene": {
+          "name": "Scène",
+          "description": "Huidige naam of nummer van de scène."
+        },
+        "new_name": {
+          "name": "Nieuwe naam",
+          "description": "De nieuwe naam."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "scene_entity": {
+          "name": "Scène-entiteit",
+          "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Scène opslaan",
+      "description": "Slaat de huidige toestand van JUNG HOME-lampen, -stopcontacten, -jaloezieën en -thermostaten op in een scène, zoals “apparaat in scène opslaan” in de app doet: zet de apparaten eerst zoals de scène ze moet achterlaten en roep dit dan aan. Elk apparaat slaat zijn toestand onder de scène op (Scene Store) samen met de JUNG-beschrijving ervan, en de mesh-export legt het lid vast. Home Assistant volgt die zonder de integratie te herladen. Met een opgegeven toestand (actie, helderheid, kleurtemperatuur, temperatuur) wordt elk apparaat eerst daarop gezet en wordt gewacht tot die is bereikt; een jaloezie met een opgegeven positie wordt niet bewogen, de scène slaat die positie ervoor op. Alleen voor beheerders.",
+      "fields": {
+        "scene": {
+          "name": "Scène",
+          "description": "Naam of nummer van de scène (aangemaakt met “Scène aanmaken” of in de app)."
+        },
+        "action": {
+          "name": "Actie",
+          "description": "Schakel de lampen en stopcontacten vóór het opslaan in of uit."
+        },
+        "brightness_pct": {
+          "name": "Helderheid",
+          "description": "Dim de lampen vóór het opslaan tot deze helderheid (de actie is dan aan)."
+        },
+        "color_temp_kelvin": {
+          "name": "Kleurtemperatuur",
+          "description": "Zet de tunable-white-lampen vóór het opslaan op deze kleurtemperatuur."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Positie waarnaar de scène een jaloezie beweegt: 0 gesloten, 100 open."
+        },
+        "tilt_position": {
+          "name": "Lamellenstand",
+          "description": "Lamellenstand waarnaar de scène een jaloezie beweegt; zonder opgave de positie van de jaloezie."
+        },
+        "temperature": {
+          "name": "Temperatuur",
+          "description": "Zet de thermostaten vóór het opslaan op deze temperatuur."
+        },
+        "scene_entity": {
+          "name": "Scène-entiteit",
+          "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Op te slaan toestand",
+          "description": "Zet de apparaten eerst in deze toestand; leeg gelaten wordt hun huidige toestand opgeslagen."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Uit scène verwijderen",
+      "description": "Haalt JUNG HOME-lampen, -stopcontacten, -jaloezieën en -thermostaten uit een scène: elk apparaat vergeet de scène (Scene Delete) en de mesh-export laat het lid vallen. Home Assistant volgt die zonder de integratie te herladen. Alleen voor beheerders.",
+      "fields": {
+        "scene": {
+          "name": "Scène",
+          "description": "Naam of nummer van de scène."
+        },
+        "scene_entity": {
+          "name": "Scène-entiteit",
+          "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Scène verwijderen",
+      "description": "Verwijdert een scène: elk apparaat dat haar heeft opgeslagen, vergeet haar, de knoppen van die apparaten die haar oproepen verliezen hun koppelingen, en de scène wordt uit de mesh-export verwijderd. Home Assistant volgt die zonder de integratie te herladen. Antwoordt op verzoek met de apparaten die zijn overgeslagen met “Ook als een apparaat niet antwoordt” (waarvoor “Bevestigen” nodig is) en wat de berichten van de knoppen hebben toegepast; met “Proefrun” wat het zou verzenden en wijzigen. Alleen voor beheerders.",
+      "fields": {
+        "scene": {
+          "name": "Scène",
+          "description": "Naam of nummer van de te verwijderen scène."
+        },
+        "force": {
+          "name": "Ook als een apparaat niet antwoordt",
+          "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        },
+        "scene_entity": {
+          "name": "Scène-entiteit",
+          "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        },
+        "confirm": {
+          "name": "Bevestigen",
+          "description": "Nodig met “Ook als een apparaat niet antwoordt”: een apparaat dat de scène houdt, kan van hieruit niet worden gedwongen haar te vergeten. Niet nodig voor een proefrun."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Ongebruikte scènes verwijderen",
+      "description": "Leest het scèneregister van elk apparaat en toont of verwijdert de scènes die de mesh-export niet kent (geen scène en geen timerscène van de app), zoals de app doet als zijn timerlijst wordt geopend. Een proefrun, tenzij anders opgegeven. Met een gateway werkt het alleen op de actuele export van de gateway; op een netwerk dat vanuit een bestand is ingesteld, vereist verwijderen “De mesh-export is actueel” of de te verwijderen nummers. Antwoordt met de nummers per apparaat. Alleen voor beheerders.",
+      "fields": {
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen de nummers tonen die zouden worden verwijderd; er wordt niets verwijderd. Standaard aan."
+        },
+        "numbers": {
+          "name": "Scènenummers",
+          "description": "Verwijder alleen deze scènenummers (geen ervan een scène uit de mesh-export)."
+        },
+        "confirm_stale_export": {
+          "name": "De mesh-export is actueel",
+          "description": "Voor een netwerk dat vanuit een bestand is ingesteld: het bestand bevat elke scène van de app, ook die sinds de export zijn gemaakt. Zonder deze optie worden alleen de genoemde nummers verwijderd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Gateway synchroniseren",
+      "description": "Geeft de mesh-export die Home Assistant gebruikt door aan de JUNG HOME Gateway, zoals de app na elke wijziging doet. Draait automatisch na elke actie die de export herschrijft; roep het aan om het opnieuw te proberen na de reparatie “export niet aan de gateway doorgegeven”, of nadat je het bestand zelf hebt bewerkt. Alleen voor beheerders.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Schakelprogramma's ophalen",
+      "description": "Leest de schakelprogramma's die JUNG HOME-verbruikers zelf uitvoeren (de pagina Automatisering van de app): tot 16 geheugenplaatsen per verbruiker, elk een trigger op tijd, zonsopgang of zonsondergang op bepaalde weekdagen met wat de verbruiker dan doet. Antwoordt per entiteit met de gebruikte geheugenplaatsen, in de velden die “Schakelprogramma aanmaken” accepteert."
+    },
+    "create_schedule": {
+      "name": "Schakelprogramma aanmaken",
+      "description": "Schrijft een schakelprogramma in de eerste vrije geheugenplaats van elke gekozen JUNG HOME-verbruiker, die het dan zelf uitvoert, zonder Home Assistant. Een schakelprogramma op zonsopgang of zonsondergang stuurt de node eerst de thuislocatie van Home Assistant. Antwoordt per entiteit met de gebruikte geheugenplaats. Niet getest op een apparaat. Alleen voor beheerders.",
+      "fields": {
+        "trigger": {
+          "name": "Trigger",
+          "description": "Wanneer het schakelprogramma afgaat: op een tijdstip, of bij zonsopgang of zonsondergang."
+        },
+        "time": {
+          "name": "Tijd",
+          "description": "Tijdstip van een schakelprogramma op tijd."
+        },
+        "not_before": {
+          "name": "Niet vóór",
+          "description": "Een schakelprogramma op zonsopgang of zonsondergang gaat niet eerder af dan dit tijdstip (open als het wordt weggelaten)."
+        },
+        "not_after": {
+          "name": "Niet na",
+          "description": "Een schakelprogramma op zonsopgang of zonsondergang gaat niet later af dan dit tijdstip (open als het wordt weggelaten)."
+        },
+        "offset": {
+          "name": "Verschuiving",
+          "description": "Minuten vóór (negatief) of na zonsopgang of zonsondergang."
+        },
+        "weekdays": {
+          "name": "Weekdagen",
+          "description": "Dagen waarop het schakelprogramma afgaat; elke dag als het wordt weggelaten."
+        },
+        "enabled": {
+          "name": "Ingeschakeld",
+          "description": "Of het schakelprogramma afgaat; een uitgeschakeld programma wacht op “Schakelprogramma inschakelen”."
+        },
+        "action": {
+          "name": "Actie",
+          "description": "Schakel een lamp of stopcontact in of uit."
+        },
+        "brightness_pct": {
+          "name": "Helderheid",
+          "description": "Helderheid waarop een dimmer inschakelt (de actie is dan aan)."
+        },
+        "color_temp_kelvin": {
+          "name": "Kleurtemperatuur",
+          "description": "Kleurtemperatuur van een tunable-white-lamp, in stappen van 100 K."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Positie waarnaar een jaloezie beweegt: 0 gesloten, 100 open."
+        },
+        "tilt_position": {
+          "name": "Lamellenstand",
+          "description": "Lamellenstand van een jaloezie; zonder opgave de positie van de jaloezie."
+        },
+        "temperature": {
+          "name": "Temperatuur",
+          "description": "Gewenste temperatuur van een kamerthermostaat."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Wanneer",
+          "description": "Wanneer het schakelprogramma afgaat."
+        },
+        "what": {
+          "name": "Wat",
+          "description": "Waarop de verbruiker wordt gezet als het afgaat."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Schakelprogramma bijwerken",
+      "description": "Herschrijft een gebruikte geheugenplaats van elke gekozen JUNG HOME-verbruiker ter plekke, zoals bewerken in de app doet, met de velden die “Schakelprogramma aanmaken” accepteert: geef ze allemaal opnieuw op, niets wat wordt weggelaten blijft uit de geheugenplaats behouden. Een schakelprogramma op zonsopgang of zonsondergang stuurt de node eerst de thuislocatie van Home Assistant; als het schrijven mislukt, wordt het oude schakelprogramma van de geheugenplaats teruggeschreven. Nog niet op echte apparaten geverifieerd. Alleen voor beheerders.",
+      "fields": {
+        "slot": {
+          "name": "Geheugenplaats",
+          "description": "Nummer van de te herschrijven geheugenplaats (0–15), zoals “Schakelprogramma's ophalen” en de sensor “Schakelprogramma's” hem tonen."
+        },
+        "trigger": {
+          "name": "Trigger",
+          "description": "Wanneer het schakelprogramma afgaat: op een tijdstip, of bij zonsopgang of zonsondergang."
+        },
+        "time": {
+          "name": "Tijd",
+          "description": "Tijdstip van een schakelprogramma op tijd."
+        },
+        "not_before": {
+          "name": "Niet vóór",
+          "description": "Een schakelprogramma op zonsopgang of zonsondergang gaat niet eerder af dan dit tijdstip (open als het wordt weggelaten)."
+        },
+        "not_after": {
+          "name": "Niet na",
+          "description": "Een schakelprogramma op zonsopgang of zonsondergang gaat niet later af dan dit tijdstip (open als het wordt weggelaten)."
+        },
+        "offset": {
+          "name": "Verschuiving",
+          "description": "Minuten vóór (negatief) of na zonsopgang of zonsondergang."
+        },
+        "weekdays": {
+          "name": "Weekdagen",
+          "description": "Dagen waarop het schakelprogramma afgaat; elke dag als het wordt weggelaten."
+        },
+        "enabled": {
+          "name": "Ingeschakeld",
+          "description": "Of het schakelprogramma afgaat; een uitgeschakeld programma wacht op “Schakelprogramma inschakelen”."
+        },
+        "action": {
+          "name": "Actie",
+          "description": "Schakel een lamp of stopcontact in of uit."
+        },
+        "brightness_pct": {
+          "name": "Helderheid",
+          "description": "Helderheid waarop een dimmer inschakelt (de actie is dan aan)."
+        },
+        "color_temp_kelvin": {
+          "name": "Kleurtemperatuur",
+          "description": "Kleurtemperatuur van een tunable-white-lamp, in stappen van 100 K."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Positie waarnaar een jaloezie beweegt: 0 gesloten, 100 open."
+        },
+        "tilt_position": {
+          "name": "Lamellenstand",
+          "description": "Lamellenstand van een jaloezie; zonder opgave de positie van de jaloezie."
+        },
+        "temperature": {
+          "name": "Temperatuur",
+          "description": "Gewenste temperatuur van een kamerthermostaat."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Wanneer",
+          "description": "Wanneer het schakelprogramma afgaat."
+        },
+        "what": {
+          "name": "Wat",
+          "description": "Waarop de verbruiker wordt gezet als het afgaat."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Schakelprogramma inschakelen",
+      "description": "Laat een geheugenplaats voor schakelprogramma's van JUNG HOME-verbruikers weer afgaan. Alleen voor beheerders.",
+      "fields": {
+        "slot": {
+          "name": "Geheugenplaats",
+          "description": "Nummer van de geheugenplaats (0–15), zoals “Schakelprogramma's ophalen” en de sensor “Schakelprogramma's” hem tonen."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Schakelprogramma uitschakelen",
+      "description": "Voorkomt dat een geheugenplaats voor schakelprogramma's van JUNG HOME-verbruikers afgaat, zonder hem te verwijderen. Alleen voor beheerders.",
+      "fields": {
+        "slot": {
+          "name": "Geheugenplaats",
+          "description": "Nummer van de geheugenplaats (0–15), zoals “Schakelprogramma's ophalen” en de sensor “Schakelprogramma's” hem tonen."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Schakelprogramma verwijderen",
+      "description": "Maakt een geheugenplaats voor schakelprogramma's van JUNG HOME-verbruikers vrij. Alleen voor beheerders.",
+      "fields": {
+        "slot": {
+          "name": "Geheugenplaats",
+          "description": "Nummer van de geheugenplaats (0–15), zoals “Schakelprogramma's ophalen” en de sensor “Schakelprogramma's” hem tonen."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Drempel instellen",
+      "description": "Stelt een drempel in van een JUNG HOME-stopcontact met energiemeting, het profiel Automatisch van de app: als het vermogen van het stopcontact gedurende de duur op het niveau blijft, schakelt het de gekozen lampen en stopcontacten zelf in (inschakeldrempel) of uit (uitschakeldrempel), zonder Home Assistant. Niet getest op een apparaat. Antwoordt op verzoek hoeveel van de koppelberichten de apparaten hebben toegepast. Alleen voor beheerders.",
+      "fields": {
+        "threshold": {
+          "name": "Drempel",
+          "description": "Welke van de twee drempels van het stopcontact moet worden ingesteld."
+        },
+        "power": {
+          "name": "Vermogen",
+          "description": "Vermogensniveau in W (stappen van 0,1 W); zonder opgave het huidige niveau van het stopcontact."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Seconden dat het vermogen op het niveau moet blijven; zonder opgave de huidige duur van het stopcontact."
+        },
+        "enabled": {
+          "name": "Ingeschakeld",
+          "description": "Of de drempel schakelt; een uitgeschakelde drempel behoudt zijn niveau en duur. Weggelaten behoudt de drempel zijn toestand (een nieuwe is ingeschakeld). Uitgeschakeld terwijl de andere drempel ook niet actief is, worden de lampen en stopcontacten ontkoppeld zoals in de app: geef de apparaten opnieuw op bij het inschakelen."
+        },
+        "devices": {
+          "name": "Apparaten",
+          "description": "De lampen en stopcontacten die beide drempels schakelen, ter vervanging van de huidige lijst; weggelaten blijft de lijst. De mesh-export wordt herschreven als die verandert, en Home Assistant volgt hem zonder de integratie te herladen."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Drempels verwijderen",
+      "description": "Wist beide drempels van een JUNG HOME-stopcontact met energiemeting en ontkoppelt de lampen en stopcontacten die ze schakelden, zoals verwijderen in de app doet. Home Assistant volgt de herschreven mesh-export zonder de integratie te herladen als er apparaten zijn ontkoppeld. Antwoordt op verzoek hoeveel van de koppelberichten de apparaten hebben toegepast. Alleen voor beheerders."
+    },
+    "audit_network": {
+      "name": "Netwerk controleren",
+      "description": "Leest, zonder iets te wijzigen, wat de mesh-configuratie van de JUNG HOME-apparaten bevat — relay, network transmit, standaard-TTL, beacon, GATT-proxy en friend, de netwerk- en applicatiesleutels die elk apparaat bevat (op index, nooit een sleutel), en voor elk model zijn publicatie, abonnementen en gebonden applicatiesleutels — en vergelijkt dat met de mesh-export. Antwoordt per apparaat met zijn instellingen en elk gevonden verschil, en toont de apparaten die niet hebben geantwoord. Alle apparaten controleren duurt een paar minuten; batterijapparaten slapen en worden overgeslagen tenzij ze worden genoemd.",
+      "fields": {
+        "device": {
+          "name": "Apparaat",
+          "description": "Controleer alleen de mesh-node achter dit apparaat (een lamp, een knop, een stopcontact of de node zelf). Leeg gelaten wordt elke node op netstroom gecontroleerd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Netwerk exporteren",
+      "description": "Antwoordt met de export die Home Assistant gebruikt — met de kamers, sleutels, koppelingen en scènes die het heeft gewijzigd — als deelbestand van de JUNG HOME-app of als mesh-database, voor een back-up of om in de app te importeren. Alleen voor beheerders: hij bevat alle sleutels van de mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Formaat",
+          "description": "Het deelbestand van de app (JungHome.json) of de mesh-database (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Netwerk",
+          "description": "Het te exporteren JUNG HOME-netwerk; alleen nodig als er meerdere zijn."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Nieuwe apparaten zoeken",
+      "description": "Toont de JUNG-apparaten in de buurt die nog in geen enkel netwerk zitten, met het Bluetooth-adres dat `add_device` nodig heeft."
+    },
+    "add_device": {
+      "name": "Apparaat toevoegen (experimenteel)",
+      "description": "Voegt een nieuw JUNG-apparaat aan het netwerk toe zoals de app zou doen: leert het in met de sterkste methode die het apparaat biedt (Static OOB als het die biedt en de waarde is opgegeven, het HMAC-SHA256-algoritme, anders No OOB zoals de app — zonder authenticatie kan iemand binnen Bluetooth-bereik tijdens het inleren de sleutels van het netwerk onderscheppen), configureert het volgens de regels van de app op basis van wat het apparaat meldt (geweigerd als dat niet is wat een apparaat van hetzelfde product dat al in het netwerk zit heeft), en legt het vast in de export (doorgegeven aan de gateway). Een apparaat waarvan de configuratie mislukt, wordt gereset, zoals de app doet. De elementgroepen ervan krijgen de hoogste vrije groepsadressen uit het bereik van de app (de app ziet het apparaat pas als hij een bestand importeert). Het antwoord toont de uitgevoerde stappen. Vereist de optie *Home Assistant toestaan apparaten toe te voegen* van het item. Alleen voor beheerders. De geauthenticeerde methoden, de configuratieregels en de reset zijn nog niet op echte apparaten geverifieerd.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth-adres",
+          "description": "Het adres dat `find_new_devices` voor het apparaat toont."
+        },
+        "name": {
+          "name": "Naam",
+          "description": "De naam van het nieuwe apparaat."
+        },
+        "config_entry_id": {
+          "name": "Netwerk",
+          "description": "Het JUNG HOME-netwerk waaraan het wordt toegevoegd; alleen nodig als er meerdere zijn."
+        },
+        "static_oob": {
+          "name": "Static OOB-waarde",
+          "description": "Alleen voor een apparaat dat Static OOB-authenticatie biedt: de waarde van 16 of 32 bytes in hexadecimaal, zoals de fabrikant die documenteert (van geen enkel JUNG-apparaat is bekend dat het die biedt). Wordt nooit gelogd. Een apparaat dat alleen geauthenticeerd inleren accepteert, wordt zonder deze waarde geweigerd, en een apparaat dat het niet biedt, wordt met deze waarde geweigerd."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Apparaat verwijderen (experimenteel)",
+      "description": "Reset een JUNG-apparaat (het vergeet het netwerk en wordt weer een nieuw apparaat) en haalt het uit het netwerk zoals de app doet: koppelingen van andere apparaten ermee worden verwijderd, de export legt het als verwijderd vast en wordt aan de gateway doorgegeven. Kan niet ongedaan worden gemaakt. Vereist de optie *Home Assistant toestaan apparaten toe te voegen en te verwijderen* van het item. Vereist “Bevestigen”; met “Proefrun” antwoordt het in plaats daarvan wat het zou verzenden en wijzigen, en is geen bevestiging nodig. Alleen voor beheerders.",
+      "fields": {
+        "device": {
+          "name": "Apparaat",
+          "description": "Het te verwijderen JUNG-apparaat (een van zijn apparaten in Home Assistant)."
+        },
+        "force": {
+          "name": "Ook als het niet antwoordt",
+          "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden."
+        },
+        "confirm": {
+          "name": "Bevestigen",
+          "description": "Nodig om het uit te voeren: een apparaat verwijderen kan niet ongedaan worden gemaakt. Niet nodig voor een proefrun."
+        },
+        "dry_run": {
+          "name": "Proefrun",
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Apparaat in behandeling resetten (experimenteel)",
+      "description": "Reset een JUNG-apparaat dat `add_device` heeft ingeleerd maar niet kon configureren of vastleggen (de reparatie *Een apparaat dat Home Assistant heeft toegevoegd, is niet vastgelegd* toont ze): stuurt het een Config Node Reset met de apparaatsleutel die alleen Home Assistant heeft, zodat het weer een nieuw apparaat wordt, en geeft de adressen ervan vrij. Nog niet op een echt apparaat geprobeerd. Vereist de optie *Home Assistant toestaan apparaten toe te voegen* van het item. Alleen voor beheerders.",
+      "fields": {
+        "uuid": {
+          "name": "Apparaat-UUID",
+          "description": "De UUID van het apparaat, zoals `add_device` of `find_new_devices` hem gaf."
+        },
+        "unicast": {
+          "name": "Unicast-adres",
+          "description": "Het primaire unicast-adres van het apparaat (hexadecimaal, zoals de reparatie het noemt); samen met de UUID moeten beide overeenkomen."
+        },
+        "force": {
+          "name": "Ook als het niet antwoordt",
+          "description": "Vergeet het apparaat, ook al bevestigt het de reset niet (handmatig gereset, of definitief weg)."
+        },
+        "config_entry_id": {
+          "name": "Netwerk",
+          "description": "Het JUNG HOME-netwerk waaraan het apparaat is toegevoegd; alleen nodig als er meerdere zijn."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Apparaat lokaliseren",
+      "description": "Laat een JUNG-apparaat zijn Node Identity adverteren — een Bluetooth-advertentie die alleen de sleutels van deze mesh aan het apparaat koppelen — tot een minuut lang en daarna stoppen, zodat een Bluetooth-scanner kan zien welke radio dat apparaat is. Wijzigt verder niets; het apparaat stopt na een minuut toch vanzelf. Alleen voor beheerders. Nog niet op echte apparaten geverifieerd.",
+      "fields": {
+        "device": {
+          "name": "Apparaat",
+          "description": "Het te lokaliseren JUNG-apparaat (een van zijn apparaten in Home Assistant)."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Seconden adverteren, 5 tot 60 (een apparaat stopt na 60 vanzelf)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Gateway-client goedkeuren",
+      "description": "Toont de API-clients die bij de JUNG HOME Gateway op toegang wachten (een andere integratie, een script) en keurt de genoemde goed, zoals Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken in de app doet. Een goedgekeurde client krijgt de hele API van de gateway, inclusief de netwerkexport met alle mesh-sleutels: keur alleen een client goed die je zelf hebt gestart. Zonder clientnaam toont het ze alleen (schakel het antwoord in). Toegang intrekken blijft bij de app. Alleen voor beheerders, voor een netwerk dat vanaf de gateway is ingesteld. Nog niet op echte apparaten geverifieerd.",
+      "fields": {
+        "client": {
+          "name": "Client",
+          "description": "De naam waaronder de client toegang vraagt, precies zoals vermeld onder `waiting`. Leeg gelaten wordt niets goedgekeurd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Dimmen starten",
+      "description": "Start het omhoog of omlaag dimmen van een JUNG HOME-dimmer, zoals het vasthouden van een wip, tot “Dimmen stoppen” (of het einde van het bereik). Nog niet op een echt apparaat geprobeerd.",
+      "fields": {
+        "direction": {
+          "name": "Richting",
+          "description": "Helderder (omhoog) of donkerder (omlaag)."
+        },
+        "speed": {
+          "name": "Snelheid",
+          "description": "Hoe snel, in procent van het helderheidsbereik per seconde (standaard 20: van uit tot vol in 5 seconden)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Dimmen stoppen",
+      "description": "Stopt een JUNG HOME-dimmer die met “Dimmen starten” in beweging is gezet, op de plek waar hij nu is. Nog niet op een echt apparaat geprobeerd."
+    },
+    "step_dim": {
+      "name": "Met een stap dimmen",
+      "description": "Maakt een JUNG HOME-dimmer een stap helderder of donkerder. Nog niet op een echt apparaat geprobeerd.",
+      "fields": {
+        "step": {
+          "name": "Stap",
+          "description": "Procent van het helderheidsbereik: positief helderder, negatief donkerder."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Verlichting (aan/uit, dimmen)",
+        "switch": "Schakelen (aan/uit)",
+        "move": "Zonwering (ongetest)",
+        "gateway": "Gateway (gebeurtenissen melden)",
+        "light_and_switch": "Lampen en stopcontacten (alleen kamers)",
+        "lock": "Vergrendelen en ontgrendelen (nog niet op echte apparaten geverifieerd)",
+        "temperature": "Temperatuur (kamerthermostaat, ongetest)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Kleurtemperatuur (nog niet op echte apparaten geverifieerd)",
+        "slat": "Lamellen (nog niet op echte apparaten geverifieerd)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Tijdstip",
+        "sunrise": "Zonsopgang",
+        "sunset": "Zonsondergang"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Aan",
+        "off": "Uit"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Maandag",
+        "tue": "Dinsdag",
+        "wed": "Woensdag",
+        "thu": "Donderdag",
+        "fri": "Vrijdag",
+        "sat": "Zaterdag",
+        "sun": "Zondag"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Inschakeldrempel",
+        "switch_off": "Uitschakeldrempel"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Deelbestand van de app (JungHome.json)",
+        "cdb": "Mesh-database (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Helderder",
+        "down": "Donkerder"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Schakelinzet",
+        "two_gang_switch": "Schakelinzet 2-voudig",
+        "dimming": "Diminzet",
+        "two_gang_dimming": "Diminzet 2-voudig",
+        "tw_dimming": "DALI-inzet",
+        "blind": "Jaloezie-inzet",
+        "extension": "Nevenpostinzet",
+        "not_available": "Geen inzet"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Knop boven / onder",
+        "one_rocker": "Wip",
+        "two_left_two_right": "Knop | Knop",
+        "one_left_two_right": "Wip | Knop",
+        "two_left_one_right": "Knop | Wip",
+        "one_left_one_right": "Wip | Wip"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Drukknop 1-voudig",
+        "push_button_2": "Drukknop 2-voudig",
+        "socket_metering": "Stopcontact (met energiemeting)",
+        "socket": "Stopcontact",
+        "switch_actuator_mini": "Schakelactor 1-voudig mini",
+        "blinds_actuator_mini": "Jaloezie-actor 1-voudig mini",
+        "wall_transmitter_1": "Wandzender 1-voudig",
+        "wall_transmitter_2": "Wandzender 2-voudig",
+        "motion_detector_1m": "Bewegingsmelder 1 m",
+        "motion_detector_2m": "Bewegingsmelder 2 m",
+        "presence_detector": "Aanwezigheidsmelder",
+        "room_thermostat": "Kamerthermostaat",
+        "gateway": "Gateway",
+        "switch_actuator_1_energy": "Schakelactor 1-voudig, 2 ingangen, energiemeting",
+        "switch_actuator_2": "Schakelactor 2-voudig, 2 ingangen",
+        "dimmer_actuator": "Dimactor 1-voudig, 2 ingangen",
+        "blinds_actuator": "Jaloezie-actor PP2 1-voudig, 2 ingangen",
+        "dali_actuator": "DALI-actor 1-voudig, 2 ingangen",
+        "mini_sensor_mains": "Mini-sensor 2 ingangen, netstroom",
+        "mini_sensor_battery": "Mini-sensor 2 ingangen, batterij"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh-netwerk",
+        "switch": "Schakelbare lamp",
+        "dimmer": "Dimbare lamp",
+        "ctl": "Tunable-white-lamp (DALI)",
+        "blind": "Jaloezie- / rolluikaandrijving",
+        "push_buttons": "Drukknoppen",
+        "unknown_product": "Product {pid}"
+      }
+    }
+  }
+}
