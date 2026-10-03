@@ -138,7 +138,13 @@ One `light` entity per output. The entity is the device, so its name is the name
   brightness is **not yet verified on air**. When a room is deleted, or no longer has lights, its entity is removed
   from Home Assistant as soon as the export says so (the action's own change, or the next export loaded); so are a
   room's *All sockets / blinds / thermostats in* entities. A renamed room renames them, and a light joining or leaving
-  the room joins or leaves them, without a reload.
+  the room joins or leaves them, without a reload. All four kinds of room entity start **hidden**
+  (`entity_registry_visible_default`, decision M9): outside every area they landed among the unassigned entities of
+  the auto-generated dashboards, one per room and kind, and were exposed to Assist next to the loads they duplicate.
+  Home Assistant applies the flag only when it first registers an entity, so an installation that registered them
+  before 1.1.0 keeps them visible, and a room created later starts hidden too. *Visible* in the entity's settings
+  shows one again (the user guide's [Everyday use](user/everyday-use.md#lights)). The home-wide *All …* entities stay
+  visible.
 - **Hold-to-dim** — dimmers and tunable-white channels can be dimmed the way a held rocker dims them, with three
   actions targeting their `light` entities (not *All lights*, not a switched light):
   **`junghome_ble.start_dim`** (`direction` `up` / `down`, optional `speed` in % of the range per second, 1–100,
@@ -231,6 +237,12 @@ the edges set to *Switch on* (rising) / *Switch off* (falling), that value is th
 plan expects the same with edge evaluation off (the app's "state" mode). **Unverified on hardware** — please
 report what a real input sends. Which of on / off means "open" depends on the contact, so the entity has no device
 class: pick *Door* or *Window* under *Show as* in the entity settings.
+
+**Mesh connection** (device class `connectivity`, on the *mesh network* device, on by default; review-4 U4-7): on
+while Home Assistant has a link to the mesh, or lost one less than the link-loss grace (20 s) ago — exactly while the
+JUNG entities count as available. Always available itself: a link that is down is its state. With *Unreachable
+devices* (see [Sensor](#sensor)) it is what to alert on; the user guide's
+[mesh health dashboard](user/everyday-use.md#mesh-health-dashboard) has an example. **Unverified on air.**
 
 ### Cover
 
@@ -390,6 +402,8 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | IP address | – | – | Yes (diagnostic) | On the gateway's node device: the address the gateway node serves over the mesh (`0xC002`, where the app finds the gateway), read once per connection; redacted from the diagnostics |
 | Proxy node | – | – | Yes (diagnostic) | On the *mesh network* device: the JUNG node Home Assistant is currently connected through (known from the node's Bluetooth address the moment the link is up — JUNG nodes advertise from their MAC — and confirmed by the proxy's own Filter Status), `unknown` while disconnected |
 | Link state | `enum` | – | Yes (diagnostic; off on installations that registered it before 1.1.0) | On the *mesh network* device: where the link stands, the mesh's health at a glance, the JUNG HOME app's connection states and the screens before them — `bluetooth_off` (Home Assistant has no connectable Bluetooth adapter or proxy at all; see the repair issue [No Bluetooth](#repair-issue-no-bluetooth-for-the-jung-home-mesh)), `searching` (no proxy node of the mesh in range), `connecting`, `updating` (connected, the connect-time state refresh running: the app's "the status of your devices is being updated"), `connected`, `failed` (the last attempt failed; the next follows after a back-off, the reason is in the log) and `disconnected` (the link went; the next attempt follows at once) |
+| Unreachable devices | – | – | Yes | On the *mesh network* device (review-4 U4-7): how many mains nodes do not answer — unreachable since a request asked with the full budget went unanswered, or dead with the *Node heartbeats* [option](#options) on — until each is heard again; battery nodes never count. Attribute `devices`, their device names (not recorded in the history). `unavailable` without a link (then *Mesh connection* is off). Pushed at each change. **Unverified on air** |
+| Mesh overview | – | – | Yes (diagnostic) | On the *mesh network* device: the number of mains nodes that answer (0 without a link), and attribute `nodes` with a row per node of the export — `name` (its device's), `area` (the node device's, else the first one of its light, socket or blind devices), `product`, `reachable` (`null` for a battery node: it sleeps), `last_seen` (ISO 8601), `rssi` (dBm), `scanner` (the name of the Bluetooth adapter or proxy with the strongest connectable advertisement of the node), `hops`, `proxy`. Not recorded in the history; written at most once a minute (a change of the link or a node's reachability at once, unless the last write was less than a minute ago). Always available. The user guide's [mesh health dashboard](user/everyday-use.md#mesh-health-dashboard) renders it as a table. **Unverified on air** |
 | Clock offset | `duration` | s | No (diagnostic) | Every mains node with a Time Server (`1200`), on the node device: how many seconds its clock was off Home Assistant's at its last Time Status — the answer each node gives the Time Set broadcast after every connection and once a day, or the answer to the Time Get that follows the daily Time Set; `unknown` while it has not answered, or answered that it has no time. See the repair issue [devices with a wrong clock](#repair-issue-jung-home-devices-with-a-wrong-clock). **Unverified on air** |
 | Last seen | `timestamp` | – | No (diagnostic) | Every node, on the node device: when Home Assistant last heard anything from it (a status, a key press, an answer, a heartbeat); kept without a link, updated at most once a minute |
 | Signal strength | `signal_strength` | dBm | No (diagnostic) | Every node, on the node device: the strength of its last Bluetooth advertisement as the adapter or ESPHome proxy that heard it received it; `unavailable` without a link |
@@ -768,7 +782,7 @@ time read back their old register); one at a time is reliable.
 
 | Device | Represents | Details |
 |---|---|---|
-| *JUNG HOME mesh &lt;uuid&gt;* (service) | The mesh network | Hosts the *Proxy node* sensor |
+| *JUNG HOME mesh &lt;uuid&gt;* (service) | The mesh network | Hosts the central *All …* entities, the link diagnostics (*Proxy node*, *Link state*) and the mesh health entities (*Mesh connection*, *Unreachable devices*, *Mesh overview*) |
 | *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room |
 | Light / socket device | One output of a node | Identifier `<node uuid>-<element location>` (`0001` / `0002`); model *Switched light*, *Dimmable light* or *Tunable-white (DALI) light* for a light, the product name (*Socket (metering)*, *Socket*) for a socket; linked to the node device |
 | Blind device | One blind / shutter / awning drive of a node | Identifier `<node uuid>-<location of the position element>`, the same scheme as a light; model *Blind / shutter drive*; hosts the `cover` and the blind parameters; linked to the node device |

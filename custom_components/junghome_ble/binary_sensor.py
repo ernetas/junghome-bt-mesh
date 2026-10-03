@@ -51,6 +51,11 @@ The app declares the same state under 0x1212 and reads one byte, but never shows
 non-zero is not documented, and the property is **unverified on air**. Read once per link like a config entity, and
 taken from any Status the thermostat publishes.
 
+**Mesh connection** (`JungHomeMeshConnection`, on the mesh device, device class *connectivity*, on by default): on
+while Home Assistant has a link to the mesh, or lost one within the link-loss grace (`JungHomeHub.link_available`,
+the moment the entities go unavailable). Always available: a lost link is what it reports. The one entity to alert
+on for the mesh as a whole; *Unreachable devices* (`sensor.py`) tells which devices do not answer (review-4 U4-7).
+
 **Scheduler function** (`JungHomeRtrSchedulerStatus`, room thermostats, diagnostic, off by default): the read-only
 0x1249 (`RtrSchedulerFunctionStatus`), which the app takes as its automatic operation (0x1246) whenever one is
 reported (`config_entities.PROPERTY_SCHEDULER_STATUS`); **unverified on air**.
@@ -100,6 +105,7 @@ from .const import (
     REFERENCE_RUN_LONGEST,
     REFERENCE_RUN_MARGIN,
     REFRESH_RETRIES,
+    SIGNAL_CONNECTION,
     SIGNAL_DETECTOR,
 )
 from .coordinator import STATUS_HANDLERS, JungHomeHub, register_status_handler
@@ -109,6 +115,7 @@ from .entity import (
     button_gang,
     buttons_device_info,
     health_nodes,
+    hub_device_info,
     node_device_info,
     node_unit_device_info,
 )
@@ -163,8 +170,9 @@ async def async_setup_entry(
 
 
 def build_entities(hub: JungHomeHub) -> list[BinarySensorEntity]:
-    """Return the detectors', thermostats', inputs', nodes', blinds' and gateways' binary sensors."""
-    entities: list[BinarySensorEntity] = [
+    """Return the mesh connection and the detectors', thermostats', inputs', nodes', blinds' and gateways' binary sensors."""
+    entities: list[BinarySensorEntity] = [JungHomeMeshConnection(hub)]
+    entities += [
         JungHomeDetectorOccupancy(hub, detector) for detector in hub.devices.detectors
     ]
     entities += [
@@ -285,6 +293,42 @@ def _on_detector_onoff_set(hub: JungHomeHub, m: AccessMessage, p: bytes) -> None
 
 
 # ----------------------------------------------------------------------------- entities
+
+
+class JungHomeMeshConnection(JungHomeEntity, BinarySensorEntity):
+    """Whether Home Assistant is connected to the mesh: on while the entities count as reachable (module docstring).
+
+    Unverified on air: a link lost on the installation has not been watched through this entity yet.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_translation_key = "mesh_connection"
+
+    def __init__(self, hub: JungHomeHub) -> None:
+        """Bind to the mesh (service) device."""
+        super().__init__(
+            hub, 0, f"{hub.cdb.mesh_uuid.lower()}-mesh-connection", hub_device_info(hub)
+        )
+
+    @property
+    def available(self) -> bool:
+        """Always available: a link that is down is the state worth showing."""
+        return True
+
+    @property
+    def is_on(self) -> bool:
+        """The link is up, or was lost less than the link-loss grace ago."""
+        return self.hub.link_available
+
+    async def async_added_to_hass(self) -> None:
+        """Follow the link signal alone (it also marks the end of the link-loss grace)."""
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_CONNECTION.format(self.hub.entry.entry_id),
+                self._handle_update,
+            )
+        )
 
 
 class JungHomeFaultSensor(JungHomeEntity, BinarySensorEntity):

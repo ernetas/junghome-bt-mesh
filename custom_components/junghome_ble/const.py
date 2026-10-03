@@ -178,6 +178,8 @@ SIGNAL_CONNECTION: Final = f"{DOMAIN}_connection_{{}}"  # per entry id
 SIGNAL_LINK_STATE: Final = f"{DOMAIN}_link_state_{{}}"
 # per entry id and node unicast: the node's link diagnostics changed (last seen, signal, hops, restart)
 SIGNAL_NODE: Final = f"{DOMAIN}_node_{{}}_{{}}"
+# per entry id: a node was marked unreachable or dead, or is back (`JungHomeHub._notify_node`); the mesh health sensors
+SIGNAL_REACHABILITY: Final = f"{DOMAIN}_reachability_{{}}"
 SIGNAL_SCENES: Final = (
     f"{DOMAIN}_scenes_{{}}"  # per entry id: the scene members' actions were (re)read
 )

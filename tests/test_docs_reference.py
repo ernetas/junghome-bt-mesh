@@ -164,6 +164,10 @@ def test_cells() -> None:
     assert gen.enabled_cell({False}) == "No"
     assert gen.enabled_cell({True, False}) == "Depends on the device"
     assert gen.enabled_cell(set()) == gen.DASH
+    assert (
+        gen.enabled_cell({True}, {True}) == "Yes, hidden"
+    )  # a room's central entities
+    assert gen.enabled_cell({True}, {False}) == "Yes"
 
 
 def test_product_names_come_from_the_source(tmp_path: Path) -> None:
@@ -190,11 +194,15 @@ def test_registered_reads_only_the_identity_blocks(tmp_path: Path) -> None:
         "    ]),\n"
         "    'entities': list([\n"
         "      'u light key=None category=None disabled_by=integration device=junghome_ble:a junghome_ble:b',\n"
+        "      'h light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:m',\n"
         "    ]),\n"
         "  })\n"
         "# ---\n",
         encoding="utf-8",
     )
     assert gen.registered(tmp_path) == [
-        gen.Registered("base", "u", "light", None, "None", False, "junghome_ble:a")
+        gen.Registered("base", "u", "light", None, "None", False, "junghome_ble:a"),
+        gen.Registered(
+            "base", "h", "light", "room_lights", "None", True, "junghome_ble:m", True
+        ),
     ]

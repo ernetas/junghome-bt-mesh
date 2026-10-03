@@ -292,13 +292,15 @@ def mock_bluetooth_env(
 ) -> Generator[dict[str, Any]]:
     """Make HA's bluetooth helpers see one proxy node of the fixture network, through one connectable scanner.
 
-    `scanners` is what `async_scanner_count` reports: 0 is a Home Assistant without Bluetooth.
+    `scanners` is what `async_scanner_count` reports: 0 is a Home Assistant without Bluetooth. `heard_by` maps a MAC
+    to what `async_scanner_devices_by_address` reports for it (the scanners hearing it; none by default).
     """
     env: dict[str, Any] = {
         "infos": [service_info],
         "callbacks": [],
         "scans": 0,
         "scanners": 1,
+        "heard_by": {},
     }
 
     def discovered(
@@ -338,6 +340,12 @@ def mock_bluetooth_env(
         patch(
             "custom_components.junghome_ble.coordinator.bluetooth.async_scanner_count",
             side_effect=lambda hass, connectable=True: env["scanners"],
+        ),
+        patch(
+            "custom_components.junghome_ble.coordinator.bluetooth.async_scanner_devices_by_address",
+            side_effect=lambda hass, address, connectable=True: list(
+                env["heard_by"].get(address, [])
+            ),
         ),
     ):
         yield env

@@ -179,6 +179,9 @@
   },
   "entity": {
     "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh connection"
+      },
       "motion": {
         "name": "Motion"
       },
@@ -348,6 +351,22 @@
           "connected": "Connected",
           "failed": "Connection failed",
           "disconnected": "Disconnected"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Unreachable devices",
+        "state_attributes": {
+          "devices": {
+            "name": "Devices"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh overview",
+        "state_attributes": {
+          "nodes": {
+            "name": "Nodes"
+          }
         }
       },
       "illuminance": {

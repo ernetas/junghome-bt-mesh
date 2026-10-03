@@ -211,6 +211,12 @@
           "disconnected": "mdi:bluetooth-off"
         }
       },
+      "unreachable_devices": {
+        "default": "mdi:lan-disconnect"
+      },
+      "mesh_overview": {
+        "default": "mdi:lan"
+      },
       "schedules": {
         "default": "mdi:calendar-clock"
       },

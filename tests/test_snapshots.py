@@ -3,9 +3,9 @@
 The `.ambr` files under `tests/snapshots/` pin it, at two depths. `test_registry_identity` covers every fixture
 network (the base one, blinds, RTR, detectors, puck, the Android share export, and the base network's share export
 set up from the gateway, which adds the gateway's REST status entities): per entity its unique id, platform,
-translation key, category and `disabled_by`, per device its identifiers, connections and `via_device` — what a
-user's installation keys its entities, automations and dashboards on, and what `tools/gen_entity_reference.py`
-builds the user guide's entity reference from. Most of those devices are
+translation key, category, `disabled_by` and a `hidden_by` that is set, per device its identifiers, connections
+and `via_device` — what a user's installation keys its entities, automations and dashboards on, and what
+`tools/gen_entity_reference.py` builds the user guide's entity reference from. Most of those devices are
 "unverified on air" (no blind, RTR, detector or puck has been captured), so a unique id changed there would
 otherwise orphan every user's entities unseen. The base network is also pinned in full, per platform: names,
 capabilities, device classes and the state after the initial refresh; device names, models and serial numbers.
@@ -216,8 +216,9 @@ async def test_registry_identity(
 ) -> None:
     """What a user's installation keys on, for every fixture network, every platform set up as shipped.
 
-    One line per entity, by unique id: platform, translation key, category, `disabled_by` and the device it belongs
-    to; one per device, by identifiers: connections and the device it hangs off (`via_device`, by identifiers:
+    One line per entity, by unique id: platform, translation key, category, `disabled_by`, `hidden_by` when an
+    entity starts hidden (only those: the lines of the others read as before) and the device it belongs to; one per
+    device, by identifiers: connections and the device it hangs off (`via_device`, by identifiers:
     registry ids are random per run). A line each keeps the `.ambr` reviewable.
     """
     source, metadata = NETWORKS[network]
@@ -247,7 +248,8 @@ async def test_registry_identity(
         "entities": sorted(
             f"{e.unique_id} {e.domain} key={e.translation_key} "
             f"category={_value(e.entity_category)} disabled_by={_value(e.disabled_by)} "
-            f"device={by_id.get(e.device_id or '', '-')}"
+            + (f"hidden_by={_value(e.hidden_by)} " if e.hidden_by else "")
+            + f"device={by_id.get(e.device_id or '', '-')}"
             for e in entities
         ),
         "devices": sorted(

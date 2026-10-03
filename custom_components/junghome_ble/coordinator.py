@@ -140,6 +140,7 @@ from .const import (
     SIGNAL_CONNECTION,
     SIGNAL_LINK_STATE,
     SIGNAL_NODE,
+    SIGNAL_REACHABILITY,
     SIGNAL_SCENES,
     SIGNAL_UPDATE,
     STOP_TIMEOUT,
@@ -5063,10 +5064,14 @@ class JungHomeHub:
             )
 
     def _notify_node(self, node: Node) -> None:
+        """Tell the node's entities, and the mesh health sensors, that its reachability changed."""
         for element in node.elements:
             async_dispatcher_send(
                 self.hass, SIGNAL_UPDATE.format(self.entry.entry_id, element.address)
             )
+        async_dispatcher_send(
+            self.hass, SIGNAL_REACHABILITY.format(self.entry.entry_id)
+        )
 
     # ------------------------------------------------------------------ incoming messages
     def element_state(self, addr: int) -> ElementState:

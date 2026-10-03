@@ -8,9 +8,9 @@
 Nothing here is written by hand, so the page cannot drift from the code. The names are the translated entity names
 of `strings.json`; everything else comes from the registry snapshot (`tests/snapshots/test_snapshots.ambr`,
 `test_registry_identity`), the reviewed record of what every synthetic fixture network registers — per entity its
-platform, translation key, category, `disabled_by` and the device it sits on — and from the fixture exports
-themselves, which say which JUNG product each device belongs to (`PRODUCT_NAMES` of `entity.py`, read without
-importing Home Assistant). A translation key with a `_key` twin (`input_state` / `input_state_key`: one key of a
+platform, translation key, category, `disabled_by`, whether it starts hidden and the device it sits on — and from the
+fixture exports themselves, which say which JUNG product each device belongs to (`PRODUCT_NAMES` of `entity.py`,
+read without importing Home Assistant). A translation key with a `_key` twin (`input_state` / `input_state_key`: one key of a
 device with several gets its letter in the name) is one row. A key that no fixture network registers is still
 listed, marked so (`tests/test_docs_reference.py` fails on one).
 
@@ -86,7 +86,7 @@ BLOCK = re.compile(
 ITEM = re.compile(r"^\s+'(?P<line>.*)',$")
 ENTITY = re.compile(
     r"(?P<uid>\S+) (?P<platform>\w+) key=(?P<key>\S+) category=(?P<category>\S+) "
-    r"disabled_by=(?P<disabled>\S+) device=(?P<device>.+)"
+    r"disabled_by=(?P<disabled>\S+)(?: hidden_by=(?P<hidden>\S+))? device=(?P<device>.+)"
 )
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 LOAD_KINDS = {
@@ -106,6 +106,7 @@ class Row:
     states: list[str] = field(default_factory=list)
     categories: set[str] = field(default_factory=set)
     enabled: set[bool] = field(default_factory=set)
+    hidden: set[bool] = field(default_factory=set)
     sits_on: set[str] = field(default_factory=set)
     products: set[int] = field(default_factory=set)
 
@@ -126,6 +127,7 @@ class Registered:
     category: str
     enabled: bool
     device: str
+    hidden: bool = False
 
 
 def display(name: str) -> str:
@@ -164,6 +166,7 @@ def registered(root: Path) -> list[Registered]:
                     category=entity["category"],
                     enabled=entity["disabled"] == "None",
                     device=entity["device"].split(" ")[0],
+                    hidden=entity["hidden"] is not None,
                 )
             )
     return out
@@ -240,6 +243,7 @@ def build_rows(
             continue  # a key strings.json lacks: tests/test_translations.py reports it
         row.categories.add(CATEGORIES.get(entity.category, entity.category))
         row.enabled.add(entity.enabled)
+        row.hidden.add(entity.hidden)
         row.sits_on.add(device_kind(entity, mains))
         node = device_node(entity)
         if node is not None and node in pids:
@@ -270,9 +274,9 @@ def products_cell(products: set[int], universe: set[int], names: dict[int, str])
     return ", ".join(sorted(names.get(pid, f"Product {pid}") for pid in products))
 
 
-def enabled_cell(enabled: set[bool]) -> str:
+def enabled_cell(enabled: set[bool], hidden: set[bool] | None = None) -> str:
     if enabled == {True}:
-        return "Yes"
+        return "Yes, hidden" if hidden == {True} else "Yes"
     if enabled == {False}:
         return "No"
     return "Depends on the device" if enabled else DASH
@@ -294,7 +298,8 @@ def render(
         "- **Category**: *Configuration* entities sit in the device page's configuration block, *Diagnostic* ones in",
         "  its diagnostic block; neither shows up on automatically generated dashboards.",
         "- **On by default**: *No* means the entity exists but is disabled; enable it on the entity's settings page",
-        "  (*Settings → Devices & services → Entities*, pick it, *Enabled*).",
+        "  (*Settings → Devices & services → Entities*, pick it, *Enabled*). *Hidden* means it is on but left off",
+        "  automatically generated dashboards and voice assistants; show it with the same page's *Visible*.",
         "- **Sits on**: the Home Assistant device the entity belongs to. Every JUNG device has a *node device*; its",
         "  lights, sockets and blinds have a device each, and its keys a *push-buttons device* per gang. The *mesh",
         "  network device* stands for the whole installation.",
@@ -325,7 +330,7 @@ def render(
                 cells = [
                     "<br>".join(display(n) for n in row.names),
                     ", ".join(sorted(row.categories)),
-                    enabled_cell(row.enabled),
+                    enabled_cell(row.enabled, row.hidden),
                     ", ".join(sorted(row.sits_on)),
                     products_cell(row.products, universe, names),
                 ]

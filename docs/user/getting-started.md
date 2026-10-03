@@ -98,7 +98,8 @@ shows up as **several Home Assistant devices**, because the app shows it that wa
 - a **push-buttons device** per gang of keys, with an event entity per key (*Button A*, *Button B*, …; *Input E1* /
   *Input E2* on a mini actuator);
 - one **mesh network device** for the whole installation, with *All lights*, *All sockets*, one *All lights in …*
-  per room, and the connection status.
+  per room (hidden at first, see [Everyday use](everyday-use.md#lights)), the connection status, and the
+  [mesh health](everyday-use.md#mesh-health-dashboard): *Mesh connection*, *Unreachable devices* and *Mesh overview*.
 
 Each scene of the app becomes a scene entity. Many settings and diagnostics exist but are **disabled** at first, as
 the app keeps them in its expert mode; the [entity reference](entities.md) lists them all and says which are on.

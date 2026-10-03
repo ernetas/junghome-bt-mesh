@@ -288,12 +288,12 @@ async def test_entities(hass: HomeAssistant, init_detectors: MockConfigEntry) ->
         device.area_id == "wc"
     )  # the room of its relay output, like a load's own device
     # nothing else made a detector entity: the relays are lights, the transmitters' keys are events (the other
-    # binary sensors are the nodes' fault registers and the gateway's API status)
+    # binary sensors are the nodes' fault registers, the gateway's API status and the mesh connection)
     assert sorted(
         e.unique_id
         for e in er.async_entries_for_config_entry(registry, init_detectors.entry_id)
         if e.domain == "binary_sensor"
-        and not e.unique_id.endswith("-fault")
+        and not e.unique_id.endswith(("-fault", "-mesh-connection"))
         and "-gateway_" not in e.unique_id
     ) == sorted([UID_MOTION, UID_OCCUPANCY])
     hub = init_detectors.runtime_data

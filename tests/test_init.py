@@ -108,7 +108,8 @@ async def test_setup_and_unload(
     entities = er.async_entries_for_config_entry(registry, entry.entry_id)
     domains = sorted(e.domain for e in entities)
     assert domains == (
-        ["binary_sensor"] * (6 + 2)  # Fault, one per node; the gateway's API status
+        # Fault, one per node; the gateway's API status; Mesh connection
+        ["binary_sensor"] * (6 + 2 + 1)
         + ["button"] * 13  # Identify, Clear faults per node; Reset consumption
         + ["event"] * 4
         # the loads; All lights; the lights of WC, Living room and Kitchen
@@ -121,8 +122,8 @@ async def test_setup_and_unload(
         # 7 socket sensors + Installed + the proxy and link state diagnostics; key mode per key; schedules and scenes
         # per load; 2 thresholds; last seen, signal, hops and last restart per (mains) node; IV index and the two
         # sequence gauges; two wear counters per light and socket; the gateway's address; the clock offset of the
-        # five nodes with a Time Server; Switches off at per load
-        + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1 + 5 + 6)
+        # five nodes with a Time Server; Switches off at per load; Unreachable devices and Mesh overview
+        + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1 + 5 + 6 + 2)
         # socket, All sockets, the Kitchen's sockets, parameters, Lock, Lock operation and Lock factory reset per
         # device node, night mode, LED colour synchronisation of the 2-gang, previous brightness, sensor values for IoT;
         # Time keeper on the five nodes with a Time Server (the export has a PP2 puck)

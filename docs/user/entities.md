@@ -9,7 +9,8 @@ Every entity the integration can create, by type. What each one does is explaine
 - **Category**: *Configuration* entities sit in the device page's configuration block, *Diagnostic* ones in
   its diagnostic block; neither shows up on automatically generated dashboards.
 - **On by default**: *No* means the entity exists but is disabled; enable it on the entity's settings page
-  (*Settings → Devices & services → Entities*, pick it, *Enabled*).
+  (*Settings → Devices & services → Entities*, pick it, *Enabled*). *Hidden* means it is on but left off
+  automatically generated dashboards and voice assistants; show it with the same page's *Visible*.
 - **Sits on**: the Home Assistant device the entity belongs to. Every JUNG device has a *node device*; its
   lights, sockets and blinds have a device each, and its keys a *push-buttons device* per gang. The *mesh
   network device* stands for the whole installation.
@@ -24,7 +25,7 @@ Explained in [Lights](../ha-integration.md#light).
 |---|---|---|---|---|
 | *(the device's name)* | – | Yes | Light device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Switch actuator 1-gang 2-input energy |
 | All lights | – | Yes | Mesh network device | – |
-| All lights in ‹room› | – | Yes | Mesh network device | – |
+| All lights in ‹room› | – | Yes, hidden | Mesh network device | – |
 
 ## Switches
 
@@ -34,7 +35,7 @@ Explained in [Switches](../ha-integration.md#switch).
 |---|---|---|---|---|
 | *(the device's name)* | – | Yes | Socket device | Socket (metering) |
 | All sockets | – | Yes | Mesh network device | – |
-| All sockets in ‹room› | – | Yes | Mesh network device | – |
+| All sockets in ‹room› | – | Yes, hidden | Mesh network device | – |
 | Automatic operation | Configuration | No | Node device | Room thermostat |
 | Automatically switch off display | Configuration | Yes | Node device | Room thermostat |
 | Boost | Configuration | No | Node device | Room thermostat |
@@ -68,7 +69,7 @@ Explained in [Covers (blinds)](../ha-integration.md#cover).
 |---|---|---|---|---|
 | *(the device's name)* | – | Yes | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |
 | All blinds | – | Yes | Mesh network device | – |
-| All blinds in ‹room› | – | Yes | Mesh network device | – |
+| All blinds in ‹room› | – | Yes, hidden | Mesh network device | – |
 
 ## Climate (room thermostats)
 
@@ -78,7 +79,7 @@ Explained in [Climate (room thermostats)](../ha-integration.md#climate).
 |---|---|---|---|---|
 | *(the device's name)* | – | Yes | Node device | Room thermostat |
 | All thermostats | – | Yes | Mesh network device | – |
-| All thermostats in ‹room› | – | Yes | Mesh network device | – |
+| All thermostats in ‹room› | – | Yes, hidden | Mesh network device | – |
 
 ## Sensors
 
@@ -108,6 +109,7 @@ Explained in [Sensors](../ha-integration.md#sensor).
 | Last restart | Diagnostic | Yes | Node device | every mains-powered device | – |
 | Last seen | Diagnostic | No | Node device | every device | – |
 | Link state | Diagnostic | Yes | Mesh network device | – | Connected, Connected, updating device states, Connecting, Connection failed, Disconnected, No Bluetooth, Searching for a proxy node |
+| Mesh overview | Diagnostic | Yes | Mesh network device | – | – |
 | Mesh sequence numbers used | Diagnostic | Yes | Mesh network device | – | – |
 | Power | – | Yes | Light device, Socket device | Socket (metering), Switch actuator 1-gang 2-input energy | – |
 | Power-on cycles | Diagnostic | No | Light device, Socket device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy | – |
@@ -123,6 +125,7 @@ Explained in [Sensors](../ha-integration.md#sensor).
 | Switch-on threshold | Diagnostic | No | Socket device | Socket (metering) | – |
 | Switches off at | – | No | Light device, Socket device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy | – |
 | Switching cycles | Diagnostic | No | Light device, Socket device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy | – |
+| Unreachable devices | – | Yes | Mesh network device | – | – |
 | Voltage | Diagnostic | No | Socket device | Socket (metering) | – |
 
 ## Binary sensors
@@ -138,6 +141,7 @@ Explained in [Binary sensors](../ha-integration.md#binary-sensor).
 | Cloud problem | Diagnostic | No | Node device | Gateway |
 | Fault | Diagnostic | Yes | Node device, Push-buttons device, Socket device | every mains-powered device |
 | Input state<br>Input state ‹key› | – | No | Push-buttons device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Switch actuator 1-gang 2-input energy |
+| Mesh connection | – | Yes | Mesh network device | – |
 | Motion | – | Yes | Node device | Motion detector 1 m |
 | Network problem | Diagnostic | No | Node device | Gateway |
 | Occupancy | – | Yes | Node device | Presence detector |

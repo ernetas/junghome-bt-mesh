@@ -683,6 +683,11 @@ class JungHomeCentralEntity(JungHomeEntity):
     On the mesh (service) device, not in the room's area, so an area action does not reach the loads twice; the
     state derived from the members' (`watched` are the elements it follows). Available while the link is up, or in its
     loss grace — the messages reach whoever is there.
+
+    A room's entity starts hidden (decision M9): outside every area it landed among the unassigned entities of the
+    auto-generated dashboards, one per room and kind, and was exposed to Assist next to the loads it duplicates.
+    Home Assistant applies the flag when it first registers the entity only, so an installation that registered it
+    before keeps it as it was; the home-wide *All …* entities stay visible.
     """
 
     def __init__(
@@ -701,6 +706,7 @@ class JungHomeCentralEntity(JungHomeEntity):
         else:
             unique_id, address = room_central_id(hub, room, kind), room
             self._attr_translation_key = f"room_{kind}"
+            self._attr_entity_registry_visible_default = False
             self._attr_translation_placeholders = {"room": hub.devices.rooms[room]}
         super().__init__(hub, address, unique_id, hub_device_info(hub))
         self.room = room

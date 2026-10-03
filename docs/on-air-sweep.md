@@ -123,6 +123,7 @@ pass removed the markers of the checks that passed.
 | [B8](#b8--transitions-probe-f4-1) | Transitions probe: which loads fade | DALI, dimmer, switch insert, a scene | load states | **yes** |
 | [B9](#b9--homeassistantupdate_entity-reads-the-device) | *update entity* reads the device | a light, a push-button, the app | a setting, restored | — |
 | [B10](#b10--locate_node-node-identity-f4-15) | `locate_node`: Node Identity on, then off (`msg:op:8047`) | any mains node, a BLE scanner | nothing kept | — |
+| [B11](#b11--mesh-health-a-breaker-off-u4-7) | *Mesh connection*, *Unreachable devices*, *Mesh overview* | a light on its own breaker | power of one light | **yes** |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
 | [C3](#c3--lock-function-of-a-load-0x0009-and-locked-loads-f4-2) | Lock function of a light (`0x0009`), locked loads (F4-2) | a light + its key, a dimmer, the app | locks, undone | **yes** |
@@ -504,6 +505,24 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
   `custom_components/junghome_ble/coordinator.py::JungHomeHub.async_locate`,
   `custom_components/junghome_ble/services.py::_locate_node`,
   `custom_components/junghome_ble/strings.json::services.locate_node.description`.
+
+### B11 · Mesh health: a breaker off (U4-7)
+
+- **Checks:** review-4 brief 45 — *Unreachable devices* counts a mains device that lost power and names it, the
+  *Mesh overview* row says `reachable: false`, both go back when it is heard again; *Mesh connection* follows the
+  link; each row's `scanner` names the adapter or proxy that hears the node.
+- **Needs:** `<light>` on a breaker you may switch off (as in [B7](#b7--a-plan-to-an-unreachable-device-is-refused);
+  the two can share the sitting), a person at the breaker. **Safety:** one light without power for a few minutes.
+- **Do:** note *Unreachable devices* (0) and the *Mesh overview* attribute `nodes`; switch the breaker off; switch
+  `<light>` in Home Assistant until it is unavailable (or, with *Node heartbeats* on, wait four minutes); switch the
+  breaker on and wait until the light answers. Optionally switch the Bluetooth proxy off for a minute and on again.
+- **Capture:** none needed; the entities' history and the log's *did not answer a request* / *is reachable again*.
+- **Pass:** *Unreachable devices* goes to 1 with the light's node device in `devices`, back to 0 when it answers;
+  its `nodes` row shows `reachable: false` within a minute and `true` again; `scanner` names your adapter or proxy;
+  with the proxy off, *Mesh connection* goes off after 20 s and *Unreachable devices* unavailable, both back with it.
+- **Markers:** `custom_components/junghome_ble/binary_sensor.py::JungHomeMeshConnection`,
+  `custom_components/junghome_ble/sensor.py::JungHomeUnreachableDevices`,
+  `custom_components/junghome_ble/sensor.py::JungHomeMeshOverview`.
 
 ## C · Settings, changed and set back
 
@@ -1069,6 +1088,7 @@ citing the session and sequence number, open a regression test for each failure,
 | B6 | | | |
 | B7 | | | |
 | B10 | | | |
+| B11 | | | |
 | C1 | | | |
 | C2 | | | |
 | C3 | | | |

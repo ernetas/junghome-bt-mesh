@@ -18,6 +18,12 @@ be checked.
 "all luminaires" does; **All lights in ‹room›** does the same for one room of the app. Their state is "on" while any
 of their lights is on.
 
+The room entities — *All lights / sockets / blinds / thermostats in ‹room›* — start **hidden**: automatically
+generated dashboards and voice assistants leave them out, since the room's own lights and sockets are there already.
+They work all the same. To show one, open the mesh network device's page, *+ N entities not shown*, pick the entity,
+open its settings (the cog) and switch on *Visible*; to let a voice assistant use it, expose it under *Settings →
+Voice assistants → Expose*. An installation set up before version 1.1.0 keeps its room entities as they were.
+
 **Dimming like a held key:** the actions *Start dimming*, *Stop dimming* and *Dim by a step*
 (`junghome_ble.start_dim`, `stop_dim`, `step_dim`) dim a dimmer up or down the way a held rocker does — useful with
 a button that should dim while it is held (see [Buttons and automations](buttons-and-automations.md#dim-a-light-while-a-key-is-held)).
@@ -108,6 +114,69 @@ see such a change at once, run the action *Update entity* (`homeassistant.update
 Each JUNG device has a **Firmware** entity (disabled at first) that shows whether the JUNG HOME app has newer
 firmware for it. Updates are installed **with the JUNG HOME app**: Home Assistant only compares versions and never
 installs firmware itself.
+
+## Mesh health dashboard
+
+Three entities on the mesh network device tell how the installation is doing (**unverified on air**):
+
+- **Mesh connection** is on while Home Assistant is connected to the mesh. Off means every JUNG entity is
+  unavailable — see [Everything is unavailable](maintenance.md#everything-is-unavailable).
+- **Unreachable devices** counts the mains-powered devices that do not answer, and names them in its attribute
+  `devices`. A device counts from the moment it leaves a request unanswered (or, with the *Node heartbeats* option,
+  stops sending its sign of life) until it is heard again; battery devices sleep and never count. It is unavailable
+  while there is no connection: then *Mesh connection* is the one that tells.
+- **Mesh overview** (a diagnostic) shows how many mains-powered devices answer, and has a row per device in its
+  attribute `nodes`: `name`, `area`, `product`, `reachable` (`true` / `false`; empty for a battery device, which
+  sleeps), `last_seen`, `rssi` (the signal in dBm), `scanner` (the Bluetooth adapter or proxy that hears the device
+  best), `hops` (with *Node heartbeats* on), and `proxy` (the device Home Assistant is connected through). It is
+  updated at most once a minute, and the list is not kept in the history.
+
+The entity ids follow the name of your mesh network device: `sensor.jung_home_mesh_mesh_overview` below stands
+for yours (*Settings → Devices & services → Entities*, search for *Mesh overview*).
+
+**A table of every device.** Edit a dashboard, add a **Markdown** card, switch to the code editor and paste:
+
+```yaml
+type: markdown
+title: JUNG HOME mesh
+content: |
+  {% set overview = 'sensor.jung_home_mesh_mesh_overview' %}
+  {% set nodes = state_attr(overview, 'nodes') or [] %}
+  **{{ states(overview) }}** of {{ nodes | rejectattr('reachable', 'none') | list | count }} mains-powered devices answer.
+
+  | Device | Area | Answers | Last seen | Signal | Heard by | Hops |
+  |:--|:--|:--|:--|--:|:--|--:|
+  {% for n in nodes | sort(attribute='name') -%}
+  | {{ n.name }}{{ ' (proxy)' if n.proxy else '' }} | {{ n.area or '–' }} | {{ 'asleep' if n.reachable is none else ('yes' if n.reachable else '**no**') }} | {{ time_since(as_datetime(n.last_seen)) ~ ' ago' if n.last_seen else '–' }} | {{ n.rssi ~ ' dBm' if n.rssi is not none else '–' }} | {{ n.scanner or '–' }} | {{ n.hops if n.hops is not none else '–' }} |
+  {% endfor %}
+```
+
+**A notification when devices stop answering**, five minutes after it happens (the entity ids as above):
+
+```yaml
+alias: JUNG HOME devices not answering
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.jung_home_mesh_unreachable_devices
+    above: 0
+    for:
+      minutes: 5
+  - trigger: state
+    entity_id: binary_sensor.jung_home_mesh_mesh_connection
+    to: "off"
+    for:
+      minutes: 5
+actions:
+  - action: persistent_notification.create
+    data:
+      title: JUNG HOME
+      message: >-
+        {% if is_state('binary_sensor.jung_home_mesh_mesh_connection', 'off') %}
+        No connection to the mesh.
+        {% else %}
+        Not answering: {{ state_attr('sensor.jung_home_mesh_unreachable_devices', 'devices') | join(', ') }}
+        {% endif %}
+```
 
 ## While Home Assistant is not running
 

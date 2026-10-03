@@ -27,6 +27,12 @@ permissions indicator), *API clients* and the *Error log* (the count of its non-
 attribute), plus *Last export upload*, when Home Assistant last handed its export to the gateway (the app's
 `gateway_last_sync`).
 
+The mesh device has the mesh's health at a glance (review-4 U4-7): *Unreachable devices*, how many mains nodes do
+not answer and their names (`JungHomeUnreachableDevices`, on by default, the entity to alert on), and *Mesh
+overview*, the reachable mains nodes with a row per node — name, area, product, reachable, last seen, signal, the
+Bluetooth adapter or proxy that hears it best, hops, proxy — for a dashboard table (`JungHomeMeshOverview`,
+diagnostic, at most one write a minute). Their lists are kept out of the recorder.
+
 Detector illuminance and battery level are spec-only so far (no such device in the maintainer's network):
 
 - illuminance is the Present Illuminance (`0x0055`) reading `binary_sensor.py` caches from the detector's Sensor
@@ -53,6 +59,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.components import bluetooth
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
@@ -73,6 +80,8 @@ from homeassistant.const import (
 )
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import (
     async_dispatcher_connect,
@@ -102,12 +111,14 @@ from .const import (
     DOMAIN,
     KEEP_AWAKE_INTERVAL,
     LINK_STATES,
+    NODE_DIAGNOSTICS_INTERVAL,
     REFRESH_RETRIES,
     SIGNAL_BATTERY,
     SIGNAL_CONNECTION,
     SIGNAL_GATEWAY_SYNCED,
     SIGNAL_LINK_STATE,
     SIGNAL_NODE,
+    SIGNAL_REACHABILITY,
     SIGNAL_SCENES,
 )
 from .coordinator import JungHomeHub, register_status_handler
@@ -121,6 +132,8 @@ from .entity import (
     load_entity_id,
     metered_device_info,
     node_device_info,
+    node_identifier,
+    product_name,
     socket_device_info,
 )
 from .gateway_api import GatewayConfig, GatewayHealthEntry
@@ -133,7 +146,8 @@ from .gateway_status import (
 )
 from .jhmesh import messages as M
 from .jhmesh import properties as P
-from .jhmesh.devices import Blind, Light, Socket, Thermostat
+from .jhmesh.advert import mac_from_uuid
+from .jhmesh.devices import BATTERY_PIDS, Blind, Light, Socket, Thermostat
 from .jhmesh.properties import parse_version
 from .mesh_config import gateway_sync
 from .node_clocks import time_server
@@ -414,6 +428,8 @@ def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
         entities.append(JungHomeGatewayLastSync(hub, polls.node))
     entities.append(JungHomeProxySensor(hub))
     entities.append(JungHomeLinkStateSensor(hub))
+    entities.append(JungHomeUnreachableDevices(hub))
+    entities.append(JungHomeMeshOverview(hub))
     entities += [
         JungHomeNodeDiagnostic(hub, node, desc)
         for node in hub.cdb.nodes
@@ -1308,6 +1324,225 @@ class JungHomeLinkStateSensor(JungHomeEntity, SensorEntity):
                 self._handle_update,
             )
         )
+
+
+def node_device(
+    hub: JungHomeHub, registry: dr.DeviceRegistry, node: Node
+) -> dr.DeviceEntry | None:
+    """Return the node's device registry entry; None while it is not registered."""
+    device = registry.async_get(hub.device_ids.get(node_identifier(node), ""))
+    return device if isinstance(device, dr.DeviceEntry) else None
+
+
+def node_label(hub: JungHomeHub, registry: dr.DeviceRegistry, node: Node) -> str:
+    """Return the name the node's device shows: the user's rename, else the integration's name for it."""
+    device = node_device(hub, registry, node)
+    names = (device.name_by_user, device.name) if device is not None else ()
+    return next((name for name in names if name), f"{node.name} {node.unicast:04X}")
+
+
+def unreachable_nodes(hub: JungHomeHub) -> list[Node]:
+    """Return the mains nodes that left a request unanswered, or stopped beating (`JungHomeHub.node_alive`)."""
+    return [node for node in health_nodes(hub) if not hub.node_alive(node.unicast)]
+
+
+def best_scanner(hass: HomeAssistant, mac: str | None) -> str | None:
+    """Return the Bluetooth adapter or proxy hearing the node's connectable advertisements best; None if none does."""
+    if mac is None:
+        return None
+    heard = bluetooth.async_scanner_devices_by_address(hass, mac, connectable=True)
+    if not heard:
+        return None
+    return max(heard, key=lambda device: device.advertisement.rssi).scanner.name
+
+
+def mesh_overview(hub: JungHomeHub) -> list[dict[str, Any]]:
+    """One row per node of the export: how Home Assistant hears it (the *Mesh overview* sensor's `nodes`).
+
+    The area is the node device's, else the first one among the devices that hang off it (a light's, a socket's:
+    the room the app put the load in). A battery node sleeps: its `reachable` is None rather than a verdict, and it
+    has no hops. Without a link no node is reachable and none is the proxy.
+    """
+    hass = hub.hass
+    registry = dr.async_get(hass)
+    areas = ar.async_get(hass)
+    child_area: dict[str, str] = {}
+    for device in dr.async_entries_for_config_entry(registry, hub.entry.entry_id):
+        if device.area_id is not None and device.via_device_id is not None:
+            child_area.setdefault(device.via_device_id, device.area_id)
+    link = hub.link_available
+    rows: list[dict[str, Any]] = []
+    for node in hub.cdb.nodes:
+        if node.pid is None:
+            continue
+        own = node_device(hub, registry, node)
+        area_id = (own.area_id or child_area.get(own.id)) if own is not None else None
+        area = areas.async_get_area(area_id) if area_id is not None else None
+        seen = hub.last_seen.get(node.unicast)
+        beat = hub.heartbeats.get(node.unicast)
+        rows.append(
+            {
+                "name": node_label(hub, registry, node),
+                "area": area.name if area is not None else None,
+                "product": product_name(node.pid),
+                "reachable": None
+                if node.pid in BATTERY_PIDS
+                else link and hub.node_alive(node.unicast),
+                "last_seen": seen.isoformat() if seen is not None else None,
+                "rssi": hub.node_rssi.get(node.unicast),
+                "scanner": best_scanner(hass, mac_from_uuid(node.uuid)),
+                "hops": beat.hops if beat is not None else None,
+                "proxy": link and node.unicast == hub.proxy_node,
+            }
+        )
+    return rows
+
+
+class JungHomeUnreachableDevices(JungHomeEntity, SensorEntity):
+    """How many mains devices do not answer, and which (review-4 U4-7): the entity to alert on for single devices.
+
+    A mains node counts while it is unreachable (a request asked with the app's full budget went unanswered) or,
+    with the *Node heartbeats* option, dead (no beat for the timeout) — the nodes whose entities are unavailable for
+    it (`JungHomeHub.node_alive`). Battery nodes sleep and never count. Unavailable without a link: then *Mesh
+    connection* is off and nothing can be told about single devices. Pushed at each change; the names
+    (`devices`) are kept out of the recorder. Unverified on air: no device has been taken off the mains under it.
+    """
+
+    _attr_translation_key = "unreachable_devices"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _unrecorded_attributes = frozenset({"devices"})
+
+    def __init__(self, hub: JungHomeHub) -> None:
+        """Bind to the mesh (service) device."""
+        super().__init__(
+            hub,
+            0,
+            f"{hub.cdb.mesh_uuid.lower()}-unreachable-devices",
+            hub_device_info(hub),
+        )
+
+    @property
+    def available(self) -> bool:
+        """Available while the entities count as reachable (a link, or its loss grace)."""
+        return self.hub.link_available
+
+    @property
+    def native_value(self) -> int:
+        """The number of mains nodes that do not answer."""
+        return len(unreachable_nodes(self.hub))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Their names, as their node devices show them."""
+        registry = dr.async_get(self.hass)
+        return {
+            "devices": [
+                node_label(self.hub, registry, node)
+                for node in unreachable_nodes(self.hub)
+            ]
+        }
+
+    async def async_added_to_hass(self) -> None:
+        """Follow the link and the nodes' reachability, not every element's state."""
+        for signal in (SIGNAL_CONNECTION, SIGNAL_REACHABILITY):
+            self.async_on_remove(
+                async_dispatcher_connect(
+                    self.hass,
+                    signal.format(self.hub.entry.entry_id),
+                    self._handle_update,
+                )
+            )
+
+
+class JungHomeMeshOverview(JungHomeEntity, SensorEntity):
+    """Every node at a glance (review-4 U4-7): the reachable mains nodes, and a row per node for a dashboard table.
+
+    The rows (`nodes`, `mesh_overview`) grow with the mesh and change with every message heard, so they are kept out
+    of the recorder and written at most once per NODE_DIAGNOSTICS_INTERVAL: a change of the link or of a node's
+    reachability is shown at once unless the last write was less than that ago, then when it is over; the time and
+    signal of the nodes heard meanwhile on the next tick. Always available: without a link it shows no node
+    reachable, and when each was last heard. Unverified on air, the `scanner` of each row in particular (which
+    adapter or proxy Home Assistant's Bluetooth stack names for a JUNG node).
+    """
+
+    _attr_translation_key = "mesh_overview"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"nodes"})
+    _written_at = float("-inf")  # the last write (`time.monotonic()`)
+    _pending: CALLBACK_TYPE | None = None  # the write held back by the rate limit
+
+    def __init__(self, hub: JungHomeHub) -> None:
+        """Bind to the mesh (service) device."""
+        super().__init__(
+            hub, 0, f"{hub.cdb.mesh_uuid.lower()}-mesh-overview", hub_device_info(hub)
+        )
+
+    @property
+    def available(self) -> bool:
+        """Always available: when each node was last heard is worth showing without a link."""
+        return True
+
+    @property
+    def native_value(self) -> int:
+        """The number of mains nodes that answer (none without a link)."""
+        if not self.hub.link_available:
+            return 0
+        return len(health_nodes(self.hub)) - len(unreachable_nodes(self.hub))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """A row per node (`mesh_overview`)."""
+        return {"nodes": mesh_overview(self.hub)}
+
+    async def async_added_to_hass(self) -> None:
+        """Follow the link and the nodes' reachability, and look at the rest once per interval."""
+        for signal in (SIGNAL_CONNECTION, SIGNAL_REACHABILITY):
+            self.async_on_remove(
+                async_dispatcher_connect(
+                    self.hass,
+                    signal.format(self.hub.entry.entry_id),
+                    self._schedule_write,
+                )
+            )
+        self.async_on_remove(
+            async_track_time_interval(
+                self.hass,
+                self._tick,
+                timedelta(seconds=NODE_DIAGNOSTICS_INTERVAL),
+            )
+        )
+        self.async_on_remove(self._cancel_pending)
+
+    @callback
+    def _tick(self, _now: datetime) -> None:
+        self._schedule_write()
+
+    @callback
+    def _schedule_write(self) -> None:
+        """Write now, or when the interval since the last write is over (once, however often asked meanwhile)."""
+        if self._pending is not None:
+            return
+        wait = self._written_at + NODE_DIAGNOSTICS_INTERVAL - time.monotonic()
+        if wait > 0:
+            self._pending = async_call_later(self.hass, wait, self._held_back)
+            return
+        self._write()
+
+    @callback
+    def _held_back(self, _now: datetime) -> None:
+        self._pending = None
+        self._write()
+
+    @callback
+    def _write(self) -> None:
+        self._written_at = time.monotonic()
+        self._handle_update()
+
+    @callback
+    def _cancel_pending(self) -> None:
+        if self._pending is not None:
+            self._pending()
+            self._pending = None
 
 
 # The mesh-level diagnostics change with every message sent or received: polled, not pushed.

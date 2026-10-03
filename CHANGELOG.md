@@ -250,6 +250,11 @@
   the gateway got an English paragraph through a placeholder. It has its own text now, naming the gateway's host.
 - The *Link state* sensor is on by default for new installations (review-4 H I-5): it is the mesh's health at a
   glance. An installation that registered it disabled keeps it so; enable it on the *mesh network* device.
+- The room entities *All lights / sockets / blinds / thermostats in ‹room›* start hidden (review-4 U4-12, decision
+  M9): outside every area, they filled the auto-generated dashboards' unassigned entities, one per room and kind, and
+  were exposed to Assist next to the loads they duplicate. They work as before; *Visible* in an entity's settings
+  shows it. Only new registrations: an installation that has them keeps them as they are. The home-wide *All …*
+  entities stay visible.
 - Less work per message on a large mesh (review-4 R4-9, R I-6, R I-10): the device behind an address, a meter's load
   and a tunable-white light's temperature element are looked up in a table instead of a search of every node or
   load (tens of microseconds per lookup with 300 nodes, several per message), the sequence-number store's bound on
@@ -434,6 +439,13 @@
   take the app's 25 % detents, the brightness threshold its 5 lx steps and is unavailable in day mode. **Battery
   devices**: a *Sleep mode* sensor (diagnostic, disabled by default), and an asleep device's error adds that one
   reacting to no key press usually has an empty battery.
+- The mesh's health at a glance (review-4 U4-7), on the *mesh network* device: *Mesh connection* (a connectivity
+  binary sensor, on while Home Assistant is connected), *Unreachable devices* (how many mains devices do not answer,
+  their names as the attribute `devices`) — the two to alert on — and *Mesh overview* (diagnostic: the devices that
+  answer, and a row per device as the attribute `nodes` with its area, product, reachability, last seen, signal,
+  the Bluetooth adapter or proxy hearing it best, hops and proxy role; at most one update a minute). The lists stay
+  out of the recorder. The user guide's *Mesh health dashboard* has a Markdown card that renders the overview as a
+  table, and an alert. Unverified on air.
 
 - Repairs that fix, and a *Learn more* link on every repair (review-4 U4-5, report 5 brief F, U4 F6). Each of the
   integration's repair issues now links to its entry on the user guide's maintenance page, and the reference has a
