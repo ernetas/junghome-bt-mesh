@@ -1,0 +1,2693 @@
+{
+ "domain": "msg",
+ "apk": "JUNG HOME 2.2.0",
+ "method": "Root = android/jadx-out/sources. (1) SIG/foundation opcodes: every constant in no/nordicsemi/android/mesh/opcodes/{ApplicationMessageOpCodes,ConfigMessageOpCodes}.java (the duplicate alias trGENERIC_DELTA_SET is folded into GENERIC_DELTA_SET) -> one item each, id msg:op:<opcode hex, 2 digits if <0x80 else 4 digits>. (2) Message classes: every file in no/nordicsemi/android/mesh/transport/ matching ^(Config|Generic|Health|Light|Scene|Scheduler|Sensor|Time)[A-Za-z]*\\.java whose class 'extends ConfigMessage|ConfigStatusMessage|ApplicationMessage|ApplicationStatusMessage|SensorMessage'; opcode = literal returned by getOpCode(); layout read from assembleMessageParameters()/parseStatusParameters(); key = DevKey for ConfigMessage/ConfigStatusMessage (ConfigMessageState uses node.getDeviceKey(), AKF 0), AppKey otherwise (AKF 1, AID = K4). GenericPropertyGet/GenericPropertyStatus take the opcode at runtime: the Get opcodes are the int literals passed to 'new GenericPropertyGet(' anywhere in the tree (33323/33325/33327 -> msg:op:822b/822d/822f), the Status opcodes are the 0x46/0x4A/0x4E constants. (3) Parse direction: every 'getOpCode() == N' / '!= N' in transport/DefaultNoOperationMessageState.java (plus the ProxyConfigFilterStatus control branch). (4) Vendor (CID 0x0527=1319): all subclasses of VendorModelMessageAcked/VendorModelMessageUnacked outside the Nordic package (grep -rn 'extends VendorModelMessage' -> G7/a..h, H7/a,b) plus every direct 'new f(' call in JungMeshApiImpl; send ints = every integer literal in 337664..337919 (0x052700..0x0527FF) anywhere in sources; receive ints = every literal equal to ((0xC0+k)<<16)|0x2705, k=0..63 (python regex scan of all .java). Wire id = the 3 opcode bytes, msg:op:<b0><27><05>. (5) Vendor sub-commands: JH Scheduler header nibble values from p056e8/h.java (super(0/1/2/15)) crossed with the builders B7/c,d,e,f (Get/Set) and resolvers AbstractC1934m0 subclasses (C1940o0, C1928k0, C1931l0, C1937n0); Scene Action Setup list-vs-single split from A7/b, A7/g and AbstractC1970y1 subclasses (C1, C1967x1) -> msg:sub:<wire opcode>-<subcommand hex | 0 | n>. (6) Proxy configuration messages: constants in opcodes/ProxyConfigMessageOpCodes.java -> msg:proxy:<2-digit hex>. (7) msg:mech:<lowercased class/method name> for the four shared codec/dispatch mechanisms (createVendorOpCode, DefaultNoOperationMessageState, waitForStatusMessage, k0 bit packer). JUNG-layer usage for each SIG item = grep -rnE 'new <Class>\\(' over de A7 B7 C7 D7 E7 G7 H7 P7 p234v7 p245w7 p254x7 p277z7 (senders) and grep -rlw <Class> de/jung/junghome/data/mesh/resolver (parsers); expected-status opcodes = the int assigned to the field returned by d() in every p234v7/A7/B7/C7/D7/p245w7/p254x7/p277z7 MessageBuilder. Second sweep (different angle): (a) listed every p234v7/*,A7-D7,p245w7,p254x7,p277z7 '*MessageBuilder.kt' class and the 'new X(' it builds; (b) grep 'OpCodes\\.' constant uses in JUNG code (numbers 85-100 inlined by jadx as SENSOR_*/LIGHT_LC_*/SCENE_STATUS constants are false positives, not message uses); (c) grep of 'new (Config|Generic|Light|Scene|Scheduler|Sensor|Time|Proxy|Health)' in no/nordicsemi/android/mesh outside transport/ (none: MeshManagerApi builds no messages itself); (d) cross-check against docs/android/vendor-models.md opcode table and docs/parity/captures-inventory.json opcodes. Transport control PDUs (Segment Ack, Heartbeat) are out of this domain. Items sorted by id; line numbers are computed by the generator from the regexes above, so a rerun reproduces the same ids. Third sweep (adversarial ledger pass, different angle; found nothing new): (e) every 'public int getOpCode() { return <literal>; }' in ALL 234 files of no/nordicsemi/android/mesh/transport (no filename filter) plus every constant in all four opcodes/*.java (incl. TransportLayerOpCodes) mapped to an id and diffed against items -> 0 missing; (f) integer-literal scan of every .java outside androidx/android/com.google/kotlin/org/io/okhttp/retrofit/j$ for 0x8000..0x804F, 0x8200..0x82FF, (0xC0..0xFF)<<16|0x2705 and 0x052700..0x0527FF -> 0 ids missing; (g) every 'extends (ApplicationMessage|ConfigMessage|MeshMessage|ApplicationStatusMessage|ConfigStatusMessage|SensorMessage|ProxyConfigMessage|VendorModelMessage*)' outside the Nordic transport package -> only G7/a..h and H7/a,b; (h) every 'new <transport class>(' outside the builder packages -> only JungMeshApiImpl, data/mesh/api/a.java (ConfigNodeReset), data/mesh/c.java (ConfigModelAppBind), all already items; (i) every class 'extends W<' (MessageBuilder) in any package -> the listed packages plus p266y7/a,b (AstroSchedulerRegister-style LBC Admin Property Get/Set of property ids 0xA001+3n / 0xA002+3n via G7/a, G7/b = existing items msg:op:c22705 / c32705; not a new message); (j) getOpCode()==N / case N in DefaultNoOperationMessageState (N = 4870..4880 there are model ids, not opcodes); (k) p056e8/h.java JHSchedulerSubCommand values vs every U8.e implementer (only V8/c, always Schedule) -> no Set sub-command 2.",
+ "items": [
+  {
+   "id": "msg:mech:createvendoropcode",
+   "title": "Vendor opcode wire encoding",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86",
+    "no/nordicsemi/android/mesh/transport/AccessLayer.java:36",
+    "P7/a.java:58"
+   ],
+   "details": "Send: {(byte)(opCode|0xC0), CID lo, CID hi} - only the low 6 bits of the Java int survive (JUNG ints are 0x0527xx). Receive: first byte >= 0xC0 -> 3-byte opcode, opCode = b0&0x3F, CID = b2<<8|b1; JUNG re-encodes status opcodes as b0<<16|b1<<8|b2 (e.g. 0xC52705) in P7.a.e."
+  },
+  {
+   "id": "msg:mech:defaultnooperationmessagestate",
+   "title": "Incoming access/proxy message dispatch",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:223",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:326",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:350"
+   ],
+   "details": "Opcode length from first byte (<0x80 ->1, <=0xBF ->2, else 3). 1-byte branch: 0x02,0x04,0x05,0x5E,0x06,0x40,0x51,0x57,0x58,0x5B,0x52,0x53,0x54,0x5F,0x4A/0x46/0x4E,0x5D; 2-byte branch: config statuses, 0x8212, generic/light/scene/scheduler/time statuses; 3-byte: any CID != 0 -> VendorModelMessageStatus (modelId from pending request or 0). Anything else -> onUnknownPduReceived."
+  },
+  {
+   "id": "msg:mech:k0",
+   "title": "JUNG LSB-first bit packer for vendor payloads",
+   "apk_refs": [
+    "androidx/compose/animation/core/k0.java:98",
+    "androidx/compose/foundation/layout/M.java:64"
+   ],
+   "details": "k0.n(value, nBits) appends from bit 0 of byte 0, field LSB first, spilling into next byte; m() flushes with zero padding. M.f(nBits) reads the same way. Used for JH Scheduler, Scene Action Setup and AstroScheduler property payloads (Nordic BitWriter/BitReader are MSB-first and used with byte reversal for SIG Time/Scheduler)."
+  },
+  {
+   "id": "msg:mech:waitforstatusmessage",
+   "title": "JUNG request/response matching",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/MeshNotificationChannel$waitForStatusMessage$1.java:172",
+    "de/jung/junghome/data/mesh/MeshMessengerImpl$processRequest$2.java:89",
+    "de/jung/junghome/data/mesh/MeshMessengerImpl$bindAppToModel$2.java:53"
+   ],
+   "details": "Every Acknowledged request carries the expected status opcode (MessageBuilder.d()); completion on first message from src with that opcode (or D1 27 05 unless the request is an LBC Admin Get/Set of property 9). If request opcode == expected opcode the app does not wait. Model App Bind waits 3000 ms for 0x803E. Raw read/writeProperty use unacknowledged c.b (no wait). Quirk: GetSubscriptionMessageBuilder (p234v7/A) expects 0x8029 (the Get opcode itself) instead of 0x802A, so it never waits."
+  },
+  {
+   "id": "msg:op:00",
+   "title": "Config AppKey Add",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:5",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyAdd.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyAdd.java:30",
+    "p234v7/C2353d.java:38"
+   ],
+   "details": "Opcode 0x00 (1-byte, int 0); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8003 AppKey Status); DevKey (ConfigMessage: AKF=0, AID=0). Params: 19 B: [0] NetKeyIndex bits0-7, [1] NetKeyIndex bits8-11 | AppKeyIndex bits0-3<<4, [2] AppKeyIndex bits4-11, [3..18] AppKey 16 B (12-bit indexes packed LE via addKeyIndexPadding). Ctor rejects keys != 16 B. JUNG layer builds it. JUNG: AddAppKeyMessageBuilder (p234v7/C2353d) sends it with the network's app key after provisioning, expects 0x8003."
+  },
+  {
+   "id": "msg:op:01",
+   "title": "Config AppKey Update",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyUpdate.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyUpdate.java:24"
+   ],
+   "details": "Opcode 0x01 (1-byte, int 1); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8003); DevKey (ConfigMessage: AKF=0, AID=0). Params: 19 B: packed NetKeyIndex (=appKey.getBoundNetKeyIndex()) + AppKeyIndex (3 B) + new AppKey 16 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:02",
+   "title": "Config Composition Data Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:15",
+    "no/nordicsemi/android/mesh/transport/ConfigCompositionDataStatus.java:18",
+    "no/nordicsemi/android/mesh/transport/ConfigCompositionDataStatus.java:198",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:225",
+    "p234v7/C2373n.java:22"
+   ],
+   "details": "Opcode 0x02 (1-byte, int 2); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Page u8, CID u16, PID u16, VID u16, CRPL u16, Features u16, then elements (Loc u16, NumS u8, NumV u8, SIG model ids u16[], vendor ids CID+ID u16 LE -> stored as (CID<<16)|ID). Dispatched as 1-byte opcode; stored on node unless received via proxy filter; updates mesh network. JUNG waits for it as expected status (p234v7/C2373n.java)."
+  },
+  {
+   "id": "msg:op:03",
+   "title": "Config Model Publication Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:40",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationSet.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationSet.java:32",
+    "p234v7/C2383s0.java:58"
+   ],
+   "details": "Opcode 0x03 (1-byte, int 3); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8019); DevKey (ConfigMessage: AKF=0, AID=0). Params: 11 B (SIG) / 13 B (vendor): ElementAddr u16, PublishAddr u16, AppKeyIndex 12 bit | CredentialFlag<<4 (byte 5 high nibble), PublishTTL u8, PublishPeriod u8 (resolution<<6 | steps&0x3F), PublishRetransmit u8 (intervalSteps<<3 | count&7), ModelId u16 or vendor (CID LE, ModelID LE). JUNG layer builds it. JUNG: PublicationMessageBuilder (p234v7/C2383s0) sends credentialFlag=false, publishTtl=255 (use default TTL), period steps/resolution from the capability (0 if unset), retransmit count 0 / interval 0; the AppKeyIndex argument is applicationKey.getBoundNetKeyIndex() (NetKey index, equal to the AppKey index 0 only by coincidence)."
+  },
+  {
+   "id": "msg:op:04",
+   "title": "Health Current Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:32",
+    "no/nordicsemi/android/mesh/transport/HealthCurrentStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/HealthCurrentStatus.java:40",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:234"
+   ],
+   "details": "Opcode 0x04 (1-byte, int 4); model Health Server 0x0002; app parses; status (unsolicited/publication); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: TestID u8, CompanyID u16 LE, FaultArray u8[] (rest). No Health client send classes exist in the APK (no Health Fault Get/Clear/Test, Period, Attention). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:05",
+   "title": "Health Fault Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:33",
+    "no/nordicsemi/android/mesh/transport/HealthFaultStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/HealthFaultStatus.java:40",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:240"
+   ],
+   "details": "Opcode 0x05 (1-byte, int 5); model Health Server 0x0002; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: TestID u8, CompanyID u16 LE, FaultArray u8[] (rest). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:06",
+   "title": "Config Heartbeat Publication Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:27",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationStatus.java:54",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:257"
+   ],
+   "details": "Opcode 0x06 (1-byte, int 6); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 10 B: Status u8, Destination u16, CountLog u8, PeriodLog u8, TTL u8, Features u16 (relay/proxy/friend/LPN bits), NetKeyIndex u16. Dispatched in the 1-byte opcode branch; stored on ConfigurationServerModel. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:40",
+   "title": "Generic Location Global Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:20",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalStatus.java:14",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalStatus.java:65",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:266",
+    "de/jung/junghome/data/mesh/resolver/S.java:8",
+    "p234v7/N.java:29"
+   ],
+   "details": "Opcode 0x40 (1-byte, int 64); model Generic Location Server 0x100E; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B: GlobalLatitude s32 LE, GlobalLongitude s32 LE, GlobalAltitude s16 LE (other lengths -> notConfigured). Lat = v/(2^31-1)*90, Lon = v/(2^31-1)*180; 0x80000000 = not configured; alt 0x7FFF not configured, 0x7FFE >= 32766. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/N.java)."
+  },
+  {
+   "id": "msg:op:41",
+   "title": "Generic Location Global Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:18",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalSet.java:13",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalSet.java:30",
+    "p234v7/N.java:51"
+   ],
+   "details": "Opcode 0x41 (1-byte, int 65); model Generic Location Setup Server 0x100F; app sends; acked (-> 0x40); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B: Latitude s32 LE = floor((2^31-1)*deg/90) (min -2147483647), Longitude s32 LE = floor((2^31-1)*deg/180), Altitude s16 LE (metres). JUNG layer builds it. JUNG: LocationMessageBuilder (p234v7/N) acked branch: latitude/longitude from capability, altitude (int) metres."
+  },
+  {
+   "id": "msg:op:42",
+   "title": "Generic Location Global Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:19",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalSetUnacknowledged.java:13",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalSetUnacknowledged.java:30",
+    "p234v7/N.java:56"
+   ],
+   "details": "Opcode 0x42 (1-byte, int 66); model Generic Location Setup Server 0x100F; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 10 B layout as Location Global Set. JUNG layer builds it. JUNG: LocationMessageBuilder unacknowledged branch (seen on air from HA as 0x42)."
+  },
+  {
+   "id": "msg:op:44",
+   "title": "Generic Manufacturer Property Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:21",
+    "no/nordicsemi/android/mesh/transport/GenericManufacturerPropertySet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericManufacturerPropertySet.java:22",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:324"
+   ],
+   "details": "Opcode 0x44 (1-byte, int 68); model Generic Manufacturer Property Server 0x1012; app sends; acked (-> 0x46); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 3 B: PropertyID u16 LE, UserAccess u8 (no value, per spec). JUNG layer builds it. JUNG: only from raw writeProperty (JungMeshApiImpl.q1) for SIG model 0x1012; the value argument is dropped (Nordic class has no value field)."
+  },
+  {
+   "id": "msg:op:46",
+   "title": "Generic Manufacturer Property Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:22",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:56",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:319",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:5",
+    "de/jung/junghome/data/mesh/resolver/GenericManufacturerSoftwareVersionPropertyResolver$processPropertyMessage$1.java:5",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:15",
+    "p234v7/Q.java:22",
+    "p234v7/S.java:22",
+    "p234v7/T.java:22"
+   ],
+   "details": "Opcode 0x46 (1-byte, int 70); model Generic Manufacturer Property Server 0x1012; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, UserAccess u8, PropertyValue u8[] (rest). Shared class GenericPropertyStatus for 0x46/0x4A/0x4E. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/Q.java, p234v7/S.java, p234v7/T.java)."
+  },
+  {
+   "id": "msg:op:48",
+   "title": "Generic Admin Property Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:5",
+    "no/nordicsemi/android/mesh/transport/GenericAdminPropertySet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericAdminPropertySet.java:24",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:320",
+    "p234v7/C2364i0.java:50",
+    "p234v7/P0.java:49"
+   ],
+   "details": "Opcode 0x48 (1-byte, int 72); model Generic Admin Property Server 0x1011; app sends; acked (-> 0x4A); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, UserAccess u8, PropertyValue u8[]. JUNG layer builds it. JUNG: PowerOnTimeMessageBuilder (p234v7/C2364i0) writes property 0x006D TOTAL_DEVICE_POWER_ON_TIME and TotalEnergyUseMessageBuilder (p234v7/P0) writes 0x006A TOTAL_DEVICE_ENERGY_USE, value = (int) double as u32 LE, UserAccess 3; also raw writeProperty (JungMeshApiImpl.q1) for SIG model 0x1011."
+  },
+  {
+   "id": "msg:op:4a",
+   "title": "Generic Admin Property Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:6",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:56",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:319",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:5",
+    "de/jung/junghome/data/mesh/resolver/GenericManufacturerSoftwareVersionPropertyResolver$processPropertyMessage$1.java:5",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:15",
+    "p234v7/C2364i0.java:27",
+    "p234v7/P0.java:26"
+   ],
+   "details": "Opcode 0x4A (1-byte, int 74); model Generic Admin Property Server 0x1011; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, UserAccess u8, PropertyValue u8[]. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2364i0.java, p234v7/P0.java)."
+  },
+  {
+   "id": "msg:op:4c",
+   "title": "Generic User Property Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:30",
+    "no/nordicsemi/android/mesh/transport/GenericUserPropertySet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericUserPropertySet.java:22",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:329"
+   ],
+   "details": "Opcode 0x4C (1-byte, int 76); model Generic User Property Server 0x1013; app sends; acked (-> 0x4E); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, PropertyValue u8[]. JUNG layer builds it. JUNG: only from raw writeProperty (JungMeshApiImpl.q1) for SIG model 0x1013."
+  },
+  {
+   "id": "msg:op:4e",
+   "title": "Generic User Property Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:31",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyStatus.java:56",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:319",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:5",
+    "de/jung/junghome/data/mesh/resolver/GenericManufacturerSoftwareVersionPropertyResolver$processPropertyMessage$1.java:5",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:15"
+   ],
+   "details": "Opcode 0x4E (1-byte, int 78); model Generic User Property Server 0x1013; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, UserAccess u8, PropertyValue u8[]. JUNG layer decodes it in a resolver."
+  },
+  {
+   "id": "msg:op:51",
+   "title": "Sensor Descriptor Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:99",
+    "no/nordicsemi/android/mesh/transport/SensorDescriptorStatus.java:14",
+    "no/nordicsemi/android/mesh/transport/SensorDescriptorStatus.java:71",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:272",
+    "de/jung/junghome/data/mesh/resolver/A0.java:21",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:31",
+    "de/jung/junghome/data/mesh/resolver/I1.java:9",
+    "p234v7/E0.java:22"
+   ],
+   "details": "Opcode 0x51 (1-byte, int 81); model Sensor Server 0x1100; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B = PropertyNotFound(PropertyID); else n x 8 B: PropertyID u16, PositiveTolerance 12 bit, NegativeTolerance 12 bit, SamplingFunction u8, MeasurementPeriod u8, UpdateInterval u8. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/E0.java)."
+  },
+  {
+   "id": "msg:op:52",
+   "title": "Sensor Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:109",
+    "no/nordicsemi/android/mesh/transport/SensorStatus.java:14",
+    "no/nordicsemi/android/mesh/transport/SensorStatus.java:71",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:296",
+    "de/jung/junghome/data/mesh/resolver/M1.java:8",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:17",
+    "p234v7/C2347a.java:23",
+    "p234v7/C2349b.java:23"
+   ],
+   "details": "Opcode 0x52 (1-byte, int 82); model Sensor Server 0x1100; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Repeated MPID + raw: Format A (bit0=0): 2 B, Length = ((b0&0x1E)>>1)+1, PropertyID = (b1<<3)|(b0>>5) (11 bit); Format B (bit0=1): 3 B, Length = (b0&0xFE)>>1 (0x7F -> 0), PropertyID = b1|b2 (library ORs without <<8); then Length raw bytes. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2347a.java, p234v7/C2349b.java)."
+  },
+  {
+   "id": "msg:op:53",
+   "title": "Sensor Column Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:97",
+    "no/nordicsemi/android/mesh/transport/SensorColumnStatus.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorColumnStatus.java:53",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:302"
+   ],
+   "details": "Opcode 0x53 (1-byte, int 83); model Sensor Server 0x1100; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, rest kept raw (column data). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:54",
+   "title": "Sensor Series Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:102",
+    "no/nordicsemi/android/mesh/transport/SensorSeriesStatus.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorSeriesStatus.java:53",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:308"
+   ],
+   "details": "Opcode 0x54 (1-byte, int 84); model Sensor Server 0x1100; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE, rest kept raw (X1/X2/Y series). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:55",
+   "title": "Sensor Cadence Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:93",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceSet.java:7",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceSet.java:19",
+    "p234v7/D0.java:50"
+   ],
+   "details": "Opcode 0x55 (1-byte, int 85); model Sensor Setup Server 0x1101; app sends; acked (-> 0x57); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Intended: PropertyID u16, (divisor<<7 | triggerType) u8, TriggerDeltaDown/Up (2x u16 percent*? or 2x characteristic), [StatusMinInterval, FastCadenceLow, FastCadenceHigh missing]. Library bug: SensorCadence.toBytes() returns a fresh zero array of length len(FastCadenceHigh)+len(FastCadenceLow)+len(delta)+4, so the wire payload is all zeros (JUNG call with Bool/Bool/Percent -> 10 zero bytes). JUNG layer builds it. JUNG: SensorCadenceMessageBuilder set: SensorCadence(property, divisor, triggerType, Percent(0.0, 1.0), Bool(true), Bool(true), minInterval) -> serialized as 10 zero bytes because of the toBytes() bug."
+  },
+  {
+   "id": "msg:op:56",
+   "title": "Sensor Cadence Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:94",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceSetUnacknowledged.java:7",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceSetUnacknowledged.java:19"
+   ],
+   "details": "Opcode 0x56 (1-byte, int 86); model Sensor Setup Server 0x1101; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same (zero-filled) payload as Sensor Cadence Set. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:57",
+   "title": "Sensor Cadence Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:95",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceStatus.java:9",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceStatus.java:47",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:278",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:30",
+    "de/jung/junghome/data/mesh/resolver/H1.java:9",
+    "p234v7/D0.java:28"
+   ],
+   "details": "Opcode 0x57 (1-byte, int 87); model Sensor Setup Server 0x1101; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE; if length > 2: PeriodDivisor = b[2], TriggerType = b[3], TriggerDelta (characteristic pair or percent u16/100 at [4..7]), StatusMinInterval u8, FastCadenceLow, FastCadenceHigh (characteristic length derived from total length). Class extends SensorMessage. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/D0.java)."
+  },
+  {
+   "id": "msg:op:58",
+   "title": "Sensor Settings Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:104",
+    "no/nordicsemi/android/mesh/transport/SensorSettingsStatus.java:9",
+    "no/nordicsemi/android/mesh/transport/SensorSettingsStatus.java:52",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:284",
+    "de/jung/junghome/data/mesh/resolver/A0.java:23",
+    "de/jung/junghome/data/mesh/resolver/L1.java:9",
+    "p234v7/I0.java:21"
+   ],
+   "details": "Opcode 0x58 (1-byte, int 88); model Sensor Setup Server 0x1101; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: SensorPropertyID u16 LE, then SensorSettingPropertyID u16[]. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/I0.java)."
+  },
+  {
+   "id": "msg:op:59",
+   "title": "Sensor Setting Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:106",
+    "no/nordicsemi/android/mesh/transport/SensorSettingSet.java:11",
+    "no/nordicsemi/android/mesh/transport/SensorSettingSet.java:27",
+    "p234v7/H0.java:58"
+   ],
+   "details": "Opcode 0x59 (1-byte, int 89); model Sensor Setup Server 0x1101; app sends; acked (-> 0x5B); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: SensorPropertyID u16 LE, SensorSettingPropertyID u16 LE, SensorSettingRaw (characteristic bytes). JUNG layer builds it. JUNG: SensorSettingMessageBuilder always sends the raw value Bool(true) = 0x01 regardless of the capability value (only checks it is non-null)."
+  },
+  {
+   "id": "msg:op:5a",
+   "title": "Sensor Setting Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:107",
+    "no/nordicsemi/android/mesh/transport/SensorSettingSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/SensorSettingSetUnacknowledged.java:27"
+   ],
+   "details": "Opcode 0x5A (1-byte, int 90); model Sensor Setup Server 0x1101; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same layout as Sensor Setting Set. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:5b",
+   "title": "Sensor Setting Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:108",
+    "no/nordicsemi/android/mesh/transport/SensorSettingStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/SensorSettingStatus.java:64",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:290",
+    "de/jung/junghome/data/mesh/resolver/A0.java:22",
+    "de/jung/junghome/data/mesh/resolver/K1.java:9",
+    "p234v7/H0.java:24"
+   ],
+   "details": "Opcode 0x5B (1-byte, int 91); model Sensor Setup Server 0x1101; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: SensorPropertyID u16, SensorSettingPropertyID u16, [Access u8, SettingRaw characteristic] if length > 4. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/H0.java)."
+  },
+  {
+   "id": "msg:op:5c",
+   "title": "Time Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:114",
+    "no/nordicsemi/android/mesh/transport/TimeSet.java:10",
+    "no/nordicsemi/android/mesh/transport/TimeSet.java:20",
+    "p234v7/M0.java:41"
+   ],
+   "details": "Opcode 0x5C (1-byte, int 92); model Time Setup Server 0x1201; app sends; acked (-> 0x5D); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B (spec order, LSB first): TAI_Seconds u40, Subsecond u8, Uncertainty u8, TimeAuthority 1 bit + TAI-UTC Delta 15 bit (stored delta+255), TimeZoneOffset u8 (stored offset+64). Built MSB-first by BitWriter in reverse field order then byte-reversed. taiSeconds passed as Integer (32 bit). JUNG layer builds it. JUNG: TimeMessageBuilder builds MeshTAITime from the capability TAITime (W7/c: TAI epoch 2000-01-01, taiSeconds, subSeconds, uncertainty, authority, taiUtcDelta, timeZoneOffset)."
+  },
+  {
+   "id": "msg:op:5d",
+   "title": "Time Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:115",
+    "no/nordicsemi/android/mesh/transport/TimeStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/TimeStatus.java:82",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:325",
+    "p234v7/M0.java:25"
+   ],
+   "details": "Opcode 0x5D (1-byte, int 93); model Time Server 0x1200; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B (else ignored): same field set as Time Set; TimeZoneOffset = raw-64, UTC delta = raw-255, TAI seconds read into int (getBits(40)). JUNG waits for it as expected status (p234v7/M0.java)."
+  },
+  {
+   "id": "msg:op:5e",
+   "title": "Scene Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:84",
+    "no/nordicsemi/android/mesh/transport/SceneStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/SceneStatus.java:76",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:246",
+    "A7/d.java:24"
+   ],
+   "details": "Opcode 0x5E (1-byte, int 94); model Scene Server 0x1203; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 3 B: StatusCode u8, CurrentScene u16 LE; or 6 B + TargetScene u16 + RemainingTime u8. Updates SceneServer.currentScene/targetScene on success. JUNG waits for it as expected status (A7/d.java)."
+  },
+  {
+   "id": "msg:op:5f",
+   "title": "Scheduler Action Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:89",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionStatus.java:56",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:314",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:29",
+    "de/jung/junghome/data/mesh/resolver/D1.java:9",
+    "B7/g.java:26"
+   ],
+   "details": "Opcode 0x5F (1-byte, int 95); model Scheduler Server 0x1206; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B (else ignored): same 80-bit register entry as Scheduler Action Set. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (B7/g.java)."
+  },
+  {
+   "id": "msg:op:60",
+   "title": "Scheduler Action Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:88",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionSet.java:10",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionSet.java:24",
+    "B7/g.java:50"
+   ],
+   "details": "Opcode 0x60 (1-byte, int 96); model Scheduler Setup Server 0x1207; app sends; acked (-> 0x5F); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 10 B, spec order LSB first: Index 4, Year 7, Month 12 (bitmask), Day 5, Hour 5, Minute 6, Second 6, DayOfWeek 7, Action 4, TransitionTime 8, SceneNumber 16 (ScheduleEntry written in reverse by MSB-first BitWriter then byte-reversed). No Scheduler Action Set Unacknowledged (0x61) class. JUNG layer builds it. JUNG: TimerActionMessageBuilder (B7/g) writes Timer -> ScheduleEntry via ScheduleEntryMapper (E7/i.d): year Specific(last two digits) or Any, month set, day, hour, minute, second, day-of-week set, action, transition time, scene number."
+  },
+  {
+   "id": "msg:op:62",
+   "title": "Light LC Property Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:64",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertySet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertySet.java:24"
+   ],
+   "details": "Opcode 0x62 (1-byte, int 98); model Light LC Setup Server 0x1310; app sends; acked (-> 0x64); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: LightLCPropertyID u16 LE + characteristic bytes. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:63",
+   "title": "Light LC Property Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:65",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertySetUnacknowledged.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertySetUnacknowledged.java:24"
+   ],
+   "details": "Opcode 0x63 (1-byte, int 99); model Light LC Setup Server 0x1310; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: LightLCPropertyID u16 LE + characteristic bytes. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:64",
+   "title": "Light LC Property Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:66",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertyStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertyStatus.java:54",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:690"
+   ],
+   "details": "Opcode 0x64 (1-byte, int 100); model Light LC Setup Server 0x1310; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE + value. Library bug: the ==100 check sits in the 2-byte-opcode branch of DefaultNoOperationMessageState while 0x64 is a 1-byte opcode, so it is unreachable (falls to handleUnknownPdu); the parser also calls get(bArr, 2, len) which would overflow. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8000",
+   "title": "Config AppKey Delete",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:6",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyDelete.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyDelete.java:30"
+   ],
+   "details": "Opcode 0x8000 (2-byte, int 32768); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8003); DevKey (ConfigMessage: AKF=0, AID=0). Params: 3 B: packed NetKeyIndex + AppKeyIndex (same packing as AppKey Add, no key). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8001",
+   "title": "Config AppKey Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyGet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyGet.java:19",
+    "p234v7/C2353d.java:31"
+   ],
+   "details": "Opcode 0x8001 (2-byte, int 32769); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8002); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: NetKeyIndex u16 LE (12 bit). JUNG layer builds it. JUNG: AddAppKeyMessageBuilder read side (ConfigAppKeyGet(networkKey)); expected status is 0x8003, not 0x8002."
+  },
+  {
+   "id": "msg:op:8002",
+   "title": "Config AppKey List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyList.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyList.java:57",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:415"
+   ],
+   "details": "Opcode 0x8002 (2-byte, int 32770); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Status u8, NetKeyIndex (2 B), AppKeyIndexes packed 2-per-3-bytes (odd tail as 2 B). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8003",
+   "title": "Config AppKey Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyStatus.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigAppKeyStatus.java:56",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:399",
+    "p234v7/C2353d.java:24"
+   ],
+   "details": "Opcode 0x8003 (2-byte, int 32771); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B: Status u8, packed NetKeyIndex+AppKeyIndex (3 B). Status codes 0x00..0x11 named in ConfigStatusMessage.getStatusCodeName. JUNG waits for it as expected status (p234v7/C2353d.java)."
+  },
+  {
+   "id": "msg:op:8008",
+   "title": "Config Composition Data Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:14",
+    "no/nordicsemi/android/mesh/transport/ConfigCompositionDataGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigCompositionDataGet.java:14",
+    "p234v7/C2373n.java:29"
+   ],
+   "details": "Opcode 0x8008 (2-byte, int 32776); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x02); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: Page = 0x00 (only page 0 ever requested). JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8009",
+   "title": "Config Beacon Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconGet.java:18",
+    "p234v7/C2375o.java:32"
+   ],
+   "details": "Opcode 0x8009 (2-byte, int 32777); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x800B); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:800a",
+   "title": "Config Beacon Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconSet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconSet.java:15",
+    "p234v7/C2375o.java:41"
+   ],
+   "details": "Opcode 0x800A (2-byte, int 32778); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x800B); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: Secure Network Beacon state 0x00/0x01. JUNG layer builds it. JUNG: ConfigBeaconMessageBuilder (p234v7/C2375o) sends the capability boolean."
+  },
+  {
+   "id": "msg:op:800b",
+   "title": "Config Beacon Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:13",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigBeaconStatus.java:28",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:567",
+    "de/jung/junghome/data/mesh/resolver/r.java:8",
+    "p234v7/C2375o.java:25"
+   ],
+   "details": "Opcode 0x800B (2-byte, int 32779); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: beacon state (==1 -> enabled). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2375o.java)."
+  },
+  {
+   "id": "msg:op:800c",
+   "title": "Config Default TTL Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:16",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlGet.java:18",
+    "p234v7/K0.java:30"
+   ],
+   "details": "Opcode 0x800C (2-byte, int 32780); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x800E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:800d",
+   "title": "Config Default TTL Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:17",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlSet.java:6",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlSet.java:20",
+    "p234v7/K0.java:37"
+   ],
+   "details": "Opcode 0x800D (2-byte, int 32781); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x800E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: TTL (0 or 2..127, else IllegalArgumentException). JUNG layer builds it. JUNG: TTLConfigurationMessageBuilder (p234v7/K0) always sends TTL 5."
+  },
+  {
+   "id": "msg:op:800e",
+   "title": "Config Default TTL Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:18",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlStatus.java:6",
+    "no/nordicsemi/android/mesh/transport/ConfigDefaultTtlStatus.java:27",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:356",
+    "p234v7/K0.java:23"
+   ],
+   "details": "Opcode 0x800E (2-byte, int 32782); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: TTL u8; written to node.setTtl. JUNG waits for it as expected status (p234v7/K0.java)."
+  },
+  {
+   "id": "msg:op:800f",
+   "title": "Config Friend Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:19",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendGet.java:18"
+   ],
+   "details": "Opcode 0x800F (2-byte, int 32783); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8011); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8010",
+   "title": "Config Friend Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:20",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendSet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendSet.java:15"
+   ],
+   "details": "Opcode 0x8010 (2-byte, int 32784); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8011); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: 0x00/0x01. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8011",
+   "title": "Config Friend Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:21",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigFriendStatus.java:28",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:576"
+   ],
+   "details": "Opcode 0x8011 (2-byte, int 32785); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: friend state (==1 -> enabled). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8012",
+   "title": "Config GATT Proxy Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:22",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxyGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxyGet.java:18",
+    "p234v7/C2381r0.java:32"
+   ],
+   "details": "Opcode 0x8012 (2-byte, int 32786); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8014); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8013",
+   "title": "Config GATT Proxy Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:23",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxySet.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxySet.java:27",
+    "p234v7/C2381r0.java:41"
+   ],
+   "details": "Opcode 0x8013 (2-byte, int 32787); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8014); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: 0 or 1 only (ctor rejects other values). JUNG layer builds it. JUNG: ProxyMessageBuilder (p234v7/C2381r0) sends 1/0 from the capability boolean."
+  },
+  {
+   "id": "msg:op:8014",
+   "title": "Config GATT Proxy Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:24",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxyStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigGattProxyStatus.java:47",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:591",
+    "de/jung/junghome/data/mesh/resolver/C1959v.java:8",
+    "p234v7/C2381r0.java:25"
+   ],
+   "details": "Opcode 0x8014 (2-byte, int 32788); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: proxy state (read as accessPdu[2], i.e. first parameter byte). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2381r0.java)."
+  },
+  {
+   "id": "msg:op:8015",
+   "title": "Config Key Refresh Phase Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:31",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseGet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseGet.java:19",
+    "p234v7/W0.java:47"
+   ],
+   "details": "Opcode 0x8015 (2-byte, int 32789); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8017); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: NetKeyIndex u16 LE (12 bit). JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8016",
+   "title": "Config Key Refresh Phase Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:32",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseSet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseSet.java:21",
+    "p234v7/W0.java:65"
+   ],
+   "details": "Opcode 0x8016 (2-byte, int 32790); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8017); DevKey (ConfigMessage: AKF=0, AID=0). Params: 3 B: NetKeyIndex u16 LE (12 bit), Transition u8 (2 or 3 per spec; value passed through from RefreshPhase). JUNG layer builds it. JUNG: UpdateKeyRefreshPhaseMessageBuilder (p234v7/W0) sends RefreshPhase value for the capability's NetKey index."
+  },
+  {
+   "id": "msg:op:8017",
+   "title": "Config Key Refresh Phase Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:33",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseStatus.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigKeyRefreshPhaseStatus.java:55",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:585",
+    "de/jung/junghome/data/mesh/resolver/C1962w.java:8",
+    "p234v7/W0.java:31"
+   ],
+   "details": "Opcode 0x8017 (2-byte, int 32791); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B: Status u8, NetKeyIndex (2 B), Phase u8 (params[3]). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/W0.java)."
+  },
+  {
+   "id": "msg:op:8018",
+   "title": "Config Model Publication Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:39",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationGet.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationGet.java:30",
+    "p234v7/C2383s0.java:35",
+    "p234v7/F0.java:34"
+   ],
+   "details": "Opcode 0x8018 (2-byte, int 32792); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8019); DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B (SIG) / 6 B (vendor): ElementAddr u16, ModelId u16 or CID u16 LE + ModelID u16 LE. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8019",
+   "title": "Config Model Publication Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:41",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationStatus.java:100",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:455",
+    "de/jung/junghome/data/mesh/resolver/A0.java:16",
+    "de/jung/junghome/data/mesh/resolver/C1950s.java:11",
+    "de/jung/junghome/data/mesh/resolver/J1.java:9",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:14",
+    "p234v7/C2383s0.java:26",
+    "p234v7/F0.java:25"
+   ],
+   "details": "Opcode 0x8019 (2-byte, int 32793); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 12 B (SIG) / 14 B (vendor): Status u8, ElementAddr u16, PublishAddr u16, AppKeyIndex 12 bit + CredentialFlag bit 4 of byte 6, TTL u8, Period u8 (steps&0x3F, res>>6), Retransmit u8 (count&7, steps>>3), ModelId (length 12 -> u16 else CID+ID). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2383s0.java, p234v7/F0.java)."
+  },
+  {
+   "id": "msg:op:801a",
+   "title": "Config Model Publication Virtual Address Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:42",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationVirtualAddressSet.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigModelPublicationVirtualAddressSet.java:46"
+   ],
+   "details": "Opcode 0x801A (2-byte, int 32794); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8019); DevKey (ConfigMessage: AKF=0, AID=0). Params: 25 B (SIG) / 27 B (vendor): ElementAddr u16, Label UUID 16 B, AppKeyIndex+CredFlag (2 B), TTL, Period, Retransmit, ModelId 2/4 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:801b",
+   "title": "Config Model Subscription Add",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:43",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionAdd.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionAdd.java:32",
+    "D7/a.java:45"
+   ],
+   "details": "Opcode 0x801B (2-byte, int 32795); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6 B (SIG) / 8 B (vendor): ElementAddr u16 LE, Address u16 LE, ModelId u16 or CID+ID. JUNG layer builds it. JUNG: AddSubscriptionMessageBuilder (D7/a) - element address, group address, model id from the capability."
+  },
+  {
+   "id": "msg:op:801c",
+   "title": "Config Model Subscription Delete",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:44",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionDelete.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionDelete.java:32",
+    "D7/b.java:45"
+   ],
+   "details": "Opcode 0x801C (2-byte, int 32796); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6/8 B like Add; ctor rejects unassigned, unicast, virtual and 0xFFFF addresses. JUNG layer builds it. JUNG: DeleteSubscriptionMessageBuilder (D7/b)."
+  },
+  {
+   "id": "msg:op:801d",
+   "title": "Config Model Subscription Delete All",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:45",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionDeleteAll.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionDeleteAll.java:27"
+   ],
+   "details": "Opcode 0x801D (2-byte, int 32797); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B (SIG) / 6 B (vendor): ElementAddr u16, ModelId. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:801e",
+   "title": "Config Model Subscription Overwrite",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:46",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionOverwrite.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionOverwrite.java:32"
+   ],
+   "details": "Opcode 0x801E (2-byte, int 32798); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6/8 B like Add. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:801f",
+   "title": "Config Model Subscription Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:47",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionStatus.java:69",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:471",
+    "de/jung/junghome/data/mesh/resolver/C1953t.java:10",
+    "D7/a.java:24",
+    "D7/b.java:24"
+   ],
+   "details": "Opcode 0x801F (2-byte, int 32799); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 7 B (SIG) / 9 B (vendor): Status u8, ElementAddr u16, Address u16, ModelId. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (D7/a.java, D7/b.java)."
+  },
+  {
+   "id": "msg:op:8020",
+   "title": "Config Model Subscription Virtual Address Add",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:48",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressAdd.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressAdd.java:30"
+   ],
+   "details": "Opcode 0x8020 (2-byte, int 32800); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 20 B (SIG) / 22 B (vendor): ElementAddr u16, Label UUID 16 B, ModelId. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8021",
+   "title": "Config Model Subscription Virtual Address Delete",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:49",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressDelete.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressDelete.java:30"
+   ],
+   "details": "Opcode 0x8021 (2-byte, int 32801); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 20/22 B like Virtual Address Add. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8022",
+   "title": "Config Model Subscription Virtual Address Overwrite",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:50",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressOverwrite.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigModelSubscriptionVirtualAddressOverwrite.java:30"
+   ],
+   "details": "Opcode 0x8022 (2-byte, int 32802); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x801F); DevKey (ConfigMessage: AKF=0, AID=0). Params: 20/22 B like Virtual Address Add. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8023",
+   "title": "Config Network Transmit Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:57",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitGet.java:18",
+    "p234v7/Q0.java:33"
+   ],
+   "details": "Opcode 0x8023 (2-byte, int 32803); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8025); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8024",
+   "title": "Config Network Transmit Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:58",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitSet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitSet.java:23",
+    "p234v7/Q0.java:44"
+   ],
+   "details": "Opcode 0x8024 (2-byte, int 32804); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8025); DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: (IntervalSteps<<3) | Count; Count 0..7, IntervalSteps 0..31 (ctor checks). JUNG layer builds it. JUNG: TransmitMessageBuilder (p234v7/Q0) sends count and interval_ms/10 as steps."
+  },
+  {
+   "id": "msg:op:8025",
+   "title": "Config Network Transmit Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:59",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigNetworkTransmitStatus.java:49",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:550",
+    "de/jung/junghome/data/mesh/resolver/C1956u.java:8",
+    "p234v7/Q0.java:26"
+   ],
+   "details": "Opcode 0x8025 (2-byte, int 32805); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 1 B: Count = b&7, IntervalSteps = (b>>3)&31. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/Q0.java)."
+  },
+  {
+   "id": "msg:op:8026",
+   "title": "Config Relay Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:65",
+    "no/nordicsemi/android/mesh/transport/ConfigRelayGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigRelayGet.java:18",
+    "p234v7/C2387u0.java:34"
+   ],
+   "details": "Opcode 0x8026 (2-byte, int 32806); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8028); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8027",
+   "title": "Config Relay Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:66",
+    "no/nordicsemi/android/mesh/transport/ConfigRelaySet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigRelaySet.java:28",
+    "p234v7/C2387u0.java:55"
+   ],
+   "details": "Opcode 0x8027 (2-byte, int 32807); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8028); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: Relay u8, RelayRetransmit u8 = (IntervalSteps<<3) | Count (0..7 / 0..31 checked). JUNG layer builds it. JUNG: RelayTransmitMessageBuilder (p234v7/C2387u0) sends Relay = 1 if enabled else 0, count, interval_ms/10."
+  },
+  {
+   "id": "msg:op:8028",
+   "title": "Config Relay Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:67",
+    "no/nordicsemi/android/mesh/transport/ConfigRelayStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigRelayStatus.java:59",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:557",
+    "de/jung/junghome/data/mesh/resolver/C1965x.java:8",
+    "p234v7/C2387u0.java:27"
+   ],
+   "details": "Opcode 0x8028 (2-byte, int 32808); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: Relay u8, Retransmit u8 (count b&7, steps (b>>3)&31). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2387u0.java)."
+  },
+  {
+   "id": "msg:op:8029",
+   "title": "Config SIG Model Subscription Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:70",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelSubscriptionGet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelSubscriptionGet.java:25",
+    "p234v7/A.java:34"
+   ],
+   "details": "Opcode 0x8029 (2-byte, int 32809); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x802A); DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B: ElementAddr u16, SIG ModelId u16. JUNG layer builds it. JUNG: GetSubscriptionMessageBuilder (p234v7/A) builds it but sets its expected status to CONFIG_SIG_MODEL_SUBSCRIPTION_GET (0x8029) instead of 0x802A; since request opcode == expected opcode the app never waits for the list."
+  },
+  {
+   "id": "msg:op:802a",
+   "title": "Config SIG Model Subscription List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:71",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelSubscriptionList.java:13",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelSubscriptionList.java:65",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:498"
+   ],
+   "details": "Opcode 0x802A (2-byte, int 32810); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Status u8, ElementAddr u16, ModelId u16, then Address u16[] to end. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:802b",
+   "title": "Config Vendor Model Subscription Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:74",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelSubscriptionGet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelSubscriptionGet.java:25"
+   ],
+   "details": "Opcode 0x802B (2-byte, int 32811); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x802C); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6 B: ElementAddr u16, CID u16 LE, ModelID u16 LE. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:802c",
+   "title": "Config Vendor Model Subscription List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:75",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelSubscriptionList.java:13",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelSubscriptionList.java:65",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:511"
+   ],
+   "details": "Opcode 0x802C (2-byte, int 32812); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Status u8, ElementAddr u16, CID+ModelID (4 B), then Address u16[]. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:802d",
+   "title": "Config Low Power Node PollTimeout Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:34",
+    "no/nordicsemi/android/mesh/transport/ConfigLowPowerNodePollTimeoutGet.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigLowPowerNodePollTimeoutGet.java:22"
+   ],
+   "details": "Opcode 0x802D (2-byte, int 32813); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x802E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: LPN unicast address u16 (0x0001..0x7FFF checked). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:802e",
+   "title": "Config Low Power Node PollTimeout Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:35",
+    "no/nordicsemi/android/mesh/transport/ConfigLowPowerNodePollTimeoutStatus.java:6",
+    "no/nordicsemi/android/mesh/transport/ConfigLowPowerNodePollTimeoutStatus.java:32",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:600"
+   ],
+   "details": "Opcode 0x802E (2-byte, int 32814); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 5 B: LPN address u16, PollTimeout u24. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8038",
+   "title": "Config Heartbeat Publication Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:25",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationGet.java:14"
+   ],
+   "details": "Opcode 0x8038 (2-byte, int 32824); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x06); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8039",
+   "title": "Config Heartbeat Publication Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:26",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationSet.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatPublicationSet.java:27"
+   ],
+   "details": "Opcode 0x8039 (2-byte, int 32825); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x06); DevKey (ConfigMessage: AKF=0, AID=0). Params: 9 B: Destination u16, CountLog u8, PeriodLog u8, TTL u8 (0..0x7F), Features u16, NetKeyIndex u16 (12 bit). No-arg ctor = all zero with Features(2,2,2,2) (disable). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:803a",
+   "title": "Config Heartbeat Subscription Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:28",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionGet.java:14"
+   ],
+   "details": "Opcode 0x803A (2-byte, int 32826); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x803C); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:803b",
+   "title": "Config Heartbeat Subscription Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:29",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionSet.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionSet.java:22"
+   ],
+   "details": "Opcode 0x803B (2-byte, int 32827); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x803C); DevKey (ConfigMessage: AKF=0, AID=0). Params: 5 B: Source u16, Destination u16, PeriodLog u8. No-arg ctor = (0, 0, 1). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:803c",
+   "title": "Config Heartbeat Subscription Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:30",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigHeartbeatSubscriptionStatus.java:52",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:524"
+   ],
+   "details": "Opcode 0x803C (2-byte, int 32828); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 9 B: Status u8, Source u16, Destination u16, PeriodLog u8, CountLog u8, MinHops u8, MaxHops u8. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:803d",
+   "title": "Config Model App Bind",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:36",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppBind.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppBind.java:29",
+    "de/jung/junghome/data/mesh/c.java:197"
+   ],
+   "details": "Opcode 0x803D (2-byte, int 32829); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x803E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6 B (SIG) / 8 B (vendor): ElementAddr u16 LE, AppKeyIndex u16 LE (12 bit), ModelId u16 or CID u16 LE + ModelID u16 LE. JUNG layer builds it. JUNG: MeshMessengerImpl.bindAppToModel (data/mesh/c.java) binds the app key to every model (SIG and vendor) not already bound; waits 3 s for 0x803E."
+  },
+  {
+   "id": "msg:op:803e",
+   "title": "Config Model App Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:37",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppStatus.java:65",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:424",
+    "de/jung/junghome/data/mesh/MeshMessengerImpl$bindAppToModel$2.java:53"
+   ],
+   "details": "Opcode 0x803E (2-byte, int 32830); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 7 B (SIG) / 9 B (vendor): Status u8, ElementAddr u16, AppKeyIndex (12 bit), ModelId. JUNG waits for it as expected status (de/jung/junghome/data/mesh/MeshMessengerImpl$bindAppToModel$2.java)."
+  },
+  {
+   "id": "msg:op:803f",
+   "title": "Config Model App Unbind",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:38",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppUnbind.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigModelAppUnbind.java:29"
+   ],
+   "details": "Opcode 0x803F (2-byte, int 32831); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x803E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6/8 B like Model App Bind. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8040",
+   "title": "Config NetKey Add",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:51",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyAdd.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyAdd.java:24"
+   ],
+   "details": "Opcode 0x8040 (2-byte, int 32832); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8044); DevKey (ConfigMessage: AKF=0, AID=0). Params: 18 B: NetKeyIndex u16 LE (12 bit), NetKey 16 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8041",
+   "title": "Config NetKey Delete",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:52",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyDelete.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyDelete.java:24"
+   ],
+   "details": "Opcode 0x8041 (2-byte, int 32833); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8044); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: NetKeyIndex u16 LE (12 bit). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8042",
+   "title": "Config NetKey Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:53",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyGet.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyGet.java:18"
+   ],
+   "details": "Opcode 0x8042 (2-byte, int 32834); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8043); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8043",
+   "title": "Config NetKey List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:54",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyList.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyList.java:52",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:390"
+   ],
+   "details": "Opcode 0x8043 (2-byte, int 32835); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: NetKeyIndexes packed 2-per-3-bytes from offset 0. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8044",
+   "title": "Config NetKey Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:55",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyStatus.java:9",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyStatus.java:50",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:371",
+    "p234v7/C2360g0.java:31"
+   ],
+   "details": "Opcode 0x8044 (2-byte, int 32836); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 3 B: Status u8, NetKeyIndex (2 B). JUNG waits for it as expected status (p234v7/C2360g0.java)."
+  },
+  {
+   "id": "msg:op:8045",
+   "title": "Config NetKey Update",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:56",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyUpdate.java:10",
+    "no/nordicsemi/android/mesh/transport/ConfigNetKeyUpdate.java:24",
+    "p234v7/C2360g0.java:56"
+   ],
+   "details": "Opcode 0x8045 (2-byte, int 32837); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8044); DevKey (ConfigMessage: AKF=0, AID=0). Params: 18 B: NetKeyIndex (2 B) + new NetKey 16 B. Library quirk: index written as addKeyIndexPadding[0],[1] = big-endian (NetKey Add writes little-endian); identical only for index 0. JUNG layer builds it. JUNG: NetKeyUpdateMessageBuilder (p234v7/C2360g0) for key refresh, expects 0x8044."
+  },
+  {
+   "id": "msg:op:8046",
+   "title": "Config Node Identity Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:60",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentityGet.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentityGet.java:18"
+   ],
+   "details": "Opcode 0x8046 (2-byte, int 32838); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8048); DevKey (ConfigMessage: AKF=0, AID=0). Params: 2 B: NetKeyIndex u16 LE (12 bit). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8047",
+   "title": "Config Node Identity Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:61",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentitySet.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentitySet.java:20"
+   ],
+   "details": "Opcode 0x8047 (2-byte, int 32839); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x8048); DevKey (ConfigMessage: AKF=0, AID=0). Params: 3 B: NetKeyIndex (2 B), Identity u8. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8048",
+   "title": "Config Node Identity Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:62",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentityStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeIdentityStatus.java:38",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:533"
+   ],
+   "details": "Opcode 0x8048 (2-byte, int 32840); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B: Status u8, NetKeyIndex (12 bit), Identity u8. Library quirk: ConfigNodeIdentityStatus.getOpCode() returns 32779 (0x800B, Beacon Status) although dispatch matches 0x8048. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8049",
+   "title": "Config Node Reset",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:63",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeReset.java:4",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeReset.java:18",
+    "de/jung/junghome/data/mesh/api/a.java:53"
+   ],
+   "details": "Opcode 0x8049 (2-byte, int 32841); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x804A); DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG layer builds it. JUNG: ConfigurationMeshApiImpl.resetNode (data/mesh/api/a.java) to the node's unicast address, expects 0x804A."
+  },
+  {
+   "id": "msg:op:804a",
+   "title": "Config Node Reset Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:64",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeResetStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/ConfigNodeResetStatus.java:44",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:542",
+    "de/jung/junghome/data/mesh/api/a.java:55"
+   ],
+   "details": "Opcode 0x804A (2-byte, int 32842); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: 0 B. JUNG waits for it as expected status (de/jung/junghome/data/mesh/api/a.java)."
+  },
+  {
+   "id": "msg:op:804b",
+   "title": "Config SIG Model App Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:68",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelAppGet.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelAppGet.java:28"
+   ],
+   "details": "Opcode 0x804B (2-byte, int 32843); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x804C); DevKey (ConfigMessage: AKF=0, AID=0). Params: 4 B: ElementAddr u16, SIG ModelId u16. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:804c",
+   "title": "Config SIG Model App List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:69",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelAppList.java:13",
+    "no/nordicsemi/android/mesh/transport/ConfigSigModelAppList.java:65",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:437"
+   ],
+   "details": "Opcode 0x804C (2-byte, int 32844); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Status u8, ElementAddr u16, ModelId u16, AppKeyIndexes packed (from offset 5). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:804d",
+   "title": "Config Vendor Model App Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:72",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelAppGet.java:11",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelAppGet.java:28"
+   ],
+   "details": "Opcode 0x804D (2-byte, int 32845); model Configuration Server 0x0000 (app acts as Configuration Client); app sends; acked (-> 0x804E); DevKey (ConfigMessage: AKF=0, AID=0). Params: 6 B: ElementAddr u16, CID u16 LE, ModelID u16 LE. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:804e",
+   "title": "Config Vendor Model App List",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ConfigMessageOpCodes.java:73",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelAppList.java:15",
+    "no/nordicsemi/android/mesh/transport/ConfigVendorModelAppList.java:67",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:446"
+   ],
+   "details": "Opcode 0x804E (2-byte, int 32846); model Configuration Server 0x0000 (app acts as Configuration Client); app parses; status; DevKey (ConfigMessage: AKF=0, AID=0). Params: Status u8, ElementAddr u16, CID+ModelID (4 B), AppKeyIndexes packed (from offset 7). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8201",
+   "title": "Generic OnOff Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:23",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffGet.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffGet.java:17",
+    "p234v7/C2395z.java:34"
+   ],
+   "details": "Opcode 0x8201 (2-byte, int 33281); model Generic OnOff Server 0x1000; app sends; acked (-> 0x8204); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8202",
+   "title": "Generic OnOff Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:24",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffSet.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffSet.java:27",
+    "p234v7/C2395z.java:42"
+   ],
+   "details": "Opcode 0x8202 (2-byte, int 33282); model Generic OnOff Server 0x1000; app sends; acked (-> 0x8204); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: OnOff u8 (0/1), TID u8; or 4 B adding TransitionTime u8 (resolution<<6 | steps) and Delay u8 when all three optional args are non-null. JUNG layer builds it. JUNG: GenericOnOffMessageBuilder (p234v7/C2395z) chooses Set vs Set Unacknowledged by the acknowledged flag; no transition/delay fields (2 B form); TID from caller."
+  },
+  {
+   "id": "msg:op:8203",
+   "title": "Generic OnOff Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:25",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffSetUnacknowledged.java:27",
+    "p234v7/C2395z.java:47"
+   ],
+   "details": "Opcode 0x8203 (2-byte, int 33283); model Generic OnOff Server 0x1000; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 2/4 B layout as Generic OnOff Set. JUNG layer builds it. JUNG: GenericOnOffMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:8204",
+   "title": "Generic OnOff Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:26",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/GenericOnOffStatus.java:66",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:606",
+    "de/jung/junghome/data/mesh/resolver/Y.java:8",
+    "p234v7/C2395z.java:27"
+   ],
+   "details": "Opcode 0x8204 (2-byte, int 33284); model Generic OnOff Server 0x1000; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B PresentOnOff (==1), or 3 B adding TargetOnOff u8 and RemainingTime u8 (steps&0x3F, res>>6). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2395z.java)."
+  },
+  {
+   "id": "msg:op:8205",
+   "title": "Generic Level Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:13",
+    "no/nordicsemi/android/mesh/transport/GenericLevelGet.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericLevelGet.java:17",
+    "p234v7/C2394y.java:34"
+   ],
+   "details": "Opcode 0x8205 (2-byte, int 33285); model Generic Level Server 0x1002; app sends; acked (-> 0x8208); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8206",
+   "title": "Generic Level Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:14",
+    "no/nordicsemi/android/mesh/transport/GenericLevelSet.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericLevelSet.java:27",
+    "p234v7/C2394y.java:46"
+   ],
+   "details": "Opcode 0x8206 (2-byte, int 33286); model Generic Level Server 0x1002; app sends; acked (-> 0x8208); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 3 B: Level s16 LE (-32768..32767 checked), TID u8; or 5 B + TransitionTime u8, Delay u8. JUNG layer builds it. JUNG: GenericLevelMessageBuilder (p234v7/C2394y) acked branch; 3 B form."
+  },
+  {
+   "id": "msg:op:8207",
+   "title": "Generic Level Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:15",
+    "no/nordicsemi/android/mesh/transport/GenericLevelSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericLevelSetUnacknowledged.java:27",
+    "p234v7/C2394y.java:51"
+   ],
+   "details": "Opcode 0x8207 (2-byte, int 33287); model Generic Level Server 0x1002; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 3/5 B layout as Generic Level Set. JUNG layer builds it. JUNG: GenericLevelMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:8208",
+   "title": "Generic Level Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:16",
+    "no/nordicsemi/android/mesh/transport/GenericLevelStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/GenericLevelStatus.java:66",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:612",
+    "de/jung/junghome/data/mesh/resolver/Q.java:8",
+    "p234v7/C2394y.java:27",
+    "p234v7/H.java:22"
+   ],
+   "details": "Opcode 0x8208 (2-byte, int 33288); model Generic Level Server 0x1002; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B PresentLevel s16 LE, or 5 B + TargetLevel s16 + RemainingTime u8. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2394y.java, p234v7/H.java)."
+  },
+  {
+   "id": "msg:op:8209",
+   "title": "Generic Delta Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:12",
+    "no/nordicsemi/android/mesh/transport/GenericDeltaSet.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericDeltaSet.java:27",
+    "p234v7/H.java:38"
+   ],
+   "details": "Opcode 0x8209 (2-byte, int 33289); model Generic Level Server 0x1002; app sends; acked (-> 0x8208); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 5 B: DeltaLevel s32 LE, TID u8; or 7 B + TransitionTime u8 + Delay u8. Library quirk: value is putInt((short) delta) so only -32768..32767 representable (ctor enforces that range), sign-extended to 32 bit. No Delta Set Unacknowledged / Move Set classes exist. JUNG layer builds it. JUNG: LevelStepMessageBuilder (p234v7/H) sends delta from capability (5 B form), expects 0x8208; Get not supported."
+  },
+  {
+   "id": "msg:op:820d",
+   "title": "Generic Default Transition Time Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeGet.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeGet.java:16"
+   ],
+   "details": "Opcode 0x820D (2-byte, int 33293); model Generic Default Transition Time Server 0x1004; app sends; acked (-> 0x8210); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:820e",
+   "title": "Generic Default Transition Time Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:10",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeSet.java:10",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeSet.java:22"
+   ],
+   "details": "Opcode 0x820E (2-byte, int 33294); model Generic Default Transition Time Server 0x1004; app sends; acked (-> 0x8210); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: TransitionTime u8 (GenericTransitionTime value). No Set Unacknowledged (0x820F) class. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8210",
+   "title": "Generic Default Transition Time Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:11",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/GenericDefaultTransitionTimeStatus.java:51",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:708"
+   ],
+   "details": "Opcode 0x8210 (2-byte, int 33296); model Generic Default Transition Time Server 0x1004; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B expected. Library quirk: decoded with BitReader.getBits(1) (only one bit read) instead of 8. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8211",
+   "title": "Generic OnPowerUp Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:27",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpGet.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpGet.java:16",
+    "p277z7/a.java:30"
+   ],
+   "details": "Opcode 0x8211 (2-byte, int 33297); model Generic Power OnOff Server 0x1006; app sends; acked (-> 0x8212); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8212",
+   "title": "Generic OnPowerUp Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:29",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpStatus.java:52",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:365",
+    "de/jung/junghome/data/mesh/resolver/C1898a0.java:13",
+    "p277z7/a.java:23",
+    "p277z7/b.java:24"
+   ],
+   "details": "Opcode 0x8212 (2-byte, int 33298); model Generic Power OnOff Server 0x1006; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: OnPowerUp u8 (0 Off, 1 Default, 2 Restore) via OnPowerUpState.fromValue; other lengths leave BT_MESH_UNKNOWN. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p277z7/a.java, p277z7/b.java)."
+  },
+  {
+   "id": "msg:op:8213",
+   "title": "Generic OnPowerUp Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:28",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpSet.java:10",
+    "no/nordicsemi/android/mesh/transport/GenericOnPowerUpSet.java:22",
+    "p277z7/b.java:38"
+   ],
+   "details": "Opcode 0x8213 (2-byte, int 33299); model Generic Power OnOff Setup Server 0x1007; app sends; acked (-> 0x8212); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: OnPowerUp u8. No Set Unacknowledged (0x8214) class. JUNG layer builds it. JUNG: SetupOnPowerUpBehaviorMessageBuilder (p277z7/b)."
+  },
+  {
+   "id": "msg:op:8223",
+   "title": "Generic Battery Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericBatteryGet.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericBatteryGet.java:17",
+    "p234v7/C2359g.java:30"
+   ],
+   "details": "Opcode 0x8223 (2-byte, int 33315); model Generic Battery Server 0x100C; app sends; acked (-> 0x8224); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8224",
+   "title": "Generic Battery Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:8",
+    "no/nordicsemi/android/mesh/transport/GenericBatteryStatus.java:7",
+    "no/nordicsemi/android/mesh/transport/GenericBatteryStatus.java:165",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:618",
+    "de/jung/junghome/data/mesh/resolver/C1912f.java:8",
+    "p234v7/C2359g.java:23"
+   ],
+   "details": "Opcode 0x8224 (2-byte, int 33316); model Generic Battery Server 0x100C; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 8 B: BatteryLevel u8 (always read), TimeToDischarge u24 LE, TimeToCharge u24 LE, Flags u8 (only if length >= 8). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/C2359g.java)."
+  },
+  {
+   "id": "msg:op:8225",
+   "title": "Generic Location Global Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:17",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalGet.java:8",
+    "no/nordicsemi/android/mesh/transport/GenericLocationGlobalGet.java:18",
+    "p234v7/N.java:36"
+   ],
+   "details": "Opcode 0x8225 (2-byte, int 33317); model Generic Location Server 0x100E; app sends; acked (-> 0x40); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. No Location Local Get/Set/Status classes exist. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:822b",
+   "title": "Generic Manufacturer Property Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:21",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:265",
+    "p234v7/Q.java:29",
+    "p234v7/S.java:29",
+    "p234v7/T.java:29"
+   ],
+   "details": "Opcode 0x822B (2-byte, int 33323); model Generic Manufacturer Property Server 0x1012; app sends; acked (-> 0x46); AppKey. Params: 2 B PropertyID u16 LE. No dedicated opcode constant: GenericPropertyGet takes the opcode as a ctor argument and the JUNG layer passes the literal 33323. The Properties Get (0x822A/0x822C/0x822E) and Client Properties Get (0x4F) are never built. Set Unacknowledged variants (0x45/0x49/0x4D) have no class."
+  },
+  {
+   "id": "msg:op:822d",
+   "title": "Generic Admin Property Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:21",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:261",
+    "p234v7/C2364i0.java:34",
+    "p234v7/P0.java:33"
+   ],
+   "details": "Opcode 0x822D (2-byte, int 33325); model Generic Admin Property Server 0x1011; app sends; acked (-> 0x4A); AppKey. Params: 2 B PropertyID u16 LE. No dedicated opcode constant: GenericPropertyGet takes the opcode as a ctor argument and the JUNG layer passes the literal 33325. The Properties Get (0x822A/0x822C/0x822E) and Client Properties Get (0x4F) are never built. Set Unacknowledged variants (0x45/0x49/0x4D) have no class."
+  },
+  {
+   "id": "msg:op:822f",
+   "title": "Generic User Property Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:9",
+    "no/nordicsemi/android/mesh/transport/GenericPropertyGet.java:21",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:259"
+   ],
+   "details": "Opcode 0x822F (2-byte, int 33327); model Generic User Property Server 0x1013; app sends; acked (-> 0x4E); AppKey. Params: 2 B PropertyID u16 LE. No dedicated opcode constant: GenericPropertyGet takes the opcode as a ctor argument and the JUNG layer passes the literal 33327. The Properties Get (0x822A/0x822C/0x822E) and Client Properties Get (0x4F) are never built. Set Unacknowledged variants (0x45/0x49/0x4D) have no class."
+  },
+  {
+   "id": "msg:op:8230",
+   "title": "Sensor Descriptor Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:98",
+    "no/nordicsemi/android/mesh/transport/SensorDescriptorGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorDescriptorGet.java:22",
+    "p234v7/E0.java:31"
+   ],
+   "details": "Opcode 0x8230 (2-byte, int 33328); model Sensor Server 0x1100; app sends; acked (-> 0x51); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B (property null) or 2 B PropertyID u16 LE. JUNG layer builds it. JUNG: SensorDescriptorMessageBuilder (p234v7/E0) with the capability property id."
+  },
+  {
+   "id": "msg:op:8231",
+   "title": "Sensor Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:100",
+    "no/nordicsemi/android/mesh/transport/SensorGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorGet.java:22",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:270",
+    "p234v7/C2347a.java:30",
+    "p234v7/C2349b.java:30"
+   ],
+   "details": "Opcode 0x8231 (2-byte, int 33329); model Sensor Server 0x1100; app sends; acked (-> 0x52); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B (all) or 2 B PropertyID u16 LE. JUNG layer builds it. JUNG: ActivePowerMessageBuilder (p234v7/C2347a) / ActualTemperatureMessageBuilder (p234v7/C2349b) with a property id, and raw readProperty for model 0x1100."
+  },
+  {
+   "id": "msg:op:8232",
+   "title": "Sensor Column Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:96",
+    "no/nordicsemi/android/mesh/transport/SensorColumnGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorColumnGet.java:24"
+   ],
+   "details": "Opcode 0x8232 (2-byte, int 33330); model Sensor Server 0x1100; app sends; acked (-> 0x53); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE + RawValueX bytes. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8233",
+   "title": "Sensor Series Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:101",
+    "no/nordicsemi/android/mesh/transport/SensorSeriesGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorSeriesGet.java:23"
+   ],
+   "details": "Opcode 0x8233 (2-byte, int 33331); model Sensor Server 0x1100; app sends; acked (-> 0x54); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: PropertyID u16 LE [+ RawValueX1 + RawValueX2]. Library quirk: null check inverted (X1 != null -> only 2 B; X1 == null -> NPE); 2-arg ctor does not call assembleMessageParameters. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8234",
+   "title": "Sensor Cadence Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:92",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorCadenceGet.java:22",
+    "p234v7/D0.java:37"
+   ],
+   "details": "Opcode 0x8234 (2-byte, int 33332); model Sensor Setup Server 0x1101; app sends; acked (-> 0x57); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: PropertyID u16 LE (0 B if null). JUNG layer builds it. JUNG: SensorCadenceMessageBuilder (p234v7/D0)."
+  },
+  {
+   "id": "msg:op:8235",
+   "title": "Sensor Settings Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:103",
+    "no/nordicsemi/android/mesh/transport/SensorSettingsGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorSettingsGet.java:22",
+    "p234v7/I0.java:30"
+   ],
+   "details": "Opcode 0x8235 (2-byte, int 33333); model Sensor Setup Server 0x1101; app sends; acked (-> 0x58); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: SensorPropertyID u16 LE. JUNG layer builds it. JUNG: SensorSettingsMessageBuilder (p234v7/I0)."
+  },
+  {
+   "id": "msg:op:8236",
+   "title": "Sensor Setting Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:105",
+    "no/nordicsemi/android/mesh/transport/SensorSettingGet.java:10",
+    "no/nordicsemi/android/mesh/transport/SensorSettingGet.java:24",
+    "p234v7/H0.java:40"
+   ],
+   "details": "Opcode 0x8236 (2-byte, int 33334); model Sensor Setup Server 0x1101; app sends; acked (-> 0x5B); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Library quirk: only 2 B SensorPropertyID u16 LE is written; the SensorSettingPropertyID ctor arg is stored but never serialized (spec needs 4 B). JUNG layer builds it. JUNG: SensorSettingMessageBuilder (p234v7/H0) passes both ids, but only the sensor property id is serialized."
+  },
+  {
+   "id": "msg:op:8237",
+   "title": "Time Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:110",
+    "no/nordicsemi/android/mesh/transport/TimeGet.java:8",
+    "no/nordicsemi/android/mesh/transport/TimeGet.java:15",
+    "p234v7/M0.java:32"
+   ],
+   "details": "Opcode 0x8237 (2-byte, int 33335); model Time Server 0x1200; app sends; acked (-> 0x5D); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it. JUNG: TimeMessageBuilder (p234v7/M0)."
+  },
+  {
+   "id": "msg:op:8238",
+   "title": "Time Role Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:111",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatusGet.java:7",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatusGet.java:16",
+    "p234v7/N0.java:32"
+   ],
+   "details": "Opcode 0x8238 (2-byte, int 33336); model Time Setup Server 0x1201; app sends; acked (-> 0x823A); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it. JUNG: TimeRoleMessageBuilder (p234v7/N0)."
+  },
+  {
+   "id": "msg:op:8239",
+   "title": "Time Role Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:112",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatusSet.java:10",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatusSet.java:22",
+    "p234v7/N0.java:44"
+   ],
+   "details": "Opcode 0x8239 (2-byte, int 33337); model Time Setup Server 0x1201; app sends; acked (-> 0x823A); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: TimeRole u8 (0 None, 1 Authority, 2 Relay, 3 Client). JUNG layer builds it. JUNG: TimeRoleMessageBuilder set with the capability TimeRole."
+  },
+  {
+   "id": "msg:op:823a",
+   "title": "Time Role Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:113",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/TimeRoleStatus.java:52",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:714",
+    "de/jung/junghome/data/mesh/resolver/V1.java:10",
+    "p234v7/N0.java:25"
+   ],
+   "details": "Opcode 0x823A (2-byte, int 33338); model Time Setup Server 0x1201; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B TimeRole per spec. Library bug: parses only when parameter length == 8, so a real 1-byte status always yields the default BT_MESH_TIME_ROLE_CLIENT. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/N0.java)."
+  },
+  {
+   "id": "msg:op:823b",
+   "title": "Time Zone Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:116",
+    "no/nordicsemi/android/mesh/transport/TimeZoneGet.java:8",
+    "no/nordicsemi/android/mesh/transport/TimeZoneGet.java:18"
+   ],
+   "details": "Opcode 0x823B (2-byte, int 33339); model Time Server 0x1200; app sends; acked (-> 0x823D); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:823c",
+   "title": "Time Zone Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:117",
+    "no/nordicsemi/android/mesh/transport/TimeZoneSet.java:11",
+    "no/nordicsemi/android/mesh/transport/TimeZoneSet.java:26"
+   ],
+   "details": "Opcode 0x823C (2-byte, int 33340); model Time Setup Server 0x1201; app sends; acked (-> 0x823D); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 6 B: TimeZoneOffsetNew u8 (encoded), TAI of Zone Change u40 LE (putInt low 32 + byte bits 32-39). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:823d",
+   "title": "Time Zone Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:118",
+    "no/nordicsemi/android/mesh/transport/TimeZoneStatus.java:13",
+    "no/nordicsemi/android/mesh/transport/TimeZoneStatus.java:64",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:703"
+   ],
+   "details": "Opcode 0x823D (2-byte, int 33341); model Time Server 0x1200; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 7 B (else defaults 64/64/0): TimeZoneOffsetCurrent u8, TimeZoneOffsetNew u8, TAI of Zone Change u40 LE. No TAI-UTC Delta Get/Set/Status classes exist. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8241",
+   "title": "Scene Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:79",
+    "no/nordicsemi/android/mesh/transport/SceneGet.java:7",
+    "no/nordicsemi/android/mesh/transport/SceneGet.java:17",
+    "A7/c.java:32",
+    "A7/d.java:31",
+    "A7/f.java:32"
+   ],
+   "details": "Opcode 0x8241 (2-byte, int 33345); model Scene Server 0x1203; app sends; acked (-> 0x5E); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it. JUNG: SceneDelete/SceneRecall/SceneStore MessageBuilders (A7/c,d,f) use Scene Get as their read message."
+  },
+  {
+   "id": "msg:op:8242",
+   "title": "Scene Recall",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:80",
+    "no/nordicsemi/android/mesh/transport/SceneRecall.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneRecall.java:27",
+    "A7/d.java:43"
+   ],
+   "details": "Opcode 0x8242 (2-byte, int 33346); model Scene Server 0x1203; app sends; acked (-> 0x5E); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 3 B: SceneNumber u16 LE, TID u8; or 5 B + TransitionTime u8 + Delay u8. A SceneRegisterStatus (0x8245) received while a SceneRecall is pending is re-parsed as SceneStatus. JUNG layer builds it. JUNG: SceneRecallMessageBuilder (A7/d) acked branch; 3 B form. (Timer.Action.SceneRecall / ScheduleEntry.Action.SceneRecall are scheduler action codes, not this message.)"
+  },
+  {
+   "id": "msg:op:8243",
+   "title": "Scene Recall Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:81",
+    "no/nordicsemi/android/mesh/transport/SceneRecallUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneRecallUnacknowledged.java:27",
+    "A7/d.java:48"
+   ],
+   "details": "Opcode 0x8243 (2-byte, int 33347); model Scene Server 0x1203; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 3/5 B layout as Scene Recall. JUNG layer builds it. JUNG: SceneRecallMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:8244",
+   "title": "Scene Register Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:82",
+    "no/nordicsemi/android/mesh/transport/SceneRegisterGet.java:7",
+    "no/nordicsemi/android/mesh/transport/SceneRegisterGet.java:17",
+    "A7/e.java:28"
+   ],
+   "details": "Opcode 0x8244 (2-byte, int 33348); model Scene Server 0x1203; app sends; acked (-> 0x8245); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it. JUNG: SceneRegisterMessageBuilder (A7/e)."
+  },
+  {
+   "id": "msg:op:8245",
+   "title": "Scene Register Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:83",
+    "no/nordicsemi/android/mesh/transport/SceneRegisterStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/SceneRegisterStatus.java:66",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:696",
+    "de/jung/junghome/data/mesh/resolver/A1.java:10",
+    "de/jung/junghome/data/mesh/resolver/SceneRegisterStatus$processMessage$1.java:5",
+    "A7/c.java:25",
+    "A7/e.java:21",
+    "A7/f.java:25"
+   ],
+   "details": "Opcode 0x8245 (2-byte, int 33349); model Scene Server 0x1203 / Scene Setup Server 0x1204; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: StatusCode u8, CurrentScene u16 LE, Scenes u16 LE[(len-3)/2]. DefaultNoOperationMessageState interprets it according to the pending request (SceneRegisterGet / SceneStore -> storeScene / SceneDelete -> deleteScene / SceneRecall -> SceneStatus). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (A7/c.java, A7/e.java, A7/f.java)."
+  },
+  {
+   "id": "msg:op:8246",
+   "title": "Scene Store",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:85",
+    "no/nordicsemi/android/mesh/transport/SceneStore.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneStore.java:26",
+    "A7/f.java:44"
+   ],
+   "details": "Opcode 0x8246 (2-byte, int 33350); model Scene Setup Server 0x1204; app sends; acked (-> 0x8245); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: SceneNumber u16 LE (Scene.isValidSceneNumber checked; invalid -> 0). JUNG layer builds it. JUNG: SceneStoreMessageBuilder (A7/f) acked branch."
+  },
+  {
+   "id": "msg:op:8247",
+   "title": "Scene Store Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:86",
+    "no/nordicsemi/android/mesh/transport/SceneStoreUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneStoreUnacknowledged.java:26",
+    "A7/f.java:49"
+   ],
+   "details": "Opcode 0x8247 (2-byte, int 33351); model Scene Setup Server 0x1204; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: SceneNumber u16 LE. JUNG layer builds it. JUNG: SceneStoreMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:8248",
+   "title": "Scheduler Action Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:87",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionGet.java:8",
+    "no/nordicsemi/android/mesh/transport/SchedulerActionGet.java:19",
+    "B7/g.java:36"
+   ],
+   "details": "Opcode 0x8248 (2-byte, int 33352); model Scheduler Server 0x1206; app sends; acked (-> 0x5F); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: Index u8 (clamped to min(index,15)). JUNG layer builds it. JUNG: TimerActionMessageBuilder (B7/g) read with the timer index."
+  },
+  {
+   "id": "msg:op:8249",
+   "title": "Scheduler Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:90",
+    "no/nordicsemi/android/mesh/transport/SchedulerGet.java:7",
+    "no/nordicsemi/android/mesh/transport/SchedulerGet.java:16",
+    "B7/h.java:28"
+   ],
+   "details": "Opcode 0x8249 (2-byte, int 33353); model Scheduler Server 0x1206; app sends; acked (-> 0x824A); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it. JUNG: TimerMessageBuilder (B7/h) read only."
+  },
+  {
+   "id": "msg:op:824a",
+   "title": "Scheduler Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:91",
+    "no/nordicsemi/android/mesh/transport/SchedulerStatus.java:16",
+    "no/nordicsemi/android/mesh/transport/SchedulerStatus.java:54",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:697",
+    "de/jung/junghome/data/mesh/resolver/A0.java:20",
+    "de/jung/junghome/data/mesh/resolver/F1.java:10",
+    "de/jung/junghome/data/mesh/resolver/SchedulerStatusResolver$processMessage$1.java:5",
+    "B7/h.java:21"
+   ],
+   "details": "Opcode 0x824A (2-byte, int 33354); model Scheduler Server 0x1206; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B Schedules bitfield; decoded as 16 x getBits(1) over the byte-reversed array into a list of 0/1 for indexes 0..15. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (B7/h.java)."
+  },
+  {
+   "id": "msg:op:824b",
+   "title": "Light Lightness Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:70",
+    "no/nordicsemi/android/mesh/transport/LightLightnessGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightLightnessGet.java:17",
+    "p234v7/J.java:33"
+   ],
+   "details": "Opcode 0x824B (2-byte, int 33355); model Light Lightness Server 0x1300; app sends; acked (-> 0x824E); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. No Lightness Linear / Last Get classes exist. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:824c",
+   "title": "Light Lightness Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:74",
+    "no/nordicsemi/android/mesh/transport/LightLightnessSet.java:11",
+    "no/nordicsemi/android/mesh/transport/LightLightnessSet.java:27",
+    "p234v7/J.java:45"
+   ],
+   "details": "Opcode 0x824C (2-byte, int 33356); model Light Lightness Server 0x1300; app sends; acked (-> 0x824E); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 3 B: Lightness u16 LE (0..0xFFFF), TID u8; or 5 B + TransitionTime u8 + Delay u8. JUNG layer builds it. JUNG: LightLightnessMessageBuilder (p234v7/J) acked branch; 3 B form."
+  },
+  {
+   "id": "msg:op:824d",
+   "title": "Light Lightness Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:75",
+    "no/nordicsemi/android/mesh/transport/LightLightnessSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/LightLightnessSetUnacknowledged.java:27",
+    "p234v7/J.java:50"
+   ],
+   "details": "Opcode 0x824D (2-byte, int 33357); model Light Lightness Server 0x1300; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 3/5 B layout as Light Lightness Set. JUNG layer builds it. JUNG: LightLightnessMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:824e",
+   "title": "Light Lightness Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:76",
+    "no/nordicsemi/android/mesh/transport/LightLightnessStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightLightnessStatus.java:66",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:624",
+    "de/jung/junghome/data/mesh/resolver/L0.java:9",
+    "p234v7/J.java:26"
+   ],
+   "details": "Opcode 0x824E (2-byte, int 33358); model Light Lightness Server 0x1300; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B PresentLightness u16, or 5 B + TargetLightness u16 + RemainingTime u8. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/J.java)."
+  },
+  {
+   "id": "msg:op:8255",
+   "title": "Light Lightness Default Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:67",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultGet.java:16",
+    "p234v7/I.java:29"
+   ],
+   "details": "Opcode 0x8255 (2-byte, int 33365); model Light Lightness Server 0x1300; app sends; acked (-> 0x8256); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8256",
+   "title": "Light Lightness Default Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:69",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultStatus.java:49",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:630",
+    "de/jung/junghome/data/mesh/resolver/A0.java:18",
+    "de/jung/junghome/data/mesh/resolver/H0.java:11",
+    "p234v7/I.java:22",
+    "p234v7/K.java:24"
+   ],
+   "details": "Opcode 0x8256 (2-byte, int 33366); model Light Lightness Server 0x1300; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: Lightness u16 LE. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/I.java, p234v7/K.java)."
+  },
+  {
+   "id": "msg:op:8257",
+   "title": "Light Lightness Range Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:71",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeGet.java:16",
+    "p234v7/L.java:29"
+   ],
+   "details": "Opcode 0x8257 (2-byte, int 33367); model Light Lightness Server 0x1300; app sends; acked (-> 0x8258); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8258",
+   "title": "Light Lightness Range Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:73",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeStatus.java:59",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:636",
+    "de/jung/junghome/data/mesh/resolver/J0.java:10",
+    "p234v7/L.java:22",
+    "p234v7/M.java:24"
+   ],
+   "details": "Opcode 0x8258 (2-byte, int 33368); model Light Lightness Server 0x1300; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 5 B: StatusCode u8, RangeMin u16 LE, RangeMax u16 LE. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/L.java, p234v7/M.java)."
+  },
+  {
+   "id": "msg:op:8259",
+   "title": "Light Lightness Default Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:68",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLightnessDefaultSet.java:26",
+    "p234v7/K.java:40"
+   ],
+   "details": "Opcode 0x8259 (2-byte, int 33369); model Light Lightness Setup Server 0x1301; app sends; acked (-> 0x8256); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: Lightness u16 LE (0..0xFFFF). No Default Set Unacknowledged (0x825A) class. JUNG layer builds it. JUNG: LightnessDefaultSetupMessageBuilder (p234v7/K)."
+  },
+  {
+   "id": "msg:op:825b",
+   "title": "Light Lightness Range Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:72",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLightnessRangeSet.java:28",
+    "p234v7/M.java:47"
+   ],
+   "details": "Opcode 0x825B (2-byte, int 33371); model Light Lightness Setup Server 0x1301; app sends; acked (-> 0x8258); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 4 B: RangeMin u16 LE, RangeMax u16 LE (1..0xFFFF, min <= max). No Range Set Unacknowledged (0x825C) class. JUNG layer builds it. JUNG: LightnessRangeSetupMessageBuilder (p234v7/M)."
+  },
+  {
+   "id": "msg:op:825d",
+   "title": "Light CTL Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:37",
+    "no/nordicsemi/android/mesh/transport/LightCtlGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightCtlGet.java:17",
+    "p234v7/T0.java:31"
+   ],
+   "details": "Opcode 0x825D (2-byte, int 33373); model Light CTL Server 0x1303; app sends; acked (-> 0x8260); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:825e",
+   "title": "Light CTL Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:38",
+    "no/nordicsemi/android/mesh/transport/LightCtlSet.java:11",
+    "no/nordicsemi/android/mesh/transport/LightCtlSet.java:29",
+    "p234v7/T0.java:39"
+   ],
+   "details": "Opcode 0x825E (2-byte, int 33374); model Light CTL Server 0x1303; app sends; acked (-> 0x8260); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 7 B: Lightness u16 LE, Temperature u16 LE (800..20000 K checked), DeltaUV s16 LE, TID u8; or 9 B + TransitionTime u8 + Delay u8. JUNG layer builds it. JUNG: TunableWhiteMessageBuilder (p234v7/T0) always uses the acknowledged Set: lightness from capability (0 if null), temperature from capability, DeltaUV 0; 7 B form."
+  },
+  {
+   "id": "msg:op:825f",
+   "title": "Light CTL Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:39",
+    "no/nordicsemi/android/mesh/transport/LightCtlSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/LightCtlSetUnacknowledged.java:29"
+   ],
+   "details": "Opcode 0x825F (2-byte, int 33375); model Light CTL Server 0x1303; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 7/9 B layout as Light CTL Set. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8260",
+   "title": "Light CTL Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:40",
+    "no/nordicsemi/android/mesh/transport/LightCtlStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightCtlStatus.java:76",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:642",
+    "de/jung/junghome/data/mesh/resolver/E0.java:9",
+    "p234v7/T0.java:24"
+   ],
+   "details": "Opcode 0x8260 (2-byte, int 33376); model Light CTL Server 0x1303; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 4 B: PresentLightness u16, PresentTemperature u16; or 9 B + TargetLightness u16 + TargetTemperature u16 + RemainingTime u8. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/T0.java)."
+  },
+  {
+   "id": "msg:op:8261",
+   "title": "Light CTL Temperature Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:41",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureGet.java:17"
+   ],
+   "details": "Opcode 0x8261 (2-byte, int 33377); model Light CTL Temperature Server 0x1306; app sends; acked (-> 0x8266); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8262",
+   "title": "Light CTL Temperature Range Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:42",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeGet.java:16",
+    "p234v7/U0.java:29"
+   ],
+   "details": "Opcode 0x8262 (2-byte, int 33378); model Light CTL Server 0x1303; app sends; acked (-> 0x8263); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8263",
+   "title": "Light CTL Temperature Range Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:44",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeStatus.java:59",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:660",
+    "de/jung/junghome/data/mesh/resolver/c2.java:10",
+    "p234v7/U0.java:22",
+    "p234v7/V0.java:24"
+   ],
+   "details": "Opcode 0x8263 (2-byte, int 33379); model Light CTL Server 0x1303; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 5 B: StatusCode u8, RangeMin u16 LE, RangeMax u16 LE. JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/U0.java, p234v7/V0.java)."
+  },
+  {
+   "id": "msg:op:8264",
+   "title": "Light CTL Temperature Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:45",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureSet.java:27"
+   ],
+   "details": "Opcode 0x8264 (2-byte, int 33380); model Light CTL Temperature Server 0x1306; app sends; acked (-> 0x8266); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 5 B: Temperature u16 LE (800..20000), DeltaUV s16 LE, TID u8; or 7 B + TransitionTime + Delay. No Temperature Set Unacknowledged (0x8265) class. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8266",
+   "title": "Light CTL Temperature Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:46",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureStatus.java:76",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:648",
+    "de/jung/junghome/data/mesh/resolver/A0.java:17",
+    "de/jung/junghome/data/mesh/resolver/F0.java:8"
+   ],
+   "details": "Opcode 0x8266 (2-byte, int 33382); model Light CTL Temperature Server 0x1306; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 4 B: PresentTemperature u16, PresentDeltaUV u16; or 9 B + TargetTemperature u16 + TargetDeltaUV u16 + RemainingTime u8. JUNG layer decodes it in a resolver."
+  },
+  {
+   "id": "msg:op:8267",
+   "title": "Light CTL Default Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:34",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultGet.java:16",
+    "p234v7/R0.java:29"
+   ],
+   "details": "Opcode 0x8267 (2-byte, int 33383); model Light CTL Server 0x1303; app sends; acked (-> 0x8268); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. JUNG layer builds it."
+  },
+  {
+   "id": "msg:op:8268",
+   "title": "Light CTL Default Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:36",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultStatus.java:11",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultStatus.java:59",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:654",
+    "de/jung/junghome/data/mesh/resolver/a2.java:10",
+    "p234v7/R0.java:22",
+    "p234v7/S0.java:24"
+   ],
+   "details": "Opcode 0x8268 (2-byte, int 33384); model Light CTL Server 0x1303; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 6 B: Lightness u16, Temperature u16, DeltaUV u16 (all LE). JUNG layer decodes it in a resolver; JUNG waits for it as expected status (p234v7/R0.java, p234v7/S0.java)."
+  },
+  {
+   "id": "msg:op:8269",
+   "title": "Light CTL Default Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:35",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightCtlDefaultSet.java:36",
+    "p234v7/S0.java:50"
+   ],
+   "details": "Opcode 0x8269 (2-byte, int 33385); model Light CTL Setup Server 0x1304; app sends; acked (-> 0x8268); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 6 B: Lightness u16 LE, Temperature u16 LE (800..20000), DeltaUV s16 LE. No Default Set Unacknowledged (0x826A) class. JUNG layer builds it. JUNG: TunableWhiteDefaultSetupMessageBuilder (p234v7/S0): lightness, temperature, deltaUV from capability."
+  },
+  {
+   "id": "msg:op:826b",
+   "title": "Light CTL Temperature Range Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:43",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightCtlTemperatureRangeSet.java:28",
+    "p234v7/V0.java:44"
+   ],
+   "details": "Opcode 0x826B (2-byte, int 33387); model Light CTL Setup Server 0x1304; app sends; acked (-> 0x8263); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 4 B: RangeMin u16 LE, RangeMax u16 LE (1..0xFFFF, min <= max; no 800..20000 check). No Range Set Unacknowledged (0x826C) class. JUNG layer builds it. JUNG: TunableWhiteRangeSetupMessageBuilder (p234v7/V0)."
+  },
+  {
+   "id": "msg:op:826d",
+   "title": "Light HSL Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:47",
+    "no/nordicsemi/android/mesh/transport/LightHslGet.java:7",
+    "no/nordicsemi/android/mesh/transport/LightHslGet.java:17"
+   ],
+   "details": "Opcode 0x826D (2-byte, int 33389); model Light HSL Server 0x1307; app sends; acked (-> 0x8278); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. No HSL Hue/Saturation/Target/Default/Range classes exist. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8276",
+   "title": "Light HSL Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:48",
+    "no/nordicsemi/android/mesh/transport/LightHslSet.java:11",
+    "no/nordicsemi/android/mesh/transport/LightHslSet.java:29"
+   ],
+   "details": "Opcode 0x8276 (2-byte, int 33398); model Light HSL Server 0x1307; app sends; acked (-> 0x8278); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 7 B: Lightness u16 LE, Hue u16 LE, Saturation u16 LE, TID u8; or 9 B + TransitionTime + Delay. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8277",
+   "title": "Light HSL Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:49",
+    "no/nordicsemi/android/mesh/transport/LightHslSetUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/LightHslSetUnacknowledged.java:29"
+   ],
+   "details": "Opcode 0x8277 (2-byte, int 33399); model Light HSL Server 0x1307; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 7/9 B layout as Light HSL Set. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8278",
+   "title": "Light HSL Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:50",
+    "no/nordicsemi/android/mesh/transport/LightHslStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightHslStatus.java:71",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:666"
+   ],
+   "details": "Opcode 0x8278 (2-byte, int 33400); model Light HSL Server 0x1307; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 6 B: Lightness u16, Hue u16, Saturation u16; if longer, RemainingTime u8. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8291",
+   "title": "Light LC Mode Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:55",
+    "no/nordicsemi/android/mesh/transport/LightLCModeGet.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCModeGet.java:16"
+   ],
+   "details": "Opcode 0x8291 (2-byte, int 33425); model Light LC Server 0x130F; app sends; acked (-> 0x8294); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. AID taken from appKey.getAid() (not recomputed with K4) for all Light LC classes. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8292",
+   "title": "Light LC Mode Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:56",
+    "no/nordicsemi/android/mesh/transport/LightLCModeSet.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCModeSet.java:18"
+   ],
+   "details": "Opcode 0x8292 (2-byte, int 33426); model Light LC Server 0x130F; app sends; acked (-> 0x8294); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: Mode 0/1. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8293",
+   "title": "Light LC Mode Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:57",
+    "no/nordicsemi/android/mesh/transport/LightLCModeSetUnacknowledged.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCModeSetUnacknowledged.java:18"
+   ],
+   "details": "Opcode 0x8293 (2-byte, int 33427); model Light LC Server 0x130F; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: Mode 0/1. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8294",
+   "title": "Light LC Mode Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:58",
+    "no/nordicsemi/android/mesh/transport/LightLCModeStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/LightLCModeStatus.java:45",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:672"
+   ],
+   "details": "Opcode 0x8294 (2-byte, int 33428); model Light LC Server 0x130F; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: Mode (==1). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8295",
+   "title": "Light LC OM Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:59",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeGet.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeGet.java:16"
+   ],
+   "details": "Opcode 0x8295 (2-byte, int 33429); model Light LC Server 0x130F; app sends; acked (-> 0x8298); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8296",
+   "title": "Light LC OM Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:60",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeSet.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeSet.java:18"
+   ],
+   "details": "Opcode 0x8296 (2-byte, int 33430); model Light LC Server 0x130F; app sends; acked (-> 0x8298); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: OccupancyMode 0/1. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8297",
+   "title": "Light LC OM Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:61",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeSetUnacknowledged.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeSetUnacknowledged.java:18"
+   ],
+   "details": "Opcode 0x8297 (2-byte, int 33431); model Light LC Server 0x130F; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: OccupancyMode 0/1. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8298",
+   "title": "Light LC OM Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:62",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/LightLCOccupancyModeStatus.java:45",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:678"
+   ],
+   "details": "Opcode 0x8298 (2-byte, int 33432); model Light LC Server 0x130F; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B: OccupancyMode (==1). Library quirk: LightLCOccupancyModeStatus.getOpCode() returns 33428 (0x8294, LC Mode Status). Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:8299",
+   "title": "Light LC Light OnOff Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:51",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffGet.java:6",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffGet.java:16"
+   ],
+   "details": "Opcode 0x8299 (2-byte, int 33433); model Light LC Server 0x130F; app sends; acked (-> 0x829C); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 0 B. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:829a",
+   "title": "Light LC Light OnOff Set",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:52",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffSet.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffSet.java:24"
+   ],
+   "details": "Opcode 0x829A (2-byte, int 33434); model Light LC Server 0x130F; app sends; acked (-> 0x829C); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: LightOnOff u8, TID u8; or 4 B + TransitionTime + Delay. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:829b",
+   "title": "Light LC Light OnOff Set Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:53",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffSetUnacknowledged.java:10",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffSetUnacknowledged.java:24"
+   ],
+   "details": "Opcode 0x829B (2-byte, int 33435); model Light LC Server 0x130F; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: Same 2/4 B layout. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:829c",
+   "title": "Light LC Light OnOff Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:54",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffStatus.java:12",
+    "no/nordicsemi/android/mesh/transport/LightLCLightOnOffStatus.java:70",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:684"
+   ],
+   "details": "Opcode 0x829C (2-byte, int 33436); model Light LC Server 0x130F; app parses; status; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 1 B Present, or 3 B + Target + RemainingTime. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:829d",
+   "title": "Light LC Property Get",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:63",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertyGet.java:9",
+    "no/nordicsemi/android/mesh/transport/LightLCPropertyGet.java:21"
+   ],
+   "details": "Opcode 0x829D (2-byte, int 33437); model Light LC Setup Server 0x1310; app sends; acked (-> 0x64); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: LightLCPropertyID u16 LE. Library only: no JUNG-layer caller/resolver/expected-status (grep of de/ A7-H7 P7 p234v7 p245w7 p254x7 p277z7)."
+  },
+  {
+   "id": "msg:op:829e",
+   "title": "Scene Delete",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:77",
+    "no/nordicsemi/android/mesh/transport/SceneDelete.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneDelete.java:26",
+    "A7/c.java:44"
+   ],
+   "details": "Opcode 0x829E (2-byte, int 33438); model Scene Setup Server 0x1204; app sends; acked (-> 0x8245); AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: SceneNumber u16 LE. JUNG layer builds it. JUNG: SceneDeleteMessageBuilder (A7/c) acked branch."
+  },
+  {
+   "id": "msg:op:829f",
+   "title": "Scene Delete Unacknowledged",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ApplicationMessageOpCodes.java:78",
+    "no/nordicsemi/android/mesh/transport/SceneDeleteUnacknowledged.java:11",
+    "no/nordicsemi/android/mesh/transport/SceneDeleteUnacknowledged.java:26",
+    "A7/c.java:49"
+   ],
+   "details": "Opcode 0x829F (2-byte, int 33439); model Scene Setup Server 0x1204; app sends; unacked; AppKey (ApplicationMessage: AKF=1, AID=K4(appKey)). Params: 2 B: SceneNumber u16 LE. JUNG layer builds it. JUNG: SceneDeleteMessageBuilder unacknowledged branch."
+  },
+  {
+   "id": "msg:op:c22705",
+   "title": "LBC Generic Admin Property Get",
+   "apk_refs": [
+    "G7/a.java:25",
+    "B7/a.java:43",
+    "B7/b.java:35",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:255",
+    "p234v7/A0.java:31",
+    "p234v7/B.java:30",
+    "p234v7/B0.java:31",
+    "p234v7/C.java:35",
+    "p234v7/C0.java:31",
+    "p234v7/C2348a0.java:32",
+    "p234v7/C2350b0.java:32",
+    "p234v7/C2352c0.java:32",
+    "p234v7/C2354d0.java:32",
+    "p234v7/C2356e0.java:32",
+    "p234v7/C2357f.java:33",
+    "p234v7/C2358f0.java:35",
+    "p234v7/C2361h.java:32",
+    "p234v7/C2362h0.java:39",
+    "p234v7/C2363i.java:32",
+    "p234v7/C2365j.java:32",
+    "p234v7/C2367k.java:32",
+    "p234v7/C2368k0.java:34",
+    "p234v7/C2369l.java:32",
+    "p234v7/C2371m.java:36",
+    "p234v7/C2372m0.java:32",
+    "p234v7/C2374n0.java:32",
+    "p234v7/C2376o0.java:32",
+    "p234v7/C2377p.java:32",
+    "p234v7/C2378p0.java:32",
+    "p234v7/C2379q.java:32",
+    "p234v7/C2382s.java:32",
+    "p234v7/C2384t.java:32",
+    "p234v7/C2385t0.java:32",
+    "p234v7/C2386u.java:32",
+    "p234v7/C2388v.java:32",
+    "p234v7/C2389v0.java:34",
+    "p234v7/C2390w.java:32",
+    "p234v7/C2391w0.java:32",
+    "p234v7/C2392x.java:32",
+    "p234v7/C2393x0.java:32",
+    "p234v7/D.java:31",
+    "p234v7/E.java:35",
+    "p234v7/F.java:31",
+    "p234v7/G.java:30",
+    "p234v7/G0.java:31",
+    "p234v7/J0.java:31",
+    "p234v7/L0.java:71",
+    "p234v7/O.java:30",
+    "p234v7/O0.java:31",
+    "p234v7/P.java:31",
+    "p234v7/X0.java:31",
+    "p234v7/Y.java:31",
+    "p234v7/Z.java:31",
+    "p234v7/r.java:32",
+    "p234v7/y0.java:50",
+    "p234v7/z0.java:31",
+    "p254x7/a.java:33",
+    "p254x7/b.java:36",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes C2 27 05 (6-bit op 0x02, CID 0x0527 = 1319); int in code: 337666 (0x052702); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1011 LBCGenericAdminPropertyServer (86446097); app sends; acked (-> C5 27 05); AppKey. Params: PropertyID u16 LE + optional extra bytes (m.u(property.a(), bArr)); only AstroSchedulerRegister (prop 7) passes 1 extra byte (register id)."
+  },
+  {
+   "id": "msg:op:c32705",
+   "title": "LBC Generic Admin Property Set",
+   "apk_refs": [
+    "G7/b.java:39",
+    "B7/a.java:70",
+    "B7/b.java:72",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:314",
+    "p234v7/A0.java:38",
+    "p234v7/B.java:37",
+    "p234v7/B0.java:38",
+    "p234v7/C.java:55",
+    "p234v7/C0.java:38",
+    "p234v7/C2348a0.java:43",
+    "p234v7/C2350b0.java:43",
+    "p234v7/C2352c0.java:43",
+    "p234v7/C2354d0.java:43",
+    "p234v7/C2356e0.java:43",
+    "p234v7/C2357f.java:51",
+    "p234v7/C2358f0.java:53",
+    "p234v7/C2361h.java:39",
+    "p234v7/C2362h0.java:55",
+    "p234v7/C2363i.java:43",
+    "p234v7/C2365j.java:43",
+    "p234v7/C2367k.java:43",
+    "p234v7/C2368k0.java:52",
+    "p234v7/C2369l.java:43",
+    "p234v7/C2371m.java:54",
+    "p234v7/C2372m0.java:43",
+    "p234v7/C2374n0.java:43",
+    "p234v7/C2376o0.java:43",
+    "p234v7/C2377p.java:39",
+    "p234v7/C2378p0.java:43",
+    "p234v7/C2379q.java:43",
+    "p234v7/C2382s.java:43",
+    "p234v7/C2384t.java:43",
+    "p234v7/C2385t0.java:39",
+    "p234v7/C2386u.java:39",
+    "p234v7/C2388v.java:39",
+    "p234v7/C2389v0.java:51",
+    "p234v7/C2390w.java:43",
+    "p234v7/C2391w0.java:39",
+    "p234v7/C2392x.java:43",
+    "p234v7/C2393x0.java:39",
+    "p234v7/D.java:42",
+    "p234v7/E.java:58",
+    "p234v7/F.java:42",
+    "p234v7/G.java:41",
+    "p234v7/G0.java:38",
+    "p234v7/J0.java:42",
+    "p234v7/L0.java:97",
+    "p234v7/O.java:41",
+    "p234v7/O0.java:38",
+    "p234v7/P.java:42",
+    "p234v7/X0.java:38",
+    "p234v7/Y.java:42",
+    "p234v7/Z.java:42",
+    "p234v7/r.java:49",
+    "p234v7/y0.java:82",
+    "p234v7/z0.java:38",
+    "p254x7/a.java:50",
+    "p254x7/b.java:57",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes C3 27 05 (6-bit op 0x03, CID 0x0527 = 1319); int in code: 337667 (0x052703); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1011; app sends; acked (-> C5 27 05); AppKey. Params: PropertyID u16 LE, UserAccess u8 (app always 3 READ_AND_WRITE), value bytes. After sending, MeshMessengerImpl records the property id (V7.q) for change tracking."
+  },
+  {
+   "id": "msg:op:c52705",
+   "title": "LBC Generic Admin Property Status",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:43",
+    "B7/a.java:25",
+    "B7/b.java:28",
+    "p234v7/A0.java:24",
+    "p234v7/B.java:23",
+    "p234v7/B0.java:24",
+    "p234v7/C.java:28",
+    "p234v7/C0.java:24",
+    "p234v7/C2348a0.java:25",
+    "p234v7/C2350b0.java:25",
+    "p234v7/C2352c0.java:25",
+    "p234v7/C2354d0.java:25",
+    "p234v7/C2356e0.java:25",
+    "p234v7/C2357f.java:26",
+    "p234v7/C2358f0.java:28",
+    "p234v7/C2361h.java:25",
+    "p234v7/C2362h0.java:28",
+    "p234v7/C2363i.java:25",
+    "p234v7/C2365j.java:25",
+    "p234v7/C2367k.java:25",
+    "p234v7/C2368k0.java:27",
+    "p234v7/C2369l.java:25",
+    "p234v7/C2371m.java:29",
+    "p234v7/C2372m0.java:25",
+    "p234v7/C2374n0.java:25",
+    "p234v7/C2376o0.java:25",
+    "p234v7/C2377p.java:25",
+    "p234v7/C2378p0.java:25",
+    "p234v7/C2379q.java:25",
+    "p234v7/C2382s.java:25",
+    "p234v7/C2384t.java:25",
+    "p234v7/C2385t0.java:25",
+    "p234v7/C2386u.java:25",
+    "p234v7/C2388v.java:25",
+    "p234v7/C2389v0.java:27",
+    "p234v7/C2390w.java:25",
+    "p234v7/C2391w0.java:25",
+    "p234v7/C2392x.java:25",
+    "p234v7/C2393x0.java:25",
+    "p234v7/D.java:24",
+    "p234v7/E.java:28",
+    "p234v7/F.java:24",
+    "p234v7/G.java:23",
+    "p234v7/G0.java:24",
+    "p234v7/J0.java:24",
+    "p234v7/L0.java:31",
+    "p234v7/O.java:23",
+    "p234v7/O0.java:24",
+    "p234v7/P.java:24",
+    "p234v7/X0.java:24",
+    "p234v7/Y.java:24",
+    "p234v7/Z.java:24",
+    "p234v7/r.java:25",
+    "p234v7/y0.java:28",
+    "p234v7/z0.java:24",
+    "p254x7/a.java:26",
+    "p254x7/b.java:29",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes C5 27 05 (6-bit op 0x05, CID 0x0527 = 1319); int in code: recv int 12920581 (0xC52705); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1011; app parses (reply or unsolicited publication); AppKey. Params: PropertyID u16 LE, UserAccess u8, value bytes (empty value -> ignored). One shared parser for C5/CB/D1; ~90 per-property resolvers decode the value. Expected-status opcode of ~60 MessageBuilders."
+  },
+  {
+   "id": "msg:op:c82705",
+   "title": "LBC Generic Manufacturer Property Get",
+   "apk_refs": [
+    "G7/c.java:20",
+    "C7/a.java:28",
+    "C7/b.java:28",
+    "C7/c.java:29",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:263",
+    "p234v7/C2366j0.java:33",
+    "p234v7/C2370l0.java:32",
+    "p245w7/a.java:29",
+    "p245w7/b.java:29",
+    "p245w7/c.java:28",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes C8 27 05 (6-bit op 0x08, CID 0x0527 = 1319); int in code: 337672 (0x052708); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1012 LBCGenericManufacturerPropertyServer (86446098); app sends; acked (-> CB 27 05); AppKey. Params: PropertyID u16 LE."
+  },
+  {
+   "id": "msg:op:c92705",
+   "title": "LBC Generic Manufacturer Property Set",
+   "apk_refs": [
+    "G7/d.java:25",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:322",
+    "p234v7/C2366j0.java:50",
+    "p234v7/C2370l0.java:49",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes C9 27 05 (6-bit op 0x09, CID 0x0527 = 1319); int in code: 337673 (0x052709); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1012; app sends; acked (-> CB 27 05); AppKey. Params: PropertyID u16 LE + value bytes (no UserAccess byte, unlike SIG and LBC Admin)."
+  },
+  {
+   "id": "msg:op:cb2705",
+   "title": "LBC Generic Manufacturer Property Status",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:43",
+    "C7/a.java:21",
+    "C7/b.java:21",
+    "C7/c.java:22",
+    "p234v7/C2366j0.java:26",
+    "p234v7/C2370l0.java:25",
+    "p245w7/a.java:22",
+    "p245w7/b.java:22",
+    "p245w7/c.java:21",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes CB 27 05 (6-bit op 0x0B, CID 0x0527 = 1319); int in code: recv int 13313797 (0xCB2705); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1012; app parses; AppKey. Params: PropertyID u16 LE, UserAccess u8, value bytes. Expected status of C7/a,b,c (versions), p245w7/a,b,c (gateway), p234v7/C2366j0, C2370l0 (presence)."
+  },
+  {
+   "id": "msg:op:ce2705",
+   "title": "LBC Generic User Property Get",
+   "apk_refs": [
+    "G7/e.java:20",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:257",
+    "p234v7/C2351c.java:30",
+    "p234v7/U.java:46",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes CE 27 05 (6-bit op 0x0E, CID 0x0527 = 1319); int in code: 337678 (0x05270E); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1013 LBCGenericUserPropertyServer (86446099); app sends; acked (-> D1 27 05); AppKey. Params: PropertyID u16 LE."
+  },
+  {
+   "id": "msg:op:cf2705",
+   "title": "LBC Generic User Property Set",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:318",
+    "G7/f.java:1",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes CF 27 05 (6-bit op 0x0F, CID 0x0527 = 1319); int in code: 337679 (0x05270F); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1013; app sends (only from the raw writeProperty API JungMeshApiImpl.q1); acked (-> D1 27 05); AppKey. Params: PropertyID u16 LE + value bytes (no UserAccess). G7/f class body lost by jadx; payload taken from the call site."
+  },
+  {
+   "id": "msg:op:d12705",
+   "title": "LBC Generic User Property Status",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:43",
+    "de/jung/junghome/data/mesh/MeshNotificationChannel$waitForStatusMessage$1.java:172",
+    "p234v7/C2351c.java:23",
+    "p234v7/U.java:25",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D1 27 05 (6-bit op 0x11, CID 0x0527 = 1319); int in code: recv int 13707013 (0xD12705); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1013; app parses; AppKey. Params: PropertyID u16 LE, UserAccess u8, value bytes. Also accepted by waitForStatusMessage as a substitute reply for every request except an LBC Admin Get/Set of property 9 (EnforceOutput). Expected status of p234v7/C2351c (InsertId) and p234v7/U (energy charts)."
+  },
+  {
+   "id": "msg:op:d22705",
+   "title": "JH Scheduler Get",
+   "apk_refs": [
+    "H7/a.java:19",
+    "B7/c.java:39",
+    "B7/d.java:40",
+    "B7/e.java:36",
+    "B7/f.java:46",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D2 27 05 (6-bit op 0x12, CID 0x0527 = 1319); int in code: 337874 (0x0527D2); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1016 JHSchedulerServer (86446102); app sends; acked (-> D3 27 05); AppKey. Params: header byte (schedulerIndex bits0-3, subCommand bits4-7) + sub-command specific bytes (see msg:sub:d22705-*). Packed LSB-first by JUNG bit writer k0."
+  },
+  {
+   "id": "msg:op:d32705",
+   "title": "JH Scheduler Status",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1934m0.java:26",
+    "B7/c.java:22",
+    "B7/d.java:23",
+    "B7/e.java:22",
+    "B7/f.java:26",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D3 27 05 (6-bit op 0x13, CID 0x0527 = 1319); int in code: recv int 13838085 (0xD32705); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1016; app parses; AppKey. Params: header byte (index 4 bit, subCommand 4 bit at AbstractC1934m0.java:32-33) dispatched to resolvers C1940o0 (0 Schedule), C1928k0 (1 Action), C1931l0 (2 EffectiveTime), C1937n0 (15 ScheduleList); unknown sub-command throws IllegalArgumentException; empty params ignored."
+  },
+  {
+   "id": "msg:op:d42705",
+   "title": "JH Scheduler Set",
+   "apk_refs": [
+    "H7/b.java:19",
+    "B7/c.java:54",
+    "B7/f.java:103",
+    "B7/f.java:80",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D4 27 05 (6-bit op 0x14, CID 0x0527 = 1319); int in code: 337876 (0x0527D4); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1016; app sends; acked (-> D3 27 05); AppKey. Params: header byte + sub-command payload (see msg:sub:d42705-*). Only sub-commands 0 (Schedule) and 1 (Action) are ever set."
+  },
+  {
+   "id": "msg:op:d62705",
+   "title": "Scene Action Setup Get",
+   "apk_refs": [
+    "G7/g.java:19",
+    "A7/b.java:30",
+    "A7/g.java:27",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D6 27 05 (6-bit op 0x16, CID 0x0527 = 1319); int in code: 337878 (0x0527D6); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1017 SceneActionSetupServer (86446103); app sends; acked (-> D7 27 05); AppKey. Params: 4 B SceneNumber as u32 LE (Capability.D(4, ...)); 0 = list all stored scenes (A7/g ScenesMessageBuilder), n = action of scene n (A7/b)."
+  },
+  {
+   "id": "msg:op:d72705",
+   "title": "Scene Action Setup Status",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1970y1.java:26",
+    "A7/b.java:21",
+    "A7/g.java:20",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D7 27 05 (6-bit op 0x17, CID 0x0527 = 1319); int in code: recv int 14100229 (0xD72705); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1017; app parses; AppKey. Params: SceneNumber u16 LE (16 bits LSB-first at AbstractC1970y1.java:35-37); 0 -> scene list (resolver C1), non-zero -> scene action (resolver C1967x1); empty params ignored."
+  },
+  {
+   "id": "msg:op:d82705",
+   "title": "Scene Action Setup Set",
+   "apk_refs": [
+    "G7/h.java:19",
+    "A7/b.java:42",
+    "no/nordicsemi/android/mesh/utils/MeshParserUtils.java:86"
+   ],
+   "details": "Vendor opcode wire bytes D8 27 05 (6-bit op 0x18, CID 0x0527 = 1319); int in code: 337880 (0x0527D8); VendorModelMessageAcked subclass / VendorModelMessageStatus. model 0x0527:0x1017; app sends; acked (-> D7 27 05); AppKey. Params: SceneNumber u16 LE, then (only if action != NoAction) ActionCode u8 + 40-bit action payload (S8/a.toByteArray). SceneNumber alone = remove stored action."
+  },
+  {
+   "id": "msg:proxy:00",
+   "title": "Proxy Config Set Filter Type",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ProxyConfigMessageOpCodes.java:8",
+    "no/nordicsemi/android/mesh/transport/ProxyConfigSetFilterType.java:6",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:368",
+    "p234v7/C2380q0.java:41"
+   ],
+   "details": "Proxy configuration message opcode 0x00 (proxy PDU type 0x02, encrypted with network key, no app/dev key, AID -1); app sends. 1 B: FilterType (0 white/accept list, 1 black/reject list). JUNG sends type 1 (reject list, i.e. receive everything) on connect (JungMeshApiImpl.setProxyConnectionSettings) and via ProxyFilterMessageBuilder; expected status 0x03."
+  },
+  {
+   "id": "msg:proxy:01",
+   "title": "Proxy Config Add Addresses To Filter",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ProxyConfigMessageOpCodes.java:5",
+    "no/nordicsemi/android/mesh/transport/ProxyConfigAddAddressToFilter.java:8",
+    "p234v7/C2355e.java:53"
+   ],
+   "details": "Proxy configuration message opcode 0x01 (proxy PDU type 0x02, encrypted with network key, no app/dev key, AID -1); app sends. Address u16 BE list. Library quirk: parameter array sized 2^n (not 2n) so n>2 appends zero bytes; JUNG builds each AddressArray from a single byte (AddressArray(b,b)), i.e. address = b<<8|b."
+  },
+  {
+   "id": "msg:proxy:02",
+   "title": "Proxy Config Remove Addresses From Filter",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ProxyConfigMessageOpCodes.java:7",
+    "no/nordicsemi/android/mesh/transport/ProxyConfigRemoveAddressFromFilter.java:8"
+   ],
+   "details": "Proxy configuration message opcode 0x02 (proxy PDU type 0x02, encrypted with network key, no app/dev key, AID -1); app sends. Same address list layout and 2^n sizing quirk as Add. Library only."
+  },
+  {
+   "id": "msg:proxy:03",
+   "title": "Proxy Config Filter Status",
+   "apk_refs": [
+    "no/nordicsemi/android/mesh/opcodes/ProxyConfigMessageOpCodes.java:6",
+    "no/nordicsemi/android/mesh/transport/ProxyConfigFilterStatus.java:8",
+    "no/nordicsemi/android/mesh/transport/DefaultNoOperationMessageState.java:774",
+    "de/jung/junghome/data/mesh/resolver/A0.java:19",
+    "de/jung/junghome/data/mesh/resolver/C1932l1.java:9"
+   ],
+   "details": "Proxy configuration message opcode 0x03 (proxy PDU type 0x02, encrypted with network key, no app/dev key, AID -1); app parses. 3 B: FilterType u8, ListSize u16 BE. Parsed from proxy config control PDU (pduType 2, opcode 3)."
+  },
+  {
+   "id": "msg:sub:d22705-0",
+   "title": "JH Scheduler Get: Schedule",
+   "apk_refs": [
+    "B7/f.java:43",
+    "p056e8/h.java:63"
+   ],
+   "details": "1 B: bits0-3 schedulerIndex (0..15), bits4-7 subCommand 0 (e8.h.c Schedule). Builder B7/f (JHSchedulerScheduleMessageBuilder)."
+  },
+  {
+   "id": "msg:sub:d22705-1",
+   "title": "JH Scheduler Get: Action",
+   "apk_refs": [
+    "B7/c.java:36",
+    "p056e8/h.java:17"
+   ],
+   "details": "1 B: bits0-3 schedulerIndex, bits4-7 subCommand 1 (e8.h.a Action). Builder B7/c (JHSchedulerActionMessageBuilder)."
+  },
+  {
+   "id": "msg:sub:d22705-2",
+   "title": "JH Scheduler Get: EffectiveTime",
+   "apk_refs": [
+    "B7/d.java:37",
+    "p056e8/h.java:40"
+   ],
+   "details": "1 B: bits0-3 schedulerIndex, bits4-7 subCommand 2 (e8.h.b EffectiveTime). Builder B7/d; Set for this sub-command throws NotImplementedError."
+  },
+  {
+   "id": "msg:sub:d22705-f",
+   "title": "JH Scheduler Get: ScheduleList",
+   "apk_refs": [
+    "B7/e.java:33",
+    "p056e8/h.java:86"
+   ],
+   "details": "2 B: byte0 = 0xF0 (index 0, subCommand 15 e8.h.d ScheduleList), byte1 = centralScheduleId u8 (0 if unset). Builder B7/e; Set throws NotImplementedError."
+  },
+  {
+   "id": "msg:sub:d32705-0",
+   "title": "JH Scheduler Status: Schedule",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1940o0.java:14"
+   ],
+   "details": "Same bit layout as the full Schedule Set (index 4, sub 4, type 4, pad 4, dayOfWeek 7, pad 1, notBeforeMM 6, notBeforeHH 5, notAfterMM 6, notAfterHH 5, pad 2, offsetMin 8 two's complement); 1-byte status = nothing stored."
+  },
+  {
+   "id": "msg:sub:d32705-1",
+   "title": "JH Scheduler Status: Action",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1928k0.java:14"
+   ],
+   "details": "index 4, sub 4, actionCode 8 (0 NoAction,1 Switching,2 Lightness,3 Lightness+CT,4 Blinds+Slats,5 TargetTemperature), 40-bit payload: 1 on u8; 2 lightness u16 (pct*65535/100); 3 lightness u16 + CT u16 Kelvin (2000..10000); 4 blind s16 + slat s16 (Generic Level range); 5 temperature*100 u16. 1-byte status = unchanged."
+  },
+  {
+   "id": "msg:sub:d32705-2",
+   "title": "JH Scheduler Status: EffectiveTime",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1931l0.java:16"
+   ],
+   "details": "56 bits: index 4, sub 4, type 4, ignored 4, dayOfWeek 7, ignored 1, effectiveTimeMM 6, effectiveTimeHH 5, ignored 13, offsetMin 8 (computed next trigger for astro schedules)."
+  },
+  {
+   "id": "msg:sub:d32705-f",
+   "title": "JH Scheduler Status: ScheduleList",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1937n0.java:16"
+   ],
+   "details": "6 B: header byte (0xF0), centralScheduleId echo (skipped, 16 bits total), then 16 x 2-bit JHSchedulerStatus (0 Available, 1 CentralScheduleIdMatched, 2 Inactive, 3 Active) for slots 0..15 LSB-first."
+  },
+  {
+   "id": "msg:sub:d42705-0",
+   "title": "JH Scheduler Set: Schedule",
+   "apk_refs": [
+    "B7/f.java:92",
+    "B7/f.java:79"
+   ],
+   "details": "Full form 8 B: index 4, sub 0 (4), type 4 (JHSchedulerType 0 Available,1 Reserved,2 TimedInactive,3 TimedActive,4 SunriseInactive,5 SunriseActive,6 SunsetInactive,7 SunsetActive), 0 (4), dayOfWeek 7 (Mon=0x01..Sun=0x40), 0 (1), notBeforeMM 6, notBeforeHH 5, notAfterMM 6, notAfterHH 5, 0 (2), offsetMin 8 (After n -> n, Before n -> 256-n), 0 (8). Toggle/type-only form 2 B: index 4, sub 0, type 4, 0 (4) when no day/time fields are set."
+  },
+  {
+   "id": "msg:sub:d42705-1",
+   "title": "JH Scheduler Set: Action",
+   "apk_refs": [
+    "B7/c.java:54",
+    "V8/a.java:99"
+   ],
+   "details": "7 B: index 4, sub 1 (4), actionCode 8, 40-bit payload exactly as msg:sub:d32705-1 (unused bits zero)."
+  },
+  {
+   "id": "msg:sub:d62705-0",
+   "title": "Scene Action Setup Get: scene list",
+   "apk_refs": [
+    "A7/g.java:27"
+   ],
+   "details": "4 B: 00 00 00 00 (SceneNumber 0 as u32 LE) -> Status lists stored scenes."
+  },
+  {
+   "id": "msg:sub:d62705-n",
+   "title": "Scene Action Setup Get: single scene",
+   "apk_refs": [
+    "A7/b.java:30"
+   ],
+   "details": "4 B: SceneNumber u32 LE (low 16 bits meaningful)."
+  },
+  {
+   "id": "msg:sub:d72705-0",
+   "title": "Scene Action Setup Status: scene list",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1.java:75"
+   ],
+   "details": "u16 LE 0x0000, then u16 LE scene numbers terminated by a 0x0000 entry; reader throws if bits run out."
+  },
+  {
+   "id": "msg:sub:d72705-n",
+   "title": "Scene Action Setup Status: scene action",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/C1967x1.java:98"
+   ],
+   "details": "SceneNumber u16 LE; length 2 -> NoAction; else actionCode u8 + 40-bit payload as JH Scheduler Action; length 1 ignored."
+  },
+  {
+   "id": "msg:sub:d82705-n",
+   "title": "Scene Action Setup Set",
+   "apk_refs": [
+    "S8/a.java:89",
+    "A7/b.java:42"
+   ],
+   "details": "SceneNumber u16 LE (+ actionCode u8 + 40-bit payload when action != NoAction)."
+  }
+ ]
+}

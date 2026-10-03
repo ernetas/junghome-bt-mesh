@@ -1,0 +1,2366 @@
+{
+ "domain": "air",
+ "source": "docs/parity/inventory-air.json",
+ "method": "One row per item of docs/parity/inventory-air.json, in its order (ids copied). For each item the implementing code was found by: (1) the opcode constant / builder in jhmesh/messages.py, jhmesh/vendor_models.py, jhmesh/config_messages.py; (2) its sender: grep of the builder name in custom_components/junghome_ble/*.py and tools/cli_ops.py; (3) its receiver: the STATUS_HANDLERS registry (grep '@register_status_handler' in coordinator.py and 'register_status_handler(' in config_entities.py / climate.py); an opcode with no entry is not consumed; (4) for vendor property ids: jhmesh/properties.py PropertySpec + config_entities.describe()/FIRST_PAGE/UNSAFE_PROPERTIES/cacheable() and sensor.py; (5) for non-access kinds: jhmesh/client.py (_on_network_pdu, _parse_beacon, _on_segment, _send_ack, _is_replay), jhmesh/pdu.py, jhmesh/sniffer.py. Tests: a python walk over tests/**/*.py mapping each 'def test_*' to the property ids / builder names / handler names it mentions; a test is only cited when it sends, injects or asserts the message (not merely names it). Status rules: implemented = code in the integration or tools/ CLI plus a test exercising it with the on-air encoding; partial = code without a test, or the on-air behaviour (encoding, who sends, consumption) not matched; gap = decoded at most by describe()/catalogue with no consumer or sender. Items sent on air only by the development tool (unicast-unknown) count as implemented when tools/cli_ops.py builds them. No item was judged na. STATUS RULES, made exact in the adversarial verification pass (so a rerun lands on the same status): implemented = a sender (for what HA/the CLI originates on air) or a specific consumer (for what others originate) exists in the integration or tools/, a test exercises it with the on-air encoding, and the on-air role (sender, solicited vs unsolicited) is matched; partial = such a sender/consumer exists but without a test of the on-air encoding, or the on-air behaviour is not matched; gap = no sender and no specific consumer anywhere in the integration or tools/ - library builders without a caller, describe(), the property catalogue and the generic per-message accounting of _on_message (last_heard / liveness, coordinator.py:3403) do not count; na = nothing to match (field has no behaviour for the app or HA). Verification also checked mechanically that every cited file:line exists and is non-blank and every cited test function exists; air:adv:* rows cover the items appended to the inventory from docs/bluetooth-recheck.md sec. 1. UPDATE: 56 rows added for the items of settings.json (the phone app's settings session). Rule used for them, on top of the status rules: a message HA itself sends or consumes with the same encoding is implemented (its builder, sender / consumer and a test of the encoding are cited, mostly from the msg / prop rows of the same message); a message only the app sends whose behaviour another row judges (a property HA reads through another server, a read HA does not do) is dup of that row. Citations: every `code` entry is now `path::symbol` (docs/parity/README.md, Row schema), converted from `path:line` by reading each line in the tree its ledger line was written against (git blame), following it through every later re-pointing that kept the cited text and past the merges that re-pointed lines to other code, and naming the innermost symbol holding it; `tools/parity.py check` verifies each symbol is defined.",
+ "rows": [
+  {
+   "id": "air:access:02-0527:0x0001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/jhmesh/properties.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/config_entities.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/switch.py::JungHomeDeviceLockFlag"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_flags_codec_device_lock_bit_order",
+    "tests/test_config_entities.py::test_device_lock_flags_per_product_lock_operation_enabled",
+    "tests/test_switch.py::test_device_lock_flag_rewrites_the_whole_word",
+    "tests/test_switch.py::test_device_lock_word_is_read_first_never_guessed"
+   ],
+   "note": "HA sends the same Get before every flag write (device lock switches, read-modify-write) and on demand; the app reads it on every device-page open."
+  },
+  {
+   "id": "air:access:02-0527:0x0009",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnforcedOutputCodec",
+    "custom_components/junghome_ble/config_entities.py::config_targets",
+    "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
+    "custom_components/junghome_ble/select.py::JungHomeLockFunction",
+    "custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_enforced_output_codec_vectors",
+    "tests/test_switch.py::test_lock_locks_the_current_state_and_unlocks_like_the_app",
+    "tests/test_cover.py::test_blind_lock_entities",
+    "tests/test_cover.py::test_lock_function_select",
+    "tests/test_config_entities.py::test_lock_goes_to_every_lockable_load_disabled_by_default"
+   ],
+   "note": "HA reads the lock function only while a lock entity is enabled; the app sweeps every load when its device list opens (ui:state:lockfunctioncapability)."
+  },
+  {
+   "id": "air:access:02-0527:0x000f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x1001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x1002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_enabled_by_default_is_the_first_parameters_page"
+   ],
+   "note": "The factory value FFFFFFFF decodes to 4294967.295 s, above the entity's 14400 s maximum; what the app shows for it is not known."
+  },
+  {
+   "id": "air:access:02-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "custom_components/junghome_ble/binary_sensor.py::JungHomeDetectorOccupancy.hold_seconds"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_number.py::test_entity_and_initial_read",
+    "tests/test_binary_sensor.py::test_motion_hold_is_the_relays_run_on_time"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x100b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x100d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_spec_fields_and_lookups"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x100e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::LOAD_KINDS"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_entities_are_config_category_with_property_attributes"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x5004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
+    "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
+    "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
+    "custom_components/junghome_ble/services.py::_threshold_devices",
+    "custom_components/junghome_ble/thresholds.py::current_threshold"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_threshold_codec",
+    "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
+    "tests/test_thresholds.py::test_threshold_sensors"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0x5005",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket.async_turn_on",
+    "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
+    "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
+    "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
+    "custom_components/junghome_ble/services.py::_threshold_devices",
+    "custom_components/junghome_ble/thresholds.py::current_threshold"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_threshold_codec",
+    "tests/test_thresholds.py::test_delete_threshold",
+    "tests/test_thresholds.py::test_threshold_sensors"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0xa001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_select.py::test_led_colour_select",
+    "tests/test_switch.py::test_night_mode"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0xa002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_select.py::test_led_colour_select",
+    "tests/test_switch.py::test_night_mode"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0xa004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_select.py::test_second_led_of_a_two_gang",
+    "tests/test_switch.py::test_night_mode"
+   ]
+  },
+  {
+   "id": "air:access:02-0527:0xa005",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_select.py::test_second_led_of_a_two_gang",
+    "tests/test_switch.py::test_night_mode"
+   ]
+  },
+  {
+   "id": "air:access:03",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.unwire_threshold"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
+    "tests/jhmesh/test_config_messages.py::test_model_publication_set_all_fields",
+    "tests/jhmesh/test_properties_codecs.py::test_model_publication_set_and_its_status",
+    "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
+    "tests/test_thresholds.py::test_delete_threshold",
+    "tests/test_thresholds.py::test_set_threshold_disabled_unwires_like_the_app"
+   ],
+   "note": "Same TTL 255 / no period / no retransmission as the app. The threshold client's publication reset on disable and delete (0000 with TTL 0, then the group) is sent as the app does, by mesh_config.MeshConfigurator.unwire_threshold (on-air check pending: net:uc:togglethreshold, net:uc:deletethreshold)."
+  },
+  {
+   "id": "air:access:03-0527:0x0001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/config_entities.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/switch.py::JungHomeDeviceLockFlag"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_flags_codec_device_lock_bit_order",
+    "tests/test_config_entities.py::test_device_lock_flags_per_product_lock_operation_enabled",
+    "tests/test_switch.py::test_device_lock_flag_rewrites_the_whole_word",
+    "tests/test_switch.py::test_device_lock_word_is_read_first_never_guessed",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ],
+   "note": "userAccess 1 as the app (on air app settings session); HA sent 3 before the userAccess fix."
+  },
+  {
+   "id": "air:access:03-0527:0x000e",
+   "status": "na",
+   "code": [
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_property_set_builds_the_app_message",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_manufacturer_and_user_have_no_access_byte"
+   ],
+   "class": "declined",
+   "reason": "Deliberately not adopted: the one-message dimmer refresh (Admin Set 0x000E = 01, review-3 F21) stays out; HA refreshes with one Get per state (coordinator.py _refresh_all) and only the CLI (`prop set <el> server_state_publish_request 1`) sends it. Records: docs/review-3/plan.md, \"## Status\" (Phase 2): \"F21 left out (few Gets saved, weaker reachability counting)\"; docs/roadmap.md, \"## 3b. TODO from the Bluetooth recheck\": \"`0x000E server_state_publish_request`: works on dimmers ... (A one-message refresh HA could use for dimmers; not adopted.)\"."
+  },
+  {
+   "id": "air:access:03-0527:0x000f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_node_properties_go_to_the_primary_element_once",
+    "tests/test_config_entities.py::test_firmware_gating_uses_the_cached_software_version",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0x1001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ],
+   "note": "userAccess 1 as the app (on air app settings session); HA sent 3 before the userAccess fix."
+  },
+  {
+   "id": "air:access:03-0527:0x1002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_enabled_by_default_is_the_first_parameters_page",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ],
+   "note": "userAccess 1 as the app (on air app settings session); HA sent 3 before the userAccess fix."
+  },
+  {
+   "id": "air:access:03-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ],
+   "note": "userAccess 1 (READ) as the app sends it (on air app settings session); HA sent 3 before the userAccess fix."
+  },
+  {
+   "id": "air:access:03-0527:0x100b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air",
+    "tests/test_switch.py::test_property_switch_read_and_written"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0x100d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/jhmesh/test_properties.py::test_spec_fields_and_lookups",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0x5003",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._admin_status",
+    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/config_entities.py::edge_detection_targets",
+    "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
+    "tests/test_mesh_config.py::test_assign_key_to_the_gateway_uses_key_mode_6",
+    "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ],
+   "note": "HA sends KeyMode Admin Sets to key elements (assign_key). The app also writes KeyMode 5 to the metering socket's meter element around threshold wiring; that element has no such Admin property (2-byte Status), so HA's threshold wiring does not send it."
+  },
+  {
+   "id": "air:access:03-0527:0x5004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
+    "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
+    "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
+    "custom_components/junghome_ble/services.py::_threshold_devices"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_threshold_codec",
+    "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
+    "tests/test_thresholds.py::test_threshold_sensors",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0xa001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_led_specs",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id",
+    "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
+    "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
+    "custom_components/junghome_ble/select.py::JungHomeLedColour",
+    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_rgb_mode_codec_led_mode_on_vector",
+    "tests/test_select.py::test_led_colour_select",
+    "tests/test_switch.py::test_night_mode",
+    "tests/test_config_entities.py::test_led_properties_are_addressed_to_the_primary_element_under_the_key_device",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0xa002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_led_specs",
+    "custom_components/junghome_ble/jhmesh/properties.py::led_property_id",
+    "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
+    "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
+    "custom_components/junghome_ble/select.py::JungHomeLedColour",
+    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_rgb_mode_codec_led_mode_on_vector",
+    "tests/test_select.py::test_led_colour_select",
+    "tests/test_switch.py::test_night_mode",
+    "tests/test_config_entities.py::test_night_mode_targets",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air"
+   ]
+  },
+  {
+   "id": "air:access:03-0527:0xa004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_led_specs",
+    "custom_components/junghome_ble/select.py::JungHomeLedColour",
+    "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air",
+    "tests/test_select.py::test_second_led_of_a_two_gang",
+    "tests/test_switch.py::test_night_mode"
+   ],
+   "note": "The app's 'Synchronise colours' writes LED 1's value to 0xA001 / 0xA004 / 0xA002 / 0xA005; HA has no such switch: prod:param:led-color:sync-led-color."
+  },
+  {
+   "id": "air:access:03-0527:0xa005",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/properties.py::_led_specs",
+    "custom_components/junghome_ble/select.py::JungHomeLedColour",
+    "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
+   ],
+   "tests": [
+    "tests/test_number.py::test_set_value_confirmed_by_the_status",
+    "tests/test_number.py::test_set_value_without_status_is_read_back",
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/jhmesh/test_properties.py::test_admin_set_matches_the_app_on_air",
+    "tests/test_select.py::test_second_led_of_a_two_gang",
+    "tests/test_switch.py::test_night_mode"
+   ]
+  },
+  {
+   "id": "air:access:04-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "tools/cli_ops.py::property_set",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_property_set_builds_the_app_message",
+    "tests/jhmesh/test_messages.py::test_describe_vendor_property_set_variants"
+   ]
+  },
+  {
+   "id": "air:access:05",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_health_fault_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_health_fault_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults_of"
+   ],
+   "tests": [
+    "tests/test_binary_sensor.py::test_fault_status_drives_the_entity",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x0001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/config_entities.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/switch.py::JungHomeDeviceLockFlag"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_flags_codec_device_lock_bit_order",
+    "tests/test_config_entities.py::test_device_lock_flags_per_product_lock_operation_enabled",
+    "tests/test_switch.py::test_device_lock_flag_rewrites_the_whole_word",
+    "tests/test_switch.py::test_device_lock_word_is_read_first_never_guessed"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x0009",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnforcedOutputCodec",
+    "custom_components/junghome_ble/config_entities.py::config_targets",
+    "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
+    "custom_components/junghome_ble/select.py::JungHomeLockFunction",
+    "custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_enforced_output_codec_vectors",
+    "tests/test_switch.py::test_lock_locks_the_current_state_and_unlocks_like_the_app",
+    "tests/test_cover.py::test_blind_lock_entities",
+    "tests/test_cover.py::test_lock_function_select",
+    "tests/test_config_entities.py::test_lock_goes_to_every_lockable_load_disabled_by_default"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x000e",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property",
+    "tools/cli_ops.py::property_status_text"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled"
+   ],
+   "class": "declined",
+   "reason": "The 2-byte Admin Status is only the reply to the Admin Set 0x000E that HA deliberately does not send (air:access:03-0527:0x000e); _on_vendor_property_status drops it (len < 3) and the CLI renders it. Records: docs/review-3/plan.md, \"## Status\" (Phase 2): \"F21 left out (few Gets saved, weaker reachability counting)\"; docs/roadmap.md, \"## 3b. TODO from the Bluetooth recheck\": \"`0x000E server_state_publish_request`: works on dimmers ... (A one-message refresh HA could use for dimmers; not adopted.)\"."
+  },
+  {
+   "id": "air:access:05-0527:0x000f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_switch.py::test_property_switch_read_and_written"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x1001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x1002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
+    "custom_components/junghome_ble/jhmesh/properties.py::Delay"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/test_config_entities.py::test_enabled_by_default_is_the_first_parameters_page",
+    "tests/jhmesh/test_properties.py::test_delay_codec_reads_as_the_app_shows",
+    "tests/test_number.py::test_factory_delay_reads_as_off_and_is_still_written"
+   ],
+   "note": "The factory value 0xFFFFFFFF seen on air (settings session, socket 0174) reads as 0 s, as the app shows it (properties.Delay)."
+  },
+  {
+   "id": "air:access:05-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x100b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x100d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/test_config_entities.py::test_mapping_table",
+    "tests/jhmesh/test_properties.py::test_spec_fields_and_lookups"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x100e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x5003",
+   "status": "na",
+   "class": "dup",
+   "reason": "An LBC Admin Property Status without access byte and value (the property does not exist on the element): the handling of value-less Admin Statuses is judged under msg:op:c52705 (implemented: nothing is cached, a pending request for the id is answered as not supported). HA never sends the Set that draws this reply (air:access:03-0527:0x5003).",
+   "dup_of": "msg:op:c52705"
+  },
+  {
+   "id": "air:access:05-0527:0x5004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
+    "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
+    "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
+    "custom_components/junghome_ble/services.py::_threshold_devices"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_threshold_codec",
+    "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
+    "tests/test_thresholds.py::test_threshold_sensors"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0x5005",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.fetch",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
+    "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
+    "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
+    "custom_components/junghome_ble/services.py::_threshold_devices"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_number.py::test_unsolicited_status_updates_the_value",
+    "tests/jhmesh/test_properties.py::test_threshold_codec",
+    "tests/test_thresholds.py::test_delete_threshold",
+    "tests/test_thresholds.py::test_threshold_sensors"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0xa001",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_select.py::test_led_colour_select"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0xa002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_select.py::test_led_colour_select"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0xa004",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_select.py::test_second_led_of_a_two_gang"
+   ]
+  },
+  {
+   "id": "air:access:05-0527:0xa005",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_select.py::test_second_led_of_a_two_gang"
+   ]
+  },
+  {
+   "id": "air:access:06",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._configure_heartbeats",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_publication_status",
+    "tools/cli_ops.py::HopProbe.read_publication"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_heartbeats_are_configured_once_per_reconfigure_interval",
+    "tests/test_coordinator.py::test_malformed_heartbeat_publication_status_is_ignored",
+    "tests/test_coordinator.py::test_heartbeat_configuration_tolerates_refusals_and_silence"
+   ]
+  },
+  {
+   "id": "air:access:08-0527:0x5014",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/sensor.py::PROPERTY_INSTALLED",
+    "custom_components/junghome_ble/sensor.py::InstalledTarget.specs",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_sensor.py::test_installed_sensor_is_read_once_from_the_meter_element",
+    "tests/jhmesh/test_properties.py::test_timestamp7_codec_reads_the_meter_timestamps_seen_on_air"
+   ]
+  },
+  {
+   "id": "air:access:08-0527:0xc000",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::gateway_status_targets",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_gateway_status_and_address",
+    "tests/test_config_entities.py::test_gateway_status_targets"
+   ]
+  },
+  {
+   "id": "air:access:08-0527:0xc002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::gateway_status_targets",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_gateway_status_and_address"
+   ]
+  },
+  {
+   "id": "air:access:0b-0527:0x5014",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/sensor.py::InstalledTarget.specs"
+   ],
+   "tests": [
+    "tests/test_sensor.py::test_installed_sensor_is_read_once_from_the_meter_element"
+   ]
+  },
+  {
+   "id": "air:access:0b-0527:0xc000",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::cacheable"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_gateway_status_and_address",
+    "tests/test_config_entities.py::test_secret_and_unknown_vendor_statuses_are_not_cached"
+   ]
+  },
+  {
+   "id": "air:access:0b-0527:0xc002",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "custom_components/junghome_ble/config_entities.py::cacheable"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_gateway_status_and_address",
+    "tests/test_config_entities.py::test_secret_and_cacheable"
+   ]
+  },
+  {
+   "id": "air:access:0e-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "tools/cli_ops.py::property_get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server",
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders"
+   ],
+   "note": "CLI only: tools/mesh_poc.py prop get --server user reads the run-on time through the User server; Home Assistant reads and writes it through the Admin server (the run-on time number)."
+  },
+  {
+   "id": "air:access:0e-0527:0x1014",
+   "status": "na",
+   "code": [
+    "tools/cli_ops.py::property_get",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server"
+   ],
+   "class": "dup",
+   "dup_of": "prod:param-gate:rtr-connection",
+   "reason": "Reading RtrOperationMode 0x1014 and showing whether a load is controlled by a room thermostat is already the prod row \"HA never reads RtrOperationMode 0x1014 nor shows the ConnectedToRtr info\" (with the parameter gating that depends on it). Today only the CLI sends this User Get; 0x1014 is in UNSAFE_PROPERTIES."
+  },
+  {
+   "id": "air:access:0e-0527:0x5003",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::KeyModeTarget",
+    "custom_components/junghome_ble/config_entities.py::key_mode_targets",
+    "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get",
+    "tools/cli_ops.py::property_get",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
+   ],
+   "tests": [
+    "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode",
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server"
+   ],
+   "note": "Status confirmed implemented, with a caveat: the item is the *User* Get (CE 27 05) the gateway polls; the integration's KeyMode sensor reads the same value through the *Admin* server (spec.server == 'admin', config_entities.py::PropertyReader._get sends C2 27 05) and also learns it passively from the gateway's User Status replies (air:access:11-0527:0x5003). The User Get itself is sent only by the CLI (`--server user`), which test_property_get_picks_the_hosting_server pins byte for byte."
+  },
+  {
+   "id": "air:access:0e-0527:0x5010",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/energy_history.py::read_chart",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnergyChart",
+    "custom_components/junghome_ble/energy_history.py::HOURLY_CHART"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
+    "tests/test_energy_history.py::test_missed_hours_are_imported_on_connect",
+    "tests/jhmesh/test_properties.py::test_energy_chart_codec",
+    "tests/test_energy_history.py::test_read_charts"
+   ]
+  },
+  {
+   "id": "air:access:0e-0527:0x5011",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/energy_history.py::read_chart",
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnergyChart",
+    "custom_components/junghome_ble/energy_history.py::DAILY_CHART"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
+    "tests/test_energy_history.py::test_missed_hours_are_imported_on_connect",
+    "tests/jhmesh/test_properties.py::test_energy_charts_at_full_length",
+    "tests/test_energy_history.py::test_days_beyond_the_hourly_chart_come_from_the_daily_one"
+   ]
+  },
+  {
+   "id": "air:access:0e-0527:0xc001",
+   "status": "na",
+   "class": "dup",
+   "reason": "The app reads the gateway's API token through the User server; HA never asks the mesh for it (it keeps the token it paired with) and never caches or shows a 0xC001 Status: judged under prop:0xc001.",
+   "dup_of": "prop:0xc001"
+  },
+  {
+   "id": "air:access:0e-0527:0xc002",
+   "status": "na",
+   "class": "dup",
+   "reason": "The same read of the gateway's IP address that HA sends through the Manufacturer server (08-0527); the value is the same property.",
+   "dup_of": "air:access:08-0527:0xc002"
+  },
+  {
+   "id": "air:access:0e-0527:0xc003",
+   "status": "na",
+   "class": "dup",
+   "reason": "The same read of the gateway's certificate fingerprint that HA sends through the Manufacturer server to pin the gateway's TLS certificate: judged under prop:0xc003.",
+   "dup_of": "prop:0xc003"
+  },
+  {
+   "id": "air:access:10-0527:0x5012",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_vendor_property_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._button_event",
+    "custom_components/junghome_ble/jhmesh/properties.py::KeyEvent"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_vendor_button_events",
+    "tests/test_coordinator.py::test_double_press_copies_interleave",
+    "tests/test_event.py::test_vendor_events",
+    "tests/jhmesh/test_properties.py::test_key_event_codec"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0x1007",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0x1014",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::cacheable",
+    "custom_components/junghome_ble/diagnostics.py::_state_dict"
+   ],
+   "tests": [],
+   "class": "dup",
+   "dup_of": "prod:param-gate:rtr-connection",
+   "reason": "Same behaviour as air:access:0e-0527:0x1014: the passively cached gateway-solicited 0x1014 Status surfaces only in diagnostics (diagnostics.py::_state_dict); the read + surface of RtrOperationMode is the prod row cited in dup_of."
+  },
+  {
+   "id": "air:access:11-0527:0x5003",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::cacheable",
+    "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
+   ],
+   "tests": [
+    "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
+    "tests/test_config_entities.py::test_secret_and_cacheable",
+    "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0x5010",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnergyChart",
+    "custom_components/junghome_ble/energy_history.py::HOURLY_CHART",
+    "custom_components/junghome_ble/energy_history.py::read_chart"
+   ],
+   "tests": [
+    "tests/jhmesh/test_properties.py::test_energy_chart_codec",
+    "tests/test_energy_history.py::test_missed_hours_are_imported_on_connect",
+    "tests/test_energy_history.py::test_read_charts"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0x5011",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
+    "custom_components/junghome_ble/jhmesh/properties.py::EnergyChart",
+    "custom_components/junghome_ble/energy_history.py::DAILY_CHART",
+    "custom_components/junghome_ble/energy_history.py::read_chart"
+   ],
+   "tests": [
+    "tests/jhmesh/test_properties.py::test_energy_charts_at_full_length",
+    "tests/test_energy_history.py::test_days_beyond_the_hourly_chart_come_from_the_daily_one"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0x5013",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::status_owner",
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_status"
+   ],
+   "tests": [
+    "tests/test_switch.py::test_status_led_follows_the_gateways_writes",
+    "tests/test_switch.py::test_status_led_is_written_with_a_user_property_status",
+    "tests/test_config_entities.py::test_write_status_needs_no_reply",
+    "tests/test_config_entities.py::test_vendor_property_status_builder"
+   ]
+  },
+  {
+   "id": "air:access:11-0527:0xc001",
+   "status": "na",
+   "class": "dup",
+   "reason": "The gateway's reply to the app's token read; HA drops any 0xC001 Status (cacheable() refuses secrets): judged under prop:0xc001.",
+   "dup_of": "prop:0xc001"
+  },
+  {
+   "id": "air:access:11-0527:0xc002",
+   "status": "na",
+   "class": "dup",
+   "reason": "The same IP address Status HA consumes from the Manufacturer server (0b-0527).",
+   "dup_of": "air:access:0b-0527:0xc002"
+  },
+  {
+   "id": "air:access:11-0527:0xc003",
+   "status": "na",
+   "class": "dup",
+   "reason": "The gateway's fingerprint Status, consumed by HA from the Manufacturer server: judged under prop:0xc003.",
+   "dup_of": "prop:0xc003"
+  },
+  {
+   "id": "air:access:12-0527",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_get",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_list_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ],
+   "note": "HA sends the same slot-list Get (central id 0) when it lists a load's schedules."
+  },
+  {
+   "id": "air:access:13-0527",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status",
+    "custom_components/junghome_ble/schedules.py::Scheduler._get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_empty_scheduler_statuses",
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "air:access:16-0527",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_a_late_scene_action_status_does_not_shift_onto_the_next_scene"
+   ]
+  },
+  {
+   "id": "air:access:17-0527",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scene_action_status",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_reply_to",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_scene_action_status",
+    "tests/test_coordinator.py::test_scene_action_read_tolerates_a_malformed_status_and_a_lost_link",
+    "tests/test_coordinator.py::test_scene_action_dropped_when_element_no_longer_lists_it"
+   ]
+  },
+  {
+   "id": "air:access:42",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_location",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
+    "custom_components/junghome_ble/schedules.py::Scheduler._send_location"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/jhmesh/test_messages.py::test_generic_location_global_set_vector",
+    "tests/test_schedules.py::test_astro_schedule_sends_the_home_location"
+   ]
+  },
+  {
+   "id": "air:access:46:0x000d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_property_status_decoding",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:46:0x0010",
+   "status": "na",
+   "class": "dup",
+   "reason": "The node's answer to the hardware revision read; HA reads it too (once per node): judged under prop:sig:0x0010.",
+   "dup_of": "prop:sig:0x0010"
+  },
+  {
+   "id": "air:access:46:0x0011",
+   "status": "na",
+   "class": "dup",
+   "reason": "The node's answer to the manufacturer name read; HA reads it too (once per node): judged under prop:sig:0x0011.",
+   "dup_of": "prop:sig:0x0011"
+  },
+  {
+   "id": "air:access:46:0x001a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version"
+   ],
+   "tests": [
+    "tests/test_sensor.py::test_node_device_shows_the_software_version",
+    "tests/test_sensor.py::test_a_version_status_without_a_value_is_ignored"
+   ]
+  },
+  {
+   "id": "air:access:46:0x0072",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._lacks_precise_energy"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_property_status_decoding",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:4a:0x006a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_property_status_decoding",
+    "tests/test_button.py::test_reset_consumption_zeroes_both_counters_like_the_app"
+   ]
+  },
+  {
+   "id": "air:access:4a:0x006d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_property_status_decoding",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:52:0x0052",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_values",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
+    "tools/cli_ops.py::property_status_text",
+    "tools/mesh_poc.py::cmd_prop_get"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: 0x0052 present input power reads 0 on a loaded socket (docs/hidden-features.md §2: 0x0052 / 0x0057 read 0 while 0x0081 shows 3.7 W); the socket measures the load side, which Home Assistant reads (0x0081, 0x005C, 0x005D). The Status still reaches the CLI (tools/mesh_poc.py prop get <meter> present_input_power). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Present input power / current 0x0052 / 0x0057'."
+  },
+  {
+   "id": "air:access:52:0x005c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sensor_status_updates_socket_readings",
+    "tests/test_sensor.py::test_socket_sensor_set",
+    "tests/test_sensor.py::test_power_sensor"
+   ]
+  },
+  {
+   "id": "air:access:52:0x005d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sensor_status_updates_socket_readings",
+    "tests/test_sensor.py::test_socket_sensor_set",
+    "tests/test_sensor.py::test_power_sensor"
+   ]
+  },
+  {
+   "id": "air:access:52:0x0081",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sensor_status_updates_socket_readings",
+    "tests/test_sensor.py::test_socket_sensor_set",
+    "tests/test_sensor.py::test_power_sensor"
+   ]
+  },
+  {
+   "id": "air:access:5c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time_daily",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._arm_offset_change",
+    "custom_components/junghome_ble/jhmesh/messages.py::time_set"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected",
+    "tests/test_link_loss.py::test_a_time_set_follows_a_daylight_saving_change",
+    "tests/test_coordinator.py::test_time_set_falls_back_to_utc_for_an_odd_zone"
+   ]
+  },
+  {
+   "id": "air:access:5d",
+   "status": "gap",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_message"
+   ],
+   "tests": [],
+   "missing": "No sender or specific consumer: Time Status has no STATUS_HANDLERS entry and only describe() decodes it; the replies reach _on_message (coordinator.py::JungHomeHub._on_message) only as generic traffic (last_heard / liveness), like every access message. HA never confirms which nodes took its Time Set nor compares their clock with its own; no test feeds a Time Status to the hub. (Was 'partial'; by the ledger's status rules no sender + no specific consumer = gap.) Build: a Time Status handler recording the last Time Status per node (acceptance of HA's Time Set + offset vs HA time) in diagnostics; testable offline with injected statuses. (mgmt:debug:timelocationdebugviewmodel.observetime describes the same storage from the app's debug screen and points here.)",
+   "class": "build",
+   "verify": "offline"
+  },
+  {
+   "id": "air:access:5e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_current_scene",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.note_scene_recall",
+    "custom_components/junghome_ble/event.py::fire_scene_recalled",
+    "custom_components/junghome_ble/scene.py::JungHomeScene._on_recalled",
+    "custom_components/junghome_ble/scene.py::JungHomeScene.extra_state_attributes",
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_scene_status"
+   ],
+   "tests": [
+    "tests/test_scene.py::test_a_recall_home_assistant_did_not_hear_is_reported_by_the_members_status",
+    "tests/test_scene.py::test_statuses_of_a_heard_recall_repeat_nothing",
+    "tests/test_scene.py::test_status_answers_and_refusals_fire_nothing",
+    "tests/test_scene.py::test_answers_to_the_apps_and_the_gateways_scene_get_fire_nothing",
+    "tests/test_scene.py::test_a_key_that_publishes_no_scene_event_leaves_the_recall_to_the_members",
+    "tests/test_scene.py::test_our_own_activation_is_recorded_once",
+    "tests/jhmesh/test_messages.py::test_decode_scene_status",
+    "tests/jhmesh/test_messages.py::test_describe_scene_messages"
+   ],
+   "reason": "Every Scene Status (0x5E) is a STATUS_HANDLERS entry: a success keeps the element's current scene (ElementState.scene; the scene entity's active_members) and, published to a group (any destination that is no unicast address: a Status sent to the app, the gateway or us answers a Scene Get and only updates the state — the blacklist proxy filter delivers all three) for a scene no recall reported within SCENE_RECALL_WINDOW (5 s; the captured statuses follow the recall within 50 ms), fires junghome_ble_scene_recalled without source, with reported_by, and records the scene entity's activation. A recall is noted only where its scene event fires, so a key whose event entity is disabled leaves the report to the members' Status. Tested with the captured on-air form (3 bytes, status 0) injected in the sim."
+  },
+  {
+   "id": "air:access:8018",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_model_gets",
+    "custom_components/junghome_ble/switch.py::JungHomeSensorPublication"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_get",
+    "tests/jhmesh/test_audit.py::test_a_query_takes_only_the_answer_about_its_own_model",
+    "tests/test_sensor_publication.py::test_sensor_publication_switch"
+   ],
+   "note": "Home Assistant reads publications in audit_network and, like the app's settings page, for the 'Sensor values for IoT systems' switch: one Publication Get of each Sensor Server per link (JungHomeSensorPublication), the export's answer standing in until the node has answered."
+  },
+  {
+   "id": "air:access:8019",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_publication_status",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._rooms_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_status_round_trips_the_set",
+    "tests/jhmesh/test_properties_codecs.py::test_model_publication_set_and_its_status"
+   ]
+  },
+  {
+   "id": "air:access:801b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._add_room",
+    "custom_components/junghome_ble/mesh_config.py::THRESHOLD_TARGET_MODELS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
+    "tests/test_services.py::test_set_room_by_device_and_entity_targets",
+    "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
+    "tests/test_thresholds.py::test_set_threshold_devices_edge_cases"
+   ],
+   "note": "Room assignment matches (0x1000 of the first element to the room group). Threshold wiring subscribes the target's 0x0527:1013 and then 0x1000 to the socket meter's group, as the app does (on-air check pending: net:uc:createthreshold)."
+  },
+  {
+   "id": "air:access:801c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._add_room",
+    "custom_components/junghome_ble/mesh_config.py::threshold_wiring"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_rejects_non_group_addresses",
+    "tests/test_services.py::test_clear_key",
+    "tests/test_thresholds.py::test_delete_threshold",
+    "tests/test_thresholds.py::test_set_threshold_disabled_unwires_like_the_app",
+    "tests/test_thresholds.py::test_delete_threshold_unwires_what_the_app_wired"
+   ]
+  },
+  {
+   "id": "air:access:801f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_subscription_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_status_and_lists",
+    "tests/jhmesh/test_properties_codecs.py::test_model_subscription_changes_and_their_status"
+   ]
+  },
+  {
+   "id": "air:access:8031",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults_of",
+    "custom_components/junghome_ble/jhmesh/messages.py::health_fault_get"
+   ],
+   "tests": [
+    "tests/test_binary_sensor.py::test_fault_register_is_asked_of_every_node_and_shown_where_identify_is",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:8038",
+   "status": "implemented",
+   "code": [
+    "tools/cli_ops.py::HopProbe.read_publication",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_get"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_hop_probe_plan_and_text",
+    "tests/test_cli.py::test_cmd_config_hops"
+   ],
+   "note": "CLI only: tools/mesh_poc.py config hops (cli_ops.HopProbe), which probes hop counts with heartbeats the way the development tool seen on air did; Home Assistant itself sends only Heartbeat Publication Set (the Node heartbeats option)."
+  },
+  {
+   "id": "air:access:8039",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._configure_heartbeats",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_set",
+    "tools/cli_ops.py::HopProbe.publish"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_heartbeats_are_configured_once_per_reconfigure_interval",
+    "tests/test_coordinator.py::test_dead_node_is_asked_for_heartbeats_again_and_a_rebooted_one_comes_back",
+    "tests/test_cli.py::test_hop_probe_plan_and_text"
+   ]
+  },
+  {
+   "id": "air:access:803a",
+   "status": "implemented",
+   "code": [
+    "tools/cli_ops.py::HopProbe.read_subscription",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_subscription_get"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_hop_probe_plan_and_text",
+    "tests/test_cli.py::test_cmd_config_hops"
+   ],
+   "note": "CLI only: tools/mesh_poc.py config hops (cli_ops.HopProbe), which probes hop counts with heartbeats the way the development tool seen on air did; Home Assistant itself sends only Heartbeat Publication Set (the Node heartbeats option)."
+  },
+  {
+   "id": "air:access:803b",
+   "status": "implemented",
+   "code": [
+    "tools/cli_ops.py::HopProbe.subscribe",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_subscription_set"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_hop_probe_plan_and_text",
+    "tests/test_cli.py::test_cmd_config_hops",
+    "tests/test_cli.py::test_cmd_config_hops_restores_the_publication_when_the_wait_is_interrupted"
+   ],
+   "note": "CLI only: tools/mesh_poc.py config hops (cli_ops.HopProbe), which probes hop counts with heartbeats the way the development tool seen on air did; Home Assistant itself sends only Heartbeat Publication Set (the Node heartbeats option)."
+  },
+  {
+   "id": "air:access:803c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_subscription_status",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::HeartbeatSubscriptionStatus",
+    "tools/cli_ops.py::hops_text"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_hop_probe_plan_and_text",
+    "tests/test_cli.py::test_cmd_config_hops"
+   ],
+   "note": "CLI only: tools/mesh_poc.py config hops (cli_ops.HopProbe), which probes hop counts with heartbeats the way the development tool seen on air did; Home Assistant itself sends only Heartbeat Publication Set (the Node heartbeats option)."
+  },
+  {
+   "id": "air:access:803d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._device_entry"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",
+    "tests/jhmesh/test_commission.py::test_binds_the_bind_list_first_then_what_the_messenger_binds",
+    "tests/test_mesh_config.py::test_assign_key_binds_an_unbound_client_first"
+   ],
+   "note": "HA binds only the models it wires (never SIG 0x0004, the Remote Provisioning Server the app keeps trying to bind on the gateway, always refused)."
+  },
+  {
+   "id": "air:access:803e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_app_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_status",
+    "tests/jhmesh/test_properties_codecs.py::test_model_app_bind_and_its_status"
+   ]
+  },
+  {
+   "id": "air:access:8201",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._keep_alive"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_quiet_mesh_is_kept_by_the_keep_alive"
+   ]
+  },
+  {
+   "id": "air:access:8202",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_set"
+   ],
+   "tests": [
+    "tests/test_switch.py::test_turn_on_off",
+    "tests/test_light.py::test_switched_light",
+    "tests/test_coordinator.py::test_sig_button_messages"
+   ]
+  },
+  {
+   "id": "air:access:8203",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._from_button"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_button_messages",
+    "tests/test_coordinator.py::test_sig_button_messages_are_deduplicated",
+    "tests/test_event.py::test_sig_events"
+   ]
+  },
+  {
+   "id": "air:access:8204",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_status_messages_update_element_state",
+    "tests/test_coordinator.py::test_transitioning_statuses_show_the_present_state"
+   ]
+  },
+  {
+   "id": "air:access:8205",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_level_get"
+   ],
+   "tests": [
+    "tests/test_cover.py::test_open_close_stop",
+    "tests/test_cover.py::test_stop_tilt_stops_the_slat_element"
+   ]
+  },
+  {
+   "id": "air:access:8208",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_level_status"
+   ],
+   "tests": [
+    "tests/test_cover.py::test_position_and_direction_from_level_status",
+    "tests/test_cover.py::test_tilt_follows_the_slat_element"
+   ]
+  },
+  {
+   "id": "air:access:8209",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.delta_level",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_delta_set",
+    "custom_components/junghome_ble/light.py::JungHomeLight.async_step_dim",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_level_set"
+   ],
+   "tests": [
+    "tests/test_light.py::test_dim_actions_move_and_step_the_level_server",
+    "tests/test_cover.py::test_delta_set_is_the_apps_alternative",
+    "tests/test_event.py::test_holds_are_derived_from_a_keys_move_and_delta_sets"
+   ]
+  },
+  {
+   "id": "air:access:820b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.move_level",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_move_set",
+    "custom_components/junghome_ble/light.py::JungHomeLight.async_start_dim",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._dim_hold"
+   ],
+   "tests": [
+    "tests/test_light.py::test_dim_actions_move_and_step_the_level_server",
+    "tests/test_cover.py::test_open_close_stop",
+    "tests/test_event.py::test_holds_are_derived_from_a_keys_move_and_delta_sets"
+   ]
+  },
+  {
+   "id": "air:access:8211",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onpowerup_get",
+    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onpowerup_builders_and_describe",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ]
+  },
+  {
+   "id": "air:access:8212",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status",
+    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ]
+  },
+  {
+   "id": "air:access:8213",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onpowerup_set",
+    "custom_components/junghome_ble/select.py::JungHomePowerOnBehaviour.async_select_option"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onpowerup_builders_and_describe",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ],
+   "note": "Acknowledged Set to the load element, as the app."
+  },
+  {
+   "id": "air:access:822b:0x000d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+   ]
+  },
+  {
+   "id": "air:access:822b:0x0010",
+   "status": "na",
+   "class": "dup",
+   "reason": "HA reads the hardware revision once per node: judged under prop:sig:0x0010.",
+   "dup_of": "prop:sig:0x0010"
+  },
+  {
+   "id": "air:access:822b:0x0011",
+   "status": "na",
+   "class": "dup",
+   "reason": "HA reads the manufacturer name once per node: judged under prop:sig:0x0011.",
+   "dup_of": "prop:sig:0x0011"
+  },
+  {
+   "id": "air:access:822b:0x001a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.schedule_version",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
+   ],
+   "tests": [
+    "tests/test_sensor.py::test_node_device_shows_the_software_version",
+    "tests/test_sensor.py::test_detector_version_is_read_and_gates_illuminance"
+   ]
+  },
+  {
+   "id": "air:access:822b:0x0072",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+   ]
+  },
+  {
+   "id": "air:access:822d:0x006a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set"
+   ]
+  },
+  {
+   "id": "air:access:822d:0x006d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
+    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+   ]
+  },
+  {
+   "id": "air:access:8231:0x0052",
+   "status": "na",
+   "code": [
+    "tools/cli_ops.py::property_get",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_get",
+    "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS"
+   ],
+   "tests": [
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server"
+   ],
+   "class": "declined",
+   "reason": "Declined: 0x0052 present input power reads 0 on a loaded socket (docs/hidden-features.md §2: 0x0052 / 0x0057 read 0 while 0x0081 shows 3.7 W); the socket measures the load side, which Home Assistant reads (0x0081, 0x005C, 0x005D). The Status still reaches the CLI (tools/mesh_poc.py prop get <meter> present_input_power). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Present input power / current 0x0052 / 0x0057'."
+  },
+  {
+   "id": "air:access:8231:0x005c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:8231:0x005d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:8231:0x0081",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "air:access:8238",
+   "status": "na",
+   "class": "dup",
+   "reason": "HA sends Time Role Get once per node: judged under msg:op:8238.",
+   "dup_of": "msg:op:8238"
+  },
+  {
+   "id": "air:access:823a",
+   "status": "na",
+   "class": "dup",
+   "reason": "HA reads and keeps the Time Role Status: judged under msg:op:823a.",
+   "dup_of": "msg:op:823a"
+  },
+  {
+   "id": "air:access:8243",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_recall",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._from_button",
+    "custom_components/junghome_ble/logbook.py::async_describe_events"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_sig_button_messages",
+    "tests/test_logbook.py::test_scene_recall_from_a_key",
+    "tests/test_event.py::test_sig_events"
+   ]
+  },
+  {
+   "id": "air:access:824b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_light.py::test_dimmer"
+   ]
+  },
+  {
+   "id": "air:access:824e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_lightness_status"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_status_messages_update_element_state",
+    "tests/test_coordinator.py::test_transitioning_statuses_show_the_present_state"
+   ]
+  },
+  {
+   "id": "air:access:8255",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_DEFAULT",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.read_setup",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_default_get"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_switch_on_brightness_and_previous_value",
+    "tests/test_setup_states.py::test_unknown_state_is_read_first_and_never_guessed"
+   ]
+  },
+  {
+   "id": "air:access:8256",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states",
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_the_switch_on_brightness_set_last"
+   ]
+  },
+  {
+   "id": "air:access:8257",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_RANGE",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.read_setup",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_range_get"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_brightness_range_moves_one_end_and_keeps_the_other"
+   ]
+  },
+  {
+   "id": "air:access:8258",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states",
+    "tests/test_setup_states.py::test_both_ends_of_the_range_set_at_once_keep_both"
+   ]
+  },
+  {
+   "id": "air:access:825d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_light.py::test_tunable_white"
+   ]
+  },
+  {
+   "id": "air:access:825e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_level",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_set",
+    "custom_components/junghome_ble/light.py::JungHomeLight._turn_on"
+   ],
+   "tests": [
+    "tests/test_light.py::test_tunable_white",
+    "tests/test_coordinator.py::test_commands_are_clamped"
+   ]
+  },
+  {
+   "id": "air:access:8260",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_status"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_status_messages_update_element_state",
+    "tests/test_coordinator.py::test_transitioning_statuses_show_the_present_state"
+   ]
+  },
+  {
+   "id": "air:access:8261",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_temperature_status"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_coordinator.py::test_ctl_temperature_status_updates_only_the_colour_temperature",
+    "tests/test_coordinator.py::test_an_unanswered_temperature_element_leaves_a_tunable_white_light_available"
+   ],
+   "reason": "The connect-time refresh reads each CTL light's temperature element (el1) with 0x8261 right after its range Get on el0, as the gateway reads a tunable-white light (settings capture: 0x8262 to the lights' el0 0210 / 016A, 0x8261 to their el1 016B / 026F / 0233); the 0x8266 answer lands on the light through _on_ctl_temperature_status. No extra Get after another client's 0x8264: the gateway polls el1 with 0x8261 all day (1521 Gets in the captures, against 79 gateway 0x8264), and the 0x8266 answers it gets are forwarded to HA by the proxy's empty blacklist filter and applied whatever their destination, so a Get of ours would only add to that traffic. Its silence does not count toward the node's reachability (_get_state counted=False): it is the third Get to the same node in one refresh, after the light's own state and range, and one the app never sends; under the app's rule one unanswered request marks the node at once (_missed_answer), and the light's own state Get already decides that."
+  },
+  {
+   "id": "air:access:8262",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_get"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_initial_connection_and_refresh",
+    "tests/test_light.py::test_tunable_white_range_from_the_light"
+   ]
+  },
+  {
+   "id": "air:access:8263",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_level_status"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_ctl_range_status_sets_the_light_limits",
+    "tests/test_light.py::test_tunable_white_range_from_the_light"
+   ]
+  },
+  {
+   "id": "air:access:8264",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl_temperature",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_set",
+    "custom_components/junghome_ble/light.py::JungHomeLight._turn_on"
+   ],
+   "tests": [
+    "tests/test_light.py::test_tunable_white_temperature_alone",
+    "tests/test_light.py::test_tunable_white"
+   ],
+   "missing": "on-air check: with the tunable-white DALI light on, change only its colour temperature in HA (e.g. 3000 K -> 4000 K); the sniffer must show HA's 0x8264 to the light's el1 with 7 parameter bytes [temperature LE][delta UV 00 00][tid][transition 00][delay 00] - compare the last two bytes with the gateway's own 0x8264 in mesh-008.json - and the light must change colour at once (no fade), with el1's 0x8266 / el0's 0x8260 reporting the new temperature. Offline done: set_ctl_temperature sends the 7-byte form with transition 0 / delay 0 (pinned byte for byte in the test).",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "air:access:8266",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._ctl_light_of"
+   ],
+   "tests": [
+    "tests/test_coordinator.py::test_ctl_temperature_status_updates_only_the_colour_temperature"
+   ]
+  },
+  {
+   "id": "air:access:8267",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::CTL_DEFAULT",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.read_setup",
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_default_get"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_lightness_and_delta_uv"
+   ]
+  },
+  {
+   "id": "air:access:8268",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states",
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_the_switch_on_brightness_set_last"
+   ]
+  },
+  {
+   "id": "air:beacon:beacon",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon",
+    "custom_components/junghome_ble/jhmesh/pdu.py::parse_beacon",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_beacon",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_iv_index",
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode_beacon"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_beacon_iv_update_is_followed",
+    "tests/jhmesh/test_client.py::test_beacon_key_refresh_is_reported",
+    "tests/test_coordinator.py::test_iv_update_beacon_changes_local_state",
+    "tests/jhmesh/test_sniffer.py::test_decoder_beacons_follow_the_iv_index"
+   ]
+  },
+  {
+   "id": "air:control:heartbeat",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_network_pdu",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._reprobe_dead",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_heartbeats",
+    "custom_components/junghome_ble/sensor.py::NODE_DIAGNOSTICS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_heartbeats_reach_the_callback",
+    "tests/test_coordinator.py::test_silent_node_goes_unavailable_until_heard_again",
+    "tests/test_node_diagnostics.py::test_hops_come_from_heartbeats",
+    "tests/jhmesh/test_client.py::test_replayed_control_messages_are_ignored"
+   ]
+  },
+  {
+   "id": "air:control:segment-ack",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_network_pdu",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack",
+    "custom_components/junghome_ble/jhmesh/pdu.py::segment_ack",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._wait_for_acks"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
+    "tests/jhmesh/test_client.py::test_segment_ack_only_counts_when_addressed_to_us_from_the_right_node",
+    "tests/jhmesh/test_pdu.py::test_segment_ack_encoding",
+    "tests/jhmesh/test_sim_mesh.py::test_segmented_replies_with_lost_client_acks"
+   ]
+  },
+  {
+   "id": "air:copy:copy",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._is_replay",
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode_network"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_replay_protection",
+    "tests/jhmesh/test_sniffer.py::test_decoder_access_message_and_copies",
+    "tests/jhmesh/test_sniffer.py::test_decoder_prunes_old_copies_and_segments"
+   ]
+  },
+  {
+   "id": "air:foreign:beacon",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode_beacon",
+    "custom_components/junghome_ble/jhmesh/pdu.py::parse_beacon",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon",
+    "custom_components/junghome_ble/onboard.py::unprovisioned_devices"
+   ],
+   "tests": [
+    "tests/jhmesh/test_sniffer.py::test_decoder_foreign_beacons",
+    "tests/jhmesh/test_pdu.py::test_parse_beacon_rejects_wrong_type_or_length"
+   ],
+   "class": "dup",
+   "dup_of": "mgmt:nordic:unprovisionedbeacon.init",
+   "reason": "Foreign secure beacons are ignored correctly (tested); Unprovisioned Device Beacons (type 0x00: UUID, OOB, optional URI hash) are decoded by the sniffer as their own kind, the mgmt row cited in dup_of (also mgmt:const:unprovisionedbeacon.*)."
+  },
+  {
+   "id": "air:foreign:network-pdu",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/pdu.py::network_decrypt",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_network_pdu",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_undecryptable",
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode_network"
+   ],
+   "tests": [
+    "tests/jhmesh/test_pdu.py::test_network_decrypt_rejects_wrong_nid_or_short_pdu",
+    "tests/jhmesh/test_client.py::test_undecryptable_messages_are_ignored",
+    "tests/test_coordinator.py::test_undecryptable_traffic_next_to_decodable_traffic_is_no_stale_export",
+    "tests/jhmesh/test_sniffer.py::test_decoder_foreign_and_undecryptable_network_pdus"
+   ]
+  },
+  {
+   "id": "air:pbadv:pb-adv",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/sniffer.py::AD_KINDS",
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode"
+   ],
+   "tests": [
+    "tests/jhmesh/test_sniffer.py::test_mesh_records_keep_only_mesh_ad_types",
+    "tests/jhmesh/test_sniffer.py::test_decoder_foreign_and_undecryptable_network_pdus"
+   ],
+   "missing": "PB-ADV PDUs are captured and labelled but not decoded: no parsing of the Generic Provisioning PDU (Link Open with the device UUID, Link Ack/Close, Transaction Start/Continuation/Ack), so the sniffer cannot say which device is being provisioned or whether a provisioning of this installation (app adding a node) started/failed. Build: a PB-ADV / Generic Provisioning PDU decoder in jhmesh/sniffer.py (spec layouts, tested with synthetic PDUs and the captured PB-ADV records). Provisioning over PB-ADV itself is not possible from HA (no raw advertising TX through HA Bluetooth).",
+   "class": "build",
+   "verify": "offline"
+  },
+  {
+   "id": "air:segment:segment",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
+    "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._segment"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
+    "tests/jhmesh/test_client.py::test_two_interleaved_segmented_messages_are_both_delivered",
+    "tests/jhmesh/test_sniffer.py::test_decoder_segmented_message"
+   ]
+  },
+  {
+   "id": "air:adv:0x01",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "reason": "Radio/GAP-level advertising flags with no behaviour to match: HA's Bluetooth stack handles the advertising PDU itself, neither the app (de/jung reads only service data and raw bytes of scan records) nor the integration acts on them.",
+   "class": "ha-native"
+  },
+  {
+   "id": "air:adv:0x03:1828",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/manifest.json::bluetooth",
+    "custom_components/junghome_ble/__init__.py::async_remove_entry"
+   ],
+   "tests": [
+    "tests/test_config_flow.py::test_bluetooth_flow"
+   ],
+   "note": "HA core matches the manifest's service_uuid 1828 against the advertised UUID list and starts the Bluetooth discovery flow; the matcher itself is HA core's, the flow it triggers is tested with a service info carrying service_uuids [1828]."
+  },
+  {
+   "id": "air:adv:0x16:1828:00",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.classify_service_data",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_unknown_node",
+    "custom_components/junghome_ble/config_flow.py::proxy_in_range"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_classify_service_data",
+    "tests/test_config_flow.py::test_proxy_in_range_ignores_other_adverts",
+    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement",
+    "tests/test_coordinator.py::test_unknown_node_of_our_network_raises_a_repair"
+   ]
+  },
+  {
+   "id": "air:adv:0x19",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "reason": "The app reads no Appearance: its only ScanRecord accesses are getServiceData for 0x1827/0x1828 (de/jung/junghome/data/mesh/DeviceDiscoveringImpl$startDiscovering$2.java:80, domain/interactors/networking/ConnectToProxy$connectToProxy$2.java:271, domain/interactors/update/ConnectToDevice$getDevice$2$scanResult$1.java:80) and the raw bytes for LBCAdvertisementData (DeviceDiscoveringImpl$startDiscovering$2.java:127); the JUNG record's product id identifies the device more precisely. Appearance has no meaning for the integration: HA Bluetooth parses the advertisement itself and the JUNG record identifies the device.",
+   "class": "ha-native"
+  },
+  {
+   "id": "air:adv:0xff:0527:03",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/advert.py::parse_jung_advertisement",
+    "custom_components/junghome_ble/jhmesh/advert.py::parse_manufacturer_data",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_unknown_node",
+    "custom_components/junghome_ble/onboard.py::unprovisioned_devices"
+   ],
+   "tests": [
+    "tests/jhmesh/test_advert.py::test_type_3_record_as_seen_on_air",
+    "tests/jhmesh/test_advert.py::test_parse_manufacturer_data_map",
+    "tests/test_coordinator.py::test_unknown_node_of_our_network_raises_a_repair"
+   ],
+   "note": "The stray JUNG device advertising the record without 0x1827/0x1828 is not surfaced (the manifest matcher is 0x1828); the app ignores it too (its discovery needs 0x1827 service data, DeviceDiscoveringImpl$startDiscovering$2.java:80)."
+  },
+  {
+   "id": "air:adv:local-name",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "reason": "Scan-response only, and the device name is HA Bluetooth's own field (BluetoothServiceInfo.name): HA's passive (ESPHome) scanners never receive it (docs/bluetooth-recheck.md sec. 5), and the app keys devices on MAC / service data, not on the name.",
+   "class": "ha-native"
+  }
+ ]
+}

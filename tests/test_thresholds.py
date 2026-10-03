@@ -1,0 +1,811 @@
+"""Power thresholds of the metering socket (`thresholds.py`): the two sensors, `set_threshold`, `delete_threshold`.
+
+The actions run against the `env` of `test_services.py` (a copy of the Android export, the Config Server and the
+socket's two threshold properties answered by stubs), so the wiring they plan is checked in the rewritten export.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
+
+import pytest
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import entity_registry as er
+
+from custom_components.junghome_ble import mesh_config
+from custom_components.junghome_ble import services as svc
+from custom_components.junghome_ble import thresholds as T
+from custom_components.junghome_ble.config_entities import PropertyReader
+from custom_components.junghome_ble.const import DOMAIN
+from custom_components.junghome_ble.jhmesh import config_messages as C
+from custom_components.junghome_ble.jhmesh import properties as P
+from custom_components.junghome_ble.jhmesh.export import raw_model
+
+from . import property_helpers as ph
+from . import test_services as services_env
+from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link
+from .helpers import (
+    LIGHT_DIMMER,
+    LIGHT_SWITCH,
+    SOCKET,
+    UID_BUTTON_WC,
+    UID_LIGHT_DIMMER,
+    UID_LIGHT_SWITCH,
+    UID_SOCKET,
+    entity_id,
+)
+from .test_services import Env, settled, subs
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+mesh = ph.mesh
+env, export_source = services_env.env, services_env.export_source
+
+METER = 0x0173  # the socket's meter element: its OnOff Client switches the thresholds' loads
+METER_GROUP = 0xC001  # its element group
+SWITCH_ON, SWITCH_OFF = 0x5004, 0x5005
+CODEC = P.ThresholdCodec()
+UID_SWITCH_OFF = f"{UID_SOCKET}-switch_off_threshold"
+UID_SWITCH_ON = f"{UID_SOCKET}-switch_on_threshold"
+
+
+def wire(threshold: P.Threshold) -> bytes:
+    return CODEC.encode(threshold)
+
+
+def socket(hass: HomeAssistant) -> str:
+    return entity_id(hass, "switch", UID_SOCKET)
+
+
+async def call(hass: HomeAssistant, service: str, data: dict[str, Any]) -> None:
+    await hass.services.async_call(DOMAIN, service, data, blocking=True)
+    await hass.async_block_till_done()
+
+
+def on_air(env: Env) -> list[bytes]:
+    """Record the threshold writes and the Config messages in the order they reach the mesh, from now on."""
+    sent: list[bytes] = []
+    config, app = env.link.config_reply, env.link.app_reply
+    assert config is not None
+    assert app is not None
+
+    def config_reply(node: int, pdu: bytes) -> bytes | None:
+        sent.append(pdu)
+        return config(node, pdu)
+
+    def app_reply(dst: int, pdu: bytes) -> bytes | None:
+        if pdu[:3] == ADMIN_SET:  # a threshold write
+            sent.append(pdu)
+        return app(dst, pdu)
+
+    env.link.config_reply, env.link.app_reply = config_reply, app_reply
+    return sent
+
+
+ADMIN_SET = bytes.fromhex("c32705")  # LBC Admin Property Set
+
+
+def admin_set(pid: int, threshold: P.Threshold) -> bytes:
+    """The LBC Admin Property Set that writes a threshold, as the app sends it (access 3)."""
+    return ADMIN_SET + pid.to_bytes(2, "little") + bytes([3]) + wire(threshold)
+
+
+# the socket's OnOff Client publication reset of the app's disable and delete: 0x0000 with TTL 0, then the group
+PUBLICATION_RESET = [
+    C.model_publication_set(METER, 0, "1001", ttl=0),
+    C.model_publication_set(METER, METER_GROUP, "1001"),
+]
+
+
+# --------------------------------------------------------------------------- which sockets have them
+
+
+def test_threshold_targets() -> None:
+    """Both thresholds of the metering socket, off by default, on the socket device; nothing for other loads."""
+    hub = ph.fake_hub()
+    targets = T.threshold_targets(hub)
+    assert [(t.address, t.which) for t in targets] == [
+        (SOCKET, "switch_on"),
+        (SOCKET, "switch_off"),
+    ]
+    assert [t.unique_id for t in targets] == [UID_SWITCH_ON, UID_SWITCH_OFF]
+    assert [t.translation_key for t in targets] == [
+        "switch_on_threshold",
+        "switch_off_threshold",
+    ]
+    assert [t.specs for t in targets] == [
+        (P.PROPERTIES[SWITCH_ON],),
+        (P.PROPERTIES[SWITCH_OFF],),
+    ]
+    assert not any(t.enabled_default for t in targets)
+    # a socket that does not measure (another product) has none; nor one without the OnOff Client
+    sock = hub.devices.by_address[SOCKET]
+    sock.node.pid = 0x0C
+    assert T.threshold_targets(hub) == []
+    sock.node.pid = 0x03
+    hub.cdb.element(METER).models.remove("1001")
+    assert T.threshold_targets(hub) == []
+
+
+def test_switched_devices() -> None:
+    """The loads whose OnOff server listens to the meter element's group; none without the client or the group."""
+    hub = ph.fake_hub()
+    sock = hub.devices.by_address[SOCKET]
+    assert T.switched_devices(hub, sock) == []
+    dimmer = hub.cdb.element(LIGHT_DIMMER)
+    next(m for m in dimmer.raw_models if m["modelId"] == "1000")["subscribe"].append(
+        "C001"
+    )
+    assert T.switched_devices(hub, sock) == [LIGHT_DIMMER]
+    with patch.object(T, "cdb_element_groups", return_value={}):
+        assert T.switched_devices(hub, sock) == []
+    hub.cdb.element(METER).models.remove("1001")
+    assert T.switched_devices(hub, sock) == []
+
+
+def test_planned_threshold() -> None:
+    """The call's fields, the socket's current ones for what it leaves out, power in the socket's 0.1 W steps."""
+    current = P.Threshold(12.5, 60, True)
+    assert T.planned_threshold(None, {"power": 3.04, "duration": 9}, "s") == (
+        P.Threshold(3.0, 9, True)
+    )
+    assert T.planned_threshold(current, {"enabled": False}, "s") == P.Threshold(
+        12.5, 60, False
+    )
+    assert T.planned_threshold(current, {"power": 20}, "s") == P.Threshold(
+        20.0, 60, True
+    )
+    # left out, `enabled` keeps a threshold's state; one the socket does not hold is written enabled
+    disabled = P.Threshold(12.5, 60, False)
+    assert T.planned_threshold(disabled, {"power": 20}, "s") == P.Threshold(
+        20.0, 60, False
+    )
+    assert T.planned_threshold(T.CLEARED, {"power": 1, "duration": 2}, "s") == (
+        P.Threshold(1.0, 2, True)
+    )
+    with pytest.raises(ServiceValidationError) as err:
+        T.planned_threshold(P.Threshold(None, 0, False), {"duration": 5}, "switch.x")
+    assert err.value.translation_key == "threshold_incomplete"
+    with pytest.raises(ServiceValidationError):
+        T.planned_threshold(None, {"power": 5}, "switch.x")
+
+
+# --------------------------------------------------------------------------- set_threshold / delete_threshold
+
+
+async def test_set_threshold_wires_and_writes(hass: HomeAssistant, env: Env) -> None:
+    """The app's order on air: the threshold, the client's subscription and publication to the meter's group, then
+    each load's JUNG User Property Server and OnOff server subscribed to it."""
+    hub = env.hub
+    sent = on_air(env)
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_off",
+            "power": 5,
+            "duration": 300,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    assert env.hub is not hub  # the export changed: reloaded
+    pf = env.reload()
+    meter = pf.cdb.element(METER)
+    assert pf.publication(meter, "1001") == METER_GROUP
+    assert METER_GROUP in subs(pf, METER, "1001")
+    assert METER_GROUP in subs(pf, LIGHT_DIMMER, "1000")
+    assert METER_GROUP in subs(pf, LIGHT_DIMMER, "05271013")
+    assert sent == [
+        admin_set(SWITCH_OFF, P.Threshold(5.0, 300, True)),
+        C.model_subscription_add(METER, METER_GROUP, "1001"),
+        C.model_publication_set(METER, METER_GROUP, "1001"),
+        C.model_subscription_add(LIGHT_DIMMER, METER_GROUP, "05271013"),
+        C.model_subscription_add(LIGHT_DIMMER, METER_GROUP, "1000"),
+    ]
+    assert env.thresholds[SOCKET, SWITCH_OFF] == wire(P.Threshold(5.0, 300, True))
+
+    # another load instead: the first one leaves the group
+    env.config_calls.clear()
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 100,
+            "duration": 10,
+            "enabled": False,
+            "devices": [entity_id(hass, "light", UID_LIGHT_SWITCH)],
+        },
+    )
+    await settled(hass, env)
+    pf = env.reload()
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "1000")
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "05271013")
+    assert METER_GROUP in subs(pf, LIGHT_SWITCH, "1000")
+    assert [pdu for _n, pdu in env.config_calls] == [  # additive steps first
+        C.model_subscription_add(LIGHT_SWITCH, METER_GROUP, "05271013"),
+        C.model_subscription_add(LIGHT_SWITCH, METER_GROUP, "1000"),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
+    ]
+    assert env.thresholds[SOCKET, SWITCH_ON] == wire(P.Threshold(100.0, 10, False))
+
+
+async def test_set_threshold_keeps_what_it_is_not_given(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Only `enabled`: the socket's power and duration are read and kept; no devices, no wiring, no reload."""
+    hub = env.hub
+    env.thresholds[SOCKET, SWITCH_ON] = wire(P.Threshold(42.0, 30, True))
+    await call(
+        hass,
+        "set_threshold",
+        {"entity_id": socket(hass), "threshold": "switch_on", "enabled": False},
+    )
+    assert env.hub is hub
+    assert env.config_calls == []
+    assert env.thresholds[SOCKET, SWITCH_ON] == wire(P.Threshold(42.0, 30, False))
+
+
+async def test_set_threshold_keeps_a_disabled_threshold_disabled(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """A new level and duration without `enabled`: the socket's state is read and kept, not switched back on."""
+    env.thresholds[SOCKET, SWITCH_OFF] = wire(P.Threshold(42.0, 30, False))
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_off",
+            "power": 5,
+            "duration": 300,
+        },
+    )
+    assert env.thresholds[SOCKET, SWITCH_OFF] == wire(P.Threshold(5.0, 300, False))
+
+
+async def test_set_threshold_enabled_without_devices_leaves_the_wiring(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """An active threshold without `devices`: written, nothing wired or unwired, the other threshold not asked."""
+    hub = env.hub
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 7,
+            "duration": 9,
+        },
+    )
+    assert env.hub is hub
+    assert env.config_calls == []
+    assert env.thresholds[SOCKET, SWITCH_ON] == wire(P.Threshold(7.0, 9, True))
+    assert (SOCKET, SWITCH_OFF) not in env.thresholds
+
+
+async def test_set_threshold_devices_edge_cases(hass: HomeAssistant, env: Env) -> None:
+    """No devices: the loads leave, the client keeps its wiring (no reset: that is the disable's and delete's);
+    a load without a JUNG User Property Server gets its OnOff server subscribed alone; without an element group
+    nothing listens, so an empty list is already so; nothing wired, nothing to unwire."""
+    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    assert not await configurator.unwire_threshold(
+        SOCKET
+    )  # the export's meter: no wiring, no publication
+    assert env.config_calls == []
+    with patch.object(mesh_config, "element_groups", return_value={}):
+        assert not await configurator.set_threshold_devices(SOCKET, [])
+    pf = env.reload()
+    switch = pf.cdb.element(LIGHT_SWITCH)
+    switch.raw_models[:] = [m for m in switch.raw_models if m["modelId"] != "05271013"]
+    switch.models.remove("05271013")
+    pf.save(env.path, force=True)
+    assert await configurator.set_threshold_devices(SOCKET, [LIGHT_SWITCH])
+    assert [pdu for _n, pdu in env.config_calls][-1:] == [
+        C.model_subscription_add(LIGHT_SWITCH, METER_GROUP, "1000")
+    ]
+    env.config_calls.clear()
+    assert await configurator.set_threshold_devices(SOCKET, [])
+    assert [pdu for _n, pdu in env.config_calls] == [
+        C.model_subscription_delete(LIGHT_SWITCH, METER_GROUP, "1000")
+    ]
+    assert env.reload().publication(METER, "1001") == METER_GROUP
+
+
+async def test_set_threshold_same_devices_does_not_reload(
+    hass: HomeAssistant, env: Env
+) -> None:
+    dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    data = {
+        "entity_id": socket(hass),
+        "threshold": "switch_off",
+        "power": 1,
+        "duration": 1,
+        "devices": [dimmer],
+    }
+    await call(hass, "set_threshold", data)
+    await settled(hass, env)
+    hub = env.hub
+    env.config_calls.clear()
+    await call(hass, "set_threshold", data)
+    assert env.hub is hub
+    assert env.config_calls == []
+
+
+async def test_a_later_socket_failing_still_reloads_for_an_earlier_one(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """One call wires socket by socket, each its own plan: when the second socket fails after the first one's
+    wiring was written to the export, the entry still reloads (the device model must follow the file)."""
+    real_sockets = svc._threshold_sockets
+    real_wiring = mesh_config.MeshConfigurator.set_threshold_devices
+    wired: list[int] = []
+
+    async def two_sockets(
+        hass: HomeAssistant, service_call: Any
+    ) -> dict[str, list[int]]:
+        return {
+            entry: [*addresses, *addresses]
+            for entry, addresses in (await real_sockets(hass, service_call)).items()
+        }
+
+    async def second_fails(
+        self: mesh_config.MeshConfigurator, address: int, devices: Any
+    ) -> bool:
+        wired.append(address)
+        if len(wired) == 1:
+            return await real_wiring(self, address, devices)
+        with patch.object(mesh_config, "threshold_client", return_value=None):
+            return await real_wiring(self, address, devices)  # fails after its _load
+
+    with (
+        patch.object(svc, "_threshold_sockets", two_sockets),
+        patch.object(
+            mesh_config.MeshConfigurator, "set_threshold_devices", second_fails
+        ),
+        patch.object(
+            hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
+        ) as reload,
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_off",
+                "power": 5,
+                "duration": 300,
+                "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+            },
+        )
+    assert err.value.translation_key == "threshold_not_supported"
+    assert len(wired) == 2
+    assert METER_GROUP in subs(env.reload(), LIGHT_DIMMER, "1000")  # the first one's
+    reload.assert_awaited_once_with(env.entry.entry_id)
+    await settled(hass, env)
+
+
+async def test_set_threshold_without_a_level(hass: HomeAssistant, env: Env) -> None:
+    """A socket that answers with nothing: `enabled` alone cannot be written."""
+    with pytest.raises(ServiceValidationError) as err:
+        await call(
+            hass,
+            "set_threshold",
+            {"entity_id": socket(hass), "threshold": "switch_on", "enabled": True},
+        )
+    assert err.value.translation_key == "threshold_incomplete"
+    assert err.value.translation_placeholders == {"name": socket(hass)}
+
+
+async def test_a_malformed_threshold_is_none(hass: HomeAssistant, env: Env) -> None:
+    """A threshold too short for its layout is no threshold: nothing to keep, and a write it answers did not take."""
+    env.thresholds[SOCKET, SWITCH_ON] = b"\x81\x00"
+    with pytest.raises(ServiceValidationError) as err:
+        await call(
+            hass,
+            "set_threshold",
+            {"entity_id": socket(hass), "threshold": "switch_on", "enabled": True},
+        )
+    assert err.value.translation_key == "threshold_incomplete"
+    env.threshold_sets = False  # the Set is answered with the malformed value
+    with pytest.raises(HomeAssistantError) as err:
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_on",
+                "power": 5,
+                "duration": 5,
+            },
+        )
+    assert err.value.translation_key == "threshold_not_applied"
+
+
+async def test_threshold_not_taken(hass: HomeAssistant, env: Env) -> None:
+    env.threshold_sets = False
+    with pytest.raises(HomeAssistantError) as err:
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_on",
+                "power": 5,
+                "duration": 5,
+            },
+        )
+    assert err.value.translation_key == "threshold_not_applied"
+    assert err.value.translation_placeholders == {
+        "address": "0172",
+        "which": "switch_on",
+    }
+
+
+async def test_threshold_lost_link(hass: HomeAssistant, env: Env) -> None:
+    with (
+        patch.object(PropertyReader, "write", side_effect=ConnectionError),
+        pytest.raises(HomeAssistantError) as err,
+    ):
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_on",
+                "power": 5,
+                "duration": 5,
+            },
+        )
+    assert err.value.translation_key == "send_failed"
+
+
+async def test_set_threshold_disabled_unwires_like_the_app(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Disabled while the other threshold is not active either: the app's disable on air, in its order — the
+    threshold, each load leaving the group (OnOff server, then `0x0527:1013`), the client's publication reset."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 20,
+            "duration": 5,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    disable = {"entity_id": socket(hass), "threshold": "switch_on", "enabled": False}
+    # the other threshold is still active: the loads stay wired for it
+    env.thresholds[SOCKET, SWITCH_OFF] = wire(P.Threshold(5.0, 60, True))
+    env.config_calls.clear()
+    await call(hass, "set_threshold", disable)
+    assert env.config_calls == []
+    # ... now it is not (the socket publishes its cleared switch-off threshold)
+    env.thresholds[SOCKET, SWITCH_OFF] = wire(T.CLEARED)
+    env.link.inject(SOCKET, 0xC000, ph.vendor_status(0x05, SWITCH_OFF, wire(T.CLEARED)))
+    await hass.async_block_till_done()
+    sent = on_air(env)
+    await call(hass, "set_threshold", disable)
+    await settled(hass, env)
+    assert sent == [
+        admin_set(SWITCH_ON, P.Threshold(20.0, 5, False)),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
+        *PUBLICATION_RESET,
+    ]
+    pf = env.reload()
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "1000")
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "05271013")
+    assert pf.publication(METER, "1001") == METER_GROUP
+
+
+async def test_editing_a_disabled_threshold_keeps_the_wiring(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Only a disable unwires (the app's `ToggleThreshold`): a new level for a threshold that is already disabled,
+    with the other one not active either, is written and the loads wired while both were off stay wired."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 20,
+            "duration": 5,
+            "enabled": False,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    assert METER_GROUP in subs(env.reload(), LIGHT_DIMMER, "1000")
+    env.thresholds[SOCKET, SWITCH_OFF] = wire(T.CLEARED)
+    hub = env.hub
+    sent = on_air(env)
+    await call(
+        hass,
+        "set_threshold",
+        {"entity_id": socket(hass), "threshold": "switch_on", "power": 30},
+    )
+    assert sent == [admin_set(SWITCH_ON, P.Threshold(30.0, 5, False))]
+    assert env.hub is hub
+    pf = env.reload()
+    assert METER_GROUP in subs(pf, LIGHT_DIMMER, "1000")
+    assert METER_GROUP in subs(pf, LIGHT_DIMMER, "05271013")
+
+
+async def test_refused_wiring_writes_no_threshold(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The configurator's checks run before the threshold is written: a refused call leaves the socket as it was
+    rather than holding a new, active threshold with the old wiring."""
+    with (
+        patch.object(mesh_config, "element_groups", return_value={}),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_on",
+                "power": 20,
+                "duration": 5,
+                "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+            },
+        )
+    assert err.value.translation_key == "service_no_element_group"
+    assert (SOCKET, SWITCH_ON) not in env.thresholds
+    assert env.config_calls == []
+
+
+async def test_publication_reset_is_sent_as_planned(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The reset's two steps go out in the app's order, neither dropped: a refused second step leaves the export
+    saying the client publishes nothing, which is what the socket holds."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 20,
+            "duration": 5,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    env.refuse[PUBLICATION_RESET[1]] = 0x04  # Invalid Publish Parameters
+    with pytest.raises(HomeAssistantError):
+        await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    await settled(hass, env)
+    assert [pdu for _n, pdu in env.config_calls[-2:]] == PUBLICATION_RESET
+    assert env.reload().publication(METER, "1001") is None
+
+
+async def test_delete_threshold(hass: HomeAssistant, env: Env) -> None:
+    """Both thresholds cleared, every load unwired, then the client's publication reset as the app does; with
+    nothing left to unwire, the reset alone and no reload (the export already says so)."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_off",
+            "power": 5,
+            "duration": 300,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    sent = on_air(env)
+    await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    await settled(hass, env)
+    cleared = wire(T.CLEARED)
+    assert env.thresholds[SOCKET, SWITCH_ON] == cleared
+    assert env.thresholds[SOCKET, SWITCH_OFF] == cleared
+    assert sent == [
+        admin_set(SWITCH_ON, T.CLEARED),
+        admin_set(SWITCH_OFF, T.CLEARED),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
+        C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
+        *PUBLICATION_RESET,
+    ]
+    pf = env.reload()
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "1000")
+    assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "05271013")
+    hub = env.hub
+    env.config_calls.clear()
+    await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    assert env.hub is hub
+    assert [pdu for _n, pdu in env.config_calls] == PUBLICATION_RESET
+
+
+async def test_delete_threshold_unwires_what_the_app_wired(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """A `0x0527:1013` subscription left without its OnOff server is removed too; the meter's own `0x0527:1013`
+    on its group is not wiring and stays, and a client that publishes nothing gets no publication reset."""
+    pf = env.reload()
+    pf.subscribe(LIGHT_SWITCH, "05271013", METER_GROUP)
+    pf.save(env.path, force=True)
+    await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    await settled(hass, env)
+    # the export's meter publishes nothing: no publication reset
+    assert [pdu for _n, pdu in env.config_calls] == [
+        C.model_subscription_delete(LIGHT_SWITCH, METER_GROUP, "05271013"),
+    ]
+    pf = env.reload()
+    assert METER_GROUP not in subs(pf, LIGHT_SWITCH, "05271013")
+    assert METER_GROUP in subs(pf, METER, "05271013")
+
+
+async def test_threshold_targets_are_checked(hass: HomeAssistant, env: Env) -> None:
+    """Only metering sockets have thresholds; they switch lights and sockets of their own network."""
+    with pytest.raises(ServiceValidationError) as err:
+        await call(
+            hass,
+            "delete_threshold",
+            {"entity_id": entity_id(hass, "light", UID_LIGHT_DIMMER)},
+        )
+    assert err.value.translation_key == "service_not_a_load"
+    with (
+        patch.object(svc, "has_thresholds", return_value=False),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    assert err.value.translation_key == "threshold_not_supported"
+    data = {"entity_id": socket(hass), "threshold": "switch_on", "power": 1}
+    key = entity_id(hass, "event", UID_BUTTON_WC)
+    with pytest.raises(ServiceValidationError) as err:
+        await call(hass, "set_threshold", {**data, "devices": [key]})
+    assert err.value.translation_key == "service_not_a_load"
+    real = svc._device_of_entity
+    dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
+
+    def elsewhere(hass: HomeAssistant, entity: str) -> Any:
+        entry, device, registry_id = real(hass, entity)
+        return ("another-entry" if entity == dimmer else entry), device, registry_id
+
+    with (
+        patch.object(svc, "_device_of_entity", elsewhere),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await call(
+            hass,
+            "set_threshold",
+            {**data, "devices": [dimmer]},
+        )
+    assert err.value.translation_key == "threshold_other_network"
+    assert env.config_calls == []
+
+
+async def test_set_threshold_devices_refusals(hass: HomeAssistant, env: Env) -> None:
+    """The configurator's own checks: a client, an element group, OnOff servers only."""
+    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    with pytest.raises(ServiceValidationError) as err:
+        await configurator.set_threshold_devices(SOCKET, [0x0149])  # a key
+    assert err.value.translation_key == "service_not_a_load"
+    with (
+        patch.object(mesh_config, "element_groups", return_value={}),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await configurator.set_threshold_devices(SOCKET, [LIGHT_DIMMER])
+    assert err.value.translation_key == "service_no_element_group"
+    with (
+        patch.object(mesh_config, "threshold_client", return_value=None),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await configurator.set_threshold_devices(SOCKET, [])
+    assert err.value.translation_key == "threshold_not_supported"
+    with (
+        patch.object(mesh_config, "threshold_client", return_value=None),
+        pytest.raises(ServiceValidationError) as err,
+    ):
+        await configurator.unwire_threshold(SOCKET)
+    assert err.value.translation_key == "threshold_not_supported"
+    assert err.value.translation_placeholders == {
+        "name": "0172"
+    }  # as the message wants
+    assert env.config_calls == []
+
+
+async def test_nothing_to_unwire_without_an_element_group(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """A client the app never gave an element group has no load listening to one: `delete_threshold` clears
+    both thresholds and is done, rather than failing after the clear for want of the group."""
+    hub = env.hub
+    env.thresholds[SOCKET, SWITCH_ON] = wire(P.Threshold(42.0, 30, True))
+    with patch.object(mesh_config, "element_groups", return_value={}):
+        await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    assert env.thresholds[SOCKET, SWITCH_ON] == wire(T.CLEARED)
+    assert env.thresholds[SOCKET, SWITCH_OFF] == wire(T.CLEARED)
+    assert env.hub is hub
+    assert env.config_calls == []
+
+
+# --------------------------------------------------------------------------- the sensors
+
+
+async def test_threshold_sensors(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    mesh: ph.PropertyMesh,
+    fast_sleep: list[float],
+) -> None:
+    """The power level as the state; duration, enabled and the loads switched as attributes; unknown when unset."""
+    registry = er.async_get(hass)
+    for uid in (UID_SWITCH_ON, UID_SWITCH_OFF):
+        registry.async_get_or_create("sensor", DOMAIN, uid, disabled_by=None)
+    mesh.values[SOCKET, SWITCH_ON] = wire(P.Threshold(250.5, 120, True))
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    on = hass.states.get(entity_id(hass, "sensor", UID_SWITCH_ON))
+    assert on.state == "250.5"
+    assert on.attributes["unit_of_measurement"] == "W"
+    assert (
+        on.attributes["duration"],
+        on.attributes["enabled"],
+        on.attributes["devices"],
+        on.attributes["property_id"],
+    ) == (120, True, [], "0x5004")
+    off = hass.states.get(entity_id(hass, "sensor", UID_SWITCH_OFF))
+    assert off.state == "unknown"  # the default: no threshold
+    assert off.attributes["enabled"] is False
+
+    # the loads it switches, by entity (an element without one by its address)
+    sensor = entity_id(hass, "sensor", UID_SWITCH_ON)
+    with patch(
+        "custom_components.junghome_ble.sensor.switched_devices",
+        return_value=[LIGHT_DIMMER, 0x7FFF],
+    ):
+        hub = mock_config_entry.runtime_data
+        hub.notify_update(SOCKET)
+        await hass.async_block_till_done()
+        assert hass.states.get(sensor).attributes["devices"] == [
+            entity_id(hass, "light", UID_LIGHT_DIMMER),
+            "7FFF",
+        ]
+    # a value that does not decode: unknown, no threshold attributes
+    fake_link.inject(SOCKET, 0xC000, ph.vendor_status(0x05, SWITCH_ON, b"\x01"))
+    await hass.async_block_till_done()
+    state = hass.states.get(sensor)
+    assert state.state == "unknown"
+    assert "duration" not in state.attributes
+
+
+async def test_unbound_client_is_bound_first(hass: HomeAssistant, env: Env) -> None:
+    """A client the export shows without the AppKey gets a Model App Bind before its publication."""
+    pf = env.reload()
+    raw_model(pf.cdb.element(METER), "1001")["bind"] = []
+    pf.save(env.path, force=True)
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_on",
+            "power": 1,
+            "duration": 1,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    assert C.model_app_bind(METER, "1001", 0) in [p for _n, p in env.config_calls]
+    assert raw_model(env.reload().cdb.element(METER), "1001")["bind"] == [0]

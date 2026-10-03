@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "packageRules": [
+    {
+      "description": "A release is proposed only once it is three days old: a compromised or broken release of a tool that runs in CI with the repository token (or that builds what is published: setuptools, build, twine) is usually yanked or fixed within that time. Every pin is a release with a date: requirements-lint.txt / requirements-test.txt / requirements-build.txt, the build back end in pyproject.toml, the actions' version tags. Digest-only updates are left out: the hassfest action and the HACS validation image follow a branch or a moving tag, where there is no release to age, and holding them would only keep the validators stale.",
+      "matchDatasources": [
+        "pypi",
+        "github-tags",
+        "github-releases"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "pytest-homeassistant-custom-component pins homeassistant, pytest, pytest-asyncio, pytest-cov, pytest-timeout and syrupy to exact versions, so requirements-test.txt pins only it: the whole test stack moves with it, in one PR, and Renovate never proposes a Home Assistant or pytest release it does not support yet. The ci.yml `library` job reads its test-runner pins from the same release's metadata and its mypy and hypothesis from requirements-test.txt (hypothesis is pinned there on its own: the Home Assistant test stack does not pin it). The packaging tools are pinned in requirements-build.txt and the build back end in pyproject.toml `[build-system]` (Renovate's pip_requirements and pep621 managers read both by themselves); the `usb` integration's requirements are not pinned anywhere: ci.yml reads them from the installed Home Assistant's manifest, so they follow HA's pins by construction. This rule only names the update so it is recognisable in the PR list.",
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchPackageNames": [
+        "pytest-homeassistant-custom-component"
+      ],
+      "groupName": "home-assistant test stack"
+    },
+    {
+      "description": "The HACS validation image (ci.yml runs ghcr.io/hacs/action:main by digest, not through the hacs/action wrapper): `docker:pinDigests` above keeps the digest moving along the `main` tag; this rule only names the update so it is recognisable in the PR list.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/hacs/action"
+      ],
+      "groupName": "hacs validation image"
+    },
+    {
+      "description": "The workflow linters of the ci.yml `lint` job (actionlint, whose image carries shellcheck, and zizmor) run as images by tag and digest: `docker:pinDigests` above keeps the digest moving with the tag. Both only read the checkout, without the repository token, and a new release can only make `lint` stricter, so they move together in one PR, named so it is recognisable. The ci.yml `library` job pins no Python version for Renovate to move: it reads the oldest one from pyproject.toml `requires-python`, so the floor the package promises is the one it is tested on.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "rhysd/actionlint",
+        "ghcr.io/zizmorcore/zizmor"
+      ],
+      "groupName": "workflow linters"
+    }
+  ]
+}

@@ -1,0 +1,351 @@
+name: CI
+
+on:
+  # Callable so release.yml can gate a tag on exactly these checks, run against the tagged commit.
+  workflow_call:
+  push:
+    # Every branch, but no tags: a tag runs this workflow through release.yml instead (otherwise it would run twice).
+    branches:
+      - "**"
+  pull_request:
+
+# A push to a branch with an open pull request fires `push` and `pull_request` for the same commit; keying the group
+# on the branch name (head_ref for pull_request, ref_name for push and for a tag through release.yml) makes the later
+# run cancel the earlier one instead of both running to the end. A newer push to the same branch cancels the older
+# run too. The branch is qualified by the repository it lives in (the pull request's head repository, else this one),
+# so a fork's pull request from its own `main` is a group of its own and cannot cancel a run on this repository's
+# `main`; a pull request from a branch of this repository still shares the group of that branch's push.
+concurrency:
+  group: ci-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+# Nothing here needs more than reading the repository; every job says so explicitly, and every checkout leaves no
+# credentials behind (`persist-credentials: false`): nothing here pushes, so the token has no business in .git/config,
+# where every later step - and every tool a test run or a build back end starts - could read it. Action SHAs, the
+# digests of the HACS, actionlint and zizmor images, the build back end in pyproject.toml and the pins in
+# requirements-lint.txt / requirements-test.txt / requirements-build.txt are kept current by Renovate (renovate.json).
+# Python's own pip (the one setup-python brings) installs everything: no unpinned `pip install --upgrade pip`.
+# Every job starts at once (none waits for `lint`); `package` needs all of them, so a tag (release.yml calls this
+# workflow and needs it whole) is still gated on every one. Artifacts are stored only on a tag: a branch push or a
+# pull request uploads nothing, so a full artifact quota cannot fail it.
+# Every job has a `timeout-minutes` a few times its usual run time, so a hang ends as a failure within minutes
+# instead of GitHub's six hours (pyproject.toml bounds each test on its own too: pytest-timeout).
+permissions: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-lint.txt
+      - name: Install ruff
+        # Only ruff is needed here, at the version requirements-lint.txt pins (the one a development venv uses).
+        run: python -m pip install -r requirements-lint.txt
+      - name: Lint
+        run: python -m ruff check .
+      - name: Format
+        run: python -m ruff format --check .
+      - name: Workflows (actionlint, with shellcheck on every `run:` script)
+        # The image bundles shellcheck, so the inline scripts are checked too. Pinned by digest like the HACS image
+        # below (renovate.json `docker:pinDigests`); run without the repository token.
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
+      - name: Shell scripts (shellcheck)
+        # The scripts the workflows run (release.yml's checks, the manual-install zip), with the shellcheck the
+        # actionlint image carries.
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          entrypoint: shellcheck
+          args: scripts/release_checks.sh scripts/package_ha.sh
+      - name: Workflow security (zizmor)
+        # Template injection, credentials left in the checkout, unpinned actions or images, excessive permissions.
+        # Offline: no repository token for the audits that would query GitHub. Every finding fails the job.
+        uses: docker://ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101
+        with:
+          args: --offline .
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # Home Assistant 2026.9 requires Python >= 3.14.2, so the integration is only ever tested here; the
+          # `library` job below covers the jhmesh package on the oldest Python pyproject.toml admits.
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+      - name: Install
+        # requirements-test.txt: pytest-homeassistant-custom-component, which pins the Home Assistant release it was
+        # built for and its whole test runner (pytest, pytest-asyncio, pytest-cov, pytest-timeout, syrupy, ...), so
+        # it is the one pin for all of them; plus mypy. The `usb` integration's requirements (aiousbwatcher, serialx)
+        # are needed too: on Linux `bluetooth_adapters` imports them and HA installs integration requirements
+        # lazily, so a test environment has to bring them. They are read from the installed HA's own manifest rather
+        # than pinned here, so they can never drift from HA's pins (and Renovate has nothing to bump).
+        run: |
+          pip install -r requirements-test.txt
+          # shellcheck disable=SC2046  # the word splitting is the point: one requirement per word
+          pip install $(python -c '
+          import json, pathlib, homeassistant
+          manifest = pathlib.Path(homeassistant.__file__).parent / "components" / "usb" / "manifest.json"
+          print(" ".join(json.loads(manifest.read_text())["requirements"]))
+          ')
+      - name: Strict typing
+        run: python -m mypy
+      - name: Tests (integration + mesh library, registry snapshots, translations; line + branch coverage gate)
+        # pyproject.toml `fail_under`: the line + branch total of everything measured (the integration, the package
+        # and tools/), at what the suite reaches. On every core of the runner (pytest-xdist, pinned by
+        # pytest-homeassistant-custom-component; pytest-cov combines the workers' data), with the twenty slowest
+        # tests listed at the end.
+        run: python -m pytest tests -q -n auto --durations=20 --cov --cov-report=term-missing
+      - name: Every line of the integration and the package is covered
+        # The docs promise 100 % line coverage of custom_components/junghome_ble; `fail_under` above is one number for
+        # line + branch coverage of everything, so it cannot say that on its own. Read from the data the tests wrote.
+        run: |
+          python -m coverage json --include='custom_components/junghome_ble/*' -o coverage-integration.json -q
+          python -c '
+          import json, sys
+          files = json.load(open("coverage-integration.json"))["files"]
+          missing = {name: f["missing_lines"] for name, f in files.items() if f["missing_lines"]}
+          for name, lines in missing.items():
+              print(f"::error file={name}::lines not covered: {lines}")
+          sys.exit(1 if missing else 0)
+          '
+
+  library:
+    # The jhmesh package alone: its sdist and wheel built and checked, then the wheel installed and tested on the
+    # oldest Python `requires-python` in pyproject.toml admits (Home Assistant needs 3.14, so the `tests` job cannot
+    # cover it). One job rather than a build job handing its files to a test job: on a branch or a pull request
+    # nothing leaves the job, so a full artifact quota cannot fail CI; on a tag (release.yml calls this workflow) the
+    # files built here are uploaded as the `jhmesh-dist` artifact, which release.yml publishes to PyPI instead of
+    # building again.
+    # `python -m build` builds the wheel from the sdist, so a file MANIFEST.in leaves out of the sdist fails here too;
+    # the back end is the setuptools pyproject.toml pins, the front end and the checker come from
+    # requirements-build.txt. `twine check --strict` turns its warnings (a README PyPI would not render, missing
+    # metadata) into failures: PyPI versions are immutable, so this is the last point where they are cheap.
+    # The wheel is imported as top-level `jhmesh` like a PyPI user would, and run with only the library tests' conftest
+    # (`--confcutdir` keeps tests/conftest.py, which needs Home Assistant, out). Everything tests/jhmesh needs lives
+    # there (tests/jhmesh/fixture_network.py), so a test importing tests/helpers.py or tests/conftest.py fails here.
+    # The checkout carries a tracked `jhmesh` symlink at its root (for the CLI tools) that would shadow the installed
+    # wheel, and the tests would never exercise it: PYTHONSAFEPATH=1 (`-P`) keeps `python -m` from prepending the
+    # current directory to sys.path, and `--import-mode=importlib` keeps pytest from prepending the checkout root
+    # (tests/ and tests/jhmesh are packages, so its default `prepend` mode inserts the first directory above them).
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      PYTHONSAFEPATH: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Oldest Python pyproject.toml admits
+        # Read from `requires-python` rather than written here, so the job follows pyproject.toml by construction and
+        # Renovate has no Python version in this job to move (it would move it to the newest, leaving the oldest
+        # supported one untested). The runner's own python3 reads it; only a plain `>=X.Y` bound is understood.
+        id: python
+        run: |
+          python3 -c '
+          import re, tomllib
+          spec = tomllib.load(open("pyproject.toml", "rb"))["project"]["requires-python"]
+          match = re.fullmatch(r">=\s*(\d+\.\d+)", spec.strip())
+          assert match, f"requires-python {spec!r} is not a plain >=X.Y bound"
+          print(f"version={match[1]}")
+          ' >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # No `cache: pip` here (unlike the other jobs): what this job builds is published, so it installs its build
+          # tools fresh from PyPI rather than from a cache other workflow runs write to.
+          python-version: ${{ steps.python.outputs.version }}
+      - name: Build sdist and wheel
+        # setup-python's own pip, not an unpinned upgrade of it: what builds the published files is pinned (pip only
+        # installs the two tools below; the isolated build environment takes the setuptools pyproject.toml pins).
+        run: |
+          python -m pip install -r requirements-build.txt
+          python -m build
+      - name: Check the distributions
+        run: python -m twine check --strict dist/*
+      - name: Hand the checked sdist and wheel to release.yml (tags only)
+        # Uploaded before anything else is installed, so the artifact is exactly what was built and checked above.
+        # In a called workflow `github` is the caller's context: on release.yml's tag run `ref_type` is `tag`, on a
+        # branch push or a pull request it is `branch` and nothing is stored.
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: jhmesh-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1  # handed to later jobs of the same run only
+      - name: Install the library and the test runner
+        # The wheel built above, then the test runner the `tests` job runs: pytest, pytest-asyncio, pytest-timeout,
+        # pytest-cov and coverage at the versions the pytest-homeassistant-custom-component release in
+        # requirements-test.txt pins, read from that release's PyPI metadata (the package itself needs Python 3.14 and
+        # cannot be installed here), and mypy and hypothesis at the versions requirements-test.txt pins. No second set
+        # of pins to drift apart, nothing for Renovate to move on its own.
+        run: |
+          # shellcheck disable=SC2046  # the word splitting is the point: one requirement per word
+          pip install dist/*.whl "$(grep -E '^mypy==' requirements-test.txt)" \
+            "$(grep -E '^hypothesis==' requirements-test.txt)" $(python -c '
+          import json, re, urllib.request
+          text = open("requirements-test.txt").read()
+          version = re.search(r"^pytest-homeassistant-custom-component==(\S+)$", text, re.MULTILINE)[1]
+          url = f"https://pypi.org/pypi/pytest-homeassistant-custom-component/{version}/json"
+          with urllib.request.urlopen(url, timeout=60) as reply:
+              requires = json.load(reply)["info"]["requires_dist"]
+          wanted = {"pytest", "pytest-asyncio", "pytest-timeout", "pytest-cov", "coverage"}
+          pins = [r for r in requires if r.partition("==")[0] in wanted]
+          assert len(pins) == len(wanted), f"pytest-homeassistant-custom-component {version} pins {pins}"
+          print(" ".join(pins))
+          ')
+      - name: Strict typing on the oldest Python
+        # The `tests` job types everything against 3.14; the library also promises the oldest version above, whose
+        # typeshed differs. mypy reads the source (the checkout's symlink: the same files the wheel carries), with
+        # pyproject.toml's settings (whose `python_version` is 3.14, hence the flag).
+        env:
+          OLDEST: ${{ steps.python.outputs.version }}
+        run: python -m mypy --python-version "$OLDEST" -p jhmesh
+      - name: Library tests (every line and branch of the installed package)
+        # The library tests alone cover the whole package: nothing in it depends on the integration's tests to be
+        # exercised. `--cov` names the installed package's directory: a bare `jhmesh` would be taken for the
+        # checkout's symlinked directory, which nothing imports here.
+        run: |
+          package="$(python -c 'import jhmesh, pathlib; print(pathlib.Path(jhmesh.__file__).parent)')"
+          python -m pytest tests/jhmesh --confcutdir=tests/jhmesh --import-mode=importlib -q -p no:cacheprovider \
+            --cov="$package" --cov-report=term-missing:skip-covered --cov-fail-under=100
+
+  floor:
+    # hacs.json names the oldest Home Assistant the integration claims to work with: it must still import there.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: hacs.json # the floor version: what the install below depends on
+      - name: Install the floor version
+        # A bare Home Assistant install lacks the requirements of the components we import (bluetooth and what it
+        # pulls in: usb, hassio, ...); collect them from that release's manifests.
+        run: |
+          pip install "homeassistant==$(python -c 'import json; print(json.load(open("hacs.json"))["homeassistant"])')"
+          # shellcheck disable=SC2046  # the word splitting is the point: one requirement per word
+          pip install $(python -c '
+          import json, pathlib, homeassistant
+          components = pathlib.Path(homeassistant.__file__).parent / "components"
+          todo, seen, reqs = ["bluetooth"], set(), set()
+          while todo:
+              if (domain := todo.pop()) in seen:
+                  continue
+              seen.add(domain)
+              manifest = json.loads((components / domain / "manifest.json").read_text())
+              reqs |= set(manifest.get("requirements", []))
+              todo += manifest.get("dependencies", []) + manifest.get("after_dependencies", [])
+          print(" ".join(sorted(reqs)))
+          ')
+      - name: Import the integration and its platforms
+        # Everything Home Assistant imports by name: the entity platforms (PLATFORMS), the config flow, diagnostics,
+        # and the two platforms it loads lazily and no test set-up touches at the floor version - device_trigger
+        # (opened with the device's automation editor) and logbook. `__init__` brings the rest.
+        run: |
+          PYTHONPATH=. python -c "
+          import importlib
+          from custom_components.junghome_ble.const import PLATFORMS
+          LAZY = ['config_flow', 'diagnostics', 'device_trigger', 'logbook']
+          for mod in (*PLATFORMS, *LAZY):
+              importlib.import_module(f'custom_components.junghome_ble.{mod}')
+              print('imported', mod)
+          "
+
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: hassfest
+        # No release tags since 2020; pinned to the master commit (Renovate moves the SHA along the
+        # repository's default branch, which is master there).
+        uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
+      - name: HACS validation
+        # hacs/action is a one-line wrapper (action.yml) around the docker image ghcr.io/hacs/action:main, so pinning
+        # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
+        # repository token in hand. The image is therefore run directly, by digest (Renovate moves the digest along
+        # the `main` tag: renovate.json `docker:pinDigests`); the wrapper's inputs become the INPUT_* variables its
+        # entrypoint (hacs/integration action/action.py) reads. Ignored validators (slugs from
+        # https://hacs.xyz/docs/publish/action/):
+        #   hacsjson - the one validator that downloads hacs.json from raw.githubusercontent.com without the token
+        #              (everything else, the manifest included, goes through the authenticated API), so it reports
+        #              the file invalid while the repository is not public. The expression drops the exemption by
+        #              itself the day the repository is public; if the event ever lacks the visibility field, the
+        #              exemption stays (a muted validator, not a blocked release).
+        #   integration_manifest - on a private repository the validator gets no manifest back ("expected a
+        #              dictionary. Got None") however the token is scoped; hassfest above validates the manifest in
+        #              full, so nothing is lost while the repository is private. Exempted by the same expression.
+        # All the other validators gate the run (and every release: release.yml calls this workflow).
+        uses: docker://ghcr.io/hacs/action:main@sha256:dc92fdad2f6ffbe74bffb7269d781ea8e064f52d9bb486cdf3925d74e7ab6ebf
+        env:
+          INPUT_CATEGORY: integration
+          INPUT_GITHUB_TOKEN: ${{ github.token }}
+          INPUT_IGNORE: ${{ github.event.repository.visibility != 'public' && 'hacsjson integration_manifest' || '' }}
+
+  package:
+    # The manual-install zip (scripts/package_ha.sh), built and checked on every run once everything else passed (and
+    # the job every other one feeds: release.yml's gate is this workflow as a whole). On a tag release.yml attaches
+    # this very zip to the GitHub release rather than zipping the tree again; on a branch or a pull request it is
+    # checked and dropped.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint, tests, library, floor, validate]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: ./scripts/package_ha.sh
+      - name: Check the zip
+        # What unzips into custom_components/ is a `junghome_ble/` folder with its manifest, and no bytecode.
+        run: |
+          listing="$(unzip -Z1 dist/junghome_ble.zip)"
+          if ! grep -qx 'junghome_ble/manifest.json' <<<"$listing"; then
+            echo "::error::dist/junghome_ble.zip has no junghome_ble/manifest.json."
+            exit 1
+          fi
+          if grep -q '__pycache__' <<<"$listing"; then
+            echo "::error::dist/junghome_ble.zip carries __pycache__."
+            exit 1
+          fi
+          echo "$(wc -l <<<"$listing") entries"
+      - name: Hand the zip to release.yml (tags only)
+        # `github` is the caller's context in a called workflow: `tag` on release.yml's run, `branch` otherwise.
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: junghome_ble
+          path: dist/junghome_ble.zip
+          if-no-files-found: error
+          retention-days: 1  # handed to later jobs of the same run only

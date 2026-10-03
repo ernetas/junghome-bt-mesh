@@ -1,0 +1,198 @@
+[
+ {
+  "nodeId": "00005EFF-FE00-5314-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 1
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 0,
+   "insertType": 2
+  },
+  "locationIds": [
+   1
+  ]
+ },
+ {
+  "id": null,
+  "name": "WC mirror",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5314-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 1
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 0,
+   "insertType": 2
+  },
+  "locationIds": [
+   64,
+   68
+  ]
+ },
+ {
+  "id": null,
+  "name": "WC mirror button",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5323-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 2
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 4,
+   "insertType": 2
+  },
+  "locationIds": [
+   1
+  ]
+ },
+ {
+  "id": null,
+  "name": "Living room DALI",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5323-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 2
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 4,
+   "insertType": 2
+  },
+  "locationIds": [
+   64,
+   65,
+   68
+  ]
+ },
+ {
+  "id": null,
+  "name": "Living room rocker",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5317-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 3
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 0,
+   "insertType": 1
+  },
+  "locationIds": [
+   1,
+   64
+  ]
+ },
+ {
+  "id": null,
+  "name": "Boiler",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5330-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 1
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 2,
+   "insertType": 2
+  },
+  "locationIds": [
+   1
+  ]
+ },
+ {
+  "id": null,
+  "name": "WC ceiling",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5330-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 1
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 2,
+   "insertType": 2
+  },
+  "locationIds": [
+   64
+  ]
+ },
+ {
+  "id": null,
+  "name": "WC ceiling button",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ },
+ {
+  "nodeId": "00005EFF-FE00-5340-0000-000000000000",
+  "productIdentifier": {
+   "albrechtJung": {
+    "_0": 16
+   }
+  },
+  "actuatorFunction": {
+   "actuatorFunctionId": 0,
+   "insertType": 3
+  },
+  "locationIds": [
+   1
+  ]
+ },
+ {
+  "id": null,
+  "name": "Kitchen ceiling",
+  "isFavorite": false,
+  "cachedGroupConnectionMetadata": [],
+  "gatewayNoteFieldInfo": {
+   "positionNotes": {}
+  }
+ }
+]

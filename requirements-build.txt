@@ -1,0 +1,7 @@
+# The packaging front end and the checker of the jhmesh sdist + wheel: ci.yml `library` installs exactly this (with
+# the pip setup-python brings, not an upgraded one), and the files it builds and checks there are the ones
+# release.yml publishes. Pinned like every other tool so a release of either cannot change what gets published
+# without a Renovate PR running these checks first; the build back end (setuptools) is pinned in pyproject.toml
+# `[build-system]`.
+build==1.6.1
+twine==7.0.0

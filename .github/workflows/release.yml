@@ -1,0 +1,142 @@
+name: Release
+
+# Cut a GitHub release when a vX.Y.Z tag is pushed. HACS offers the latest releases of the repository, so each tag
+# becomes an installable version.
+#
+#   1. bump "version" in custom_components/junghome_ble/manifest.json and pyproject.toml (one version for both), and
+#      replace "(unreleased)" in the CHANGELOG.md heading of that version by the release date; that section becomes
+#      the release notes (HACS shows them in its update dialog), so it is where upgrade steps go
+#   2. merge to main, then git tag vX.Y.Z (on main) && git push origin vX.Y.Z
+#
+# The workflow fails if the tag does not match the manifest and pyproject versions, to keep them in sync; if the tagged
+# commit is not on main (a tag on a feature branch would publish code main never had); and, for a plain X.Y.Z tag, if
+# CHANGELOG.md has no heading for the version, an empty section or still calls it "(unreleased)". Those checks and
+# the release notes live in scripts/release_checks.sh, which tests/test_release_checks.py runs on every push. It
+# re-runs the whole of ci.yml (lint and workflow lint, strict typing, tests, the jhmesh sdist + wheel build and
+# `twine check` with the library tests on its oldest Python, floor import, hassfest, HACS validation, packaging)
+# against the tagged commit before publishing anything, and publishes the very files those jobs built and checked
+# (their artifacts, which ci.yml stores only on a tag), never a rebuild. ci.yml itself only runs on branch pushes and
+# pull requests, so a tag pushed alongside its commit could otherwise reach every HACS user before CI on main had
+# finished, or after it had failed. What HACS validation gates is exactly what ci.yml says: every validator
+# except, while the repository is not public, `hacsjson` and `integration_manifest` (they fetch the raw files without
+# the token) - hassfest and the remaining HACS validators do block a tag.
+#
+# A plain X.Y.Z tag is a normal release. Anything with a suffix (v1.1.0b1, v1.1.0rc1, v1.1.0-rc1) is published as a
+# GitHub *pre-release*, which HACS hides unless the user enables "show beta versions" for the repository, so betas
+# do not auto-update everyone.
+#
+# The release carries junghome_ble.zip (ci.yml `package`: scripts/package_ha.sh) for manual installs: it unzips into
+# <HA config>/custom_components/. That zip has a top-level `junghome_ble/` folder, so hacs.json must NOT declare it
+# as `zip_release`: HACS extracts such an asset straight into custom_components/<domain>/, which would nest the
+# package one level too deep. HACS installs from the tagged repository tree instead, where the integration (with
+# its bundled jhmesh package) already sits under custom_components/junghome_ble/.
+#
+# The same tag publishes the jhmesh library to PyPI (job `pypi`, trusted publishing: no token in the repository;
+# PyPI must list this repository + workflow + the `pypi` environment as the project's trusted publisher - before the
+# first release, while no `jhmesh` project exists yet, as a *pending* publisher under the PyPI account's own
+# Publishing page, which the first upload turns into the project's publisher; without it the first tag gets its
+# GitHub release and a failed `pypi` job, to re-run once the publisher is registered). That is
+# what Home Assistant's `dependency-transparency` rule asks of a requirement - built and published from a public
+# pipeline against a tagged release - and the step before the integration can declare `jhmesh==X.Y.Z` in its
+# manifest instead of bundling the package. Pre-release versions go to PyPI as pre-releases (pip skips them
+# unless asked), so a beta tag is safe there too. `pypi` runs only after `release` succeeded: a PyPI version is
+# immutable, so a tag that fails the manifest check (or the release upload) must not have burnt it.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+jobs:
+  # Gate: the same checks main runs, but against the tag. Called workflows run at the caller's ref, so this
+  # validates exactly what is about to be published.
+  # The workspace-relative form, not zizmor's suggested `$/` one: a called workflow is read from this run's commit
+  # either way (not from a runner's checkout), and actionlint does not know the `$/` form yet.
+  ci:
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+
+  release:
+    needs: [ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # create the release and upload its asset
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the history of main, for the check below that the tagged commit is on it
+
+      - name: Verify the tag is on main
+        run: ./scripts/release_checks.sh on-main
+
+      - name: Verify CHANGELOG.md dates the version
+        # A pre-release (X.Y.Zb1, X.Y.Zrc1) is cut while the version's section is still "(unreleased)": only a plain
+        # X.Y.Z tag has to find its heading dated.
+        run: ./scripts/release_checks.sh changelog
+
+      - name: Verify the tag matches the manifest and pyproject versions
+        run: ./scripts/release_checks.sh versions
+
+      - name: Fetch the manual-install zip
+        # The one ci.yml `package` built from this tag once every check had passed: what is attached is what was
+        # checked, not a second zip of the tree.
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: junghome_ble
+          path: dist
+
+      - name: Release notes from CHANGELOG.md
+        # The version's own CHANGELOG.md section, not GitHub's list of merged pull requests (the script says why).
+        run: ./scripts/release_checks.sh notes "$RUNNER_TEMP/notes.md"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if printf '%s' "$tag" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" \
+              --notes-file "$RUNNER_TEMP/notes.md" dist/junghome_ble.zip
+          else
+            echo "Pre-release version ($tag): marked as a pre-release so HACS does not auto-update everyone."
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" \
+              --notes-file "$RUNNER_TEMP/notes.md" --prerelease --latest=false dist/junghome_ble.zip
+          fi
+
+  pypi:
+    # The jhmesh library (pyproject.toml: the package under custom_components/junghome_ble/jhmesh) as the sdist + wheel
+    # ci.yml `library` built from this tag, checked with `twine check --strict` and tested (the wheel, installed) -
+    # published to PyPI through trusted publishing (OIDC): the `pypi` environment's id-token is the only
+    # credential, and PyPI accepts it only from this repository's release.yml. Nothing is built here: what reaches
+    # the immutable PyPI version is byte for byte what was checked. Waits for `release`, whose version check covers
+    # both files, so a tag that is refused there (or whose release upload fails) never reaches PyPI. Opt-in: runs only
+    # when the repository variable PUBLISH_PYPI is "true", set once the trusted publisher is registered on pypi.org
+    # (docs/roadmap.md) - until then a release is the GitHub release alone (what HACS installs), not a failed run.
+    if: vars.PUBLISH_PYPI == 'true'
+    needs: [ci, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/jhmesh/
+    permissions:
+      contents: read
+      id-token: write # trusted publishing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the tag matches the jhmesh (and integration) version
+        run: ./scripts/release_checks.sh versions
+      - name: Fetch the checked sdist and wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: jhmesh-dist
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

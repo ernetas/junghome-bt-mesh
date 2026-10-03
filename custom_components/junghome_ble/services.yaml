@@ -1,0 +1,615 @@
+set_room:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+  fields:
+    room:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+
+create_room:
+  fields:
+    name:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+rename_room:
+  fields:
+    room:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+    new_name:
+      required: true
+      example: "Dining room"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+delete_room:
+  fields:
+    room:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+assign_key:
+  fields:
+    key_entity:
+      example: "event.living_room_rocker_button_a"
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: event
+    key_device:
+      selector:
+        device:
+          integration: junghome_ble
+          model: "Push-buttons"
+    key:
+      example: "A"
+      selector:
+        select:
+          options:
+            - "A"
+            - "B"
+            - "C"
+            - "D"
+            - "E1"
+            - "E2"
+    target_entity:
+      example: "light.living_room_dali"
+      selector:
+        entity:
+          integration: junghome_ble
+          domain:
+            - light
+            - switch
+            - cover
+    target_device:
+      selector:
+        device:
+          integration: junghome_ble
+    room:
+      example: "Living room"
+      selector:
+        text:
+    scene:
+      example: "Evening"
+      selector:
+        text:
+    mode:
+      example: "light"
+      selector:
+        select:
+          translation_key: key_mode
+          options:
+            - light
+            - switch
+            - move
+            - gateway
+            - light_and_switch
+
+clear_key:
+  fields:
+    key_entity:
+      example: "event.living_room_rocker_button_a"
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: event
+    key_device:
+      selector:
+        device:
+          integration: junghome_ble
+          model: "Push-buttons"
+    key:
+      example: "A"
+      selector:
+        select:
+          options:
+            - "A"
+            - "B"
+            - "C"
+            - "D"
+            - "E1"
+            - "E2"
+
+create_scene:
+  fields:
+    name:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+rename_scene:
+  fields:
+    scene:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+    new_name:
+      required: true
+      example: "Cinema"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+store_scene:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    scene:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+    action:
+      example: "on"
+      selector:
+        select:
+          translation_key: schedule_action
+          options:
+            - "on"
+            - "off"
+    brightness_pct:
+      example: 40
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    color_temp_kelvin:
+      example: 2700
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 2000
+          max: 10000
+    position:
+      example: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    tilt_position:
+      example: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    temperature:
+      example: 21
+      selector:
+        number:
+          min: 5
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+
+remove_from_scene:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    scene:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+
+delete_scene:
+  fields:
+    scene:
+      required: true
+      example: "Movie night"
+      selector:
+        text:
+    force:
+      default: false
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+delete_unused_scenes:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+sync_gateway:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+get_schedules:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+
+create_schedule:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    trigger:
+      required: true
+      example: "time"
+      selector:
+        select:
+          translation_key: schedule_trigger
+          options:
+            - time
+            - sunrise
+            - sunset
+    time:
+      example: "07:30:00"
+      selector:
+        time:
+    not_before:
+      example: "06:00:00"
+      selector:
+        time:
+    not_after:
+      example: "08:00:00"
+      selector:
+        time:
+    offset:
+      example: -15
+      selector:
+        number:
+          min: -128
+          max: 127
+          unit_of_measurement: min
+          mode: box
+    weekdays:
+      example: '["mon", "tue", "wed", "thu", "fri"]'
+      selector:
+        select:
+          multiple: true
+          translation_key: weekday
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+    enabled:
+      default: true
+      selector:
+        boolean:
+    action:
+      example: "on"
+      selector:
+        select:
+          translation_key: schedule_action
+          options:
+            - "on"
+            - "off"
+    brightness_pct:
+      example: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    color_temp_kelvin:
+      example: 3000
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 2000
+          max: 10000
+    position:
+      example: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    tilt_position:
+      example: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    temperature:
+      example: 21
+      selector:
+        number:
+          min: 5
+          max: 30
+          step: 0.5
+          unit_of_measurement: "°C"
+
+enable_schedule:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    slot:
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: box
+
+disable_schedule:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    slot:
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: box
+
+delete_schedule:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+        - climate
+  fields:
+    slot:
+      required: true
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: box
+
+set_threshold:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - switch
+  fields:
+    threshold:
+      required: true
+      example: "switch_off"
+      selector:
+        select:
+          translation_key: threshold
+          options:
+            - switch_on
+            - switch_off
+    power:
+      example: 5
+      selector:
+        number:
+          min: 0
+          max: 3680
+          step: 0.1
+          unit_of_measurement: W
+          mode: box
+    duration:
+      example: 300
+      selector:
+        number:
+          min: 0
+          max: 65535
+          unit_of_measurement: s
+          mode: box
+    enabled:
+      selector:
+        boolean:
+    devices:
+      example: "light.kitchen_table"
+      selector:
+        entity:
+          multiple: true
+          integration: junghome_ble
+          domain:
+            - light
+            - switch
+
+delete_threshold:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - switch
+
+audit_network:
+  fields:
+    device:
+      selector:
+        device:
+          integration: junghome_ble
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+export_network:
+  fields:
+    flavour:
+      default: share
+      selector:
+        select:
+          options:
+            - share
+            - cdb
+          translation_key: export_flavour
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+find_new_devices:
+  fields: {}
+
+add_device:
+  fields:
+    address:
+      required: true
+      selector:
+        text:
+    name:
+      required: true
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+remove_device:
+  fields:
+    device:
+      required: true
+      selector:
+        device:
+          integration: junghome_ble
+    force:
+      default: false
+      selector:
+        boolean:
+
+reset_pending_device:
+  fields:
+    uuid:
+      selector:
+        text:
+    unicast:
+      example: "7FFE"
+      selector:
+        text:
+    force:
+      default: false
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
+
+start_dim:
+  target:
+    entity:
+      integration: junghome_ble
+      domain: light
+  fields:
+    direction:
+      required: true
+      example: "up"
+      selector:
+        select:
+          translation_key: dim_direction
+          options:
+            - up
+            - down
+    speed:
+      example: 20
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%/s"
+
+stop_dim:
+  target:
+    entity:
+      integration: junghome_ble
+      domain: light
+
+step_dim:
+  target:
+    entity:
+      integration: junghome_ble
+      domain: light
+  fields:
+    step:
+      required: true
+      example: 10
+      selector:
+        number:
+          min: -100
+          max: 100
+          unit_of_measurement: "%"

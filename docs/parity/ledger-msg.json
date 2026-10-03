@@ -1,0 +1,2593 @@
+{
+ "domain": "msg",
+ "inventory": "docs/parity/inventory-msg.json",
+ "method": "One row per item of docs/parity/inventory-msg.json, same order and ids. For each item the implementing code was found by grepping custom_components/junghome_ble and tools/ for (a) the opcode constant bound to the item's opcode (jhmesh/config_messages.py CONFIG_*, jhmesh/messages.py GEN_*/LIGHT_*/SCENE_*/SENSOR_*/TIME_*/HEALTH_*, jhmesh/vendor_models.py JH_SCHEDULER_*/SCENE_ACTION_SETUP_*, messages._LBC_OPS for C2..D1 27 05, pdu.py proxy_config_*/FILTER_*), also as a raw hex literal (grep -rniE '0x<opcode>'), (b) the builder / decoder using that constant (def <name> in the same module) and (c) production callers of the builder/decoder (grep -rn '<builder>(' and register_status_handler(<CONST>) in coordinator.py, config_entities.py, sensor.py, mesh_config.py, schedules.py, commission.py, audit.py, tools/cli_ops.py, tools/mesh_poc.py) plus describe()/describe_config() dispatch entries (messages._describe, _SIG_GETS, _SIG_DESCRIBERS, config_messages._describe_params). Tests: an AST index of every tests/**/test_*.py function (names, attributes and string constants used in the body); a test counts for an item when it calls the item's builder/decoder or asserts on its wire hex / describe() text (checked by reading the test). Status rules: implemented = the app's behaviour for that message (encoding, ranges, reply matching) is reproduced by code that a listed test exercises; partial = message codec exists but a behaviour the app has for it is missing (no production caller where the JUNG layer has one, an extra-byte variant, a matching rule) or the only code is a describe() decoder for a message the app sends; gap = no builder and no decoder (describe() may still name it); na = not used. Items the inventory marks 'Library only' (Nordic class present, no JUNG-layer caller) are held to the same rule (the user asked for parity or better); a working builder+decoder+test counts as implemented, their absence as gap with feasibility. Line numbers are the first line matching a fixed regex per anchor (/tmp generator: A(file, regex)), so a rerun on the same tree reproduces them. Nothing was probed on air. Verification pass (adversarial): (1) every gap/partial row re-checked by grepping custom_components, tools and tests for the opcode as 0x<op>/<op> literals, the constant names, builder names (<snake name>( ), getattr/dir-based dispatch (only tools/mesh_sniff.py sig_property_opcodes, property ops) and the mesh_poc/cli_ops argparse sub-commands; no gap/partial row turned out implemented. (2) Rows were re-graded against this ledger's own rules: 'only a describe() decoder for a message the app sends' = partial (msg:op:8239 gap->partial), and 'codec exists but the JUNG layer has a read/wait path HA lacks' = partial, applied mechanically to every implemented row whose code refs are only jhmesh codec modules (messages/config_messages/vendor_models/pdu) while the inventory says the JUNG layer builds/decodes it, then checked for production callers by grep (msg:op:40, 8017, 823a implemented->partial; 41, 51, 801f, 8025, 8028, 8202/8203/8206/8207/824c/824d/825e, 8247, 829f have production or tools callers or an app-side flag-dependent branch and stay implemented). (3) Every code ref was checked to be a non-blank line of an existing file and every test ref to be an existing test function (AST); 16 implemented rows were read against the APK (03, 5c incl. W7/c TAI conversion, 8209, 00, 52 Format A/B, d42705-0 incl. 2-byte toggle form, d32705 vs AbstractC1934m0/C1937n0, 40, 41, 06, 8019, 822b, 8029, 8245, 8202, 04). Noted, not status-changing: 8202 production sends the 4-byte form with transition 0 (docs/ha-integration.md: deliberate) where the app sends 2 B; 52 Format B length is decoded per spec (+1) where the APK library omits the +1; 8209 accepts the full s32 range where the APK caps at s16. Citations: every `code` entry is now `path::symbol` (docs/parity/README.md, Row schema), converted from `path:line` by reading each line in the tree its ledger line was written against (git blame), following it through every later re-pointing that kept the cited text and past the merges that re-pointed lines to other code, and naming the innermost symbol holding it; `tools/parity.py check` verifies each symbol is defined.",
+ "rows": [
+  {
+   "id": "msg:mech:createvendoropcode",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/pdu.py::encode_opcode",
+    "custom_components/junghome_ble/jhmesh/pdu.py::decode_opcode"
+   ],
+   "tests": [
+    "tests/jhmesh/test_pdu.py::test_encode_opcode",
+    "tests/jhmesh/test_pdu.py::test_decode_opcode",
+    "tests/jhmesh/test_pdu.py::test_encode_opcode_refuses_what_the_wire_cannot_carry",
+    "tests/jhmesh/test_pdu.py::test_opcode_round_trip"
+   ]
+  },
+  {
+   "id": "msg:mech:defaultnooperationmessagestate",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/pdu.py::decode_opcode",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._deliver",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_pdu.py::test_decode_opcode_rejects_empty_truncated_and_reserved",
+    "tests/test_coordinator.py::test_a_registered_handler_gets_the_hub_the_message_and_its_parameters",
+    "tests/test_coordinator.py::test_messages_without_a_handler_are_ignored",
+    "tests/test_coordinator.py::test_registry_has_one_row_per_built_in_message_type"
+   ]
+  },
+  {
+   "id": "msg:mech:k0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::_bits",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::_Writer",
+    "custom_components/junghome_ble/jhmesh/properties.py::AstroRegisterCodec"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_bit_writer_refuses_a_value_wider_than_its_field",
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/jhmesh/test_properties_codecs.py::test_schedule_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:mech:waitforstatusmessage",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._request",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_request_config_ignores_replies_with_the_wrong_key_source_or_opcode",
+    "tests/jhmesh/test_client.py::test_request_config_retries_then_times_out",
+    "tests/test_reachability.py::test_a_node_heard_from_during_its_command_stays_reachable",
+    "tests/test_reachability.py::test_a_load_command_is_retried_until_its_status_comes"
+   ],
+   "note": "replies are matched on source + expected opcode (+ predicate), 3 attempts x 3 s per request (Model App Bind: 3 x 3 s where the app waits 3000 ms once). The app's substitute rule (any pending request completes on an LBC User Property Status D1 27 05 from the element, except an Admin Get/Set of 0x0009) is deliberately not reproduced: nodes publish D1 27 05 unsolicited (button events 0x5012, InsertId / KeyMode changes), so it would complete a Get or a command with an unrelated status and leave the state unknown; none of the 7-day captures shows a node answering a request that way. Its one effect that matters, a node that sent it not being marked unreachable, is kept: a node heard from while asked stays reachable (coordinator._missed_answer). Nor is the wait-less 0x8029 quirk reproduced"
+  },
+  {
+   "id": "msg:op:00",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::appkey_add",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.add_app_key"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_appkey_add_matches_the_spec_sample",
+    "tests/jhmesh/test_properties_codecs.py::test_appkey_add_and_its_status",
+    "tests/jhmesh/test_commission.py::test_plan_follows_the_apps_step_machine"
+   ]
+  },
+  {
+   "id": "msg:op:01",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::appkey_update"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_config_messages.py::test_describe_config_never_leaks_a_key"
+   ]
+  },
+  {
+   "id": "msg:op:02",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_composition_data",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_composition_data_page0",
+    "tests/jhmesh/test_config_messages.py::test_composition_data_rejects_other_pages_and_truncation",
+    "tests/jhmesh/test_properties_codecs.py::test_composition_data_page_0"
+   ]
+  },
+  {
+   "id": "msg:op:03",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._rooms_of",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
+    "tests/jhmesh/test_config_messages.py::test_model_publication_set_all_fields",
+    "tests/jhmesh/test_properties_codecs.py::test_model_publication_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:04",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::HEALTH_CURRENT_STATUS",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_health_fault",
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_health_fault_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:05",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_health_fault_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_health_fault_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_health_fault_test_and_the_fault_status",
+    "tests/test_binary_sensor.py::test_fault_status_drives_the_entity"
+   ]
+  },
+  {
+   "id": "msg:op:06",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_publication_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_status_decode_and_describe",
+    "tests/jhmesh/test_properties_codecs.py::test_heartbeat_publication_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:40",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::location_global",
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_location_messages",
+    "tests/jhmesh/test_properties_codecs.py::test_location_global_round_trips"
+   ],
+   "missing": "Decoder (location_global) and describe() exist and are tested, but no production code ever solicits or consumes a Generic Location Global Status: HA has no reader of a node's stored location (msg:op:8225 is builder-only), whereas the app's LocationMessageBuilder (p234v7/N) reads with Get and waits for 0x40 (expected status 64). HA only pushes the location with Set Unacknowledged. Build: a Get + status handler (e.g. a diagnostic sensor or a location-drift repair) reusing the existing decoder; verify with one read-only Get to a node (every node hosts a Location Server 0x100E).",
+   "class": "build",
+   "verify": "on-air",
+   "review": "adversarial pass: implemented -> partial under this ledger's own status rules (see method, 'Verification pass')"
+  },
+  {
+   "id": "msg:op:41",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
+    "custom_components/junghome_ble/jhmesh/messages.py::location_global_fields"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_location_global_set_vector",
+    "tests/jhmesh/test_messages.py::test_generic_location_global_set_rejects_out_of_range",
+    "tests/jhmesh/test_properties_codecs.py::test_location_global_round_trips"
+   ]
+  },
+  {
+   "id": "msg:op:42",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_location",
+    "custom_components/junghome_ble/schedules.py::Scheduler._send_location"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_location_global_set_vector",
+    "tests/test_schedules.py::test_astro_schedule_sends_the_home_location"
+   ]
+  },
+  {
+   "id": "msg:op:44",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
+    "tools/cli_ops.py::property_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_set_builders_and_describe",
+    "tests/test_cli.py::test_property_set_builds_the_app_message"
+   ]
+  },
+  {
+   "id": "msg:op:46",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::GEN_ADMIN_PROP_STATUS",
+    "custom_components/junghome_ble/jhmesh/messages.py::SIG_PROP_STATUS",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sig_property_status_decoders_carry_the_access_byte",
+    "tests/jhmesh/test_messages.py::test_describe_sig_property_status_and_get",
+    "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set",
+    "tests/jhmesh/test_messages.py::test_sig_property_status_is_named_after_its_model"
+   ]
+  },
+  {
+   "id": "msg:op:48",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._reset_counter"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_set_builders_and_describe",
+    "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set",
+    "tests/test_energy_puck.py::test_reset_consumption_zeroes_the_meter_total_only"
+   ]
+  },
+  {
+   "id": "msg:op:4a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::GEN_ADMIN_PROP_STATUS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sig_property_status_decoders_carry_the_access_byte",
+    "tests/jhmesh/test_messages.py::test_describe_sig_property_status_and_get",
+    "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set"
+   ]
+  },
+  {
+   "id": "msg:op:4c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
+    "tools/cli_ops.py::property_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_set_builders_and_describe"
+   ]
+  },
+  {
+   "id": "msg:op:4e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::GEN_ADMIN_PROP_STATUS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sig_property_status_decoders_carry_the_access_byte",
+    "tests/jhmesh/test_messages.py::test_describe_sig_property_status_and_get",
+    "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set"
+   ]
+  },
+  {
+   "id": "msg:op:51",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_descriptors",
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sensor_descriptor_builders_and_describe",
+    "tests/jhmesh/test_properties_codecs.py::test_sensor_descriptors_round_trip"
+   ]
+  },
+  {
+   "id": "msg:op:52",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_values",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_health_fault_status",
+    "custom_components/junghome_ble/binary_sensor.py::_on_detector_sensor_status",
+    "custom_components/junghome_ble/climate.py::_on_sensor_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sensor_values_unmarshalling",
+    "tests/jhmesh/test_properties_codecs.py::test_sensor_values_round_trip_and_refuse_a_truncated_status",
+    "tests/test_energy_puck.py::test_the_meter_is_asked_for_power_and_the_energy_counters"
+   ]
+  },
+  {
+   "id": "msg:op:53",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the meter's Series and Column Gets were answered with the property id only (docs/hidden-features.md §3), its descriptors describe single values (§2), and no Column or Series Status was ever seen on air, so there is nothing to read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:54",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the meter's Series and Column Gets were answered with the property id only (docs/hidden-features.md §3), its descriptors describe single values (§2), and no Column or Series Status was ever seen on air, so there is nothing to read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:55",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:56",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:57",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::SENSOR_CADENCE_STATUS"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:58",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::SENSOR_SETTINGS_STATUS"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:59",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:5a",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:5b",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:5c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::time_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_time_set_vector",
+    "tests/jhmesh/test_messages.py::test_time_set_explicit_fields_and_zone",
+    "tests/jhmesh/test_properties_codecs.py::test_time_set_reads_back"
+   ]
+  },
+  {
+   "id": "msg:op:5d",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_tai_time",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_time_status_and_get",
+    "tests/jhmesh/test_messages.py::test_describe_time_status_far_future_does_not_raise"
+   ],
+   "class": "build",
+   "verify": "offline",
+   "missing": "Home Assistant sends Time Set (msg:op:5c) after every connection without waiting for the Time Status a node answers, and no status handler takes one: only describe() decodes it (messages._tai_time), where the app waits for it as Time Set's expected status (p234v7/M0). A handler, and the node clocks it would show as diagnostics: review 4 brief 34."
+  },
+  {
+   "id": "msg:op:5e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_scene_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe",
+    "tools/mesh_poc.py::cmd_scene.run"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_decode_scene_status",
+    "tests/jhmesh/test_messages.py::test_describe_scene_messages",
+    "tests/test_scene.py::test_current_scenes_are_read_after_the_connection"
+   ],
+   "note": "Decoded (3 B or 6 B with target and remaining time) and handled: the hub keeps each element's current scene from it, the answer to the Scene Get after a connection (msg:op:8241) or the status a recall publishes."
+  },
+  {
+   "id": "msg:op:5f",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: docs/roadmap.md, '### Step 2 — completeness (devices the user does not own yet)', item 20: \"Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.\" (docs/hidden-features.md confirms no SIG Scheduler Server 0x1206 on any node). Schedules use the JH Scheduler vendor model (msg:op:d22705..d42705, implemented)."
+  },
+  {
+   "id": "msg:op:60",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: docs/roadmap.md, '### Step 2 — completeness (devices the user does not own yet)', item 20: \"Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.\" (docs/hidden-features.md confirms no SIG Scheduler Server 0x1206 on any node). Schedules use the JH Scheduler vendor model (msg:op:d22705..d42705, implemented)."
+  },
+  {
+   "id": "msg:op:62",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:63",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:64",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8000",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::appkey_delete"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders"
+   ]
+  },
+  {
+   "id": "msg:op:8001",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config AppKey Get builder (NetKeyIndex u16 LE, 12 bit). The app sends it as the read side of AddAppKeyMessageBuilder (expects 0x8003 there). Verify: one read-only AppKey Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8002",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config AppKey List decoder / describe() entry (Status u8, NetKeyIndex, AppKey indexes packed 2 per 3 B). Verify: one read-only AppKey Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8003",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_appkey_status",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.add_app_key"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_appkey_status",
+    "tests/jhmesh/test_properties_codecs.py::test_appkey_add_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:8008",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::composition_data_get",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
+    "tools/cli_ops.py::config_composition"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_composition_data_get",
+    "tests/test_cli.py::test_config_requests"
+   ]
+  },
+  {
+   "id": "msg:op:8009",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::beacon_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_audit.py::test_the_export_s_transmit_and_beacon_states_are_compared"
+   ]
+  },
+  {
+   "id": "msg:op:800a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::beacon_set",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:800b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_beacon_status",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:800c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::default_ttl_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ]
+  },
+  {
+   "id": "msg:op:800d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::default_ttl_set",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders_reject_bad_values"
+   ]
+  },
+  {
+   "id": "msg:op:800e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_default_ttl_status",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:800f",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+  },
+  {
+   "id": "msg:op:8010",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+  },
+  {
+   "id": "msg:op:8011",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+  },
+  {
+   "id": "msg:op:8012",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::gatt_proxy_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ]
+  },
+  {
+   "id": "msg:op:8013",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::gatt_proxy_set",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders_reject_bad_values"
+   ]
+  },
+  {
+   "id": "msg:op:8014",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_gatt_proxy_status",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:8015",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders"
+   ],
+   "class": "declined",
+   "reason": "Declined: nothing sends Key Refresh Phase Get because HA does not drive a key refresh (the app sends it only during KeyRenewal); the builder exists and is tested. docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\" (risk: \"high: can split the network\"), and '## Status' (Phase 4: \"Not started: N6, ...\"); docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" The passive follow of the app's key refresh (N2b) is implemented."
+  },
+  {
+   "id": "msg:op:8016",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_key_refresh_phase_set_and_its_status",
+    "tests/jhmesh/test_sim_mesh.py::test_a_key_refresh_followed_from_the_provisioners_messages"
+   ],
+   "class": "declined",
+   "reason": "Declined: HA never sends Key Refresh Phase Set itself (the app's UpdateKeyRefreshPhaseMessageBuilder); the builder exists and the app's Phase Set is followed passively. docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\" (risk: \"high: can split the network\"), and '## Status' (Phase 4: \"Not started: N6, ...\"); docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" The passive follow of the app's key refresh (N2b) is implemented."
+  },
+  {
+   "id": "msg:op:8017",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_key_refresh_phase_status",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._follow_key_refresh",
+    "custom_components/junghome_ble/jhmesh/keyrefresh.py::KeyRefreshFollower.phase_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_netkey_and_key_refresh_phase_status",
+    "tests/jhmesh/test_properties_codecs.py::test_key_refresh_phase_set_and_its_status",
+    "tests/jhmesh/test_keyrefresh.py::test_one_nodes_statuses_are_no_proof_but_two_are",
+    "tests/jhmesh/test_keyrefresh.py::test_phase_three_needs_a_node_that_held_the_key"
+   ],
+   "note": "Consumed passively since review 4 brief 04: the devices' own Key Refresh Phase Status replies to the app's Phase Set are proof that a followed key refresh moved (two distinct devices, or the proxy). Unverified on air (review 4 brief 30)."
+  },
+  {
+   "id": "msg:op:8018",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_model_gets"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_get",
+    "tests/jhmesh/test_audit.py::test_a_query_takes_only_the_answer_about_its_own_model"
+   ]
+  },
+  {
+   "id": "msg:op:8019",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_publication_status",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_publication_status_round_trips_the_set",
+    "tests/jhmesh/test_properties_codecs.py::test_model_publication_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:801a",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no app flow and no export uses a Label UUID: publications and subscriptions stay on group addresses (the app never sends it; virtual-address crypto would be needed too). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Virtual addresses'."
+  },
+  {
+   "id": "msg:op:801b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
+    "tests/test_services.py::test_set_room_by_device_and_entity_targets"
+   ]
+  },
+  {
+   "id": "msg:op:801c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_rejects_non_group_addresses",
+    "tests/test_services.py::test_clear_key"
+   ]
+  },
+  {
+   "id": "msg:op:801d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete_all"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders"
+   ]
+  },
+  {
+   "id": "msg:op:801e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_overwrite"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders"
+   ]
+  },
+  {
+   "id": "msg:op:801f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_subscription_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_status_and_lists",
+    "tests/jhmesh/test_properties_codecs.py::test_model_subscription_changes_and_their_status"
+   ]
+  },
+  {
+   "id": "msg:op:8020",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::_is_virtual"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no app flow and no export uses a Label UUID: publications and subscriptions stay on group addresses (the app never sends it; virtual-address crypto would be needed too). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Virtual addresses'."
+  },
+  {
+   "id": "msg:op:8021",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::_is_virtual"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no app flow and no export uses a Label UUID: publications and subscriptions stay on group addresses (the app never sends it; virtual-address crypto would be needed too). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Virtual addresses'."
+  },
+  {
+   "id": "msg:op:8022",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::_is_virtual"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no app flow and no export uses a Label UUID: publications and subscriptions stay on group addresses (the app never sends it; virtual-address crypto would be needed too). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Virtual addresses'."
+  },
+  {
+   "id": "msg:op:8023",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::network_transmit_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_audit.py::test_the_export_s_transmit_and_beacon_states_are_compared"
+   ]
+  },
+  {
+   "id": "msg:op:8024",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::network_transmit_set",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:8025",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_network_transmit_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:8026",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::relay_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ]
+  },
+  {
+   "id": "msg:op:8027",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::relay_set",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.set_configuration"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders_reject_bad_values"
+   ]
+  },
+  {
+   "id": "msg:op:8028",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_relay_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:8029",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_model_gets"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ]
+  },
+  {
+   "id": "msg:op:802a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_subscription_list"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_status_and_lists",
+    "tests/jhmesh/test_properties_codecs.py::test_model_subscription_list"
+   ]
+  },
+  {
+   "id": "msg:op:802b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_subscription_builders"
+   ]
+  },
+  {
+   "id": "msg:op:802c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_subscription_list"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_decode_config_dispatches_on_the_opcode",
+    "tests/jhmesh/test_properties_codecs.py::test_model_subscription_list"
+   ]
+  },
+  {
+   "id": "msg:op:802d",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+  },
+  {
+   "id": "msg:op:802e",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+  },
+  {
+   "id": "msg:op:8038",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_get",
+    "tools/cli_ops.py::HopProbe.read_publication"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_builders",
+    "tests/test_cli.py::test_cmd_config_hops"
+   ]
+  },
+  {
+   "id": "msg:op:8039",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._configure_heartbeats"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_heartbeat_publication_set_and_its_status",
+    "tests/test_coordinator.py::test_heartbeat_disable_counts_only_a_node_that_stopped"
+   ]
+  },
+  {
+   "id": "msg:op:803a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_subscription_get",
+    "tools/cli_ops.py::HopProbe.read_subscription"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_subscription_builders_and_status",
+    "tests/test_cli.py::test_cmd_config_hops"
+   ]
+  },
+  {
+   "id": "msg:op:803b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_subscription_set",
+    "tools/cli_ops.py::HopProbe.subscribe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_subscription_builders_and_status",
+    "tests/jhmesh/test_properties_codecs.py::test_heartbeat_subscription_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:803c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_subscription_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_heartbeat_subscription_builders_and_status",
+    "tests/jhmesh/test_properties_codecs.py::test_heartbeat_subscription_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:803d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._bind_step"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",
+    "tests/jhmesh/test_commission.py::test_binds_the_bind_list_first_then_what_the_messenger_binds",
+    "tests/test_mesh_config.py::test_assign_key_binds_an_unbound_client_first"
+   ]
+  },
+  {
+   "id": "msg:op:803e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_app_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_status",
+    "tests/jhmesh/test_properties_codecs.py::test_model_app_bind_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:803f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_unbind",
+    "tools/cli_ops.py::config_bind"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind"
+   ]
+  },
+  {
+   "id": "msg:op:8040",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_add"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_netkey_add_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:8041",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_delete"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders"
+   ]
+  },
+  {
+   "id": "msg:op:8042",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config NetKey Get builder / constant (0 B). Verify: one read-only NetKey Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8043",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config NetKey List decoder / describe() (NetKey indexes packed 2 per 3 B); _unpack_key_index_list exists and could be reused. Verify: one read-only NetKey Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8044",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_netkey_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_netkey_and_key_refresh_phase_status",
+    "tests/jhmesh/test_properties_codecs.py::test_netkey_add_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:op:8045",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_update"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_management_builders",
+    "tests/jhmesh/test_client.py::test_a_key_refresh_by_the_provisioner_is_followed",
+    "tests/test_key_refresh.py::test_the_apps_key_refresh_is_followed_and_survives_a_reload"
+   ],
+   "class": "declined",
+   "reason": "Declined: HA never distributes a new NetKey itself (the app's NetKeyUpdateMessageBuilder); the builder (index little-endian, without the Nordic big-endian quirk) exists and the app's NetKey Update is followed passively. docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\" (risk: \"high: can split the network\"), and '## Status' (Phase 4: \"Not started: N6, ...\"); docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" The passive follow of the app's key refresh (N2b) is implemented."
+  },
+  {
+   "id": "msg:op:8046",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config Node Identity Get builder (NetKeyIndex u16 LE); review-3 Phase 3 lists Node Identity as a library gap. Verify: one read-only Node Identity Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8047",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config Node Identity Set builder (NetKeyIndex, Identity u8). Verify: a Set only starts Node Identity advertising for 60 s (harmless); the adverts are already decoded by advert.py.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8048",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Config Node Identity Status decoder / describe() (Status, NetKeyIndex, Identity). Verify: one read-only Node Identity Get to any node.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8049",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::node_reset",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
+    "tests/jhmesh/test_sim_mesh.py::test_a_fresh_node_commissioned_and_audited"
+   ]
+  },
+  {
+   "id": "msg:op:804a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_node_reset_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
+    "tests/jhmesh/test_config_messages.py::test_decode_config_dispatches_on_the_opcode"
+   ]
+  },
+  {
+   "id": "msg:op:804b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_model_gets"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_get_and_list",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ]
+  },
+  {
+   "id": "msg:op:804c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_app_list"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_get_and_list",
+    "tests/jhmesh/test_properties_codecs.py::test_model_app_list"
+   ]
+  },
+  {
+   "id": "msg:op:804d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_get_and_list"
+   ]
+  },
+  {
+   "id": "msg:op:804e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_app_list"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_model_app_get_and_list",
+    "tests/jhmesh/test_properties_codecs.py::test_model_app_list"
+   ]
+  },
+  {
+   "id": "msg:op:8201",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_get",
+    "custom_components/junghome_ble/coordinator.py::ONOFF_GET"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onoff_builders",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "msg:op:8202",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onoff_builders",
+    "tests/jhmesh/test_messages.py::test_describe_set_messages"
+   ]
+  },
+  {
+   "id": "msg:op:8203",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_command",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.room_command"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onoff_builders",
+    "tests/test_central.py::test_all_sockets",
+    "tests/test_central.py::test_room_sockets_switch_each_socket"
+   ],
+   "note": "Sent by the central-function and room entities, one unacknowledged message each (JungHomeHub.central_command, room_command), as the app's UpdateDeviceTypeGroup and area sheet send it; a load's own command is the acknowledged Set (msg:op:8202)."
+  },
+  {
+   "id": "msg:op:8204",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_generic_status_messages",
+    "tests/test_switch.py::test_turn_on_off"
+   ]
+  },
+  {
+   "id": "msg:op:8205",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_level_get",
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_level_builders",
+    "tests/test_cover.py::test_position_and_direction_from_level_status"
+   ]
+  },
+  {
+   "id": "msg:op:8206",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_level_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_level_builders",
+    "tests/test_cover.py::test_set_position"
+   ]
+  },
+  {
+   "id": "msg:op:8207",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_level_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_level_builders",
+    "tests/jhmesh/test_messages.py::test_describe_set_messages"
+   ]
+  },
+  {
+   "id": "msg:op:8208",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_level_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_generic_status_messages",
+    "tests/test_cover.py::test_position_and_direction_from_level_status"
+   ]
+  },
+  {
+   "id": "msg:op:8209",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_delta_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.delta_level"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_delta_and_move_builders",
+    "tests/test_cover.py::test_delta_set_is_the_apps_alternative",
+    "tests/test_light.py::test_dim_actions_move_and_step_the_level_server"
+   ]
+  },
+  {
+   "id": "msg:op:820d",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+   ],
+   "class": "declined",
+   "reason": "Declined: the switch insert stores a Default Transition Time but the DALI insert, the one that could fade, ignores it (docs/hidden-features.md §3 and §7.3); a transition carried in each Set (review 4 brief 31) is the planned way to fade. The app never sends it either. The Status is decoded by describe() (msg:op:8210). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Generic Default Transition Time'."
+  },
+  {
+   "id": "msg:op:820e",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::GEN_DTT_SET_UNACK"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the switch insert stores a Default Transition Time but the DALI insert, the one that could fade, ignores it (docs/hidden-features.md §3 and §7.3); a transition carried in each Set (review 4 brief 31) is the planned way to fade. The app never sends it either. The Status is decoded by describe() (msg:op:8210). Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Generic Default Transition Time'."
+  },
+  {
+   "id": "msg:op:8210",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_misc_status_and_config",
+    "tests/jhmesh/test_messages.py::test_describe_shows_an_unknown_remaining_time"
+   ]
+  },
+  {
+   "id": "msg:op:8211",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onpowerup_get",
+    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onpowerup_builders_and_describe",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ]
+  },
+  {
+   "id": "msg:op:8212",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status",
+    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+   ],
+   "tests": [
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ]
+  },
+  {
+   "id": "msg:op:8213",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_onpowerup_set",
+    "custom_components/junghome_ble/select.py::JungHomePowerOnBehaviour.async_select_option"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_onpowerup_builders_and_describe",
+    "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set"
+   ]
+  },
+  {
+   "id": "msg:op:8223",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_battery_get",
+    "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor._read"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_battery_get_and_status",
+    "tests/test_sensor.py::test_battery_sensor_is_read_after_a_key_event_only"
+   ]
+  },
+  {
+   "id": "msg:op:8224",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::battery_status",
+    "custom_components/junghome_ble/sensor.py::_on_battery_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_battery_get_and_status",
+    "tests/jhmesh/test_properties_codecs.py::test_battery_status_fields",
+    "tests/test_sensor.py::test_battery_level_above_100_is_not_a_percentage"
+   ]
+  },
+  {
+   "id": "msg:op:8225",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_round_trips_every_sig_addition"
+   ],
+   "missing": "Builder only: nothing reads the node's stored location back (the app's LocationMessageBuilder has a Get read path and resolves 0x40); HA only pushes the home location with Set Unacknowledged. Verify: one read-only Get to any node (every node hosts a Location Server 0x100E).",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:822b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server",
+    "tests/test_sensor.py::test_detector_version_is_read_and_gates_illuminance"
+   ]
+  },
+  {
+   "id": "msg:op:822d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server",
+    "tests/test_sensor.py::test_detector_version_is_read_and_gates_illuminance"
+   ]
+  },
+  {
+   "id": "msg:op:822f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
+    "tests/test_cli.py::test_property_get_picks_the_hosting_server",
+    "tests/test_sensor.py::test_detector_version_is_read_and_gates_illuminance"
+   ]
+  },
+  {
+   "id": "msg:op:8230",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_descriptor_get",
+    "tools/mesh_poc.py::cmd_prop_lists.run"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sensor_descriptor_builders_and_describe"
+   ]
+  },
+  {
+   "id": "msg:op:8231",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::sensor_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_sensor_get_builder_and_describe",
+    "tests/test_binary_sensor.py::test_sensor_get_reply_is_matched_on_its_property"
+   ]
+  },
+  {
+   "id": "msg:op:8232",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the meter's Series and Column Gets were answered with the property id only (docs/hidden-features.md §3), its descriptors describe single values (§2), and no Column or Series Status was ever seen on air, so there is nothing to read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:8233",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the meter's Series and Column Gets were answered with the property id only (docs/hidden-features.md §3), its descriptors describe single values (§2), and no Column or Series Status was ever seen on air, so there is nothing to read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:8234",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::SENSOR_CADENCE_STATUS"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:8235",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::SENSOR_SETTINGS_STATUS"
+   ],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:8236",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: the metering socket's Sensor Setup Server answers Cadence and Settings Gets with the property id only: it holds no cadence and no settings (its ~65 s publication rhythm is firmware, docs/hidden-features.md §3), so there is nothing to set or read. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Sensor Cadence, Settings, Series and Column'."
+  },
+  {
+   "id": "msg:op:8237",
+   "status": "gap",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_time_status_and_get"
+   ],
+   "missing": "describe() decodes it, but there is no Time Get builder, so HA cannot read a node's clock (the app's TimeMessageBuilder reads with it; nodes answer 0x5D). Verify: read-only Get; every node answers Time Status (0x5D seen from all pids).",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:8238",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::time_role_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_time_role"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_time_role_get_and_status",
+    "tests/test_node_info.py::test_everything_is_asked_on_the_first_link",
+    "tests/test_node_info.py::test_no_time_role_get_without_a_time_setup_server",
+    "tests/test_node_info.py::test_a_known_time_role_is_not_asked_again",
+    "tests/test_node_info.py::test_the_node_device_shows_its_manufacturer_and_hardware_revision"
+   ],
+   "reason": "Sent once per node, not on every link: the role is kept with the node's information (node_versions store) like SIG 0x0010 / 0x0011, and asked again only while it is not known (silence, an empty or prohibited role). The app asks on every opening of a device page to show it; in Home Assistant only the device diagnostics show it, nothing acts on it, Home Assistant never sends Time Role Set, and every node on air answered client (3), so a per-link Get was pure link-up traffic (one per node on every connect)."
+  },
+  {
+   "id": "msg:op:8239",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_role"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+   ],
+   "missing": "Only a describe() decoder (_describe_time_role, 1 B TimeRole) for a message the app sends: there is no Time Role Set builder (1 B TimeRole 0..3) and nothing sets the time keeper's role (app: TimeRoleMessageBuilder p234v7/N0 set path, TimeRoleStatusSet). Reclassified from gap: this ledger's rule makes 'only a describe() decoder for a message the app sends' partial, not gap. Verify: a Set changes which node is time authority; Get / Set / restore on one node.",
+   "class": "build",
+   "verify": "on-air",
+   "review": "adversarial pass: gap -> partial under this ledger's own status rules (see method, 'Verification pass')"
+  },
+  {
+   "id": "msg:op:823a",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_time_role_status",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_time_role",
+    "custom_components/junghome_ble/diagnostics.py::_node_info"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_time_role_get_and_status",
+    "tests/test_node_info.py::test_a_time_role_that_is_not_one_is_not_kept",
+    "tests/test_diagnostics.py::test_device_diagnostics"
+   ],
+   "reason": "Read with Time Role Get once per node (msg:op:8238) from its Time Setup Server (1201) by the property reader, after the software version (the app: on every opening of the device page); the 1-byte role is decoded (a prohibited role or none is dropped), kept with the node's information and shown in the device diagnostics (node_info.time_role). Vector: 823A 03 = client (on air)."
+  },
+  {
+   "id": "msg:op:823b",
+   "status": "gap",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+   ],
+   "missing": "describe() names it, but there is no Time Zone Get builder. Verify: read-only Get to any node's Time Server 0x1200.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:823c",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: review-3 F17 offered 'Time Zone Set with the next change (or Time Set at the switch)' (docs/review-3/plan.md, '## Phase 3 — functionality that needs a short, safe probe on the installation', F17 DST) and the second was built: CHANGELOG.md, '### Added': \"a Time Set right after every daylight-saving change\"; docs/review-3/plan.md '## Status' marks F17 done. The app never sends Time Zone Set either (library only)."
+  },
+  {
+   "id": "msg:op:823d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_zone"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+   ]
+  },
+  {
+   "id": "msg:op:8241",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_current_scenes",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_current_scene_of",
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_builders",
+    "tests/test_scene.py::test_current_scenes_are_read_after_the_connection",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ],
+   "note": "Unverified on air (review 4 brief 30): after a (re)connection, every element holding a scene register (each address in the export's scenes[].addresses) should answer Home Assistant's Scene Get with a 3-byte Scene Status (5E 00 <current u16>), and the scene entity's active_members then name the members whose current scene it is; no capture has a Scene Get yet."
+  },
+  {
+   "id": "msg:op:8242",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_recall",
+    "tools/mesh_poc.py::cmd_scene.run"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_builders_carry_the_scene_number"
+   ]
+  },
+  {
+   "id": "msg:op:8243",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_recall",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_builders",
+    "tests/test_scene.py::test_activate"
+   ]
+  },
+  {
+   "id": "msg:op:8244",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_register_get",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._scene_register"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/test_mesh_config.py::test_store_scene_reads_back_when_the_node_publishes_instead_of_replying"
+   ]
+  },
+  {
+   "id": "msg:op:8245",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::decode_scene_register_status",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._scene_register"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_register_status_round_trips",
+    "tests/test_mesh_config.py::test_store_scene_the_node_refused_by_publication_is_not_reported_as_success"
+   ]
+  },
+  {
+   "id": "msg:op:8246",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_store",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._store_one"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/test_mesh_config.py::test_store_scene_stores_writes_the_action_and_records_the_member"
+   ]
+  },
+  {
+   "id": "msg:op:8247",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_store"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_builders_carry_the_scene_number"
+   ]
+  },
+  {
+   "id": "msg:op:8248",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: docs/roadmap.md, '### Step 2 — completeness (devices the user does not own yet)', item 20: \"Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.\" (docs/hidden-features.md confirms no SIG Scheduler Server 0x1206 on any node). Schedules use the JH Scheduler vendor model (msg:op:d22705..d42705, implemented)."
+  },
+  {
+   "id": "msg:op:8249",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: docs/roadmap.md, '### Step 2 — completeness (devices the user does not own yet)', item 20: \"Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.\" (docs/hidden-features.md confirms no SIG Scheduler Server 0x1206 on any node). Schedules use the JH Scheduler vendor model (msg:op:d22705..d42705, implemented)."
+  },
+  {
+   "id": "msg:op:824a",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: docs/roadmap.md, '### Step 2 — completeness (devices the user does not own yet)', item 20: \"Not done, deliberately: the legacy SIG scheduler — no `1206` server on any node here, current firmware has the JH Scheduler on every load, and its timer scenes / `meta.timer` rows could not be tested against anything.\" (docs/hidden-features.md confirms no SIG Scheduler Server 0x1206 on any node). Schedules use the JH Scheduler vendor model (msg:op:d22705..d42705, implemented)."
+  },
+  {
+   "id": "msg:op:824b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_get",
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_builders",
+    "tests/test_light.py::test_dimmer"
+   ]
+  },
+  {
+   "id": "msg:op:824c",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_builders",
+    "tests/jhmesh/test_messages.py::test_describe_set_messages"
+   ]
+  },
+  {
+   "id": "msg:op:824d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_command",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.room_command"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_builders",
+    "tests/test_central.py::test_all_lights_follows_its_members_and_switches_them_with_one_message",
+    "tests/test_central.py::test_room_lights_dim_with_one_message_and_switch_each_light"
+   ],
+   "note": "Sent by the central-function and room entities, one unacknowledged message each (JungHomeHub.central_command, room_command), as the app's UpdateDeviceTypeGroup and area sheet send it; a load's own command is the acknowledged Set (msg:op:824c)."
+  },
+  {
+   "id": "msg:op:824e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_lightness_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_generic_status_messages",
+    "tests/test_light.py::test_dimmer"
+   ]
+  },
+  {
+   "id": "msg:op:8255",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_default_get",
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_DEFAULT"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states"
+   ]
+  },
+  {
+   "id": "msg:op:8256",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_DEFAULT",
+    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/test_setup_states.py::test_status_handler_caches_setup_states"
+   ]
+  },
+  {
+   "id": "msg:op:8257",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_range_get",
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_RANGE"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/test_setup_states.py::test_brightness_range_moves_one_end_and_keeps_the_other"
+   ]
+  },
+  {
+   "id": "msg:op:8258",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_RANGE",
+    "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/test_setup_states.py::test_brightness_range_moves_one_end_and_keeps_the_other"
+   ]
+  },
+  {
+   "id": "msg:op:8259",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_default_set",
+    "custom_components/junghome_ble/number.py::JungHomeDefaultLightness.async_set_native_value"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/jhmesh/test_messages.py::test_describe_round_trips_every_sig_addition"
+   ]
+  },
+  {
+   "id": "msg:op:825b",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_range_set",
+    "custom_components/junghome_ble/number.py::JungHomeLightnessBound.async_set_native_value"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
+    "tests/test_setup_states.py::test_brightness_range_moves_one_end_and_keeps_the_other"
+   ]
+  },
+  {
+   "id": "msg:op:825d",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_get",
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_builders",
+    "tests/test_light.py::test_tunable_white"
+   ]
+  },
+  {
+   "id": "msg:op:825e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_builders",
+    "tests/test_light.py::test_tunable_white"
+   ]
+  },
+  {
+   "id": "msg:op:825f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_builders",
+    "tests/jhmesh/test_messages.py::test_describe_set_messages"
+   ]
+  },
+  {
+   "id": "msg:op:8260",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_ctl_status_messages",
+    "tests/test_light.py::test_tunable_white"
+   ]
+  },
+  {
+   "id": "msg:op:8261",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_get",
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_builders",
+    "tests/jhmesh/test_messages.py::test_describe_ctl_temperature_get_and_sets",
+    "tests/test_coordinator.py::test_initial_connection_and_refresh"
+   ]
+  },
+  {
+   "id": "msg:op:8262",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_get",
+    "custom_components/junghome_ble/coordinator.py::STATE_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_light.py::test_tunable_white_range_from_the_light"
+   ]
+  },
+  {
+   "id": "msg:op:8263",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_level_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_light.py::test_tunable_white_range_from_the_light"
+   ]
+  },
+  {
+   "id": "msg:op:8264",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl_temperature"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_builders",
+    "tests/test_light.py::test_tunable_white_temperature_alone"
+   ]
+  },
+  {
+   "id": "msg:op:8266",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_ctl_temperature_status_with_targets",
+    "tests/test_light.py::test_tunable_white"
+   ]
+  },
+  {
+   "id": "msg:op:8267",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_default_get",
+    "custom_components/junghome_ble/config_entities.py::CTL_DEFAULT"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_lightness_and_delta_uv"
+   ]
+  },
+  {
+   "id": "msg:op:8268",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::CTL_DEFAULT"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_the_switch_on_brightness_set_last"
+   ]
+  },
+  {
+   "id": "msg:op:8269",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_default_set",
+    "custom_components/junghome_ble/number.py::JungHomeDefaultColorTemp.async_set_native_value"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_setup_states.py::test_switch_on_colour_temperature_keeps_lightness_and_delta_uv"
+   ]
+  },
+  {
+   "id": "msg:op:826b",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_set",
+    "custom_components/junghome_ble/number.py::JungHomeColorTempBound",
+    "custom_components/junghome_ble/number.py::JungHomeColorTempBound.async_set_native_value",
+    "custom_components/junghome_ble/config_entities.py::CTL_TEMPERATURE_RANGE"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
+    "tests/test_setup_states.py::test_white_area_moves_one_end_and_keeps_the_other",
+    "tests/test_setup_states.py::test_white_area_the_light_does_not_take_is_not_applied",
+    "tests/test_setup_states.py::test_white_area_unknown_is_read_first"
+   ],
+   "missing": "on-air check: enable the DALI light's Minimum colour temperature entity and set it to 2100 K; the sniffer must show HA's acknowledged 0x826B to the light's el0 with parameters 34 08 70 17 (2100..6000 K). The earlier probe (hidden-features.md section 9) saw no 0x8263 answer and no change: then HA re-reads the range (0x8262), still 2000..6000, and the change fails with 'not applied'. If the light answers and applies it instead, its min_color_temp_kelvin becomes 2100; set Minimum back to 2000 K afterwards and check the light reports 2000..6000 again. Offline done: two expert number entities write the range the app's way (one Set with both ends, the other as read, clamped to 2000..10000 K, min > max refused), confirmed by the Status or by the read-back.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:826d",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light HSL Server (0x1307; the gateway's HSL client points at colour products that do not exist, docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8276",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light HSL Server (0x1307; the gateway's HSL client points at colour products that do not exist, docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8277",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light HSL Server (0x1307; the gateway's HSL client points at colour products that do not exist, docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8278",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light HSL Server (0x1307; the gateway's HSL client points at colour products that do not exist, docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8291",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8292",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8293",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8294",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8295",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8296",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8297",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8298",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:8299",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:829a",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:829b",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:829c",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:829d",
+   "status": "na",
+   "code": [],
+   "tests": [],
+   "class": "declined",
+   "reason": "Declined: no JUNG product hosts a Light LC Server or Setup Server (0x130F / 0x1310), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Light LC and Light HSL'."
+  },
+  {
+   "id": "msg:op:829e",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_delete",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._delete_from_register"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/test_mesh_config.py::test_remove_from_scene_and_delete_scene"
+   ]
+  },
+  {
+   "id": "msg:op:829f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::scene_delete"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_scene_store_delete_and_register",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_builders_carry_the_scene_number"
+   ]
+  },
+  {
+   "id": "msg:op:c22705",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated"
+   ],
+   "missing": "vendor_property_get takes no extra bytes: the Get of AstroSchedulerRegister (admin 0x0007) must carry the register index as one extra byte (app: m.u(property.a(), bArr)); review-3 Phase 3 'Admin Property Get with extra bytes' still open. Verify: the extra-byte Get is read-only; on an astro-capable load.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:op:c32705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_property"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_admin_carries_the_access_byte",
+    "tests/test_switch.py::test_property_switch_read_and_written"
+   ]
+  },
+  {
+   "id": "msg:op:c52705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::has_value",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_vendor_property_status_with_key_mode",
+    "tests/jhmesh/test_properties_codecs.py::test_vendor_property_set_and_status_layouts",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/test_switch.py::test_set_answered_without_a_value_is_not_supported",
+    "tests/test_config_entities.py::test_gateway_status_and_address"
+   ],
+   "note": "An LBC Admin Property Status without a value - the property id and access byte (3 B), or the id alone (2 B: the metering socket's meter element answering the app's Admin Set of 0x5003 on air) - is dropped by _on_vendor_property_status and never clears a cached value, as the app's resolver drops it (AbstractC1972z0, UtilsKt.k). It still answers a pending request for its property id, as in the app, which neither resends nor reads back: PropertyReader.write returns 'not_supported' without a re-read, and the entity raises setting_not_supported. HA-idiomatic difference: the app moves on silently; HA reports that the device does not have the setting instead of showing a change that did not happen."
+  },
+  {
+   "id": "msg:op:c82705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text",
+    "custom_components/junghome_ble/tls.py::async_read_mesh_fingerprint"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
+    "tests/test_sensor.py::test_node_device_shows_the_software_version"
+   ]
+  },
+  {
+   "id": "msg:op:c92705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "tools/cli_ops.py::property_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_manufacturer_and_user_have_no_access_byte"
+   ]
+  },
+  {
+   "id": "msg:op:cb2705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::has_value",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_vendor_property_status_with_key_mode",
+    "tests/jhmesh/test_properties_codecs.py::test_vendor_property_set_and_status_layouts",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/test_switch.py::test_set_answered_without_a_value_is_not_supported",
+    "tests/test_config_entities.py::test_gateway_status_and_address"
+   ],
+   "note": "An LBC Manufacturer Property Status without a value - the property id and access byte (3 B), or the id alone (2 B: the metering socket's meter element answering the app's Admin Set of 0x5003 on air) - is dropped by _on_vendor_property_status and never clears a cached value, as the app's resolver drops it (AbstractC1972z0, UtilsKt.k). It still answers a pending request for its property id, as in the app, which neither resends nor reads back: PropertyReader.write returns 'not_supported' without a re-read, and the entity raises setting_not_supported. HA-idiomatic difference: the app moves on silently; HA reports that the device does not have the setting instead of showing a change that did not happen."
+  },
+  {
+   "id": "msg:op:ce2705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
+    "custom_components/junghome_ble/energy_history.py::read_chart"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
+    "tests/test_energy_history.py::test_missed_hours_are_imported_on_connect"
+   ]
+  },
+  {
+   "id": "msg:op:cf2705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
+    "tools/cli_ops.py::property_set"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_vendor_property_set_manufacturer_and_user_have_no_access_byte"
+   ]
+  },
+  {
+   "id": "msg:op:d12705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/config_entities.py::has_value",
+    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
+   ],
+   "tests": [
+    "tests/jhmesh/test_messages.py::test_describe_vendor_property_status_with_key_mode",
+    "tests/jhmesh/test_properties_codecs.py::test_vendor_property_set_and_status_layouts",
+    "tests/test_switch.py::test_property_switch_read_and_written",
+    "tests/test_switch.py::test_set_answered_without_a_value_is_not_supported",
+    "tests/test_config_entities.py::test_gateway_status_and_address"
+   ],
+   "note": "An LBC User Property Status without a value - the property id and access byte (3 B), or the id alone (2 B: the metering socket's meter element answering the app's Admin Set of 0x5003 on air) - is dropped by _on_vendor_property_status and never clears a cached value, as the app's resolver drops it (AbstractC1972z0, UtilsKt.k). It still answers a pending request for its property id, as in the app, which neither resends nor reads back: PropertyReader.write returns 'not_supported' without a re-read, and the entity raises setting_not_supported. HA-idiomatic difference: the app moves on silently; HA reports that the device does not have the setting instead of showing a change that did not happen. The app's other use of D1 27 05, as a substitute reply completing any pending request, is a waiting rule, tracked in msg:mech:waitforstatusmessage."
+  },
+  {
+   "id": "msg:op:d22705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_get",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_list_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:op:d32705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status",
+    "custom_components/junghome_ble/schedules.py::Scheduler._get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_empty_scheduler_statuses",
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:op:d42705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::Action.encode",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_action_set",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_type_set",
+    "custom_components/junghome_ble/schedules.py::Scheduler._write_action"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_action_and_effective_time",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:op:d62705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/test_coordinator.py::test_a_late_scene_action_status_does_not_shift_onto_the_next_scene"
+   ]
+  },
+  {
+   "id": "msg:op:d72705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scene_action_status",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_scene_action_status",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_action_list_status",
+    "tests/test_coordinator.py::test_scene_action_read_tolerates_a_malformed_status_and_a_lost_link"
+   ]
+  },
+  {
+   "id": "msg:op:d82705",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_set",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._scene_action"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/test_mesh_config.py::test_store_scene_stores_writes_the_action_and_records_the_member"
+   ]
+  },
+  {
+   "id": "msg:proxy:00",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/pdu.py::proxy_config_set_filter",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.set_filter"
+   ],
+   "tests": [
+    "tests/jhmesh/test_pdu.py::test_proxy_config_builders",
+    "tests/jhmesh/test_client.py::test_attach_sets_filter_and_learns_proxy_address",
+    "tests/jhmesh/test_sim_mesh.py::test_the_proxy_filter_is_set_under_loss"
+   ]
+  },
+  {
+   "id": "msg:proxy:01",
+   "status": "na",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/pdu.py::proxy_config_add_addresses"
+   ],
+   "tests": [
+    "tests/jhmesh/test_pdu.py::test_proxy_config_builders"
+   ],
+   "class": "declined",
+   "reason": "Declined: Home Assistant never narrows its proxy's filter. It keeps the empty reject list (receive everything) for a link's whole life (docs/ha-integration.md: the link sets the proxy filter to *blacklist, empty*) and commissions new nodes through that link (jhmesh/commission.py NOT_COVERED, first entry), so the app's address lists ({node, 0xFFFF, provisioner} during setup, {node, 0xFFFF} after) have no use. The builder exists and is tested, without the app's byte-cast quirk, but no flow sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Proxy filter address lists'."
+  },
+  {
+   "id": "msg:proxy:02",
+   "status": "gap",
+   "code": [],
+   "tests": [],
+   "missing": "No Remove Addresses From Filter builder (opcode 0x02 + address u16 BE list); only Set Filter Type and Add Addresses exist in pdu.py. Verify: on the live proxy link via the Filter Status list size.",
+   "class": "build",
+   "verify": "on-air"
+  },
+  {
+   "id": "msg:proxy:03",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_notify"
+   ],
+   "tests": [
+    "tests/jhmesh/test_client.py::test_filter_status_reports_the_proxy_node_and_a_new_link_forgets_it",
+    "tests/jhmesh/test_client.py::test_truncated_filter_status_is_dropped_quietly",
+    "tests/jhmesh/test_client.py::test_a_filter_answered_on_the_second_try_stops_the_retries"
+   ]
+  },
+  {
+   "id": "msg:sub:d22705-0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._read_slot"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:sub:d22705-1",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._read_slot"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:sub:d22705-2",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._read_slot"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/test_schedules.py::test_slot_as_dict"
+   ]
+  },
+  {
+   "id": "msg:sub:d22705-f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_list_get",
+    "custom_components/junghome_ble/schedules.py::Scheduler._list"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_get_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_scheduler_list_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d32705-0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/jhmesh/test_vendor_models.py::test_decode_empty_scheduler_statuses",
+    "tests/jhmesh/test_properties_codecs.py::test_schedule_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d32705-1",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_action"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_action_and_effective_time",
+    "tests/jhmesh/test_vendor_models.py::test_action_round_trip",
+    "tests/jhmesh/test_properties_codecs.py::test_scheduler_action_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d32705-2",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_action_and_effective_time",
+    "tests/jhmesh/test_properties_codecs.py::test_effective_time_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d32705-f",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scheduler_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_list_decodes_two_bit_slots",
+    "tests/jhmesh/test_properties_codecs.py::test_scheduler_list_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d42705-0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::Schedule.encode",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_type_set",
+    "custom_components/junghome_ble/schedules.py::Scheduler.create"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_schedule_round_trip_and_decode",
+    "tests/jhmesh/test_properties_codecs.py::test_schedule_set_and_its_status",
+    "tests/test_schedules.py::test_create_list_toggle_delete"
+   ]
+  },
+  {
+   "id": "msg:sub:d42705-1",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scheduler_action_set",
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::Action.encode",
+    "custom_components/junghome_ble/schedules.py::Scheduler._write_action"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scheduler_action_and_effective_time",
+    "tests/jhmesh/test_properties_codecs.py::test_scheduler_action_set_and_its_status",
+    "tests/test_schedules.py::test_a_new_schedule_goes_active_after_its_action"
+   ]
+  },
+  {
+   "id": "msg:sub:d62705-0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/test_coordinator.py::test_scene_action_dropped_when_element_no_longer_lists_it"
+   ]
+  },
+  {
+   "id": "msg:sub:d62705-n",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_get",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/test_coordinator.py::test_a_late_scene_action_status_does_not_shift_onto_the_next_scene"
+   ]
+  },
+  {
+   "id": "msg:sub:d72705-0",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scene_action_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_scene_action_status",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_action_list_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d72705-n",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scene_action_status"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_decode_scene_action_status",
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_status_needs_the_scene_number",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_action_set_and_its_status"
+   ]
+  },
+  {
+   "id": "msg:sub:d82705-n",
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_set",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._scene_action"
+   ],
+   "tests": [
+    "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
+    "tests/jhmesh/test_properties_codecs.py::test_scene_action_set_and_its_status",
+    "tests/test_mesh_config.py::test_remove_from_scene_and_delete_scene"
+   ]
+  }
+ ]
+}

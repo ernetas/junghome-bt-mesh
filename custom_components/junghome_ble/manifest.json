@@ -1,0 +1,21 @@
+{
+  "domain": "junghome_ble",
+  "name": "JUNG HOME (Bluetooth Mesh)",
+  "after_dependencies": ["recorder"],
+  "bluetooth": [
+    {
+      "service_uuid": "00001828-0000-1000-8000-00805f9b34fb",
+      "connectable": true
+    }
+  ],
+  "codeowners": ["@ernetas"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters", "file_upload"],
+  "documentation": "https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/ha-integration.md",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/ernetas/junghome-bt-mesh/issues",
+  "loggers": ["jhmesh", "custom_components.junghome_ble"],
+  "requirements": [],
+  "version": "1.0.0"
+}

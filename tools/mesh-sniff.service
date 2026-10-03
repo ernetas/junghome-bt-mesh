@@ -1,0 +1,30 @@
+# JUNG HOME mesh sniffer: unattended advertising-bearer capture with the nRF Sniffer dongle (docs/sniffer.md,
+# "Unattended capture"). One NDJSON file per day under ~/nrfsniff/captures, byte-identical repeats folded
+# (`--dedupe 2`), no key anywhere near it. The dongle has one user: stop the service before an ad-hoc capture.
+#
+#   scp tools/mesh_sniff.py sniffhost:nrfsniff/ && scp tools/mesh-sniff.service sniffhost:.config/systemd/user/
+#   ssh sniffhost 'systemctl --user daemon-reload && systemctl --user enable --now mesh-sniff.service'
+#   (the user must linger: `loginctl enable-linger`, already the case on sniffhost)
+
+[Unit]
+Description=JUNG HOME mesh sniffer: unattended advertising-bearer capture (nRF Sniffer on /dev/ttyACM0)
+# Restart=always below is what makes one file per day (the capture exits cleanly after --seconds); the start
+# limit stops a dongle or --api error from restarting every 30 s for ever (5 starts in 10 min → the unit fails,
+# `systemctl --user reset-failed mesh-sniff` after fixing it). A clean daily exit is one start a day, far below it.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=%h/nrfsniff
+ExecStart=/bin/sh -c 'mkdir -p %h/nrfsniff/captures && exec %h/nrfsniff/venv/bin/python -W ignore %h/nrfsniff/mesh_sniff.py capture --api %h/nrfsniff/extcap --dedupe 2 --seconds 86400 --ndjson %h/nrfsniff/captures/mesh-$(date +%%F-%%H%%M).ndjson'
+Restart=always
+RestartSec=30
+# `systemctl stop` must unwind the capture loop (flush the dedupe window, close the file, stop the dongle):
+# SIGINT is what the script handles (it also treats SIGTERM like Ctrl-C, so an older copy of the script is fine)
+KillSignal=SIGINT
+TimeoutStopSec=15
+Nice=10
+
+[Install]
+WantedBy=default.target
