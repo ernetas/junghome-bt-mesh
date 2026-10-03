@@ -33,7 +33,7 @@ from custom_components.junghome_ble.const import (
     OPTION_CLICK_DELAY,
     OPTION_HEARTBEATS,
 )
-from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
+from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN, JungHomeHub
 from custom_components.junghome_ble.diagnostics import redact_paths
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
@@ -432,12 +432,23 @@ async def test_gateway_entry_data_is_redacted(
     assert_no_secrets(result)
 
 
+@pytest.fixture
+def no_time_keeper_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The time keeper repair stays shut from before the setup on (requested ahead of `init_integration`)."""
+    monkeypatch.setattr(JungHomeHub, "_report_time_keeper", lambda self: None)
+
+
 async def test_diagnostics_include_the_options_and_the_open_repairs(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
+    no_time_keeper_check: None,
     init_integration: MockConfigEntry,
 ) -> None:
-    """Review-4 H4-6: the options are part of the picture, and so are the repairs this integration has open."""
+    """Review-4 H4-6: the options are part of the picture, and so are the repairs this integration has open.
+
+    The fixture project has a PP2 puck, so the time keeper repair (F4-14) may open on its own once every candidate
+    answered its time role, sooner or later under load: it is kept out here, the issues listed are the test's own.
+    """
     result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
     assert (result["options"], result["issues"]) == ({}, [])
     hass.config_entries.async_update_entry(

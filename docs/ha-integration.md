@@ -780,7 +780,8 @@ the device: the device goes into the area of that name, which Home Assistant cre
 asked, and nothing follows later: a device you moved to another area stays there, and a room changed in the app
 afterwards does not move it (the room actions below place a device that has no area yet).
 
-**Renaming a device** in Home Assistant renames it in the JUNG HOME app too, the way the app's own rename does: a
+**Renaming a device** in Home Assistant writes the new name where the app's own rename does, so the JUNG HOME app
+shows it once it loads that export (an app that never downloads the project keeps its own name until then): a
 light, socket or blind device, a *Push-buttons* device, or the node device of a room thermostat or detector. The new
 name goes into the app's device list of the mesh export (`meta.devices[].name`; the node's own Bluetooth name stays),
 and the export is handed to the gateway, when there is one, as after every change Home Assistant makes. Nothing goes
