@@ -65,6 +65,8 @@ from custom_components.junghome_ble.const import (
     GATEWAY_USER_NAME,
     OPTION_ALLOW_PROVISIONING,
     OPTION_CLICK_DELAY,
+    OPTION_FOLLOW_APP,
+    OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
     OPTION_PROVISIONER_IDENTITY,
     PIN_FROM_MESH,
@@ -2927,9 +2929,16 @@ async def test_options_flow(
         OPTION_HEARTBEATS: False,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
+        OPTION_FOLLOW_APP: True,  # decision M12: following the app is on by default
+        OPTION_GATEWAY_CHECK: True,
     }  # the defaults
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: True}
+        result["flow_id"],
+        {
+            OPTION_CLICK_DELAY: True,
+            OPTION_HEARTBEATS: True,
+            OPTION_GATEWAY_CHECK: False,
+        },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.options == {
@@ -2937,6 +2946,8 @@ async def test_options_flow(
         OPTION_HEARTBEATS: True,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
+        OPTION_FOLLOW_APP: True,
+        OPTION_GATEWAY_CHECK: False,
     }
     # the form offers the stored values next time
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
@@ -2945,6 +2956,8 @@ async def test_options_flow(
         OPTION_HEARTBEATS: True,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
+        OPTION_FOLLOW_APP: True,
+        OPTION_GATEWAY_CHECK: False,
     }
 
 

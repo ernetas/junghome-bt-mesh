@@ -20,6 +20,9 @@
   (`timeout`, `link_lost`, `stopped`) on the event entity and the `junghome_ble_button_action` event. An automation
   that must react to a real release only checks that `reason` is absent. The device-trigger picker lists only what
   a key's wiring produces; automations saved with another subtype keep working.
+- **Gateway entries fetch the gateway's export by themselves** (decision M12, review-4 U4-6): a few minutes after the
+  phone running the JUNG HOME app was heard on the mesh and every six hours, one request to the gateway each, and a
+  changed export is taken over (see *Added*). Switch either off in the entry's options (*Configure*).
 - **`set_room` no longer creates a room it does not know** (review-4 W4-12): a mistyped room name used to create a
   new room and move the devices into it. An unknown name is now refused (*There is no room named …*); add
   `create: true` to create the room, as automations that relied on it need to.
@@ -465,6 +468,16 @@
   threshold, an off delay) and *Appliance finished* from a power sensor. The key blueprints listen to the
   `junghome_ble_button_action` event and are unverified on air. `tests/test_blueprints.py` loads and validates each
   against the pinned Home Assistant and runs it.
+- Changes made in the JUNG HOME app reach Home Assistant without Reconfigure (review-4 U4-6, decision M12). An entry
+  set up from the gateway asks the gateway for its export a few minutes after the phone running the app was heard on
+  the mesh (a burst of edits is one request, at most one every 15 minutes) and every six hours, and takes it over
+  when it changed — renamed devices, rooms, scenes and key connections follow in place, without a reload where the
+  integration can — under every rule of the gateway's other uses: never from a gateway whose certificate the gateway
+  node has not confirmed, never while the gateway rejects the token, Home Assistant's own unsent changes carried
+  over. A *Fetch export from gateway* button on the gateway's device does it on demand. An entry set up from a file
+  fetches nothing: when the phone is seen configuring a device, the repair *The JUNG HOME app changed the
+  installation* asks for the app's new export (its **Submit** takes the upload). Both are options of the entry, on by
+  default. Unverified on air.
 
 ### CLI tools and library
 

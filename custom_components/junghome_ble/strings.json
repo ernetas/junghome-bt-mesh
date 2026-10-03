@@ -166,13 +166,17 @@
           "click_delay": "Report clicks only once a double click is ruled out",
           "heartbeats": "Node heartbeats (mark a silent device unavailable)",
           "allow_provisioning": "Allow Home Assistant to add and remove devices (experimental)",
-          "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)"
+          "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)",
+          "follow_app": "Follow changes made in the JUNG HOME app",
+          "gateway_check": "Check the gateway's export every six hours"
         },
         "data_description": {
           "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well.",
           "heartbeats": "Every mains-powered device is asked to send a heartbeat to Home Assistant every 64 seconds (a standard Bluetooth Mesh setting the JUNG app leaves off). A device that sends nothing for about three and a half minutes has its entities marked unavailable until it is heard again. Switching this off tells the devices to stop (again on the next connection if they could not all be told at once); switch it off before removing the integration, which cannot tell them afterwards.",
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
-          "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it."
+          "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it.",
+          "follow_app": "When the phone running the JUNG HOME app is heard on the mesh, an entry set up from the gateway fetches the gateway's export a few minutes after the phone went quiet (at most every 15 minutes) and takes it over when it changed: devices, rooms, scenes and key connections changed in the app reach Home Assistant without Reconfigure. An entry set up from a file shows a repair notice instead, once the app was seen changing a device's configuration. Nothing is sent on the mesh for it. Unverified on air.",
+          "gateway_check": "An entry set up from the gateway asks the gateway for its export every six hours and takes it over when it changed, which catches what the app changed while Home Assistant did not hear the phone. One request to the gateway; nothing is sent on the mesh. No effect on an entry set up from a file."
         }
       }
     }
@@ -514,6 +518,9 @@
       },
       "reset_consumption": {
         "name": "Reset consumption"
+      },
+      "fetch_gateway_export": {
+        "name": "Fetch export from gateway"
       }
     },
     "number": {
@@ -1455,6 +1462,9 @@
     },
     "service_detector_mode_unsupported": {
       "message": "Detector {address} cannot drive a target in mode {mode}: a detector has no key mode, so it only switches a light, a socket or a blind in the mode the target gives, with no lock function, room thermostat, gateway or target element."
+    },
+    "gateway_fetch_refused": {
+      "message": "The export was not fetched from the JUNG HOME Gateway at {host}: {error}. Nothing changed; the repair notices say what to do."
     }
   },
   "issues": {
@@ -1515,6 +1525,52 @@
           "upload": {
             "title": "Load a new export",
             "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them yet. Home Assistant asks the gateway for its current export and takes it over by itself when that lists them. Export the network from the JUNG HOME app (Project → Share via file) and upload the file here: Home Assistant checks it, keeps it under `junghome_ble/` in its configuration directory (it holds every mesh key) and sets the integration up again from it; the export it replaces is kept as a copy. An entry that read its export from a path on the host uses the uploaded copy from then on — to keep the path, copy the new file there instead and use Reconfigure. If the issue stays, the gateway's export does not know them either: open the JUNG HOME app once while it is connected to the gateway (it uploads its project), then repair again. Unverified on air.",
+            "data": {
+              "export_file": "[%key:component::junghome_ble::config::step::upload::data::export_file%]"
+            },
+            "data_description": {
+              "export_file": "[%key:component::junghome_ble::config::step::upload::data_description::export_file%]"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
+          "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
+          "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
+          "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
+          "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
+          "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
+          "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
+          "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
+          "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
+          "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
+          "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
+          "upload_failed": "[%key:component::junghome_ble::config::error::upload_failed%]"
+        },
+        "abort": {
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
+          "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
+          "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
+        }
+      }
+    },
+    "app_changed": {
+      "title": "The JUNG HOME app changed the installation",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Fetch the export from the gateway again",
+            "description": "The JUNG HOME app was seen changing the configuration of a device of the mesh {title} (a key connection, a room, a scene or a device's setting), so the export Home Assistant loaded may no longer match the installation: what was changed in the app is not in Home Assistant yet. Confirm to fetch the current export from the JUNG HOME Gateway at {host} with the access Home Assistant already holds, check it and set the integration up again from it, as Reconfigure → Fetch it again from the gateway does; the export it replaces is kept as a copy (`.pre-reconfigure`). Unverified on air."
+          },
+          "upload": {
+            "title": "Load a new export",
+            "description": "The JUNG HOME app was seen changing the configuration of a device of the mesh {title} (a key connection, a room, a scene or a device's setting), so the export Home Assistant loaded may no longer match the installation: what was changed in the app is not in Home Assistant yet. Once you are done in the app, export the network from it (Project → Share via file) and upload the file here: Home Assistant checks it, keeps it under `junghome_ble/` in its configuration directory (it holds every mesh key) and sets the integration up again from it; the export it replaces is kept as a copy. An entry that read its export from a path on the host uses the uploaded copy from then on — to keep the path, copy the new file there instead and use Reconfigure, which clears this notice too. Unverified on air.",
             "data": {
               "export_file": "[%key:component::junghome_ble::config::step::upload::data::export_file%]"
             },

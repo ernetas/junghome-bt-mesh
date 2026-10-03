@@ -64,8 +64,9 @@ eine eigene Adresse.
   melden *pressed on / up* und *pressed off / down*.
 - Messende Steckdosen liefern Leistung und Energie; den Sensor *Energy* im Energie-Dashboard als Einzelgerät
   hinzufügen.
-- Nach Änderungen in der App (neue Geräte, Räume, Szenen): bei Einrichtung über das Gateway *Neu konfigurieren →
-  Fetch it again from the gateway*, sonst den Export neu teilen und hochladen.
+- Nach Änderungen in der App (neue Geräte, Räume, Szenen): bei Einrichtung über das Gateway holt Home Assistant den
+  Export einige Minuten nach der App-Nutzung und alle sechs Stunden selbst (sofort: Taste *Fetch export from gateway*
+  am Gateway-Gerät; noch nicht auf echter Hardware geprüft), sonst den Export neu teilen und hochladen.
 
 ## Hilfe
 

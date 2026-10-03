@@ -9,6 +9,9 @@
       },
       "reference_run": {
         "default": "mdi:window-shutter-auto"
+      },
+      "fetch_gateway_export": {
+        "default": "mdi:cloud-download-outline"
       }
     },
     "climate": {

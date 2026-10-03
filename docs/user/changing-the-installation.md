@@ -8,14 +8,19 @@ Home Assistant with its actions. Both write the same things to the devices.
 Home Assistant learns your installation from the export it was set up with, so it needs the new export after you
 added, removed or replaced a device, rewired a key, renamed things or edited rooms and scenes in the app.
 
-- **Set up from the gateway:** a device you add in the app appears in Home Assistant by itself (the app hands its
-  project to the gateway, and Home Assistant fetches it as soon as the new device shows up). For everything else:
-  *Settings → Devices & services → JUNG HOME (Bluetooth Mesh) → ⋮ → Reconfigure → Fetch it again from the gateway*.
+- **Set up from the gateway:** Home Assistant follows the app by itself. The app hands its project to the gateway
+  after each change; when Home Assistant hears your phone on the mesh, it asks the gateway for the project a few
+  minutes after the phone went quiet (so a burst of edits is one request, at most one every 15 minutes), and
+  every six hours whatever it heard. A device you add in the app shows up as soon as it does. To pick a change up
+  right away, press **Fetch export from gateway** on the gateway's device (under *Configuration*). Both are options
+  of the entry (*Configure*), on by default. **Unverified on air.**
 - **Set up from a file:** share the export from the app again (*Project → Share via file*) and give it to Home
-  Assistant: *Reconfigure → Upload the app's export file* (or point it at the new file on the host).
+  Assistant: *Reconfigure → Upload the app's export file* (or point it at the new file on the host). When Home
+  Assistant sees the app change a device's configuration, a repair notice reminds you (see
+  [Maintenance](maintenance.md#the-jung-home-app-changed-the-installation)).
 
-Home Assistant reloads with the new export. Devices that are no longer in it disappear; the others keep their
-entities, names and history. A device that the app reports as new but that is not in the export yet raises a repair
+Home Assistant takes the new export over without a reload where it can (no entity goes unavailable), and reloads
+otherwise. Devices that are no longer in it disappear; the others keep their entities, names and history. A device that the app reports as new but that is not in the export yet raises a repair
 notice (see [Maintenance](maintenance.md#jung-home-devices-missing-from-the-export)).
 
 After a **key renewal** in the app (rarely needed), Home Assistant follows along if it was running at the time;

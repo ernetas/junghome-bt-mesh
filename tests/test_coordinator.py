@@ -32,6 +32,8 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import Event, EventStateChangedData, callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
@@ -41,8 +43,10 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed_exact,
 )
 
-from custom_components.junghome_ble import coordinator
+from custom_components.junghome_ble import app_follow, coordinator
 from custom_components.junghome_ble.const import (
+    APP_QUIET_AFTER,
+    APP_SYNC_MIN_INTERVAL,
     BUTTON_REPEAT_WINDOW,
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
@@ -59,11 +63,14 @@ from custom_components.junghome_ble.const import (
     ENERGY_POLL_INTERVAL,
     EXPORT_STALE_THRESHOLD,
     FILTER_STATUS_TIMEOUT,
+    GATEWAY_SYNC_PERIOD,
     HEARTBEAT_PERIOD_LOG,
     HEARTBEAT_RECONFIGURE_INTERVAL,
     HEARTBEAT_REPROBE_INTERVAL,
+    ISSUE_APP_CHANGED,
     ISSUE_EXPORT_STALE,
     ISSUE_GATEWAY_CERTIFICATE,
+    ISSUE_GATEWAY_TOKEN,
     ISSUE_KEY_REFRESH,
     ISSUE_PDUS_DROPPED,
     ISSUE_UNKNOWN_NODES,
@@ -71,6 +78,8 @@ from custom_components.junghome_ble.const import (
     KEEP_ALIVE_TIMEOUT,
     LINK_IDLE_TIMEOUT,
     OPTION_CLICK_DELAY,
+    OPTION_FOLLOW_APP,
+    OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
     PIN_FROM_MESH,
     PIN_FROM_USER,
@@ -81,6 +90,7 @@ from custom_components.junghome_ble.const import (
     TIME_SET_INTERVAL,
     UNREACHABLE_RECHECK,
     UNREACHABLE_REPROBE,
+    learn_more_url,
 )
 from custom_components.junghome_ble.coordinator import (
     GENERIC_LEVEL_OPCODES,
@@ -5390,6 +5400,563 @@ async def test_gateway_export_refresh_runs_one_fetch_at_a_time(
         await hass.async_block_till_done()
     assert calls == 1
     assert len(hub.unknown_nodes) == 2
+
+
+# ----------------------------------------------------------------------------- following the app (review-4 U4-6)
+
+PHONE = (
+    0x0001  # the export's provisioner node: no product id, the phone running the app
+)
+PHONE_GET = encode_opcode(M.GEN_ONOFF_GET)  # plain traffic of the open app
+SUBSCRIPTION_ADD = encode_opcode(C.CONFIG_MODEL_SUBSCRIPTION_ADD) + bytes.fromhex(
+    "480101c00010"
+)  # 0148 joins C001 on its OnOff server: a room edit in the app
+
+
+def _renamed(share: dict[str, Any], name: str = "WC basin (app)") -> dict[str, Any]:
+    """The share export with the first device renamed, as the app uploads it after a rename."""
+    doc = copy.deepcopy(share)
+    doc["meta"]["devices"][0]["name"] = name
+    return doc
+
+
+async def _later(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: float
+) -> None:
+    """Let `seconds` pass for the timers, then for what they started (the fetch's background task, the follow).
+
+    The test asks for `freezer` before the entry, so the timers the setup started run on the frozen clock. The
+    gateway's status polls that come due meanwhile get no answer (and never reach the network).
+    """
+    freezer.tick(timedelta(seconds=seconds))
+    with (
+        patch.object(
+            JungHomeGatewayApi,
+            "config",
+            AsyncMock(side_effect=GatewayError("not here")),
+        ),
+        patch.object(
+            JungHomeGatewayApi,
+            "health_status",
+            AsyncMock(side_effect=GatewayError("not here")),
+        ),
+    ):
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    follower = hub_of_any(hass).app_follow
+    assert follower is not None
+    await wait_until(
+        hass,
+        lambda: follower.task is None or follower.task.done(),
+        what="the fetch that follows the app",
+    )
+    await settle(hass)
+
+
+def hub_of_any(hass: HomeAssistant) -> JungHomeHub:
+    """The hub of the one loaded entry (a follow in place keeps it, a reload would replace it)."""
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    return hub_of(entry)  # type: ignore[arg-type]
+
+
+class FetchCounter:
+    """`fetch_project` patched onto the gateway client: counts the GETs, answers `answer` (or raises it)."""
+
+    def __init__(self, answer: Any) -> None:
+        self.answer = answer
+        self.calls = 0
+
+    async def fetch_project(self) -> dict[str, Any]:
+        """Patched onto the class as a bound method: called without the API instance."""
+        self.calls += 1
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return self.answer  # type: ignore[no-any-return]
+
+
+async def _gateway_entry(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    *,
+    options: Mapping[str, Any] | None = None,
+    data: Mapping[str, Any] | None = None,
+) -> MockConfigEntry:
+    """`gateway_entry` with other options or data (the test asks for the link and Bluetooth fixtures)."""
+    path = tmp_path / "JungHome.json"
+    shutil.copy(SHARE_EXPORT_PATH, path)
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="JUNG HOME mesh test",
+        unique_id="1fbd2c61a4b6e5a4",
+        data={
+            CONF_CDB_PATH: str(path),
+            CONF_UNICAST: "0D00",
+            CONF_SOURCE: "gateway",
+            CONF_GATEWAY_SYNCED: export_digest(_read_json(SHARE_EXPORT_PATH)),
+            **GATEWAY_DATA,
+            **(data or {}),
+        },
+        options=dict(options or {}),
+    )
+    await setup_entry(hass, entry)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+    return entry
+
+
+async def test_the_phone_heard_then_quiet_fetches_once_and_follows_the_app(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    gateway_entry: MockConfigEntry,
+    answering_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+    state_transitions: StateTransitions,
+) -> None:
+    """Review-4 U4-6: the app renames a device and uploads its project; Home Assistant hears the phone on the mesh,
+    waits for it to go quiet, asks the gateway once and follows the renamed export in place — no Reconfigure, no
+    entity through `unavailable`, the gateway's copy recorded as synced."""
+    hub = hub_of(gateway_entry)
+    follower = hub.app_follow
+    assert follower is not None
+    share = _read_json(SHARE_EXPORT_PATH)
+    gw = FetchCounter(_renamed(share))
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+        await settle(hass)
+        assert gw.calls == 0  # nothing while the phone may still be at it
+        await _later(hass, freezer, APP_QUIET_AFTER - 30)
+        assert gw.calls == 0
+        await _later(hass, freezer, 31)
+    assert gw.calls == 1
+    assert hub_of(gateway_entry) is hub
+    assert hub.link_count == 1
+    assert hub.devices.by_address[LIGHT_SWITCH].name == "WC basin (app)"
+    assert _read_json(gateway_entry.data[CONF_CDB_PATH]) == _renamed(share)
+    assert gateway_sync(hass, gateway_entry.entry_id).synced == export_digest(
+        _renamed(share)
+    )
+    assert "following it" in caplog.text
+    assert state_transitions.lost() == []
+
+
+async def test_an_unchanged_export_is_not_followed(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    gateway_entry: MockConfigEntry,
+    answering_link: FakeProxyLink,
+) -> None:
+    """The phone only switched a light: the gateway's digest has not moved, nothing is written or followed."""
+    hub = hub_of(gateway_entry)
+    original = _read_bytes(gateway_entry.data[CONF_CDB_PATH])
+    gw = FetchCounter(_read_json(SHARE_EXPORT_PATH))
+    with (
+        patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project),
+        patch.object(hub, "follow_adopted_export") as follow,
+    ):
+        answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+        await settle(hass)
+        await _later(hass, freezer, APP_QUIET_AFTER + 1)
+    assert gw.calls == 1
+    follow.assert_not_called()
+    assert _read_bytes(gateway_entry.data[CONF_CDB_PATH]) == original
+
+
+async def test_a_burst_of_app_edits_is_one_fetch_and_the_next_waits_out_the_rate_limit(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    gateway_entry: MockConfigEntry,
+    answering_link: FakeProxyLink,
+) -> None:
+    """Every message from the phone restarts the wait, so a burst of edits is one GET once it is over; activity right
+    after a fetch waits until APP_SYNC_MIN_INTERVAL passed since it."""
+    gw = FetchCounter(_read_json(SHARE_EXPORT_PATH))
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        for _ in range(4):
+            answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+            answering_link.inject_from_provisioner(LIGHT_SWITCH, SUBSCRIPTION_ADD)
+            await settle(hass)
+            await _later(hass, freezer, APP_QUIET_AFTER / 2)
+        assert gw.calls == 0
+        await _later(hass, freezer, APP_QUIET_AFTER / 2 + 1)
+        assert gw.calls == 1
+        # the app again, right away: the quiet alone is not enough now
+        answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+        await settle(hass)
+        await _later(hass, freezer, APP_QUIET_AFTER + 1)
+        assert gw.calls == 1
+        await _later(hass, freezer, APP_SYNC_MIN_INTERVAL + 1)
+        assert gw.calls == 2
+
+
+async def test_the_gateway_is_checked_every_few_hours_without_the_phone(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    gateway_entry: MockConfigEntry,
+    answering_link: FakeProxyLink,
+) -> None:
+    """The periodic check: what the app changed while Home Assistant did not hear the phone."""
+    share = _read_json(SHARE_EXPORT_PATH)
+    gw = FetchCounter(_renamed(share, "Checked"))
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        await _later(hass, freezer, GATEWAY_SYNC_PERIOD + 1)
+    assert gw.calls == 1
+    assert hub_of(gateway_entry).devices.by_address[LIGHT_SWITCH].name == "Checked"
+
+
+async def test_following_the_app_can_be_switched_off(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    answering_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Both options off: neither the phone nor the clock makes Home Assistant ask the gateway."""
+    entry = await _gateway_entry(
+        hass,
+        tmp_path,
+        options={OPTION_FOLLOW_APP: False, OPTION_GATEWAY_CHECK: False},
+    )
+    follower = hub_of(entry).app_follow
+    assert follower is not None
+    gw = FetchCounter(_read_json(SHARE_EXPORT_PATH))
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+        await settle(hass)
+        assert follower._unsub_quiet is None
+        await _later(hass, freezer, GATEWAY_SYNC_PERIOD + 1)
+    assert gw.calls == 0
+
+
+async def test_the_app_is_followed_only_by_every_guard_of_the_gateway(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    answering_link: FakeProxyLink,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Not while the token repair is open, nor with a pin the gateway node has not vouched for (that check is the
+    link's, over the mesh: the automatic fetch sends nothing on it), nor beside a fetch in flight or before the
+    configurator."""
+    entry = await _gateway_entry(
+        hass,
+        tmp_path,
+        data={CONF_GATEWAY_PIN_SOURCE: PIN_FROM_USER},  # nothing vouched for yet
+    )
+    hub = hub_of(entry)
+    follower = hub.app_follow
+    assert follower is not None
+    share = _read_json(SHARE_EXPORT_PATH)
+    gw = FetchCounter(_renamed(share))
+    caplog.set_level(logging.DEBUG, logger="custom_components.junghome_ble.app_follow")
+    with (
+        patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project),
+        patch.object(JungHomeHub, "gateway_vouched", PropertyMock(return_value=False)),
+    ):
+        follower.request("a test")
+        await hass.async_block_till_done()
+    assert gw.calls == 0
+    assert "Not fetching the gateway's export for a test now" in caplog.text
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        coordinator.issue_id(entry, ISSUE_GATEWAY_TOKEN),
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=ISSUE_GATEWAY_TOKEN,
+    )
+    with (
+        patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project),
+        patch.object(JungHomeHub, "gateway_vouched", PropertyMock(return_value=True)),
+    ):
+        follower.request("a test")
+        await hass.async_block_till_done()
+        assert gw.calls == 0
+        # the configurator answers the same for the button
+        assert hub.configurator is not None
+        assert await hub.configurator.adopt_if_gateway_changed() is False
+        assert gw.calls == 0
+        ir.async_delete_issue(
+            hass, DOMAIN, coordinator.issue_id(entry, ISSUE_GATEWAY_TOKEN)
+        )
+        # a fetch in flight takes the request; the phone's quiet waits once more behind it (that fetch may have asked
+        # before the app uploaded); no configurator yet: nothing
+        follower.task = hass.loop.create_future()  # type: ignore[assignment]
+        follower.request("a test")
+        follower._quiet(dt_util.utcnow())
+        assert follower._unsub_quiet is not None
+        follower.stop()
+        follower.task.cancel()
+        configurator, hub.configurator = hub.configurator, None
+        follower.request("a test")
+        hub.configurator = configurator
+        await hass.async_block_till_done()
+        assert gw.calls == 0
+
+
+async def test_home_assistants_own_change_is_not_replaced_by_the_export_it_left(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    gateway_entry: MockConfigEntry,
+) -> None:
+    """Home Assistant changed its file and the upload has not gone out yet: the gateway still holds what was synced,
+    so it is not ahead and nothing is taken over."""
+    hub = hub_of(gateway_entry)
+    follower = hub.app_follow
+    assert follower is not None
+    share = _read_json(SHARE_EXPORT_PATH)
+    mine = _renamed(share, "Home Assistant's name")
+    await hass.async_add_executor_job(
+        Path(gateway_entry.data[CONF_CDB_PATH]).write_text, json.dumps(mine)
+    )
+    gw = FetchCounter(share)
+    with (
+        patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project),
+        patch.object(hub, "follow_adopted_export") as follow,
+    ):
+        follower.request("a test")
+        await _later(hass, freezer, 0)
+    assert gw.calls == 1
+    follow.assert_not_called()
+    assert _read_json(gateway_entry.data[CONF_CDB_PATH]) == mine
+
+
+async def test_a_bare_database_is_never_taken_over_the_share_export(
+    hass: HomeAssistant,
+    gateway_entry: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The gateway's `/project/cdb` fallback has no names or room links: logged, not adopted; nor is anything when
+    the gateway does not answer."""
+    hub = hub_of(gateway_entry)
+    original = _read_bytes(gateway_entry.data[CONF_CDB_PATH])
+    bare = {"meshNetwork": _read_json(CDB_PATH)["meshNetwork"]}
+    gw = FetchCounter(bare)
+    assert hub.configurator is not None
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        assert await hub.configurator.adopt_if_gateway_changed() is False
+        assert "service_gateway_export_incomplete" in caplog.text
+        gw.answer = GatewayError("GET project/junghome: HTTP 500")
+        assert await hub.configurator.adopt_if_gateway_changed() is False
+    assert "Could not ask the gateway junghome.local for its export" in caplog.text
+    assert _read_bytes(gateway_entry.data[CONF_CDB_PATH]) == original
+
+
+def _fetch_button(hass: HomeAssistant, entry: MockConfigEntry) -> str:
+    gateway = next(n for n in hub_of(entry).cdb.nodes if n.unicast == GATEWAY)
+    return entity_id(
+        hass, "button", f"node:{gateway.uuid.lower()}-fetch_gateway_export"
+    )
+
+
+async def test_the_fetch_button_follows_the_app_on_demand(
+    hass: HomeAssistant, gateway_entry: MockConfigEntry
+) -> None:
+    """*Fetch export from gateway*: the same fetch, now; a press that fetched nothing says why."""
+    hub = hub_of(gateway_entry)
+    button = _fetch_button(hass, gateway_entry)
+    share = _read_json(SHARE_EXPORT_PATH)
+    gw = FetchCounter(_renamed(share, "Pressed"))
+
+    async def press() -> None:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": button}, blocking=True
+        )
+        await settle(hass)
+
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        await press()
+        assert gw.calls == 1
+        assert hub.devices.by_address[LIGHT_SWITCH].name == "Pressed"
+        await press()  # unchanged now: no error
+        assert gw.calls == 2
+
+        gw.answer = GatewayError("GET project/junghome: HTTP 500")
+        with pytest.raises(HomeAssistantError) as err:
+            await press()
+        assert err.value.translation_key == "service_gateway_export_unavailable"
+
+        gw.answer = {"meshNetwork": _read_json(CDB_PATH)["meshNetwork"]}
+        with pytest.raises(HomeAssistantError) as err:
+            await press()
+        assert err.value.translation_key == "service_gateway_export_incomplete"
+
+        with (
+            patch.object(
+                JungHomeHub,
+                "async_gateway_distrust",
+                AsyncMock(return_value=coordinator.GATEWAY_UNVERIFIED),
+            ),
+            pytest.raises(HomeAssistantError) as err,
+        ):
+            await press()
+        assert err.value.translation_key == "gateway_fetch_refused"
+        assert err.value.translation_placeholders == {
+            "host": "junghome.local",
+            "error": coordinator.GATEWAY_UNVERIFIED,
+        }
+
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            coordinator.issue_id(gateway_entry, ISSUE_GATEWAY_TOKEN),
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_GATEWAY_TOKEN,
+        )
+        calls = gw.calls
+        with pytest.raises(HomeAssistantError) as err:
+            await press()
+        assert err.value.translation_key == "gateway_fetch_refused"
+        assert gw.calls == calls  # the gateway was not asked
+
+
+async def test_an_entry_from_a_file_has_no_fetch_button_and_fetches_nothing(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    hub = hub_of(init_integration)
+    gateway = next(n for n in hub.cdb.nodes if n.unicast == GATEWAY)
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id(
+            "button", DOMAIN, f"node:{gateway.uuid.lower()}-fetch_gateway_export"
+        )
+        is None
+    )
+    assert hub.configurator is not None
+    assert await hub.configurator.adopt_if_gateway_changed() is False
+    with pytest.raises(ServiceValidationError) as err:
+        await hub.configurator.adopt_if_gateway_changed(raise_errors=True)
+    assert err.value.translation_key == "service_no_gateway"
+
+
+async def test_the_app_changing_a_file_entrys_devices_raises_a_repair_once(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An entry set up from a file fetches nothing: the phone configuring a device raises `app_changed` (fixable by
+    the new-export repair, kept across restarts), once; the phone's plain control, a node's own traffic and a Config
+    read raise nothing."""
+    hub = hub_of(init_integration)
+    gw = FetchCounter(_read_json(SHARE_EXPORT_PATH))
+    with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
+        fake_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+        fake_link.inject(LIGHT_SWITCH, OUR_ADDRESS, onoff_status(True))
+        fake_link.inject_from_provisioner(
+            LIGHT_SWITCH, encode_opcode(C.CONFIG_COMPOSITION_DATA_GET) + b"\x00"
+        )
+        await settle(hass)
+        assert find_issue(hass, ISSUE_APP_CHANGED) is None
+        assert hub.app_follow is not None
+        assert hub.app_follow._unsub_quiet is None  # nothing to fetch from
+        fake_link.inject_from_provisioner(LIGHT_SWITCH, SUBSCRIPTION_ADD)
+        await settle(hass)
+        issue = find_issue(hass, ISSUE_APP_CHANGED)
+        assert issue is not None
+        assert issue.is_fixable
+        assert issue.is_persistent
+        assert issue.data == {"entry_id": init_integration.entry_id}
+        assert issue.translation_placeholders == {"title": init_integration.title}
+        assert issue.learn_more_url == learn_more_url(ISSUE_APP_CHANGED)
+        assert caplog.text.count("changed the configuration of 0148") == 1
+        # a scene edit too, but the notice is up already
+        fake_link.inject(
+            PHONE, LIGHT_SWITCH, encode_opcode(M.SCENE_STORE) + b"\x02\x00"
+        )
+        await settle(hass)
+    assert caplog.text.count("load the app's new export") == 1
+    assert gw.calls == 0
+
+
+async def test_an_app_changed_notice_from_before_a_restart_is_not_raised_again(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        coordinator.issue_id(init_integration, ISSUE_APP_CHANGED),
+        is_fixable=True,
+        is_persistent=True,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=ISSUE_APP_CHANGED,
+    )
+    fake_link.inject(PHONE, LIGHT_SWITCH, encode_opcode(M.SCENE_DELETE) + b"\x02\x00")
+    await settle(hass)
+    assert "load the app's new export" not in caplog.text
+
+
+async def test_app_changes_are_not_watched_with_the_option_off(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=mock_config_entry.title,
+        unique_id=mock_config_entry.unique_id,
+        data=mock_config_entry.data,
+        options={OPTION_FOLLOW_APP: False},
+    )
+    await setup_entry(hass, entry)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+    fake_link.inject_from_provisioner(LIGHT_SWITCH, SUBSCRIPTION_ADD)
+    await settle(hass)
+    assert find_issue(hass, ISSUE_APP_CHANGED) is None
+
+
+async def test_unloading_stops_the_wait_for_the_phones_quiet(
+    hass: HomeAssistant, gateway_entry: MockConfigEntry, answering_link: FakeProxyLink
+) -> None:
+    follower = hub_of(gateway_entry).app_follow
+    assert follower is not None
+    answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+    await settle(hass)
+    assert follower._unsub_quiet is not None
+    assert await hass.config_entries.async_unload(gateway_entry.entry_id)
+    assert follower._unsub_quiet is None
+    assert follower._unsub_periodic is None
+
+
+def test_what_counts_as_the_phone_and_as_a_change() -> None:
+    """Home Assistant's own address and a device are not the phone; a vendor message or a Config Get no change."""
+    hub = SimpleNamespace(
+        proxy=SimpleNamespace(state=SimpleNamespace(src=OUR_ADDRESS)),
+        cdb=SimpleNamespace(
+            node_by_addr={
+                LIGHT_SWITCH: SimpleNamespace(pid=1),
+                PHONE: SimpleNamespace(pid=None),
+            }.get
+        ),
+        entry=SimpleNamespace(options={}, entry_id="e"),
+    )
+    follower = app_follow.AppFollower(hub)  # type: ignore[arg-type]
+
+    def msg(
+        src: int, opcode: int, key: str = "app0", cid: int | None = None
+    ) -> AccessMessage:
+        return AccessMessage(src, LIGHT_SWITCH, 3, 0, opcode, cid, b"", b"", key)
+
+    assert follower.from_phone(msg(PHONE, M.GEN_ONOFF_GET))
+    assert follower.from_phone(msg(0x0D42, M.GEN_ONOFF_GET))  # no node at all
+    assert not follower.from_phone(msg(OUR_ADDRESS, M.GEN_ONOFF_GET))
+    assert not follower.from_phone(msg(LIGHT_SWITCH, M.GEN_ONOFF_GET))
+    change = app_follow.is_app_change
+    assert change(msg(PHONE, C.CONFIG_MODEL_PUBLICATION_SET, "dev:0148"))
+    assert not change(
+        msg(PHONE, C.CONFIG_MODEL_PUBLICATION_SET)
+    )  # 0x03 under the app key is not Config
+    assert not change(msg(PHONE, C.CONFIG_MODEL_PUBLICATION_GET, "dev:0148"))
+    assert change(msg(PHONE, M.SCENE_STORE_UNACK))
+    assert not change(msg(PHONE, M.SCENE_STORE, cid=M.JUNG_CID))
 
 
 # ----------------------------------------------------------------------------- following the gateway over the mesh

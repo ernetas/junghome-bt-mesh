@@ -778,6 +778,11 @@ node that does not answer the read-back raises "did not answer" — the Clear ma
 next connection's survey tells. Pressing many at once can lose a Clear on the way (three of 25 pressed five at a
 time read back their old register); one at a time is reliable.
 
+An entry set up from the gateway also has a **Fetch export from gateway** button (configuration) on the gateway's
+node device: it asks the gateway for its export now and takes it over when the app changed something since, as the
+entry otherwise does a few minutes after the phone was heard and every six hours (see
+[Following the app](#following-the-app)). A press that fetched nothing says why. Unverified on air.
+
 ### Devices and areas
 
 | Device | Represents | Details |
@@ -966,6 +971,8 @@ the integration when something changed.
 | Report clicks only once a double click is ruled out | off | Off: a press fires `click` at once and the second press of a double press fires `double_click` as well, so an automation on `click` also runs on every double press. On: every `click` is held back for 0.5 s (the double-click window) and dropped when a second click arrives, so a double press fires only `double_click` — at the price of a 0.5 s delay on single clicks. A hold that follows a click within the window ends the wait early: the `click` is fired first, then `hold_start`. |
 | Allow Home Assistant to add and remove devices (experimental) | off | Enables `add_device` and `remove_device`, see [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental). |
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
+| Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
+| Check the gateway's export every six hours | on | An entry set up from the gateway asks the gateway for its export every six hours, whatever it heard on the mesh. No effect on an entry set up from a file. See [Following the app](#following-the-app). |
 | Node heartbeats (mark a silent device unavailable) | off | On: after each connection every mains-powered device is asked (a standard Bluetooth Mesh *Heartbeat Publication* setting the JUNG app leaves off, sent with the device key once and then at most every six hours) to send a heartbeat to Home Assistant every 64 s. A device that sends neither a heartbeat nor anything else for about 3½ minutes has its entities marked **unavailable**, with a warning in the log, until it is heard again; while it is missing — or while its heartbeats have stopped although it still talks (a metering socket after a power cut keeps publishing readings) — it is asked for heartbeats again every two minutes, so a device that restarted (and lost the setting) comes back, and beats again, by itself. Off (the default): only the rule below marks a device unavailable. Switching the option off tells the devices to stop beating. |
 
 The click option only concerns rockers linked to the gateway (key mode *Gateway*), the only ones that report
@@ -1026,9 +1033,10 @@ once recorded.
 ## Reconfiguration
 
 The devices, rooms and scenes known to Home Assistant come from the export file, which is read when the integration
-loads. Export the network again and update the integration whenever you change the installation in the JUNG HOME app:
-after adding, removing or re-provisioning a device, changing what a rocker controls, renaming things, changing rooms or
-editing scenes, and after a key refresh (see [Known limitations](#known-limitations)).
+loads. An entry set up from the gateway follows the changes made in the JUNG HOME app by itself (see
+[Following the app](#following-the-app)). Any other entry needs the export again whenever you change the installation
+in the app: after adding, removing or re-provisioning a device, changing what a rocker controls, renaming things,
+changing rooms or editing scenes, and after a key refresh (see [Known limitations](#known-limitations)).
 
 1. Open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)**, the entry's menu, **Reconfigure**.
 2. Pick a source. If the entry was set up from the gateway, **Fetch it again from the gateway** downloads the current
@@ -1057,6 +1065,38 @@ The integration reloads with the new export. Devices that are no longer in the e
 together with their entities; devices that keep their node identity keep their entity IDs and history, because devices
 are keyed by the node's MAC address, not by its mesh address. A device that has disappeared from the export can also be
 deleted by hand from its device page.
+
+### Following the app
+
+Review-4 U4-6, decision M12; **unverified on air**: whether the proxy forwards the phone's configuration messages to
+Home Assistant, and how soon after a change the app's upload reaches the gateway. The app uploads its project to the
+gateway after every change, and the phone running it talks on the mesh while the app is open (it reads states,
+switches loads and, for a key connection, a room or a scene, configures the devices). Home Assistant takes a message
+from a source that is neither its own address nor a device's (the phone's own entry in the export, a node without a
+JUNG product, or no node at all) as the phone's:
+
+- **An entry set up from the gateway** asks the gateway for its export 3 minutes after the phone was last heard — a
+  burst of edits is one request — and at most once every 15 minutes for the phone's activity; and every 6 hours
+  whatever it heard (what the app changed while Home Assistant did not hear the phone, or from afar through the
+  gateway). The export is taken over only when its content changed since Home Assistant last synced with the gateway,
+  by the rules of the gateway's other uses: never from a gateway whose certificate the gateway node has not confirmed
+  or that presents another one (the repair *JUNG HOME Gateway certificate changed* points to Reconfigure), never
+  while the gateway rejects Home Assistant's token (the re-authentication), never a bare device database over the
+  app's export, and when Home Assistant's own file changed too, its changes are carried over onto the app's export
+  as before every change (see [Actions: rooms and key connections](#actions-rooms-and-key-connections)). The
+  automatic requests go out only once the gateway node confirmed the certificate, so nothing is sent on the mesh for
+  them. The integration then follows the new export without a reload where it can (see
+  [Following a change without a reload](#following-a-change-without-a-reload)): renamed devices, rooms, scenes and
+  key connections show up and no entity passes through *unavailable*; where it cannot, it reloads (a few seconds of
+  *unavailable*). The gateway device's **Fetch export from gateway** button (configuration) does the same on demand;
+  a press that fetched nothing says why (the token rejected, the certificate not confirmed, no answer).
+- **An entry set up from a file** fetches nothing. When the phone is seen configuring a device — a Config message that
+  changes a key connection, a room membership, a binding or a device's mesh settings, or a scene stored or deleted —
+  the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation)
+  appears once, and stays across restarts until a new export is loaded. Plain control from the phone raises nothing.
+
+Both are [options](#options) of the entry (*Follow changes made in the JUNG HOME app*, *Check the gateway's export
+every six hours*), on by default. A source taken for the phone wrongly costs one request whose export has not changed.
 
 ## Migrating from the gateway integration
 
@@ -1455,7 +1495,7 @@ next app change overwrites what Home Assistant did.
 
 An action that changes the export — the room, key, scene, threshold and *Sensor values for IoT systems* actions, a
 device renamed in Home Assistant, and the export an entry set up from the gateway takes over for a device it did not
-know — is followed by the running integration in place (review-4 D23): the export is read again as the setup reads
+know or after the app changed something ([Following the app](#following-the-app)) — is followed by the running integration in place (review-4 D23): the export is read again as the setup reads
 it, every platform builds its entities from it, and the change is carried over to the entities that already run —
 new ones (a new scene, a room's *All lights in*, a new device's) are added, those the export no longer gives are
 removed, and every other one takes its new name, `rooms`, members or connection while keeping what it learnt over
@@ -1868,8 +1908,10 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   file the integration uses and, for an entry set up from the gateway, handed to the gateway as the app does after
   each of its own changes (a failed upload raises a repair issue and is tried again twice, 15 s apart, as the app
   does; `junghome_ble.sync_gateway` retries it on demand). Nothing
-  flows the other way on its own: a change made in the app afterwards is only picked up when the gateway's export is
-  fetched again (an unknown node of the mesh advertising triggers that; otherwise *Reconfiguration → fetch again*).
+  flows the other way unasked: a change made in the app afterwards is picked up when the gateway's export is
+  fetched again — after the phone was heard on the mesh, every six hours, when an unknown node of the mesh
+  advertises, from the *Fetch export from gateway* button, or by *Reconfiguration → fetch again* (see
+  [Following the app](#following-the-app)).
   Before every change (and before `junghome_ble.sync_gateway`) the integration does fetch the gateway's export once
   more: when the app changed the installation since the last fetch, that newer copy is adopted and the change is
   planned on top of it — `sync_gateway` refuses instead (*the gateway holds a newer export*), so fetch it through
@@ -2192,6 +2234,14 @@ from a file, or when the gateway's export does not know the device either (open 
 to the gateway so it uploads), export again from the app and update the integration (**Reconfigure**); the issue is
 cleared when the new export loads and is raised again only for nodes still missing from it. The repair loads the
 new export itself (**Submit**, see [Reconfiguration](#reconfiguration)): fetched from the gateway again, or uploaded.
+
+### Repair issue "The JUNG HOME app changed the installation"
+
+Only for an entry set up from a file, with the option *Follow changes made in the JUNG HOME app* on: the phone running
+the app was seen configuring a device of the mesh (see [Following the app](#following-the-app)), so the export Home
+Assistant loaded may lack what was changed. Once you are done in the app, export the network from it (*Project →
+Share via file*) and load it: the repair's **Submit** takes the upload (see [Reconfiguration](#reconfiguration)), and
+Reconfigure does the same. Raised once, kept across restarts, cleared when the new export loads. Unverified on air.
 
 ### Repair issue "JUNG HOME push-buttons with another insert than in the export"
 

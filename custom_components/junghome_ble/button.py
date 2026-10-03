@@ -13,6 +13,10 @@ Reset consumption zeroes the socket's resettable energy total (`0x006A`) and pow
 metered load (the energy puck's output, `jhmesh.devices.meter_element`) has one too, which zeroes `0x006A` alone: it
 keeps no power-on hours (unverified on air). Like the counters it zeroes (`sensor.py`), it is a diagnostic entity,
 off by default.
+
+*Fetch export from gateway*, on the gateway node's device of an entry set up from the gateway, asks the gateway for its
+export now and takes it over when the app changed something since (`app_follow.AppFollower`, review-4 U4-6): what the
+entry otherwise does a few minutes after the phone was heard on the mesh, and every six hours. Unverified on air.
 """
 
 from __future__ import annotations
@@ -31,8 +35,10 @@ from .entity import (
     async_setup_platform,
     health_nodes,
     metered_device_info,
+    node_device_info,
     node_unit_device_info,
 )
+from .gateway_status import gateway_polls
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -68,6 +74,8 @@ def build_entities(hub: JungHomeHub) -> list[ButtonEntity]:
     entities += [
         JungHomeResetConsumptionButton(hub, load) for load in hub.devices.metered
     ]
+    if hub.follows_gateway and (polls := gateway_polls(hub.hass, hub)) is not None:
+        entities.append(JungHomeFetchExportButton(hub, polls.node))
     return entities
 
 
@@ -171,6 +179,32 @@ class JungHomeResetConsumptionButton(JungHomeEntity, ButtonEntity):
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="send_failed"
             ) from err
+
+
+class JungHomeFetchExportButton(ButtonEntity):
+    """Fetch the gateway's export now and follow it when it changed (`app_follow.AppFollower.async_fetch`).
+
+    No mesh entity: the gateway is asked over the network, so it is available without a link. Why nothing was
+    fetched — the token rejected, a certificate the gateway node did not vouch for, no answer — is the press's error;
+    an unchanged export is no error.
+    """
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "fetch_gateway_export"
+
+    def __init__(self, hub: JungHomeHub, node: Node) -> None:
+        """Bind to the gateway node's device."""
+        self.hub = hub
+        self._attr_unique_id = f"node:{node.uuid.lower()}-fetch_gateway_export"
+        self._attr_device_info = node_device_info(hub, node)
+
+    async def async_press(self) -> None:
+        """Fetch, adopt and follow; errors say why nothing was taken over."""
+        follower = self.hub.app_follow
+        assert follower is not None  # set by the setup, before the platforms
+        await follower.async_fetch(raise_errors=True)
 
 
 class JungHomePropertyButton(PropertyEntity, ButtonEntity):

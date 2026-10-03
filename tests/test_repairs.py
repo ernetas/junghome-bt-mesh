@@ -384,6 +384,45 @@ async def test_the_new_export_repair_takes_an_upload(
     flow.async_remove()  # nothing left to delete
 
 
+async def test_the_app_changed_notice_is_fixed_by_a_new_export_from_either_repair(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-4 U4-6: `app_changed` (an entry set up from a file) offers the new-export upload; any new export that
+    loads — this repair's, another one's, Reconfigure's (`async_replace_export`) — clears it."""
+    follower = hub_of(init_integration).app_follow
+    assert follower is not None
+    phone_config = SimpleNamespace(src=0x0001, dst=0x0148)
+    follower._report(phone_config)  # type: ignore[arg-type]
+    issue = raised(hass, const.ISSUE_APP_CHANGED)
+    flow = await start(hass, issue)
+    assert isinstance(flow, repairs.NewExportFlow)
+    form = await flow.async_step_init()
+    assert form["step_id"] == "upload"
+    assert form["description_placeholders"] == {"title": "JUNG HOME mesh test"}
+
+    # the key-refresh repair's new export clears it too
+    hub_of(init_integration).report_key_refresh()
+    other = await start(hass, raised(hass, ISSUE_KEY_REFRESH))
+    with uploaded(SHARE_EXPORT_PATH):
+        result = await other.async_step_upload(UPLOAD)
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert find_issue(hass, const.ISSUE_APP_CHANGED) is None
+    await wait_for_link(hass, init_integration)
+
+    # and this one's own, once raised again by the new hub
+    follower = hub_of(init_integration).app_follow
+    assert follower is not None
+    follower._report(phone_config)  # type: ignore[arg-type]
+    flow = await start(hass, raised(hass, const.ISSUE_APP_CHANGED))
+    with uploaded(SHARE_EXPORT_PATH):
+        result = await flow.async_step_upload(UPLOAD)
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert find_issue(hass, const.ISSUE_APP_CHANGED) is None
+    await wait_for_link(hass, init_integration)
+
+
 @pytest.mark.parametrize(
     ("upload", "error"),
     [

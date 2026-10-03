@@ -86,6 +86,8 @@ from .const import (
     CONF_UNICAST,
     DEFAULT_ALLOW_PROVISIONING,
     DEFAULT_CLICK_DELAY,
+    DEFAULT_FOLLOW_APP,
+    DEFAULT_GATEWAY_CHECK,
     DEFAULT_HEARTBEATS,
     DEFAULT_PROVISIONER_IDENTITY,
     DEFAULT_UNICAST,
@@ -93,10 +95,13 @@ from .const import (
     GATEWAY_DEFAULT_HOST,
     GATEWAY_DOMAIN,
     GATEWAY_USER_NAME,
+    ISSUE_APP_CHANGED,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
     OPTION_ALLOW_PROVISIONING,
     OPTION_CLICK_DELAY,
+    OPTION_FOLLOW_APP,
+    OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
     OPTION_PROVISIONER_IDENTITY,
     PIN_FROM_MESH,
@@ -282,6 +287,14 @@ def _options_schema(options: dict[str, Any]) -> vol.Schema:
                 default=options.get(
                     OPTION_PROVISIONER_IDENTITY, DEFAULT_PROVISIONER_IDENTITY
                 ),
+            ): BooleanSelector(),
+            vol.Required(
+                OPTION_FOLLOW_APP,
+                default=options.get(OPTION_FOLLOW_APP, DEFAULT_FOLLOW_APP),
+            ): BooleanSelector(),
+            vol.Required(
+                OPTION_GATEWAY_CHECK,
+                default=options.get(OPTION_GATEWAY_CHECK, DEFAULT_GATEWAY_CHECK),
             ): BooleanSelector(),
         }
     )
@@ -765,10 +778,12 @@ async def async_replace_export(
             await gateway_sync(hass, entry.entry_id).async_seed(
                 entry, data[CONF_GATEWAY_SYNCED]
             )
-        # the gateway repairs are about the entry's old pin and token; the reload checks the new ones
+        # the gateway repairs are about the entry's old pin and token; the reload checks the new ones; and the new
+        # export is what `app_changed` asked for (`app_follow.py`)
         for issue in (
             certificate_issue_id(entry.entry_id),
             issue_id(entry, ISSUE_GATEWAY_TOKEN),
+            issue_id(entry, ISSUE_APP_CHANGED),
         ):
             ir.async_delete_issue(hass, DOMAIN, issue)
         async_update_and_reload(

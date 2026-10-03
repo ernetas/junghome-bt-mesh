@@ -15,6 +15,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 
+from .app_follow import AppFollower
 from .config_entities import device_lock_targets, retired_unique_ids
 from .config_flow import (
     LOAD_ERRORS,
@@ -35,6 +36,7 @@ from .const import (
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
+    ISSUE_APP_CHANGED,
     ISSUE_DEVICE_NAME,
     ISSUE_DUPLICATE_MESH,
     ISSUE_EXPORT_STALE,
@@ -246,6 +248,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     assert hub.configurator is not None  # registered just above
     if await hub.configurator.async_replay_journal():
         _reload_once_loaded(hass, entry)
+    # changes made in the JUNG HOME app: the phone heard on the mesh, the periodic check (`app_follow.py`, U4-6)
+    hub.app_follow = AppFollower(hub)
+    hub.app_follow.start()
+    entry.async_on_unload(hub.app_follow.stop)
     await hub.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_entry_updated))
@@ -383,6 +389,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 ISSUE_PDUS_DROPPED,
                 ISSUE_EXPORT_STALE,
                 ISSUE_UNKNOWN_NODES,
+                ISSUE_APP_CHANGED,
                 ISSUE_DUPLICATE_MESH,
                 ISSUE_GATEWAY_SYNC,
                 ISSUE_GATEWAY_TOKEN,

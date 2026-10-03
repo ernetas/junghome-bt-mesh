@@ -15772,6 +15772,7 @@
       '1baf3ade-0000-4000-8000-000000000001-unreachable-devices sensor key=unreachable_devices category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       'node:00005eff-fe00-530d-0000-000000000000-clear-faults button key=clear_faults category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',
       'node:00005eff-fe00-530d-0000-000000000000-fault binary_sensor key=fault category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',
+      'node:00005eff-fe00-530d-0000-000000000000-fetch_gateway_export button key=fetch_gateway_export category=config disabled_by=None device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',
       'node:00005eff-fe00-530d-0000-000000000000-gateway_access_requests sensor key=gateway_access_requests category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',
       'node:00005eff-fe00-530d-0000-000000000000-gateway_api_available binary_sensor key=gateway_api_available category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',
       'node:00005eff-fe00-530d-0000-000000000000-gateway_api_clients sensor key=gateway_api_clients category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-530d-0000-000000000000',

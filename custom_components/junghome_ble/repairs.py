@@ -13,9 +13,10 @@ now and asks those nodes again; their answers clear it. Unverified on air.
 
 Review-4 U4-5 added the fixes a user would otherwise look up the way to: `gateway_sync_failed` runs the action
 *Sync gateway* (`GatewaySyncFlow`); `address_in_use` moves Home Assistant to the free address it suggests
-(`FreeAddressFlow`); `unknown_nodes`, `export_stale` and `key_refresh` load a new export — fetched again from the
-gateway with the access the entry holds, or uploaded for an entry set up from a file (`NewExportFlow`, with the config
-flow's own steps: `config_flow.async_fetch_to_store`, `async_take_upload`, `async_replace_export`);
+(`FreeAddressFlow`); `unknown_nodes`, `export_stale`, `key_refresh` and `app_changed` (review-4 U4-6, raised for an
+entry set up from a file only) load a new export — fetched again from the gateway with the access the entry holds, or
+uploaded for an entry set up from a file (`NewExportFlow`, with the config flow's own steps:
+`config_flow.async_fetch_to_store`, `async_take_upload`, `async_replace_export`);
 `device_name_rejected` asks for a name the app accepts (`DeviceNameFlow`). Each changes something only once
 confirmed, and none touches the sequence numbers: a new address starts its own record by the store's rules.
 Unverified on air.
@@ -71,6 +72,7 @@ from .const import (
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_SHARED,
+    ISSUE_APP_CHANGED,
     ISSUE_DEVICE_NAME,
     ISSUE_EXPORT_STALE,
     ISSUE_GATEWAY_SYNC,
@@ -355,7 +357,7 @@ class FreeAddressFlow(_IssueFlow):
 
 
 class NewExportFlow(_IssueFlow):
-    """`unknown_nodes`, `export_stale`, `key_refresh`: replace the entry's export with a new one, as Reconfigure does.
+    """`unknown_nodes`, `export_stale`, `key_refresh`, `app_changed`: replace the entry's export, as Reconfigure does.
 
     An entry set up from the gateway fetches it again with the access and the certificate pin it holds (the gateway
     node's report over the mesh first, `config_flow.async_known_pin`) after a confirmation; nothing is learned or
@@ -551,6 +553,7 @@ FIX_FLOWS: dict[str, type[_IssueFlow]] = {
     ISSUE_GATEWAY_SYNC: GatewaySyncFlow,
     ISSUE_ADDRESS_IN_USE: FreeAddressFlow,
     ISSUE_UNKNOWN_NODES: NewExportFlow,
+    ISSUE_APP_CHANGED: NewExportFlow,
     ISSUE_EXPORT_STALE: NewExportFlow,
     ISSUE_KEY_REFRESH: NewExportFlow,
     ISSUE_DEVICE_NAME: DeviceNameFlow,

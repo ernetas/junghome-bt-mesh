@@ -74,6 +74,13 @@ DEFAULT_UNUSED_SCENES_DRY_RUN: Final = True
 NODE_BOOT_DELAY: Final = 5.0
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
 DEFAULT_HEARTBEATS: Final = False
+# Follow the app (review-4 U4-6, decision M12, `app_follow.py`): the phone heard on the mesh makes an entry set up from
+# the gateway fetch its export once the phone went quiet, and an entry set up from a file raise `app_changed` when the
+# phone was seen configuring a device; and an entry set up from the gateway checks its export every few hours
+OPTION_FOLLOW_APP: Final = "follow_app"
+DEFAULT_FOLLOW_APP: Final = True
+OPTION_GATEWAY_CHECK: Final = "gateway_check"
+DEFAULT_GATEWAY_CHECK: Final = True
 
 # Heartbeats (`OPTION_HEARTBEATS`, `docs/hidden-features.md` §4): Config Heartbeat Publication with this PeriodLog
 # (2^(n-1) s) to our own address; a node is dead after HEARTBEAT_MISSED_BEATS periods (plus half a period of slack)
@@ -345,6 +352,12 @@ UNREACHABLE_REPROBE: Final = 300.0
 # its project there after a change, but not always before the new node first advertises. Unanswered, the question is
 # asked again after each of these delays (the last one repeating) and on every new link, until the export has them.
 EXPORT_REFRESH_BACKOFF: Final = (60.0, 300.0, 900.0, 3600.0)
+# Following the app (`app_follow.py`): the gateway's export is fetched APP_QUIET_AFTER seconds after the phone was last
+# heard (the app uploads its project after each change; a burst of edits is one fetch), at most once per
+# APP_SYNC_MIN_INTERVAL for the phone's activity, and every GATEWAY_SYNC_PERIOD seconds whatever was heard
+APP_QUIET_AFTER: Final = 180.0
+APP_SYNC_MIN_INTERVAL: Final = 900.0
+GATEWAY_SYNC_PERIOD: Final = 6 * 3600.0
 TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the first one follows every connection
 # a daylight-saving change sends Time Set again this many seconds after it (review-3 F17); the change is looked for up to
 # a year ahead
@@ -525,6 +538,8 @@ ISSUE_UNKNOWN_NODES: Final = (
 )
 # ... the same issue's wording for an entry set up from the gateway, whose export Home Assistant fetches by itself
 ISSUE_UNKNOWN_NODES_GATEWAY: Final = "unknown_nodes_gateway"
+# the phone was seen configuring a device of an entry set up from a file: the export may be behind (`app_follow.py`)
+ISSUE_APP_CHANGED: Final = "app_changed"
 # push-buttons advertising another insert than the one the export cached for them: an insert was swapped (`inserts.py`)
 ISSUE_INSERT_MISMATCH: Final = "insert_mismatch"
 # a node that may run schedules has a wrong clock or zone offset (`node_clocks.py`): fixed by sending Time Set now
@@ -547,6 +562,7 @@ ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
     {
         ISSUE_UNKNOWN_NODES: "jung-home-devices-missing-from-the-export",
         ISSUE_UNKNOWN_NODES_GATEWAY: "jung-home-devices-missing-from-the-export",
+        ISSUE_APP_CHANGED: "the-jung-home-app-changed-the-installation",
         ISSUE_INSERT_MISMATCH: "jung-home-push-buttons-with-another-insert-than-in-the-export",
         ISSUE_DEVICE_NAME: "device-name-not-passed-on-to-the-jung-home-app",
         ISSUE_GATEWAY_IMPORT: "take-over-the-jung-home-gateway-integrations-entities",

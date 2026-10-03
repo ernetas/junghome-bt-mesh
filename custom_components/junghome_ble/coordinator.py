@@ -202,6 +202,7 @@ from .vault_refresh import VaultKeyRefresh
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
+    from .app_follow import AppFollower
     from .entity import TrackedPlatform
     from .gateway_status import GatewayPolls
     from .identity import VaultKeeper
@@ -2272,6 +2273,8 @@ class JungHomeHub:
         )
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
         self.configurator: MeshConfigurator | None = None
+        # what follows the changes made in the JUNG HOME app (`app_follow.py`, review-4 U4-6), set by the setup
+        self.app_follow: AppFollower | None = None
         # the platforms' entities, by platform (`entity.async_setup_platform`), and what makes the hub follow the
         # export after a change, in place or by a reload (`model_update.async_follow_export`, set by the setup)
         self.platforms: dict[str, TrackedPlatform] = {}
@@ -2995,6 +2998,11 @@ class JungHomeHub:
 
         self._unsub_export_refresh = async_call_later(self.hass, delay, again)
 
+    @property
+    def follows_gateway(self) -> bool:
+        """Whether the entry was set up from the gateway, whose export may replace ours (`_gateway_for_refresh`)."""
+        return self._gateway_for_refresh() is not None
+
     def _gateway_for_refresh(self) -> JungHomeGatewayApi | None:
         """Return the gateway API when its export may replace ours: only for an entry set up *from* the gateway.
 
@@ -3215,7 +3223,14 @@ class JungHomeHub:
             self.entry.data.get(CONF_GATEWAY_HOST),
             ", ".join(found),
         )
-        # not one of the entry's background tasks: a reload in its place unloads the entry, which cancels those
+        self.follow_adopted_export()
+
+    @callback
+    def follow_adopted_export(self) -> None:
+        """Have the device model follow an export adopted from the gateway, in a task of its own (`_reload_for_export`).
+
+        Not one of the entry's background tasks: a reload in its place unloads the entry, which cancels those.
+        """
         self.hass.async_create_task(
             self._reload_for_export(), f"{DOMAIN} follow the gateway's export"
         )
@@ -5087,7 +5102,7 @@ class JungHomeHub:
         )
 
     def _on_message(self, m: AccessMessage) -> None:
-        """Account for the traffic (link watchdog, drop detection, stale-export detection), then hand the message to its handler."""
+        """Account for the traffic (link watchdog, drop detection, stale-export detection, the app), then hand the message to its handler."""
         self._last_rx = time.monotonic()
         self._rx_messages += 1
         self._rx_decoded_link += 1
@@ -5105,6 +5120,8 @@ class JungHomeHub:
                 self._report_pdus_dropped(
                     False
                 )  # a node answered us: our PDUs get through again
+        if self.app_follow is not None:
+            self.app_follow.note(m)
         handler = STATUS_HANDLERS.get((m.company_id, m.opcode))
         if handler is not None:
             handler(self, m, m.params)

@@ -399,6 +399,11 @@ Dependencies (hard unless marked *soft*):
 - **M11 — Hold end on link loss (R4-7, brief 19).** Fire `hold_end` with `reason: link_lost`, or drop the hold
   silently?
 - **M12 — Follow the app (brief 48).** A periodic gateway GET (every few hours) plus activity-triggered adoption: OK?
+  **Taken:** gateway entries GET the export a few minutes after the phone's last activity on the mesh (a burst is one
+  GET, at most one per 15 minutes from activity) and every 6 hours, applying it only when its digest changed; both on
+  by default and switchable off in the options. File entries never fetch: a repair points at the new-export upload
+  once the phone was seen changing a device's configuration (once until resolved). A changed certificate or a
+  rejected token is never accepted or re-registered silently: Reconfigure and the re-authentication as before.
 - **M13 — Version and CI clean-up.** First public version 0.3.0 with "first public release" notes, or renumber; delete
   the old CI artifacts by hand once.
 - **M14 — HACS listing timing (briefs 66, 67).** Submit to hacs/default right after the first public release, or let

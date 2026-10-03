@@ -133,6 +133,7 @@ pass removed the markers of the checks that passed.
 | [C5](#c5--schedules) | Schedules, node clock and location | a light | a schedule slot, freed | — |
 | [C6](#c6--firmware-only-properties-set-and-restored-brief-36) | Firmware-only properties, set and restored | DALI insert, socket meter, a key, a light | settings, restored | **yes** |
 | [C7](#c7--repairs-that-fix-u4-5) | Repairs that fix: gateway sync, a device name, a fetch | gateway, a light, a firewall rule | a device name, restored | — |
+| [C8](#c8--following-the-app-u4-6) | Following the app: a rename in the app reaches Home Assistant | gateway, the app, a light | a device name, restored | **yes** |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
 | [D2](#d2--key--scene-f15) | Key → scene (F15) | push-button key, harmless scene | key wiring, restored | **yes** |
 | [D3](#d3--rooms-and-scenes-allocated-from-the-top) | Rooms and scenes allocated from the top | a light, the app | room / scene, removed | — |
@@ -750,6 +751,38 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   `custom_components/junghome_ble/strings.json::issues.device_name_rejected.fix_flow.step.name.description`,
   `custom_components/junghome_ble/strings.json::issues.unknown_nodes_gateway.fix_flow.step.gateway_refetch.description`.
 
+### C8 · Following the app (U4-6)
+
+- **Checks:** review-4 U4-6 (brief 48, decision M12) — the phone running the app is heard on the mesh as a source
+  that is neither Home Assistant nor a device; a gateway entry fetches the gateway's export about 3 minutes after the
+  phone went quiet (one GET for a burst, at most one per 15 minutes) and follows a changed export in place; the
+  *Fetch export from gateway* button does it at once; a file entry raises *The JUNG HOME app changed the
+  installation* when the phone configures a device, which needs the proxy to forward the phone's device-key Config
+  messages to Home Assistant.
+- **Needs:** a gateway entry, `<light>`, **a person with the phone and the app** at home. The file-entry notice
+  cannot be raised here (one entry per mesh, and this one is from the gateway): step 4 checks the traffic it depends
+  on. Enable debug logging for `custom_components.junghome_ble.app_follow`. **Safety:** a device name changes in the
+  app and is set back.
+- **Do:**
+  1. With the app open near a proxy node, rename `<light>` in the app, then leave the app alone.
+  2. Watch the log: *Fetching the gateway's export: the app was used* about 3 minutes after the last phone message,
+     then *following it*. Check `<light>`'s device name in Home Assistant.
+  3. Rename it back in the app; this time press **Fetch export from gateway** on the gateway's device right after the
+     app saved.
+  4. File-entry part, from the capture: during step 1 or 3, does any Config message (`--grep 'Config'`) from the
+     phone's address reach Home Assistant's link (`--dst` any, seen by the proxy Home Assistant is connected to)?
+     Change a key connection or a room in the app if a rename alone sends none, and set it back.
+- **Capture:** `--src <phone>` (the phone's address: the export's provisioner node without a product id) for the
+  traffic Home Assistant counts as the phone's, and the HTTPS request in the log.
+- **Pass:** steps 2 and 3 show the new name without Reconfigure and without *unavailable* in `<light>`'s history,
+  one GET each; step 4 shows the phone's Config messages arriving (else the file-entry notice cannot trigger: note
+  it, and the repair's markers stay).
+- **Markers:** `custom_components/junghome_ble/app_follow.py::<module>`,
+  `custom_components/junghome_ble/strings.json::options.step.init.data_description.follow_app`,
+  `custom_components/junghome_ble/strings.json::issues.app_changed.fix_flow.step.upload.description`,
+  `custom_components/junghome_ble/strings.json::issues.app_changed.fix_flow.step.gateway_refetch.description` (shown
+  only for an entry reconfigured to the gateway while the notice stood, which Reconfigure clears).
+
 ## D · Rewiring, undone in the sitting
 
 **These change the network's wiring and the export, upload it to the gateway and reload the entry.** Each ends with the
@@ -1149,6 +1182,7 @@ citing the session and sequence number, open a regression test for each failure,
 | C5 | | | |
 | C6 | | | |
 | C7 | | | |
+| C8 | | | |
 | D1 | | | |
 | D2 | | | |
 | D3 | | | |

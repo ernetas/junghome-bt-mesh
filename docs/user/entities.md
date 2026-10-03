@@ -174,6 +174,7 @@ Explained in [Buttons](../ha-integration.md#device-parameters-number-select-swit
 | Name | Category | On by default | Sits on | Devices |
 |---|---|---|---|---|
 | Clear faults | Diagnostic | Yes | Node device, Push-buttons device, Socket device | every mains-powered device |
+| Fetch export from gateway | Configuration | Yes | Node device | Gateway |
 | Identify | Diagnostic | Yes | Node device, Push-buttons device, Socket device | every mains-powered device |
 | Reference run | Configuration | No | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |
 | Reset consumption | Diagnostic | No | Light device, Socket device | Socket (metering), Switch actuator 1-gang 2-input energy |

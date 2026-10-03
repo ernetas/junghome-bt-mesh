@@ -2078,6 +2078,60 @@ class MeshConfigurator:
                 )
             return found if adopted else []
 
+    async def adopt_if_gateway_changed(self, *, raise_errors: bool = False) -> bool:
+        """Adopt the gateway's export when it changed since Home Assistant last synced; True when the file was written.
+
+        Following the app (`app_follow.AppFollower`, review-4 U4-6): after the phone went quiet on the mesh, every
+        `GATEWAY_SYNC_PERIOD`, and from the *Fetch export from gateway* button. One GET under the lock, with every
+        guard of `adopt_for_unknown_nodes`: nothing while the `gateway_token_rejected` repair is open, nothing from a
+        gateway whose pin is not vouched for or that presents another certificate (`_gateway_state`; its repair points
+        to Reconfigure, a rejected token to the re-authentication — nothing is accepted or registered anew here), an
+        unchanged digest or one only Home Assistant's file moved from writes nothing, and both changed is merged as
+        `_adopt` does (refused without the app's previous upload). Never a bare `/project/cdb` database over a share
+        export. Logged, not raised, unless `raise_errors` (the button): then a translated error says why nothing was
+        adopted.
+        """
+        api = self.gateway
+        if api is None:
+            if raise_errors:
+                raise _validation("service_no_gateway")
+            return False
+        async with self.lock:
+            cause: str | None = None
+            state = None
+            if token_rejected_open(self.hub.hass, self.hub.entry):
+                cause = TOKEN_REJECTED
+            else:
+                try:
+                    state = await self._gateway_state()
+                except _GatewayUnusable as err:
+                    cause = err.cause
+            if cause is not None:
+                _LOGGER.info(
+                    "The gateway %s was not asked for its export: %s", api.host, cause
+                )
+                if raise_errors:
+                    raise _failure("gateway_fetch_refused", host=api.host, error=cause)
+                return False
+            if state is None:
+                if raise_errors:  # `_gateway_export` logged why
+                    raise _failure("service_gateway_export_unavailable")
+                return False
+            try:
+                adopted = await self._adopt(state, "to follow the app")
+            except HomeAssistantError as err:
+                _LOGGER.warning(
+                    "The gateway's export was not adopted: %s", err.translation_key
+                )
+                if raise_errors:
+                    raise
+                return False
+            if not adopted:
+                _LOGGER.debug(
+                    "The gateway's export holds nothing Home Assistant has not synced"
+                )
+            return adopted
+
     async def async_current_export(self) -> ProjectFile:
         """Return the export as a change would plan on it now, for a plan made outside the configurator (`add_device`).
 

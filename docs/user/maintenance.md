@@ -76,6 +76,14 @@ connected to the gateway. **Submit** loads the new export: set up from the gatew
 a file, it asks you to upload the app's new export (*Project → Share via file*). **Unverified on air.**
 [Details](../ha-integration.md#repair-issue-jung-home-devices-missing-from-the-export)
 
+#### The JUNG HOME app changed the installation
+
+Only for an entry set up from a file: Home Assistant saw the app change a device's configuration (a key connection, a
+room, a scene), so its export may be behind. Once you are done in the app, **Submit** asks for the app's new export
+(*Project → Share via file*); *Reconfigure* clears the notice too. An entry set up from the gateway fetches the new
+export by itself instead. **Unverified on air.**
+[Details](../ha-integration.md#repair-issue-the-jung-home-app-changed-the-installation)
+
 #### JUNG HOME push-buttons with another insert than in the export
 
 A push-button's insert was replaced (a dimmer instead of a switch, say). Check it in the app, export again and
