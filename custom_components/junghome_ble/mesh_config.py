@@ -3086,6 +3086,72 @@ class MeshConfigurator:
         not have is created only with `create`: a typo used to make a new room and move the loads into it
         (review-4 W4-12).
         """
+        return await self._change_rooms(
+            addresses, room, action="junghome_ble.set_room", create=create, only=True
+        )
+
+    async def add_to_room(
+        self, address: int, room: str, *, create: bool = False
+    ) -> bool:
+        """Put the load element at `address` into `room` as well (created when missing with `create`)."""
+        return await self.add_to_rooms([address], room, create=create)
+
+    async def add_to_rooms(
+        self, addresses: Iterable[int], room: str, *, create: bool = False
+    ) -> bool:
+        """Put every load element in `addresses` into `room` as well, keeping the rooms it is in (review-4 F4-5).
+
+        The app's `AddDeviceToGroups`: a device can be in several rooms at once. The same `AddGroupToDevices`
+        messages as `set_rooms` (the room's Subscription Adds, then each key linked to the room), without leaving
+        any other room. A load already in the room sends nothing. Unverified on air.
+        """
+        return await self._change_rooms(
+            addresses, room, action="junghome_ble.add_to_room", create=create
+        )
+
+    async def remove_from_room(
+        self, address: int, room: str, *, force: bool = False
+    ) -> bool:
+        """Take the load element at `address` out of `room`, leaving it in its other rooms."""
+        return await self.remove_from_rooms([address], room, force=force)
+
+    async def remove_from_rooms(
+        self, addresses: Iterable[int], room: str, *, force: bool = False
+    ) -> bool:
+        """Take every load element in `addresses` out of `room`, keeping the other rooms it is in (review-4 F4-5).
+
+        The app's `DeleteDeviceFromGroups` (`DeleteGroupFromDevices`): the load stops listening to every key linked
+        to the room, then every model carrying the room drops it (`ProjectFile.set_room(member=False)`). A load a
+        key's room link drives — it listens to the key's group — is refused unless `force`, naming the key: taking
+        it out of the room unwires it from the key too, which the user may not expect from a room change. A load
+        that is in no room afterwards is fine; the app allows that too. A load not in the room sends nothing.
+        Unverified on air.
+        """
+        return await self._change_rooms(
+            addresses,
+            room,
+            action="junghome_ble.remove_from_room",
+            join=False,
+            force=force,
+        )
+
+    async def _change_rooms(
+        self,
+        addresses: Iterable[int],
+        room: str,
+        *,
+        action: str,
+        join: bool = True,
+        only: bool = False,
+        create: bool = False,
+        force: bool = False,
+    ) -> bool:
+        """Join `room` (leaving every other room as well with `only`), or leave it: one plan, one rewrite, one upload.
+
+        `create` makes a missing room to join (its creation is the plan's `prepare` note, so a stopped plan
+        records it); leaving a room needs one the export has. `force`: leave even where a key's room link drives
+        the load (`_room_keys`).
+        """
         async with self.lock:
             pf = await self._load()
             before = pf.snapshot()
@@ -3094,16 +3160,23 @@ class MeshConfigurator:
             try:
                 group = self._room(pf, room)
             except ServiceValidationError:
-                if not create:
+                if not (join and create):
                     raise
                 created = self._room_name(room)
                 group = self._add_room(pf, room)
             changes: list[ModelChange] = []
-            for element in elements:
-                for other in self._rooms_of(pf, element):
-                    if other != group:
-                        changes += pf.set_room(element, other, member=False)
-                changes += pf.set_room(element, group)
+            if join:
+                for element in elements:
+                    for other in self._rooms_of(pf, element) if only else ():
+                        if other != group:
+                            changes += pf.set_room(element, other, member=False)
+                    changes += pf.set_room(element, group)
+            else:
+                members = [e for e in elements if group in self._rooms_of(pf, e)]
+                if not force:
+                    self._refuse_room_keys(pf, members, group)
+                for element in members:
+                    changes += pf.set_room(element, group, member=False)
             prepare: Note | None = (
                 {"kind": "room", "name": created, "address": group}
                 if created is not None
@@ -3112,16 +3185,45 @@ class MeshConfigurator:
             steps = self._steps(pf, changes)
             if not steps and pf.snapshot() == before:
                 return self.adopted  # already so: nothing to send, write or upload
-            await self._send(steps, action="junghome_ble.set_room", prepare=prepare)
+            await self._send(steps, action=action, prepare=prepare)
             await self._save(pf)
             _LOGGER.info(
-                "Element(s) %s now in room %r (%04X), %d Config messages",
+                "Element(s) %s %s room %r (%04X), %d Config messages",
                 ", ".join(f"{e.address:04X}" for e in elements),
+                "now in" if join else "taken out of",
                 pf.cdb.groups[group],
                 group,
                 len(changes),
             )
             return True
+
+    @staticmethod
+    def _room_keys(pf: ProjectFile, element: Element, group: int) -> list[int]:
+        """Return the key elements whose room link to `group` drives `element`: it listens to the link's publish group."""
+        listened = {
+            address
+            for raw in element.raw_models
+            for address in element.subscriptions(raw["modelId"])
+        }
+        return [
+            key
+            for row in pf.room_connections(group)
+            if (key := as_int(row.get("elementAddress"))) is not None
+            and as_int(row.get("publishAddress")) in listened
+        ]
+
+    def _refuse_room_keys(
+        self, pf: ProjectFile, elements: Iterable[Element], group: int
+    ) -> None:
+        """Refuse taking a load out of `group` while a key's room link to it drives the load (the first one found)."""
+        for element in elements:
+            if keys := self._room_keys(pf, element, group):
+                raise _validation(
+                    "service_room_key_drives_load",
+                    device=self._member_name(element.address),
+                    button=", ".join(self._member_name(k) for k in keys),
+                    room=pf.cdb.groups[group],
+                )
 
     # ------------------------------------------------------------------ key connections
     async def assign_key(

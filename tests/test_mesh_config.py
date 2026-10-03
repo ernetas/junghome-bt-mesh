@@ -1259,6 +1259,185 @@ async def test_set_room_on_a_raw_cdb_writes_the_cdb_flavour(
     assert bench.hub.hass.jobs == ["load_project", "save"]
 
 
+LIVING_MODELS = ("1000", "1002", "1300", "1301", "1303", "1304", "1203", "1204")
+
+
+async def test_add_to_room_keeps_the_rooms_a_load_is_in(bench: Bench) -> None:
+    """Review-4 F4-5: the DALI light joins WC as well — the same `AddGroupToDevices` messages as `set_room`, the
+    WC-linked dimmer key's group included — and stays in Living room; `meta` is untouched."""
+    assert await bench.configurator.add_to_room(DALI_LOAD, "wc") is True
+    assert bench.config_pdus() == [
+        (DALI_NODE, sub_add(DALI_LOAD, WC, "1000")),
+        (DALI_NODE, sub_add(DALI_LOAD, WC, "1002")),
+        (DALI_NODE, sub_add(DALI_LOAD, DIMMER_KEY_GROUP, "1000")),
+        (DALI_NODE, sub_add(DALI_LOAD, DIMMER_KEY_GROUP, "1002")),
+    ]
+    assert bench.config_pdus()[0][1] == bytes.fromhex("801b 3202 0fc0 0010")
+    pf = bench.reload()
+    for model in ("1000", "1002"):
+        assert subs(pf, DALI_LOAD, model) == [
+            DALI_GROUP,
+            LAMPS,
+            LIVING,
+            WC,
+            DIMMER_KEY_GROUP,
+        ]
+    assert LIVING in subs(pf, DALI_LOAD, "1300")
+    assert pf.meta == ProjectFile.load(ANDROID_PATH).meta
+    cdb = CDB.load(bench.path)
+    el = cdb.element(DALI_LOAD)
+    assert el is not None
+    assert {cdb.groups[a] for a in el.subscriptions("1000") if a in (WC, LIVING)} == {
+        "WC",
+        "Living room",
+    }
+    # already so: nothing sent, nothing written
+    mark = len(bench.config_pdus())
+    written = bench.path.read_bytes()
+    assert await bench.configurator.add_to_room(DALI_LOAD, "WC") is False
+    assert bench.config_pdus()[mark:] == []
+    assert bench.path.read_bytes() == written
+
+
+async def test_add_to_room_creates_a_missing_room_only_when_asked(
+    bench: Bench,
+) -> None:
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.add_to_room(SOCKET_NODE, "Garage")
+    assert exc.value.translation_key == "service_no_room"
+    assert bench.file_unchanged()
+    await bench.configurator.add_to_room(SOCKET_NODE, "Garage", create=True)
+    assert bench.config_pdus() == [
+        (SOCKET_NODE, sub_add(SOCKET_NODE, NEW_ROOM, "1000"))
+    ]
+    pf = bench.reload()
+    assert pf.user_groups()[NEW_ROOM] == "Garage"
+    assert subs(pf, SOCKET_NODE, "1000") == [SOCKET_GROUP, SOCKETS, KITCHEN, NEW_ROOM]
+
+
+async def test_remove_from_room_leaves_the_other_rooms(bench: Bench) -> None:
+    """The DALI light, in Living room and WC, leaves Living room only: every model carrying the room drops it."""
+    await bench.configurator.add_to_room(DALI_LOAD, "WC")
+    mark = len(bench.config_pdus())
+    assert await bench.configurator.remove_from_room(DALI_LOAD, "Living room") is True
+    assert bench.config_pdus()[mark:] == [
+        (DALI_NODE, sub_del(DALI_LOAD, LIVING, m)) for m in LIVING_MODELS
+    ]
+    assert bench.config_pdus()[mark:][0][1] == bytes.fromhex("801c 3202 10c0 0010")
+    pf = bench.reload()
+    assert subs(pf, DALI_LOAD, "1000") == [DALI_GROUP, LAMPS, WC, DIMMER_KEY_GROUP]
+    assert subs(pf, DALI_LOAD, "1300") == [DALI_GROUP, LAMPS]
+    assert pf.user_groups()[LIVING] == "Living room"  # the room itself stays
+    # not in the room (any more): nothing to send, nothing written, no error
+    mark = len(bench.config_pdus())
+    written = bench.path.read_bytes()
+    assert await bench.configurator.remove_from_room(DALI_LOAD, "Living room") is False
+    assert bench.config_pdus()[mark:] == []
+    assert bench.path.read_bytes() == written
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.remove_from_room(DALI_LOAD, "Garage", force=True)
+    assert exc.value.translation_key == "service_no_room"
+
+
+async def test_a_load_may_end_up_in_no_room(bench: Bench) -> None:
+    await bench.configurator.remove_from_room(DALI_LOAD, "Living room")
+    cdb = CDB.load(bench.path)
+    el = cdb.element(DALI_LOAD)
+    assert el is not None
+    rooms = {a for a, n in cdb.groups.items() if mc.is_room(a, n)}
+    assert not any(a in rooms for m in LIVING_MODELS for a in el.subscriptions(m))
+
+
+async def test_remove_from_room_refuses_a_load_a_room_linked_key_drives(
+    bench: Bench,
+) -> None:
+    """The WC-linked dimmer key drives the WC switch (0148 listens to the key's group C071): leaving WC would unwire
+    it from the key too. Refused, naming the key, before anything is sent; with `force` it goes, the key's group
+    first and the room last (a stop leaves it a member, so the next run completes it), and the key's link row
+    stays — it still drives the WC dimmer."""
+    bench.hub.devices.by_address[DIMMER_KEY] = SimpleNamespace(
+        name="Dimmer buttons key A"
+    )
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.remove_from_room(SWITCH_LOAD, "WC")
+    assert exc.value.translation_key == "service_room_key_drives_load"
+    assert exc.value.translation_placeholders == {
+        "device": "0148",
+        "button": "0301 (Dimmer buttons key A)",
+        "room": "WC",
+    }
+    assert bench.config_pdus() == []
+    assert bench.file_unchanged()
+    # with another load in the same call: the refusal is the whole plan's, nothing goes out
+    with pytest.raises(ServiceValidationError):
+        await bench.configurator.remove_from_rooms([DALI_LOAD, SWITCH_LOAD], "WC")
+    assert bench.config_pdus() == []
+    assert await bench.configurator.remove_from_room(SWITCH_LOAD, "WC", force=True)
+    pdus = bench.config_pdus()
+    assert pdus[0] == (SWITCH_NODE, sub_del(SWITCH_LOAD, DIMMER_KEY_GROUP, "1000"))
+    assert len(pdus) > 1
+    assert all(
+        node == SWITCH_NODE and pdu[:2] == bytes.fromhex("801c") for node, pdu in pdus
+    )
+    assert (SWITCH_NODE, sub_del(SWITCH_LOAD, WC, "1000")) in pdus
+    pf = bench.reload()
+    assert subs(pf, SWITCH_LOAD, "1000") == [0xC061, LAMPS]
+    assert [
+        (as_int(r["elementAddress"]), r["groupAddress"]) for r in link_rows(pf)
+    ] == [(DIMMER_KEY, WC)]
+    assert DIMMER_KEY_GROUP in subs(pf, DIMMER_LOAD, "1000")
+
+
+async def test_a_load_a_key_does_not_drive_leaves_a_linked_room_freely(
+    bench: Bench,
+) -> None:
+    """A room link of function SWITCH drives no light: the light is not wired to the key, so nothing refuses."""
+    await bench.configurator.assign_key(ROCKER_A, room="Kitchen", mode="switch")
+    mark = len(bench.config_pdus())
+    assert await bench.configurator.remove_from_room(ACTUATOR_OUT1, "Kitchen")
+    pdus = bench.config_pdus()[mark:]
+    assert (ACTUATOR_NODE, sub_del(ACTUATOR_OUT1, KITCHEN, "1000")) in pdus
+    assert all(pdu[4:6] != ROCKER_A_GROUP.to_bytes(2, "little") for _n, pdu in pdus)
+    assert KITCHEN not in subs(bench.reload(), ACTUATOR_OUT1, "1000")
+
+
+async def test_a_stopped_room_change_records_what_was_accepted(bench: Bench) -> None:
+    """A refused second message: the record holds the first Subscription Add only, the error says so, and the plan
+    journal named the action; running it again completes the plan."""
+    refused = sub_add(DALI_LOAD, WC, "1002")
+    bench.config.refuse[refused] = 0x05  # Insufficient Resources
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.add_to_room(DALI_LOAD, "WC")
+    assert exc.value.translation_key == "service_config_refused"
+    assert "1 of 4" in exc.value.translation_placeholders["applied"]
+    pf = bench.reload()
+    assert WC in subs(pf, DALI_LOAD, "1000")
+    assert WC not in subs(pf, DALI_LOAD, "1002")
+    assert LIVING in subs(pf, DALI_LOAD, "1000")
+    assert {s["action"] for s in bench.journal.saves if s} == {
+        "junghome_ble.add_to_room"
+    }
+    bench.config.refuse.clear()
+    assert await bench.configurator.add_to_room(DALI_LOAD, "WC") is True
+    assert DIMMER_KEY_GROUP in subs(bench.reload(), DALI_LOAD, "1002")
+
+    # leaving, stopped at the room's first Subscription Delete: the key's groups are gone, the room is still there
+    bench.journal.saves.clear()
+    bench.config.refuse[sub_del(DALI_LOAD, WC, "1000")] = 0x05
+    with pytest.raises(HomeAssistantError):
+        await bench.configurator.remove_from_room(DALI_LOAD, "WC", force=True)
+    pf = bench.reload()
+    assert DIMMER_KEY_GROUP not in subs(pf, DALI_LOAD, "1000")
+    assert WC in subs(pf, DALI_LOAD, "1000")
+    assert {s["action"] for s in bench.journal.saves if s} == {
+        "junghome_ble.remove_from_room"
+    }
+    bench.config.refuse.clear()
+    # no key drives it any more, so no `force` is needed to finish
+    assert await bench.configurator.remove_from_room(DALI_LOAD, "WC") is True
+    assert WC not in subs(bench.reload(), DALI_LOAD, "1000")
+
+
 async def test_create_rename_delete_room(bench: Bench) -> None:
     assert await bench.configurator.create_room("Attic") == NEW_ROOM
     assert bench.config_pdus() == []

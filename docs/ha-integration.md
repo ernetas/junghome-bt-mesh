@@ -1181,6 +1181,22 @@ hand), the action refuses with *"export from the app again"* — export, replace
   (review-4 W4-12; before 1.1.0 every unknown name created a room).
   The device leaves every other room; keys already connected to the room start driving it. A device without a Home
   Assistant area is placed in the area of the same name.
+- **`junghome_ble.add_to_room`** — the same target, `room` and `create` as `set_room`, but the device **stays in the
+  rooms it is in**: a device can be in several JUNG rooms, as in the app (review-4 F4-5). It sends the same
+  messages as `set_room`'s joining half (the room's subscriptions on the device's OnOff / Level servers, then the
+  groups of the keys already linked to the room) and leaves nothing. A device already in the room sends nothing. The
+  `rooms` attribute lists every room, and each room's *All lights in …* / *All sockets in …* entity counts the
+  device. A device without an area gets the room's, as with `set_room`.
+- **`junghome_ble.remove_from_room`** — target as above, `room`; takes the device out of that room only (the app's
+  *remove from room*): the device stops listening to the keys linked to the room, then every model carrying the room
+  drops it. Its other rooms stay; a device may end up in none, as in the app. A device a key drives through its link
+  to the room (it listens to that key) is refused, naming the key (*Not taken out of room …: … is switched by …*):
+  leaving the room would unwire it from the key too. `force: true` takes it out all the same; the key keeps driving
+  the room's other devices. A device not in the room sends nothing. Areas are not touched.
+
+  Both are unverified on air, and so is the app's view after it imports an export where Home Assistant put a device
+  into several rooms. Check: add a light to a second room, switch both rooms' *All lights in …*, remove it from one,
+  then `tools/mesh_poc.py config audit <node>` (or `audit_network`) reports no difference from the export.
 - **`create_room` / `rename_room` / `delete_room`** — `name` / `room` / `new_name`; `config_entry_id` only when
   several networks are configured. Deleting a room removes its devices from it and gives keys connected to the room *no
   function* (as the app does); the devices stay operable.

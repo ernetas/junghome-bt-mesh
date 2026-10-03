@@ -17,6 +17,44 @@ set_room:
       selector:
         boolean:
 
+add_to_room:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+  fields:
+    room:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+    create:
+      default: false
+      selector:
+        boolean:
+
+remove_from_room:
+  target:
+    entity:
+      integration: junghome_ble
+      domain:
+        - light
+        - switch
+        - cover
+  fields:
+    room:
+      required: true
+      example: "Kitchen"
+      selector:
+        text:
+    force:
+      default: false
+      selector:
+        boolean:
+
 create_room:
   fields:
     name:

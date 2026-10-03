@@ -73,6 +73,13 @@ OPERATIONS: dict[str, Operation] = {
     "set_room into a new room": lambda c: c.set_rooms(
         [SWITCH_LOAD, DIMMER_LOAD], "Garage", create=True
     ),
+    "add_to_room": lambda c: c.add_to_rooms([DALI_LOAD, SOCKET_NODE], "WC"),
+    "add_to_room into a new room": lambda c: c.add_to_rooms(
+        [SWITCH_LOAD, DIMMER_LOAD], "Garage", create=True
+    ),
+    "remove_from_room": lambda c: c.remove_from_rooms(
+        [SWITCH_LOAD, DIMMER_LOAD], "WC", force=True
+    ),
     "delete_room": lambda c: c.delete_room("WC"),
     "set_threshold_devices": lambda c: c.set_threshold_devices(
         SOCKET_NODE, [DALI_LOAD, SWITCH_LOAD]

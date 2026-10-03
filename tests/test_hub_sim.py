@@ -202,3 +202,51 @@ async def test_room_actions_over_the_mesh_change_no_state(
     servers = sim_mesh.node(LIGHT_SWITCH).servers
     assert servers is not None
     assert servers.subscribed(room)
+
+
+async def test_a_light_joins_a_second_room_and_leaves_its_first_over_the_mesh(
+    hass: HomeAssistant,
+    sim_mesh: Mesh,
+    sim_entry: MockConfigEntry,
+    tmp_path: Path,
+    state_transitions: StateTransitions,
+) -> None:
+    """Review-4 F4-5 over the simulated mesh: `add_to_room` puts the light into a second room — its Configuration
+    Server listens to both — and `remove_from_room` takes it out of the first; the light keeps its state through
+    both, on the link it had."""
+    path = tmp_path / "MeshNetwork.json"
+    shutil.copy(CDB_PATH, path)
+    sim_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        sim_entry, data={**sim_entry.data, CONF_CDB_PATH: str(path)}
+    )
+    element_state(sim_mesh, LIGHT_SWITCH).on = True
+    eid = await start(hass, sim_entry, UID_LIGHT_SWITCH)
+    before = hass.states.get(eid)
+    [first] = before.attributes["rooms"]
+    hub = sim_entry.runtime_data
+    servers = sim_mesh.node(LIGHT_SWITCH).servers
+    assert servers is not None
+    await hass.services.async_call(
+        DOMAIN,
+        "add_to_room",
+        {"entity_id": eid, "room": "Attic", "create": True},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert set(hass.states.get(eid).attributes["rooms"]) == {first, "Attic"}
+    rooms = {name: a for a, name in hub.devices.rooms.items()}
+    assert servers.subscribed(rooms[first])
+    assert servers.subscribed(rooms["Attic"])
+    await hass.services.async_call(
+        DOMAIN, "remove_from_room", {"entity_id": eid, "room": first}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).attributes["rooms"] == ["Attic"]
+    assert not servers.subscribed(rooms[first])
+    assert servers.subscribed(rooms["Attic"])
+    assert sim_entry.runtime_data is hub
+    assert (hub.connected, hub.link_count) == (True, 1)
+    assert state_transitions.lost() == []
+    now = hass.states.get(eid)
+    assert (now.state, now.last_changed) == (STATE_ON, before.last_changed)

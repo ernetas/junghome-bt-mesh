@@ -132,6 +132,7 @@ pass removed the markers of the checks that passed.
 | [D5](#d5--sensor-values-for-iot-systems) | *Sensor values for IoT systems* | metering socket | publication, restored | — |
 | [D6](#d6--both-sides-changed-merge-optional) | Both-changed merge (optional) | gateway, the app, a firewall rule | room names, restored | — |
 | [D7](#d7--configuration-changes-without-a-reload) | Configuration changes without a reload | a light, a key | a room and a key, undone | — |
+| [D8](#d8--several-rooms-per-light-leaving-a-room-f4-5) | Several rooms per light, leaving a room | a light, two rooms | rooms, set back | — |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -755,6 +756,34 @@ starting state restored; the app shows Home Assistant's changes only once it tak
 - **Pass:** the light's history shows no gap or `unavailable`; the link does not drop; only the Config messages of the
   change go out, no wave of state Gets. A change that cannot be followed in place reloads (debug log: the reason).
 - **Markers:** `custom_components/junghome_ble/model_update.py::<module>`.
+
+### D8 · Several rooms per light, leaving a room (F4-5)
+
+- **Checks:** review-4 F4-5 / W I12 — `add_to_room` puts a light into a second room without leaving its first;
+  `remove_from_room` takes it out of one room only, and refuses a light a room-linked key drives unless `force`.
+- **Needs:** `<light>` in a room (note it: room R1) that no key is linked to, a second room R2 (any other room; or
+  `create: true` with a throw-away name); optionally the app. **Safety:** `<light>`'s rooms change; set back in step 4.
+- **Do:**
+  1. `junghome_ble.add_to_room` with `<light>`, `room: R2`. Its `rooms` attribute lists R1 and R2.
+  2. Turn *All lights in R1* off, `<light>` on, then *All lights in R2* off: `<light>` goes off with each room; both
+     room entities list it under `members`.
+  3. `junghome_ble.remove_from_room` with `<light>`, `room: R1`; switch *All lights in R1*: `<light>` no longer
+     follows. Optional, the refusal: `remove_from_room` of a light a room-linked key drives, without `force` — the
+     error names the key and nothing goes out.
+  4. Undo: `add_to_room` `<light>` → R1, `remove_from_room` `<light>` → R2 (and `delete_room` a throw-away room).
+- **Capture:** `--src <ha> --grep 'Subscription'`: step 1 *Config Model Subscription Add* of R2's address on
+  `<light el>`'s OnOff `0x1000` and Level `0x1002` servers (plus each R2-linked key's group), no Subscription Delete;
+  step 3 *Subscription Delete* of R1's address on every model of `<light el>` that carried it, nothing for R2; every
+  Config Status *Success*.
+- **Pass:** those messages and behaviour; after steps 1, 3 and 4 `tools/mesh_poc.py config audit <node>` (or
+  `audit_network`) reports no difference from the export; the history of `<light>` shows no `unavailable`. With the
+  app, after it takes the gateway's export following step 1: note whether it shows `<light>` in both rooms (*the
+  app's view of several rooms per device written by Home Assistant* — unverified).
+- **Markers:** `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.add_to_rooms`,
+  `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_rooms`,
+  `custom_components/junghome_ble/strings.json::services.add_to_room.description`,
+  `custom_components/junghome_ble/strings.json::services.remove_from_room.description`,
+  `net:uc:adddevicetogroups`, `net:uc:deletedevicefromgroups`.
 
 ## E · Credentials, sequence numbers and keys
 

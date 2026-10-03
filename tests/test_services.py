@@ -985,6 +985,78 @@ async def test_set_room_of_a_foreign_device_in_the_registry(
     assert exc.value.translation_placeholders == {"id": foreign.id}
 
 
+# ----------------------------------------------------------------------------- add_to_room / remove_from_room
+
+DIMMER_KEY, DIMMER_KEY_GROUP = (
+    0x0301,
+    0xC071,
+)  # the WC-linked key of the dimmer push-button, its own group
+
+
+async def test_add_to_room_keeps_the_room_a_load_is_in(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 F4-5: the DALI light joins WC and stays in Living room, wired to the WC-linked key as well; its
+    device keeps its area."""
+    ctl = entity_id(hass, "light", UID_LIGHT_CTL)
+    await call(hass, "add_to_room", {"entity_id": ctl, "room": "WC"})
+    assert env.config_calls == [
+        (DALI_NODE, C.model_subscription_add(LIGHT_CTL, WC, "1000")),
+        (DALI_NODE, C.model_subscription_add(LIGHT_CTL, WC, "1002")),
+        (DALI_NODE, C.model_subscription_add(LIGHT_CTL, DIMMER_KEY_GROUP, "1000")),
+        (DALI_NODE, C.model_subscription_add(LIGHT_CTL, DIMMER_KEY_GROUP, "1002")),
+    ]
+    pf = env.reload()
+    assert {WC, LIVING} <= set(subs(pf, LIGHT_CTL, "1000"))
+    assert hass.states.get(ctl).attributes["rooms"] == ["WC", "Living room"]
+    living = ar.async_get(hass).async_get_area_by_name("Living room")
+    device = dr.async_get(hass).async_get(device_id(hass, UID_LIGHT_CTL))
+    assert living is not None
+    assert device is not None
+    assert device.area_id == living.id
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "add_to_room", {"entity_id": ctl, "room": "Attic"})
+    assert exc.value.translation_key == "service_no_room"
+
+
+async def test_remove_from_room_needs_force_for_a_load_a_key_drives(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The WC mirror listens to the WC-linked dimmer key: taking it out of WC is refused, naming the key, until
+    `force`; then it is in no room, its area stays and the key keeps driving the WC ceiling."""
+    mirror = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    before = env.path.read_bytes()
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "remove_from_room", {"entity_id": mirror, "room": "WC"})
+    assert exc.value.translation_key == "service_room_key_drives_load"
+    placeholders = exc.value.translation_placeholders
+    assert placeholders["device"] == "0148 (WC mirror)"
+    assert placeholders["button"].startswith("0301 (")
+    assert placeholders["room"] == "WC"
+    assert env.config_calls == []
+    assert env.path.read_bytes() == before
+    unchanged = dr.async_get(hass).async_get(device_id(hass, UID_LIGHT_SWITCH))
+    assert unchanged is not None
+    await call(
+        hass, "remove_from_room", {"entity_id": mirror, "room": "WC", "force": True}
+    )
+    assert env.config_calls[0] == (
+        LIGHT_SWITCH,
+        C.model_subscription_delete(LIGHT_SWITCH, DIMMER_KEY_GROUP, "1000"),
+    )
+    assert (
+        LIGHT_SWITCH,
+        C.model_subscription_delete(LIGHT_SWITCH, WC, "1000"),
+    ) in env.config_calls
+    pf = env.reload()
+    assert WC not in subs(pf, LIGHT_SWITCH, "1000")
+    assert DIMMER_KEY_GROUP in subs(pf, LIGHT_DIMMER, "1000")
+    assert hass.states.get(mirror).attributes["rooms"] == []
+    device = dr.async_get(hass).async_get(device_id(hass, UID_LIGHT_SWITCH))
+    assert device is not None
+    assert device.area_id == unchanged.area_id
+
+
 # ----------------------------------------------------------------------------- blinds
 
 
@@ -2547,6 +2619,8 @@ async def test_export_network_answers_the_export_to_administrators_only(
 # user is, so each call must pass it to meet the refusal
 ADMIN_CALLS: dict[str, dict[str, Any]] = {
     "set_room": {"entity_id": "light.any", "room": "WC"},
+    "add_to_room": {"entity_id": "light.any", "room": "WC"},
+    "remove_from_room": {"entity_id": "light.any", "room": "WC"},
     "create_room": {"name": "Attic"},
     "rename_room": {"room": "WC", "new_name": "Loo"},
     "delete_room": {"room": "WC"},

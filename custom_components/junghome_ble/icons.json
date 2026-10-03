@@ -337,6 +337,12 @@
     }
   },
   "services": {
+    "add_to_room": {
+      "service": "mdi:home-plus-outline"
+    },
+    "remove_from_room": {
+      "service": "mdi:home-minus-outline"
+    },
     "get_schedules": {
       "service": "mdi:calendar-search"
     },

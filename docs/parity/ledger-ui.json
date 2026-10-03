@@ -859,7 +859,7 @@
     "tests/test_central.py::test_room_sockets_switch_each_socket"
    ],
    "class": "dup",
-   "reason": "its shortfalls are multi-room membership (this row), the room icon (net:uc:updategroup) and the favourite toggle (ha-native); the area central control is implemented (net:ui:centralfunctions) and the name validation too (ui:uc:checknameinput)",
+   "reason": "multi-room membership is this row (add_to_room / remove_from_room); its shortfalls are the room icon (net:uc:updategroup) and the favourite toggle (ha-native); the area central control is implemented (net:ui:centralfunctions) and the name validation too (ui:uc:checknameinput)",
    "dup_of": "net:uc:adddevicetogroups"
   },
   {
@@ -885,7 +885,7 @@
     "tests/test_light.py::test_entities"
    ],
    "class": "dup",
-   "reason": "its shortfalls are multi-room membership (this row), the room icon (net:enum:groupicon) and the favourite marker (ha-native)",
+   "reason": "multi-room membership is this row (add_to_room / remove_from_room); its shortfalls are the room icon (net:enum:groupicon) and the favourite marker (ha-native)",
    "dup_of": "net:uc:adddevicetogroups"
   },
   {
@@ -2369,7 +2369,7 @@
     "tests/test_light.py::test_entities"
    ],
    "class": "dup",
-   "reason": "the same ObserveGroups use case; the multi-room shortfall is net:uc:adddevicetogroups and the favourite filter is ha-native",
+   "reason": "the same ObserveGroups use case; multi-room membership is net:uc:adddevicetogroups and the favourite filter is ha-native",
    "dup_of": "net:uc:observegroups"
   },
   {
@@ -3572,7 +3572,7 @@
     "tests/test_coordinator.py::test_initial_connection_and_refresh"
    ],
    "class": "dup",
-   "reason": "its only shortfall is multi-room membership (a load in one HA area / set_room moves into exactly one room), recorded there",
+   "reason": "the same use case: multi-room membership (add_to_room keeps a load's other rooms, remove_from_room leaves one), recorded there",
    "dup_of": "net:uc:adddevicetogroups"
   },
   {
@@ -3624,7 +3624,7 @@
     "tests/test_services.py::test_create_rename_delete_room"
    ],
    "class": "dup",
-   "reason": "its shortfalls are multi-room membership (this row), the room icon (net:enum:groupicon) and the favourite marker (ha-native)",
+   "reason": "multi-room membership is this row (add_to_room / remove_from_room); its shortfalls are the room icon (net:enum:groupicon) and the favourite marker (ha-native)",
    "dup_of": "net:uc:adddevicetogroups"
   },
   {

@@ -1002,6 +1002,9 @@
     "service_room_exists": {
       "message": "A room named {room} already exists."
     },
+    "service_room_key_drives_load": {
+      "message": "Not taken out of room {room}: {device} is switched by {button} through that key's link to the room, and leaving the room unwires it from the key too. Run the action again with Even if a key drives it, or give the key another function first."
+    },
     "service_invalid_room_name": {
       "message": "A room needs a name."
     },
@@ -1534,6 +1537,34 @@
         "create": {
           "name": "Create the room",
           "description": "Create the room when the mesh has none of that name. Off, an unknown name is refused."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Add to room",
+      "description": "Puts JUNG HOME lights, sockets and blinds into a room of the mesh as well: they stay in the rooms they are in, as the app lets a device be in several rooms. A room that does not exist yet is created only with Create the room. Keys already linked to the room start driving them. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Administrators only.",
+      "fields": {
+        "room": {
+          "name": "Room",
+          "description": "Name of the room in the JUNG HOME app."
+        },
+        "create": {
+          "name": "Create the room",
+          "description": "Create the room when the mesh has none of that name. Off, an unknown name is refused."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Remove from room",
+      "description": "Takes JUNG HOME lights, sockets and blinds out of a room of the mesh; they stay in their other rooms, and a device may end up in none. A device a key drives through its link to the room is refused unless Even if a key drives it is on: leaving the room unwires it from that key too. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Administrators only.",
+      "fields": {
+        "room": {
+          "name": "Room",
+          "description": "Name of the room in the JUNG HOME app."
+        },
+        "force": {
+          "name": "Even if a key drives it",
+          "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it."
         }
       }
     },

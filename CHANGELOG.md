@@ -337,6 +337,14 @@
   basic-light, night and presentation modes, the transmission settings, runtime statistics and key toggle enable
   (review-4 F4-3, F4-9) stay unexposed and are never written until a supervised probe settles what they do
   (`docs/on-air-sweep.md` A6 and C6); only ids a probe settled can become entities, and those start disabled.
+- Several rooms per device, and leaving a room (review-4 F4-5, W I12): the actions `junghome_ble.add_to_room` and
+  `junghome_ble.remove_from_room` (administrators only). `add_to_room` puts lights, sockets and blinds into a room
+  as well, keeping the rooms they are in, as the app allows (`create: true` creates a missing room, as with
+  `set_room`); `remove_from_room` takes them out of one room, leaving the others — a device may end up in none. A
+  device a key drives through its link to the room is refused, naming the key, unless `force: true`: leaving the
+  room unwires it from that key too. The `rooms` attribute and the rooms' *All lights in …* / *All sockets in …*
+  entities follow in place, without a reload. `set_room` still moves a device into exactly one room. Unverified on
+  air, and so is the app's view of a device Home Assistant put into several rooms.
 
 ### CLI tools and library
 

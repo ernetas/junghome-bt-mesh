@@ -2976,18 +2976,21 @@
   },
   {
    "id": "net:uc:adddevicetogroups",
-   "status": "partial",
+   "status": "implemented",
    "code": [
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.add_to_rooms",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_rooms",
+    "custom_components/junghome_ble/services.py::_add_to_room",
     "custom_components/junghome_ble/services.py::_set_room"
    ],
    "tests": [
-    "tests/test_mesh_config.py::test_set_room_moves_a_load_between_rooms",
-    "tests/test_services.py::test_set_room_by_device_and_entity_targets"
+    "tests/test_mesh_config.py::test_add_to_room_keeps_the_rooms_a_load_is_in",
+    "tests/test_mesh_config.py::test_add_to_room_creates_a_missing_room_only_when_asked",
+    "tests/test_services.py::test_add_to_room_keeps_the_room_a_load_is_in",
+    "tests/test_model_update.py::test_a_light_in_two_rooms_counts_in_both_and_leaves_one_in_place",
+    "tests/test_mesh_config.py::test_set_room_moves_a_load_between_rooms"
    ],
-   "missing": "set_room puts a load into exactly one room (it leaves every other room); the app lets a device be in several rooms at once (multi-select AddDeviceToGroups), and 'already part of the group' is not an error here",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (add a light to a second room with add_to_room, switch both rooms' All lights in entities, then config audit the node), and so is the app's view after it imports an export where Home Assistant put a device into several rooms. set_room keeps moving a load into exactly one room; add_to_room is the app's multi-select AddDeviceToGroups, and a load already in the room is no error."
   },
   {
    "id": "net:uc:addgrouptodevices",
@@ -3452,16 +3455,21 @@
   },
   {
    "id": "net:uc:deletedevicefromgroups",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_rooms"
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_rooms",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._refuse_room_keys",
+    "custom_components/junghome_ble/services.py::_remove_from_room",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_room"
    ],
    "tests": [
-    "tests/test_mesh_config.py::test_set_room_moves_a_load_between_rooms"
+    "tests/test_mesh_config.py::test_remove_from_room_leaves_the_other_rooms",
+    "tests/test_mesh_config.py::test_remove_from_room_refuses_a_load_a_room_linked_key_drives",
+    "tests/test_mesh_config.py::test_a_stopped_room_change_records_what_was_accepted",
+    "tests/test_services.py::test_remove_from_room_needs_force_for_a_load_a_key_drives",
+    "tests/test_hub_sim.py::test_a_light_joins_a_second_room_and_leaves_its_first_over_the_mesh"
    ],
-   "missing": "a load leaves its other rooms only by being put into another; there is no action to take a load out of a room (or out of every room)",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (remove a light from one of its two rooms with remove_from_room, then config audit the node). Home Assistant refuses taking a load out of a room whose linked key drives it unless force, naming the key; the app asks no such question."
   },
   {
    "id": "net:uc:deletedevicefromscenes",
@@ -3510,7 +3518,7 @@
     "tests/jhmesh/test_export.py::test_set_room_adds_and_removes_a_member_like_the_app"
    ],
    "class": "dup",
-   "reason": "same behaviour as net:uc:deletedevicefromgroups; the same room-membership removal seen from the room (ProjectFile.set_room(member=False) exists only inside a move)",
+   "reason": "same behaviour as net:uc:deletedevicefromgroups; the same room-membership removal seen from the room (ProjectFile.set_room(member=False), run by remove_from_room and by a set_room move)",
    "dup_of": "net:uc:deletedevicefromgroups"
   },
   {

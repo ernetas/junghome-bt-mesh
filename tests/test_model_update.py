@@ -93,6 +93,14 @@ ACTIONS: dict[str, tuple[str, Any]] = {
         "set_room",
         {"entity_id": ("light", UID_LIGHT_SWITCH), "room": "Living room"},
     ),
+    "add_to_room": (
+        "add_to_room",
+        {"entity_id": ("light", UID_LIGHT_SWITCH), "room": "Living room"},
+    ),
+    "remove_from_room": (
+        "remove_from_room",
+        {"entity_id": ("light", UID_LIGHT_CTL), "room": "Living room"},
+    ),
     "assign_key": (
         "assign_key",
         {
@@ -189,6 +197,60 @@ async def test_a_light_moving_room_moves_between_the_room_entities(
     await switch_on(hass, env, LIGHT_SWITCH, on=True)
     assert hass.states.get(wc).state == "off"  # and the WC room no longer does
     assert hass.states.get(living).state == "on"
+
+
+async def test_a_light_in_two_rooms_counts_in_both_and_leaves_one_in_place(
+    hass: HomeAssistant, env: Env, state_transitions: StateTransitions
+) -> None:
+    """Review-4 F4-5: `add_to_room` puts the WC light into Living room as well — both room entities list it and
+    follow it — and `remove_from_room` takes it out of WC (`force`: the WC-linked key drives it) — WC no longer
+    follows it. In place: the light never changes state, and no room entity flaps through `unavailable` or
+    `unknown`; their only changes are the ones the light's own state explains."""
+    wc, living = room_entity(hass, 0xC00F), room_entity(hass, 0xC010)
+    assert wc is not None
+    assert living is not None
+    light = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    await switch_on(hass, env, LIGHT_SWITCH, on=True)
+    await switch_on(hass, env, LIGHT_DIMMER, LIGHT_CTL, on=False)
+    state_transitions.seen.clear()
+    await call(hass, "add_to_room", {"entity_id": light, "room": "Living room"})
+    assert hass.states.get(light).attributes["rooms"] == ["WC", "Living room"]
+    assert set(hass.states.get(wc).attributes["members"]) == {
+        "WC mirror",
+        "WC ceiling",
+    }
+    assert set(hass.states.get(living).attributes["members"]) == {
+        "WC mirror",
+        "Living room DALI",
+    }
+    assert (hass.states.get(wc).state, hass.states.get(living).state) == ("on", "on")
+    await switch_on(hass, env, LIGHT_SWITCH, on=False)
+    assert (hass.states.get(wc).state, hass.states.get(living).state) == (
+        "off",
+        "off",
+    )
+    await switch_on(hass, env, LIGHT_SWITCH, on=True)
+    await call(
+        hass, "remove_from_room", {"entity_id": light, "room": "WC", "force": True}
+    )
+    assert hass.states.get(light).attributes["rooms"] == ["Living room"]
+    assert hass.states.get(wc).attributes["members"] == ["WC ceiling"]
+    assert (hass.states.get(wc).state, hass.states.get(living).state) == ("off", "on")
+    await switch_on(hass, env, LIGHT_SWITCH, on=False)
+    await switch_on(hass, env, LIGHT_SWITCH, on=True)
+    assert hass.states.get(wc).state == "off"  # WC no longer hears it
+    assert state_transitions.lost() == []
+    assert [t for t in state_transitions.seen if t[0] == light] == [
+        (light, "on", "off"),
+        (light, "off", "on"),
+        (light, "on", "off"),
+        (light, "off", "on"),
+    ]  # the statuses it published only: neither action moved it
+    assert all(
+        {old, new} <= {"on", "off"}
+        for eid, old, new in state_transitions.seen
+        if eid.startswith("light.")
+    )
 
 
 async def test_a_deleted_room_takes_its_entities_with_it(

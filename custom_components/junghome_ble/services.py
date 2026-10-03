@@ -122,6 +122,8 @@ if TYPE_CHECKING:
     from .jhmesh.properties import Threshold
 
 SERVICE_SET_ROOM = "set_room"
+SERVICE_ADD_TO_ROOM = "add_to_room"
+SERVICE_REMOVE_FROM_ROOM = "remove_from_room"
 SERVICE_CREATE_ROOM = "create_room"
 SERVICE_RENAME_ROOM = "rename_room"
 SERVICE_DELETE_ROOM = "delete_room"
@@ -176,6 +178,7 @@ USER_SERVICES = frozenset(
 
 ATTR_ROOM = "room"
 ATTR_CREATE = "create"
+ATTR_FORCE = "force"
 ATTR_NAME = "name"
 ATTR_NEW_NAME = "new_name"
 ATTR_CONFIG_ENTRY = "config_entry_id"
@@ -236,6 +239,17 @@ SET_ROOM_SCHEMA = vol.All(
         {
             vol.Required(ATTR_ROOM): cv.string,
             vol.Optional(ATTR_CREATE, default=False): cv.boolean,
+            **cv.ENTITY_SERVICE_FIELDS,
+        }
+    ),
+    cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+)
+ADD_TO_ROOM_SCHEMA = SET_ROOM_SCHEMA
+REMOVE_FROM_ROOM_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            vol.Required(ATTR_ROOM): cv.string,
+            vol.Optional(ATTR_FORCE, default=False): cv.boolean,
             **cv.ENTITY_SERVICE_FIELDS,
         }
     ),
@@ -321,7 +335,6 @@ REMOVE_FROM_SCENE_SCHEMA = vol.All(
     vol.Schema({vol.Required(ATTR_SCENE): cv.string, **cv.ENTITY_SERVICE_FIELDS}),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
 )
-ATTR_FORCE = "force"
 DELETE_SCENE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_SCENE): cv.string,
@@ -522,6 +535,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
         ]
     ] = [
         (SERVICE_SET_ROOM, _set_room, SET_ROOM_SCHEMA),
+        (SERVICE_ADD_TO_ROOM, _add_to_room, ADD_TO_ROOM_SCHEMA),
+        (SERVICE_REMOVE_FROM_ROOM, _remove_from_room, REMOVE_FROM_ROOM_SCHEMA),
         (SERVICE_CREATE_ROOM, _create_room, CREATE_ROOM_SCHEMA),
         (SERVICE_RENAME_ROOM, _rename_room, RENAME_ROOM_SCHEMA),
         (SERVICE_DELETE_ROOM, _delete_room, DELETE_ROOM_SCHEMA),
@@ -985,6 +1000,47 @@ async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
             for load in mine:
                 _suggest_area(hass, load.device_id, room)
             return changed
+
+        await _run(hass, entry_id, operation)
+    return None
+
+
+async def _add_to_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Put the loads into a room as well, keeping their other rooms (several rooms per load, as in the app)."""
+    room: str = call.data[ATTR_ROOM]
+    create: bool = call.data[ATTR_CREATE]
+    loads = await _resolve_loads(hass, call, LOAD_TYPES)
+    for entry_id in sorted({load.entry_id for load in loads}):
+        mine = [load for load in loads if load.entry_id == entry_id]
+
+        async def operation(
+            configurator: MeshConfigurator, mine: list[Load] = mine
+        ) -> bool:
+            changed = await configurator.add_to_rooms(
+                [load.address for load in mine], room, create=create
+            )
+            for load in mine:
+                _suggest_area(hass, load.device_id, room)
+            return changed
+
+        await _run(hass, entry_id, operation)
+    return None
+
+
+async def _remove_from_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Take the loads out of a room, keeping their other rooms; the device areas stay as they are."""
+    room: str = call.data[ATTR_ROOM]
+    force: bool = call.data[ATTR_FORCE]
+    loads = await _resolve_loads(hass, call, LOAD_TYPES)
+    for entry_id in sorted({load.entry_id for load in loads}):
+        mine = [load for load in loads if load.entry_id == entry_id]
+
+        async def operation(
+            configurator: MeshConfigurator, mine: list[Load] = mine
+        ) -> bool:
+            return await configurator.remove_from_rooms(
+                [load.address for load in mine], room, force=force
+            )
 
         await _run(hass, entry_id, operation)
     return None
