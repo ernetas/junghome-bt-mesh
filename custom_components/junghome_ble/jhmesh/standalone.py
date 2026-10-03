@@ -34,6 +34,10 @@ FAILED_COOLDOWN = 60.0  # seconds a proxy that dropped or refused the link is pa
 # a link that delivered nothing for this long is dropped and another proxy looked for (the hub waits as long,
 # `LINK_IDLE_TIMEOUT`, before its keep-alive)
 SILENCE_TIMEOUT = 660.0
+# a JUNG proxy sends its Secure Network Beacon right after the subscription: the filter request waits up to this long
+# for it, so it goes out under the network's current IV index rather than a stale stored one the proxy would drop (the
+# hub waits as long, `CONNECT_BEACON_WAIT`; review-4 R4-10)
+BEACON_WAIT = 1.0
 
 
 async def scan_for_proxies(
@@ -87,7 +91,7 @@ async def connect(
         timeout=timeout,
     )
     await client.connect()
-    await proxy.attach(client)
+    await proxy.attach(client, beacon_wait=BEACON_WAIT)
     return candidate
 
 

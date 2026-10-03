@@ -53,7 +53,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_GATEWAY_SYNC,
     PIN_FROM_MESH,
 )
-from custom_components.junghome_ble.coordinator import issue_id
+from custom_components.junghome_ble.coordinator import JungHomeHub, issue_id
 from custom_components.junghome_ble.cover import closedness_to_level
 from custom_components.junghome_ble.gateway_api import (
     GatewayError,
@@ -300,7 +300,11 @@ async def env(
     # a silent load is the rule here (the refresh after every reload): each unanswered attempt costs milliseconds
     timeout, *rest = ProxyClient.request.__defaults__ or ()
     assert timeout == 3.0
-    with patch.object(ProxyClient.request, "__defaults__", (REPLY_TIMEOUT, *rest)):
+    with (
+        patch.object(ProxyClient.request, "__defaults__", (REPLY_TIMEOUT, *rest)),
+        # ... and marks none of them unreachable, which would refuse every plan to it (review-4 W I5)
+        patch.object(JungHomeHub, "_missed_answer", lambda *_args, **_kwargs: None),
+    ):
         await setup_entry(hass, entry)
         await wait_for_link(hass, entry)
         await settle(hass)
@@ -842,14 +846,19 @@ async def test_set_room_keeps_an_existing_area_and_expands_areas(
 async def test_set_room_creates_the_room_and_places_an_area_less_device(
     hass: HomeAssistant, env: Env
 ) -> None:
+    """With `create` only (review-4 W4-12): without it, an unknown room is refused before anything is sent."""
     registry = dr.async_get(hass)
     switch = device_id(hass, UID_LIGHT_SWITCH)
     registry.async_update_device(switch, area_id=None)
-    await call(
-        hass,
-        "set_room",
-        {"entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH), "room": "Attic"},
-    )
+    target = {"entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH), "room": "Attic"}
+    before = env.path.read_bytes()
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "set_room", target)
+    assert exc.value.translation_key == "service_no_room"
+    assert env.path.read_bytes() == before
+    assert env.config_calls == []
+    assert ar.async_get(hass).async_get_area_by_name("Attic") is None
+    await call(hass, "set_room", {**target, "create": True})
     await settled(hass, env)
     pf = env.reload()
     assert "Attic" in pf.user_groups().values()
@@ -1511,7 +1520,7 @@ async def test_a_stopped_plan_still_reloads_the_entry(
     """CFG-15: a plan that stopped after recording what the mesh accepted raises, but the export changed: the
     entry reloads so HA's device model follows it, as after a finished plan."""
 
-    async def stopped(self: Any, addresses: Any, room: str) -> bool:
+    async def stopped(self: Any, addresses: Any, room: str, **_kwargs: Any) -> bool:
         self.recorded = True
         raise HomeAssistantError("stopped")
 
@@ -1555,7 +1564,7 @@ async def test_a_failure_does_not_reload_for_what_an_earlier_call_recorded(
     that fails before planning anything must not reload the entry on that account."""
     await call(hass, "create_room", {"name": "Attic"})
 
-    async def refused(self: Any, addresses: Any, room: str) -> bool:
+    async def refused(self: Any, addresses: Any, room: str, **_kwargs: Any) -> bool:
         raise HomeAssistantError("refused before planning")
 
     with (
@@ -1577,7 +1586,11 @@ async def test_a_room_assignment_that_is_already_so_does_not_reload(
     hass: HomeAssistant, env: Env
 ) -> None:
     """CFG-14 through the service: `set_room` reloads only when the plan changed the device model."""
-    target = {"entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH), "room": "Attic"}
+    target = {
+        "entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH),
+        "room": "Attic",
+        "create": True,
+    }
     with patch.object(
         hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
     ) as reload:
@@ -2439,7 +2452,11 @@ async def test_store_and_remove_from_scene_write_the_export_once_per_call(
         assert env.reload().cdb.scenes[2] == []
         assert ProjectFile.load(bak).cdb.scenes[2] == [LIGHT_CTL, SOCKET]
         assert len(uploads) == 2
-        await call(hass, "set_room", {"entity_id": [ctl, socket], "room": "Attic"})
+        await call(
+            hass,
+            "set_room",
+            {"entity_id": [ctl, socket], "room": "Attic", "create": True},
+        )
         await settled(hass, env)
         assert "Attic" not in ProjectFile.load(bak).user_groups().values()
         assert len(uploads) == 3
@@ -2559,9 +2576,24 @@ def export_name(pf: ProjectFile, uuid: str, locations: list[int]) -> str:
     )
 
 
+RENAME_TASK = f"{DOMAIN} device rename"
+
+
 async def renamed(hass: HomeAssistant, device: str, name: str | None) -> None:
-    """Name a registry device as a user does, and let the rename it starts finish."""
+    """Name a registry device as a user does, and let the rename it starts finish.
+
+    The rename is a Home Assistant background task, not one of the entry's (W4-10), so `async_block_till_done`
+    does not wait for it: it is awaited by its name (waiting for every background task would wait for the link).
+    """
     dr.async_get(hass).async_update_device(device, name_by_user=name)
+    await hass.async_block_till_done()
+    renames = [
+        t
+        for t in hass._background_tasks
+        if isinstance(t, asyncio.Task) and t.get_name() == RENAME_TASK
+    ]
+    if renames:
+        await asyncio.gather(*renames)
     await hass.async_block_till_done()
 
 
@@ -2693,6 +2725,52 @@ async def test_a_rename_that_fails_otherwise_is_logged(
         )
         is None
     )
+
+
+async def test_a_rename_that_adopted_reloads_outside_the_entrys_tasks(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 W4-10: a rename that took the gateway's export over reloads the entry. As one of the entry's tasks
+    the unload would wait for it — 10 s, as it waits for that very reload — so it is a Home Assistant background
+    task; the reload is through well within the test's call budget."""
+    hub = env.hub
+    mirror = device_id(hass, UID_LIGHT_SWITCH)
+
+    async def adopting(
+        self: mesh_config.MeshConfigurator, _address: int, name: str
+    ) -> str:
+        self.adopted = True
+        return name
+
+    background: list[str] = []
+    entry_tasks: list[str] = []
+    real_background = hass.async_create_background_task
+    real_entry_task = env.entry.async_create_task
+
+    def on_hass(target: Any, name: str, *args: Any, **kwargs: Any) -> Any:
+        background.append(name)
+        return real_background(target, name, *args, **kwargs)
+
+    def on_entry(
+        hass: HomeAssistant,
+        target: Any,
+        name: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        entry_tasks.append(name or "")
+        return real_entry_task(hass, target, name, *args, **kwargs)
+
+    with (
+        patch.object(mesh_config.MeshConfigurator, "rename_device", adopting),
+        patch.object(hass, "async_create_background_task", on_hass),
+        patch.object(env.entry, "async_create_task", on_entry),
+    ):
+        await renamed(hass, mirror, "Mirror")
+    assert RENAME_TASK in background
+    assert RENAME_TASK not in entry_tasks
+    await settled(hass, env)
+    assert env.hub is not hub  # the adopted export reloaded the entry
 
 
 async def test_a_device_removed_during_its_rename_is_left_alone(

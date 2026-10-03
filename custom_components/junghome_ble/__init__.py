@@ -78,6 +78,7 @@ from .mesh_config import (
     gateway_sync,
     held_scenes,
     plan_journal,
+    token_rejected_open,
 )
 from .migration import (
     async_update_gateway_issue,
@@ -240,6 +241,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     # a device the user names goes into the app's project too (device_names.py)
     entry.async_on_unload(async_track_device_names(hass, entry))
     async_update_gateway_issue(hass, entry)
+    # a reload aborts the entry's reauth flows (Home Assistant's `async_reload`), and most actions reload it right
+    # after the change that met the rejected token: ask again while the token repair is open (review-4 H I-2)
+    if token_rejected_open(hass, entry):
+        entry.async_start_reauth(hass)
     # a device Home Assistant provisioned but never recorded (onboard.py, review-4 D2)
     async_update_pending_issue(hass, entry, hub.vault)
     # the vault could not be written while a device was added: the next save that lands clears it (review-4 D15)

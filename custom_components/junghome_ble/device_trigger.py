@@ -4,11 +4,15 @@ The keys are already exposed as `event` entities, but those only show up in the 
 triggers put "Button A clicked" directly in the buttons device's automation UI, which is where users look first
 for a wall switch.
 
-A device trigger can only attach to something on the Home Assistant bus, so the event platform re-emits every
-event as `EVENT_BUTTON_ACTION` and the triggers here are thin wrappers that match it. `type` is the key
-(`a`…`d`, or `e1` / `e2` for a mini actuator's inputs; only the keys the device has), `subtype` the event type the key reports (`event.EVENT_TYPES`). Which
-subtypes a key can actually produce depends on how the app wired it (a gateway-mode key clicks, a key wired to a
-load presses, a key wired to a scene recalls); all are offered, as the mode is not reliably known from the export.
+A device trigger can only attach to something on the Home Assistant bus, so the hub publishes every key event as
+`EVENT_BUTTON_ACTION` (`event.publish_button_event`, whether or not the key's event entity is enabled) and the
+triggers here are thin wrappers that match it. `type` is the key (`a`…`d`, or `e1` / `e2` for a mini actuator's
+inputs; only the keys the device has), `subtype` the event type the key reports (`event.EVENT_TYPES`). Which
+subtypes a key can actually produce depends on how it is wired (`key_subtypes`): a gateway-mode key clicks and
+holds, a key wired to a load or a room presses, dims and holds, a key wired to a scene recalls. Only those are
+offered when the key's mode (0x5003, once read) or its connection in the export tells; all of them otherwise.
+Validation accepts every subtype of a key the device has, so an automation saved before — or across a rewiring —
+stays valid.
 
 A gateway-mode rocker is one element with two halves whose gestures differ only in the event's `side`: the
 `<type>_up` / `<type>_down` subtypes match one half (`SIDE_SUBTYPES`), the plain ones either — which is what
@@ -35,6 +39,7 @@ from homeassistant.const import (
 )
 from homeassistant.helpers import device_registry as dr
 
+from .config_entities import PROPERTY_KEY_MODE, cached_value
 from .const import (
     ATTR_KEY,
     DOMAIN,
@@ -44,6 +49,7 @@ from .const import (
 )
 from .entity import button_gang, buttons_device_id
 from .event import EVENT_TYPES
+from .jhmesh import properties as P
 from .jhmesh.devices import BUTTON_LETTERS, INPUT_NAMES
 
 if TYPE_CHECKING:
@@ -52,6 +58,7 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
     from .coordinator import JungHomeHub
+    from .jhmesh.devices import Button
 
 CONF_SUBTYPE = "subtype"
 ATTR_SIDE = "side"  # the event attribute a gateway-mode rocker's gestures carry (`const.KEY_EVENTS`)
@@ -74,6 +81,27 @@ SIDE_SUBTYPES: dict[str, tuple[str, str]] = {
 }
 TRIGGER_SUBTYPES = (*EVENT_TYPES, *SIDE_SUBTYPES)
 
+# What a key produces, by how it is wired: a gateway-mode key its vendor gestures, per rocker half too; a key wired to
+# a load, a room or another group its On / Off and Level messages, and the holds derived from them (`_dim_hold`); a
+# key wired to a scene its recalls.
+GATEWAY_SUBTYPES = (*SIDED_TYPES, *SIDE_SUBTYPES)
+LOAD_SUBTYPES = ("press_on", "press_off", "dim", "hold_start", "hold_end")
+SCENE_SUBTYPES = ("scene",)
+CONNECTION_SUBTYPES: dict[str, tuple[str, ...]] = {
+    "gateway": GATEWAY_SUBTYPES,
+    "device": LOAD_SUBTYPES,
+    "room": LOAD_SUBTYPES,
+    "group": LOAD_SUBTYPES,
+    "scene": SCENE_SUBTYPES,
+}
+# the key modes (0x5003) whose messages are known; `move` (blinds), `property` and `rtr` keys are left to the export
+KEY_MODE_SUBTYPES: dict[str, tuple[str, ...]] = {
+    "gateway": GATEWAY_SUBTYPES,
+    "light": LOAD_SUBTYPES,
+    "switch": LOAD_SUBTYPES,
+    "scene": SCENE_SUBTYPES,
+}
+
 TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
     {
         vol.Required(CONF_TYPE): vol.In(TRIGGER_TYPES),
@@ -82,8 +110,26 @@ TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
 )
 
 
-def _device_keys(hass: HomeAssistant, device_id: str) -> list[str] | None:
-    """Return the trigger types (key letters) of the buttons device `device_id`, in key order.
+def key_subtypes(hub: JungHomeHub, button: Button) -> tuple[str, ...]:
+    """Return the trigger subtypes `button` can produce, in `TRIGGER_SUBTYPES` order (review-4 H I-3, U4-9).
+
+    The key's mode as the node reported it (0x5003, read once its *Key mode* sensor is enabled) comes first: it is
+    what the key sends now, whatever the export says. Otherwise the connection the export shows (`KeyConnection`).
+    A key that tells neither — no mode read and no connection, or a mode whose messages are not known — offers all.
+    """
+    mode = cached_value(hub, button.address, P.PROPERTIES[PROPERTY_KEY_MODE])
+    wanted = KEY_MODE_SUBTYPES.get(mode) if isinstance(mode, str) else None
+    if wanted is None and button.connection is not None:
+        wanted = CONNECTION_SUBTYPES.get(button.connection.kind)
+    if wanted is None:
+        return TRIGGER_SUBTYPES
+    return tuple(subtype for subtype in TRIGGER_SUBTYPES if subtype in wanted)
+
+
+def _device_buttons(
+    hass: HomeAssistant, device_id: str
+) -> tuple[JungHomeHub, list[Button]] | None:
+    """Return the hub and the keys of the buttons device `device_id`, in key order.
 
     `None` when the registry entry is not a buttons device of a loaded entry: the automation UI then offers no
     triggers, and validation accepts the config as it is rather than break an automation while the mesh export is
@@ -117,27 +163,36 @@ def _device_keys(hass: HomeAssistant, device_id: str) -> list[str] | None:
         key=lambda button: button.location,
     )
     if keys:
-        return [button.key.lower() for button in keys]
+        return hub, keys
     return None
+
+
+def _device_keys(hass: HomeAssistant, device_id: str) -> list[str] | None:
+    """Return the trigger types (key letters) of the buttons device `device_id`, in key order (`_device_buttons`)."""
+    found = _device_buttons(hass, device_id)
+    if found is None:
+        return None
+    return [button.key.lower() for button in found[1]]
 
 
 async def async_get_triggers(
     hass: HomeAssistant, device_id: str
 ) -> list[dict[str, Any]]:
-    """List the triggers a JUNG HOME device offers: every event type of every key of a buttons device."""
-    keys = _device_keys(hass, device_id)
-    if keys is None:
+    """List the triggers a JUNG HOME device offers: every event type each key of a buttons device can produce."""
+    found = _device_buttons(hass, device_id)
+    if found is None:
         return []
+    hub, buttons = found
     return [
         {
             CONF_PLATFORM: "device",
             CONF_DEVICE_ID: device_id,
             CONF_DOMAIN: DOMAIN,
-            CONF_TYPE: key,
+            CONF_TYPE: button.key.lower(),
             CONF_SUBTYPE: subtype,
         }
-        for key in keys
-        for subtype in TRIGGER_SUBTYPES
+        for button in buttons
+        for subtype in key_subtypes(hub, button)
     ]
 
 

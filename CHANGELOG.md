@@ -15,6 +15,14 @@
   starts or that user's long-lived token. Automations the system triggers are not affected. `get_schedules`,
   `audit_network`, `find_new_devices` and the dimming actions stay open to every user; `export_network` and adding
   or removing devices were administrators only already.
+- **`hold_end` can come without a release** (decision M11, review-4 R4-7): a hold now ends at the latest 30 s after
+  it started, when the link is lost and when the entry stops (a reload included), with a `reason` attribute
+  (`timeout`, `link_lost`, `stopped`) on the event entity and the `junghome_ble_button_action` event. An automation
+  that must react to a real release only checks that `reason` is absent. The device-trigger picker lists only what
+  a key's wiring produces; automations saved with another subtype keep working.
+- **`set_room` no longer creates a room it does not know** (review-4 W4-12): a mistyped room name used to create a
+  new room and move the devices into it. An unknown name is now refused (*There is no room named …*); add
+  `create: true` to create the room, as automations that relied on it need to.
 
 ### Fixed — mesh safety
 
@@ -91,6 +99,20 @@
   read when the vault is missing or does not read back, and an unreadable vault is removed only once its copy aside
   was written — before, a failed copy lost it. The library's `provision()` takes an optional `on_device_key` hook for
   this. Unverified on air.
+- Another client sending from Home Assistant's address is told apart from a stale counter (review-4 S I2): a PDU from
+  that address with a number Home Assistant never sent (above its counter, or under an IV index it never transmitted
+  under) used to be dropped as its own echo, and the clash showed at best as *JUNG HOME devices ignore Home
+  Assistant*, whose skip ahead does not help while the other client keeps sending. It now raises the repair issue
+  *Another client uses Home Assistant's JUNG HOME address* and Home Assistant sends nothing to the mesh until it is
+  fixed, so no sequence number is used by both (a reused nonce); the sighting is saved with the counter, so a
+  restart keeps refusing. The fix continues the counter past the highest number seen (plus 512); seen again after
+  that, the issue asks for another unicast address. *Devices ignore Home Assistant* is not raised while it is open.
+  Our own PDUs relayed back stay ignored. The store's minor version is 5 (the optional `address_shared` of an
+  address's record): 1.0.0 still reads it. Diagnostics show `address_shared`. Unverified on air.
+- Proxy configuration PDUs (the proxy's Filter Status) get the checks every other PDU gets (review-4 P4-7): they must
+  be control PDUs to the unassigned address, and one at or below the last sequence number taken on the link is
+  dropped as a replay. A recorded Filter Status could be played back to stand in for the acknowledgement of a filter
+  the proxy never took. Drops are counted in the diagnostics (`proxy_config_dropped`).
 
 ### Fixed — link
 
@@ -108,6 +130,15 @@
   the next link like the loads' (review-4 R4-6, H4-5); they used to go unavailable the moment the link went.
 - A load's command whose link was lost (or replaced) while it waited for the answer is sent once more on the next link
   instead of failing (review-4 R I-11). Unverified on air.
+- The time and the home location go out first on every link, right after the proxy filter (review-4 R I-5): they were
+  sent only once the state refresh was through, so a link lost before that never set the nodes' clocks. The scene
+  actions, fault registers and current scenes are not read again by a link that comes within 15 minutes of their last
+  complete read after a link that lasted a minute; the state refresh and the energy poll stay on every link.
+  Unverified on air.
+- A node's software version (and the rest of what it tells about itself) is asked once per start, and again only after
+  Home Assistant saw the node restart, instead of on every link (review-4 R4-5). A read is queued once: several links
+  in quick succession used to leave one copy per link in the queue, each read in turn, and a read of a link that is
+  gone is dropped for the one the next link queues. Unverified on air.
 
 ### Fixed — gateway sync and rewiring
 
@@ -130,6 +161,56 @@
   entries file, and the sensor listened to every entry update for it. The first start takes the values over; the
   entry keeps its copy as of the upgrade, so after a downgrade to 1.0.0 the first change may ask to fetch the export
   again.
+- The *Sensor values for IoT systems* switch can change what it shows (review-4 D19, W4-6). It shows the node's
+  answer, but the change was planned against the export: when the app had switched the publication on and the
+  export still said off, turning it off sent nothing. A node whose answer differs from the wanted state now gets the
+  *Publication Set* even where the export agrees, and the export records it. Unverified on air.
+- `remove_device` tells a reset device from an absent one (review-4 D20, W4-7). A device that took the reset but
+  whose confirmation was lost was reported as *did not confirm its reset; nothing was changed*. Without a
+  confirmation Home Assistant now looks for the device advertising as a new device for 5 s and, seen, records the
+  removal; not seen, the error says it *may have been reset* (use `force` once it is gone). The device Home Assistant
+  is connected through is refused without `force`. Unverified on air.
+- A plan to a device Home Assistant counts as unreachable (its entities unavailable after an unanswered request) is
+  refused before anything is sent, naming the devices (review-4 W I5): it used to stop there only after all the
+  attempts of that device's first message, with the messages before it applied. Battery devices are never counted
+  so. Unverified on air.
+- `set_threshold` / `delete_threshold` failures say what was already written (review-4 W4-13): thresholds and
+  whole sockets written earlier in the same call were reported as *nothing before it was applied*. A lost link while
+  writing a threshold names the socket and the threshold. `set_threshold` checks and reads every socket before it
+  writes the first one.
+
+### Fixed — Home Assistant
+
+- Renaming a device whose rename took over the app's newer export from the gateway no longer holds up the reload
+  that follows for 10 s (review-4 W4-10): the rename runs as a Home Assistant background task instead of one of the
+  entry's, which the entry's unload waited for.
+- Device triggers and logbook lines of a key keep working when its event entity is disabled (review-4 D24, H4-2):
+  the `junghome_ble_button_action` bus event was fired by the entity, so disabling `event.<key>` silently stopped
+  every device-trigger automation of that key. The hub publishes it now, once per event, without `entity_id` while the
+  entity is disabled (the logbook then names the device and key). A key's scene recall publishes
+  `junghome_ble_scene_recalled` with the key as its source either way.
+- Every hold ends (review-4 R4-7): only a *Generic Delta Set* hold had an end timer; a *Generic Move Set* hold whose
+  Move 0 was lost, and a gateway-mode key's hold whose release was lost, never sent `hold_end`, so a dim-while-held
+  automation never stopped. Each hold now ends at the latest 30 s after it started, and on link loss and on stop,
+  with `reason` (decision M11); a release that still comes after that ends nothing a second time. A gateway-mode
+  `hold_start` while a hold runs ends that hold first, as a dimming hold did already. The holds derived from a key
+  wired to a dimmer stay unverified on air.
+- The device-trigger picker offers what each key can produce (review-4 H I-3, U4-9) instead of all 16 subtypes on
+  every key: a key linked to the gateway clicks and holds (and their rocker halves), a key wired to a load, a room or
+  another group presses, dims and holds, a key wired to a scene recalls. The key mode the device reported (once its
+  *Key mode* sensor is enabled) decides first, then the export's connection; a key neither tells about offers all.
+
+### Added
+
+- Re-authentication with the JUNG HOME Gateway (review-4 H I-2, U4-5; the quality scale's `reauthentication-flow`).
+  When the gateway rejects Home Assistant's access token — on an export fetch, an upload or a status poll — Home
+  Assistant now asks for access again with its standard re-authentication card, besides the repair *JUNG HOME Gateway
+  no longer accepts Home Assistant*: enter the gateway's network-key password, or leave it empty and approve the
+  access request in the app. Only the token is renewed, pinned to the gateway's certificate as before: the export is
+  not fetched again, the entry is not reloaded, and the devices keep working throughout. The repair clears on
+  success; the action *Sync gateway* then hands over the changes made meanwhile. *Reconfigure → Fetch it again from
+  the gateway* still works too. The question is asked once per outage and again after a reload while the repair is
+  open; a repair raised before a restart no longer keeps the gateway status polls silent after it. Unverified on air.
 
 ### CLI tools and library
 
@@ -137,6 +218,15 @@
   mesh holds a counter for (review-4 S4-11), as `--source` and as `provision --unicast`: only the integration's
   default `0D00` was refused, not the address it is configured with. `LocalState.persist_now` writes at once; a
   key refresh is persisted through it.
+- `ProxyClient` takes an `on_foreign_own_source(iv_index, seq)` callback: a PDU from the client's own address with a
+  number it never handed out (`foreign_own_source` holds the highest on the link) is reported at most once a minute
+  per link and logged as a WARNING — the CLI says so when another client uses its `--source`. Proxy configuration
+  PDUs are header- and replay-checked (`rx_proxy_config_dropped`).
+- The CLI's link waits up to a second for the proxy's beacon before its filter request, as Home Assistant's does
+  (review-4 R4-10): after an IV Update the request went out under the stored IV index and the proxy dropped it.
+- `ProxyClient` bounds the subscription when it attaches and the disconnect when it detaches by `GATT_TIMEOUT`
+  (review-4 R4-11): a transport call that never returned held the connection loop, and its connection slot, for
+  good. A disconnect that times out is logged as a warning and left behind. Unverified on air.
 
 ## 1.0.0
 

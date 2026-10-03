@@ -17,7 +17,7 @@ the energy puck's output (`MeasureLampDevice`) the consumption page but no thres
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -27,7 +27,12 @@ from .const import DOMAIN
 from .entity import socket_device_info
 from .jhmesh import properties as P
 from .jhmesh.export import cdb_element_groups
-from .mesh_config import threshold_client, threshold_devices
+from .mesh_config import (
+    APPLIED_NOTHING,
+    applied_text,
+    threshold_client,
+    threshold_devices,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -115,6 +120,59 @@ def switched_devices(hub: JungHomeHub, socket: Socket) -> list[int]:
     return [e.address for e in threshold_devices(hub.cdb, client, group)]
 
 
+@dataclass
+class ThresholdProgress:
+    """What a threshold action wrote so far, for the error of the write or wiring plan that stops it (W4-13).
+
+    A call writes socket after socket, each its threshold(s) and then its wiring: the error of a later one used
+    to say that nothing before it was applied, though thresholds and whole sockets were. `written` are the
+    thresholds of the socket under way, `finished` the sockets done.
+    """
+
+    written: list[str] = field(default_factory=list)
+    finished: list[int] = field(default_factory=list)
+
+    def wrote(self, address: int, which: Which) -> None:
+        """Note that the socket at `address` took its `which` threshold."""
+        self.written.append(
+            f"the {which.replace('_', '-')} threshold of socket {address:04X}"
+        )
+
+    def finish(self, address: int) -> None:
+        """Note that the socket at `address` holds everything the call asked of it."""
+        self.finished.append(address)
+        self.written.clear()
+
+    def done(self) -> str:
+        """Return the sentence naming what was written; empty when nothing was."""
+        parts = []
+        if self.finished:
+            sockets = ", ".join(f"{a:04X}" for a in self.finished)
+            plural = len(self.finished) > 1
+            parts.append(
+                f"socket{'s' if plural else ''} {sockets} {'were' if plural else 'was'} set as asked"
+            )
+        if self.written:
+            plural = len(self.written) > 1
+            parts.append(
+                f"{' and '.join(self.written)} {'were' if plural else 'was'} written"
+            )
+        return f"Before it, {' and '.join(parts)}." if parts else ""
+
+    def text(self) -> str:
+        """Return the `applied` of a threshold write that failed."""
+        done = self.done()
+        if not done:
+            return APPLIED_NOTHING
+        return f"{done} Run the action again with the same target to finish."
+
+    def applied(self, accepted: int, total: int) -> str:
+        """Return the `applied` of a socket's wiring plan that stopped after `accepted` of `total` messages."""
+        if accepted == 0:
+            return self.text()
+        return f"{self.done()} {applied_text(accepted, total)}".lstrip()
+
+
 def _error(key: str, **placeholders: str) -> HomeAssistantError:
     return HomeAssistantError(
         translation_domain=DOMAIN,
@@ -169,14 +227,25 @@ async def write_threshold(
     socket: Socket,
     which: Which,
     value: P.Threshold,
+    progress: ThresholdProgress | None = None,
 ) -> None:
-    """Write one threshold and check the socket holds it afterwards (its Status, or the read-back)."""
+    """Write one threshold and check the socket holds it afterwards (its Status, or the read-back).
+
+    A failure says what the call wrote before it (`progress`, which records this write once it took).
+    """
+    progress = progress if progress is not None else ThresholdProgress()
     reader = property_reader(hass, hub)
     spec = P.PROPERTIES[THRESHOLD_PROPERTIES[which]]
+    address = f"{socket.address:04X}"
     try:
         await reader.write(socket.address, spec, value)
     except OSError as err:  # a lost link (ConnectionError)
-        raise _error("send_failed") from err
+        raise _error(
+            "threshold_send_failed",
+            address=address,
+            which=which,
+            applied=progress.text(),
+        ) from err
     raw = reader.cached(socket.address, spec)
     try:
         held = None if raw is None else spec.codec.decode(raw)
@@ -184,5 +253,9 @@ async def write_threshold(
         held = None
     if held != value:
         raise _error(
-            "threshold_not_applied", address=f"{socket.address:04X}", which=which
+            "threshold_not_applied",
+            address=address,
+            which=which,
+            applied=progress.text(),
         )
+    progress.wrote(socket.address, which)

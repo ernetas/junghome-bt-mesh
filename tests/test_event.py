@@ -23,6 +23,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble.const import (
+    DIM_HOLD_MAX,
     DIM_HOLD_QUIET,
     DOMAIN,
     EVENT_BUTTON_ACTION,
@@ -39,6 +40,7 @@ from custom_components.junghome_ble.event import (
     EVENT_TYPES,
     JungHomeButtonEvent,
     fire_scene_recalled,
+    publish_button_event,
     scene_name,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -510,25 +512,146 @@ async def test_holds_are_derived_from_a_keys_move_and_delta_sets(
     assert got == [("hold_start", up), ("hold_end", up), ("hold_start", down)]
 
 
-async def test_a_running_hold_timer_is_cancelled_with_the_hub(
+async def test_holds_end_with_the_hub(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
+    """Stopping the entry ends every running hold with `reason: stopped` (decision M11, review-4 R4-7), and their
+    timers with it: nothing fires afterwards."""
     hub = init_integration.runtime_data
-    got: list[str] = []
-    hub.add_event_listener(BUTTON_DIMMER, lambda event, _attrs: got.append(event))
+    got: list[tuple[int, str, dict[str, Any]]] = []
+    for addr in (BUTTON_DIMMER, ROCKER_A, BUTTON_WC):
+        hub.add_event_listener(
+            addr,
+            lambda event, attrs, addr=addr: got.append((addr, event, attrs)),
+        )
     fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(500, 1))
-    fake_link.inject(
-        ROCKER_A, GROUP_DIMMER, _move(0x1000, 1)
-    )  # a Move hold has no timer
+    fake_link.inject(ROCKER_A, GROUP_DIMMER, _move(0x1000, 1))
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
     await hass.async_block_till_done()
-    assert got == ["dim", "hold_start"]
+    got.clear()
     assert await hass.config_entries.async_unload(init_integration.entry_id)
-    _later(hass, freezer, DIM_HOLD_QUIET * 4)
+    up = {"target": "C070", "direction": "up", "reason": "stopped"}
+    assert got == [
+        (BUTTON_DIMMER, "hold_end", up),
+        (ROCKER_A, "hold_end", up),
+        (BUTTON_WC, "hold_end", {"reason": "stopped"}),
+    ]
+    _later(hass, freezer, DIM_HOLD_MAX * 2)
     await hass.async_block_till_done()
-    assert got == ["dim", "hold_start"]
+    assert len(got) == 3
+    assert hub._dim_holds == {}
+    assert hub._key_holds == {}
+
+
+async def test_every_hold_ends_after_the_maximum(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """R4-7: a Move hold whose Move 0 is lost, and a gateway-mode hold whose release is lost, end DIM_HOLD_MAX
+    after they started, with `reason: timeout`; the stop that still comes then ends nothing a second time."""
+    hub = init_integration.runtime_data
+    got: list[tuple[str, dict[str, Any]]] = []
+    for addr in (BUTTON_DIMMER, ROCKER_A):
+        hub.add_event_listener(
+            addr,
+            lambda event, attrs: got.append((event, attrs)) if event != "dim" else None,
+        )
+    fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _move(-0x1000, 1))
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(1, ROCKER_UP_HOLD))
+    await hass.async_block_till_done()
+    _later(hass, freezer, DIM_HOLD_MAX - 1)
+    await hass.async_block_till_done()
+    assert [event for event, _ in got] == ["hold_start", "hold_start"]
+    _later(hass, freezer, 1)
+    await hass.async_block_till_done()
+    assert sorted(got[2:], key=str) == [
+        ("hold_end", {"side": "up", "reason": "timeout"}),
+        ("hold_end", {"target": "C070", "direction": "down", "reason": "timeout"}),
+    ]
+    state = hass.states.get(entity_id(hass, "event", UID_BUTTON_DIMMER))
+    assert state.attributes["reason"] == "timeout"
+    fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _move(0, 2))
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(2, BUTTON_HOLD_END))
+    await hass.async_block_till_done()
+    assert len(got) == 4
+    # the release cleared the ended hold: the next release without a hold reports as it always did
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(3, BUTTON_HOLD_END))
+    await hass.async_block_till_done()
+    assert got[4:] == [("hold_end", {"counter": 3})]
+
+    # a Delta hold has its quiet end, and the maximum too: a key that never goes quiet (its quiet end pushed past
+    # the maximum here) ends at DIM_HOLD_MAX, its quiet timer with it
+    got.clear()
+    with patch(
+        "custom_components.junghome_ble.coordinator.DIM_HOLD_QUIET", DIM_HOLD_MAX * 2
+    ):
+        fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(500, 4))
+        await hass.async_block_till_done()
+    hold = hub._dim_holds[BUTTON_DIMMER]
+    assert hold.quiet is not None
+    _later(hass, freezer, DIM_HOLD_MAX)
+    await hass.async_block_till_done()
+    assert got == [
+        ("hold_start", {"target": "C070", "direction": "up"}),
+        ("hold_end", {"target": "C070", "direction": "up", "reason": "timeout"}),
+    ]
+    assert (hold.quiet, hold.limit) == (None, None)
+
+
+async def test_a_new_hold_ends_a_gateway_hold_whose_release_was_lost(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """A gateway-mode hold_start while a hold runs ends that hold first (a plain hold_end with its side), as a
+    dimming hold does; a hold ended on its maximum is not ended again."""
+    hub = init_integration.runtime_data
+    got: list[tuple[str, dict[str, Any]]] = []
+    hub.add_event_listener(ROCKER_A, lambda event, attrs: got.append((event, attrs)))
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(1, ROCKER_DOWN_HOLD))
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(2, ROCKER_UP_HOLD))
+    await hass.async_block_till_done()
+    assert got == [
+        ("hold_start", {"counter": 1, "side": "down"}),
+        ("hold_end", {"side": "down"}),
+        ("hold_start", {"counter": 2, "side": "up"}),
+    ]
+    hub._key_holds[ROCKER_A].ended = True  # as if DIM_HOLD_MAX had ended it
+    fake_link.inject(ROCKER_A, 0xC005, vendor_button_event(3, BUTTON_HOLD_START))
+    await hass.async_block_till_done()
+    assert got[3:] == [("hold_start", {"counter": 3})]
+
+
+async def test_a_link_loss_ends_every_hold(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """Decision M11: a lost link ends the running holds with `reason: link_lost` — their stop cannot be heard —
+    and the release that comes on the next link ends nothing a second time."""
+    hub = init_integration.runtime_data
+    actions = async_capture_events(hass, EVENT_BUTTON_ACTION)
+    fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _move(0x1000, 1))
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
+    await hass.async_block_till_done()
+    actions.clear()
+    fake_link.drop_link()
+    await hass.async_block_till_done()
+    assert [(e.data["key"], e.data["type"], e.data["reason"]) for e in actions] == [
+        ("A", "hold_end", "link_lost"),
+        ("A", "hold_end", "link_lost"),
+    ]
+    assert [e.data["device_id"] for e in actions] == [
+        _device_of(hass, entity_id(hass, "event", UID_BUTTON_DIMMER)),
+        _device_of(hass, entity_id(hass, "event", UID_BUTTON_WC)),
+    ]
+    assert hub._dim_holds == {}
+    assert hub._key_holds[BUTTON_WC].ended
+    hub._button_event(BUTTON_WC, 2, BUTTON_HOLD_END)
+    await hass.async_block_till_done()
+    assert len(actions) == 2
+    assert BUTTON_WC not in hub._key_holds
 
 
 async def test_availability_follows_the_link(
@@ -678,10 +801,11 @@ async def test_scene_recall_of_a_scene_the_export_does_not_know(
     }
 
 
-async def test_no_bus_event_before_the_entity_has_a_device(
+async def test_the_entity_does_not_publish_itself(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """An entity not (yet) in the device registry fires on itself only: a trigger needs the device id."""
+    """The entity only shows the event: the hub publishes it on the bus (`publish_button_event`), so a key event
+    reaches the bus once, not once per listener."""
     hub = init_integration.runtime_data
     actions = async_capture_events(hass, EVENT_BUTTON_ACTION)
     entity = JungHomeButtonEvent(hub, hub.devices.buttons[0])
@@ -693,3 +817,91 @@ async def test_no_bus_event_before_the_entity_has_a_device(
     write.assert_called_once()
     assert entity.state is not None  # the event reached the entity ...
     assert actions == []  # ... but not the bus
+
+
+async def test_a_key_event_is_published_once(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """H4-2: with the key's event entity enabled, a key event is one bus event, after the entity took it."""
+    eid = entity_id(hass, "event", UID_BUTTON_WC)
+    seen: list[str | None] = []
+
+    def _state_when_published(_event: Any) -> None:
+        state = hass.states.get(eid)
+        seen.append(state.attributes.get("counter") if state else None)
+
+    hass.bus.async_listen(EVENT_BUTTON_ACTION, _state_when_published)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(7, BUTTON_HOLD_START))
+    await hass.async_block_till_done()
+    assert seen == [7]
+
+
+async def test_a_disabled_entity_leaves_the_bus_event_in_place(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """H4-2: a key whose event entity is disabled still publishes its events, without `entity_id`; its scene
+    recall still publishes the scene event, with the key as its source and device."""
+    registry = er.async_get(hass)
+    for uid in (UID_BUTTON_WC, UID_ROCKER_B):
+        registry.async_get_or_create(
+            "event",
+            DOMAIN,
+            uid,
+            disabled_by=er.RegistryEntryDisabler.USER,
+        )
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    actions = async_capture_events(hass, EVENT_BUTTON_ACTION)
+    scenes = async_capture_events(hass, EVENT_SCENE_RECALLED)
+    assert hass.states.get(entity_id(hass, "event", UID_BUTTON_WC)) is None
+
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
+    fake_link.inject(ROCKER_B, 0xFFFF, M.scene_recall(2, ack=False, tid=3))
+    await hass.async_block_till_done()
+    wc_device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{UID_BUTTON_WC}-buttons"), mock_config_entry.entry_id
+    )
+    rocker_device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{UID_ROCKER_A}-buttons"), mock_config_entry.entry_id
+    )
+    assert wc_device is not None
+    assert rocker_device is not None
+    assert [e.data for e in actions] == [
+        {"device_id": wc_device.id, "key": "A", "type": "hold_start", "counter": 1},
+        {"device_id": rocker_device.id, "key": "B", "type": "scene", "scene": 2},
+    ]
+    assert [(e.data["source"], e.data["device_id"]) for e in scenes] == [
+        ("0235", rocker_device.id)
+    ]
+
+
+async def test_no_bus_event_without_the_keys_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """A key whose buttons device is not in the device registry publishes no button event (a trigger needs the
+    device id); its scene recall still publishes the scene event, without a device. An element that is no key, and
+    an event type the entities do not declare, publish nothing."""
+    hub = init_integration.runtime_data
+    actions = async_capture_events(hass, EVENT_BUTTON_ACTION)
+    scenes = async_capture_events(hass, EVENT_SCENE_RECALLED)
+    devices = dr.async_get(hass)
+    device = devices.async_get_device_by_identifier(
+        (DOMAIN, f"{UID_ROCKER_A}-buttons"), init_integration.entry_id
+    )
+    assert device is not None
+    devices.async_remove_device(device.id)
+    await hass.async_block_till_done()
+    publish_button_event(hass, hub, ROCKER_A, "click", {"counter": 1})
+    publish_button_event(hass, hub, ROCKER_B, "scene", {"scene": 2})
+    publish_button_event(hass, hub, BUTTON_WC, "code_07", {"counter": 1})
+    publish_button_event(hass, hub, 0x0300, "click", {"counter": 1})  # a load
+    await hass.async_block_till_done()
+    assert actions == []
+    assert [(e.data["source"], "device_id" in e.data) for e in scenes] == [
+        ("0235", False)
+    ]

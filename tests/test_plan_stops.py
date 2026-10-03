@@ -47,6 +47,9 @@ from .test_mesh_config import (
     make_bench,
 )
 from .test_mesh_config import (
+    adverts as adverts,  # noqa: PLC0414  # the autouse fixture: no Bluetooth on the bench
+)
+from .test_mesh_config import (
     fast as fast,  # noqa: PLC0414  # the fixture, re-exported for this module
 )
 
@@ -68,7 +71,7 @@ OPERATIONS: dict[str, Operation] = {
     "clear_key": lambda c: c.clear_key(DIMMER_KEY),
     "set_room": lambda c: c.set_rooms([DALI_LOAD, SOCKET_NODE], "WC"),
     "set_room into a new room": lambda c: c.set_rooms(
-        [SWITCH_LOAD, DIMMER_LOAD], "Garage"
+        [SWITCH_LOAD, DIMMER_LOAD], "Garage", create=True
     ),
     "delete_room": lambda c: c.delete_room("WC"),
     "set_threshold_devices": lambda c: c.set_threshold_devices(

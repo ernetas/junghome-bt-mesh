@@ -44,6 +44,7 @@ from homeassistant.util.file import WriteError
 from homeassistant.util.hass_dict import HassKey
 
 from .const import (
+    ATTR_REASON,
     AUDIT_RETRIES,
     AUDIT_TIMEOUT,
     BUTTON_REPEAT_WINDOW,
@@ -56,8 +57,10 @@ from .const import (
     CONNECT_BACKOFF_MAX,
     CONNECT_BACKOFF_MIN,
     CONNECT_BEACON_WAIT,
+    CONNECT_STEP_FRESH,
     DEFAULT_CLICK_DELAY,
     DEFAULT_HEARTBEATS,
+    DIM_HOLD_MAX,
     DIM_HOLD_QUIET,
     DOMAIN,
     DOUBLE_CLICK_WINDOW,
@@ -72,8 +75,13 @@ from .const import (
     HEARTBEAT_PERIOD_LOG,
     HEARTBEAT_RECONFIGURE_INTERVAL,
     HEARTBEAT_REPROBE_INTERVAL,
+    HOLD_END_LINK_LOST,
+    HOLD_END_STOPPED,
+    HOLD_END_TIMEOUT,
     HUB_DATA_KEYS,
     IDENTIFY_SECONDS,
+    ISSUE_ADDRESS_SHARED,
+    ISSUE_ADDRESS_SHARED_AGAIN,
     ISSUE_BLUETOOTH_UNAVAILABLE,
     ISSUE_DUPLICATE_MESH,
     ISSUE_EXPORT_STALE,
@@ -212,10 +220,11 @@ STORAGE_VERSION = 1
 # The sequence-number store's minor version: 2 adds an address record's optional `seq_guard` (`LocalState.seq_guard`,
 # written by the `seq_store_lost` repair), 3 its optional `in_backup` (the mark of a Home Assistant backup being
 # taken, `backup.py`), 4 the mesh-level part next to `addresses`, `{"mesh": {"key_refresh": …}}` (the key refresh
-# followed, `HAState`: the address's own record keeps a copy, for an older reader). A minor bump: Home Assistant
+# followed, `HAState`: the address's own record keeps a copy, for an older reader), 5 an address record's optional
+# `address_shared` (`[IV index, seq]` another client sent from the address, `HAState.address_shared`). A minor bump: Home Assistant
 # loads a store of a higher minor version with the same major one as it is when the reader has no migration for it,
 # so an older integration reads these records (and ignores the fields) rather than failing to start.
-SEQ_STORAGE_MINOR_VERSION = 4
+SEQ_STORAGE_MINOR_VERSION = 5
 # Sequence-number persistence (`HAState`): the margin added to a counter found in use, and how many numbers may
 # pass between two forced store writes — see the class docstring for the arithmetic.
 SEQ_RESTART_MARGIN = 512
@@ -540,9 +549,10 @@ class SeqStore(Store[dict[str, Any]]):
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: Any
     ) -> Any:
-        """1.1, 1.2 or 1.3 → 1.4: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark).
+        """1.1 … 1.4 → 1.5: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark).
 
-        No `mesh` part: the key refresh is read from the address's own record (`_stored_key_refresh`).
+        No `mesh` part: the key refresh is read from the address's own record (`_stored_key_refresh`); no
+        `address_shared`: no other client seen.
         """
         if old_major_version != STORAGE_VERSION:
             raise NotImplementedError
@@ -1184,6 +1194,36 @@ def _evidence_of_use(
     return None
 
 
+class AddressShared(SequenceStalled):
+    """Another client sends from our address: no number is handed out until the `address_shared` repair skips past it.
+
+    A `SequenceStalled` so whatever treats a refusal as "cannot send now" rather than as a lost link or real
+    exhaustion does here too (the link stays, receive-only; a keep-alive refused is no verdict); not retried by
+    `JungHomeHub._while_seq_stalls`, which only waits for a store to catch up — this one waits for the user.
+    """
+
+
+def _stored_address_shared(record: Any) -> tuple[int, int] | None:
+    """Return the (IV index, seq) another client sent from the address, as its record holds it; None without one.
+
+    A value that is not one (a store edited by hand) is dropped with a WARNING rather than failing the start: the
+    next PDU of the other client raises the issue again.
+    """
+    raw = record.get("address_shared") if isinstance(record, dict) else None
+    if raw is None:
+        return None
+    try:
+        iv_index, seq = (int(value) for value in raw)
+        _check_range("IV index", iv_index, 0, IV_INDEX_MAX)
+        _check_range("sequence number", seq, 0, SEQ_MAX)
+    except (TypeError, ValueError):
+        _LOGGER.warning(
+            "Ignoring an unusable record of another client on our address: %r", raw
+        )
+        return None
+    return iv_index, seq
+
+
 class HAState(LocalState):
     """Sequence-number store backed by HA's storage helper: one store per mesh, one counter per address ever used.
 
@@ -1197,6 +1237,10 @@ class HAState(LocalState):
     refresh followed (review-4 S4-9) — a new address after one keeps its key, and a copy in our own record keeps
     it for an older reader. An address the store does not know starts where `JungHomeHub.async_create` decides
     (`_evidence_of_use`): 0, or SEQ_SKIP_AHEAD when it may have sent before.
+
+    Another client seen sending from the address (`address_shared`, review-4 S I2) is stored with its record, so a
+    restart does not resume sending into that client's numbers: every send is refused (`AddressShared`) until the
+    `address_shared` repair skips past them (`skip_past_shared`).
 
     With a `floor` (the mesh's `.floor` file) the floor entry of our address keeps up with the counter (review-4
     S4-8): a new one whenever the transmit index moved past the entry's and every SEQ_FLOOR_EVERY numbers, and
@@ -1268,6 +1312,9 @@ class HAState(LocalState):
         self._mesh = _mesh_of(data)
         src = f"{default_src:04X}"
         record = self._addresses.get(src)
+        # (IV index, seq), the highest another client was seen sending from our address with; None: none seen (or
+        # skipped past). Set before `super().__init__`, whose first `persist()` writes it back
+        self.address_shared = _stored_address_shared(record)
         self._record = (
             None
             if record is None
@@ -1444,6 +1491,10 @@ class HAState(LocalState):
             raise SequenceExhausted(
                 "a newer hub of this mesh owns the sequence numbers now"
             )
+        if self.address_shared is not None:
+            raise AddressShared(
+                f"another client sends from address {self.src:04X}: nothing is sent until the repair skips past it"
+            )
         if self._held_back(count):
             now = time.monotonic()
             if self._stalled_since is None:
@@ -1577,6 +1628,42 @@ class HAState(LocalState):
         self.persist()
         return self.seq
 
+    def note_address_shared(self, iv_index: int, seq: int) -> bool:
+        """Record that another client sent (`iv_index`, `seq`) from our address; True when it is the first such record.
+
+        Saved at once with the counter: from here on `reserve_seq` refuses (`AddressShared`), across a restart too.
+        """
+        seen = self.address_shared
+        if seen is None or (iv_index, seq) > seen:
+            self.address_shared = (iv_index, seq)
+            self._saved = None  # force the immediate-save branch
+            self.persist()
+        return seen is None
+
+    def skip_past_shared(self) -> int | None:
+        """Continue past the other client's numbers (the `address_shared` repair); return the new counter, None if none.
+
+        The counter goes SEQ_RESTART_MARGIN past the highest number seen (never past SEQ_MAX, which is never sent):
+        the other client may have sent a few more since, and the nodes' replay lists know them. Seen under the next
+        IV index (the mesh is in an IV Update, the other client already transmits under the new index), `seq_guard`
+        keeps the counter from restarting at 0 there. Saved at once; sends wait for that save (`reserve_seq`).
+        """
+        seen = self.address_shared
+        if seen is None:
+            return None
+        iv_index, seq = seen
+        self.seq = max(self.seq, min(seq + 1 + SEQ_RESTART_MARGIN, SEQ_MAX))
+        if iv_index > self.tx_iv_index:
+            if self.seq_guard is None:
+                self.seq_guard = iv_index
+            elif self.seq_guard != SEQ_GUARD_FIRST_BEACON:
+                self.seq_guard = max(self.seq_guard, iv_index)
+            # else: the first beacon raises it past the index it states, this one at least
+        self.address_shared = None
+        self._saved = None  # force the immediate-save branch
+        self.persist()
+        return self.seq
+
     async def async_close(self) -> None:
         """Write the counter now, marked cleanly closed: the next load of this address needs no restart margin.
 
@@ -1600,6 +1687,8 @@ class HAState(LocalState):
         """
         record = {key: value for key, value in self.to_stored().items() if key != "src"}
         record["clean"] = False if force_dirty else self._closed
+        if self.address_shared is not None:
+            record["address_shared"] = list(self.address_shared)
         addresses = {**self._addresses, f"{self.src:04X}": record}
         if (token := self.backup_token) is not None:
             addresses = {
@@ -1788,10 +1877,11 @@ def hub_data(data: Mapping[str, Any]) -> dict[str, Any]:
 
 @dataclass
 class DimHold:
-    """A key's dimming hold in progress (`JungHomeHub._dim_hold`): how it started and its end timer, if it has one.
+    """A key's dimming hold in progress (`JungHomeHub._dim_hold`): how it started and its end timers.
 
     `kind` is the message that started it (`move` / `delta`), `tid` its transaction, `direction` `up` / `down`,
-    `target` the address the key dims (hex); `quiet` cancels the end of a Delta transaction's hold.
+    `target` the address the key dims (hex); `quiet` cancels the end of a Delta transaction's hold, `limit` its end
+    at DIM_HOLD_MAX.
     """
 
     kind: str
@@ -1799,12 +1889,39 @@ class DimHold:
     direction: str
     target: str
     quiet: Callable[[], None] | None = None
+    limit: Callable[[], None] | None = None
 
     def cancel_quiet(self) -> None:
-        """Stop the end timer, if one runs."""
+        """Stop the quiet timer, if one runs."""
         if self.quiet is not None:
             self.quiet()
             self.quiet = None
+
+    def cancel_timers(self) -> None:
+        """Stop both end timers."""
+        self.cancel_quiet()
+        if self.limit is not None:
+            self.limit()
+            self.limit = None
+
+
+@dataclass
+class KeyHold:
+    """A gateway-mode key's hold (`JungHomeHub._button_event`): the side it started on and its end at DIM_HOLD_MAX.
+
+    `ended`: the hold was ended without its release (DIM_HOLD_MAX, the link) and stays here only so that release,
+    when it still comes, ends nothing a second time.
+    """
+
+    side: str | None
+    limit: Callable[[], None] | None = None
+    ended: bool = False
+
+    def cancel_limit(self) -> None:
+        """Stop the end timer, if one runs."""
+        if self.limit is not None:
+            self.limit()
+            self.limit = None
 
 
 @dataclass(frozen=True)
@@ -1858,6 +1975,7 @@ class JungHomeHub:
             on_undecryptable=self._on_undecryptable,
             on_heartbeat=self._on_heartbeat,
             on_key_refresh=self._on_key_refresh,
+            on_foreign_own_source=self._on_foreign_own_source,
         )
         self.states: dict[int, ElementState] = {}
         for unicast, info in (
@@ -1899,6 +2017,9 @@ class JungHomeHub:
             0  # ... of which unicast to our address: proof that nodes accept our PDUs
         )
         self._pdus_dropped = False
+        # the `address_shared` repair skipped past another client's numbers since this hub started: a new sighting
+        # asks for another address (`_report_address_shared`)
+        self._address_shared_skipped = False
         # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe),
         # and the watchdog waiting for its Filter Status (`_filter_status_overdue`)
         self._beacon_authenticated = False
@@ -1915,7 +2036,7 @@ class JungHomeHub:
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
         self.audits: dict[int, NodeAudit] = {}
         # scene number → {member element → its JUNG scene action (None: stored without a description)}, read from
-        # the members' Scene Action Setup servers after every connection (`_get_scene_actions`)
+        # the members' Scene Action Setup servers at link-up (`_get_scene_actions`, `_connect_step`)
         self.scene_actions: dict[int, dict[int, V.Action | None]] = {}
         # the channels whose scene list answered (`_get_scene_actions_of`): only theirs narrows `scenes_of`
         self.scene_lists_read: set[int] = set()
@@ -1980,6 +2101,10 @@ class JungHomeHub:
         # how the last link ended, None while one is up (`_link_ended`); when the current one came up (monotonic)
         self._link_end: LinkEnd | None = NO_LINK
         self._link_since = 0.0
+        # how the link before the current one ended, for the connect-time steps (`_connect_step`)
+        self._previous_link = NO_LINK
+        # connect-time step → when its last complete round ended (monotonic; `_connect_step`)
+        self._connect_steps_done: dict[str, float] = {}
         # proxy MAC → its links in a row that ended within SHORT_LINK (`_judge_link`)
         self._short_links: dict[str, int] = {}
         self._link_loss_listeners: list[Callable[[LinkEnd], None]] = []
@@ -2025,9 +2150,9 @@ class JungHomeHub:
         self._button_last_click: dict[
             int, tuple[float, str | None]
         ] = {}  # element → (when, side) of the last click, for double clicks
-        self._hold_side: dict[
-            int, str | None
-        ] = {}  # element → side of the hold in progress, handed to its release
+        self._key_holds: dict[
+            int, KeyHold
+        ] = {}  # element → the gateway-mode hold in progress, whose side is handed to its release
         self._dim_holds: dict[
             int, DimHold
         ] = {}  # element → the dimming hold in progress
@@ -2039,6 +2164,7 @@ class JungHomeHub:
             tuple[int, int, bytes], float
         ] = {}  # (src, opcode, params) → when
         self._event_listeners: dict[int, list[EventListener]] = {}
+        self.async_on_link_loss(self._end_holds_on_link_loss)
         # element → (what its last state Set asked for, its cached values before it), for `async_wait_settled`
         self._requested: dict[
             int, tuple[dict[str, bool | int], dict[str, bool | int | None]]
@@ -2174,6 +2300,9 @@ class JungHomeHub:
         # the last hub saw advertising: any it still lacks are re-reported (`async_stop` cleared them all already;
         # this covers a hub whose predecessor never ran)
         self._clear_issues()
+        if self.state.address_shared is not None:
+            # stored by an earlier run: sends stay refused until the repair, across the restart too
+            self._report_address_shared()
         self._unsub_adv = bluetooth.async_register_callback(
             self.hass,
             self._adv_seen,
@@ -2255,9 +2384,8 @@ class JungHomeHub:
         self._recheck.clear()
         for addr in list(self._delayed_clicks):
             self._cancel_delayed_click(addr)
-        for hold in self._dim_holds.values():
-            hold.cancel_quiet()
-        self._dim_holds.clear()
+        self._end_holds(HOLD_END_STOPPED)
+        self._key_holds.clear()
         try:
             await self._cancel(self._task)
             self._task = None
@@ -2291,6 +2419,7 @@ class JungHomeHub:
             ISSUE_SEQUENCE_SPACE_LOW,
             ISSUE_KEY_REFRESH,
             ISSUE_PDUS_DROPPED,
+            ISSUE_ADDRESS_SHARED,
             ISSUE_EXPORT_STALE,
             ISSUE_UNKNOWN_NODES,
             ISSUE_DUPLICATE_MESH,
@@ -3073,6 +3202,7 @@ class JungHomeHub:
             # lost while attach() settled after the filter request (review-4 R4-3): a failed connection, not a link
             # to report as up for a moment and then as lost — the entities would flap
             raise ConnectionError("the link was lost while it was set up")
+        self._previous_link = self._link_end or NO_LINK
         self._link_end = None
         self._link_since = time.monotonic()
         self._connect_failure_logged = False
@@ -3286,27 +3416,63 @@ class JungHomeHub:
         async_dispatcher_send(self.hass, SIGNAL_CONNECTION.format(self.entry.entry_id))
 
     async def _after_connect(self) -> None:
-        if await self._refresh_all():
-            # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
-            self._set_link_state(LINK_CONNECTED)
-            await self._send_time()
-            await self._send_location()
-            await self._poll_energy()
-            await self._backfill_energy_history()
-            await self._configure_heartbeats()
-            if not self.heartbeats_enabled and self.heartbeats_publishing:
-                # the option went off while some nodes could not be told (link down, a node silent or refusing)
-                await self.async_disable_heartbeats()
-            await self._get_scene_actions()
-            await self._get_faults()
-            await self._get_current_scenes()
+        """Run a link's connect-time sequence: the clock and location, the state refresh, then the slower reads.
 
-    async def _get_faults(self) -> None:
+        Time Set and the location go first, right after the proxy filter `attach` wrote (review-4 R I-5): two
+        unacknowledged broadcasts, they need no refresh to be through, and sent after it they never went out on a
+        link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
+        fault reads are not repeated soon after a round on a link that held (`_connect_step`); the heartbeat
+        configuration has a longer interval of its own (`_configure_heartbeats`). The new order is unverified on air.
+        """
+        await self._send_time()
+        await self._send_location()
+        if not await self._refresh_all():
+            return
+        # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
+        self._set_link_state(LINK_CONNECTED)
+        await self._poll_energy()
+        await self._backfill_energy_history()
+        await self._configure_heartbeats()
+        if not self.heartbeats_enabled and self.heartbeats_publishing:
+            # the option went off while some nodes could not be told (link down, a node silent or refusing)
+            await self.async_disable_heartbeats()
+        await self._connect_step("scene actions", self._get_scene_actions)
+        await self._connect_step("faults", self._get_faults)
+        await self._connect_step("current scenes", self._get_current_scenes)
+
+    async def _connect_step(
+        self, name: str, step: Callable[[], Awaitable[bool]]
+    ) -> None:
+        """Run a connect-time read, unless its last complete round is recent and the link before this one held.
+
+        A link that lasted SHORT_LINK kept the hub hearing the nodes' publications (a Scene Status after every
+        recall); a round within CONNECT_STEP_FRESH of this link is current enough, and repeating it on every link
+        is what made a link that comes and goes keep the mesh busy (review-4 R I-5). After a short link — a failed
+        connection to `_judge_link` — the round runs again: what the hub heard through that link proves little.
+        `step` returns True when it got through. Unverified on air.
+        """
+        done = self._connect_steps_done.get(name)
+        if (
+            done is not None
+            and time.monotonic() - done < CONNECT_STEP_FRESH
+            and self._previous_link.lasted >= SHORT_LINK
+        ):
+            _LOGGER.debug(
+                "%s read %.0f s ago: not asked again on this link",
+                name,
+                time.monotonic() - done,
+            )
+            return
+        if await step():
+            self._connect_steps_done[name] = time.monotonic()
+
+    async def _get_faults(self) -> bool:
         """Ask every mains node for its registered Health faults (Health Fault Get to its primary element).
 
         JUNG nodes keep the vendor faults 0x81 / 0x80 registered (meaning unknown, `docs/hidden-features.md` §10)
-        and nothing publishes the register, so the fault binary sensors are filled once per connection, one
-        unicast Get per node REFRESH_CHUNK at a time; a single all-nodes Get loses answers in the collision.
+        and nothing publishes the register, so the fault binary sensors are filled at link-up (`_connect_step`),
+        one unicast Get per node REFRESH_CHUNK at a time; a single all-nodes Get loses answers in the collision.
+        False when the link went away first.
         """
         try:
             await self._chunked(
@@ -3318,6 +3484,8 @@ class JungHomeHub:
             )
         except ConnectionError as err:
             _LOGGER.debug("fault read aborted: %s", err)
+            return False
+        return True
 
     async def _get_faults_of(self, addr: int) -> None:
         """Read one node's fault register; the Health Fault Status handler stores it."""
@@ -3332,14 +3500,15 @@ class JungHomeHub:
         except TimeoutError:
             _LOGGER.debug("%04X did not answer its Health Fault Get", addr)
 
-    async def _get_scene_actions(self) -> None:
+    async def _get_scene_actions(self) -> bool:
         """Ask every scene member what it does in its scenes (JUNG Scene Action Setup), for the scene entities.
 
         One list Get per member channel, then one Get per scene it names — a few dozen messages on a typical
-        installation, once per connection. The export knows the members, not their actions; nothing publishes
+        installation, at link-up (`_connect_step`). The export knows the members, not their actions; nothing publishes
         them, so this is the only way to show "what does this scene do". The export lists the element the Scene
         Store went to (the node's primary, for both channels of a two-channel node), so every channel of that node
-        is asked, as the app asks each channel for its own list (`GetScenesForDevice`).
+        is asked, as the app asks each channel for its own list (`GetScenesForDevice`). False when the link went
+        away first.
         """
         members = sorted(
             {
@@ -3350,33 +3519,37 @@ class JungHomeHub:
             }
         )
         if not members:
-            return
+            return True
         try:
             await self._chunked(
                 [partial(self._get_scene_actions_of, addr) for addr in members]
             )
         except ConnectionError as err:
             _LOGGER.debug("scene action read aborted: %s", err)
-            return
+            return False
         async_dispatcher_send(self.hass, SIGNAL_SCENES.format(self.entry.entry_id))
+        return True
 
-    async def _get_current_scenes(self) -> None:
+    async def _get_current_scenes(self) -> bool:
         """Ask every element holding a scene register for its current scene (Scene Get), as the app reads it.
 
         The Scene Status handler stores the answer (an answer to us, not a publication: it fires no event). After
-        that the nodes keep it current themselves: they publish a Scene Status after every recall.
+        that the nodes keep it current themselves: they publish a Scene Status after every recall. False when the
+        link went away first.
         """
         registers = sorted(
             {a for addresses in self.cdb.scenes.values() for a in addresses}
         )
         if not registers:
-            return
+            return True
         try:
             await self._chunked(
                 [partial(self._get_current_scene_of, addr) for addr in registers]
             )
         except ConnectionError as err:
             _LOGGER.debug("current scene read aborted: %s", err)
+            return False
+        return True
 
     async def _get_current_scene_of(self, addr: int) -> None:
         self._scene_gets.add(addr)
@@ -3595,7 +3768,11 @@ class JungHomeHub:
             try:
                 return await send()
             except SequenceStalled as err:
-                if not self.connected or waited >= SEQ_STALL_DEADLINE:
+                if (
+                    isinstance(err, AddressShared)  # waits for the user, not the store
+                    or not self.connected
+                    or waited >= SEQ_STALL_DEADLINE
+                ):
                     raise
                 _LOGGER.debug(
                     "send held back (%s); trying again in %.0f s", err, SEQ_STALL_RETRY
@@ -4696,10 +4873,11 @@ class JungHomeHub:
     def _on_scene_recall(self, m: AccessMessage, p: bytes) -> None:
         """Report a scene recall: a rocker wired to the scene being pressed, else the app's or the gateway's recall.
 
-        A key's recall is the key's `scene` event (which publishes the scene event, `event.py`); any other sender's
-        is published as the scene event directly, with the sender as its source. The firmware's second copy of
-        either (same TID) is dropped. The recall is noted only where the scene event fires (`fire_scene_recalled`):
-        a key whose event entity is disabled publishes none, and the members' Scene Status then reports the recall.
+        A key's recall is the key's `scene` event (whose publication publishes the scene event too,
+        `event.publish_button_event`, whether or not the key's event entity is enabled); any other sender's is
+        published as the scene event directly, with the sender as its source. The firmware's second copy of either
+        (same TID) is dropped. The recall is noted where the scene event fires (`fire_scene_recalled`), so the
+        members' Scene Status that follows reports only a recall no key event or sender told of.
         """
         if len(p) < 2 or self._is_repeat(m.src, m.opcode, p):
             return
@@ -4778,7 +4956,9 @@ class JungHomeHub:
         Set with a delta starts a hold (its sign is the direction: `up` brighter, `down` darker) and a Move Set 0
         ends it; the first Delta Set of a transaction (TID) starts one, the next ones of the same transaction
         continue it, and it ends `DIM_HOLD_QUIET` seconds after the last — or at a Delta Set 0. A new start while a
-        hold runs (its stop was lost) ends that hold first. A Level Set moves to a level: no hold.
+        hold runs (its stop was lost) ends that hold first. A Level Set moves to a level: no hold. Whatever its kind,
+        a hold ends `DIM_HOLD_MAX` seconds after it started, with `reason: timeout` (review-4 R4-7: a lost Move 0
+        used to leave it open for good); a Move 0 that still comes then ends nothing.
         """
         if m.opcode in (M.GEN_MOVE_SET, M.GEN_MOVE_SET_UNACK) and len(p) >= 3:
             kind, delta, tid = (
@@ -4814,6 +4994,9 @@ class JungHomeHub:
         self._dim_holds[addr] = hold
         if kind == "delta":
             self._quiet_dim_hold(addr, hold)
+        hold.limit = async_call_later(
+            self.hass, DIM_HOLD_MAX, partial(self._dim_hold_limit, addr)
+        )
         self.fire_button(
             addr, "hold_start", {"target": hold.target, "direction": direction}
         )
@@ -4830,12 +5013,54 @@ class JungHomeHub:
         self._dim_holds[addr].quiet = None
         self._end_dim_hold(addr)
 
-    def _end_dim_hold(self, addr: int) -> None:
+    @callback
+    def _dim_hold_limit(self, addr: int, _now: datetime) -> None:
+        self._dim_holds[addr].limit = None
+        self._end_dim_hold(addr, HOLD_END_TIMEOUT)
+
+    def _end_dim_hold(self, addr: int, reason: str | None = None) -> None:
+        """End the dimming hold of `addr`: its `hold_end`, with `reason` when its stop did not come (HOLD_END_REASONS)."""
         hold = self._dim_holds.pop(addr)
-        hold.cancel_quiet()
-        self.fire_button(
-            addr, "hold_end", {"target": hold.target, "direction": hold.direction}
-        )
+        hold.cancel_timers()
+        attrs: dict[str, Any] = {"target": hold.target, "direction": hold.direction}
+        if reason is not None:
+            attrs[ATTR_REASON] = reason
+        self.fire_button(addr, "hold_end", attrs)
+
+    def _end_key_hold(self, addr: int, reason: str) -> None:
+        """End the gateway-mode hold of `addr` without its release: `hold_end` with its side and `reason`.
+
+        The hold stays known as ended, so the release that may still come is not a second `hold_end`.
+        """
+        hold = self._key_holds[addr]
+        hold.cancel_limit()
+        hold.ended = True
+        attrs: dict[str, Any] = {ATTR_REASON: reason}
+        if hold.side is not None:
+            attrs["side"] = hold.side
+        self.fire_button(addr, "hold_end", attrs)
+
+    @callback
+    def _key_hold_limit(self, addr: int, _now: datetime) -> None:
+        self._key_holds[addr].limit = None
+        self._end_key_hold(addr, HOLD_END_TIMEOUT)
+
+    def _end_holds(self, reason: str) -> None:
+        """End every hold in progress, its `hold_end` saying why (decision M11: a `reason`, not a silent drop).
+
+        Without a link the stop cannot be heard, and a stopping hub hears nothing more, so a dim-while-held
+        automation would otherwise never be told to stop. The `reason` lets it tell this from a real release: the
+        key may still be held, and a node wired straight to a dimmer may still be dimming.
+        """
+        for addr in list(self._dim_holds):
+            self._end_dim_hold(addr, reason)
+        for addr, hold in list(self._key_holds.items()):
+            if not hold.ended:
+                self._end_key_hold(addr, reason)
+
+    @callback
+    def _end_holds_on_link_loss(self, _end: LinkEnd) -> None:
+        self._end_holds(HOLD_END_LINK_LOST)
 
     @register_status_handler(VENDOR_USER_PROPERTY_SET_UNACK, company_id=M.JUNG_CID)
     def _on_vendor_property_set(self, m: AccessMessage, p: bytes) -> None:
@@ -4859,9 +5084,17 @@ class JungHomeHub:
 
     @callback
     def fire_button(self, addr: int, event: str, attrs: dict[str, Any]) -> None:
-        """Deliver a button event of the element at `addr` to its listeners."""
+        """Deliver a button event of the element at `addr` to its listeners, then publish it on the bus.
+
+        The bus event (`event.publish_button_event`) comes from here rather than from the key's event entity, so a
+        disabled entity no longer silences the key's device triggers and logbook lines (review-4 H4-2); it follows
+        the listeners, so an automation it starts sees the entity's new state.
+        """
+        from .event import publish_button_event  # noqa: PLC0415
+
         for cb in self._event_listeners.get(addr, []):
             cb(event, attrs)
+        publish_button_event(self.hass, self, addr, event, attrs)
 
     def _is_repeat(self, src: int, op: int, p: bytes) -> bool:
         """Second copy of a client message (the firmware publishes everything twice, ~1 s apart, fresh SEQ, same TID).
@@ -4925,9 +5158,14 @@ class JungHomeHub:
         else:
             name, side = known
         if name == "hold_start":
-            self._hold_side[addr] = side
+            self._start_key_hold(addr, side)
         elif code == KEY_EVENT_RELEASE:
-            side = self._hold_side.pop(addr, None)
+            hold = self._key_holds.pop(addr, None)
+            if hold is not None:
+                hold.cancel_limit()
+                if hold.ended:
+                    return  # its hold_end went out already (DIM_HOLD_MAX, the link)
+                side = hold.side
         if name == "click":
             last = self._button_last_click.get(addr)
             self._button_last_click[addr] = (now, side)
@@ -4955,6 +5193,26 @@ class JungHomeHub:
             # any other gesture ends the wait: the click is reported first, then the gesture, in order
             self._flush_delayed_click(addr)
         self.fire_button(addr, name, self._event_attrs(counter, side))
+
+    def _start_key_hold(self, addr: int, side: str | None) -> None:
+        """Note a gateway-mode hold of `addr`, ending at DIM_HOLD_MAX unless its release comes first.
+
+        A hold still open (its release was lost) ends first, with a plain `hold_end`, as a dimming hold does.
+        """
+        if (running := self._key_holds.pop(addr, None)) is not None:
+            running.cancel_limit()
+            if not running.ended:
+                self._flush_delayed_click(addr)
+                attrs: dict[str, Any] = {}
+                if running.side is not None:
+                    attrs["side"] = running.side
+                self.fire_button(addr, "hold_end", attrs)
+        self._key_holds[addr] = KeyHold(
+            side,
+            async_call_later(
+                self.hass, DIM_HOLD_MAX, partial(self._key_hold_limit, addr)
+            ),
+        )
 
     @callback
     def _delayed_click_due(
@@ -5169,8 +5427,11 @@ class JungHomeHub:
         """Raise (or clear) the repair issue for a mesh that ignores us although the link works (the caller logs why).
 
         Raised by the Filter Status watchdog and by an unanswered state refresh; cleared by a Filter Status or by
-        the first message addressed to us (`_on_message`).
+        the first message addressed to us (`_on_message`). Not raised while another client is known to send from
+        our address (`address_shared` names the cause, and its repair is the one that helps).
         """
+        if dropped and self.state.address_shared is not None:
+            return
         self._pdus_dropped = dropped
         if not dropped:
             ir.async_delete_issue(
@@ -5190,6 +5451,73 @@ class JungHomeHub:
                 "unicast": f"{self.proxy.state.src:04X}",
             },
         )
+
+    def _on_foreign_own_source(self, iv_index: int, seq: int) -> None:
+        """Another client sends from our address: the proxy delivered a PDU from it with a number we never sent (S I2).
+
+        Its numbers and ours run into each other — every one both send is a reused nonce, and the nodes drop ours as
+        replays below its last — so from here on nothing is sent (`HAState.note_address_shared`, `AddressShared`)
+        until `address_shared` is repaired. That issue explains the dropped PDUs better than `pdus_dropped` does,
+        which it replaces.
+        """
+        if self.state.note_address_shared(iv_index, seq):
+            _LOGGER.error(
+                "Another Bluetooth mesh client sends from Home Assistant's address %04X (sequence number %06X under "
+                "IV index %d, which Home Assistant never sent): nothing is sent to the mesh %s until the repair is "
+                "confirmed",
+                self.state.src,
+                seq,
+                iv_index,
+                self.entry.title,
+            )
+        if self._pdus_dropped:
+            self._report_pdus_dropped(False)
+        self._report_address_shared()
+
+    def _report_address_shared(self) -> None:
+        """Raise `address_shared`; once its repair skipped past the other client, with the text asking for another address.
+
+        The same issue id either way (`ISSUE_ADDRESS_SHARED_AGAIN` is only its other translation key).
+        """
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            issue_id(self.entry, ISSUE_ADDRESS_SHARED),
+            is_fixable=True,
+            data={"entry_id": self.entry.entry_id},
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=ISSUE_ADDRESS_SHARED_AGAIN
+            if self._address_shared_skipped
+            else ISSUE_ADDRESS_SHARED,
+            translation_placeholders={
+                "title": self.entry.title,
+                "unicast": f"{self.state.src:04X}",
+            },
+        )
+
+    async def async_skip_past_shared(self) -> None:
+        """Continue past the other client's numbers and send again (the `address_shared` repair).
+
+        The issue goes at once; should the other client still send above the new counter, it comes back asking for
+        another address. A link whose proxy never took our filter (its request was refused too) is renewed: on the
+        default white list the proxy forwards next to nothing.
+        """
+        seq = self.state.skip_past_shared()
+        self._address_shared_skipped = True
+        ir.async_delete_issue(
+            self.hass, DOMAIN, issue_id(self.entry, ISSUE_ADDRESS_SHARED)
+        )
+        if seq is None:
+            return
+        _LOGGER.warning(
+            "Sequence numbers of address %04X continue from %06X, past the other client's",
+            self.state.src,
+            seq,
+        )
+        if self.proxy.connected and self.proxy.proxy_addr is None:
+            await self._drop_link(
+                "sequence numbers skipped past another client's", penalise=False
+            )
 
     # ------------------------------------------------------------------ commands
     async def _wait_for_link(self) -> None:

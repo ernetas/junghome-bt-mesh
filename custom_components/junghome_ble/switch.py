@@ -591,7 +591,8 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
     Sensor Server, once per link through the property reader's queue; on while one of them publishes anywhere (the
     app's test: a publication address). Until the node has answered, what the export says (a Sensor Server
     publishing to its element's group). A change is the Config messages of `MeshConfigurator.set_sensor_publication`,
-    the export rewritten and the entry reloaded, like the key and room actions.
+    planned against the node's answer when there is one, the export rewritten and the entry reloaded, like the key
+    and room actions.
     """
 
     _attr_entity_category = EntityCategory.CONFIG
@@ -681,11 +682,14 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
         await self._set(False)
 
     async def _set(self, on: bool) -> None:
-        unicast = self.node.unicast
+        # planned against what the node answered, which the switch shows, not only against the export (W4-6)
+        unicast, live = self.node.unicast, self._published
         await async_configure(
             self.hass,
             self.hub.entry.entry_id,
-            lambda configurator: configurator.set_sensor_publication(unicast, on),
+            lambda configurator: configurator.set_sensor_publication(
+                unicast, on, live=live
+            ),
         )
 
 

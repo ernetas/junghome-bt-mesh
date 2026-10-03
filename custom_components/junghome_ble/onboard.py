@@ -144,6 +144,21 @@ def unprovisioned_devices(hass: HomeAssistant) -> list[dict[str, Any]]:
     return sorted(out, key=lambda d: -(d["rssi"] or -127))
 
 
+def advertises_unprovisioned(hass: HomeAssistant, uuid: str) -> bool:
+    """Whether a device nearby advertises the Mesh Provisioning Service with the Device UUID `uuid`.
+
+    What a node does once reset (`remove_device` takes it as the reset done, review-4 W4-7). Any scanner counts,
+    connectable or not: nothing connects to it.
+    """
+    wanted = canonical_uuid(uuid)
+    for info in bluetooth.async_discovered_service_info(hass, connectable=False):
+        data = info.service_data.get(MESH_PROVISIONING_SERVICE)
+        parsed = parse_provisioning_service_data(bytes(data)) if data else None
+        if parsed is not None and parsed[0] == wanted:
+            return True
+    return False
+
+
 def _new_device(
     hass: HomeAssistant, address: str
 ) -> tuple[BluetoothServiceInfoBleak, str, JungAdvertisement]:

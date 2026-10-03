@@ -1201,7 +1201,9 @@ async def test_undecryptable_messages_are_ignored(
     link.send_access(
         PROXY_NODE, OUR_SRC, ONOFF_STATUS_ON, iv_index=2
     )  # wrong IV index → NetMIC fails
-    link.send_access(OUR_SRC, GROUP_WC, ONOFF_STATUS_ON)  # our own message echoed back
+    link.send_access(
+        OUR_SRC, GROUP_WC, ONOFF_STATUS_ON, seq=0
+    )  # our own message (the filter request's number) echoed back
     assert recorder.messages == []
     assert attached.state.rpl == {}
 
@@ -3443,6 +3445,56 @@ async def test_a_gatt_write_that_never_completes_is_a_connection_error(
     assert not attached._send_lock.locked()
 
 
+async def test_a_subscription_that_never_completes_fails_the_attach(
+    proxy: ProxyClient, link: FakeBleak, monkeypatch: pytest.MonkeyPatch
+):
+    """Review-4 R4-11: a `start_notify` that never returns held the caller's connection loop, and the connection
+    slot, for good. It fails the attach after `GATT_TIMEOUT`, and the connection is released like any failure."""
+    monkeypatch.setattr(client_mod, "GATT_TIMEOUT", 0.01)
+    stalled = asyncio.Event()
+
+    async def hang(char: str, cb: Any) -> None:
+        await stalled.wait()
+
+    monkeypatch.setattr(link, "start_notify", hang)
+    with pytest.raises(TimeoutError):
+        await proxy.attach(link)
+    assert proxy.client is None
+    assert link.disconnect_calls == 1
+
+
+async def test_a_disconnect_that_never_completes_is_left_behind(
+    attached: ProxyClient,
+    link: FakeBleak,
+    cdb: CDB,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    """Review-4 R4-11: `detach` (and an attach over a client still attached) gives a transport's disconnect
+    `GATT_TIMEOUT`, then logs a warning and carries on: the link is released already."""
+    monkeypatch.setattr(client_mod, "GATT_TIMEOUT", 0.01)
+    stalled = asyncio.Event()
+    hung: list[str] = []
+
+    async def hang(self: FakeBleak) -> None:
+        hung.append(self.address)
+        await stalled.wait()
+
+    monkeypatch.setattr(FakeBleak, "disconnect", hang)
+    with caplog.at_level(logging.WARNING, logger="jhmesh"):
+        await attached.detach()
+    assert attached.client is None
+    assert hung == [link.address]
+    assert f"disconnecting {link.address} did not complete within 0.01s" in caplog.text
+    other = FakeBleak(cdb, address="11:22:33:44:55:66")
+    await attached.attach(other)
+    other.is_connected = False  # gone without its callback
+    third = FakeBleak(cdb)
+    await attached.attach(third)
+    assert attached.client is third
+    assert hung == [link.address, other.address]
+
+
 async def test_a_failing_callback_does_not_break_the_notification_stream(
     attached: ProxyClient, link: FakeBleak, caplog: pytest.LogCaptureFixture
 ):
@@ -4596,3 +4648,183 @@ def test_access_message_repr_never_shows_a_decrypted_key():
         )  # the dataclass default printed the bytes' own repr
     assert "src=1" in repr(msg)
     assert "key='dev:0100'" in repr(msg)
+
+
+# ============================================================================= own-source detection (review-4 S I2)
+
+
+def _from_us(link: FakeBleak, seq: int, iv_index: int | None = None) -> None:
+    """Deliver an access message from our own address, as a relay echoes ours or another client sends one."""
+    link.send_access(OUR_SRC, GROUP_WC, ONOFF_STATUS_ON, seq=seq, iv_index=iv_index)
+
+
+async def test_a_number_we_never_sent_from_our_address_is_reported_once_per_interval(
+    attached: ProxyClient,
+    link: FakeBleak,
+    recorder: Recorder,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    clock = [1000.0]
+    monkeypatch.setattr(client_mod, "_now", lambda: clock[0])
+    seen: list[tuple[int, int]] = []
+    attached.on_foreign_own_source = lambda iv, seq: seen.append((iv, seq))
+    assert attached.state.seq == 1  # the filter request took number 0
+
+    _from_us(link, 0)  # our own filter request's number, echoed: ignored as always
+    assert (seen, attached.foreign_own_source) == ([], None)
+
+    with caplog.at_level(logging.WARNING, logger="jhmesh"):
+        _from_us(link, 500)  # a number we never handed out: another client
+    assert seen == [(0, 500)]
+    assert attached.foreign_own_source == (0, 500)
+    assert "another client uses this address" in caplog.text
+    _from_us(link, 600)
+    _from_us(link, 550)
+    assert seen == [(0, 500)]  # within the interval: noted, not reported again
+    assert attached.foreign_own_source == (0, 600)
+    clock[0] += client_mod.FOREIGN_SOURCE_REPORT_INTERVAL
+    _from_us(link, 560)
+    assert seen == [(0, 500), (0, 600)]  # the highest seen on this link
+    # never delivered, never in the replay list: the PDUs are dropped as our echoes were
+    assert recorder.messages == []
+    assert OUR_SRC not in attached.state.rpl
+    assert attached.state.seq == 1  # nothing was sent or skipped by the library
+
+    # a new link starts over: its first sighting is reported at once
+    await attached.detach()
+    await attached.attach(link)
+    assert attached.foreign_own_source is None
+    _from_us(link, 700)
+    assert seen[-1] == (0, 700)
+
+
+async def test_a_failing_or_missing_own_source_handler_only_logs(
+    attached: ProxyClient, link: FakeBleak, caplog: pytest.LogCaptureFixture
+):
+    def boom(_iv: int, _seq: int) -> None:
+        raise RuntimeError("handler bug")
+
+    _from_us(link, 300)  # no handler: the warning alone
+    assert attached.foreign_own_source == (0, 300)
+    await attached.detach()
+    await attached.attach(link)
+    attached.on_foreign_own_source = boom
+    with caplog.at_level(logging.ERROR, logger="jhmesh"):
+        _from_us(link, 400)
+    assert "on_foreign_own_source handler failed" in caplog.text
+
+
+async def test_our_own_pdus_around_an_iv_update_are_echoes(
+    attached: ProxyClient, link: FakeBleak
+):
+    """Echoes under the index we transmitted before an IV Update completed stay ignored; numbers above them, or under
+    the new index while we still transmit under the old one, prove another client."""
+    seen: list[tuple[int, int]] = []
+    attached.on_foreign_own_source = lambda iv, seq: seen.append((iv, seq))
+    state = attached.state
+    # IV Update in progress: the mesh is at 1, we (and every node) still transmit under 0
+    state.iv_index, state.iv_update_active, state.seq = 1, True, 40
+    link.iv_index = 1
+    _from_us(link, 39, iv_index=0)  # ours
+    assert seen == []
+    _from_us(link, 0, iv_index=1)  # an index we never transmitted under
+    assert seen == [(1, 0)]
+
+    # the update completed: we restarted at 0 under 1, the 40 numbers sent under 0 are the peak
+    await attached.detach()
+    await attached.attach(link)
+    seen.clear()
+    state.iv_update_active, state.seq_peak, state.seq_peak_from = False, 41, 0
+    state.seq = 5
+    _from_us(
+        link, 40, iv_index=0
+    )  # our last PDU under the old index, echoed after the switch
+    _from_us(link, 4, iv_index=1)
+    assert seen == []
+    _from_us(link, 41, iv_index=0)  # above everything we sent under 0
+    assert seen == [(0, 41)]
+
+
+def test_handed_out_follows_the_counter_peak_and_guard(cdb: CDB):
+    state = LocalState(None, OUR_SRC)
+    proxy = ProxyClient(cdb, state)
+    state.iv_index, state.seq, state.seq_peak, state.seq_peak_from = 5, 100, 300, 4
+    assert proxy._handed_out(5, 99)
+    assert not proxy._handed_out(5, 100)
+    # an older index: below the counter and the peak, from the peak's index on; nothing known before it
+    assert proxy._handed_out(4, 299)
+    assert not proxy._handed_out(4, 300)
+    assert proxy._handed_out(3, 0xFFFFFF)
+    state.seq = 400  # the counter carried on under a guard: above the peak
+    assert proxy._handed_out(4, 399)
+    # a newer index: never ours, unless the guard says the counter carried on under it
+    state.iv_index, state.iv_update_active = 6, True  # transmitting under 5
+    assert not proxy._handed_out(6, 0)
+    state.seq_guard = 5
+    assert not proxy._handed_out(6, 0)
+    state.seq_guard = 6
+    assert proxy._handed_out(6, 399)
+    assert not proxy._handed_out(6, 400)
+    state.seq_guard = client_mod.SEQ_GUARD_FIRST_BEACON
+    assert proxy._handed_out(6, 0)
+
+
+# ============================================================================= proxy configuration checks (P4-7)
+
+
+def _proxy_config(
+    link: FakeBleak,
+    *,
+    ctl: bool = True,
+    dst: int = 0x0000,
+    seq: int | None = None,
+    src: int = PROXY_NODE,
+) -> bytes:
+    return network_encrypt(
+        link.nk,
+        link.iv_index,
+        ctl,
+        0,
+        link.next_seq() if seq is None else seq,
+        src,
+        dst,
+        h("03010000"),
+        proxy=True,
+    )
+
+
+async def test_proxy_configuration_needs_its_header_and_is_replay_protected(
+    attached: ProxyClient, link: FakeBleak
+):
+    statuses: list[int] = []
+    attached.on_filter_status = statuses.append
+    attached.proxy_addr = None
+    assert attached.rx_proxy_config_dropped == 0
+    link.deliver(PROXY_CONFIG, _proxy_config(link, ctl=False))  # CTL=0
+    link.deliver(PROXY_CONFIG, _proxy_config(link, dst=LIGHT_2G))  # DST not unassigned
+    link.deliver(PROXY_CONFIG, h("00") * 20)  # not ours at all
+    assert (attached.proxy_addr, statuses) == (None, [])
+    assert attached.rx_proxy_config_dropped == 3
+
+    recorded = _proxy_config(link, src=LIGHT_2G)
+    link.deliver(PROXY_CONFIG, recorded)
+    assert (attached.proxy_addr, statuses) == (LIGHT_2G, [LIGHT_2G])
+    # played back, or an older one: dropped, the proxy node stays
+    attached.proxy_addr = None
+    attached._filter_acked.clear()
+    link.deliver(PROXY_CONFIG, recorded)
+    link.deliver(PROXY_CONFIG, _proxy_config(link, seq=5))
+    assert attached.proxy_addr is None
+    assert not attached._filter_acked.is_set()
+    assert statuses == [LIGHT_2G]
+    assert attached.rx_proxy_config_dropped == 5
+    link.deliver(PROXY_CONFIG, _proxy_config(link))  # a newer one
+    assert attached.proxy_addr == PROXY_NODE
+
+    # the next link starts over: its proxy's numbers have nothing to do with this one's
+    await attached.detach()
+    link.seq = 0x100
+    await attached.attach(link)
+    assert attached.proxy_addr == PROXY_NODE
+    assert attached.rx_proxy_config_dropped == 0

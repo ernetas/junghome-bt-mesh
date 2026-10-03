@@ -12,6 +12,10 @@ set_room:
       example: "Kitchen"
       selector:
         text:
+    create:
+      default: false
+      selector:
+        boolean:
 
 create_room:
   fields:

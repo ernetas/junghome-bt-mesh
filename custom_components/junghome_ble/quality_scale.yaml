@@ -1,7 +1,7 @@
 # The status of every Integration Quality Scale rule, checked against the code. A tier holds only when each of its rules
 # and of every tier below is done or exempt, so manifest.json claims none: one Bronze rule is open
-# (`dependency-transparency`), and Silver also waits for `reauthentication-flow`. The other rules up to Platinum are
-# done or exempt as recorded below; once those two are done too, manifest.json can claim `platinum` again. hassfest
+# (`dependency-transparency`). The other rules up to Platinum are done or exempt as recorded below; once that one is
+# done too, manifest.json can claim `platinum` again. hassfest
 # does not check this file for a custom integration, so nothing but keeping it true keeps the claim honest.
 rules:
   # Bronze
@@ -50,8 +50,8 @@ rules:
     comment: The link logs once when lost and once when back; a device that stops beating logs one warning and one info line when heard again.
   parallel-updates: done
   reauthentication-flow:
-    status: todo
-    comment: Not exempt - an entry set up from the gateway holds the gateway's API token, and the token is revocable (access removed in the app). The mesh keys themselves come from the export file and do not expire. When the gateway rejects the token only the gateway sync stops - the devices keep working over Bluetooth - and the repair issue gateway_token_rejected points to the reconfigure flow's "fetch again", which requests access anew (app approval) and loads the gateway's current export. The rule asks for a reauth step (ConfigEntryAuthFailed starting `async_step_reauth`), which the integration does not have; until it does, Silver is not met.
+    status: done
+    comment: An entry set up from the gateway holds the gateway's API token, which is revocable (access removed in the app); the mesh keys come from the export file and do not expire. When the gateway rejects the token (an export fetch, an upload or a status poll gets HTTP 401) MeshConfigurator.report_token_rejected raises the gateway_token_rejected repair and calls entry.async_start_reauth once per outage; the set-up entry starts it again while the repair is open, since a reload aborts reauth flows. Not ConfigEntryAuthFailed - that would stop the entry, and only the gateway sync needs the token, the devices keep working over Bluetooth. async_step_reauth / reauth_confirm takes the gateway's network-key password or waits for the access request to be approved in the app, pinned to the entry's certificate (the gateway node's over the mesh when connected; another one goes through the certificate step, or aborts when the mesh vouched for the pin), stores the token with async_update_and_abort (no reload - hub_data leaves the token out) and clears the repair. Unverified on air.
   test-coverage: done
 
   # Gold
@@ -84,7 +84,7 @@ rules:
   reconfiguration-flow: done
   repair-issues:
     status: done
-    comment: key_refresh, export_stale (nothing decrypts with the export's keys after a completed key refresh), pdus_dropped, unknown_nodes (a node of this mesh advertises from a MAC the export lacks), gateway_import (an enabled entry of the JUNG HOME Gateway integration exists next to ours; points at the reconfigure menu's import step, which takes the gateway entities over), gateway_certificate_changed (the gateway presents a TLS certificate other than the pinned one, or its mesh node reports another one; the gateway is then not used until Reconfigure), gateway_token_rejected (the gateway no longer accepts the entry's token; points at Reconfigure) and gateway_sync_failed (a changed export was not handed to the gateway; the sync_gateway action retries it).
+    comment: key_refresh, export_stale (nothing decrypts with the export's keys after a completed key refresh), pdus_dropped, unknown_nodes (a node of this mesh advertises from a MAC the export lacks), gateway_import (an enabled entry of the JUNG HOME Gateway integration exists next to ours; points at the reconfigure menu's import step, which takes the gateway entities over), gateway_certificate_changed (the gateway presents a TLS certificate other than the pinned one, or its mesh node reports another one; the gateway is then not used until Reconfigure), gateway_token_rejected (the gateway no longer accepts the entry's token; the reauthentication flow it starts renews the token, Reconfigure still can) and gateway_sync_failed (a changed export was not handed to the gateway; the sync_gateway action retries it).
   stale-devices: done
 
   # Platinum

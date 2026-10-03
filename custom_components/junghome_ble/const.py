@@ -227,6 +227,19 @@ BUTTON_REPEAT_WINDOW: Final = 3.0  # a vendor button event with a counter seen t
 # growing deltas while held, `TID_REPEAT_WINDOW`). A Delta transaction has no stop message: its hold is taken to end
 # this many seconds after its last Set (the key's cadence is a guess; the firmware's second copies are dropped first).
 DIM_HOLD_QUIET: Final = 1.5
+# Every hold — a Move or Delta one above, or a gateway-mode key's vendor `hold_start` — ends at the latest this many
+# seconds after it started (review-4 R4-7): a lost stop (a Move 0, a release) used to leave it open, and a
+# dim-while-held automation dimming for ever. Fading through the whole range takes a few seconds; nobody holds a key
+# this long on purpose. A hold ended without its stop carries `reason` (HOLD_END_REASONS) in its `hold_end`.
+DIM_HOLD_MAX: Final = 30.0
+HOLD_END_TIMEOUT: Final = "timeout"  # DIM_HOLD_MAX passed
+HOLD_END_LINK_LOST: Final = (
+    "link_lost"  # the link ended: the stop could not be heard (decision M11)
+)
+HOLD_END_STOPPED: Final = (
+    "stopped"  # the entry stopped (unload, reload, Home Assistant shutting down)
+)
+HOLD_END_REASONS: Final = (HOLD_END_TIMEOUT, HOLD_END_LINK_LOST, HOLD_END_STOPPED)
 # `junghome_ble.start_dim`: Generic Move Set with a transition time of one 100 ms step (Mesh Model §3.1.3: 0b00
 # resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Unverified on air.
 DIM_MOVE_TRANSITION: Final = 0x01
@@ -329,6 +342,11 @@ FAILED_PROXY_COOLDOWN: Final = 120.0
 # short link alone sets no node aside (a node restarting right after we connected is no flapping proxy).
 SHORT_LINK: Final = 60.0
 SHORT_LINK_STREAK: Final = 3
+# Connect-time steps that read what changes rarely or is published anyway (the scene actions, the fault registers,
+# the current scenes; review-4 R I-5) are not repeated by a link that comes within CONNECT_STEP_FRESH seconds of
+# their last complete round when the link before it held for SHORT_LINK: the hub heard the nodes' publications
+# meanwhile. The state refresh, the energy poll, Time Set and the location go out on every link. Unverified on air.
+CONNECT_STEP_FRESH: Final = 900.0
 # a proxy advertisement older than this ranks behind every fresher one: its node may be off (JUNG nodes advertise
 # several times a second)
 PROXY_ADVERT_MAX_AGE: Final = 60.0
@@ -422,6 +440,12 @@ ISSUE_SEQUENCE_SPACE_LOW: Final = "sequence_space_low"
 ISSUE_SEQ_STORE_LOST: Final = "seq_store_lost"  # our address has history, but neither copy of its sequence-number record is usable
 # the sequence-number store has refused every write for a while: sends are held back until one lands
 ISSUE_SEQ_STORE_UNWRITABLE: Final = "seq_store_unwritable"
+# a PDU from Home Assistant's own address with a number it never sent: another client uses the address (review-4
+# S I2); sends are refused until the repair skips past it
+ISSUE_ADDRESS_SHARED: Final = "address_shared"
+# ... the same issue (its id stays `address_shared_<entry id>`) seen again after that repair skipped past it once:
+# the text that asks for another address (a translation key cannot hold two descriptions)
+ISSUE_ADDRESS_SHARED_AGAIN: Final = "address_shared_again"
 # How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`):
 # past what the nodes may remember from the best record left, or — nothing left at all — this far from 0. A year of
 # a busy link (polls, refreshes, keep-alives) is well under the first; the 24-bit space holds 16 of them.
@@ -467,9 +491,9 @@ ISSUE_DUPLICATE_MESH: Final = (
 )
 EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beacons on one link, with nothing decodable, before the export counts as stale
 
-# Bus events. Device triggers can only attach to something on the Home Assistant bus, so every event the button
-# event entities fire is published a second time as EVENT_BUTTON_ACTION (`device_trigger.py` matches on it), and
-# a Scene Recall heard on the mesh as EVENT_SCENE_RECALLED. `logbook.py` describes both.
+# Bus events. Device triggers can only attach to something on the Home Assistant bus, so the hub publishes every
+# event of a key as EVENT_BUTTON_ACTION (`device_trigger.py` matches on it) — whether or not the key's event entity
+# is enabled — and a Scene Recall heard on the mesh as EVENT_SCENE_RECALLED. `logbook.py` describes both.
 EVENT_BUTTON_ACTION: Final = f"{DOMAIN}_button_action"
 EVENT_SCENE_RECALLED: Final = f"{DOMAIN}_scene_recalled"
 # Keys of the bus events' data, next to HA's own ATTR_DEVICE_ID / ATTR_ENTITY_ID / ATTR_NAME and CONF_TYPE:
@@ -481,3 +505,6 @@ ATTR_SCENE: Final = "scene"
 ATTR_SOURCE: Final = "source"
 ATTR_REPORTED_BY: Final = "reported_by"
 ATTR_ENTRY_ID: Final = "entry_id"
+ATTR_REASON: Final = (
+    "reason"  # why a `hold_end` came without its stop (HOLD_END_REASONS)
+)

@@ -249,7 +249,9 @@ STATE_REPLIES[M.health_fault_get()] = FAULT_STATUS
 # light's temperature range + its temperature element's colour temperature; they go out as 9 jobs (the meter's three
 # Gets are one sequential job) in chunks of 5
 REFRESH_GETS = 11
-BROADCASTS = 2  # after the refresh: Time Set, then the home location, both to all nodes
+BROADCASTS = (
+    2  # before the refresh: Time Set, then the home location, both to all nodes
+)
 REFRESH_FIRST_CHUNK = 5  # PDUs of the first chunk: the five lights
 ENERGY_GETS = len(COUNTER_GETS)  # the four counters of the one metering socket
 SCENE_GETS = len(
@@ -401,9 +403,10 @@ async def test_initial_connection_and_refresh(
 
     # every load was asked for its state with the Get matching its kind, in export order, our address as source;
     # the socket's meter for each of its readings by property (it ignores a Sensor Get without one), then the CTL
-    # light for its temperature range; the mesh got the time once the refresh was through (as the app does at
-    # start), and the metering socket was asked for its power-on hours, which nothing publishes
-    assert fake_link.sent[:REFRESH_GETS] == [
+    # light for its temperature range; the mesh got the time and location first, right after the proxy filter (as
+    # the app sends the time at start), and the metering socket was asked for its power-on hours, which nothing
+    # publishes
+    assert fake_link.sent[BROADCASTS : BROADCASTS + REFRESH_GETS] == [
         (OUR_ADDRESS, LIGHT_SWITCH, M.generic_onoff_get()),
         (OUR_ADDRESS, LIGHT_CTL, M.light_ctl_get()),
         (OUR_ADDRESS, LIGHT_DIMMER, M.light_lightness_get()),
@@ -431,9 +434,9 @@ async def test_initial_connection_and_refresh(
     )  # its Scene Server says no scene is current
     assert hub.scene_actions == {1: {LIGHT_SWITCH: V.Action(V.ACTION_SWITCH, on=True)}}
     assert all(hub.states[node].faults == (0x81,) for _, node, _ in FAULT_GETS_PDUS)
-    assert_time_set(fake_link.sent[REFRESH_GETS], dt_util.now())
+    assert_time_set(fake_link.sent[0], dt_util.now())
     config = hass.config
-    assert fake_link.sent[REFRESH_GETS + 1] == (
+    assert fake_link.sent[1] == (
         OUR_ADDRESS,
         ALL_NODES,
         M.generic_location_global_set(
@@ -492,14 +495,17 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     answering_link: FakeProxyLink,
     refresh_gate: asyncio.Event,
 ) -> None:
-    """A quick reconnect must not leave the previous link's refresh polling through the new one."""
+    """A quick reconnect must not leave the previous link's refresh polling through the new one. Each link sets
+    the nodes' clocks before its refresh (review-4 R I-5): a link lost before its refresh was through still did."""
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
     await settle(hass)
     hub = hub_of(mock_config_entry)
+    first_link = BROADCASTS + REFRESH_FIRST_CHUNK
     assert (
-        len(answering_link.sent) == REFRESH_FIRST_CHUNK
-    )  # first chunk sent, the refresh waits at the pause
+        len(answering_link.sent) == first_link
+    )  # Time Set and location, the first chunk; the refresh waits at the pause
+    assert answering_link.sent[0][2][0] == M.TIME_SET
     old = hub._refresh_task
     assert old is not None
     assert not old.done()
@@ -513,21 +519,18 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     assert hub._refresh_task is not None
     assert hub._refresh_task is not old
     assert (
-        len(answering_link.sent) == 2 * REFRESH_FIRST_CHUNK
-    )  # the new link's first chunk, nothing more from the old refresh
+        len(answering_link.sent) == 2 * first_link
+    )  # the new link's broadcasts and first chunk, nothing more from the old refresh
+    assert answering_link.sent[first_link][2][0] == M.TIME_SET
 
     refresh_gate.set()
     await settle(hass)
     second_chunk = REFRESH_GETS - REFRESH_FIRST_CHUNK
     assert (
-        len(answering_link.sent)
-        == 2 * REFRESH_FIRST_CHUNK + second_chunk + BROADCASTS + AFTER_ENERGY
-    )  # only the new refresh completed (its second chunk, Time Set and location, energy poll, scene and fault
-    # reads; not the old refresh's second chunk)
-    assert [dst for _, dst, _ in answering_link.sent].count(ALL_NODES) == BROADCASTS
-    assert answering_link.sent[2 * REFRESH_FIRST_CHUNK + second_chunk][2][0] == (
-        M.TIME_SET
-    )
+        len(answering_link.sent) == 2 * first_link + second_chunk + AFTER_ENERGY
+    )  # only the new refresh completed (its second chunk, energy poll, scene and fault reads; not the old
+    # refresh's second chunk) — the first link lasted too short for its reads to count as fresh
+    assert [dst for _, dst, _ in answering_link.sent].count(ALL_NODES) == 2 * BROADCASTS
     assert answering_link.sent[-AFTER_ENERGY:-CONNECT_TAIL] == COUNTER_GETS
     assert hub._refresh_task.done()
 
@@ -2438,7 +2441,9 @@ async def test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair(
 ) -> None:
     """Nodes silently drop our PDUs after a lost sequence store or an address collision; the connect-time refresh notices."""
     hub = hub_of(init_integration)
-    assert len(fake_link.sent) == 5  # the first chunk of Gets is waiting for replies
+    assert (
+        len(fake_link.sent) == BROADCASTS + 5
+    )  # Time Set and location, then the first chunk of Gets is waiting for replies
     # traffic that is not for us: the status LIGHT_SWITCH publishes when the gateway polls it (same source and opcode
     # as our Get, so the request matcher takes it — a reply to us it is not)
     fake_link.inject(LIGHT_SWITCH, GROUP_SWITCH, onoff_status(True))
@@ -2453,7 +2458,7 @@ async def test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair(
     assert (
         len(fake_link.sent) == 28
     )  # 5 + 2 * 4 retries + (socket, meter, range, temperature) + 2 * (socket retry, meter, range retry, temperature
-    # retry), then the Time Set and the location (the refresh did complete) and the energy Get
+    # retry), after the Time Set and the location, then the energy Get (the refresh did complete)
     assert [dst for _, dst, _ in fake_link.sent].count(ALL_NODES) == BROADCASTS
     issue = find_issue(hass, ISSUE_PDUS_DROPPED)
     assert issue is not None
@@ -2844,15 +2849,60 @@ async def test_time_set_falls_back_to_utc_for_an_odd_zone(
     assert_time_set(fake_link.sent[0], odd, zone=timedelta(0))
 
 
-async def test_no_time_set_after_an_aborted_refresh(
+async def test_time_set_goes_out_before_the_refresh(
     hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
-    """A refresh cut short by the link going away proves nothing and sends nothing more."""
+    """Review-4 R I-5: Time Set and the location follow the proxy filter, before the refresh — sent after a complete
+    refresh, they never went out on a link lost before it was through. A refresh cut short sends nothing more."""
     hub = hub_of(init_answered)
+    fake_link.sent.clear()
+    with patch.object(hub, "_refresh_all", AsyncMock(return_value=False)):
+        await hub._after_connect()
+    assert [dst for _, dst, _ in fake_link.sent] == [ALL_NODES] * BROADCASTS
+    assert_time_set(fake_link.sent[0], dt_util.now())
+    # a link already gone: nothing goes out, and nothing is raised
     fake_link.sent.clear()
     fake_link.write_error = ConnectionError("proxy disconnected")
     await hub._after_connect()
     assert not fake_link.sent
+
+
+async def test_connect_reads_are_not_repeated_soon_after_a_link_that_held(
+    hass: HomeAssistant,
+    init_answered: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 R I-5: the scene actions, the fault registers and the current scenes are not read again by a link
+    that follows a link of at least SHORT_LINK within CONNECT_STEP_FRESH of their last round; after a short link,
+    or once the window has passed, they are. The clock, the location, the refresh and the energy poll go out on
+    every link."""
+    hub = hub_of(init_answered)
+    tail = SCENE_GETS_PDUS + FAULT_GETS_PDUS + CURRENT_SCENE_PDUS
+
+    async def link_after(lasted: float) -> list[tuple[int, int, bytes]]:
+        hub._previous_link = coordinator.LinkEnd("the proxy disconnected", None, lasted)
+        fake_link.sent.clear()
+        await hub._after_connect()
+        return fake_link.sent
+
+    with caplog.at_level(logging.DEBUG, logger="custom_components.junghome_ble"):
+        sent = await link_after(coordinator.SHORT_LINK)
+    assert len(sent) == BROADCASTS + REFRESH_GETS + ENERGY_GETS
+    assert sent[-ENERGY_GETS:] == COUNTER_GETS
+    assert "faults read 0 s ago: not asked again on this link" in caplog.text
+    # after a short link: everything again
+    assert (await link_after(coordinator.SHORT_LINK - 1))[-CONNECT_TAIL:] == tail
+    # past the window: again
+    for name in hub._connect_steps_done:
+        hub._connect_steps_done[name] -= coordinator.CONNECT_STEP_FRESH
+    assert (await link_after(coordinator.SHORT_LINK))[-CONNECT_TAIL:] == tail
+    # a round the link cut short does not count: the next link reads again
+    for name in hub._connect_steps_done:
+        hub._connect_steps_done[name] -= coordinator.CONNECT_STEP_FRESH
+    with patch.object(hub, "_get_faults", AsyncMock(return_value=False)):
+        await link_after(coordinator.SHORT_LINK)
+    assert (await link_after(coordinator.SHORT_LINK))[-FAULT_GETS:] == FAULT_GETS_PDUS
 
 
 def stall_seq(hub: JungHomeHub, refusals: int) -> list[int]:
@@ -3191,9 +3241,8 @@ async def test_energy_poll_is_anchored_on_the_connection(
     assert (
         hub._unsub_energy is not timer
     )  # re-armed by the new link, the old timer is gone
-    assert (
-        fake_link.sent[-AFTER_ENERGY:-CONNECT_TAIL] == COUNTER_GETS
-    )  # the connect-time poll of the new link
+    # the connect-time poll of the new link; the scene and fault reads of the first, a link that held, are fresh
+    assert fake_link.sent[-ENERGY_GETS:] == COUNTER_GETS
     fake_link.sent.clear()
 
     await tick(

@@ -292,10 +292,10 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
 
         A drive that did not answer (asleep, out of range, drowned out by the connect-time traffic) is asked again
         on the next link, not on the next update of this one; until it answers the cover is a shutter without tilt.
+        A read still queued from a lost link is queued again: the reader keeps one copy, for the current link.
         """
         if (
             self._mode_read_done
-            or self._mode_read_pending
             or not self.hub.connected
             or self._mode_read_link == self.hub.link_count
         ):

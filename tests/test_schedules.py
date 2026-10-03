@@ -34,6 +34,7 @@ from custom_components.junghome_ble.jhmesh.devices import (
     Metadata,
     build_devices,
 )
+from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES
 
 from . import property_helpers as ph
 from .conftest import (
@@ -379,8 +380,8 @@ async def test_create_list_toggle_delete(
     assert fake_link.scheduler.actions[LIGHT_DIMMER, 1] == V.Action(
         V.ACTION_LIGHTNESS, lightness=round(0.3 * V.LIGHTNESS_MAX)
     )
-    # a timed schedule sends no location
-    assert not [p for _s, _d, p in fake_link.sent if p[:1] == b"\x42"]
+    # a timed schedule sends no location (the connect-time broadcast to all nodes is not the schedule's)
+    assert not [p for _s, d, p in fake_link.sent if p[:1] == b"\x42" and d != ALL_NODES]
     listed = await call(hass, "get_schedules", {"entity_id": dimmer}, response=True)
     assert [s["slot"] for s in listed[dimmer]["schedules"]] == [0, 1]
     assert listed[dimmer]["schedules"][1] == {
@@ -469,7 +470,7 @@ async def test_astro_schedule_without_a_location_server(
         response=True,
     ) == {socket: {"slot": 0}}
     assert fake_link.scheduler.schedules[SOCKET, 0].type == 5
-    assert not [p for _s, _d, p in fake_link.sent if p[:1] == b"\x42"]
+    assert not [p for _s, d, p in fake_link.sent if p[:1] == b"\x42" and d != ALL_NODES]
 
 
 async def test_location_send_failure(

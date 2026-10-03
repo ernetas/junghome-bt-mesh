@@ -21,10 +21,14 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import (
     ATTR_KEY,
+    ATTR_REASON,
     ATTR_SCENE,
     DOMAIN,
     EVENT_BUTTON_ACTION,
     EVENT_SCENE_RECALLED,
+    HOLD_END_LINK_LOST,
+    HOLD_END_STOPPED,
+    HOLD_END_TIMEOUT,
 )
 
 if TYPE_CHECKING:
@@ -40,6 +44,12 @@ BUTTON_MESSAGES = {
     "press_off": "pressed off / down",
     "dim": "dimming",
 }  # a `scene` event names the scene number instead
+# Why a hold ended without its release (`const.HOLD_END_REASONS`), appended to "hold released".
+HOLD_END_MESSAGES = {
+    HOLD_END_TIMEOUT: "no release heard in time",
+    HOLD_END_LINK_LOST: "link lost",
+    HOLD_END_STOPPED: "integration stopped",
+}
 
 
 @callback
@@ -56,7 +66,7 @@ def async_describe_events(
 
     @callback
     def describe_button_action(event: Event) -> dict[str, str]:
-        """'Living room rocker Button A clicked': the key entity's name, or the device's while it is gone."""
+        """'Living room rocker Button A clicked': the key entity's name, or the device's while it is gone or disabled."""
         data = event.data
         entity_id = data.get(ATTR_ENTITY_ID)
         state = hass.states.get(entity_id) if entity_id else None
@@ -71,6 +81,8 @@ def async_describe_events(
             message = f"recalled scene {data.get(ATTR_SCENE, '?')}"
         else:
             message = BUTTON_MESSAGES.get(event_type, event_type)
+        if (reason := data.get(ATTR_REASON)) is not None:
+            message += f" ({HOLD_END_MESSAGES.get(str(reason), str(reason))})"
         entry = {LOGBOOK_ENTRY_NAME: name, LOGBOOK_ENTRY_MESSAGE: message}
         if entity_id:
             entry[LOGBOOK_ENTRY_ENTITY_ID] = str(entity_id)

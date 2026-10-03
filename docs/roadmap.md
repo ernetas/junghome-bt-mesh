@@ -293,8 +293,8 @@ notes), so what users must know goes there — the move of the sequence-number s
 - [x] Brands: the JUNG HOME brand images (as home-assistant/brands publishes them for `custom_integrations/junghome`)
   ship in `custom_components/junghome_ble/brand/`, which Home Assistant 2026.3+ and the HACS `brands` validator read;
   the brands repository no longer takes custom integrations. `quality_scale.yaml` `brands: done`; the HACS `brands`
-  validator gates. With `dependency-transparency` done and a reauth step for the gateway token
-  (`reauthentication-flow`, Silver) `manifest.json` can claim `platinum` again.
+  validator gates. The reauth step for the gateway token is in (`reauthentication-flow: done`, Silver); with
+  `dependency-transparency` done too `manifest.json` can claim `platinum` again.
 - [ ] HACS: submit the repository to the HACS default repository list (https://hacs.xyz/docs/publish/include —
   the `validate` job is that list's own check), or document the custom-repository install in `ha-integration.md`
   as the way in.

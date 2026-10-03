@@ -13,7 +13,7 @@ import contextlib
 import json
 import shutil
 import stat
-from collections.abc import AsyncGenerator, Callable, Coroutine
+from collections.abc import AsyncGenerator, Callable, Coroutine, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -282,6 +282,10 @@ class FakeEntry:
     state: ConfigEntryState = ConfigEntryState.LOADED
     runtime_data: Any = None  # the bench's hub (`make_bench`)
     setup_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    reauths: int = 0  # reauth flows started (`MeshConfigurator.report_token_rejected`)
+
+    def async_start_reauth(self, hass: Any) -> None:
+        self.reauths += 1
 
     def async_create_background_task(
         self, hass: Any, target: Coroutine[Any, Any, None], name: str
@@ -344,6 +348,9 @@ class FakeHub:
         default_factory=lambda: SimpleNamespace(by_address={})
     )
     keep_awake: KeepAwake = field(init=False)
+    # the nodes a request went unanswered by (`JungHomeHub.unreachable`), and the node carrying the link
+    unreachable: set[int] = field(default_factory=set)
+    proxy_node: int | None = None
     # the mesh's vault (`identity.py`) over an in-memory store
     vault: VaultKeeper = field(
         default_factory=lambda: VaultKeeper(MemoryStore(), lambda _stamp: MemoryStore())  # type: ignore[arg-type]
@@ -360,6 +367,10 @@ class FakeHub:
         """The bench's link never comes back by itself: the wait ends at once (`KeepAwake` looks again)."""
         await asyncio.sleep(0)
         return self.connected
+
+    def node_alive(self, address: int) -> bool:
+        node = self.cdb.node_by_addr(address)
+        return node is None or node.unicast not in self.unreachable
 
     async def async_gateway_distrust(self) -> str | None:
         return self.distrust
@@ -469,6 +480,14 @@ async def make_bench(
     return Bench(
         path, hub, link, config, keys, MeshConfigurator(hub), path.read_bytes()
     )  # type: ignore[arg-type]
+
+
+@pytest.fixture(autouse=True)
+def adverts() -> Iterator[set[str]]:
+    """The UUIDs advertising as new devices: the bench has no Bluetooth, so `remove_node` looks here (W4-7)."""
+    seen: set[str] = set()
+    with patch.object(mc, "advertises_unprovisioned", lambda _hass, uuid: uuid in seen):
+        yield seen
 
 
 @pytest.fixture
@@ -1185,7 +1204,13 @@ async def test_set_room_moves_a_load_between_rooms(bench: Bench) -> None:
 
 
 async def test_set_room_creates_a_missing_room(bench: Bench) -> None:
-    await bench.configurator.set_room(SOCKET_NODE, "Garage")
+    """Only with `create` (review-4 W4-12): a room name the export does not have is refused without it."""
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.set_room(SOCKET_NODE, "Garage")
+    assert exc.value.translation_key == "service_no_room"
+    assert bench.file_unchanged()
+    assert bench.config_pdus() == []
+    await bench.configurator.set_room(SOCKET_NODE, "Garage", create=True)
     pf = bench.reload()
     assert (
         pf.user_groups()[NEW_ROOM] == "Garage"
@@ -1284,7 +1309,7 @@ async def test_room_names_the_mesh_reserves_are_refused(
     for op in (
         lambda: bench.configurator.create_room(name),
         lambda: bench.configurator.rename_room("WC", name),
-        lambda: bench.configurator.set_room(SWITCH_LOAD, name),
+        lambda: bench.configurator.set_room(SWITCH_LOAD, name, create=True),
     ):
         with pytest.raises(ServiceValidationError) as exc:
             await op()
@@ -1307,7 +1332,7 @@ async def test_room_range_exhaustion_is_a_translated_error(bench: Bench) -> None
         await bench.configurator.create_room("One more")
     assert exc.value.translation_key == "service_room_range_full"
     with pytest.raises(ServiceValidationError) as exc:
-        await bench.configurator.set_room(SWITCH_LOAD, "One more")
+        await bench.configurator.set_room(SWITCH_LOAD, "One more", create=True)
     assert exc.value.translation_key == "service_room_range_full"
     assert bench.path.read_bytes() == original
     assert bench.config_pdus() == []
@@ -1503,7 +1528,9 @@ async def test_a_stopped_plan_into_a_new_room_records_the_room(bench: Bench) -> 
     silent = sub_add(DIMMER_LOAD, group, "1000")
     bench.config.silent.add(silent)
     with pytest.raises(HomeAssistantError):
-        await bench.configurator.set_rooms([SWITCH_LOAD, DIMMER_LOAD], "Garage")
+        await bench.configurator.set_rooms(
+            [SWITCH_LOAD, DIMMER_LOAD], "Garage", create=True
+        )
     pf = bench.reload()
     assert group in subs(pf, SWITCH_LOAD, "1000")
     assert pf.user_groups().get(group) == "Garage"
@@ -3853,8 +3880,8 @@ def issues(monkeypatch: pytest.MonkeyPatch) -> dict[str, dict[str, Any]]:
 
     class Registry:
         @staticmethod
-        def async_get_issue(_domain: str, issue_id: str) -> dict[str, Any] | None:
-            return raised.get(issue_id)
+        def async_get_issue(_domain: str, issue_id: str) -> SimpleNamespace | None:
+            return SimpleNamespace(active=True) if issue_id in raised else None
 
     monkeypatch.setattr(mc.ir, "async_create_issue", create)
     monkeypatch.setattr(mc.ir, "async_delete_issue", delete)
@@ -3893,10 +3920,10 @@ async def test_a_rejected_token_raises_its_own_repair(
     issues: dict[str, dict[str, Any]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """HTTP 401 on the fetch or the upload: not "check reachability" but the token repair pointing to
-    Reconfigure (its warning logged once while the repair is open); a change still goes through on disk,
+    """HTTP 401 on the fetch or the upload: not "check reachability" but the token repair and one reauth flow
+    (its warning logged, the flow started, once while the repair is open); a change still goes through on disk,
     `sync_gateway` says so; the next answer clears it."""
-    rejected = "access token: nothing is exchanged with it"
+    rejected = "access token: the export is not handed to it"
     in_sync = with_gateway.doc
     with_gateway.doc = GatewayAuthError("GET project/junghome: HTTP 401")
     await bench.configurator.create_room("Attic")
@@ -3907,11 +3934,13 @@ async def test_a_rejected_token_raises_its_own_repair(
             "title": "JUNG HOME mesh test",
         }
     }
+    assert bench.hub.entry.reauths == 1
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.sync_gateway()
     assert exc.value.translation_key == "service_gateway_token_rejected"
     assert exc.value.translation_placeholders == {"host": "junghome.local"}
     assert caplog.text.count(rejected) == 1  # the repair is open: not logged again
+    assert bench.hub.entry.reauths == 1  # nor a second reauth started
     # the fetch passes again (a new token), the upload is refused
     with_gateway.doc = in_sync
     with_gateway.refuse_upload = GatewayAuthError("POST config: HTTP 401")
@@ -3921,6 +3950,7 @@ async def test_a_rejected_token_raises_its_own_repair(
     assert exc.value.translation_key == "service_gateway_token_rejected"
     assert list(issues) == ["gateway_token_rejected_entry"]
     assert caplog.text.count(rejected) == 2  # raised anew
+    assert bench.hub.entry.reauths == 2
     await bench.configurator.create_room("Loft")  # not raised for a change
     assert with_gateway.uploads == []
     # accepted again: the repairs go, the legacy (not per-entry) sync issue with them
@@ -4696,7 +4726,9 @@ async def test_a_cancelled_room_move_records_the_room_it_created(
     """`set_room` into a new room, cancelled after the first of the socket's steps: the room and that
     subscription are recorded, as for a refusal (CFG-02)."""
     group = mc.load_project(str(bench.path), None).free_group_address()
-    await cancelled(bench, 1, bench.configurator.set_room(SOCKET_NODE, "Garage"))
+    await cancelled(
+        bench, 1, bench.configurator.set_room(SOCKET_NODE, "Garage", create=True)
+    )
     pf = bench.reload()
     assert pf.user_groups().get(group) == "Garage"
     assert subs(pf, SOCKET_NODE, "1000") == [SOCKET_GROUP, SOCKETS, KITCHEN, group]
@@ -4777,6 +4809,45 @@ async def test_a_cancelled_removal_records_the_reset_node_as_excluded(
     reset cannot be taken back, so the node is recorded as excluded."""
     await cancelled(bench, 1, bench.configurator.remove_node(DIMMER_NODE))
     assert bench.config_pdus()[0] == (DIMMER_NODE, C.node_reset())
+    pf = bench.reload()
+    assert pf.cdb.node_by_addr(DIMMER_NODE) is None
+    assert {DIMMER_LOAD, DIMMER_KEY} <= pf.cdb.excluded_addresses
+
+
+async def test_a_plan_to_an_unreachable_node_is_refused_before_it_is_sent(
+    bench: Bench,
+) -> None:
+    """Review-4 W I5: a node the hub marked unreachable would stop the plan only after every attempt of its first
+    step, the steps before it applied: the plan is refused at once, naming it, nothing sent, journaled or written."""
+    bench.hub.unreachable.add(DALI_NODE)
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.set_room(DALI_LOAD, "WC")
+    assert exc.value.translation_key == "service_nodes_unreachable"
+    assert exc.value.translation_placeholders == {
+        "nodes": f"{DALI_NODE:04X}",
+        "applied": mc.APPLIED_NOTHING,
+    }
+    assert bench.config_pdus() == []
+    assert bench.file_unchanged()
+    assert not bench.configurator.journaled
+    bench.hub.unreachable.clear()  # heard from again
+    assert await bench.configurator.set_room(DALI_LOAD, "WC") is True
+
+
+async def test_a_removal_whose_unwiring_meets_an_unreachable_node_records_the_reset(
+    bench: Bench,
+) -> None:
+    """The reset cannot be taken back: refused unwiring still records the node as removed, and says so."""
+    bench.hub.unreachable.update(
+        n.unicast for n in bench.hub.cdb.nodes if n.unicast != DIMMER_NODE
+    )
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.remove_node(DIMMER_NODE)
+    assert exc.value.translation_key == "service_nodes_unreachable"
+    assert exc.value.translation_placeholders["applied"].startswith(
+        f"Device {DIMMER_NODE:04X} was reset and the mesh export records it as removed"
+    )
+    assert bench.config_pdus() == [(DIMMER_NODE, C.node_reset())]
     pf = bench.reload()
     assert pf.cdb.node_by_addr(DIMMER_NODE) is None
     assert {DIMMER_LOAD, DIMMER_KEY} <= pf.cdb.excluded_addresses
@@ -4947,7 +5018,7 @@ async def test_a_replayed_journal_applies_the_plans_bookkeeping_once(
     twice they are recorded once."""
     group = mc.load_project(str(bench.path), None).free_group_address()
     operations: list[tuple[Callable[[], Coroutine[Any, Any, Any]], int]] = [
-        (lambda: bench.configurator.set_room(SOCKET_NODE, "Garage"), 1),
+        (lambda: bench.configurator.set_room(SOCKET_NODE, "Garage", create=True), 1),
         (lambda: bench.configurator.assign_key(ROCKER_A, room="WC"), 1),
         (lambda: bench.configurator.remove_node(DIMMER_NODE), 1),
     ]

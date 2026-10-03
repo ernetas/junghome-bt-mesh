@@ -7,13 +7,16 @@ the REST calls themselves have their tests in test_gateway_api.py.
 from __future__ import annotations
 
 import json
+import logging
 import shutil
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
+from homeassistant.config_entries import SOURCE_REAUTH
 from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
@@ -35,6 +38,7 @@ from custom_components.junghome_ble.const import (
     CONF_GATEWAY_FINGERPRINT,
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_LAST_SYNC,
+    CONF_GATEWAY_PASSWORD,
     CONF_GATEWAY_PIN_SOURCE,
     CONF_GATEWAY_SYNCED,
     CONF_GATEWAY_TOKEN,
@@ -182,6 +186,11 @@ def state(hass: HomeAssistant, domain: str, key: str) -> Any:
     return found
 
 
+def reauth_flows(hass: HomeAssistant, entry: MockConfigEntry) -> list[Any]:
+    """The entry's reauthentication flows in progress."""
+    return list(entry.async_get_active_flows(hass, {SOURCE_REAUTH}))
+
+
 async def poll(hass: HomeAssistant, seconds: float = GATEWAY_STATUS_INTERVAL) -> None:
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=seconds))
     await settle(hass)
@@ -282,9 +291,9 @@ async def test_failures_make_the_entities_unavailable_and_raise_the_repairs(
     rest: FakeRest,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A rejected token raises its repair, and the polls stop sending it while the repair is open (logged once);
-    another certificate raises the certificate repair; the next answer clears both. A busy or failing gateway is
-    just unavailable."""
+    """A rejected token raises its repair and starts one reauth flow, and the polls stop sending it while the
+    repair is open (logged once); another certificate raises the certificate repair; the next answer clears both.
+    A busy or failing gateway is just unavailable."""
     firmware = entity_id(hass, "sensor", uid("firmware"))
     issues = ir.async_get(hass)
 
@@ -292,15 +301,18 @@ async def test_failures_make_the_entities_unavailable_and_raise_the_repairs(
     await poll(hass)
     assert hass.states.get(firmware).state == STATE_UNAVAILABLE  # type: ignore[union-attr]
     assert issues.async_get_issue(DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+    assert len(reauth_flows(hass, entry)) == 1
     asked = len(rest.calls)
     for _ in range(3):
         await poll(hass, GATEWAY_HEALTH_INTERVAL)
     assert (
         len(rest.calls) == asked
-    )  # nothing is exchanged until the entry is reconfigured
+    )  # nothing is exchanged until access is granted again
     assert hass.states.get(firmware).state == STATE_UNAVAILABLE  # type: ignore[union-attr]
-    assert caplog.text.count("access token: nothing is exchanged with it") == 1
-    # reconfiguring clears the repair (`config_flow`): the polls ask again
+    assert caplog.text.count("access token: the export is not handed to it") == 1
+    assert len(reauth_flows(hass, entry)) == 1
+    # the reauth flow clears the repair (`config_flow`): the polls ask again
+    hass.config_entries.flow.async_abort(reauth_flows(hass, entry)[0]["flow_id"])
     ir.async_delete_issue(hass, DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
     rest.health = LOG
 
@@ -321,6 +333,137 @@ async def test_failures_make_the_entities_unavailable_and_raise_the_repairs(
     assert hass.states.get(firmware).state == "2.1.3"  # type: ignore[union-attr]
     for issue in (ISSUE_GATEWAY_TOKEN, ISSUE_GATEWAY_CERTIFICATE):
         assert issues.async_get_issue(DOMAIN, issue_id(entry, issue)) is None
+
+
+async def test_a_rejection_from_before_a_restart_is_reported_again(
+    hass: HomeAssistant, entry: MockConfigEntry, rest: FakeRest
+) -> None:
+    """The token repair is not persistent: one raised before a restart comes back from the registry inactive. The
+    polls then ask again, and a rejection raises it anew and starts the reauth flow, instead of the polls staying
+    silent with nothing on screen."""
+    issues = ir.async_get(hass)
+    token_issue = issue_id(entry, ISSUE_GATEWAY_TOKEN)
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        token_issue,
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=ISSUE_GATEWAY_TOKEN,
+        translation_placeholders={"host": HOST, "title": entry.title},
+    )
+    restored = issues.async_get_issue(DOMAIN, token_issue)
+    assert restored is not None
+    issues.issues[(DOMAIN, token_issue)] = replace(restored, active=False)
+
+    rest.config = rest.health = GatewayAuthError("GET config: HTTP 401")
+    await poll(hass)
+    asked = issues.async_get_issue(DOMAIN, token_issue)
+    assert asked is not None
+    assert asked.active
+    assert ("config", HOST) in rest.calls
+    assert len(reauth_flows(hass, entry)) == 1
+
+
+async def test_a_reload_asks_again_while_the_token_repair_is_open(
+    hass: HomeAssistant, entry: MockConfigEntry, rest: FakeRest
+) -> None:
+    """Home Assistant aborts an entry's reauth flows when it reloads it — and most actions reload right after the
+    change that met the rejected token. While the token repair is open the set-up entry asks again."""
+    rest.config = rest.health = GatewayAuthError("GET config: HTTP 401")
+    await poll(hass)
+    (first,) = reauth_flows(hass, entry)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+    (again,) = reauth_flows(hass, entry)
+    assert again["flow_id"] != first["flow_id"]
+
+    hass.config_entries.flow.async_abort(again["flow_id"])
+    ir.async_delete_issue(hass, DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+    rest.config, rest.health = CONFIG, LOG
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+    assert reauth_flows(hass, entry) == []  # no repair, no question
+
+
+async def test_the_reauth_flow_restores_the_gateway_without_a_reload(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    rest: FakeRest,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The gateway rejects the token: the reauth flow the poll started takes the gateway password, stores the new
+    token and clears the repair. The hub is not set up again and no mesh entity goes unavailable at any point; the
+    next poll asks with the new token. The pin comes from the gateway node over the mesh."""
+    caplog.set_level(logging.DEBUG)
+    hub = entry.runtime_data
+    firmware = entity_id(hass, "sensor", uid("firmware"))
+    tokens: list[str | None] = []
+
+    async def config(api: JungHomeGatewayApi) -> GatewayConfig:
+        tokens.append(api.token)
+        return rest.answer("config", api.host)  # type: ignore[no-any-return]
+
+    async def by_password(api: JungHomeGatewayApi, password: str) -> str:
+        assert password == "netkey-pw"
+        api.token = "tok.new"
+        return "tok.new"
+
+    def unique_id(hass: HomeAssistant, eid: str) -> str:
+        reg = er.async_get(hass).async_get(eid)
+        assert reg is not None
+        return reg.unique_id
+
+    def unavailable() -> set[str]:
+        return {
+            s.entity_id
+            for s in hass.states.async_all()
+            if s.state == STATE_UNAVAILABLE
+            and (reg := er.async_get(hass).async_get(s.entity_id)) is not None
+            and reg.platform == DOMAIN
+        }
+
+    mesh_down_before = unavailable() - {firmware}
+    rest.config = rest.health = GatewayAuthError("GET config: HTTP 401")
+    with patch.object(JungHomeGatewayApi, "config", config):
+        await poll(hass)
+    assert hass.states.get(firmware).state == STATE_UNAVAILABLE  # type: ignore[union-attr]
+    gateway_down = unavailable() - mesh_down_before
+    assert gateway_down
+    assert all("-gateway_" in unique_id(hass, e) for e in gateway_down)
+    (flow,) = reauth_flows(hass, entry)
+
+    rest.config, rest.health = CONFIG, LOG
+    with (
+        patch.object(JungHomeGatewayApi, "version", return_value=None),
+        patch.object(JungHomeGatewayApi, "register_by_password", by_password),
+        patch(
+            "custom_components.junghome_ble.config_flow.async_read_mesh_fingerprint",
+            return_value="ab" * 32,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            flow["flow_id"], {CONF_GATEWAY_PASSWORD: "netkey-pw"}
+        )
+    await settle(hass)
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_GATEWAY_TOKEN] == "tok.new"
+    assert (
+        ir.async_get(hass).async_get_issue(DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+        is None
+    )
+    assert entry.runtime_data is hub  # not reloaded
+    assert unavailable() - mesh_down_before <= gateway_down
+
+    with patch.object(JungHomeGatewayApi, "config", config):
+        await poll(hass)
+    assert tokens[-1] == "tok.new"
+    assert hass.states.get(firmware).state == "2.1.3"  # type: ignore[union-attr]
+    assert unavailable() == mesh_down_before
+    assert "netkey-pw" not in caplog.text
+    assert "tok.new" not in caplog.text
 
 
 async def test_a_silent_gateway_is_looked_for_over_the_mesh_once_per_outage(

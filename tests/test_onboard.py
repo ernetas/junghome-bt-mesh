@@ -31,6 +31,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_VAULT_UNWRITABLE,
     OPTION_ALLOW_PROVISIONING,
     OPTION_PROVISIONER_IDENTITY,
+    SERVICE_LINK_WAIT,
 )
 from custom_components.junghome_ble.entity import mesh_identifier, node_identifier
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi
@@ -57,6 +58,7 @@ from custom_components.junghome_ble.jhmesh.vault import RefreshProgress
 from custom_components.junghome_ble.services import CONFIGURATORS
 
 from .conftest import (
+    PROXY_NODE,
     SHARE_EXPORT_PATH,
     FakeProxyLink,
     make_service_info,
@@ -477,8 +479,9 @@ async def test_remove_device_refusals(
 ) -> None:
     hub = provisioning_entry.runtime_data
     monkeypatch.setattr(mesh_config, "NODE_RESET_TIMEOUT", 0.01)
+    monkeypatch.setattr(mesh_config, "RESET_ADVERT_WAIT", 0.01)
     fake_link.config_reply = lambda _node, _access: None  # nobody answers
-    with refused(HomeAssistantError, "remove_device_no_answer"):
+    with refused(HomeAssistantError, "remove_device_unconfirmed"):
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
@@ -529,6 +532,135 @@ async def test_remove_device_refusals(
             {"device": node_device_id(hass, hub, 0x0400)},
             blocking=True,
         )
+
+
+def reset_advert(hub: JungHomeHub, network_id: bytes, unicast: int) -> Any:
+    """What node `unicast` advertises once reset: the provisioning service with its own Device UUID."""
+    node = hub.cdb.node_by_addr(unicast)
+    assert node is not None
+    return new_device_advert(
+        hub, network_id, uuid=bytes.fromhex(node.uuid.replace("-", ""))
+    )
+
+
+@pytest.mark.parametrize("stale", [False, True], ids=["fresh", "stale"])
+async def test_an_unconfirmed_reset_is_looked_for_among_new_devices(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+    monkeypatch: pytest.MonkeyPatch,
+    stale: bool,
+) -> None:
+    """Review-4 W4-7: a node can take the reset and lose its status. Advertising as a new device after the reset,
+    it is recorded as removed; one that already advertised so before it (a scanner's stale advert data) proves
+    nothing, and the error says it may have been reset."""
+    monkeypatch.setattr(mesh_config, "NODE_RESET_TIMEOUT", 0.01)
+    monkeypatch.setattr(mesh_config, "RESET_ADVERT_WAIT", 0.05)
+    monkeypatch.setattr(mesh_config, "RESET_ADVERT_POLL", 0.01)
+    hub = provisioning_entry.runtime_data
+    advert = reset_advert(hub, network_id, 0x0300)
+    if stale:
+        mock_bluetooth_env["infos"].append(advert)
+
+    def reset_lost(node: int, access: bytes) -> bytes | None:
+        op, _cid, _params = decode_opcode(access)
+        if op == C.CONFIG_NODE_RESET:
+            if advert not in mock_bluetooth_env["infos"]:
+                mock_bluetooth_env["infos"].append(advert)  # it took the reset ...
+            return None  # ... and its status is lost
+        return reset_and_answer(node, access)
+
+    fake_link.config_reply = reset_lost
+    device = node_device_id(hass, hub, 0x0300)
+    path = Path(provisioning_entry.data[CONF_CDB_PATH])
+    if stale:
+        with refused(HomeAssistantError, "remove_device_unconfirmed") as caught:
+            await hass.services.async_call(
+                DOMAIN, "remove_device", {"device": device}, blocking=True
+            )
+        assert caught.value.translation_placeholders == {"address": "0300"}
+        assert "may have been reset" in str(caught.value)
+        assert ProjectFile.load(path).cdb.node_by_addr(0x0300) is not None
+        return
+    await hass.services.async_call(
+        DOMAIN, "remove_device", {"device": device}, blocking=True
+    )
+    await hass.async_block_till_done()
+    await wait_for_link(hass, provisioning_entry)
+    pf = ProjectFile.load(path)
+    assert pf.cdb.node_by_addr(0x0300) is None
+    assert {0x0300, 0x0301} <= pf.cdb.excluded_addresses
+
+
+async def test_the_node_carrying_the_link_is_removed_only_with_force(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 W4-7: its reset ends the link its confirmation would come back on — refused without `force`,
+    nothing sent. With `force` the link lost on its reset is no "nothing changed": the removal is recorded and
+    the others' wiring goes once a link is up."""
+    path = Path(provisioning_entry.data[CONF_CDB_PATH])
+    pf = ProjectFile.load(path)
+    key = pf.cdb.element(0x0301)
+    assert key is not None
+    pf.set_publication(
+        key.node, key, "1001", PROXY_NODE
+    )  # a key switching the proxy node's load
+    pf.save()
+    await hass.config_entries.async_reload(provisioning_entry.entry_id)
+    await wait_for_link(hass, provisioning_entry)
+    await settle(hass)
+    hub = provisioning_entry.runtime_data
+    proxy = hub.proxy_node
+    assert proxy == PROXY_NODE
+    device = node_device_id(hass, hub, proxy)
+    sent: list[int] = []
+
+    def answer(node: int, access: bytes) -> bytes | None:
+        sent.append(node)
+        return reset_and_answer(node, access)
+
+    fake_link.config_reply = answer
+    with refused(ServiceValidationError, "remove_device_proxy") as caught:
+        await hass.services.async_call(
+            DOMAIN, "remove_device", {"device": device}, blocking=True
+        )
+    assert caught.value.translation_placeholders == {"address": f"{proxy:04X}"}
+    assert sent == []
+    request = hub.proxy.request_config
+
+    async def link_lost_on_reset(
+        node: int, pdu: bytes, *args: Any, **kwargs: Any
+    ) -> Any:
+        if pdu == C.node_reset():
+            raise ConnectionError("the proxy went away")
+        return await request(node, pdu, *args, **kwargs)
+
+    waits: list[float] = []
+    wait_connected = hub.async_wait_connected
+
+    async def wait_for_the_next_link(timeout: float) -> bool:
+        waits.append(timeout)
+        return await wait_connected(timeout)
+
+    with (
+        patch.object(hub.proxy, "request_config", link_lost_on_reset),
+        patch.object(hub, "async_wait_connected", wait_for_the_next_link),
+    ):
+        await hass.services.async_call(
+            DOMAIN, "remove_device", {"device": device, "force": True}, blocking=True
+        )
+    assert SERVICE_LINK_WAIT in waits  # before the unwiring
+    assert sent == [0x0300]  # the key's publication to it, taken away
+    await hass.async_block_till_done()
+    await wait_for_link(hass, provisioning_entry)
+    pf = ProjectFile.load(path)
+    assert pf.cdb.node_by_addr(proxy) is None
+    assert proxy in pf.cdb.excluded_addresses
+    assert pf.publication(0x0301, "1001") is None
 
 
 async def test_add_device_with_the_provisioner_identity_uses_home_assistants_ranges(
