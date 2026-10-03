@@ -657,17 +657,22 @@
   },
   {
    "id": "msg:op:8016",
-   "status": "na",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_set"
+    "custom_components/junghome_ble/jhmesh/config_messages.py::key_refresh_phase_set",
+    "custom_components/junghome_ble/jhmesh/vaultrefresh.py::carry",
+    "custom_components/junghome_ble/vault_refresh.py::VaultKeyRefresh._pass"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_key_management_builders",
     "tests/jhmesh/test_properties_codecs.py::test_key_refresh_phase_set_and_its_status",
-    "tests/jhmesh/test_sim_mesh.py::test_a_key_refresh_followed_from_the_provisioners_messages"
+    "tests/jhmesh/test_sim_mesh.py::test_a_key_refresh_followed_from_the_provisioners_messages",
+    "tests/jhmesh/test_vaultrefresh.py::test_the_whole_way_with_a_node_the_client_does_not_know",
+    "tests/jhmesh/test_sim_mesh.py::test_a_node_the_app_does_not_know_keeps_working_after_its_key_refresh",
+    "tests/test_key_refresh.py::test_a_device_home_assistant_added_is_carried_through_the_apps_key_refresh",
+    "tests/test_key_refresh.py::test_a_forged_key_refresh_reaches_no_device_home_assistant_added"
    ],
-   "class": "declined",
-   "reason": "Declined: HA never sends Key Refresh Phase Set itself (the app's UpdateKeyRefreshPhaseMessageBuilder); the builder exists and the app's Phase Set is followed passively. docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\" (risk: \"high: can split the network\"), and '## Status' (Phase 4: \"Not started: N6, ...\"); docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" The passive follow of the app's key refresh (N2b) is implemented."
+   "note": "Sent since review 4 brief 14 (D11) to the devices Home Assistant added (the vault) only, which the app does not know and so never hands a new key: once the app's own key refresh is proven (keyrefresh KeyRefreshFollower.distribution), never before, under the device's own key. Home Assistant never starts a key refresh itself (mgmt:flow:keyrenewal stays declined); the app's own messages are still followed passively. Unverified on air."
   },
   {
    "id": "msg:op:8017",
@@ -1083,17 +1088,22 @@
   },
   {
    "id": "msg:op:8045",
-   "status": "na",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_update"
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_update",
+    "custom_components/junghome_ble/jhmesh/vaultrefresh.py::carry",
+    "custom_components/junghome_ble/vault_refresh.py::VaultKeyRefresh._pass"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_key_management_builders",
     "tests/jhmesh/test_client.py::test_a_key_refresh_by_the_provisioner_is_followed",
-    "tests/test_key_refresh.py::test_the_apps_key_refresh_is_followed_and_survives_a_reload"
+    "tests/test_key_refresh.py::test_the_apps_key_refresh_is_followed_and_survives_a_reload",
+    "tests/jhmesh/test_vaultrefresh.py::test_the_whole_way_with_a_node_the_client_does_not_know",
+    "tests/jhmesh/test_sim_mesh.py::test_a_node_the_app_does_not_know_keeps_working_after_its_key_refresh",
+    "tests/test_key_refresh.py::test_a_device_home_assistant_added_is_carried_through_the_apps_key_refresh",
+    "tests/test_key_refresh.py::test_a_forged_key_refresh_reaches_no_device_home_assistant_added"
    ],
-   "class": "declined",
-   "reason": "Declined: HA never distributes a new NetKey itself (the app's NetKeyUpdateMessageBuilder); the builder (index little-endian, without the Nordic big-endian quirk) exists and the app's NetKey Update is followed passively. docs/review-3/plan.md, '## Phase 4 — owning the network', N6 \"Key refresh driven by HA\" (risk: \"high: can split the network\"), and '## Status' (Phase 4: \"Not started: N6, ...\"); docs/ha-integration.md, '## Known limitations': \"A key refresh is followed, not started.\" The passive follow of the app's key refresh (N2b) is implemented."
+   "note": "Sent since review 4 brief 14 (D11) to the devices Home Assistant added (the vault) only, which the app does not know and so never hands a new key: once the app's own key refresh is proven (keyrefresh KeyRefreshFollower.distribution), never before, under the device's own key. Home Assistant never starts a key refresh itself (mgmt:flow:keyrenewal stays declined); the app's own messages are still followed passively. Unverified on air."
   },
   {
    "id": "msg:op:8046",

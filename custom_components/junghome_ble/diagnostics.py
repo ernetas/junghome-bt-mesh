@@ -1,4 +1,4 @@
-"""Diagnostics: network summary, link state, cached element states, node information and the last Configuration Server audit.
+"""Diagnostics: network summary, link state, key refresh, cached element states, node information and the last audit.
 
 Keys are never included; the export paths (they describe the host), the gateway's host and API token and the
 Bluetooth MAC addresses are redacted, and so are the gateway's address and any secret property should one ever sit
@@ -250,6 +250,11 @@ async def async_get_config_entry_diagnostics(
                 "seq": st.seq,
                 "iv_index": st.iv_index,
                 "iv_update_active": st.iv_update_active,
+                # the sequence-number store's back-pressure: how long sends have been held back (None: they are
+                # not), the last write's error, and how many numbers may go out before the next hold
+                "stalled_for": hub.state.stalled_for,
+                "last_write_error": hub.state.last_write_error,
+                "durable_headroom": hub.state.durable_headroom,
             },
             "link": async_redact_data(link, TO_REDACT_LINK),
             "heartbeats": _heartbeats(hub),
@@ -261,6 +266,9 @@ async def async_get_config_entry_diagnostics(
             # where the last adopted app export kept its own version over Home Assistant's (the open
             # `carry_over_conflict` repair), UUIDs redacted
             "carry_over_conflicts": _carry_over_conflicts(hass, entry),
+            # the followed key refresh, how far it is proven, and how far each device Home Assistant added came
+            # through it (review-4 D11: phases and Network IDs, never a key)
+            "key_refresh": hub.vault_refresh.diagnostics(),
             # nodes that left a full-budget request unanswered and were not heard from since
             "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
             "devices": {

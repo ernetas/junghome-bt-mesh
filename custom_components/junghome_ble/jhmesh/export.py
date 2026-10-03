@@ -1207,13 +1207,18 @@ class ProjectFile:
         number: int | None = None,
         addresses: Iterable[int] = (),
         icon: str = DEFAULT_SCENE_ICON,
+        avoid: Iterable[int] = (),
     ) -> int:
-        """Create a scene: CDB `scenes[]` + `meta.scenes[]`; the number from `free_scene_number` unless given."""
+        """Create a scene: CDB `scenes[]` + `meta.scenes[]`; the number from `free_scene_number` unless given.
+
+        `avoid`: numbers `free_scene_number` must not pick either — those a device still holds after a forced
+        deletion skipped it (review-4 W4-8), which the export no longer names.
+        """
         check_name(name)
         if any(n.lower() == name.lower() for n in self.scene_names().values()):
             raise ValueError(f"a scene named {name!r} already exists")
         if number is None:
-            number = self.free_scene_number()
+            number = self.free_scene_number(avoid=avoid)
         elif not 1 <= number <= 0xFFFF:
             raise ValueError(f"scene number {number} is not 1..65535")
         elif number in self.cdb.scenes:

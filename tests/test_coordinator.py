@@ -1019,6 +1019,93 @@ async def test_keep_alive_waits_out_a_stalled_store(
     assert "dropping the link" not in caplog.text
 
 
+async def test_keep_alive_returns_under_real_exhaustion(
+    hass: HomeAssistant,
+    init_answered: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> None:
+    """Review-4 R4-2 (S4-5), the reviewer's repro: `_while_seq_stalls` caught `SequenceExhausted` — the base class —
+    and retried it for as long as the link was up, so with the 24-bit space really used up the keep-alive looped
+    thousands of times, never returned, and the watchdog never dropped a silent proxy. Exhaustion is no
+    back-pressure: it is raised at once, and the keep-alive's verdict is what arrived meanwhile (nothing here)."""
+    hub = hub_of(init_answered)
+    quiet_mesh(hub)
+    state = hub.state
+    state.seq = client_mod.SEQ_TX_LIMIT + 1
+    state._saved = None  # written at once: the store holds nothing back, the refusal is the space's own
+    state.persist()
+    await hass.async_block_till_done()
+    fake_link.sent.clear()
+    fast_sleep.clear()
+    # untracked: `settle` would wait forever for a tracked task that never ends
+    keep_alive = asyncio.get_running_loop().create_task(hub._keep_alive())
+    await settle(hass)
+    try:
+        assert keep_alive.done(), "the keep-alive still retries an exhausted space"
+        assert keep_alive.result() is False
+    finally:
+        keep_alive.cancel()
+    assert fast_sleep.count(coordinator.SEQ_STALL_RETRY) == 0
+    assert keep_alive_gets(fake_link) == []
+    assert state.seq == client_mod.SEQ_TX_LIMIT + 1
+
+
+async def test_watchdog_drops_a_silent_proxy_while_the_store_is_stalled(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_answered: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 R4-2: a store that never lands a write (an SD card remounted read-only) held the keep-alive in its
+    retries for as long as the link was up. A held-back send now waits SEQ_STALL_DEADLINE at most; then it is no
+    verdict either way, nothing arrived meanwhile, and the silent proxy is dropped like after an unanswered Get."""
+    hub = hub_of(init_answered)
+    quiet_mesh(hub)
+    fake_link.sent.clear()
+    fast_sleep.clear()
+    retries = int(coordinator.SEQ_STALL_DEADLINE / coordinator.SEQ_STALL_RETRY)
+    refused = stall_seq(
+        hub, retries + 1
+    )  # the first try and every retry; the next link sends again
+    await tick(hass, freezer, LINK_IDLE_TIMEOUT + 1)
+    assert len(refused) == retries + 1
+    assert fast_sleep[:retries] == [coordinator.SEQ_STALL_RETRY] * retries
+    assert "no answer to a keep-alive Get; dropping the link" in caplog.text
+    assert fake_link.connect_count == 2
+    assert hub.connected
+    assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
+
+
+async def test_a_send_held_back_past_the_deadline_is_given_up(
+    hass: HomeAssistant, init_answered: MockConfigEntry, fast_sleep: list[float]
+) -> None:
+    """`_while_seq_stalls` retries back-pressure every SEQ_STALL_RETRY for SEQ_STALL_DEADLINE, then raises it like a
+    lost link; a send that goes through within that time returns its result."""
+    hub = hub_of(init_answered)
+    retries = int(coordinator.SEQ_STALL_DEADLINE / coordinator.SEQ_STALL_RETRY)
+    calls: list[int] = []
+
+    async def held_back() -> int:
+        calls.append(1)
+        if len(calls) <= retries:
+            raise client_mod.SequenceStalled("held back")
+        return len(calls)
+
+    fast_sleep.clear()
+    assert (
+        await hub._while_seq_stalls(held_back) == retries + 1
+    )  # through on the last retry
+    calls.clear()
+    retries += 1  # one refusal more than the deadline allows
+    with pytest.raises(client_mod.SequenceStalled):
+        await hub._while_seq_stalls(held_back)
+    assert len(calls) == retries
+    assert fast_sleep == [coordinator.SEQ_STALL_RETRY] * (2 * retries - 2)
+
+
 # --------------------------------------------------------------------------- per-node reachability (the app's rule)
 
 

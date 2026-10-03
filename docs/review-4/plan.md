@@ -428,9 +428,16 @@ Dependencies (hard unless marked *soft*):
   machines are `slow_ok` and skip real flushes. Unverified on air: backup restore, IV rewind, top-down allocation
   (`docs/ha-integration.md` says so). Decisions taken by default: M6 (the restore skip is automatic), M7 (top-down
   now). The IV timing is the spec's, with no test-mode bypass.
+- **Wave 3 (briefs 12–14): done.** D9 bounded back-pressure, a `seq_store_unwritable` repair, no number without a
+  link (12); D3 / D22 `delete_unused_scenes` a dry run by default and refused on a stale export, held scene numbers,
+  rewiring and deleting actions admin-only (13, decisions M3 and M8 taken as recommended); D11 the devices Home
+  Assistant added carried through the app's key renewal as far as it is proven (14). Changelog: from here on the
+  `## 1.1.0 (unreleased)` section. Unverified on air: 13's gateway path, all of 14.
+- **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
+  private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
   `custom_components/junghome_ble/brand/`, `brands` removed from the `ci.yml` ignore list, `quality_scale.yaml`,
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 12–67 are TODO.
+Every other finding, every low item and briefs 15–67 are TODO.

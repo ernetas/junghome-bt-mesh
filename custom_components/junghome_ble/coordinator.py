@@ -40,6 +40,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
+from homeassistant.util.file import WriteError
 from homeassistant.util.hass_dict import HassKey
 
 from .const import (
@@ -81,8 +82,10 @@ from .const import (
     ISSUE_KEY_REFRESH,
     ISSUE_PDUS_DROPPED,
     ISSUE_SEQ_STORE_LOST,
+    ISSUE_SEQ_STORE_UNWRITABLE,
     ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_UNKNOWN_NODES,
+    ISSUE_VAULT_KEY_REFRESH,
     KEEP_ALIVE_ATTEMPTS,
     KEEP_ALIVE_TIMEOUT,
     KEY_EVENT_RELEASE,
@@ -168,6 +171,7 @@ from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
 from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, Scaled
 from .keep_awake import KeepAwake
 from .tls import normalize_fingerprint
+from .vault_refresh import VaultKeyRefresh
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -209,6 +213,11 @@ SEQ_STORAGE_MINOR_VERSION = 3
 SEQ_RESTART_MARGIN = 512
 SEQ_SAVE_EVERY = 64
 SEQ_STALL_RETRY = 5.0  # seconds between forced-save retries while reserve_seq() is refusing to hand out numbers
+# how long one send waits for the store to catch up (`JungHomeHub._while_seq_stalls`) before it is given up on: a
+# healthy store lands its write within a second, one that refuses for this long will not do so by waiting
+SEQ_STALL_DEADLINE = 120.0
+# how long the store may refuse before `seq_store_unwritable` is raised (`HAState.report_unwritable`)
+SEQ_STALL_ISSUE_AFTER = 60.0
 SENSOR_POWER, SENSOR_VOLTAGE, SENSOR_CURRENT = 0x0081, 0x005D, 0x005C
 # What the connect-time refresh asks a socket's meter element for, one property-qualified `Sensor Get` each: on air
 # the meter ignores an unqualified Sensor Get (no property id; two attempts, no reply, every connection) and answers
@@ -502,9 +511,12 @@ class SeqStore(Store[dict[str, Any]]):
     the usual way an SD card dies) with only a log line, and by then it has already cleared its own pending
     data, so nothing else notices the write never landed. `HAState.reserve_seq` reads `written` to tell what a
     restart would actually load, so it can hold back sends the moment that stops matching what has been sent.
+    `write_error` keeps the text of the last write's `WriteError` (None once a write lands) for the repair that
+    names it (`seq_store_unwritable`) and the diagnostics.
     """
 
     written: dict[str, Any] | None = None
+    write_error: str | None = None
 
     def __init__(
         self, hass: HomeAssistant, version: int, key: str, **kwargs: Any
@@ -522,10 +534,13 @@ class SeqStore(Store[dict[str, Any]]):
         return old_data
 
     async def _async_write_data(self, data: dict[str, Any]) -> None:
-        await super()._async_write_data(data)
-        self.written = data[
-            "data"
-        ]  # not reached when the write raised: `written` still lags on a failure
+        try:
+            await super()._async_write_data(data)
+        except WriteError as err:
+            self.write_error = str(err)
+            raise  # `Store` logs it; `written` still lags on a failure
+        self.written = data["data"]
+        self.write_error = None
 
 
 def seq_store_for_uuid(hass: HomeAssistant, mesh_uuid: str) -> SeqStore:
@@ -1133,8 +1148,14 @@ class HAState(LocalState):
             None  # (tx IV index, seq) of the last forced save
         )
         self._stalled_at: float | None = (
-            None  # monotonic time reserve_seq() first refused since the last one that succeeded
+            None  # monotonic time reserve_seq() last forced a save while refusing (the retry throttle)
         )
+        # monotonic time reserve_seq() first refused since the last one that succeeded; told to `stall_listener`
+        # (the hub: it times `report_unwritable`, and cancels that timer when it stops)
+        self._stalled_since: float | None = None
+        self.stall_listener: Callable[[], None] | None = None
+        # `seq_store_unwritable` was raised and not cleared since (the hub's stop clears it too, `_clear_issues`)
+        self._stall_issue_open = False
         record = self._addresses.get(f"{default_src:04X}")
         self._record = (
             None if record is None else {"src": f"{default_src:04X}", **record}
@@ -1250,14 +1271,20 @@ class HAState(LocalState):
 
         A superseded `HAState` (HAC-02) refuses outright: it can no longer persist what it hands out, and `_limit`
         reads the shared store's `written`, which the successor keeps advancing into the numbers it sends with.
+
+        The first refusal since a number was last handed out starts a stall (`stalled_for`), which `stall_listener`
+        (the hub) hears of, to raise `seq_store_unwritable` if it lasts; the next number handed out ends it.
         """
         if not self._owns_the_store():
             raise SequenceExhausted(
                 "a newer hub of this mesh owns the sequence numbers now"
             )
-        tx, limit = self._limit()
-        if self.tx_iv_index != tx or self.seq + count > limit:
+        if self._held_back(count):
             now = time.monotonic()
+            if self._stalled_since is None:
+                self._stalled_since = now
+                if self.stall_listener is not None:
+                    self.stall_listener()
             if self._stalled_at is None or now - self._stalled_at >= SEQ_STALL_RETRY:
                 if self._stalled_at is None:
                     _LOGGER.warning(
@@ -1270,7 +1297,103 @@ class HAState(LocalState):
                 "sequence-number store not written yet: holding back to keep nonces unique"
             )
         self._stalled_at = None
+        if self._stalled_since is not None or self._stall_issue_open:
+            self._end_stall()
         return super().reserve_seq(count)
+
+    def _held_back(self, count: int) -> bool:
+        """Whether `count` more numbers lie beyond what a restart could continue from (`_limit`)."""
+        tx, limit = self._limit()
+        return self.tx_iv_index != tx or self.seq + count > limit
+
+    def report_unwritable(self) -> None:
+        """Raise `seq_store_unwritable` if sends are still held back (the hub calls it SEQ_STALL_ISSUE_AFTER into a stall).
+
+        Without it a store that never lands a write (a full disk, an SD card remounted read-only) only showed as
+        `pdus_dropped` once the proxy filter went unanswered, and that repair's skip-ahead cannot be written either.
+        A store that caught up meanwhile, with nothing sent since, ends the stall here instead; a superseded
+        `HAState` (HAC-02) reports nothing, its successor has the store now.
+        """
+        if self._stalled_since is None or not self._owns_the_store():
+            return
+        if not self._held_back(1):
+            self._stalled_since = None
+            return
+        path, error = self._stall_cause()
+        _LOGGER.error(
+            "The sequence-number store %s has not been written for %.0f s (%s): Home Assistant sends nothing to "
+            "the mesh until a write lands",
+            path,
+            time.monotonic() - self._stalled_since,
+            error or "no error reported",
+        )
+        hass = self._store.hass
+        entry = (
+            None
+            if self.entry_id is None
+            else hass.config_entries.async_get_entry(self.entry_id)
+        )
+        if entry is None:
+            return
+        self._stall_issue_open = True
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            issue_id(entry, ISSUE_SEQ_STORE_UNWRITABLE),
+            is_fixable=False,
+            is_persistent=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=ISSUE_SEQ_STORE_UNWRITABLE,
+            translation_placeholders={
+                "title": entry.title,
+                "path": path,
+                "error": error or "none reported",
+            },
+        )
+
+    def _stall_cause(self) -> tuple[str, str | None]:
+        """(path, last write error) of the copy holding sends back: the first one whose last write failed."""
+        stores = [self._store]
+        if self._backup_store is not None:
+            stores.append(self._backup_store)
+        for store in stores:
+            if store.write_error is not None:
+                return store.path, store.write_error
+        return self._store.path, None
+
+    def _end_stall(self) -> None:
+        """End a stall once a number was handed out: the store caught up, so its repair goes."""
+        if self._stalled_since is not None:
+            _LOGGER.info(
+                "Sequence-number store written again after %.0f s: sending resumes",
+                time.monotonic() - self._stalled_since,
+            )
+        self._stalled_since = None
+        if self._stall_issue_open and self.entry_id is not None:
+            ir.async_delete_issue(
+                self._store.hass,
+                DOMAIN,
+                f"{ISSUE_SEQ_STORE_UNWRITABLE}_{self.entry_id}",
+            )
+        self._stall_issue_open = False
+
+    @property
+    def stalled_for(self) -> float | None:
+        """Seconds since sends were first held back, None while they are not (the hub's watchdog, diagnostics)."""
+        if self._stalled_since is None:
+            return None
+        return time.monotonic() - self._stalled_since
+
+    @property
+    def last_write_error(self) -> str | None:
+        """The last `WriteError` of the store or its `.backup` copy (`_stall_cause`); None when both last wrote."""
+        return self._stall_cause()[1]
+
+    @property
+    def durable_headroom(self) -> int:
+        """How many more numbers may go out before a send is held back for the store to catch up (`_limit`)."""
+        tx, limit = self._limit()
+        return max(limit - self.seq, 0) if tx == self.tx_iv_index else 0
 
     def skip_ahead(self, count: int) -> int:
         """Move the counter `count` numbers ahead (never past `SEQ_TX_LIMIT`), saved at once; return the new counter.
@@ -1532,6 +1655,8 @@ class JungHomeHub:
         self.state = (
             state  # our address, sequence number and IV state, persisted per mesh
         )
+        state.stall_listener = self._seq_stall_started
+        self._unsub_seq_stall: CALLBACK_TYPE | None = None
         self.proxy = ProxyClient(
             cdb,
             state,
@@ -1653,6 +1778,10 @@ class JungHomeHub:
         ] = {}  # node unicast → monotonic time of its last message
         # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`, review-3 W4 / F24)
         self.keep_awake = KeepAwake(self)
+        # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`, review-4 D11)
+        self.vault_refresh = VaultKeyRefresh(
+            self, issue_id(entry, ISSUE_VAULT_KEY_REFRESH)
+        )
         self._lost_at: float | None = (
             None  # monotonic time the last link was lost, while no new one is up
         )
@@ -1872,11 +2001,12 @@ class JungHomeHub:
             self._unsub_ha_stop,
             self._unsub_echo,
             self._unsub_offset_change,
+            self._unsub_seq_stall,
         ):
             if unsub:
                 unsub()
         self._unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
-        self._unsub_offset_change = None
+        self._unsub_offset_change = self._unsub_seq_stall = None
         self._unsub_adv = self._unsub_time = self._unsub_energy = None
         self._unsub_heartbeats = self._unsub_seq_check = None
         self._cancel_export_refresh_timer()
@@ -1900,6 +2030,8 @@ class JungHomeHub:
             self._energy_task = None
             await self._cancel(self._heartbeat_task)
             self._heartbeat_task = None
+            await self._cancel(self.vault_refresh.task)
+            self.vault_refresh.task = None
         finally:
             # always reached, even if one of the cancels above still raised: an unclosed link keeps holding a
             # connection slot, and an unclosed counter keeps persisting into the shared store forever (HAC-04)
@@ -1917,6 +2049,7 @@ class JungHomeHub:
 
     def _clear_issues(self) -> None:
         for key in (
+            ISSUE_SEQ_STORE_UNWRITABLE,
             ISSUE_IV_INDEX_MISMATCH,
             ISSUE_SEQUENCE_SPACE_LOW,
             ISSUE_KEY_REFRESH,
@@ -1925,6 +2058,7 @@ class JungHomeHub:
             ISSUE_UNKNOWN_NODES,
             ISSUE_DUPLICATE_MESH,
             ISSUE_BLUETOOTH_UNAVAILABLE,
+            ISSUE_VAULT_KEY_REFRESH,
         ):
             ir.async_delete_issue(self.hass, DOMAIN, issue_id(self.entry, key))
 
@@ -2558,7 +2692,10 @@ class JungHomeHub:
         A Get is the one message JUNG firmware always answers (`_refresh_all`), so an unanswered keep-alive means
         the proxy no longer forwards (or the element is gone: up to KEEP_ALIVE_ATTEMPTS distinct elements are
         tried). Traffic of any kind arriving meanwhile counts as well. A send the sequence-number store holds
-        back is waited for (`_while_seq_stalls`), not taken for a dead link.
+        back is waited for (`_while_seq_stalls`), not taken for a dead link; one that cannot go out at all (the
+        store refused past SEQ_STALL_DEADLINE, the sequence space is used up) is no verdict either way, so what
+        arrived since decides alone — with nothing, the watchdog drops a silent proxy as after any unanswered
+        keep-alive.
         """
         before = self._last_rx
         for addr in self._keep_alive_targets()[:KEEP_ALIVE_ATTEMPTS]:
@@ -2700,6 +2837,7 @@ class JungHomeHub:
         )
         self._check_gateway_pin()
         self._request_export_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
+        self.vault_refresh.schedule()  # a device Home Assistant added that missed a key refresh step: again now
 
     def _cancel_refresh(self) -> None:
         """Cancel the per-link background work: the connect-time refresh, a running energy poll, the Filter Status watchdog."""
@@ -2723,12 +2861,18 @@ class JungHomeHub:
         replay — a stale sequence number, or another client using our address — and the link stays on the default
         whitelist: nothing at all is forwarded, so the refresh-based detection (which needs other traffic) never
         fires. Seen on air with an address whose sequence numbers the nodes already knew higher.
+
+        Nothing to report when the request never went out — no filter request written on this link (the store held
+        every attempt back) — or while the store holds sends back: the proxy was not asked, and the repair's
+        skip-ahead could not be written either (`seq_store_unwritable` reports that).
         """
         self._unsub_filter_watch = None
         if (
             not self.connected
             or self.proxy.proxy_addr is not None  # the status did arrive
             or not self._beacon_authenticated
+            or self.proxy.filter_writes == 0
+            or self.state.stalled_for is not None
         ):
             return
         _LOGGER.warning(
@@ -3090,25 +3234,44 @@ class JungHomeHub:
                 *(self._while_seq_stalls(job) for job in jobs[i : i + REFRESH_CHUNK])
             )
 
-    async def _while_seq_stalls[T](self, send: Callable[[], Awaitable[T]]) -> T:
-        """Run `send`, again every SEQ_STALL_RETRY seconds for as long as the sequence-number store holds sends back.
+    @callback
+    def _seq_stall_started(self) -> None:
+        """Look again SEQ_STALL_ISSUE_AFTER after the store began holding sends back (`HAState.reserve_seq`)."""
+        if self._unsub_seq_stall is not None:
+            self._unsub_seq_stall()  # an earlier stall's, which ended meanwhile
+        self._unsub_seq_stall = async_call_later(
+            self.hass, SEQ_STALL_ISSUE_AFTER, self._seq_stall_overdue
+        )
 
-        `HAState.reserve_seq` refuses numbers while the store's last save has not landed (`SequenceExhausted`, a
+    @callback
+    def _seq_stall_overdue(self, _now: datetime) -> None:
+        self._unsub_seq_stall = None
+        self.state.report_unwritable()
+
+    async def _while_seq_stalls[T](self, send: Callable[[], Awaitable[T]]) -> T:
+        """Run `send`, again every SEQ_STALL_RETRY seconds while the sequence-number store holds it back, for a while.
+
+        `HAState.reserve_seq` refuses numbers while the store's last save has not landed (`SequenceStalled`, a
         `ConnectionError`): back-pressure, not a lost link. Taken as one, it used to end the whole connect-time
         sequence at its first send — no Time Set, location, energy, heartbeats, scene actions or faults on that
-        link — and a keep-alive refused that way dropped a working link. Once the link is gone the refusal is
-        raised like any lost link.
+        link — and a keep-alive refused that way dropped a working link. Once the link is gone, or the store has
+        refused for SEQ_STALL_DEADLINE (it is not catching up: `seq_store_unwritable` says why), the refusal is
+        raised like any lost link. Real exhaustion (plain `SequenceExhausted`: the 24-bit space used up, or a newer
+        hub owns the numbers) is raised at once — retried, it held the link watchdog's keep-alive forever, so a
+        silent proxy was never dropped.
         """
+        waited = 0.0  # summed rather than read off the clock: the retries are what is bounded
         while True:
             try:
                 return await send()
-            except SequenceExhausted as err:
-                if not self.connected:
+            except SequenceStalled as err:
+                if not self.connected or waited >= SEQ_STALL_DEADLINE:
                     raise
                 _LOGGER.debug(
                     "send held back (%s); trying again in %.0f s", err, SEQ_STALL_RETRY
                 )
                 await asyncio.sleep(SEQ_STALL_RETRY)
+                waited += SEQ_STALL_RETRY
 
     async def _poll_energy(self) -> None:
         """Read the counters of every metered load (energy; a socket's power-on hours); nothing ever publishes them.
@@ -4632,11 +4795,13 @@ class JungHomeHub:
 
         Once it completes (phase 0, reported only on proof that the mesh moved: review-4 D4) the Network ID is the
         new key's: the entry's unique id follows, so discovery keeps recognising this mesh. The export keeps the old key until it is fetched again; every setup puts the
-        followed one in its place (`async_apply_followed_key_refresh`).
+        followed one in its place (`async_apply_followed_key_refresh`). Every move — a proven Phase 1 included —
+        takes the devices Home Assistant added along as far as it is proven (`vault_refresh.py`, review-4 D11).
         """
         ir.async_delete_issue(
             self.hass, DOMAIN, issue_id(self.entry, ISSUE_KEY_REFRESH)
         )
+        self.vault_refresh.schedule()
         if phase == 0 and self.entry.unique_id != (network_id := key.network_id.hex()):
             self.hass.config_entries.async_update_entry(
                 self.entry, unique_id=network_id

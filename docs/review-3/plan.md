@@ -220,7 +220,8 @@ Done and on `main`:
   off path writes and uploads byte-identical files; the vault keeps device keys from provisioning on regardless.
   **Not yet imported by any app**: try it on a spare app install first). Not started: N6, N8 (little gain next to
   the link-loss grace, costs a proxy connection slot), N9, N10, N11, N13.
-- **Phase 5:** T4, T5, T8, T9, T10, C5 (freshness only), C6, C7, S2, the link-loss UX items, W2, W5–W14 and the
+- **Phase 5:** T4, T5, T8, T9, T10, C5 (freshness only), C6, C7, S2, the link-loss UX items (but the repair when
+  the seq store refuses for minutes: listed here as done, never built — review 4 D9 built it), W2, W5–W14 and the
   `free_group_address` hardening, P4–P7, M1–M4, M6–M10, the battery `RestoreSensor` and the cover mode enum.
 - **Phase 6:** Q1, Q2, Q4, Q5, Q9, Q10, Q11, Q12, the doc corrections, the quality-scale correction (no tier claimed
   until Bronze holds), `persist-credentials`, Renovate `minimumReleaseAge`, `DeprecationWarning` as error. The

@@ -27,6 +27,8 @@ from jhmesh.keyrefresh import PROOF_STATUSES
 from jhmesh.onboarding import commission as run_commission
 from jhmesh.onboarding import free_unicast_block, node_for
 from jhmesh.pdu import FILTER_BLACKLIST, decode_opcode
+from jhmesh.vault import RefreshProgress, Vault, VaultNode
+from jhmesh.vaultrefresh import carry, target_of, wanted
 from tests.sim import (
     CLIENT_ADDRESS,
     FIXTURE_HOP_MATRIX,
@@ -540,7 +542,8 @@ def test_a_key_refresh_followed_from_the_provisioners_messages() -> None:
         assert (done.key, done.phase, done.proof) == (NEW_NET_KEY, 3, PROOF_STATUSES)
         assert all(n.net_key == new and n.kr_phase == 0 for n in mesh.nodes.values())
         assert await s.onoff(FAR, False) is False  # only the new key works now
-        assert s.phases == [1, 2, 0]
+        # phase 1 twice: learnt, then proven by the nodes' NetKey Status (review-4 D11)
+        assert s.phases == [1, 1, 2, 0]
 
     simulate(body)
 
@@ -563,6 +566,91 @@ def test_the_whole_key_refresh_while_the_client_keeps_asking() -> None:
         assert await s.onoff(FAR) is False
 
     simulate(body, Mesh(seed=5, loss=LossModel(loss=0.05)))
+
+
+async def _a_node_only_the_client_knows(s: Session) -> tuple[int, VaultNode]:
+    """Provision and commission a node as `add_device` does; the vault keeps it. The app's database lacks it."""
+    mesh, client = s.mesh, s.client
+    template = client.cdb.node_by_addr(LIGHT_2G)
+    sim_template = mesh.cdb.node_by_addr(LIGHT_2G)
+    assert template is not None
+    assert sim_template is not None
+    count = len(template.elements)
+    unicast = free_unicast_block(client.cdb, count)
+    assert unicast is not None
+    plan = commission.plan(client.cdb, unicast, count, template)
+    mesh.add_node(
+        node_for(
+            sim_template,
+            uuid=NEW_UUID,
+            unicast=unicast,
+            dev_key=NEW_DEV_KEY,
+            name="New",
+        ),
+        [0x0172, DIMMER],
+    )
+    client.add_node(
+        node_for(
+            template, uuid=NEW_UUID, unicast=unicast, dev_key=NEW_DEV_KEY, name="New"
+        )
+    )
+    await run_commission(client, plan)
+    vault = Vault.create()
+    return unicast, vault.remember_provisioned(NEW_UUID, unicast, count, NEW_DEV_KEY)
+
+
+async def _carry_along(
+    client: ProxyClient, node: VaultNode, done: asyncio.Event, *, from_phase: int
+) -> list[int]:
+    """What Home Assistant does (`vault_refresh.py`): take the node as far as the refresh is proven, again and again.
+
+    Returns the phases it was taken to, in order. `from_phase`: only once the refresh is proven that far (a node
+    that missed the earlier phases).
+    """
+    taken: list[int] = []
+    while True:
+        target = target_of(client)
+        want = wanted(target, client.nk.key, node)
+        if want is not None and want.phase >= from_phase:
+            if await carry(client, node, want, timeout=1.0):
+                taken.append(want.phase)
+        elif done.is_set():
+            return taken
+        await asyncio.sleep(0.25)
+
+
+@pytest.mark.parametrize("from_phase", [1, 2])
+def test_a_node_the_app_does_not_know_keeps_working_after_its_key_refresh(
+    from_phase: int,
+) -> None:
+    """Review-4 D11: the app refreshes the NetKey of the nodes in its database only. A node only the client knows
+    (the vault's) is taken along once each phase is proven: NetKey Update, Phase Set 2, Phase Set 3 — or, when it
+    missed Phase 1, its NetKey Update in Phase 2 sealed under the old key it still holds. It answers under the new
+    key alone afterwards, and was never told to drop the old one before the mesh proved it had."""
+
+    async def body(s: Session) -> None:
+        mesh, client = s.mesh, s.client
+        unicast, vault_node = await _a_node_only_the_client_knows(s)
+        provisioner = mesh.provisioner
+        assert provisioner is not None
+        targets = [a for a in mesh.configured_nodes() if a != unicast]
+        done = asyncio.Event()
+        driver = asyncio.ensure_future(
+            _carry_along(client, vault_node, done, from_phase=from_phase)
+        )
+        await provisioner.refresh_net_key(NEW_NET_KEY, nodes=targets, between=5.0)
+        await asyncio.sleep(2)
+        done.set()
+        taken = await driver
+        assert taken == ([1, 2, 3] if from_phase == 1 else [2, 3])
+        new = NetKeyMaterial.derive(NEW_NET_KEY)
+        sim = mesh.node(unicast)
+        assert (sim.net_key, sim.new_net_key, sim.kr_phase) == (new, None, 0)
+        assert vault_node.key_refresh == RefreshProgress(new.network_id, 3)
+        assert client.rx_net_keys == (new,)
+        assert await s.onoff(unicast, True) is True  # under the new key alone
+
+    simulate(body)
 
 
 def test_a_node_restarting_continues_in_the_next_sequence_block() -> None:

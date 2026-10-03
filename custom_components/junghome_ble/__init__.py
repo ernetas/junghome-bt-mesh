@@ -44,8 +44,10 @@ from .const import (
     ISSUE_PDUS_DROPPED,
     ISSUE_PENDING_DEVICE,
     ISSUE_PLAN_INTERRUPTED,
+    ISSUE_SCENE_HELD,
     ISSUE_SEQ_STORE_LOST,
     ISSUE_UNKNOWN_NODES,
+    ISSUE_VAULT_KEY_REFRESH,
     PLATFORMS,
     STORAGE_DIR,
 )
@@ -69,7 +71,7 @@ from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB
 from .jhmesh.client import MESH_PROXY_SERVICE
 from .jhmesh.devices import InvalidMetadata
-from .mesh_config import cancel_upload_retry, plan_journal
+from .mesh_config import cancel_upload_retry, held_scenes, plan_journal
 from .migration import (
     async_update_gateway_issue,
     drop_retired_entities,
@@ -365,6 +367,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     await async_remove_node_versions(hass, entry.entry_id)
     await plan_journal(hass, entry.entry_id).async_remove()
+    await held_scenes(hass, entry.entry_id).async_remove()
     # the mesh's proxies were matched to this entry: let discovery offer them again (review-3 C7)
     for info in bluetooth.async_discovered_service_info(hass, connectable=True):
         if MESH_PROXY_SERVICE in info.service_data:
@@ -401,6 +404,8 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 ISSUE_DEVICE_NAME,
                 ISSUE_PENDING_DEVICE,
                 ISSUE_PLAN_INTERRUPTED,
+                ISSUE_SCENE_HELD,
+                ISSUE_VAULT_KEY_REFRESH,
             )
         ),
     ):

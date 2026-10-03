@@ -22,6 +22,10 @@ decoded and persists `record()`):
   (`PROOF_BEACON`; Key Refresh flag set = Phase 2, clear = Phase 3, §3.10.4.1), Phase Status confirmations from at
   least two distinct nodes (`PROOF_STATUSES`) or from the proxy node itself (`PROOF_PROXY`). An export written mid
   key refresh is its own proof (`PROOF_EXPORT`).
+- Phase 1 is **proven** the same way (review-4 D11): the candidate confirmed held — a NetKey Status or a Phase Status
+  reporting phase 1 — by two distinct nodes or by the proxy node, the export's own refresh, or a proven Phase 2. It
+  moves nothing here (the key was accepted already); it is what `distribution` waits for before Home Assistant hands
+  the key to the nodes only it knows (`vaultrefresh`): a key one node made up is never sent anywhere.
 
 The proxy node is trusted on its own word (its beacon, its status), as it is for everything the link carries: a
 compromised proxy can still move the refresh; any other single node cannot.
@@ -79,7 +83,8 @@ def _nodes(value: Any, what: str) -> frozenset[int]:
 class KeyRefreshRecord:
     """A key refresh in progress (phase 1 or 2) or completed (3, until the export holds the new key), as stored.
 
-    `proof` says how the phase was proven (one of `PROOFS`); None = not proven, which a phase 1 needs no more than.
+    `proof` says how the phase was proven (one of `PROOFS`); None = not proven. A phase 1 needs none to be followed
+    (the key is only accepted); one with a proof is the provisioner's key, which `distribution` hands out.
     `nodes` are the nodes the new key's NetKey Update was seen addressed to and `confirmed` maps a phase (1, 2, 3)
     to the nodes that confirmed it, so a restart keeps counting.
     """
@@ -92,7 +97,7 @@ class KeyRefreshRecord:
 
     @property
     def proven(self) -> bool:
-        """Whether the phase was proven (a phase 1 needs no proof: the key is only accepted, never used)."""
+        """Whether the phase was proven (a phase 1 needs no proof to be followed: the key is only accepted)."""
         return self.proof is not None
 
     def to_stored(self) -> dict[str, Any]:
@@ -140,10 +145,10 @@ class KeyRefreshRecord:
 
 @dataclass(frozen=True)
 class Moved:
-    """The followed refresh moved: phase 1 (a new key learnt), 2 (transmitting with it) or 0 (complete).
+    """The followed refresh moved: phase 1 (a new key learnt, or proven), 2 (transmitting with it) or 0 (complete).
 
     At 1 the key is only accepted; at 0 it is the only one. `proof` and the `nodes` whose statuses gave it are for
-    the log (None / () at phase 1).
+    the log; a phase 1 comes twice: when the key is learnt (no proof) and when the nodes prove it the provisioner's.
     """
 
     phase: int
@@ -155,6 +160,10 @@ class Moved:
 def describe_proof(moved: Moved) -> str:
     """How `moved` was proven, for the log (never the key)."""
     nodes = ", ".join(f"{n:04X}" for n in moved.nodes)
+    if moved.phase == 1 and moved.proof == PROOF_STATUSES:
+        return f"the new key confirmed by nodes {nodes}"
+    if moved.phase == 1 and moved.proof == PROOF_PROXY:
+        return f"the new key confirmed by the proxy node {nodes}"
     if moved.proof == PROOF_BEACON:
         return "the proxy's Secure Network beacon under the new key"
     if moved.proof == PROOF_STATUSES:
@@ -172,6 +181,8 @@ class _Candidate:
     kept: bool = False
     # how its Phase 2 was proven, once it was
     proof: str | None = None
+    # how it was proven the provisioner's key (Phase 1), once it was: `distribution` hands out no other
+    held: str | None = None
     confirmed: dict[int, set[int]] = field(
         default_factory=lambda: {p: set() for p in _PHASES}
     )
@@ -226,6 +237,26 @@ class KeyRefreshFollower:
             key=lambda k: (self._support(k), self._candidates[k].order),
         )
 
+    @property
+    def distribution(self) -> tuple[int, bytes] | None:
+        """The phase the nodes only Home Assistant knows may be taken to, and the new key: proven only (review-4 D11).
+
+        2 with the proven Phase 2 key; 1 with a candidate proven the provisioner's (`held`; the one most nodes vouch
+        for, should there be several); 3 with the key of a proven completion the export does not hold yet; None when
+        there is no refresh or nothing about it was proven. A candidate learnt from one node's word alone is never
+        handed out.
+        """
+        if self._switched is not None:
+            return 2, self._switched
+        held = [k for k, c in self._candidates.items() if c.held is not None]
+        if held:
+            return 1, max(
+                held, key=lambda k: (self._support(k), self._candidates[k].order)
+            )
+        if self._done is not None:
+            return 3, self._done.key
+        return None
+
     def record(self) -> KeyRefreshRecord | None:
         """Return what to persist: the refresh in progress (its `new_key`), else a completion the export lacks.
 
@@ -241,7 +272,7 @@ class KeyRefreshFollower:
         return KeyRefreshRecord(
             key,
             2 if switched else 1,
-            c.proof if switched else None,
+            c.proof if switched else c.held,
             frozenset(self._targets(key)),
             {p: frozenset(nodes) for p, nodes in c.confirmed.items() if nodes},
         )
@@ -267,11 +298,19 @@ class KeyRefreshFollower:
         if transition == 3:
             self._revoking.add(node)
 
-    def netkey_status(self, node: int, ok: bool) -> None:
-        """Note a NetKey Status `node` sealed with its own device key: success = it holds the key it was sent."""
+    def netkey_status(
+        self, node: int, ok: bool, proxy: int | None = None
+    ) -> Moved | None:
+        """Note a NetKey Status `node` sealed with its own device key: success = it holds the key it was sent.
+
+        Returns `Moved(1)` with its proof when this status proves the key the provisioner's (`distribution`;
+        `proxy`: the proxy node, whose word alone is enough).
+        """
         key = self._attributed(node)
-        if ok and key is not None:
-            self._candidates[key].confirmed[1].add(node)
+        if not ok or key is None:
+            return None
+        self._candidates[key].confirmed[1].add(node)
+        return self._check(key, proxy)
 
     def phase_status(self, node: int, phase: int, proxy: int | None) -> Moved | None:
         """Count a successful Key Refresh Phase Status `node` sealed with its own device key (`proxy`: the proxy)."""
@@ -321,6 +360,7 @@ class KeyRefreshFollower:
             new, phase = exported
             f._add(new, kept=True)
             f._trusted = new
+            f._candidates[new].held = PROOF_EXPORT
             if phase == 2:
                 f._switched = new
                 f._candidates[new].proof = PROOF_EXPORT
@@ -344,6 +384,9 @@ class KeyRefreshFollower:
         if stored.phase == 2 and stored.proven:
             f._switched = f._trusted = stored.key
             c.proof, c.kept = stored.proof, True
+            c.held = c.held or stored.proof
+        elif stored.phase == 1 and stored.proven:
+            c.held, c.kept = c.held or stored.proof, True
         return f, True
 
     # ------------------------------------------------------------------ internals
@@ -372,7 +415,7 @@ class KeyRefreshFollower:
 
     def _check(self, key: bytes, proxy: int | None) -> Moved | None:
         c = self._candidates[key]
-        for phase in (3, 2):
+        for phase in (3, 2, 1):
             nodes = c.confirmed[phase]
             by: tuple[int, ...]
             if proxy is not None and proxy in nodes:
@@ -383,14 +426,18 @@ class KeyRefreshFollower:
                 continue
             if phase == 3:
                 return self._complete(key, proof, by)
-            if key != self._switched:
+            if phase == 2 and key != self._switched:
                 return self._switch(key, proof, by)
+            if phase == 1 and c.held is None:
+                c.held, c.kept = proof, True
+                return Moved(1, key, proof, by)
         return None
 
     def _switch(self, key: bytes, proof: str, by: tuple[int, ...]) -> Moved:
         self._switched = self._trusted = key
         c = self._candidates[key]
         c.proof, c.kept = proof, True
+        c.held = c.held or proof  # Phase 2 proves Phase 1 too
         return Moved(2, key, proof, by)
 
     def _complete(self, key: bytes, proof: str, by: tuple[int, ...]) -> Moved:

@@ -6,12 +6,15 @@ import json
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest.mock import AsyncMock
 
 import pytest
 
+from custom_components.junghome_ble import vault_refresh
 from custom_components.junghome_ble.const import (
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
+    ISSUE_VAULT_KEY_REFRESH,
 )
 from custom_components.junghome_ble.coordinator import (
     async_apply_followed_key_refresh,
@@ -20,7 +23,9 @@ from custom_components.junghome_ble.coordinator import (
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
-from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
+from custom_components.junghome_ble.jhmesh.onboarding import node_for
+from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
+from custom_components.junghome_ble.jhmesh.vault import RefreshProgress, VaultNode
 
 from .conftest import (
     CDB_PATH,
@@ -28,6 +33,7 @@ from .conftest import (
     make_service_info,
     settle,
     wait_for_link,
+    wait_until,
 )
 from .helpers import LIGHT_CTL, LIGHT_SWITCH, MESH_UUID, find_issue
 
@@ -35,13 +41,99 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+    from custom_components.junghome_ble.coordinator import JungHomeHub
+
 NEW_KEY = bytes(range(0x40, 0x50))
+NEW_ID = NetKeyMaterial.derive(NEW_KEY).network_id
 PHONE = 0x0001
+# a device Home Assistant added (`add_device`): in its vault, not in the export, and so not in the app's database
+VAULT_NODE = 0x7FF0
+VAULT_UUID = "00005EFF-FE00-5399-0000-000000000000"
+VAULT_KEY = bytes(range(0x60, 0x70))
 
 
 def phase_status(phase: int) -> bytes:
     """Config Key Refresh Phase Status, success, NetKey index 0."""
     return encode_opcode(C.CONFIG_KEY_REFRESH_PHASE_STATUS) + bytes([0, 0, 0, phase])
+
+
+def netkey_status() -> bytes:
+    """Config NetKey Status, success, NetKey index 0."""
+    return encode_opcode(C.CONFIG_NETKEY_STATUS) + bytes(3)
+
+
+class VaultDevice:
+    """The Configuration Server of the device Home Assistant added: NetKey Update and Phase Set, as the spec has them.
+
+    `silent`: it answers nothing (off, out of range, or it never got the new key).
+    """
+
+    def __init__(self) -> None:
+        self.phase = 0
+        self.silent = False
+
+    def __call__(self, node: int, access: bytes) -> bytes | None:
+        if node != VAULT_NODE or self.silent:
+            return None
+        op, _cid, p = decode_opcode(access)
+        if op == C.CONFIG_NETKEY_UPDATE:
+            self.phase = 1
+            return netkey_status()
+        if op == C.CONFIG_KEY_REFRESH_PHASE_SET:
+            self.phase = 2 if p[2] == 2 else 0
+            return phase_status(self.phase)
+        return None
+
+
+def put_in_vault(
+    hub: JungHomeHub, fake_link: FakeProxyLink, progress: RefreshProgress | None = None
+) -> VaultNode:
+    """A device `add_device` provisioned (pending: in no export) — kept in the vault, holding its key on air."""
+    template = hub.cdb.node_by_addr(LIGHT_CTL)
+    assert template is not None
+    count = len(template.elements)
+    node = hub.vault.identity().remember_provisioned(
+        VAULT_UUID, VAULT_NODE, count, VAULT_KEY, (), progress
+    )
+    fake_link.cdb.nodes.append(
+        node_for(
+            template, uuid=VAULT_UUID, unicast=VAULT_NODE, dev_key=VAULT_KEY, name="New"
+        )
+    )
+    return node
+
+
+def sent_to_vault_node(fake_link: FakeProxyLink) -> list[bytes]:
+    return [
+        access for _src, node, access in fake_link.config_sent if node == VAULT_NODE
+    ]
+
+
+async def app_refresh(
+    hass: HomeAssistant, fake_link: FakeProxyLink, *, up_to: int = 3
+) -> list[list[bytes]]:
+    """The app's key refresh as the proxy node (0148) shows it, proven at each step; what the vault device got after each.
+
+    Phase 1: its NetKey Update to the proxy node and the proxy's NetKey Status (the proxy's word is proof); Phase 2:
+    the proxy beacons with the new key, the Key Refresh flag set; Phase 3: the flag clear.
+    """
+    seen = []
+    fake_link.inject_from_provisioner(LIGHT_SWITCH, C.netkey_update(NEW_KEY))
+    await settle(hass)
+    seen.append(sent_to_vault_node(fake_link))
+    fake_link.inject_config(LIGHT_SWITCH, PHONE, netkey_status())
+    await settle(hass)
+    seen.append(sent_to_vault_node(fake_link))
+    if up_to >= 2:
+        fake_link.nk = NetKeyMaterial.derive(NEW_KEY)
+        fake_link.inject_beacon(key_refresh=True)
+        await settle(hass)
+        seen.append(sent_to_vault_node(fake_link))
+    if up_to >= 3:
+        fake_link.inject_beacon()
+        await settle(hass)
+        seen.append(sent_to_vault_node(fake_link))
+    return seen
 
 
 async def test_the_apps_key_refresh_is_followed_and_survives_a_reload(
@@ -211,3 +303,178 @@ async def test_only_a_proven_completion_replaces_the_exports_key(
     assert ("complete but unproven" in caplog.text) is (
         refresh is not None and "proof" not in refresh
     )
+
+
+# ============================================================================= devices Home Assistant added (D11)
+
+
+async def test_a_device_home_assistant_added_is_carried_through_the_apps_key_refresh(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review 4 (D11): the app hands the new key only to the devices of its database; one Home Assistant added gets
+    the NetKey Update, Phase Set 2 and Phase Set 3 from Home Assistant, each once the step is proven, in order. It
+    keeps working under the new key alone, and the vault says how far it came (no key)."""
+    hub = init_integration.runtime_data
+    vault_node = put_in_vault(hub, fake_link)
+    device = VaultDevice()
+    fake_link.config_reply = device
+    seen = await app_refresh(hass, fake_link)
+    update, set2, set3 = (
+        C.netkey_update(NEW_KEY),
+        C.key_refresh_phase_set(2),
+        C.key_refresh_phase_set(3),
+    )
+    assert seen == [
+        [],  # learnt from one Update: nothing handed out yet
+        [update],  # proven by the proxy's own NetKey Status
+        [update, set2],
+        [update, set2, set3],
+    ]
+    assert device.phase == 0  # normal operation, on the new key
+    assert vault_node.key_refresh == RefreshProgress(NEW_ID, 3)
+    stored = await hub.vault._store.async_load()
+    assert stored is not None
+    assert stored["nodes"][0]["keyRefresh"] == {
+        "networkId": NEW_ID.hex().upper(),
+        "phase": 3,
+    }
+    assert NEW_KEY.hex() not in json.dumps(stored).lower()
+    assert (
+        hub.proxy.cdb.node_by_addr(VAULT_NODE) is None
+    )  # made known for the exchanges only
+    assert find_issue(hass, ISSUE_VAULT_KEY_REFRESH) is None
+    assert hub.vault_refresh.diagnostics() == {
+        "phase": 0,
+        "proven_phase": 3,
+        "vault_nodes": {"7FF0": {"network_id": NEW_ID.hex(), "phase": 3}},
+        "lagging": [],
+    }
+
+
+async def test_a_silent_device_raises_the_repair_and_a_later_link_clears_it(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    monkeypatch: pytest.MonkeyPatch,
+    fast_sleep: list[float],
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """A device that does not confirm the end of the refresh once Home Assistant reached it is named by a repair
+    issue; the next link takes it up again (from where it stopped) and clears the issue once it confirmed."""
+    monkeypatch.setattr(vault_refresh, "REQUEST_TIMEOUT", 0.01)
+    hub = init_integration.runtime_data
+    vault_node = put_in_vault(
+        hub, fake_link, RefreshProgress(NEW_ID, 2)
+    )  # got as far as Phase 2
+    device = VaultDevice()
+    device.phase, device.silent = 2, True
+    fake_link.config_reply = device
+    seen = await app_refresh(hass, fake_link)
+    assert seen[:3] == [[], [], []]  # there already
+    await wait_until(
+        hass,
+        lambda: find_issue(hass, ISSUE_VAULT_KEY_REFRESH) is not None,
+        what="the lagging device's repair issue",
+    )
+    issue = find_issue(hass, ISSUE_VAULT_KEY_REFRESH)
+    assert issue is not None
+    assert issue.translation_placeholders == {
+        "title": init_integration.title,
+        "addresses": "7FF0",
+    }
+    assert vault_node.key_refresh == RefreshProgress(NEW_ID, 2)
+    assert hub.vault_refresh.diagnostics()["lagging"] == ["7FF0"]
+    device.silent = False
+    # the proxies advertise the new key's Network ID now
+    mock_bluetooth_env["infos"] = [make_service_info(NEW_ID)]
+    fake_link.drop_link()
+    await wait_for_link(hass, init_integration, connected=False)
+    await wait_for_link(hass, init_integration)
+    await wait_until(
+        hass,
+        lambda: find_issue(hass, ISSUE_VAULT_KEY_REFRESH) is None,
+        what="the repair issue cleared",
+    )
+    assert device.phase == 0
+    assert vault_node.key_refresh == RefreshProgress(NEW_ID, 3)
+    assert sent_to_vault_node(fake_link).count(C.key_refresh_phase_set(3)) == 4
+    # forgotten (reset with `force`): no longer named
+    hub.vault_refresh.lagging = {VAULT_NODE}
+    hub.vault.identity().forget(VAULT_UUID)
+    hub.vault_refresh.update_issue()
+    assert find_issue(hass, ISSUE_VAULT_KEY_REFRESH) is None
+
+
+async def test_a_forged_key_refresh_reaches_no_device_home_assistant_added(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """One node seals NetKey Update (a key of its choice), Phase Set 2 and 3 with its own device key and confirms
+    every phase itself: the key is never handed to the devices Home Assistant added, and no Phase Set goes out."""
+    hub = init_integration.runtime_data
+    put_in_vault(hub, fake_link)
+    fake_link.config_reply = VaultDevice()
+    for pdu in (
+        C.netkey_update(NEW_KEY),
+        C.key_refresh_phase_set(2),
+        C.key_refresh_phase_set(3),
+    ):
+        fake_link.inject_from_provisioner(LIGHT_CTL, pdu, src=PHONE)
+    fake_link.inject_config(LIGHT_CTL, PHONE, netkey_status())
+    for phase in (1, 2, 0):
+        fake_link.inject_config(LIGHT_CTL, PHONE, phase_status(phase))
+    await settle(hass)
+    assert hub.proxy.key_refresh_phase == 1
+    assert sent_to_vault_node(fake_link) == []
+    # a new link's pass: still nothing
+    hub.vault_refresh.schedule()
+    await settle(hass)
+    assert sent_to_vault_node(fake_link) == []
+
+
+async def test_the_pass_stops_with_the_link_and_keeps_going_without_a_vault_store(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    hub = init_integration.runtime_data
+    refresh = hub.vault_refresh
+    refresh.schedule()  # no vault: nothing to do, no task
+    assert refresh.task is None
+    put_in_vault(hub, fake_link)
+    device = VaultDevice()
+    fake_link.config_reply = device
+    # a vault that cannot be written: logged (no key), the device still taken along
+    save = AsyncMock(side_effect=OSError("disk full"))
+    monkeypatch.setattr(hub.vault, "async_save", save)
+    with caplog.at_level(logging.WARNING):
+        await app_refresh(hass, fake_link, up_to=1)
+    assert device.phase == 1
+    assert save.await_count >= 2
+    assert "could not be kept in the vault (OSError)" in caplog.text
+    assert VAULT_KEY.hex() not in caplog.text.lower()
+    # a pass asked for while one runs runs once more after it; one whose link goes stops
+    calls: list[int] = []
+
+    async def lost(*_args: Any, **_kwargs: Any) -> bool:
+        calls.append(1)
+        if len(calls) == 1:
+            refresh.schedule()  # while running
+            return True
+        raise ConnectionError("link lost")
+
+    monkeypatch.setattr(vault_refresh, "carry", lost)
+    monkeypatch.setattr(vault_refresh, "wanted", lambda *_args: object())
+    refresh.schedule()
+    await settle(hass)
+    assert len(calls) == 2
+    # no link: nothing asked
+    monkeypatch.setattr(type(hub.proxy), "connected", property(lambda _self: False))
+    await refresh._pass()
+    assert len(calls) == 2

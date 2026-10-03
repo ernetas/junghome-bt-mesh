@@ -1134,7 +1134,9 @@ async def test_store_scene_sets_the_state_first(hass: HomeAssistant, env: Env) -
         lit.to_bytes(2, "little")
     ]
     gets = [pdu for dst, pdu in env.app_calls if dst == LIGHT_DIMMER]
-    assert gets.count(M.light_lightness_get()) == 2
+    # up to the Scene Store: the reloaded hub's connect-time refresh may ask again before the call returns
+    stored = gets.index(M.scene_store(2))
+    assert gets[:stored].count(M.light_lightness_get()) == 2
     assert env.scene_actions[LIGHT_DIMMER, 2] == (
         V.Action(V.ACTION_LIGHTNESS, lightness=lit - 1).encode()
     )
@@ -1843,20 +1845,48 @@ async def test_create_rename_and_delete_scene(hass: HomeAssistant, env: Env) -> 
     with pytest.raises(ServiceValidationError) as exc:
         await call(hass, "delete_scene", {"scene": "WC off"})
     assert exc.value.translation_key == "service_unknown_scene"
-    # `force` reaches the configurator; a scene number no scene of the export has is deleted from the registers
+    # `force` reaches the configurator, and the members it skipped come back
     with patch.object(
-        mesh_config.MeshConfigurator, "delete_scene", autospec=True, return_value=False
+        mesh_config.MeshConfigurator,
+        "delete_scene",
+        autospec=True,
+        return_value=["0232"],
     ) as delete:
-        await call(hass, "delete_scene", {"scene": "Cinema", "force": True})
+        response = await hass.services.async_call(
+            DOMAIN,
+            "delete_scene",
+            {"scene": "Cinema", "force": True},
+            blocking=True,
+            return_response=True,
+        )
+    assert response == {"skipped": ["0232"]}
     assert delete.call_args.args[1:] == ("Cinema",)
     assert delete.call_args.kwargs == {"force": True}
+    await settled(hass, env)
+    # a scene number no scene of the export has: listed by default (a dry run), deleted when told so
     env.registers[LIGHT_SWITCH] = [9]
+    env.app_calls.clear()
     response = await hass.services.async_call(
         DOMAIN, "delete_unused_scenes", {}, blocking=True, return_response=True
     )
     assert response == {"0148": [9], "unanswered": []}
+    assert env.registers[LIGHT_SWITCH] == [9]
+    assert (LIGHT_SWITCH, M.scene_delete(9)) not in env.app_calls
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "delete_unused_scenes", {"dry_run": False})
+    assert exc.value.translation_key == "service_unused_scenes_stale_export"
+    response = await hass.services.async_call(
+        DOMAIN,
+        "delete_unused_scenes",
+        {"dry_run": False, "numbers": ["9"]},
+        blocking=True,
+        return_response=True,
+    )
+    assert response == {"0148": [9], "unanswered": []}
     assert env.registers[LIGHT_SWITCH] == []
-    await call(hass, "delete_unused_scenes", {})  # nothing left, no response asked
+    await call(
+        hass, "delete_unused_scenes", {"dry_run": False, "confirm_stale_export": True}
+    )  # nothing left, no response asked
 
 
 async def test_store_and_remove_from_scene(hass: HomeAssistant, env: Env) -> None:
@@ -2447,6 +2477,73 @@ async def test_export_network_answers_the_export_to_administrators_only(
             return_response=True,
             context=Context(user_id=hass_read_only_user.id),
         )
+
+
+# Valid data for every action that is for administrators only (review-4 W4-9): the schema is checked before the
+# user is, so each call must pass it to meet the refusal
+ADMIN_CALLS: dict[str, dict[str, Any]] = {
+    "set_room": {"entity_id": "light.any", "room": "WC"},
+    "create_room": {"name": "Attic"},
+    "rename_room": {"room": "WC", "new_name": "Loo"},
+    "delete_room": {"room": "WC"},
+    "assign_key": {"key_entity": "event.any", "room": "WC"},
+    "clear_key": {"key_entity": "event.any"},
+    "create_scene": {"name": "Evening"},
+    "rename_scene": {"scene": "1", "new_name": "Night"},
+    "store_scene": {"scene": "1", "entity_id": "light.any"},
+    "remove_from_scene": {"scene": "1", "entity_id": "light.any"},
+    "delete_scene": {"scene": "1"},
+    "delete_unused_scenes": {},
+    "sync_gateway": {},
+    "create_schedule": {
+        "trigger": "time",
+        "time": "07:00",
+        "action": "on",
+        "entity_id": "light.any",
+    },
+    "enable_schedule": {"slot": 0, "entity_id": "light.any"},
+    "disable_schedule": {"slot": 0, "entity_id": "light.any"},
+    "delete_schedule": {"slot": 0, "entity_id": "light.any"},
+    "set_threshold": {"threshold": "switch_on", "entity_id": "switch.any"},
+    "delete_threshold": {"entity_id": "switch.any"},
+    "export_network": {},
+    "add_device": {"address": "AA:BB:CC:DD:EE:FF", "name": "New"},
+    "remove_device": {"device": "any"},
+    "reset_pending_device": {"unicast": "0D20"},
+}
+
+
+async def test_rewiring_actions_are_for_administrators_only(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_read_only_user: Any,
+) -> None:
+    """Review-4 W4-9 (decision M8): every action that rewires, deletes or writes the export or the devices refuses
+    a user who is no administrator; the reading ones stay open (`svc.USER_SERVICES`), and so do the dimming entity
+    actions. A new action must take a side here."""
+    registered = set(hass.services.async_services_for_domain(DOMAIN))
+    dimming = {"start_dim", "stop_dim", "step_dim"}
+    assert set(ADMIN_CALLS) == registered - svc.USER_SERVICES - dimming
+    user = Context(user_id=hass_read_only_user.id)
+    for name, data in ADMIN_CALLS.items():
+        with pytest.raises(Unauthorized):
+            await hass.services.async_call(
+                DOMAIN,
+                name,
+                data,
+                blocking=True,
+                context=user,
+                return_response=name == "export_network",
+            )
+    found = await hass.services.async_call(
+        DOMAIN,
+        "find_new_devices",
+        {},
+        blocking=True,
+        return_response=True,
+        context=user,
+    )
+    assert found == {"devices": []}
 
 
 # --------------------------------------------------------------------------- device renames (device_names.py)

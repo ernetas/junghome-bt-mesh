@@ -31,6 +31,7 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.entity import mesh_identifier, node_identifier
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi
 from custom_components.junghome_ble.jhmesh import config_messages as C
+from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
 from custom_components.junghome_ble.jhmesh.devices import element_group_address
 from custom_components.junghome_ble.jhmesh.export import (
     AllocationCrowded,
@@ -43,7 +44,11 @@ from custom_components.junghome_ble.jhmesh.onboarding import (
     node_for,
 )
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
-from custom_components.junghome_ble.jhmesh.provisioning import MESH_PROVISIONING_SERVICE
+from custom_components.junghome_ble.jhmesh.provisioning import (
+    MESH_PROVISIONING_SERVICE,
+    ProvisioningData,
+)
+from custom_components.junghome_ble.jhmesh.vault import RefreshProgress
 from custom_components.junghome_ble.services import CONFIGURATORS
 
 from .conftest import (
@@ -1298,3 +1303,49 @@ async def test_a_device_configured_but_not_recorded_is_reset_from_home_assistant
     }
     assert hub.proxy.cdb.node_by_addr(unicast) is None
     assert pending_issue(hass, provisioning_entry) is None
+
+
+async def test_add_device_is_refused_while_a_key_refresh_is_in_phase_one(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """Review-4 D11: in Phase 1 the device would get the key being retired, and miss the rest of the refresh."""
+    hub = provisioning_entry.runtime_data
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fake_link.inject_from_provisioner(
+        TEMPLATE, C.netkey_update(bytes(range(0x40, 0x50)))
+    )
+    await settle(hass)
+    assert hub.proxy.key_refresh_phase == 1
+    connect = AsyncMock()
+    with (
+        patch.object(onboard, "establish_connection", connect),
+        refused(ServiceValidationError, "add_device_key_refresh"),
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "add_device",
+            {"address": NEW_MAC, "name": "Hall light"},
+            blocking=True,
+        )
+    connect.assert_not_awaited()
+    assert hub.vault.vault is None
+
+
+def test_a_device_provisioned_in_phase_two_starts_there() -> None:
+    """Phase 2 hands out the new key with the Key Refresh flag: the vault records the device at Phase 2 of that
+    refresh (by the key's Network ID), so `vault_refresh.py` takes it on to Phase 3 only."""
+    new = bytes(range(0x40, 0x50))
+    data = ProvisioningData(
+        net_key=new, unicast=0x7FF0, iv_index=0, iv_update=False, key_refresh=True
+    )
+    assert onboard._refresh_progress(data) == RefreshProgress(
+        NetKeyMaterial.derive(new).network_id, 2
+    )
+    plain = ProvisioningData(
+        net_key=new, unicast=0x7FF0, iv_index=0, iv_update=False, key_refresh=False
+    )
+    assert onboard._refresh_progress(plain) is None

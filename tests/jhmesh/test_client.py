@@ -1581,6 +1581,33 @@ async def test_send_ack_edge_cases(attached: ProxyClient, link: FakeBleak):
     assert link.sent_acks() == []
 
 
+async def test_a_send_without_a_link_takes_no_sequence_number(
+    proxy: ProxyClient, link: FakeBleak
+):
+    """Review-4 R4-4: every send path used to reserve (and persist) its number before `_write` found no client —
+    ten sends with no link used ten numbers. Each now refuses first, under the send lock, and takes none."""
+    seq = proxy.state.seq
+    for _ in range(10):
+        with pytest.raises(ConnectionError, match="not connected to a proxy"):
+            await proxy.send_access(PROXY_NODE, M.generic_onoff_get())
+    with pytest.raises(ConnectionError, match="not connected to a proxy"):
+        await proxy.send_access(DIMMER, bytes(20))  # segmented
+    with pytest.raises(ConnectionError, match="not connected to a proxy"):
+        await proxy.set_filter(FILTER_BLACKLIST)
+    await proxy._send_ack(PROXY_NODE, 1, 1)  # swallowed, like any failed ack
+    assert proxy.state.seq == seq
+    assert not proxy._send_lock.locked()
+    assert proxy.filter_writes == 0
+
+    # the filter requests a link actually got are counted, and start from none on the next link
+    await proxy.attach(link)
+    assert proxy.filter_writes == 1
+    await proxy.set_filter(FILTER_BLACKLIST)
+    assert proxy.filter_writes == 2
+    await proxy.detach()
+    assert proxy.filter_writes == 0
+
+
 async def test_write_errors_surface_as_connection_error(
     attached: ProxyClient, link: FakeBleak
 ):
@@ -4062,7 +4089,13 @@ async def test_a_key_refresh_by_the_provisioner_is_followed(
     assert state.key_refresh is not None  # kept until the export holds the new key
     assert (state.key_refresh.key, state.key_refresh.phase) == (NEW_NET_KEY, 3)
     assert state.key_refresh.proof == PROOF_BEACON
-    assert phases == [(1, NEW_NET_KEY), (2, NEW_NET_KEY), (0, NEW_NET_KEY)]
+    # phase 1 twice: learnt, then proven by the proxy's own NetKey Status (review-4 D11)
+    assert phases == [
+        (1, NEW_NET_KEY),
+        (1, NEW_NET_KEY),
+        (2, NEW_NET_KEY),
+        (0, NEW_NET_KEY),
+    ]
     # a restart before the export has the new key: the new key alone, no refresh in progress
     restarted = ProxyClient(cdb, state)
     assert restarted.rx_net_keys == (restarted.nk,)
@@ -4072,6 +4105,55 @@ async def test_a_key_refresh_by_the_provisioner_is_followed(
         "network-id",
         None,
     )
+
+
+async def test_a_config_request_under_the_old_key_while_transmitting_with_the_new(
+    attached: ProxyClient, link: FakeBleak, cdb: CDB, fast: FastAsyncio
+):
+    """Review-4 D11: in a proven Phase 2 the client transmits with the new key, which a node still waiting for its
+    NetKey Update does not hold; `old_net_key` seals a Config request with the old one — unsegmented and
+    segmented — while every other message keeps the new one. `key_refresh_target` names a proven phase only."""
+    old = attached.nk
+    assert attached.key_refresh_target is None
+    phone_config(link, cdb, PROXY_NODE, C.netkey_update(NEW_NET_KEY))
+    assert attached.key_refresh_target is None  # learnt from one Update: not proven
+    link.nk = NetKeyMaterial.derive(
+        NEW_NET_KEY
+    )  # the proxy re-filters under the new key
+    node_answers(link, PROXY_NODE, phase_status(2))
+    await settle(10)
+    assert attached.key_refresh_target == (2, NEW_NET_KEY)
+    assert attached.nk.key == NEW_NET_KEY
+    link.nk = old  # a node that holds the old key only
+    link.auto_ack()
+    link.auto_config(
+        lambda _node, access: (
+            netkey_status()
+            if access == C.netkey_update(NEW_NET_KEY)
+            else phase_status(0)
+        )
+    )
+    reply = await attached.request_config(
+        LIGHT_2G,
+        C.key_refresh_phase_get(),
+        C.CONFIG_KEY_REFRESH_PHASE_STATUS,
+        timeout=1.0,
+        old_net_key=True,
+    )
+    assert reply.params == bytes([0, 0, 0, 0])
+    reply = await attached.request_config(
+        LIGHT_2G,
+        C.netkey_update(NEW_NET_KEY),
+        C.CONFIG_NETKEY_STATUS,
+        timeout=1.0,
+        old_net_key=True,
+    )  # 20 bytes: two segments, each under the old key
+    assert reply.params == bytes(3)
+    assert [m[4] for m in link.sent_config()][-2:] == [
+        C.key_refresh_phase_get(),
+        C.netkey_update(NEW_NET_KEY),
+    ]
+    assert attached.nk.key == NEW_NET_KEY  # the rest still goes out under the new key
 
 
 async def test_a_key_refresh_beacon_moves_to_phase_two_and_messages_that_are_not_ours_do_not_count(

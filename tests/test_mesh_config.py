@@ -317,6 +317,10 @@ class FakeHub:
     certificate_issues: int = 0
     # the battery nodes' keep-alive (`keep_awake.py`); nothing here tracks traffic, so no node was ever heard from
     last_heard: dict[int, float] = field(default_factory=dict)
+    # the device model, for the names a repair gives (`MeshConfigurator._member_name`)
+    devices: SimpleNamespace = field(
+        default_factory=lambda: SimpleNamespace(by_address={})
+    )
     keep_awake: KeepAwake = field(init=False)
     # the mesh's vault (`identity.py`) over an in-memory store
     vault: VaultKeeper = field(
@@ -325,6 +329,15 @@ class FakeHub:
 
     def __post_init__(self) -> None:
         self.keep_awake = KeepAwake(self)  # type: ignore[arg-type]
+
+    @property
+    def connected(self) -> bool:
+        return bool(self.proxy.connected)
+
+    async def async_wait_connected(self, timeout: float) -> bool:
+        """The bench's link never comes back by itself: the wait ends at once (`KeepAwake` looks again)."""
+        await asyncio.sleep(0)
+        return self.connected
 
     async def async_gateway_distrust(self) -> str | None:
         return self.distrust
@@ -369,6 +382,11 @@ class Bench:
         """The entry's plan journal."""
         return self.hub.hass.data[mc.PLAN_JOURNALS][self.hub.entry.entry_id]  # type: ignore[no-any-return]
 
+    @property
+    def held(self) -> MemoryStore:
+        """The entry's held scene numbers."""
+        return self.hub.hass.data[mc.HELD_SCENES][self.hub.entry.entry_id]  # type: ignore[no-any-return]
+
 
 @pytest.fixture
 def fast(monkeypatch: pytest.MonkeyPatch) -> FastAsyncio:
@@ -410,6 +428,8 @@ async def make_bench(
     hub.hass.config_entries.entries[hub.entry.entry_id] = hub.entry
     # the plan journal (`mesh_config.plan_journal`) in memory
     hub.hass.data[mc.PLAN_JOURNALS] = {hub.entry.entry_id: MemoryStore()}
+    # ... and the held scene numbers (`mesh_config.held_scenes`)
+    hub.hass.data[mc.HELD_SCENES] = {hub.entry.entry_id: MemoryStore()}
     return Bench(
         path, hub, link, config, keys, MeshConfigurator(hub), path.read_bytes()
     )  # type: ignore[arg-type]
@@ -2261,7 +2281,7 @@ async def test_remove_from_scene_and_delete_scene(
     assert scenes.registers[SOCKET_NODE] == []
     assert bench.reload().cdb.scenes[2] == [DALI_LOAD]
     scenes.seen.clear()
-    assert await bench.configurator.delete_scene("all OFF")
+    assert await bench.configurator.delete_scene("all OFF") == []
     assert scenes.seen == [
         (DALI_LOAD, V.scene_action_set(2)),
         (DALI_LOAD, M.scene_delete(2)),
@@ -2423,7 +2443,7 @@ async def test_scene_register_status_malformed_and_members_without_the_vendor_mo
     ]  # no Scene Action Setup Set
     assert bench.reload().cdb.scenes[1] == [SWITCH_LOAD, 0x0FFF]
     server.seen.clear()
-    assert await bench.configurator.delete_scene(1)
+    assert await bench.configurator.delete_scene(1) == []
     assert server.seen == [
         (SWITCH_LOAD, V.scene_action_set(1)),
         (SWITCH_LOAD, M.scene_delete(1)),
@@ -2509,7 +2529,7 @@ async def test_two_channel_node_shares_one_scene_register(
     # deleting the whole scene clears every channel's action and the register once, no sibling check
     scenes.actions[(ACTUATOR_OUT2, 2)] = lightness.encode()
     scenes.seen.clear()
-    assert await bench.configurator.delete_scene(2)
+    assert await bench.configurator.delete_scene(2) == []
     assert scenes.seen == [
         (ACTUATOR_OUT1, V.scene_action_set(2)),
         (ACTUATOR_OUT2, V.scene_action_set(2)),
@@ -4109,18 +4129,33 @@ async def test_a_stale_scene_row_does_not_clear_a_key_wired_elsewhere(
     """The fixture's 0149 has a scene-1 row but drives the gateway: the row is a stale cache, the key is kept."""
     assert scene_key_rows(bench.reload()) == [SWITCH_KEY]
     bench.config.seen.clear()
-    assert await bench.configurator.delete_scene(1)
+    assert await bench.configurator.delete_scene(1) == []
     assert bench.config.seen == []
     assert pub(bench.reload(), SWITCH_KEY, "1001") == GATEWAY_GROUP
 
 
-async def test_delete_scene_anyway_skips_what_does_not_answer(
-    bench: Bench, scenes: SceneServer, caplog: pytest.LogCaptureFixture
-) -> None:
-    """The app's *Delete anyway*: a member that cannot be reached keeps the scene, the export forgets it all the
-    same; without `force` the same silence stops the deletion."""
-    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)
-    assert await bench.configurator.store_scene(2, SOCKET_NODE, None)
+@pytest.fixture
+def issue_calls(monkeypatch: pytest.MonkeyPatch) -> dict[str, dict[str, Any]]:
+    """The repair issues the configurator holds open, by issue id, with every field it gave (`issues` keeps the
+    placeholders only)."""
+    raised: dict[str, dict[str, Any]] = {}
+
+    def create(_hass: Any, _domain: str, issue: str, **fields: Any) -> None:
+        raised[issue] = fields
+
+    def delete(_hass: Any, _domain: str, issue: str) -> None:
+        raised.pop(issue, None)
+
+    monkeypatch.setattr(mc.ir, "async_create_issue", create)
+    monkeypatch.setattr(mc.ir, "async_delete_issue", delete)
+    return raised
+
+
+SCENE_HELD = "scene_held_entry"
+
+
+def dali_silent(bench: Bench, scenes: SceneServer) -> Callable[[NetworkPDU], None]:
+    """Make the DALI node swallow every scene message; return the server's own responder, to put back."""
     original = scenes.respond
 
     def dali_gone(n: NetworkPDU) -> None:
@@ -4131,16 +4166,42 @@ async def test_delete_scene_anyway_skips_what_does_not_answer(
         original(n)
 
     bench.link.responders[-1] = dali_gone
+    return original
+
+
+async def test_delete_scene_anyway_skips_what_does_not_answer(
+    bench: Bench,
+    scenes: SceneServer,
+    issue_calls: dict[str, dict[str, Any]],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The app's *Delete anyway*: a member that cannot be reached keeps the scene, the export forgets it all the
+    same; without `force` the same silence stops the deletion. The skipped member is answered, held and named by a
+    repair (review-4 W4-8), not only logged."""
+    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)
+    assert await bench.configurator.store_scene(2, SOCKET_NODE, None)
+    dali_silent(bench, scenes)
     with pytest.raises(HomeAssistantError) as err:
         await bench.configurator.delete_scene(2)
     assert err.value.translation_key == "service_no_reply"
     assert 2 in bench.reload().cdb.scenes
-    assert await bench.configurator.delete_scene(2, force=True)
+    assert bench.held.data is None
+    assert issue_calls == {}
+    bench.hub.devices.by_address[DALI_LOAD] = SimpleNamespace(name="Kitchen")
+    assert await bench.configurator.delete_scene(2, force=True) == ["0232"]
     pf = bench.reload()
     assert 2 not in pf.cdb.scenes
     assert scenes.registers[SOCKET_NODE] == []  # the one that answered forgot it
     assert scenes.registers[DALI_LOAD] == [2]  # the silent one still holds it
     assert "still stored on 0232" in caplog.text
+    assert bench.held.data == {"held": [[2, DALI_LOAD]]}
+    issue = issue_calls[SCENE_HELD]
+    assert issue["translation_key"] == "scene_held"
+    assert issue["is_persistent"]  # the record outlives a restart: so does the issue
+    assert issue["translation_placeholders"] == {
+        "title": bench.hub.entry.title,
+        "members": "2: 0232 (Kitchen)",
+    }
 
 
 async def test_delete_scene_anyway_when_a_key_cannot_be_cleared(
@@ -4154,7 +4215,7 @@ async def test_delete_scene_anyway_when_a_key_cannot_be_cleared(
         await bench.configurator.delete_scene(1)
     assert err.value.translation_key == "service_config_refused"
     assert 1 in bench.reload().cdb.scenes
-    assert await bench.configurator.delete_scene(1, force=True)
+    assert await bench.configurator.delete_scene(1, force=True) == []
     pf = bench.reload()
     assert 1 not in pf.cdb.scenes
     assert (
@@ -4191,7 +4252,9 @@ async def test_delete_unused_scenes_deletes_what_the_export_does_not_know(
         original(n)
 
     bench.link.responders[-1] = some_silent
-    result = await bench.configurator.delete_unused_scenes()
+    result = await bench.configurator.delete_unused_scenes(
+        dry_run=False, confirm_stale_export=True
+    )
     assert result == {"0148": [7], "0172": [9], "unanswered": ["0300", "0400"]}
     assert scenes.registers[SWITCH_LOAD] == [1]
     assert scenes.registers[SOCKET_NODE] == []
@@ -4213,7 +4276,9 @@ async def test_delete_unused_scenes_stops_at_a_refused_delete(
 
     bench.link.responders[-1] = keeps_seven
     with pytest.raises(HomeAssistantError) as err:
-        await bench.configurator.delete_unused_scenes()
+        await bench.configurator.delete_unused_scenes(
+            dry_run=False, confirm_stale_export=True
+        )
     assert err.value.translation_key == "service_scene_not_deleted"
     assert err.value.translation_placeholders["scene"] == "7"
     assert scenes.registers[SWITCH_LOAD] == [1, 7]
@@ -4223,6 +4288,163 @@ async def test_delete_unused_scenes_stops_at_a_refused_delete(
     assert "(0148: 5)" in applied_unused_deleted({"0148": [5]})
     assert applied_unused_deleted({}) == APPLIED_NOTHING
     assert bench.file_unchanged()
+
+
+def scene_deletes(bench: Bench) -> list[tuple[int, bytes]]:
+    """(element, pdu) of every Scene Delete sent."""
+    return [
+        (dst, pdu)
+        for dst, pdu in bench.app_pdus()
+        if decode_opcode(pdu)[:2] == (M.SCENE_DELETE, None)
+    ]
+
+
+async def test_delete_unused_scenes_spares_the_apps_newer_scenes_on_a_file_entry(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """Review-4 W4-3: scene 7 was made in the app after the file was exported, so the file does not know it. A
+    call as an automation made it before (no fields) used to delete it from every device; now it is a dry run that
+    only lists it, and the deletion itself wants the user's word that the file is current."""
+    scenes.registers[SWITCH_LOAD] = [1, 7]
+    result = await bench.configurator.delete_unused_scenes()
+    assert result == {"0148": [7], "unanswered": []}
+    assert scenes.registers[SWITCH_LOAD] == [1, 7]
+    assert scene_deletes(bench) == []
+    with pytest.raises(ServiceValidationError) as err:
+        await bench.configurator.delete_unused_scenes(dry_run=False)
+    assert err.value.translation_key == "service_unused_scenes_stale_export"
+    assert scenes.registers[SWITCH_LOAD] == [1, 7]
+    assert scene_deletes(bench) == []
+    assert bench.file_unchanged()
+
+
+async def test_delete_unused_scenes_refuses_when_the_gateway_does_not_answer(
+    bench: Bench, scenes: SceneServer, with_gateway: FakeGateway
+) -> None:
+    """A gateway entry plans on the gateway's export or not at all: the copy on disk may lack what the app made
+    since (review-4 W4-3); neither the flag nor a list of numbers stands in for the gateway's answer, not even for
+    a dry run, whose listing the user would act on."""
+    scenes.registers[SWITCH_LOAD] = [1, 7]
+    with_gateway.doc = GatewayError("unreachable")
+    for fields in (
+        {},
+        {"dry_run": False},
+        {"dry_run": False, "confirm_stale_export": True},
+        {"dry_run": False, "numbers": [7]},
+    ):
+        with pytest.raises(HomeAssistantError) as err:
+            await bench.configurator.delete_unused_scenes(**fields)
+        assert err.value.translation_key == "service_gateway_export_unavailable"
+    # a gateway that must not be asked (its pin not vouched for) is no answer either
+    with_gateway.doc = json.loads(ProjectFile.load(bench.path).share_json())
+    bench.hub.distrust = "the gateway node has not confirmed the pinned certificate"
+    with pytest.raises(HomeAssistantError) as err:
+        await bench.configurator.delete_unused_scenes()
+    assert err.value.translation_key == "service_gateway_export_unavailable"
+    assert bench.app_pdus() == []
+    assert scenes.registers[SWITCH_LOAD] == [1, 7]
+
+
+async def test_delete_unused_scenes_spares_a_scene_the_app_made_on_a_gateway_entry(
+    bench: Bench, scenes: SceneServer, with_gateway: FakeGateway
+) -> None:
+    """What to check on air: a scene made in the app reaches the gateway, which hands it to Home Assistant before
+    anything is judged — the dry run does not list it, and a deletion (no flag needed with a gateway) keeps it."""
+    scenes.registers[SWITCH_LOAD] = [1, 7, 9]
+    app = ProjectFile.load(bench.path)
+    app.add_scene("From the app", number=7)
+    app.touch(datetime.now(UTC) + timedelta(minutes=1))
+    with_gateway.doc = json.loads(app.share_json())
+    assert await bench.configurator.delete_unused_scenes() == {
+        "0148": [9],
+        "unanswered": [],
+    }
+    assert 7 in bench.reload().cdb.scenes  # adopted
+    assert scenes.registers[SWITCH_LOAD] == [1, 7, 9]
+    # unchanged since: the gateway's answer stands for the copy on disk
+    assert await bench.configurator.delete_unused_scenes(dry_run=False) == {
+        "0148": [9],
+        "unanswered": [],
+    }
+    assert scenes.registers[SWITCH_LOAD] == [1, 7]
+
+
+async def test_delete_unused_scenes_deletes_only_the_numbers_named(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """On a file entry, `numbers` stand in for the user's word on the file: only those go; a number that is a
+    scene of the export is refused (that is `delete_scene`'s), before anything is sent."""
+    scenes.registers[SWITCH_LOAD] = [1, 7, 9]
+    with pytest.raises(ServiceValidationError) as err:
+        await bench.configurator.delete_unused_scenes(dry_run=False, numbers=[1, 7])
+    assert err.value.translation_key == "service_unused_scenes_known"
+    assert err.value.translation_placeholders == {"numbers": "1"}
+    assert bench.app_pdus() == []
+    assert await bench.configurator.delete_unused_scenes(dry_run=True, numbers=[7]) == {
+        "0148": [7],
+        "unanswered": [],
+    }
+    assert scene_deletes(bench) == []
+    assert await bench.configurator.delete_unused_scenes(
+        dry_run=False, numbers=[7]
+    ) == {"0148": [7], "unanswered": []}
+    assert scene_deletes(bench) == [(SWITCH_LOAD, M.scene_delete(7))]
+    assert scenes.registers[SWITCH_LOAD] == [1, 9]
+    assert bench.file_unchanged()
+
+
+async def test_a_held_scene_number_is_not_reused_until_it_is_deleted(
+    bench: Bench, scenes: SceneServer, issue_calls: dict[str, dict[str, Any]]
+) -> None:
+    """Review-4 W4-8: a member a forced deletion skipped still recalls the number. The next scene does not get it
+    (it would recall that member too) until `delete_unused_scenes` deletes it there; a dry run lets go of nothing."""
+    assert await bench.configurator.create_scene("Evening") == NEW_SCENE
+    assert await bench.configurator.store_scene(NEW_SCENE, DALI_LOAD, ON)
+    original = dali_silent(bench, scenes)
+    assert await bench.configurator.delete_scene(NEW_SCENE, force=True) == ["0232"]
+    assert bench.held.data == {"held": [[NEW_SCENE, DALI_LOAD]]}
+    assert issue_calls[SCENE_HELD]["translation_placeholders"]["members"] == (
+        f"{NEW_SCENE}: 0232"
+    )
+    assert await bench.configurator.create_scene("Night") == NEW_SCENE - 1
+    bench.link.responders[-1] = original  # the DALI node is back
+    assert await bench.configurator.delete_unused_scenes() == {
+        "0232": [NEW_SCENE],
+        "unanswered": [],
+    }
+    assert bench.held.data == {"held": [[NEW_SCENE, DALI_LOAD]]}  # a dry run
+    assert SCENE_HELD in issue_calls
+    assert await bench.configurator.delete_unused_scenes(
+        dry_run=False, confirm_stale_export=True
+    ) == {"0232": [NEW_SCENE], "unanswered": []}
+    assert scenes.registers[DALI_LOAD] == []
+    assert bench.held.data == {"held": []}
+    assert issue_calls == {}
+    assert await bench.configurator.create_scene("Late") == NEW_SCENE
+
+
+async def test_a_held_number_the_register_no_longer_holds_is_let_go(
+    bench: Bench,
+    scenes: SceneServer,
+    issue_calls: dict[str, dict[str, Any]],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A skipped device reset by hand, or that forgot the scene some other way: its register, read by a real run,
+    no longer holds the number, which is free again; the other held pairs stay. An unreadable record holds
+    nothing (and says so)."""
+    bench.held.data = {"held": [[5, DALI_LOAD], [6, DALI_LOAD], [5, SOCKET_NODE]]}
+    scenes.registers[DALI_LOAD] = [6]
+    scenes.registers[SOCKET_NODE] = [5]
+    assert await bench.configurator.delete_unused_scenes(
+        dry_run=False, numbers=[9]
+    ) == {"unanswered": []}
+    assert bench.held.data == {"held": [[5, SOCKET_NODE], [6, DALI_LOAD]]}
+    assert issue_calls[SCENE_HELD]["translation_placeholders"]["members"] == (
+        "5: 0172; 6: 0232"
+    )
+    bench.held.data = {"held": [["five", DALI_LOAD]]}
+    assert await bench.configurator.create_scene("Evening") == NEW_SCENE
+    assert "unreadable record of held scene numbers" in caplog.text
 
 
 async def test_keys_cleared_before_a_member_that_stops_are_recorded(

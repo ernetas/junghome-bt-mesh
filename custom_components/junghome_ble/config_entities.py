@@ -46,6 +46,7 @@ from homeassistant.util.hass_dict import HassKey
 from . import const
 from .const import (
     DOMAIN,
+    LINK_WAIT_STEP,
     LOCK_EXPIRY_MARGIN,
     NODE_INFO,
     NODE_INFO_TIME_ROLE,
@@ -1242,6 +1243,9 @@ class PropertyReader:
             return
         await asyncio.sleep(PROPERTY_READ_DELAY)
         while self._jobs:
+            # no link: wait for one rather than run the queue into "not connected" (each read lost for nothing)
+            while not self.hub.connected:
+                await self.hub.async_wait_connected(LINK_WAIT_STEP)
             for result in await asyncio.gather(
                 *(job() for job in self._take_chunk()), return_exceptions=True
             ):

@@ -30,6 +30,7 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
 )
+from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.pdu import (
@@ -171,13 +172,26 @@ async def test_diagnostics(
         init_integration.runtime_data.proxy.state.seq
     )  # how many PDUs the start-up refresh took is the hub's business
     assert seq > 0
+    headroom = init_integration.runtime_data.state.durable_headroom
+    # a healthy store: written, so the restart margin lies ahead of us; nothing held back, no write failed
+    assert 0 < headroom <= SEQ_RESTART_MARGIN
     assert result["local"] == {
         "src": "0D00",
         "seq": seq,
         "iv_index": 0,
         "iv_update_active": False,
+        "stalled_for": None,
+        "last_write_error": None,
+        "durable_headroom": headroom,
     }
 
+    # no key refresh, no device Home Assistant added (review-4 D11: phases and Network IDs only, never a key)
+    assert result["key_refresh"] == {
+        "phase": 0,
+        "proven_phase": None,
+        "vault_nodes": {},
+        "lagging": [],
+    }
     # every node answered, or is still within its three misses
     assert result["unreachable"] == []
     init_integration.runtime_data.unreachable.add(0x0300)

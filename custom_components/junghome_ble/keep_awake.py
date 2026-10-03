@@ -30,7 +30,13 @@ from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
-from .const import DOMAIN, KEEP_AWAKE_INTERVAL, KEEP_AWAKE_RETRY, KEEP_AWAKE_TIMEOUT
+from .const import (
+    DOMAIN,
+    KEEP_AWAKE_INTERVAL,
+    KEEP_AWAKE_RETRY,
+    KEEP_AWAKE_TIMEOUT,
+    LINK_WAIT_STEP,
+)
 from .jhmesh import messages as M
 from .jhmesh.devices import BATTERY_PIDS
 
@@ -102,10 +108,14 @@ class KeepAwake:
 
         The operation holding the node sends its first message as the task starts, so the quiet time counts from
         then; an unanswered Get (or one the link could not send) is repeated `KEEP_AWAKE_RETRY` later, the app's.
-        Anything else is a bug: logged, and the task ends (the next `hold` starts a new one).
+        Anything else is a bug: logged, and the task ends (the next `hold` starts a new one). While there is no link
+        it waits for one rather than sending into "not connected" every `KEEP_AWAKE_RETRY`.
         """
         quiet_since = time.monotonic()
         while True:
+            if not self.hub.connected:
+                await self.hub.async_wait_connected(LINK_WAIT_STEP)
+                continue
             heard = max(quiet_since, self.hub.last_heard.get(unicast, quiet_since))
             wait = heard + KEEP_AWAKE_INTERVAL - time.monotonic()
             if wait > 0:

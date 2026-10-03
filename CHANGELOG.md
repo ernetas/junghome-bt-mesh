@@ -1,5 +1,63 @@
 # Changelog
 
+## 1.1.0 (unreleased)
+
+### Upgrading
+
+- **`delete_unused_scenes` is a dry run by default** (decision M3): a call without fields, as an automation made it
+  before, now only lists the numbers it would delete (the response is the same shape) and deletes nothing. Add
+  `dry_run: false` to delete; on an entry set up from a file also `confirm_stale_export: true` (the file holds every
+  scene of the app) or `numbers: [...]`. On a gateway entry it refuses while the gateway does not answer.
+- **Rewiring and deleting actions are for administrators only** (decision M8, review-4 W4-9): `set_room`,
+  `create_room`, `rename_room`, `delete_room`, `assign_key`, `clear_key`, every scene action (`store_scene`
+  included), `sync_gateway`, the schedule actions but `get_schedules`, `set_threshold` and `delete_threshold` now
+  fail with *Unauthorized* when a user who is no administrator calls them, from a dashboard, a script that user
+  starts or that user's long-lived token. Automations the system triggers are not affected. `get_schedules`,
+  `audit_network`, `find_new_devices` and the dimming actions stay open to every user; `export_network` and adding
+  or removing devices were administrators only already.
+
+### Fixed — mesh safety
+
+- Sequence-number back-pressure is bounded and no longer mistaken for exhaustion (review-4 D9, R4-2): a send the
+  store holds back is retried every 5 s for 2 minutes at most, then fails like a lost link; a really used-up sequence
+  space (or a newer hub owning the numbers) fails at once. Both used to be retried for as long as the link was up, so
+  the link watchdog's keep-alive never returned and a silent proxy was never dropped; a keep-alive that cannot be sent
+  now decides nothing, and the watchdog drops a silent proxy as usual.
+- A sequence-number store that cannot be written (a full disk, an SD card remounted read-only) raises its own repair,
+  *JUNG HOME sequence numbers cannot be saved*, after a minute, naming the file and the last write error; it clears
+  itself once a write lands. Review 3 listed this repair as done, but it was never built: the user got *JUNG HOME
+  devices ignore Home Assistant* instead, whose fix cannot be written either. That issue is no longer raised for a
+  proxy filter request that was never sent, nor while the store holds sends back. Diagnostics show `stalled_for`,
+  `last_write_error` and `durable_headroom`.
+- A send with no link fails before it takes a sequence number (review-4 R4-4): every send path (commands, segmented
+  messages, the proxy filter, segment acknowledgements) used to persist a number and only then find the link gone, and
+  one after the entry stopped cleared the clean-close mark, so the next start added the restart margin for nothing. The
+  property reads and a battery node's keep-alive wait for the link instead of sending into "not connected".
+- `delete_unused_scenes` no longer deletes the app's scenes from a stale export (review-4 W4-3). It deletes every
+  scene number the export does not know, and an entry set up from a file — or a gateway entry whose gateway did not
+  answer, which silently planned on the copy on disk — lacked the scenes and timer scenes made in the app since:
+  they were deleted from every device while the app still listed them. It is now a dry run unless told
+  `dry_run: false` (it reads the scene registers and answers what it would delete); a gateway entry works only on
+  the gateway's current export (taking it over first when the app changed something) and refuses when the gateway
+  does not answer, dry run included; a file entry deletes only with `confirm_stale_export: true` or the `numbers` to
+  delete. A number that is a scene of the export is refused in `numbers`. Unverified on air.
+- A scene number a device still holds after `delete_scene` with `force` skipped it is no longer handed to a new
+  scene, which that device would have joined (review-4 W4-8): the number is held
+  (`.storage/junghome_ble.<entry id>.held_scenes`, removed with the entry) until `delete_unused_scenes` deletes it
+  from the device. The skipped members are answered (`{"skipped": ["0232"]}`, with *Response* on) and named by the
+  new repair issue *Devices still hold a deleted JUNG HOME scene*, instead of a log line only.
+- Devices Home Assistant added (`add_device`) are carried through the app's key renewal (review-4 D11). The app
+  hands the new network key only to the devices of its own database, so such a device kept the old key alone and
+  was cut off when the renewal completed. Home Assistant now sends it the same messages, sealed with the device key
+  only its vault holds, and only as far as the renewal is proven: NetKey Update once the new key is confirmed by two
+  devices or by the proxy node (or the export was written mid renewal), Key Refresh Phase Set 2 at a proven Phase 2,
+  Phase Set 3 once the renewal is proven complete — never earlier, and never a key one device made up. Each step
+  waits for the one before it to be confirmed, is retried on every new connection, and is recorded in the vault
+  (the phase and the new key's Network ID, no key; also in the diagnostics). A device that does not confirm the end
+  raises the repair issue *Devices Home Assistant added missed the new network key*. Nothing is sent without such a
+  device. `add_device` refuses while a renewal is in Phase 1 (the device would get the key being retired).
+  Unverified on air.
+
 ## 1.0.0
 
 The fixes from the first code review (`docs/review-1/`; every change and its reasoning is in

@@ -82,6 +82,7 @@ from .const import (
     CONF_GATEWAY_SYNCED,
     CONF_METADATA_DIR,
     DEFAULT_PROVISIONER_IDENTITY,
+    DEFAULT_UNUSED_SCENES_DRY_RUN,
     DOMAIN,
     GATEWAY_UPLOAD_RETRIES,
     GATEWAY_UPLOAD_RETRY_DELAY,
@@ -90,6 +91,7 @@ from .const import (
     ISSUE_GATEWAY_SYNC,
     ISSUE_GATEWAY_TOKEN,
     ISSUE_PLAN_INTERRUPTED,
+    ISSUE_SCENE_HELD,
     OPTION_PROVISIONER_IDENTITY,
 )
 from .coordinator import issue_id
@@ -855,6 +857,28 @@ def plan_journal(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
     return journals[entry_id]
 
 
+HELD_SCENES_VERSION = 1
+HELD_SCENES: HassKey[dict[str, Store[dict[str, Any]]]] = HassKey(
+    f"{DOMAIN}_held_scenes"
+)
+
+
+def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    """Return the entry's held scene numbers (`.storage/junghome_ble.<entry id>.held_scenes`), one instance per entry.
+
+    `{"held": [[number, element], ...]}`: the scene registers a forced `delete_scene` skipped, which still hold a
+    number the export no longer names (review-4 W4-8). `create_scene` does not hand such a number out again — the
+    skipped device would join every recall of the new scene — and `delete_unused_scenes` lets go of a pair once the
+    register no longer holds it. Numbers and addresses, no key material.
+    """
+    stores = hass.data.setdefault(HELD_SCENES, {})
+    if entry_id not in stores:
+        stores[entry_id] = Store(
+            hass, HELD_SCENES_VERSION, f"{DOMAIN}.{entry_id}.held_scenes"
+        )
+    return stores[entry_id]
+
+
 async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
     """Await `work` to its end even when the caller is cancelled meanwhile, then pass the cancellation on (D12).
 
@@ -906,14 +930,18 @@ class MeshConfigurator:
         """The export the config entry points at."""
         return str(self.hub.entry.data[CONF_CDB_PATH])
 
-    async def _load(self) -> ProjectFile:
+    async def _load(self, *, fresh: bool = False) -> ProjectFile:
         """Read the export a mutation plans against: the gateway's when that is newer, else the copy on disk.
 
         Every mutation starts here, under the lock. `recorded` and `adopted` are not reset here but per call
         (`services._run`): one call can run several mutations (`set_threshold` wires socket by socket), and a
-        later one that fails must not hide the export an earlier one wrote.
+        later one that fails must not hide the export an earlier one wrote. `fresh`: a gateway entry whose gateway
+        did not answer is refused instead of planning on the copy on disk, which may lack what the app made since
+        (review-4 W4-3: what judges by what the export *lacks* must not fall back silently).
         """
-        await self._adopt_gateway_export()
+        answered = await self._adopt_gateway_export()
+        if fresh and not answered and self.gateway is not None:
+            raise _failure("service_gateway_export_unavailable")
         pf = await self._read()
         await self._with_identity(pf)
         return pf
@@ -1078,6 +1106,59 @@ class MeshConfigurator:
             },
         )
         return self.recorded
+
+    # ------------------------------------------------------------------ held scene numbers (review-4 W4-8)
+    async def _held_scenes(self) -> set[tuple[int, int]]:
+        """(scene number, register element) of every register a forced `delete_scene` skipped and that may hold it."""
+        data = await held_scenes(self.hub.hass, self.hub.entry.entry_id).async_load()
+        try:
+            return {(int(n), int(e)) for n, e in (data or {}).get("held", [])}
+        except (TypeError, ValueError, AttributeError) as err:
+            _LOGGER.warning(
+                "Ignoring an unreadable record of held scene numbers: %s", err
+            )
+            return set()
+
+    async def _hold_scenes(self, pairs: set[tuple[int, int]]) -> None:
+        """Keep `pairs` as the held scene numbers and let the `scene_held` repair name them (cleared when none).
+
+        An empty record is written rather than the file removed: `Store` would hand data it loaded back to the
+        next load in this run.
+        """
+        await held_scenes(self.hub.hass, self.hub.entry.entry_id).async_save(
+            {"held": sorted([n, e] for n, e in pairs)}
+        )
+        issue = issue_id(self.hub.entry, ISSUE_SCENE_HELD)
+        if not pairs:
+            ir.async_delete_issue(self.hub.hass, DOMAIN, issue)
+            return
+        by_number: dict[int, list[int]] = {}
+        for number, element in sorted(pairs):
+            by_number.setdefault(number, []).append(element)
+        ir.async_create_issue(
+            self.hub.hass,
+            DOMAIN,
+            issue,
+            is_fixable=False,
+            # the record outlives a restart, so must the issue: nothing raises it again at setup
+            is_persistent=True,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_SCENE_HELD,
+            translation_placeholders={
+                "title": self.hub.entry.title,
+                "members": "; ".join(
+                    f"{number}: {', '.join(self._member_name(e) for e in elements)}"
+                    for number, elements in by_number.items()
+                ),
+            },
+        )
+
+    def _member_name(self, element: int) -> str:
+        """`0232 (Kitchen)`: a register element by its address, with the name of its load when the hub has one."""
+        device = self.hub.devices.by_address.get(element)
+        if device is None:
+            return hexaddr(element)
+        return f"{hexaddr(element)} ({device.name})"
 
     async def _write(self, pf: ProjectFile) -> None:
         """Write `pf` to the entry's export (the app's last upload kept first as the merge base, with a gateway)."""
@@ -1573,7 +1654,7 @@ class MeshConfigurator:
         except OSError:
             return None
 
-    async def _adopt_gateway_export(self) -> None:
+    async def _adopt_gateway_export(self) -> bool:
         """Replace the copy on disk by the gateway's export when it, and only it, changed since HA last synced.
 
         The app uploads its project to the gateway after every change (network-features.md §8.2) and the file of
@@ -1584,17 +1665,24 @@ class MeshConfigurator:
         made on the gateway's copy (the hub's device model follows with the reload after the change). When HA's
         own copy changed too (an earlier upload never reached the gateway), neither side is silently dropped: the
         change is refused until the entry is fetched again. A gateway that must not be asked is not: the plan is
-        made on disk, and the upload after the change reports why it did not go out.
+        made on disk, and the upload after the change reports why it did not go out. True when the copy on disk
+        now holds what the gateway's export holds: adopted, or the gateway unchanged since HA last synced; False
+        without a gateway, when it was not asked or did not answer, and for a bare database left beside a bare
+        file (nothing tells what either lacks).
         """
         try:
             state = await self._gateway_state()
         except _GatewayUnusable as err:
             _LOGGER.debug("Planning on the copy on disk: %s", err.cause)
-            return
+            return False
         if state is None:
-            return  # the upload after the change decides later, from its own check
+            return (
+                False  # the upload after the change decides later, from its own check
+            )
         if await self._adopt(state, "before the change"):
             self.recorded = self.adopted = True
+            return True
+        return state[2] is not None
 
     async def _adopt(
         self,
@@ -3281,11 +3369,18 @@ class MeshConfigurator:
         return False
 
     async def create_scene(self, name: str, icon: str | None = None) -> int:
-        """Create an empty scene (CDB `scenes[]` + `meta.scenes[]`); nothing goes on air. Returns its number."""
+        """Create an empty scene (CDB `scenes[]` + `meta.scenes[]`); nothing goes on air. Returns its number.
+
+        Not a number a device still holds after a forced deletion skipped it (`held_scenes`): that device would
+        join every recall of the new scene (review-4 W4-8).
+        """
         async with self.lock:
             pf = await self._load()
+            held_numbers = {number for number, _ in await self._held_scenes()}
             try:
-                number = pf.add_scene(name, icon=icon or DEFAULT_SCENE_ICON)
+                number = pf.add_scene(
+                    name, icon=icon or DEFAULT_SCENE_ICON, avoid=held_numbers
+                )
             except InvalidName as err:
                 raise _name_error(err, name) from err
             except ValueError as err:
@@ -3540,14 +3635,17 @@ class MeshConfigurator:
             await self._save(pf)
             return True
 
-    async def delete_scene(self, scene: str | int, *, force: bool = False) -> bool:
+    async def delete_scene(self, scene: str | int, *, force: bool = False) -> list[str]:
         """Delete a scene: every element that stored it forgets it (every channel's action too), then the CDB / `meta` entries go.
 
         The keys of the members that recall the scene are cleared first (`_scene_key_steps`, as the app's
         *remove device from scene* does for every member). A member that cannot be reached, or refuses, stops the
         deletion with what was done recorded — unless `force`, the app's *Delete anyway*
         (`removeScene(scene, force)`): then that member is skipped, keeps the scene in its register, and the scene
-        leaves the export all the same.
+        leaves the export all the same. A skipped member's number is held (`held_scenes`, the `scene_held` repair
+        names it) until `delete_unused_scenes` deletes it there: a new scene with that number would also recall
+        the skipped member (review-4 W4-8). Returns the skipped members (`["0232"]`); the device model always
+        changes.
         """
         async with self.lock:
             pf = await self._load()
@@ -3596,6 +3694,11 @@ class MeshConfigurator:
                     if done or keys:  # the members before this one, the keys: recorded
                         await self._save(pf)
                     raise
+            if skipped:
+                # held before the export lets the number go, so no later call can hand it out in between
+                await self._hold_scenes(
+                    await self._held_scenes() | {(number, a) for a in skipped}
+                )
             pf.remove_scene(number)
             await self._save(pf)
             _LOGGER.info(
@@ -3605,9 +3708,15 @@ class MeshConfigurator:
                 if skipped
                 else "",
             )
-            return True
+            return [hexaddr(a) for a in skipped]
 
-    async def delete_unused_scenes(self) -> dict[str, list[int] | list[str]]:
+    async def delete_unused_scenes(
+        self,
+        *,
+        dry_run: bool = DEFAULT_UNUSED_SCENES_DRY_RUN,
+        numbers: Collection[int] | None = None,
+        confirm_stale_export: bool = False,
+    ) -> dict[str, list[int] | list[str]]:
         """Delete from every node's scene register the scenes the export does not know (the app's `DeleteUnusedScenes`).
 
         `Scene Register Get` to each node's first Scene Setup Server, then `Scene Delete` for every number that is
@@ -3617,10 +3726,32 @@ class MeshConfigurator:
         did not answer the Get, left alone. A Delete the node does not carry out stops the call, as elsewhere,
         and the error names the numbers deleted before it (`applied_unused_deleted`); nothing of this is in the
         export, so nothing is written.
+
+        Judged by what the export *lacks*, so only on an export known to be current (review-4 W4-3): the app's
+        scenes made since a file was exported are no scene of that file, and the call deleted them from every
+        device while the app still listed them. A `dry_run` (the default, decision M3) sends the Gets only and
+        answers what it would delete. A gateway entry plans on the gateway's export or not at all
+        (`service_gateway_export_unavailable`, dry run included); an entry set up from a file deletes only with
+        `confirm_stale_export` (the user vouches for the file) or the `numbers` to delete, which restrict the
+        call either way and must be no scene of the export. A held number (`held_scenes`) is let go once its
+        register no longer holds it. Unverified on air: an app scene taken over from the gateway before the dry run.
         """
         async with self.lock:
-            pf = await self._load()
+            pf = await self._load(fresh=True)
             known = set(pf.cdb.scenes)
+            if numbers is not None and (named := sorted(set(numbers) & known)):
+                raise _validation(
+                    "service_unused_scenes_known",
+                    numbers=", ".join(str(n) for n in named),
+                )
+            if (
+                not dry_run
+                and self.gateway is None
+                and numbers is None
+                and not confirm_stale_export
+            ):
+                raise _validation("service_unused_scenes_stale_export")
+            wanted = None if numbers is None else set(numbers)
             registers = [
                 store
                 for node in pf.cdb.nodes
@@ -3633,51 +3764,76 @@ class MeshConfigurator:
                 )
                 is not None
             ]
+            held_before = await self._held_scenes()
+            still_held = set(held_before)
             deleted: dict[str, list[int]] = {}
             unanswered: list[int] = []
-            for store in registers:
-                reply = await self._reply(
-                    store.address,
-                    M.scene_register_get(),
-                    M.SCENE_REGISTER_STATUS,
-                    CONFIG_TIMEOUT,
-                    CONFIG_RETRIES,
-                    applied_unused_deleted(deleted),
-                )
-                try:
-                    held = (
-                        None
-                        if reply is None
-                        else M.decode_scene_register_status(reply.params).scenes
-                    )
-                except ValueError:
-                    held = None
-                if held is None:
-                    unanswered.append(store.address)
-                    continue
-                for number in [n for n in held if n not in known]:
-                    register, _read_back = await self._scene_register(
+            try:
+                for store in registers:
+                    reply = await self._reply(
                         store.address,
-                        M.scene_delete(number),
+                        M.scene_register_get(),
+                        M.SCENE_REGISTER_STATUS,
+                        CONFIG_TIMEOUT,
+                        CONFIG_RETRIES,
                         applied_unused_deleted(deleted),
                     )
-                    if number in register.scenes:
-                        raise _failure(
-                            "service_scene_not_deleted",
-                            address=hexaddr(store.address),
-                            scene=str(number),
-                            status=_scene_register_status_name(register.status),
-                            applied=applied_unused_deleted(deleted),
+                    try:
+                        holds = (
+                            None
+                            if reply is None
+                            else M.decode_scene_register_status(reply.params).scenes
                         )
-                    deleted.setdefault(hexaddr(store.address), []).append(number)
-                    _LOGGER.info(
-                        "Deleted scene %d, unknown to the export, from %04X",
-                        number,
-                        store.address,
-                    )
+                    except ValueError:
+                        holds = None
+                    if holds is None:
+                        unanswered.append(store.address)
+                        continue
+                    on_node = {e.address for e in store.node.elements}
+                    if not dry_run:  # a dry run changes nothing, not even this record
+                        still_held -= {
+                            (n, e)
+                            for n, e in still_held
+                            if e in on_node and n not in holds
+                        }
+                    for number in holds:
+                        if number in known or (
+                            wanted is not None and number not in wanted
+                        ):
+                            continue
+                        if not dry_run:
+                            await self._delete_unused(store, number, deleted)
+                            still_held -= {
+                                (n, e)
+                                for n, e in still_held
+                                if n == number and e in on_node
+                            }
+                        deleted.setdefault(hexaddr(store.address), []).append(number)
+            finally:
+                if still_held != held_before:
+                    await self._hold_scenes(still_held)
             result: dict[str, list[int] | list[str]] = dict(deleted)
             result["unanswered"] = [hexaddr(a) for a in unanswered]
             return result
+
+    async def _delete_unused(
+        self, store: Element, number: int, deleted: dict[str, list[int]]
+    ) -> None:
+        """`Scene Delete` of a number the export does not know, checked; `deleted` is what went before it."""
+        register, _read_back = await self._scene_register(
+            store.address, M.scene_delete(number), applied_unused_deleted(deleted)
+        )
+        if number in register.scenes:
+            raise _failure(
+                "service_scene_not_deleted",
+                address=hexaddr(store.address),
+                scene=str(number),
+                status=_scene_register_status_name(register.status),
+                applied=applied_unused_deleted(deleted),
+            )
+        _LOGGER.info(
+            "Deleted scene %d, unknown to the export, from %04X", number, store.address
+        )
 
     async def _forget_scene(
         self,
