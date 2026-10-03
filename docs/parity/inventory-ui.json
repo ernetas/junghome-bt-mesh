@@ -1,0 +1,3156 @@
+{
+ "domain": "ui",
+ "apk": "JUNG HOME 2.2.0",
+ "method": "Root: android/jadx-out/sources (S) and android/jadx-out/resources/res (R). Kotlin names come from `grep -m1 'compiled from: X.kt'` (obfuscated files keep it). apk_refs are S- or R-relative path:line, line = first line containing a literal anchor (class declaration when no anchor).\nSTEP 1 surfaces (whitelist). Start from R/navigation/nav_graph.xml destinations whose class is a runtime page: home.HomeFragment, groups.GroupsFragment, groupDetail.GroupDetailsActivity, scenes.ScenesFragment, sceneDetail.SceneDetailsActivity, centralFunction.CentralFunctionsActivity, devices.{lamp.LampDetailActivity, blinds.BlindDetailActivity, rtr.RtrDetailActivity, socket.SwitchSocketDetailActivity, controlSwitch.ControlSwitchDetailActivity, detectors.motionDetector.*, detectors.presenceDetector.*, miniActuator.MiniActuatorDetailActivity, blinds.parameter.ReferenceRunLoadingActivity}, main.MainActivity; add their child fragments/views: every Kotlin file named *Fragment/*Activity/*Sheet/*View/*ViewHolder/*Slider/*Wheel/*Adapter that such a page instantiates (t.C(...) fragment swaps, R.layout.* it inflates, custom-view tags in those layouts and their <include>s), the 4 obfuscated tab fragments found by `grep -rl 'compiled from: [A-Za-z]*CentralFunctionsFragment.kt' S` (p223u6/b, p125l6/c, B6/b, p265y6/a), SwitchMeasureSocketDeviceDetailActivity, PowerConsumptionFragment, SleepFragment, SimpleSwitchFragment, DimFragment, TunableWhiteFragment, BlindsFragment, RoomTemperatureFragment, DetectorSensorFragment, ControlSwitchConfigurationFragment, MiniActuatorConfigurationFragment, FavoritesFragment, DevicesFragment, ProxyConnectionLoadingActivity, BluetoothOffActivity, and (second sweep) DeviceInfoFragment, ConfigurationConsumptionFragment, BlindReferenceRunFragment. Out of this domain by package: timer/, scheduler/ (timers), devices/connection/ (connection flows), configuration/deviceParameter/ (parameters, except the detector current-brightness cell), scene/create/ (scene editing), meshnetwork/, project/, update/, settings/, onboarding/, addNewDevice/, projectSync/, featureToogle/.\nSTEP 2 ids (all lowercase, from code names, never wording): ui:screen:<kt> one per whitelisted Activity/Fragment/Sheet; ui:view:<kt> one per custom view/tile holder used there; ui:tile:<DeviceViewType constant> (home/devices/adapter/DeviceViewType.java, 11); ui:filter:<DeviceFilterView constant> (devices/DeviceFilterView.java, 8); ui:vm:<class>.<method> one per file `find S -name '<VM>$<method>$*.java'` for VM/delegate classes HomeViewModel DevicesViewModel FavoritesViewModel GroupsViewModel GroupDetailsViewModel ScenesViewModel SceneDetailsViewModel CentralFunctionsHelper DeviceDetailsViewModel LockFunctionViewModelDelegate KeepLowPowerDeviceAwakeViewModelDelegate LampViewModel SimpleSwitchViewModel DimViewModel TunableWhiteViewModel BlindsViewModel RoomTemperatureViewModel PowerConsumptionViewModel DetectorSensorViewModel ControlSwitchConfigurationViewModel MiniActuatorConfigurationViewModel DeviceInfoViewModel MainViewModel BluetoothOffViewModel ConfigurationConsumptionViewModel ReferenceRunLoadingViewModel (method = 2nd `$` segment; `$$inlined`/`$special`/`$Companion` skipped; VMs with no such files, e.g. BlindViewModel RtrViewModel SwitchSocketViewModel CentralFunctionsViewModel, have none); ui:uc:<UseCase> one per distinct `new <UseCase>.Params(` found in the scope files (all files of the whitelisted Kotlin names + their `$` coroutine files; I6/b.java excluded because it is an R8-merged click listener shared with timer screens), UpdateDeviceTypeGroup split per Params subclass as ui:uc:updatedevicetypegroup.<outer>.<inner> (9); ui:uc:loadinitialdevicestate added because ProxyConnectionLoadingViewModel holds it; ui:ctl:<class>.<action> for UI actions whose send is not inside a coroutine class (grep `CommunicateWithDevice.Params`/`UpdateDeviceTypeGroup.Params` in non-`$` scope files: Lamp/Socket/Blind/Rtr central-function VMs, G6/b detector sensitivity, dim and tunable-white +/- listeners); ui:state:<Capability kt> for every Capability class referenced (import or FQN) by a scope file whose value is rendered, plus non-capability state holders RtrConnectionMode, SleepMode, DeviceState(X7/a), reachability (Y7/AbstractC0916e S1/N1/Q1 -> ui:state:devicereachability) and favourite flag (M1 -> ui:state:isfavorite); ui:enum:<kt> for enums rendered by scope files; ui:msg:<string key> for each BaseDialog.a.*/snackbars.*/Banner/status text built in scope files, keyed by its title (or only) string resource; ui:unused:strings = second-sweep dead strings.\nSTEP 3 details: message semantics re-derived from the capability -> message builder (p234v7/*, A7/*) and resolver (data/mesh/resolver/*, F7/*) classes; timings from FlowOperatorsKt.h/f, H.b(ms), p256x9.c.L/M, f.K (sample)/f.r (debounce) calls; cross-checked against docs/android/network-logic.md 4-5 and docs/gap-analysis/control-and-state.md (only facts re-found in jadx are cited).\nSTEP 4 closure: collect every R.string.<k> in the scope files and every @string/<k> in R/layout files reachable from them (R.layout.* + <include layout>); each key must appear verbatim in some item's title/details; leftovers are appended mechanically to the item owning the source file as 'Other strings on this surface'; only exclusion: insert_*_description (app/utils/g.g, used solely by the ButtonLayout configuration dialog). Result: 0 unassigned.\nSTEP 5 second sweep (different angle): regex over strings.xml keys ^(device_detail|blind|rtr_|socket|boost|detector|lamp|state_|favorite|central_function|home_|scenes?_|lock_function|lock_|unlock|battery|dim|tunable|consumption|presence|motion|pir_|puck|sleep|wake|proxy|no_proxy|bluetooth|device_not|quick|room_temperature|temperature|common_device|common_unit|unit_|forced|walking|current|power|energy|price|update_available|cloud|exploration|group_devices|groups_|switched|swipe|wind) minus keys already named; each hit was classified as (a) referenced by an in-domain surface -> surface added (this found ConfigurationConsumptionFragment, ReferenceRunLoadingActivity, BlindReferenceRunFragment, detector current-brightness cell), (b) referenced only by out-of-domain screens (blind_detail_parameter_*, rtr_*_mode_* on RtrModesFragment presets, scene_* creation, user_mode_* role switching, *_timer_empty_text, lock_function_* rocker-connection subtitles) -> left to other domains, (c) referenced nowhere (`grep -rhoE 'R\\.string\\.[A-Za-z0-9_]+' S` union `@string/` in R except values/strings.xml, values/public.xml) -> ui:unused:strings. Class-name angle: every Kotlin UI name in the whitelist has a ui:screen/ui:view/ui:tile item; every Capability referenced by scope files is either a ui:state item or only a lambda type parameter (TunableWhiteDefault*/RangeSetup*, PublicationCapability).\nRerun = repeat steps 1-5; ids are pure functions of class/method/enum/string names, so an unchanged APK yields the same list. Sorted by id. STEP 6 (adversarial verification pass, different angles; rerun = same scripts): (a) import graph: every class under S/de/jung/junghome/domain/interactors/** that `extends UseCase<` or `extends FlowUseCase<` and is named in an `import de.jung.junghome.domain.interactors.<pkg>.<Name>;` line (top-level package included) of any .java file under S/de/jung/junghome/app/ui/{home,groups,groupDetail,scenes,sceneDetail,centralFunction,main,proxy,bluetooth,base,shared,devices}/** except the out-of-domain subpackages devices/connection/, devices/blinds/setup/, devices/controlSwitch/buttonLayout/, devices/rtr/modes/ (opened from ConfigurationActivity), shared/picker, shared/weekday, shared/success, shared/deviceparameter must have a ui:uc:<name lowercase> item (catches use cases run without `new X.Params(` or from R8-merged listeners such as groupDetail/b.java); (b) instantiation: every `new <pkg>.a()`/`b()` fragment created by a whitelisted page whose file says `compiled from: *Fragment.kt` gets ui:screen:<kt> (icon pickers, NameConfigFragment) and its view model's `$<method>$` files get ui:vm items; (c) custom views: every `<de.jung.junghome.app.ui.devices.*>` tag in a layout reachable from the scope files (R.layout.* + <include>) gets ui:view:<class lowercase>; generic widgets from app/ui/shared (Divider, Skeleton*, EmptyView, CardToolbar, pickers, sliders of config pages) carry no device function and stay out; (d) navigation: every android:name destination in R/navigation/*.xml under an in-domain package is a ui:screen item or in an excluded subpackage. Items added by this pass: ui:screen:groupiconselectionfragment, ui:screen:nameconfigfragment, ui:screen:sceneiconselectionfragment, ui:uc:checknameinput, ui:uc:connecttoproxy, ui:uc:deletegroup, ui:uc:observebluetoothstate, ui:uc:observecloudstatus, ui:uc:observedemomode, ui:uc:observemeshnetwork, ui:uc:observeprojectbubbleindicators, ui:uc:observeupdateavailable, ui:uc:removeinvaliddevices, ui:uc:requestsoftwareversion, ui:uc:resetdevice, ui:uc:toggledemomode, ui:uc:updatesceneicon, ui:view:controlswitchkeyassignmentview, ui:view:controlswitchview, ui:view:miniactuatorkeyassignmentview, ui:vm:demomodeawareviewmodel.deactivatedemomode, ui:vm:demomodeawareviewmodel.toggledemomode, ui:vm:nameconfigviewmodel.observedevice, ui:vm:nameconfigviewmodel.observegroup, ui:vm:nameconfigviewmodel.observescene, ui:vm:nameconfigviewmodel.updatename, ui:vm:sceneiconselectionviewmodel.observescene.",
+ "items": [
+  {
+   "id": "ui:ctl:blindcentralfunctionsviewmodel.position",
+   "title": "Central blinds position / open / close (home or area)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/centralFunction/BlindCentralFunctionsViewModel.java:53",
+    "de/jung/junghome/app/ui/devices/blinds/centralFunction/BlindCentralFunctionsViewModel.java:73"
+   ],
+   "details": "Open = o(0.0), close = o(100.0), slider = o(pct). Home: Move.Blinds -> Generic Level Set Unack 0xFEF6. Area: per blind Generic Level Set Unacknowledged (0x8207) to its position element. Slats in an area: per-blind Level Set Unack to the slat element (p125l6/c.f)."
+  },
+  {
+   "id": "ui:ctl:detectorsensorviewmodel.pirsensitivity",
+   "title": "Detector PIR segment sensitivity (drag)",
+   "apk_refs": [
+    "G6/b.java:163"
+   ],
+   "details": "On release: LBC Admin Property Set 0x6008 (PIR A), 0x6009 (PIR B), 0x600A (PIR C, presence only) [raw u8 = round(pct/100*255)], ack; steps 0/25/50/75/100 %."
+  },
+  {
+   "id": "ui:ctl:dimfragment.plusminus",
+   "title": "Dim +/- buttons",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/d.java:213",
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/d.java:226"
+   ],
+   "details": "+ : min(current+1 %, range max); - : current-1 %, or 0 (off) when already at the range minimum; sent immediately as Light Lightness Set (no hold-to-dim, no Generic Level/Delta/Move for lamps anywhere)."
+  },
+  {
+   "id": "ui:ctl:lampcentralfunctionsviewmodel.onoff",
+   "title": "Central lamps on/off (home or area)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/centralFunction/LampCentralFunctionsViewModel.java:59",
+    "p223u6/b.java:53"
+   ],
+   "details": "Home: UpdateDeviceTypeGroup Toggle.Lamps -> Generic OnOff Set Unack 0xFEF5. Area: per lamp in the area a Generic OnOff Set Unacknowledged (0x8203) to the lamp OnOff element (CommunicateWithDevice UPDATE, waitForStatus=false)."
+  },
+  {
+   "id": "ui:ctl:rtrcentralfunctionsviewmodel.targettemperature",
+   "title": "Central thermostats target temperature (home or area)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/centralFunction/RtrCentralFunctionsViewModel.java:12",
+    "p265y6/a.java:51",
+    "p265y6/a.java:67"
+   ],
+   "details": "Home: TargetTemperature.Rtrs -> Level Set Unack 0xFEF9. Area: per-RTR Generic Level Set Unacknowledged to its set-point element."
+  },
+  {
+   "id": "ui:ctl:socketcentralfunctionsviewmodel.onoff",
+   "title": "Central sockets on/off (home or area)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/centralFunction/SocketCentralFunctionsViewModel.java:59"
+   ],
+   "details": "Home: Toggle.Sockets -> Generic OnOff Set Unack 0xFEF8. Area: per-socket Generic OnOff Set Unacknowledged to each socket OnOff element."
+  },
+  {
+   "id": "ui:ctl:tunablewhitefragment.plusminus",
+   "title": "Colour temperature +/- buttons",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/tunableWhite/d.java:29",
+    "de/jung/junghome/app/ui/devices/lamp/controls/TunableWhiteWheel.java:254"
+   ],
+   "details": "+/- 1 % of the 2000..10000 K scale (80 K), bounded by the CTL temperature range; sent via the 500 ms debounced Light CTL Set."
+  },
+  {
+   "id": "ui:enum:batterystatusindicator",
+   "title": "Battery indicator enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/BatteryStatusIndicator.java:24"
+   ],
+   "details": "BATTERY_GOOD 2, BATTERY_LOW 1, BATTERY_CRITICAL 0, BATTERY_UNKNOWN 3 (Generic Battery flags bits 3:2)."
+  },
+  {
+   "id": "ui:enum:blindmoveoperationmode",
+   "title": "Blind operation mode enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/BlindMoveOperationMode.java:23"
+   ],
+   "details": "BLINDS 0, SHUTTER 1, AWNING 3, UNKNOWN 4."
+  },
+  {
+   "id": "ui:enum:devicefilterview",
+   "title": "Home filter enum",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:39"
+   ],
+   "details": "FAVORITE, LAMP, BLIND, RTR, SOCKET, CONTROL_SWITCH, DETECTOR, MINI_ACTUATOR (see ui:filter:*)."
+  },
+  {
+   "id": "ui:enum:deviceviewtype",
+   "title": "Tile type enum",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:58"
+   ],
+   "details": "RTR, SWITCH_SOCKET, SOCKET, LAMP, BLIND, CONTROL_SWITCH, MOTION_DETECTOR, PRESENCE_DETECTOR, MINI_ACTUATOR, GATEWAY, UNKNOWN (see ui:tile:*)."
+  },
+  {
+   "id": "ui:enum:forcedoffmode",
+   "title": "Detector forced mode enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/ForcedOffMode.java:23"
+   ],
+   "details": "INACTIVE 0, ON 3, OFF 2."
+  },
+  {
+   "id": "ui:enum:hvacmode",
+   "title": "RTR HVAC mode enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/HvacMode.java:24"
+   ],
+   "details": "NONE 0, COMFORT 1, ECO 2, FREEZE 3 (unknown byte -> NONE); buttons Comfort / ECO / Frost."
+  },
+  {
+   "id": "ui:enum:layoutmode",
+   "title": "Push-button layout enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/models/LayoutMode.java:22"
+   ],
+   "details": "See ui:state:buttonlayoutcapability."
+  },
+  {
+   "id": "ui:enum:levelstepcapable",
+   "title": "Blind step command",
+   "apk_refs": [
+    "p085h8/j.java:14",
+    "p085h8/j.java:33",
+    "p085h8/j.java:52"
+   ],
+   "details": "Decrease = -1 (open/up), Increase = +1 (close/down), Stop = 0 -> Generic Delta Set delta."
+  },
+  {
+   "id": "ui:enum:lockfunctioncontrolcommand",
+   "title": "Lock command enum",
+   "apk_refs": [
+    "C8/c.java:14",
+    "C8/c.java:36"
+   ],
+   "details": "b = 0 (none/unlock), a = 1 (enforce value), C0006c = 2 (lock current state), e = 3, d = 0xFF; locked = not b and not d."
+  },
+  {
+   "id": "ui:enum:lockfunctionpriority",
+   "title": "Lock priority",
+   "apk_refs": [
+    "C8/f.java:27",
+    "C8/f.java:16"
+   ],
+   "details": "a = 0xFE lock-out protection, c = 0xFF wind alarm, b(n) = normal (1 used by the app)."
+  },
+  {
+   "id": "ui:enum:measuretype",
+   "title": "Consumption chart range",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/MeasureType.java:26"
+   ],
+   "details": "DAILY (0x5010, \"24h Report\"), THIRTY_ONE_DAYS (0x5011, \"31 days report\"). socket_measure_type_monthly is unused."
+  },
+  {
+   "id": "ui:enum:onoffstate",
+   "title": "On/off enum",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/models/OnOffState.java:22"
+   ],
+   "details": "ON, OFF; null = unknown (skeleton; toggle treats unknown as ON -> sends OFF)."
+  },
+  {
+   "id": "ui:enum:sleepmode",
+   "title": "Sleep mode",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/SleepMode.java:8"
+   ],
+   "details": "DeviceAwake, DeviceNotAwake, DeviceNotAvailable."
+  },
+  {
+   "id": "ui:enum:valuedisplaymode",
+   "title": "RTR slider value mode",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/controls/ValueDisplayMode.java:22"
+   ],
+   "details": "Current / Target (label rtr_detail_display_mode_current_temperature / _target_temperature)."
+  },
+  {
+   "id": "ui:filter:blind",
+   "title": "Home filter tab BLIND",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:43",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:67",
+    "res/layout/fragment_home.xml:90"
+   ],
+   "details": "Shown when BlindDevice (C0892b); label home_blind_tab_description=\"Shading\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:control_switch",
+   "title": "Home filter tab CONTROL_SWITCH",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:49",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:76",
+    "res/layout/fragment_home.xml:102"
+   ],
+   "details": "Shown when ControlSwitchDevice (AbstractC0914c) and the user is admin; label home_control_tab_description=\"Sensors\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:detector",
+   "title": "Home filter tab DETECTOR",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:51",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:103",
+    "res/layout/fragment_home.xml:114"
+   ],
+   "details": "Shown when detector (AbstractC0915d) and the user is admin; label home_detector_tab_description=\"Motion detection\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:favorite",
+   "title": "Home filter tab FAVORITE",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:39",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:52",
+    "res/layout/fragment_home.xml:44"
+   ],
+   "details": "Shown when any device exists; label home_favorite_tab_description=\"Favourites\". Selecting it shows FavoritesFragment."
+  },
+  {
+   "id": "ui:filter:lamp",
+   "title": "Home filter tab LAMP",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:41",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:58",
+    "res/layout/fragment_home.xml:78"
+   ],
+   "details": "Shown when LampDevice (i0: switch/dim/TW/measure lamp); label home_lamp_tab_description=\"Light\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:mini_actuator",
+   "title": "Home filter tab MINI_ACTUATOR",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:53",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:112",
+    "res/layout/fragment_home.xml:126"
+   ],
+   "details": "Shown when MiniActuatorDevice and the user is admin; label home_mini_actuator_tab_description=\"Binary inputs\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:rtr",
+   "title": "Home filter tab RTR",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:45",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:85",
+    "res/layout/fragment_home.xml:56"
+   ],
+   "details": "Shown when RtrDevice; label home_rtr_tab_description=\"Temperature\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:filter:socket",
+   "title": "Home filter tab SOCKET",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceFilterView.java:47",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:94",
+    "res/layout/fragment_home.xml:68"
+   ],
+   "details": "Shown when SocketDevice (p0); label home_socket_tab_description=\"Current\". Selecting it shows DevicesFragment with the matching DeviceFilter (Lamp/Blind/Rtr/Socket/ControlSwitch/Detector/MiniActuator); list sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:msg:cloud_offline_dialog_title",
+   "title": "Cloud offline dialog",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/e.java:262",
+    "res/values/strings.xml:135"
+   ],
+   "details": "cloud_offline_dialog_title=\"No synchronization possible\"; cloud_offline_dialog_message=\"You are using an online synchronized project. Without an internet connection to the cloud, changes to the project cannot be made and shared.\\n\\nPlease check your connection.\"; icon ic_no_wifi_bubble. Shown when tapping an editing control disabled because the synced project cloud is offline."
+  },
+  {
+   "id": "ui:msg:common_connections_not_loaded_dialog_title",
+   "title": "Connections could not be loaded (push-button / RTR pages)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/d.java:378",
+    "res/values/strings.xml:170"
+   ],
+   "details": "common_connections_not_loaded_dialog_title=\"Connection could not be loaded\"; common_connections_not_loaded_dialog_text=\"The connection query failed. Navigate back one step and reopen this view.\"; buttons common_try_again / common_abort."
+  },
+  {
+   "id": "ui:msg:common_error_title",
+   "title": "Generic error dialog",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/e.java:166",
+    "res/values/strings.xml:186"
+   ],
+   "details": "common_error_title=\"Oh no!\" / common_error_message=\"Something seems to have gone wrong. Please try again.\" (or device_create_connection_error_dialog_message); also ErrorView with common_try_again and favourites removal failure (common_error_message)."
+  },
+  {
+   "id": "ui:msg:control_switch_connection_successful_text",
+   "title": "Connection saved snackbar",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/snackbars/h.java:21",
+    "res/values/strings.xml:334"
+   ],
+   "details": "control_switch_connection_successful_text=\"Connection successful!\" (after a key/input assignment was saved)."
+  },
+  {
+   "id": "ui:msg:control_switch_sleep_mode_title",
+   "title": "Power saving mode info dialogs (push-button / puck)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/ControlSwitchSleepModeView.java:72",
+    "res/values/strings.xml:356"
+   ],
+   "details": "control_switch_sleep_mode_title=\"Power saving mode\"; control_switch_sleep_mode_dialog_text=\"After each use, the button is put into energy-saving mode. For configurations within the JUNG HOME app, the button must be woken up.\\n\\nThe button can also be operated in energy-saving mode.\"; update_walltransmitter_no_wake_up_title=\"Your button is not responding?\" / update_walltransmitter_no_wake_up_text=\"In this case, the battery is usually empty and your button has switched off. Please replace the battery.\"; puck: puck_battery_no_reaction=\"Your Puck does not react?\" / update_puck_no_wake_up_text=\"In this case, the battery is usually empty and your Puck has switched off. Please replace the battery.\"; state words common_active / common_inactive."
+  },
+  {
+   "id": "ui:msg:device_detail_error_change_name_failed_title",
+   "title": "Rename failed dialog",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/d.java:134",
+    "res/values/strings.xml:436"
+   ],
+   "details": "device_detail_error_change_name_failed_title=\"Unable to update name\"; device_detail_error_change_name_failed_message=\"Updating the name failed\"."
+  },
+  {
+   "id": "ui:msg:device_not_reachable_title",
+   "title": "Device not reachable dialog + label",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/e.java:275",
+    "de/jung/junghome/app/ui/base/i.java:651",
+    "res/values/strings.xml:518"
+   ],
+   "details": "device_not_reachable_title=\"No connection\"; device_not_reachable_description=\"Currently, no connection can be made to your device. Check the power supply. A hardware reset may be necessary.\"; suggestions list common_check_power_supply=\"Check power supply\", common_restart_app=\"Restart app\", common_perform_hardware_reset=\"Perform a hardware reset\"; button common_ok; icon ic_error_bubble. Shown when tapping the header of an unreachable (non-battery) device (activities: BaseActivity.f0, fragments: BaseFragment); the same title is the tile/header \"No connection\" label."
+  },
+  {
+   "id": "ui:msg:device_reset_manually_dialog_title",
+   "title": "Manual reset needed after removing a device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:121",
+    "res/values/strings.xml:674"
+   ],
+   "details": "device_reset_manually_dialog_title=\"Manually reset the device\"; device_reset_manually_dialog_message=\"Your device could not be reset automatically. Please perform a manual factory reset to be able to operate the device again.\" - after removing a device that could not be reset over the mesh (long-press remove on Devices/Favourites; remove dialog device_remove=\"Delete device\" / device_remove_message=\"The device is being completely removed from your project. You can add it back by pairing again.\")."
+  },
+  {
+   "id": "ui:msg:favorite_device_add_snackbar_message",
+   "title": "Favourite added/removed snackbars",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/b.java:54",
+    "res/values/strings.xml:759"
+   ],
+   "details": "Device: favorite_device_add_snackbar_message=\"Device marked as a favourite.\" / favorite_device_remove_snackbar_message=\"Device removed as a favourite.\"; area: favorite_group_add_snackbar_message / favorite_group_remove_snackbar_message; scene: favorite_scene_add_snackbar_message / favorite_scene_remove_snackbar_message."
+  },
+  {
+   "id": "ui:msg:permissions_import_dialog_title",
+   "title": "Bluetooth/location permission required",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/e.java:39",
+    "res/values/strings.xml:1225"
+   ],
+   "details": "permissions_import_dialog_title=\"Bluetooth connection required\"; permissions_import_dialog_body=\"To find Bluetooth devices, the location of the device is required in this Android version. Please adjust the permissions for this.\"."
+  },
+  {
+   "id": "ui:msg:proxy_connection_established",
+   "title": "Proxy connection state text",
+   "apk_refs": [
+    "de/jung/junghome/app/service/ConnectionViewService$updateProxyStatus$1.java:90",
+    "res/values/strings.xml:1249"
+   ],
+   "details": "proxy_connection_established=\"Devices conntected\" (auto-hides after 4 s) / no_proxy_connection=\"No connection to Mesh\" (blinking)."
+  },
+  {
+   "id": "ui:msg:remove_rtr_connection_dialog_title",
+   "title": "Unlink actuator from thermostat",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:629",
+    "res/values/strings.xml:1287"
+   ],
+   "details": "remove_rtr_connection_dialog_title=\"Delete link\"; remove_rtr_connection_dialog_text=\"Are you sure you want to delete this link?\"; loading remove_rtr_connection_loading_text=\"The link will be deleted.\"; success snackbar rtr_connection_successful_removed_text=\"Link deleted.\"; error remove_rtr_connection_error_dialog_title=\"Deletion failed\" / remove_rtr_connection_error_dialog_text=\"The link between your devices could not be deleted. Please check the status of your device and try again.\"."
+  },
+  {
+   "id": "ui:msg:scene_detail_remove_dialog_title",
+   "title": "Delete scene / area / device dialogs",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/e.java:126",
+    "res/values/strings.xml:1338"
+   ],
+   "details": "scene_detail_remove_dialog_title=\"Delete scenes\" / scene_detail_remove_dialog_message=\"The scene will be permanently deleted. All devices remain present and operable in the app.\"; area: group_detail_remove_dialog_title / group_detail_remove_dialog_message=\"The area is permanently deleted. All devices contained remain in the app and operable.\"; device: device_remove / device_remove_message; confirm common_remove."
+  },
+  {
+   "id": "ui:msg:scenes_device_not_reachable_title",
+   "title": "Scene: device not reachable",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsActivity.java:417",
+    "res/values/strings.xml:1359"
+   ],
+   "details": "scenes_device_not_reachable_title=\"Device not reachable\"; scenes_device_not_reachable_message=\"No settings are possible without a connection. Please go to your device and operate it to re-establish the connection.\"."
+  },
+  {
+   "id": "ui:msg:series_timer_scene_not_available_title",
+   "title": "Feature not available for 2-channel-insert devices",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/g.java:294",
+    "res/values/strings.xml:1380"
+   ],
+   "details": "series_timer_scene_not_available_title=\"Feature not available\"; series_timer_scene_not_available_text=\"This device was created from a two-channel insert. Unfortunately, it is not yet possible to create automations and scenes for this device. \\n\\nUpdate this device to be able to use automations.\" (device info page; also timers/scenes). Device naming fallback strings device_name_mini_actuator, device_name_mini_actuator_blind, device_name_puck_common."
+  },
+  {
+   "id": "ui:msg:update_available_snackbar_title",
+   "title": "Firmware update available snackbar",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/d.java:144",
+    "res/values/strings.xml:1643"
+   ],
+   "details": "update_available_snackbar_title=\"Software update available.\", action update_available_snackbar_action_text=\"View\" -> UpdateActivity for this device."
+  },
+  {
+   "id": "ui:msg:user_mode_new_banner_title",
+   "title": "New user role banner",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/snackbars/a.java:90",
+    "res/values/strings.xml:1714"
+   ],
+   "details": "user_mode_new_banner_title=\"New: Admin and member mode\"; admin: user_mode_new_banner_message_admin=\"You are now an admin in this project. Take a look at what you can do in admin mode.\"; member: user_mode_new_banner_message_member=\"You have been added as a member in this project. Take a look at what you can do in member mode.\"; action user_mode_new_banner_action_text=\"More information\"."
+  },
+  {
+   "id": "ui:screen:appconditionssettingsactivity",
+   "title": "Analytics / crash-report consent settings",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/conditions/AppConditionsSettingsActivity.java:31",
+    "de/jung/junghome/app/ui/conditions/AppConditionsSettingsViewModel.java:17",
+    "de/jung/junghome/domain/interactors/config/ToggleAnalytics.java:13",
+    "de/jung/junghome/domain/interactors/config/ToggleCrashlytics.java:13",
+    "res/layout/activity_app_conditions_settings.xml:27"
+   ],
+   "details": "Two switches (app_conditions_settings_crashlytics_* / app_conditions_settings_analytics_*) that opt the app into Firebase Crashlytics and Firebase Analytics (ToggleCrashlytics / ToggleAnalytics store the flag and enable the SDK collection), plus a 'read more' link to the privacy policy."
+  },
+  {
+   "id": "ui:screen:blindcentralfunctionsfragment",
+   "title": "Central control - blinds tab",
+   "apk_refs": [
+    "p125l6/c.java:148",
+    "p125l6/c.java:174",
+    "p125l6/c.java:185",
+    "p125l6/c.java:282"
+   ],
+   "details": "Blinds position slider with \"%d%%\" readout (common_percentage), open (0 %) / close (100 %) buttons, stop button (blind_stop_movement) and a SlatSlider. Position/open/close -> ui:ctl:blindcentralfunctionsviewmodel.position; stop -> OpenClose.Blinds(Stop) / OpenClose.Group(Stop, area); slats -> Move.Slats (home) or per-device unicast (area)."
+  },
+  {
+   "id": "ui:screen:blinddetailactivity",
+   "title": "Blind / shutter / awning detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:159",
+    "res/layout/activity_blind_detail.xml:41"
+   ],
+   "details": "Tabs: Blind control (BlindsFragment) and Timer (timerProfilesFragmentButton). Header power button hidden (not an OnOff device)."
+  },
+  {
+   "id": "ui:screen:blindreferencerunfragment",
+   "title": "Reference-run step in blind setup / parameters",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/setup/setps/c.java:18",
+    "res/layout/fragment_blind_reference_run.xml:13"
+   ],
+   "details": "Card blind_reference_run_title (\"reference run\") + blind_reference_run_description; starts ReferenceRunLoadingActivity."
+  },
+  {
+   "id": "ui:screen:blindsfragment",
+   "title": "Blind control tab (position, slats, arrows, stop, lock/wind alarm)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/c.java:468",
+    "res/layout/fragment_detail_blinds.xml:33",
+    "res/layout/fragment_detail_blinds.xml:22"
+   ],
+   "details": "Blinds slider (thumb = target % if known else present %, shaded = present %; \"%d %\" text), up/down arrows, stop button (blind_stop_movement), SlatSlider only for BLINDS operation mode (0x1104 = 0) and disabled at 0 % (fully open); LockFunctionView of type blind (lock-out protection + wind alarm). All controls disabled while unreachable, while the page-open Gets are pending, while the lock state is unknown, or while locked. 0 % = open (level -32768), 100 % = closed (+32767); nothing inverted for shutter/awning."
+  },
+  {
+   "id": "ui:screen:bluetoothoffactivity",
+   "title": "Bluetooth-off blocking screen",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/bluetooth/BluetoothOffActivity.java:25",
+    "res/layout/activity_bluetooth_off.xml:22",
+    "de/jung/junghome/app/ui/bluetooth/BluetoothOffViewModel$observeConnection$1.java:16"
+   ],
+   "details": "Shown when the phone Bluetooth adapter is off: bluetooth_turn_on_title / bluetooth_turn_on_description; closes itself when Bluetooth comes back (observeConnection)."
+  },
+  {
+   "id": "ui:screen:centralfunctionsactivity",
+   "title": "Central control (all devices of a type, home-wide or per area)",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:377",
+    "de/jung/junghome/app/ui/centralFunction/CentralFunctionsActivityArgs.java:21",
+    "res/layout/activity_central_functions.xml:42",
+    "de/jung/junghome/app/ui/centralFunction/CentralFunctionsTab.java:10"
+   ],
+   "details": "Tabs (IconToggleButtons) RTR / socket / lamp / blind, each only if such devices exist (CentralFunctionsHelper.getAvailableDevices); arg groupAddress = -1 for the whole home, else the area group. Empty: central_function_no_devices_title / central_function_no_devices_message. Descriptions central_function_description_lamps/_sockets/_blinds/_rtrs with suffix central_function_description_in_app (\"in the JUNG HOME\") or central_function_description_in_group (\"in %s\"). Tab fragments: ui:screen:lampcentralfunctionsfragment, ...socket..., ...blind..., ...rtr.... Other strings on this surface: central_function_description_blinds=\"All blinds %s\"; central_function_description_rtrs=\"All temperature regulators %s\"; central_function_description_sockets=\"All sockets %s\"."
+  },
+  {
+   "id": "ui:screen:centralfunctionsheet",
+   "title": "Central control entry card",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/centralFunction/d.java:9",
+    "de/jung/junghome/app/ui/centralFunction/c.java:37"
+   ],
+   "details": "Compose card titled central_function_sheet_title (\"Central control\") used on the favourites dashboard (subtitle central_function_sheet_home_sub_title) and the area detail page; tap opens CentralFunctionsActivity."
+  },
+  {
+   "id": "ui:screen:conditionsactivity",
+   "title": "Terms of use / privacy policy consent gate",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/conditions/ConditionsActivity.java:29",
+    "de/jung/junghome/app/ui/conditions/ConditionsViewModel.java:17",
+    "de/jung/junghome/app/ui/conditions/ConditionType.java:11",
+    "res/layout/activity_app_conditions.xml:26",
+    "p063f6/a.java:41"
+   ],
+   "details": "ConditionType App (first start), MultiUserBeforeProjectView (before project synchronisation) and MultiUserBeforeCameraView (before the QR scanner): shows app_conditions_privacy_policy_* text with links (app_conditions_link_text, privacy_url, opened via an intent chooser app_conditions_intent_chooser_title) and a link to the consent settings (app_conditions_link_settings_text -> ui:screen:appconditionssettingsactivity); accepting stores a preference flag."
+  },
+  {
+   "id": "ui:screen:configurationconsumptionfragment",
+   "title": "Consumption display settings + counter reset (measuring socket / lamp)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/e.java:87",
+    "res/layout/fragment_configuration_consumption.xml:170",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$resetTotalConsumption$1.java:99"
+   ],
+   "details": "Configuration tab of measuring devices deciding which metering displays the runtime consumption page shows: Current Power (socket_active_power_info_title / socket_active_power_info_explanation), Energy consumption (socket_consumption_info_title / socket_consumption_info_explanation) with Reset button, Electricity cost (socket_consumption_price_title / consumption_price_info_explanation, price entry consumption_price_edit_label \"in cents per kWh\"); each with a \"Preview\" (socket_preview_label) of the live card. kWh = Wh/1000 on this page. Other strings on this surface: common_off=\"Off\"; common_on=\"On\"."
+  },
+  {
+   "id": "ui:screen:controlswitchconfigurationfragment",
+   "title": "Push-button key assignment view (what each rocker does)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/d.java:439",
+    "res/layout/view_control_switch_key_assignment.xml:32",
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel.java:283"
+   ],
+   "details": "ControlSwitchView (selectable rocker/key areas) + per key group (Top/Bottom) \"Press\"/\"Hold\" interaction cards (control_switch_item_key_press / _hold, control_switch_item_key_action_undefined = \"No interaction\"); gateway note field. Editing = device-settings domain; runtime-relevant: on open reads Generic Battery (waitForStatus=false) and lock functions of linked outputs; shows ConnectionSuccessfulSnackbar (control_switch_connection_successful_text). Other strings on this surface: control_switch_bottom_center_description=\"What do you want the bottom operating area to control?\"; control_switch_bottom_left_description=\"What do you want the bottom left operating area to control?\"; control_switch_bottom_right_description=\"What do you want the bottom right operating area to control?\"; control_switch_center_description=\"What should the button control?\"; control_switch_item_key_group_bottom=\"Bottom\"; control_switch_item_key_group_top=\"Top\"; control_switch_left_description=\"What do you want the left operating area to control?\"; control_switch_right_description=\"What do you want the right operating area to control?\"; control_switch_top_center_description=\"What do you want the top operating area to control?\"; control_switch_top_left_description=\"What do you want the bottom left operating area to control?\"; control_switch_top_right_description=\"What do you want the top right operating area to control?\"; gateway_connection_note=\"Note\"; gateway_selection_placeholder_text=\"Here you can record which function you have stored for this device in your IoT system.\"; scene_connection_subtitle=\"Scene\"."
+  },
+  {
+   "id": "ui:screen:controlswitchdetailactivity",
+   "title": "Wall transmitter / push-button detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:185",
+    "de/jung/junghome/app/ui/devices/controlSwitch/ControlSwitchDetailActivity.java:146",
+    "de/jung/junghome/app/ui/devices/controlSwitch/ControlSwitchDetailActivity.java:157",
+    "de/jung/junghome/data/mesh/resolver/e2.java:288"
+   ],
+   "details": "Header: rocker icon (ic_switch_on_gang_rocker for 1-gang / ic_two_rocker_control_switch), subtitle = button layout text (switch_layout_type_*), battery status icon (ui:state:batterycapability). ControlSwitchSleepModeView banner shown for battery devices while SleepMode = DeviceNotAwake (control_switch_sleep_mode_text, image ic_wake_up_one/two_gang_control_switch); hidden on DeviceAwake; keep-alive cancelled on DeviceNotAvailable. Content = ControlSwitchConfigurationFragment. Other strings on this surface: control_switch_detail_status=\"Structure\"."
+  },
+  {
+   "id": "ui:screen:detectorsensorfragment",
+   "title": "Detector tab: activation area, PIR sensitivity, walking test, controlled function",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/d.java:172",
+    "de/jung/junghome/app/ui/devices/detectors/d.java:215",
+    "de/jung/junghome/app/ui/devices/detectors/d.java:222",
+    "res/layout/fragment_detector_sensor.xml:181"
+   ],
+   "details": "DetectorView activation-area diagram (detector_activation_area) with per-segment sensitivity (drag) and segment highlight during the walking test; \"What should the detector control?\" card (detector_connection_title, common_select_function) = connection flow; Walking test card (device_parameter_detector_test_enable_title / _subtext, button _start / _stop). No live motion or lux indicator outside the walking test. Other strings on this surface: device_parameter_detector_test_enable_start=\"Start walking test\"; pir_sensor_a_description=\"A\"; pir_sensor_b_description=\"B\"; pir_sensor_c_description=\"C\"."
+  },
+  {
+   "id": "ui:screen:devicedetailsactivity",
+   "title": "Common device detail page frame (header, favourite, reachability, lock badge, settings, timers)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/d.java:450",
+    "de/jung/junghome/app/ui/devices/d.java:551",
+    "de/jung/junghome/app/ui/devices/d.java:515",
+    "de/jung/junghome/app/ui/devices/b.java:48",
+    "de/jung/junghome/app/ui/devices/b.java:80",
+    "res/layout/view_device_detail_header.xml:66"
+   ],
+   "details": "Base class of every device detail activity (DeviceDetailsActivity.kt). DeviceDetailHeader: device icon, editable name (rename -> updateDeviceName, 300 ms debounce; error device_detail_error_change_name_failed_title/message), favourite star (toggleFavorite + snackbar favorite_device_add/remove_snackbar_message, haptic), power/action button (enabled only when reachable and not RTR-controlled/forced), \"No connection\" label (device_not_reachable_title) when !S1(); tap on header while unreachable (non-battery) shows the not-reachable dialog; lock icon (ic_function_lock_closed / ic_lock_wind) when locked, tap scrolls to the LockFunctionView. Toolbar gear (menu_device_details/action_settings, admin only) opens ConfigurationActivity. Timer tab hosts TimerProfilesFragment (old mesh) or JHSchedulerScheduleListFragment (X1() = new mesh version) - timers domain. Update-available snackbar (checkForUpdate)."
+  },
+  {
+   "id": "ui:screen:deviceinfofragment",
+   "title": "Device info / diagnostic page (Specifications)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/g.java:257",
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel.java:169",
+    "res/layout/fragment_device_info.xml:11"
+   ],
+   "details": "Configuration tab \"info\": controllable elements (device_info_device_button_layout_label), areas and scenes counts (DeviceInfoStatusCard \"x / y\"), Specifications (device_info_label): Software-Version (device_info_software_version, SIG Manufacturer prop 0x001A formatted \"a.b.c.d\") + \"(Update available)\" link, serial number, App.-Ctrl. SW-Ver. (stm32_version_title, RTR only, Manufacturer prop 0x0005 via STM32VersionCapability) + update link, Manufacturer (device_info_company_label), Hardware Revision (device_info_hardware_revision_label, SIG Manufacturer prop 0x0010 via GenericPropertyGet 0x822B). Reset error view (common_error_title/message, common_try_again). Other strings on this surface: device_info_serial_number_label=\"Serialnumber\"."
+  },
+  {
+   "id": "ui:screen:devicesfragment",
+   "title": "Device list for one device-type filter",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:136",
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:156",
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:92",
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:121",
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel$observeDevices$1.java:6"
+   ],
+   "details": "RecyclerView of item_device tiles (DevicesAdapter). Tap tile = open the device detail activity for its class (app/utils/g.k); tap action icon = ToggleDevice; long-press = popup_window_long_press_default (common_rename / common_remove) only when user role allows editing and cloud status permits. On observe it calls LoadStateForDevices for the listed devices (ui:uc:loadstatefordevices). Emits UnreachableIndicesEvent to redraw tiles whose reachability changed. After \"remove\" of an unreachable device: dialog device_reset_manually_dialog_title / device_reset_manually_dialog_message."
+  },
+  {
+   "id": "ui:screen:dimfragment",
+   "title": "Brightness tab",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/d.java:213",
+    "res/layout/fragment_dim.xml:8",
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/DimViewModel.java:85"
+   ],
+   "details": "Title dim_title (\"Brightness\"); DimSlider 0..100 % bounded by the lamp's lightness range (LightnessRange min/max); - / + buttons step 1 % (minus below the range minimum goes to 0 = off); LockFunctionView (switch type). Slider values sampled every 500 ms -> Light Lightness Set; incoming Lightness Status debounced 300 ms before redrawing."
+  },
+  {
+   "id": "ui:screen:favoritesfragment",
+   "title": "Favourites dashboard (devices, areas, scenes, central control card)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/e.java:171",
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel.java:190",
+    "de/jung/junghome/app/ui/home/favorites/e.java:468",
+    "de/jung/junghome/app/ui/home/favorites/e.java:505",
+    "de/jung/junghome/app/ui/home/favorites/e.java:225",
+    "de/jung/junghome/app/ui/home/favorites/a.java:29",
+    "res/layout/fragment_favorites.xml:43"
+   ],
+   "details": "Sections: \"Devices\" (favorite_devices_title, device tiles = ui:view:deviceviewholder with toggle action), \"Areas\" (groups_header, small area cards), \"Scenes\" (scenes_title, tap = ActivateScene recall). Data = ObserveDevices(DeviceFilter.IsFavorite) + ObserveGroups(GroupFilter.IsFavorite) + ObserveScenes(SceneFilter.IsFavorite). SearchView filters the lists (common_search_hint, empty result common_search_empty). Empty state favorite_empty_title=\"Favourites\" / favorite_empty_message=\"Make devices, areas or scenes favourites in the respective view for them to show here.\". A \"Central control\" compose card (central_function_sheet_title, subtitle central_function_sheet_home_sub_title) opens CentralFunctionsActivity without groupAddress (whole home). Long-press on device/area/scene opens the rename/remove popup (remove dialogs device_remove / group_detail_remove_dialog_title / scene_detail_remove_dialog_title). Tile toggle disabled when device is RTR-controlled (isActionDisabled)."
+  },
+  {
+   "id": "ui:screen:groupdetailsactivity",
+   "title": "Area detail page: devices with quick toggles + area central control",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:129",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsActivity.java:1454",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsActivity.java:137",
+    "de/jung/junghome/app/ui/groupDetail/a.java:96",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$startObservingDevices$1.java:300",
+    "res/layout/activity_group_details.xml:134"
+   ],
+   "details": "Header: area icon + editable name (groupNameTextInput), favourite toggle (favoriteGroupButton, snackbars favorite_group_add/remove_snackbar_message). Device list reuses DevicesAdapter tiles (tap = detail, action icon = ToggleDevice, state as on the Devices tab); LoadStateForDevices for the area devices on open. Central control card opens CentralFunctionsActivity with groupAddress = the area group address (room functions, ui:screen:centralfunctionsactivity). Admin-only: add devices (add_devices_to), swipe-to-remove device (swipe_to_delete_remove_device_text), delete area (group_detail_delete_group, dialog group_detail_remove_dialog_title/message, overlay group_detail_loading_message). Empty: group_detail_empty_message / _member. Errors: group_detail_error_create_failed_title/message, group_detail_error_update_failed_title/message, name validation group_detail_name_empty_error, group_detail_name_already_taken_error, common_name_format_error. Other strings on this surface: common_group=\"Area\"; group_detail_create=\"Create\"; group_detail_empty_message_member=\"As soon as devices are available in the area, you will find them here.\"; group_detail_error_create_failed_message=\"Creating the area failed\"; group_detail_error_update_failed_message=\"Updating the area failed\"; group_devices_title=\"Devices\"."
+  },
+  {
+   "id": "ui:screen:groupiconselectionfragment",
+   "title": "Area icon picker",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/iconSelection/a.java:22",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsActivity.java:1508"
+   ],
+   "details": "Grid of GroupIcon values (title common_icons_title \"Icons\"), opened from the area page header; selection goes to GroupDetailsViewModel.updateGroupIcon (UpdateGroup)."
+  },
+  {
+   "id": "ui:screen:groupsfragment",
+   "title": "Areas (rooms) tab",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:11",
+    "de/jung/junghome/app/ui/groups/GroupsFragment.java:102",
+    "de/jung/junghome/app/ui/groups/GroupsViewModel$startObserving$1.java:127",
+    "res/layout/item_group_small.xml:56"
+   ],
+   "details": "List of areas (groups_tab_title=\"Areas\") as small cards: icon, name, \"%d Devices\" (group_devices_placeholder / group_devices_empty_placeholder), favourite marker. Tap opens GroupDetailsActivity. Empty state groups_empty_message / groups_empty_message_member; create button groups_create_title (admin). Long-press remove with group_detail_remove_dialog_*; removal overlay group_detail_loading_message. Toolbar carries ProxyStatusView, CloudStatusView and the demo \"Discovery mode\" indicator (exploration_mode_title, action_end_demo_mode). Other strings on this surface: group_function_blind=\"Shading\"; group_function_light=\"Lighting\"; group_function_light_and_switch=\"Lighting & Sockets\"; group_function_switch=\"Sockets\"."
+  },
+  {
+   "id": "ui:screen:homefragment",
+   "title": "Home tab with device-type filter toggles",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:89",
+    "de/jung/junghome/app/ui/home/HomeFragment.java:164",
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:52",
+    "de/jung/junghome/app/ui/home/c.java:52",
+    "res/layout/fragment_home.xml:31"
+   ],
+   "details": "Top \"Home\" tab (home_tab_title). IconToggleGroup of up to 8 DeviceFilterView buttons (see ui:filter:*), each shown only if a device of that class exists; control-switch / detector / binary-input buttons additionally require the admin user role (HomeViewModel$observeData$1 z9 = userRoleService flag); if the selected filter disappears the first visible one is selected (HomeViewModel$selectTab). Child container shows FavoritesFragment for FAVORITE, DevicesFragment for the other filters. Empty project: compose empty view home_empty_title=\"no devices present\", home_empty_description=\"Add JUNG HOME Bluetooth® devices to have them displayed here.\" / home_empty_description_member=\"As soon as there are devices in your JUNG HOME, you will find them here.\" (member role), button devices_add_device=\"Add Device to Network\". Tab descriptions: home_favorite_tab_description, home_lamp_tab_description=\"Light\", home_blind_tab_description=\"Shading\", home_rtr_tab_description=\"Temperature\", home_socket_tab_description=\"Current\", home_control_tab_description=\"Sensors\", home_detector_tab_description=\"Motion detection\", home_mini_actuator_tab_description=\"Binary inputs\"."
+  },
+  {
+   "id": "ui:screen:lampcentralfunctionsfragment",
+   "title": "Central control - lamps tab",
+   "apk_refs": [
+    "p223u6/b.java:25",
+    "p223u6/b.java:47",
+    "p223u6/b.java:96"
+   ],
+   "details": "All-on / all-off buttons (set the DimSlider to 100 / 0) and a DimSlider (0..100 %). On/off -> ui:ctl:lampcentralfunctionsviewmodel.onoff; slider -> UpdateDeviceTypeGroup Dim.Lamps (home, 0xFEF5) or Dim.Group(pct, areaAddress) (area)."
+  },
+  {
+   "id": "ui:screen:lampdetailactivity",
+   "title": "Lamp detail page (switch / dim / tunable white / measuring lamp)",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:146",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:407",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:253",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:393",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:224",
+    "res/layout/activity_lamp_detail.xml:114"
+   ],
+   "details": "Tab buttons by device class: DimLampDevice(f0) -> Dim; SwitchLampDevice(q0) -> SimpleSwitch; TunableWhiteLampDevice(t0) -> Dim + Colour temperature; MeasureLampDevice(n0) -> Measure (PowerConsumptionFragment); plus Timer. Default tab = Dim, else Switch, else Measure. Header icon ic_lightbulb_on_secondary/off_primary; header subtitle \"%d%% brightness\" (device_detail_state, from LightLightness present %) for dimmers, \"Switched on/off\" (common_device_on/off) for switch/measure lamps. Header power button = ToggleDevice. RTR binding card (view_connection_mode_info_card): rtr_connection_info_text + \"\\n\" + comma-joined RTR names, tabs hidden and controls disabled when ObserveRtrConnectionMode says controlled. ForcedOffView shown when the attached detector reports forced ON/OFF (ui:state:detectorforcedoffcapability); controls disabled unless forcedOffMode == INACTIVE and not RTR-controlled."
+  },
+  {
+   "id": "ui:screen:legalactivity",
+   "title": "Legal: open-source licences and imprint",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/legal/LegalActivity.java:26",
+    "de/jung/junghome/app/ui/settings/legal/LegalViewModel.java:9",
+    "de/jung/junghome/app/ui/settings/imprint/ImprintActivity.java:18",
+    "de/jung/junghome/app/ui/settings/imprint/ImprintViewModel.java:9"
+   ],
+   "details": "Settings > Legal (settings_legal_title): licences list (settings_licenses_title) and the publisher imprint (ImprintActivity, imprint_title). Static text only."
+  },
+  {
+   "id": "ui:screen:mainactivity",
+   "title": "Main shell: bottom navigation, banners, proxy/bluetooth supervision",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:491",
+    "de/jung/junghome/app/ui/main/MainViewModel$showBanner$1.java:125",
+    "res/layout/activity_main.xml:19"
+   ],
+   "details": "Bottom navigation Home / Areas / Scenes / Settings (nav_graph homesFragment, groupsFragment, scenesFragment, settingsFragment) with bubble indicators (ObserveProjectBubbleIndicators, ObserveUpdateAvailable); floating \"+\" menu add device / area / scene (admin). Banner for new user role (user_mode_new_banner_title, user_mode_new_banner_message_admin / _member, action user_mode_new_banner_action_text). Starts ConnectToProxy, observes Bluetooth state (-> BluetoothOffActivity) and missing-location-permission dialog (permissions_import_dialog_title/body). Other strings on this surface: add_device_floating_action_menu_label=\"Add new device\"; add_group_floating_action_menu_label=\"Add new Area\"; add_scene_floating_action_menu_label=\"Add new scene\"."
+  },
+  {
+   "id": "ui:screen:miniactuatorconfigurationfragment",
+   "title": "Mini actuator inputs view",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java:814",
+    "res/layout/fragment_mini_actuator_configuration.xml:304"
+   ],
+   "details": "Input cards E1/E2 (mini_actuator_first/second_input_title), connect-inputs switch (mini_actuator_connect_input_label_text/_description), function selection, MiniActuatorKeyAssignmentView (Press/Hold), edge evaluation (mini_actuator_input_edge_behaviour_label_text/_description, rising_input_edge / falling_input_edge). Reads on open: Generic Battery Get (battery puck), Admin 0x5009 input edge detection, 0x5003 key modes, 0x5006/0x5007 property links. Errors: P0(common_process_failed, device_create_connection_error_dialog_message). Other strings on this surface: connection_temperature_auto_manu_title=\"AUTO | MANU\"; connection_temperature_eco_comfort_title=\"Eco | Comfort\"; input_edge_behaviour=\"Behaviour\"; key_mode_gateway=\"Gateway\"; key_mode_light=\"Lights\"; key_mode_move=\"Blinds\"; key_mode_property=\"Property\"; key_mode_rtr=\"Temperature\"; key_mode_scene=\"Scene\"; key_mode_switch=\"Switch\"; key_mode_unknown=\"Unknown\"; mini_actuator_connect_input_description=\"When the connection is active, E1 and E2 control the same function. Separately, each input can control one function.\"; mini_actuator_connection_dialog_connect_title=\"Connect inputs\"; mini_actuator_connection_dialog_disconnect_title=\"Disconnect inputs\"; mini_actuator_connection_dialog_message=\"The JUNG HOME Switch Actuator Mini must carry out a restart in order to apply your settings.\"; mini_actuator_first_input_title=\"E1\"; mini_actuator_input_edge_behaviour_description=\"When edge evaluation is active, the reaction of E1 and E2 to a rising or falling edge can be set.\"; mini_actuator_second_input_title=\"E2\"; puck_connection_dialog_message=\"The JUNG HOME Puck must perform a restart in order to apply your settings.\"."
+  },
+  {
+   "id": "ui:screen:miniactuatordetailactivity",
+   "title": "Mini actuator / puck (binary inputs) detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:364",
+    "de/jung/junghome/app/ui/devices/miniActuator/MiniActuatorDetailActivity.java:168",
+    "de/jung/junghome/data/mesh/resolver/e2.java:316"
+   ],
+   "details": "Header icon ic_puck (R1() = puck) or ic_mini_actuator, battery status icon for the battery puck. Content: SleepFragment while the battery puck is asleep, else MiniActuatorConfigurationFragment (inputs E1/E2, key assignment Press/Hold, connect inputs, edge evaluation rising/falling) - configuration domain."
+  },
+  {
+   "id": "ui:screen:motiondetectordevicedetailactivity",
+   "title": "Motion detector detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:198",
+    "de/jung/junghome/app/ui/devices/detectors/motionDetector/MotionDetectorDeviceDetailActivity.java:90"
+   ],
+   "details": "Header title motion_detector_title; hosts DetectorSensorFragment (2 PIR segments A/B). No power button, no lock."
+  },
+  {
+   "id": "ui:screen:nameconfigfragment",
+   "title": "Rename dialog for a device / area / scene (long-press)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/nameConfig/b.java:18",
+    "de/jung/junghome/app/ui/shared/nameConfig/a.java:55",
+    "de/jung/junghome/app/ui/home/devices/b.java:40",
+    "de/jung/junghome/app/ui/groups/c.java:37",
+    "de/jung/junghome/app/ui/scenes/b.java:38"
+   ],
+   "details": "Bottom sheet opened by long-press on Devices / Areas / Scenes / Favourites tiles: title common_rename_device / common_rename_group / common_rename_scene, description device_name_config_description / group_name_config_description / scene_name_config_description, labels device_info_device_name_label / device_info_options_label, error name_config_error; saves via NameConfigViewModel.updateName."
+  },
+  {
+   "id": "ui:screen:onboardingactivity",
+   "title": "Onboarding tutorial pages",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/onboarding/OnboardingActivity.java:45",
+    "P6/a.java:12",
+    "P6/b.java:12",
+    "P6/c.java:12",
+    "P6/d.java:12",
+    "P6/i.java:12",
+    "P6/j.java:12"
+   ],
+   "details": "Pager of illustrated tutorial pages (onboarding_{devices,add_devices,groups,favorites,scenes,settings}_{title,subtitle}) explaining the app's tabs, shown from the welcome screen."
+  },
+  {
+   "id": "ui:screen:permissionsactivity",
+   "title": "Android permissions overview (Bluetooth / location / camera)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/permissions/PermissionsActivity.java:27",
+    "de/jung/junghome/app/ui/settings/permissions/PermissionsViewModel.java:13",
+    "res/layout/activity_permissions.xml:24"
+   ],
+   "details": "Settings > Permissions (settings_permissions_title): shows the phone's Bluetooth adapter state (permissions_bluetooth_state_on / _off) and the Android runtime permissions the app uses (permissions_access, permissions_location for BLE scanning, permissions_camera for the project QR scanner) with granted / denied state (permissions_granted / permissions_denied)."
+  },
+  {
+   "id": "ui:screen:powerconsumptionfragment",
+   "title": "Energy / power consumption tab (measuring socket, measuring lamp)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/c.java:939",
+    "de/jung/junghome/app/ui/devices/socket/consumption/c.java:161",
+    "de/jung/junghome/app/ui/devices/socket/consumption/c.java:954",
+    "de/jung/junghome/app/ui/devices/socket/consumption/c.java:512",
+    "res/layout/view_total_consumption_info.xml:34"
+   ],
+   "details": "Spinner DAILY (\"24h Report\") / THIRTY_ONE_DAYS (\"31 days report\") -> ChartLine (Wh). Current power card (socket_active_power_info_title, value W rounded to 2 dp, \"State\" On/Off with ic_plugged_in/ic_not_plugged_in). Total consumption card (socket_total_consumption_info_title, Wh, operating hours socket_consumption_info_operating_hours) and electricity cost card (socket_consumption_price \"%.2f €\", price per kWh socket_consumption_price_per_cent \"ct / kWh\", example 100 Wh) - each card only if enabled on the configuration consumption page (local DeviceInfo flags). Empty chart: socket_consumption_empty_title + socket_consumption_empty_description (socket) / lamp_consumption_empty_description (measuring lamp). LockFunctionView. Other strings on this surface: common_unit_cent_kwh=\"ct / kWh\"; common_unit_watt=\"Watt\"; common_unit_wh=\"Wh\"; socket_active_power_state_label=\"State\"; socket_consumption_price_kwh_example=\"100\"; socket_measure_type_31_day=\"31 days report\"; socket_measure_type_daily=\"24h Report\"."
+  },
+  {
+   "id": "ui:screen:presencedetectordevicedetailactivity",
+   "title": "Ceiling presence detector detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:211",
+    "de/jung/junghome/app/ui/devices/detectors/presenceDetector/PresenceDetectorDeviceDetailActivity.java:94"
+   ],
+   "details": "Header title presence_detector_title; hosts DetectorSensorFragment (3 PIR segments A/B/C)."
+  },
+  {
+   "id": "ui:screen:proxyconnectionloadingactivity",
+   "title": "Proxy connection loading screen",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/proxy/ProxyConnectionLoadingActivity.java:16",
+    "res/layout/activity_proxy_connection_loading.xml:51",
+    "de/jung/junghome/app/service/AppStartService$showProxyLoadingScreen$1.java:12"
+   ],
+   "details": "Full-screen \"Your JUNG HOME is being updated\" (proxy_loading_new_connection_title) / \"Bluetooth connection is established and the status of your devices is being updated.\" shown by AppStartService while the first proxy connection and state load run; \"Skip\" (proxy_loading_continue_without_connection). Other strings on this surface: proxy_loading_new_connection_description=\"Bluetooth connection is established and the status of your devices is being updated.\"."
+  },
+  {
+   "id": "ui:screen:referencerunloadingactivity",
+   "title": "Blind reference run (calibration) progress screen",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:598",
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingActivity.java:109",
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingViewModel$waitForReferenceRun$1.java:64"
+   ],
+   "details": "Full-screen loading \"Your blind is moved to the Fully-Opened reference position.\" (blind_reference_run_description) for running time + 10 s after Admin Set 0x110D = 1. No calibration state is read or shown anywhere else."
+  },
+  {
+   "id": "ui:screen:roomtemperaturefragment",
+   "title": "Thermostat control tab",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:133",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:159",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:188",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:637",
+    "res/layout/fragment_detail_room_temperature.xml:143"
+   ],
+   "details": "RoomTemperatureSlider (arc 5..30 degC, 0.5 steps) with value label toggle Target/Current (rtr_detail_display_mode_target_temperature / _current_temperature; \"%s°C\"/\"%s°\"), Auto/Manu label (device_detail_rtr_operation_mode_auto/_manu) that toggles scheduler on tap; - / + buttons (±0.5 degC); quick programs (quick_programs_title) Frost / ECO / Comfort buttons (HvacMode FREEZE/ECO/COMFORT); Boost card (boost_mode_title, boost_mode_description, Start boost / Stop boost). Enabling: slider/±/mode buttons disabled while boost active or state unknown; boost buttons enabled once boost state known. Boost card and connected-devices list only when allowOperationModeSwitch. Connected heating actuators list (compose) with remove link (remove_rtr_connection_dialog_*, loading remove_rtr_connection_loading_text, success rtr_connection_successful_removed_text, error remove_rtr_connection_error_dialog_*; explanation rtr_connected_devices_explanation / _participant). Other strings on this surface: boost_mode_disable=\"Stop boost\"; boost_mode_enable=\"Start boost\"; device_detail_rtr_operation_mode_comfort=\"Comfort\"; device_detail_rtr_operation_mode_echo=\"ECO\"; device_detail_rtr_operation_mode_frost=\"Frost\"; room_temperature_title=\"Temperature\"."
+  },
+  {
+   "id": "ui:screen:rtrcentralfunctionsfragment",
+   "title": "Central control - thermostats tab",
+   "apk_refs": [
+    "p265y6/a.java:35",
+    "de/jung/junghome/app/ui/devices/rtr/centralFunction/RtrCentralFunctionsViewModel.java:12"
+   ],
+   "details": "RoomTemperatureSlider (5..30 degC, 0.5 steps) setting the target temperature of all RTRs -> ui:ctl:rtrcentralfunctionsviewmodel.targettemperature (home: TargetTemperature.Rtrs -> 0xFEF9; area: per-device unicast unack)."
+  },
+  {
+   "id": "ui:screen:rtrdetailactivity",
+   "title": "Room thermostat detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:172",
+    "res/layout/activity_rtr_detail.xml:52"
+   ],
+   "details": "Tabs: temperature control (RoomTemperatureFragment, allowOperationModeSwitch=true) and heating profiles (timers domain). No lock function, no power button."
+  },
+  {
+   "id": "ui:screen:scenedetailsactivity",
+   "title": "Scene detail page (favourite + stored device states)",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:224",
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$toggleFavorite$1.java:18",
+    "W6/c.java:170"
+   ],
+   "details": "Shows the scene name/icon, favourite toggle (favorite_scene_add/remove_snackbar_message) and the list of devices with the state stored in the scene (SceneResultAdapter; RTR-controlled outputs labelled scenes_temperature_controlled, locked devices marked). Editing (SceneEditMode, add/remove devices, save) belongs to the scenes domain; errors scene_detail_error_* and scenes_device_not_reachable_title/message are shown from here. Other strings on this surface: common_device_off=\"Switched off\"; rtr_state_temperature=\"%.1f °C\"; scene_delete_loading_title=\"All devices are removed from the scene and the scene is deleted.\"; scene_detail_delete_button=\"Delete scene\"; scene_detail_devices_title=\"Devices\"; scene_detail_empty_message=\"Click + and select devices to add them to the scene.\"; scene_detail_empty_message_member=\"As soon as devices are available in the scene, you will find them here.\"; scene_detail_error_configuration_failed_completely_message=\"The connection to a device was interrupted. Saving is not possible without a connection.\"; scene_detail_error_configuration_failed_completely_title=\"Scene could not be saved\"; scene_detail_error_configuration_failed_message=\"Some devices could not be configured for this scene. You can edit the scene later to add them.\"; scene_detail_error_configuration_failed_title=\"Scene partially saved\"; scene_detail_error_delete_failed_message=\"Deletion of the scene failed\"; scene_detail_error_delete_failed_title=\"Scene could not be deleted\"; scene_detail_error_force_delete=\"Delete anyway\"; scene_detail_error_update_failed_message=\"Not all devices were able to save your settings in this scene\"; scene_detail_error_update_failed_title=\"Application of the scene failed\"; scene_detail_name_hint=\"Scene...\"; scene_name_duplicate_error=\"This name is already in use.\"; scene_name_empty_error=\"Name must not be empty.\"; scene_save=\"Save scene\"; scene_save_loading_title=\"The scene is being saved...\"."
+  },
+  {
+   "id": "ui:screen:sceneiconselectionfragment",
+   "title": "Scene icon picker",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/iconSelection/a.java:24",
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsActivity.java:373"
+   ],
+   "details": "Grid of SceneIcon values (title common_icons_title \"Icons\"), opened from the scene page header; selection sends UpdateSceneIcon."
+  },
+  {
+   "id": "ui:screen:scenesfragment",
+   "title": "Scenes tab: recall scenes",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:63",
+    "de/jung/junghome/app/ui/scenes/ScenesFragment.java:275",
+    "de/jung/junghome/app/ui/scenes/ScenesFragment.java:88",
+    "Y6/b.java:35"
+   ],
+   "details": "Grid of scene tiles (name, icon, favourite marker). Tap = ActivateScene(scene number) -> Scene Recall broadcast (ui:uc:activatescene); no \"active scene\" state is shown. Long-press = popup_window_long_press_scene (common_action_trigger_scene \"Trigger scene\" = same recall, rename, remove with dialog scene_detail_remove_dialog_title/message). Empty: scenes_empty_message; create button scenes_create_title (admin, opens scene editor = scenes domain)."
+  },
+  {
+   "id": "ui:screen:settingsdesignactivity",
+   "title": "App theme (system / light / dark)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/design/SettingsDesignActivity.java:22",
+    "de/jung/junghome/app/ui/settings/design/SettingsDesignViewModel.java:14",
+    "res/layout/activity_settings_design.xml:12"
+   ],
+   "details": "Settings > Design: radio choice settings_design_system / settings_design_light / settings_design_dark, stored as a preference and applied with AppCompatDelegate night mode."
+  },
+  {
+   "id": "ui:screen:settingsfragment",
+   "title": "Settings tab (project and app settings hub)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/SettingsFragment.java:25",
+    "de/jung/junghome/app/ui/settings/SettingsViewModel.java:36",
+    "de/jung/junghome/app/ui/settings/h.java:255",
+    "res/layout/view_bottom_bar.xml:64"
+   ],
+   "details": "Bottom-bar tab settings_tab_title. Section settings_project_settings_title: share via QR / synchronisation (net:uc:createqrcode, net:uc:createsyncedproject), settings_manage_my_project_title (ProjectActivity: share file net:ui:projectshare, gateway net:uc:getgatewayconfig, delete project net:uc:removelocaldata), gateway. Section settings_app_settings_title: firmware updates (mgmt:flow:checkforupdate), support, design, version history, permissions, legal, and the hidden mesh network entry (mgmt:debug:entry, 7 taps on the version text)."
+  },
+  {
+   "id": "ui:screen:simpleswitchfragment",
+   "title": "Switch tab (on/off illustration + lock functions) for switch lamps and sockets",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchFragment.java:59",
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchFragment.java:69",
+    "e6/c.java:102",
+    "de/jung/junghome/app/utils/g.java:374"
+   ],
+   "details": "Compose screen: large on/off illustration (ic_lamp_function_on/off for lamps, ic_socket_particles_on/off for sockets, app/utils/g.i) with \"Switched on/off\" text (read-only; switching is done with the header button). Lock card \"Lock functions\" / \"Permanent On | Off\" (lock_function_switch_title/description) with a Time limit picker (H:MM:SS, unit_hour) and Lock/Unlock device button (onToggleDeviceLockedClicked -> LockFunctionViewModelDelegate lock/unlock). On open: Generic OnOff Get if no cached state (requestGenericOnOffIfMissing). Other strings on this surface: lock_function_title=\"Lock functions\"."
+  },
+  {
+   "id": "ui:screen:sleepfragment",
+   "title": "Battery device sleep screen",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/SleepFragment.java:44",
+    "de/jung/junghome/app/ui/devices/SleepViewModel.java:208",
+    "de/jung/junghome/app/ui/devices/SleepFragment$onCreateView$1$1$1$1.java:90"
+   ],
+   "details": "Compose screen shown for sleeping battery devices: wake-up illustration (ic_wake_up_puck / ic_wake_up_one_gang_control_switch / ic_wake_up_two_gang_control_switch), text puck_sleep_mode_text or control_switch_sleep_mode_text, info dialog (puck_sleep_mode_dialog_text / control_switch_sleep_mode_dialog_text) and \"does not react\" link (puck_sleep_mode_battery_change_button_text / control_switch_sleep_mode_battery_change_button_text -> update_puck_no_wake_up_text / update_walltransmitter_no_wake_up_text: battery empty, replace it)."
+  },
+  {
+   "id": "ui:screen:socketcentralfunctionsfragment",
+   "title": "Central control - sockets tab",
+   "apk_refs": [
+    "B6/b.java:23",
+    "de/jung/junghome/app/ui/devices/socket/centralFunction/SocketCentralFunctionsViewModel.java:25"
+   ],
+   "details": "All sockets on / off buttons -> ui:ctl:socketcentralfunctionsviewmodel.onoff (home: Toggle.Sockets -> 0xFEF8; area: per-device unicast unack)."
+  },
+  {
+   "id": "ui:screen:supportactivity",
+   "title": "Support links (workbook, device manuals, report a problem)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/support/SupportActivity.java:18",
+    "de/jung/junghome/app/ui/settings/support/SupportViewModel.java:9",
+    "res/layout/activity_support.xml:25"
+   ],
+   "details": "Settings > Support: three rows that open external web pages in the browser: support_workbook (support_workbook_url), support_device_manuals (https://www.jung.group/JH-Catalogue), support_report_a_problem (https://www.jung.group/Customer-Centre). No logs or data are attached."
+  },
+  {
+   "id": "ui:screen:switchmeasuresocketdevicedetailactivity",
+   "title": "Measuring socket detail page",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/SwitchMeasureSocketDeviceDetailActivity.java:137",
+    "res/layout/activity_switch_measure_socket_detail.xml:53"
+   ],
+   "details": "Tabs: consumption chart (PowerConsumptionFragment) and Timer. Header power button = ToggleDevice."
+  },
+  {
+   "id": "ui:screen:switchsocketdetailactivity",
+   "title": "Switch socket detail page",
+   "apk_refs": [
+    "res/navigation/nav_graph.xml:351",
+    "de/jung/junghome/app/ui/devices/socket/SwitchSocketDetailActivity.java:138",
+    "res/layout/activity_switch_socket_detail.xml:52"
+   ],
+   "details": "Tabs: SimpleSwitch (on/off illustration + lock) and Timer. Header power button = ToggleDevice. RTR binding card (rtr_connection_info_text) as for lamps."
+  },
+  {
+   "id": "ui:screen:tunablewhitefragment",
+   "title": "Colour temperature tab",
+   "apk_refs": [
+    "res/layout/fragment_tunable_white.xml:8",
+    "de/jung/junghome/app/ui/devices/lamp/elements/tunableWhite/TunableWhiteViewModel.java:121",
+    "de/jung/junghome/app/ui/devices/lamp/elements/tunableWhite/d.java:29"
+   ],
+   "details": "Title tunable_white_title (\"Colour temperature\"); TunableWhiteWheel showing \"%s K\" (common_kelvin) rounded to 100 K, - / + buttons (1 % steps of the 2000..10000 K scale) bounded by the CTL temperature range; LockFunctionView. Changes debounced 500 ms -> Light CTL Set with current lightness."
+  },
+  {
+   "id": "ui:screen:versionhistoryactivity",
+   "title": "App release notes (version history, post-update changelog)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/settings/versionHistory/VersionHistoryActivity.java:20",
+    "de/jung/junghome/app/ui/settings/versionHistory/VersionHistoryViewModel.java:15",
+    "de/jung/junghome/app/ui/appChangelog/AppChangelogActivity.java:31",
+    "de/jung/junghome/app/ui/appChangelog/AppChangelogViewModel.java:17",
+    "p055e7/b.java:94"
+   ],
+   "details": "Settings > Version history (settings_version_history): expandable per-version notes (version_history_show_more / show_less); AppChangelogActivity (app_changelog_title) shows the same bundled changelog once after an app update, gated by a stored last-seen version."
+  },
+  {
+   "id": "ui:screen:welcomeactivity",
+   "title": "Splash / welcome screen (start directly or discover the demo)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/welcome/WelcomeActivity.java:19",
+    "de/jung/junghome/app/ui/welcome/WelcomeViewModel.java:22",
+    "res/layout/activity_welcome.xml:22"
+   ],
+   "details": "Splash (1 s) that runs CheckForForcedAppUpdate (-> ForceUpdateActivity) and CheckForValidProject; with a project it opens MainActivity, otherwise shows welcome_sub_title with welcome_button_start_directly (-> ProjectStartupActivity: import a project file or search devices) and welcome_button_discover_app (demo project, ui:uc:toggledemomode), and the onboarding tutorial."
+  },
+  {
+   "id": "ui:state:activepowercapability",
+   "title": "Current power (W)",
+   "apk_refs": [
+    "M8/a.java:11",
+    "F7/a.java:39",
+    "de/jung/junghome/app/ui/devices/socket/consumption/c.java:161"
+   ],
+   "details": "Sensor Status first property 0x0081 Active Power Load Side, LE x0.1 W; shown with 2 decimals on the consumption page (polled every 5 s while open, also consumed from publications)."
+  },
+  {
+   "id": "ui:state:actualtemperaturecapability",
+   "title": "RTR current room temperature",
+   "apk_refs": [
+    "p046d9/a.java:11",
+    "F7/a.java:45",
+    "de/jung/junghome/data/mesh/resolver/M1.java:32",
+    "I6/a.java:108"
+   ],
+   "details": "Sensor Status (0x52) whose FIRST marshalled property is 0x004F Present Ambient Temperature: value = signed raw x 0.5 degC, clamped 5..30. Tile \"Currently %.1f °C\", slider secondary/Current value. Other properties of a multi-property status are ignored."
+  },
+  {
+   "id": "ui:state:batterycapability",
+   "title": "Battery indicator (wall transmitters, battery puck)",
+   "apk_refs": [
+    "p096i8/b.java:11",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java:251",
+    "de/jung/junghome/app/utils/g.java:133"
+   ],
+   "details": "Generic Battery Status (0x8224): only flags bits 3:2 (battery indicator) used, level byte ignored. Icon: GOOD(2) -> ic_battery_medium, LOW(1) -> ic_battery_empty, CRITICAL(0) -> ic_battery_critical, UNKNOWN(3) or device unreachable -> ic_battery_unknown. Header status icon on push-button and mini-actuator pages only (not on tiles)."
+  },
+  {
+   "id": "ui:state:blindoperationmodecapability",
+   "title": "Blind operation mode (blind / shutter / awning)",
+   "apk_refs": [
+    "J8/C0535c.java:12",
+    "de/jung/junghome/data/mesh/resolver/BlindMoveOperationModeStatusMessageResolver$processPropertyMessage$2$1.java:14",
+    "de/jung/junghome/domain/item/mesh/BlindMoveOperationMode.java:25"
+   ],
+   "details": "LBC Admin property 0x1104 u8: 0 BLINDS (slat slider shown), 1 SHUTTER, 3 AWNING, 4 UNKNOWN; read on blind page open. Only runtime effect: slat slider visibility (nothing inverted)."
+  },
+  {
+   "id": "ui:state:boostmodecapability",
+   "title": "RTR boost active",
+   "apk_refs": [
+    "p096i8/c.java:11",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/g.java:611"
+   ],
+   "details": "Admin 0x120D u8 1/0, polled every 5 s while the RTR page is open; while active Start/Stop boost toggles and slider + mode buttons are disabled."
+  },
+  {
+   "id": "ui:state:buttonlayoutcapability",
+   "title": "Push-button layout text",
+   "apk_refs": [
+    "p096i8/d.java:11",
+    "de/jung/junghome/app/utils/g.java:164",
+    "de/jung/junghome/domain/item/mesh/nodes/models/LayoutMode.java:23"
+   ],
+   "details": "Admin 0x5001 LayoutMode 0 ONE_TOP_ONE_BOTTOM, 1 ONE_ROCKER, 2 TWO_LEFT_TWO_RIGHT, 3 ONE_LEFT_TWO_RIGHT, 4 TWO_LEFT_ONE_RIGHT, 5 ONE_LEFT_ONE_RIGHT, 255 UNKNOWN -> tile/header text switch_layout_type_* and rocker drawing; also the keep-alive probe."
+  },
+  {
+   "id": "ui:state:detectorforcedoffcapability",
+   "title": "Detector forced ON/OFF (continuous on/off)",
+   "apk_refs": [
+    "P8/d.java:9",
+    "de/jung/junghome/domain/item/mesh/ForcedOffMode.java:25",
+    "de/jung/junghome/app/ui/devices/lamp/LampViewModel$_forceOffMode$3.java:89"
+   ],
+   "details": "Admin 0x6016 u8 0 INACTIVE, 2 OFF, 3 ON read from the detector element when a lamp page opens; ForcedOffView on the load page, controls disabled while != INACTIVE. Read-only in the UI."
+  },
+  {
+   "id": "ui:state:devicereachability",
+   "title": "Device reachable / \"No connection\"",
+   "apk_refs": [
+    "Y7/AbstractC0916e.java:362",
+    "Y7/AbstractC0916e.java:315",
+    "Y7/AbstractC0916e.java:336"
+   ],
+   "details": "S1() reachable = failedMessagesCounter < 3 && !N1(); N1() = battery device (Q1: 1-/2-gang wall transmitter, battery puck) with >= 1 failed request. Counter set to 3 on request timeout, reset to 0 by any status from the device. Unreachable: tile \"No connection\" (not for battery devices), greyed icon, disabled toggle, detail header label + tap dialog device_not_reachable_*, battery icon unknown."
+  },
+  {
+   "id": "ui:state:devicestate",
+   "title": "Mesh proxy connection state",
+   "apk_refs": [
+    "X7/a.java:9",
+    "de/jung/junghome/app/service/ConnectionViewService$updateProxyStatus$1.java:84"
+   ],
+   "details": "DeviceState: Connected(macAddress) / CommunicationError(status) / c (connecting) / d(flag) -> ProxyStatusView text and colour."
+  },
+  {
+   "id": "ui:state:genericlevelcapability",
+   "title": "Blind position / slat (percent closed)",
+   "apk_refs": [
+    "p096i8/f.java:12",
+    "de/jung/junghome/data/mesh/resolver/Q.java:148",
+    "I6/a.java:48"
+   ],
+   "details": "Generic Level Status (0x8208) present AND target stored as pct = round((level+32768)*100/65535) (target := present in the short form; remaining time ignored). Tile uses present (Closed/Open/\"To %d%% Closed\"); slider thumb = target, shaded = present; slat % on SlatSlider."
+  },
+  {
+   "id": "ui:state:genericonoffcapability",
+   "title": "On/off state (lamps, sockets, outputs)",
+   "apk_refs": [
+    "p096i8/g.java:13",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java:356",
+    "de/jung/junghome/data/mesh/resolver/L0.java:150",
+    "de/jung/junghome/app/utils/g.java:675"
+   ],
+   "details": "From Generic OnOff Status (0x8204) PRESENT state (target/remaining ignored), also set by Lightness/CTL status (lightness != 0 -> ON). Shown as tile icon + \"Switched on\"/\"Switched off\", tile toggle checked, header power button, detail illustration, consumption \"State On/Off\". Unknown -> skeleton."
+  },
+  {
+   "id": "ui:state:inputedgedetectioncapability",
+   "title": "Binary input edge evaluation",
+   "apk_refs": [
+    "p096i8/h.java:13",
+    "res/layout/fragment_mini_actuator_configuration.xml:304"
+   ],
+   "details": "Admin 0x5009 per input: rising / falling edge (rising_input_edge / falling_input_edge) shown on the inputs page."
+  },
+  {
+   "id": "ui:state:isfavorite",
+   "title": "Favourite flag",
+   "apk_refs": [
+    "Y7/AbstractC0916e.java:310",
+    "I6/c.java:85"
+   ],
+   "details": "Local flag per device/area/scene: star on tiles, header toggle, favourites dashboard, sort order, initial state load."
+  },
+  {
+   "id": "ui:state:lightlightnesscapability",
+   "title": "Brightness %",
+   "apk_refs": [
+    "p096i8/j.java:12",
+    "de/jung/junghome/data/mesh/resolver/L0.java:146",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:253"
+   ],
+   "details": "Light Lightness Status (0x824E) present lightness -> pct = round(l*100/65535); detail header \"%d%% brightness\", DimSlider position. Not shown on tiles."
+  },
+  {
+   "id": "ui:state:lightnessrangecapability",
+   "title": "Dimmer lightness range (slider bounds)",
+   "apk_refs": [
+    "J8/t.java:10",
+    "B8/b.java:9",
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/d.java:77"
+   ],
+   "details": "Light Lightness Range Status (0x8258) [status][min u16][max u16] -> DimSlider range (percent of 65535); minus below min turns off."
+  },
+  {
+   "id": "ui:state:lockfunctioncapability",
+   "title": "Lock function state (locked / lock-out / wind alarm, time limit)",
+   "apk_refs": [
+    "D8/a.java:12",
+    "C8/a.java:129",
+    "C8/a.java:145",
+    "de/jung/junghome/app/utils/g.java:301"
+   ],
+   "details": "LBC Admin property 0x0009 status [cmd u8][priority u8][time u16 LE s][value...]: locked = cmd not in {0 (none), 0xFF}; priority 0xFE = lock-out protection, 0xFF = wind alarm (locked && prio 0xFF), other (1) = normal lock; time 0 = unlimited. Shown as lock badge on tiles/header (ic_function_lock_closed, ic_lock_wind), Lock/Unlock button text, wind alarm Start/End, disables all controls while locked; read on detail page open and after toggles."
+  },
+  {
+   "id": "ui:state:manufacturerinfoscapability",
+   "title": "Hardware revision / manufacturer (device info)",
+   "apk_refs": [
+    "G8/a.java:11",
+    "p234v7/Q.java:29"
+   ],
+   "details": "SIG Generic Manufacturer Property 0x0010 hardware revision (raw bytes) shown under Specifications."
+  },
+  {
+   "id": "ui:state:manufacturersoftwareversioncapability",
+   "title": "Software version (device info)",
+   "apk_refs": [
+    "G8/b.java:10"
+   ],
+   "details": "SIG Manufacturer property 0x001A as ASCII digit string -> \"a.b.c.d\"; shown under Specifications; also gates RTR 0x120B support (>= 2.2.0.0)."
+  },
+  {
+   "id": "ui:state:measureconsumptioncapability",
+   "title": "Consumption history samples",
+   "apk_refs": [
+    "p096i8/m.java:15",
+    "p234v7/U.java:33"
+   ],
+   "details": "LBC User property 0x5010 (DAILY: u16 big-endian x0.1 per hour, index i = i hours ago, 0xFFFF invalid) / 0x5011 (THIRTY_ONE_DAYS: u24 BE x0.1 per day) -> ChartLine."
+  },
+  {
+   "id": "ui:state:pirsensorcapability",
+   "title": "Detector PIR sensitivities",
+   "apk_refs": [
+    "p096i8/n.java:13",
+    "de/jung/junghome/data/mesh/resolver/A0.java:92"
+   ],
+   "details": "Admin 0x6008 / 0x6009 / 0x600A u8 raw 0..255 per PIR segment A/B/C -> segment radius (0..100 %)."
+  },
+  {
+   "id": "ui:state:powerontimecapability",
+   "title": "Operating hours",
+   "apk_refs": [
+    "p213t8/a.java:11",
+    "de/jung/junghome/data/mesh/resolver/Y1.java:14"
+   ],
+   "details": "SIG Generic Admin Property 0x006D power-on time, hours (uint24 on air); \"Operating hours\" card."
+  },
+  {
+   "id": "ui:state:presencebrightnesscapability",
+   "title": "Detector current brightness (lux)",
+   "apk_refs": [
+    "P8/r.java:9",
+    "de/jung/junghome/data/mesh/resolver/A0.java:106",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1857m.java:72",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1861q.java:46"
+   ],
+   "details": "LBC Manufacturer property 0x6004 u16 LE (lux), polled every 5 s on the detector parameter page (device_parameter_detector_light_situation_title / device_parameter_detector_light_situation_sub_title, unit_lx); never delivered as Sensor Status."
+  },
+  {
+   "id": "ui:state:presencecontrolpircapability",
+   "title": "Detector live PIR trigger bits (walking test only)",
+   "apk_refs": [
+    "P8/t.java:8",
+    "de/jung/junghome/data/mesh/resolver/A0.java:114"
+   ],
+   "details": "LBC Manufacturer property 0x6005 u8 bitfield bit0 A, bit1 B, bit2 C -> DetectorView segment highlight. The only \"motion detected\" display in the app; not shown outside the walking test."
+  },
+  {
+   "id": "ui:state:presencetestcapability",
+   "title": "Detector walking test active",
+   "apk_refs": [
+    "J8/D.java:9",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java:153"
+   ],
+   "details": "Admin 0x6001 u8 bool; button text Start/Stop walking test; drives the 1 s 0x6005 poll."
+  },
+  {
+   "id": "ui:state:rtrconnectionmode",
+   "title": "Output controlled by thermostat",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/connection/RtrConnectionMode.java:11",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:224"
+   ],
+   "details": "RtrConnectionMode(controlled, rtr names): local DB (subscriptions); disables toggle on tiles/pages, shows \"This device is controlled by a thermostat.\" + RTR names; parameters page shows rtr_connection_parameter_info_text."
+  },
+  {
+   "id": "ui:state:rtrhvacmodecapability",
+   "title": "RTR mode Comfort / ECO / Frost",
+   "apk_refs": [
+    "p096i8/q.java:13",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:37",
+    "de/jung/junghome/domain/item/mesh/HvacMode.java:27"
+   ],
+   "details": "LBC Admin 0x120B u8 0 NONE, 1 COMFORT, 2 ECO, 3 FREEZE (FW >= 2.2.0.0, SIG prop 0x001A). Highlights the active quick-program button."
+  },
+  {
+   "id": "ui:state:rtrmodecapability",
+   "title": "RTR preset temperatures (old firmware mode derivation)",
+   "apk_refs": [
+    "P8/w.java:9",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel.java:234"
+   ],
+   "details": "Admin 0x1203 Comfort / 0x1204 Eco / 0x1205 Frost preset (int16 LE degC x100). FW < 2.2.0.0: the highlighted mode is the preset equal to the current target; selecting a mode writes that preset as target."
+  },
+  {
+   "id": "ui:state:schedulerenabledcapability",
+   "title": "RTR Auto / Manu",
+   "apk_refs": [
+    "J8/I.java:9",
+    "de/jung/junghome/data/mesh/resolver/C1952s1.java:13",
+    "de/jung/junghome/app/ui/devices/rtr/controls/RoomTemperatureSlider.java:539"
+   ],
+   "details": "Admin 0x1246 u8 1 = AUTO (scheduler/heating profile active: \"the temperature changes between Comfort and ECO modes\"), 0 = MANU; 0x1249 RtrSchedulerFunctionStatus updates the same field."
+  },
+  {
+   "id": "ui:state:sleepmode",
+   "title": "Battery device awake/asleep",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/SleepMode.java:8",
+    "de/jung/junghome/data/mesh/resolver/e2.java:301"
+   ],
+   "details": "DeviceAwake / DeviceNotAwake / DeviceNotAvailable from the keep-alive; controls the sleep banner/SleepFragment."
+  },
+  {
+   "id": "ui:state:stm32versioncapability",
+   "title": "RTR application controller version",
+   "apk_refs": [
+    "Y8/b.java:10",
+    "res/layout/fragment_device_info.xml:11"
+   ],
+   "details": "LBC Manufacturer property 0x0005 (application image version) of the RTR, \"App.-Ctrl. SW-Ver.\" with update link."
+  },
+  {
+   "id": "ui:state:targettemperaturecapability",
+   "title": "RTR target temperature (set-point)",
+   "apk_refs": [
+    "p046d9/b.java:12",
+    "de/jung/junghome/data/mesh/resolver/Q.java:156"
+   ],
+   "details": "Generic Level Status of the set-point element: pct -> t = 5 + 25*pct/100 (target preferred over present). Slider primary value \"Target\"."
+  },
+  {
+   "id": "ui:state:totalenergyusecapability",
+   "title": "Total consumption (Wh)",
+   "apk_refs": [
+    "p213t8/b.java:11",
+    "de/jung/junghome/data/mesh/resolver/T.java:8"
+   ],
+   "details": "SIG Generic Admin Property 0x006A TotalDeviceEnergyUse, LE integer Wh (kWh = /1000 on the configuration page); drives the cost calculation."
+  },
+  {
+   "id": "ui:state:tunablewhiterangecapability",
+   "title": "Colour temperature range",
+   "apk_refs": [
+    "J8/P.java:10",
+    "de/jung/junghome/data/mesh/resolver/c2.java:15"
+   ],
+   "details": "Light CTL Temperature Range Status (0x8263) [status][min K u16][max K u16] -> wheel bounds (default scale 2000..10000 K)."
+  },
+  {
+   "id": "ui:state:tunablewhitevaluecapability",
+   "title": "Colour temperature (and lightness) of TW lamps",
+   "apk_refs": [
+    "p109j9/a.java:13",
+    "de/jung/junghome/data/mesh/resolver/E0.java:204"
+   ],
+   "details": "Light CTL Status (0x8260) present lightness + present temperature; temperature pct = (K-2000)/8000*100; wheel shows K rounded to 100."
+  },
+  {
+   "id": "ui:tile:blind",
+   "title": "Blind tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:66",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:494",
+    "I6/a.java:56"
+   ],
+   "details": "Present level +32767 -> \"Closed\" (blind_state_closed, ic_blinds_closed); -32768 -> \"Open\" (blind_state_open, ic_blinds_fully_open); else \"To %d%% Closed\" (blind_state_closing, present %, ic_blinds_closing). No action button, no slat, no moving indicator. Wind-alarm lock icon."
+  },
+  {
+   "id": "ui:tile:control_switch",
+   "title": "Push-button / wall transmitter tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:68",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:496",
+    "I6/a.java:69"
+   ],
+   "details": "Icon ic_switch_on_gang_rocker (1-gang: Z7.a, Z7.i) or ic_two_rocker_control_switch; state text = button layout (switch_layout_type_one_key_text, _one_rocker_text, _2_2_text, _1_2_text, _2_1_text, _1_1_text) from ButtonLayout 0x5001; no action; battery devices never show \"No connection\"."
+  },
+  {
+   "id": "ui:tile:gateway",
+   "title": "Gateway tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:76",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:504"
+   ],
+   "details": "Icon ic_gateway; name only, no state, no action."
+  },
+  {
+   "id": "ui:tile:lamp",
+   "title": "Lamp tile (switch, dim, tunable white, measuring lamp)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:64",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:492",
+    "I6/a.java:78"
+   ],
+   "details": "Icon ic_lightbulb_on_secondary / ic_lightbulb_off_primary; state \"Switched on/off\" (no brightness % on the tile); toggle action button (ToggleDevice)."
+  },
+  {
+   "id": "ui:tile:mini_actuator",
+   "title": "Mini actuator / puck tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:74",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:502",
+    "I6/d.java:29"
+   ],
+   "details": "Icon ic_mini_actuator (variants 0,1) or ic_puck (2..8); empty state text; no action. Outputs of the actuator/puck appear as separate lamp/socket/blind tiles."
+  },
+  {
+   "id": "ui:tile:motion_detector",
+   "title": "Motion detector tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:70",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:498",
+    "I6/a.java:91"
+   ],
+   "details": "Icon ic_detector_motion; static text \"Motion detector\"; no motion/lux state, no action."
+  },
+  {
+   "id": "ui:tile:presence_detector",
+   "title": "Presence detector tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:72",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:500",
+    "I6/a.java:99"
+   ],
+   "details": "Icon ic_detector_presence; static text \"Ceiling presence detector\"; no presence state, no action."
+  },
+  {
+   "id": "ui:tile:rtr",
+   "title": "RTR tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:58",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:487",
+    "I6/a.java:108"
+   ],
+   "details": "Icon ic_rtr; state text \"Currently %.1f °C\" (rtr_state_temperature_currently) from ActualTemperature (Sensor 0x004F), \"-\" until known; no action button; redraw only when temperature changes."
+  },
+  {
+   "id": "ui:tile:socket",
+   "title": "Measuring socket tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:62",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:490"
+   ],
+   "details": "Same holder as switch socket (I6.a case 7): socket icon by OnOff, \"Switched on/off\", toggle button. No power value on the tile."
+  },
+  {
+   "id": "ui:tile:switch_socket",
+   "title": "Switch socket tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:60",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:490",
+    "I6/a.java:121"
+   ],
+   "details": "Icon ic_socket_on / ic_socket by OnOff; state \"Switched on\"/\"Switched off\" (common_device_on/off); toggle action button (ToggleDevice)."
+  },
+  {
+   "id": "ui:tile:unknown",
+   "title": "Unknown device tile",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/adapter/DeviceViewType.java:78",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:506"
+   ],
+   "details": "Name only, no state."
+  },
+  {
+   "id": "ui:uc:activatescene",
+   "title": "Recall a scene (scene tile / favourite)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/scene/ActivateScene.java:75",
+    "A7/d.java:48",
+    "de/jung/junghome/app/ui/scenes/ScenesFragment.java:275"
+   ],
+   "details": "SceneRecallCapability(address 0xFFFF, scene number) -> Scene Recall Unacknowledged (0x8243) [scene u16 LE][tid], no transition/delay, one broadcast to all nodes. No feedback shown; the current scene is not displayed anywhere."
+  },
+  {
+   "id": "ui:uc:adddevicesforscene",
+   "title": "Scene editing: add devices",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$updateScene$1.java:8"
+   ],
+   "details": "Scenes domain (Scene Store / SceneActionSetupSet)."
+  },
+  {
+   "id": "ui:uc:checkfordeviceupdate",
+   "title": "Firmware update availability for a device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$checkForUpdate$2.java:15",
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel.java:22"
+   ],
+   "details": "Compares the node software version (SIG Manufacturer prop 0x001A, \"a.b.c.d\") with the bundled firmware catalogue; result drives the update-available snackbar and the \"(Update available)\" links."
+  },
+  {
+   "id": "ui:uc:checknameinput",
+   "title": "Name validation for device / area / scene names",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel.java:255",
+    "de/jung/junghome/app/ui/sceneDetail/f.java:28",
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$updateDeviceName$1.java:59",
+    "de/jung/junghome/domain/interactors/scene/CheckNameInput.java:175"
+   ],
+   "details": "Run inside CreateGroup / UpdateGroup / UpdateSceneName / UpdateDeviceData: Blank (null or blank name) -> group_detail_name_empty_error \"Name cannot be blank\"; NotAllowed (String.format(name) throws, e.g. a stray '%') -> common_name_format_error \"The name contains invalid characters.\"; AlreadyTaken (another device / area / scene per CheckType already has the name) -> group_detail_name_already_taken_error \"Name is already in use\". No mesh traffic."
+  },
+  {
+   "id": "ui:uc:checknewusermodebanner",
+   "title": "New user role banner check",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$showBanner$1.java:125"
+   ],
+   "details": "Shows once after the user role changed (admin/member) -> Banner user_mode_new_banner_*."
+  },
+  {
+   "id": "ui:uc:communicatewithdevice",
+   "title": "Send one capability to a device (all runtime detail-page reads/writes)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/CommunicateWithDevice.java:45",
+    "de/jung/junghome/domain/interactors/manufacturer/CommunicateWithDevice.java:114"
+   ],
+   "details": "Params(deviceId, capability, CommunicationType REQUEST (Get) | UPDATE (Set) | UNKNOWN, waitForStatus). Acked request to the element hosting the server model; 3 attempts x 3 s matched on source element + status opcode (vendor property requests also accept D1 27 05); on timeout the device failedMessagesCounter -> 3 (unreachable). If the proxy link is down the request fails immediately (DeviceNotReachable) except for battery devices whose requests are queued (docs/android/network-logic.md 4.1/5.1)."
+  },
+  {
+   "id": "ui:uc:configurecontrolswitchlayout",
+   "title": "Change input layout (connect inputs)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java:45"
+   ],
+   "details": "Configuration (Admin 0x5001 layout); device-settings domain."
+  },
+  {
+   "id": "ui:uc:connecttoproxy",
+   "title": "Connect to a mesh proxy (use case)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:56",
+    "de/jung/junghome/app/ui/main/MainViewModel$startConnectingToProxy$1.java:11"
+   ],
+   "details": "ConnectToProxy injected into MainViewModel and run by startConnectingToProxy (ui:vm:mainviewmodel.startconnectingtoproxy): GATT proxy scan/connect and reconnect loop."
+  },
+  {
+   "id": "ui:uc:creategroup",
+   "title": "Create area (admin)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$createGroup$1.java:6"
+   ],
+   "details": "Configuration: new group address + subscriptions (network domain)."
+  },
+  {
+   "id": "ui:uc:deletedevicefromgroups",
+   "title": "Remove device from area",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsActivity.java:40"
+   ],
+   "details": "Swipe-to-remove on the area page (configuration: unsubscribe)."
+  },
+  {
+   "id": "ui:uc:deletedevicesfromscene",
+   "title": "Scene editing: remove devices",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsActivity.java:32"
+   ],
+   "details": "Scenes domain (Scene Delete)."
+  },
+  {
+   "id": "ui:uc:deletegroup",
+   "title": "Delete an area (use case)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/b.java:46",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel.java:69"
+   ],
+   "details": "new DeleteGroup.Params(groupAddress) after the confirm dialog group_detail_remove_dialog_title / group_detail_remove_dialog_message (area page menu, Areas list and Favourites long-press): members unsubscribed from the area address, keys linked to the area lose their wiring, area removed from the project."
+  },
+  {
+   "id": "ui:uc:deletescene",
+   "title": "Delete scene",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel.java:17"
+   ],
+   "details": "Scenes domain."
+  },
+  {
+   "id": "ui:uc:disablepresencetest",
+   "title": "Stop detector walking test",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/d.java:222",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel.java:122"
+   ],
+   "details": "Admin Set 0x6001 PresenceTest [00] then Admin Set 0x6003 PresenceControl [00] (ack). Also sent automatically after 300 000 ms and when the page is destroyed (DetectorSensorViewModel.onCleared)."
+  },
+  {
+   "id": "ui:uc:enablepresencetest",
+   "title": "Start detector walking test",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/d.java:215",
+    "de/jung/junghome/domain/interactors/detector/EnablePresenceTest.java:26"
+   ],
+   "details": "Admin Set 0x6001 PresenceTest [01] then Admin Set 0x6003 PresenceControl [01] (ack); auto-disable after 300 000 ms (5 min, device_parameter_detector_test_enable_subtext). While active the page polls 0x6005 every 1 s."
+  },
+  {
+   "id": "ui:uc:getconnecteddevices",
+   "title": "Heating actuators bound to an RTR",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$getConnectedDevices$1.java:110"
+   ],
+   "details": "Local DB: devices whose OnOff server subscribes to the RTR OnOff-client publish address; shown as the RTR connected-devices list."
+  },
+  {
+   "id": "ui:uc:getconnection",
+   "title": "Detector controlled function",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java:15"
+   ],
+   "details": "Reads the target of the detector OnOff-client publication (load / area / function) for the \"What should the detector control?\" card."
+  },
+  {
+   "id": "ui:uc:getdevicesforscene",
+   "title": "Scene members",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$observeScene$2.java:6"
+   ],
+   "details": "Devices stored in a scene with their stored action."
+  },
+  {
+   "id": "ui:uc:getscenesfordevice",
+   "title": "Scenes of a device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel.java:21"
+   ],
+   "details": "Device info scenes count card."
+  },
+  {
+   "id": "ui:uc:isanyrtrdeviceconnected",
+   "title": "Is this output controlled by a thermostat?",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel.java:136",
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel.java:172"
+   ],
+   "details": "True when any RTR publishes its OnOff client to this output; tiles then disable the toggle and scene lists show scenes_temperature_controlled."
+  },
+  {
+   "id": "ui:uc:keeplowpowerdeviceawake",
+   "title": "Keep a battery device awake while its page is open",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/f.java:45",
+    "de/jung/junghome/domain/interactors/KeepLowPowerDeviceAwake.java:72"
+   ],
+   "details": "Emits SleepMode DeviceAwake / DeviceNotAwake / DeviceNotAvailable; keep-alive = acked Admin Get 0x5001 ButtonLayout every 6 s (skipped while another BLE process runs), retry after 1 s on timeout. Used by ControlSwitchDetailViewModel and MiniActuatorViewModel (battery puck)."
+  },
+  {
+   "id": "ui:uc:loadinitialdevicestate",
+   "title": "App start: time broadcast + favourites state load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/proxy/ProxyConnectionLoadingViewModel.java:19",
+    "de/jung/junghome/domain/interactors/networking/LoadInitialDeviceState$work$2.java:278",
+    "de/jung/junghome/domain/interactors/networking/LoadInitialDeviceState$work$2.java:323"
+   ],
+   "details": "Run behind the proxy loading screen: Time Set (0x5C) unack -> 0xFFFF (TAI seconds since 2000, TAI-UTC delta 37, zone offset/15+64); Manufacturer Property Get 0xC001/0xC002/0xC003 to gateways; then LoadStateForDevices for favourite devices only (M1())."
+  },
+  {
+   "id": "ui:uc:loadstatefordevices",
+   "title": "Bulk state read for listed devices",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/networking/LoadStateForDevices$work$1.java:1240",
+    "de/jung/junghome/domain/interactors/networking/LoadStateForDevices$work$1.java:478",
+    "de/jung/junghome/domain/interactors/networking/LoadStateForDevices.java:358",
+    "de/jung/junghome/domain/interactors/networking/LoadStateForDevices.java:306",
+    "de/jung/junghome/domain/interactors/networking/LoadStateForDevices.java:254"
+   ],
+   "details": "Reachable devices in chunks of 5, 300 ms between chunks; per device only if no cached value: Generic OnOff Get (0x8201) -> OnOff element (lamps/sockets/outputs); Generic Level Get (0x8205) -> blind position element; Sensor Get (0x8231) [4F 00] -> RTR sensor element. Nothing for detectors, push-buttons, gateway. Called by the Devices tab, area detail and app start."
+  },
+  {
+   "id": "ui:uc:loganalyticsevent",
+   "title": "Analytics for central functions / charts",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/centralFunction/i.java:10"
+   ],
+   "details": "Firebase analytics events (central function used, consumption chart type). No mesh traffic."
+  },
+  {
+   "id": "ui:uc:observebinaryinputassignment",
+   "title": "Binary input assignment (mini actuator/puck)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel.java:13"
+   ],
+   "details": "What each input E1/E2 controls (local DB + cached key modes/publications)."
+  },
+  {
+   "id": "ui:uc:observebluetoothstate",
+   "title": "Observe the phone's Bluetooth adapter state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:145",
+    "de/jung/junghome/app/ui/bluetooth/BluetoothOffViewModel.java:6"
+   ],
+   "details": "ObserveBluetoothState (FlowUseCase<Unit, BluetoothState>) feeding MainViewModel.observeBluetoothState (-> BluetoothOffActivity) and BluetoothOffViewModel.observeConnection."
+  },
+  {
+   "id": "ui:uc:observecloudstatus",
+   "title": "Observe cloud-sync status (use case)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel$observeCloudStatus$1.java:12"
+   ],
+   "details": "ObserveCloudStatus injected into the Devices / Favourites / Areas / Scenes / push-button / mini-actuator / detector view models; offline cloud disables editing controls (CloudStatusWrapperView, cloud_offline_dialog_*)."
+  },
+  {
+   "id": "ui:uc:observecontrolswitchkeyassignment",
+   "title": "Push-button key assignment",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel.java:26"
+   ],
+   "details": "Per key position: press/hold function (from key modes 0x5003 and client publications), shown on the push-button page."
+  },
+  {
+   "id": "ui:uc:observedemomode",
+   "title": "Observe demo (\"Discovery mode\") state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/DemoModeAwareViewModel.java:22",
+    "de/jung/junghome/app/ui/base/l.java:28"
+   ],
+   "details": "ObserveDemoMode (FlowUseCase<Unit, Boolean>) in DemoModeAwareViewModel (base of Home / Areas / Scenes view models) and MainViewModel: while the demo project is active the toolbars show the exploration indicator (exploration_mode_title=\"Discovery mode\") with an Exit button (action_end_demo_mode). No mesh traffic."
+  },
+  {
+   "id": "ui:uc:observedevice",
+   "title": "Observe one device (live state)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$observeDevice$1.java:8"
+   ],
+   "details": "Flow of the device aggregate (capabilities keyed by element address, updated by every status resolver, reachability counter, favourite flag)."
+  },
+  {
+   "id": "ui:uc:observedeviceinfo",
+   "title": "Local device info",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel.java:22"
+   ],
+   "details": "Local per-device info (notes, consumption views enabled, price)."
+  },
+  {
+   "id": "ui:uc:observedevices",
+   "title": "Observe device lists (sorted)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/devices/ObserveDevices$work$lambda$43$$inlined$compareByDescending$1.java:15",
+    "de/jung/junghome/domain/interactors/devices/ObserveDevices$work$lambda$43$$inlined$thenBy$1.java:29"
+   ],
+   "details": "Lists filtered by DeviceFilter (All, Lamp, Blind, Rtr, Socket, ControlSwitch, Detector, MiniActuator, IsFavorite, Group, ...) sorted favourites first, then by name."
+  },
+  {
+   "id": "ui:uc:observegroup",
+   "title": "Observe area",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/centralFunction/CentralFunctionsViewModel.java:12"
+   ],
+   "details": "Area name/address for central functions and area detail."
+  },
+  {
+   "id": "ui:uc:observegroups",
+   "title": "Observe areas",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groups/GroupsViewModel$startObserving$1.java:127"
+   ],
+   "details": "Areas list (optionally IsFavorite)."
+  },
+  {
+   "id": "ui:uc:observemeshnetwork",
+   "title": "Observe the loaded mesh network (use case)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:68"
+   ],
+   "details": "ObserveMeshNetwork in MainViewModel.observeJungMeshNetwork: once the project's mesh network is loaded, RequestSoftwareVersion(AllDevices) and RemoveInvalidDevices run."
+  },
+  {
+   "id": "ui:uc:observeprojectbubbleindicators",
+   "title": "Bottom-bar / settings badge indicators",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:146",
+    "de/jung/junghome/domain/interactors/ObserveProjectBubbleIndicators.java:129"
+   ],
+   "details": "Params BottomBar / Settings / Gateway; Indicators GatewayPermission(count of gateway API clients awaiting approval), ParticipantRequests(count, cloud project), ProjectFileModified (project changed, gateway not yet updated), SensorValues (gateway sensor values not yet viewed) -> badge dots on the bottom navigation."
+  },
+  {
+   "id": "ui:uc:observertrconnectionmode",
+   "title": "RTR binding of an output",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:140"
+   ],
+   "details": "RtrConnectionMode(controlled: Boolean, rtrNames): output pages show rtr_connection_info_text + RTR names and hide/disable their controls."
+  },
+  {
+   "id": "ui:uc:observescene",
+   "title": "Observe scene",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$observeScene$1.java:4"
+   ],
+   "details": "Scene detail data."
+  },
+  {
+   "id": "ui:uc:observescenes",
+   "title": "Observe scenes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel.java:190"
+   ],
+   "details": "Scene list (optionally IsFavorite)."
+  },
+  {
+   "id": "ui:uc:observeupdateavailable",
+   "title": "Firmware update available (bottom-bar indicator)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:62"
+   ],
+   "details": "ObserveUpdateAvailable in MainViewModel.observeIndicators: badge on the settings tab when any device has newer bundled firmware."
+  },
+  {
+   "id": "ui:uc:removeconnectionforaddress",
+   "title": "Remove an input connection",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel.java:19"
+   ],
+   "details": "Configuration (publication removal)."
+  },
+  {
+   "id": "ui:uc:removeinvaliddevices",
+   "title": "Drop mesh nodes without an app device after load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$observeJungMeshNetwork$1.java:104",
+    "de/jung/junghome/domain/interactors/RemoveInvalidDevices.java:14"
+   ],
+   "details": "Admin only and when no BLE process runs: node UUIDs of the mesh network with no app device -> RemoveDevice.ForDevicesWithUUID (local project only, no mesh traffic)."
+  },
+  {
+   "id": "ui:uc:removemulticonnection",
+   "title": "Unlink heating actuator from RTR",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$removeConnection$1.java:118"
+   ],
+   "details": "Config unsubscribe of the actuator OnOff server from the RTR address + Admin Set 0x1014 = 0 on the actuator."
+  },
+  {
+   "id": "ui:uc:requestlockfunctionforcontrolkeyselection",
+   "title": "Lock-function assignment of keys",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel.java:91"
+   ],
+   "details": "Reads the lock-function (0x0009-style KeySetPropertyValue) configured on keys to label them (lock_function_on_subtitle, lock_function_off_subtitle, lock_function_wind_alarm_subtitle, lock_function_lockout_protection_subtitle, lock_function_keep_current_state_connection_subtitle; app/utils/g.j)."
+  },
+  {
+   "id": "ui:uc:requestmanufacturerinfos",
+   "title": "Read identity/version properties for the device info page",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel.java:169",
+    "p234v7/Q.java:29"
+   ],
+   "details": "SIG Generic Manufacturer Property Get (0x822B) for 0x0010 hardware revision (and 0x001A software version) -> Generic Manufacturer Property Status 0x46; RTR additionally LBC Manufacturer Get 0x0005 (STM32 / application image version)."
+  },
+  {
+   "id": "ui:uc:requestsoftwareversion",
+   "title": "Read the software version of all devices after load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel.java:137"
+   ],
+   "details": "RequestSoftwareVersion.Params.AllDevices: SIG Generic Manufacturer Property Get 0x001A to every device once the mesh network is loaded (feeds device info and update checks)."
+  },
+  {
+   "id": "ui:uc:resetdevice",
+   "title": "Remove (reset) a device (use case)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel.java:44",
+    "de/jung/junghome/app/ui/home/devices/DevicesFragment.java:121"
+   ],
+   "details": "ResetDevice injected into DevicesViewModel / FavoritesViewModel (the invocation, new ResetDevice.Params(device, false), sits in configuration/c.java); failure to reset over the mesh -> device_reset_manually_dialog_title."
+  },
+  {
+   "id": "ui:uc:toggledemomode",
+   "title": "Enter / leave the demo (\"Discovery mode\") project",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/DemoModeAwareViewModel$deactivateDemoMode$1.java:44"
+   ],
+   "details": "ToggleDemoMode.Params Toggle / Activate / Deactivate; the toolbar Exit button (explorationModeFinishButton, action_end_demo_mode) sends Deactivate. No mesh traffic."
+  },
+  {
+   "id": "ui:uc:toggledevice",
+   "title": "Toggle on/off (tile action, detail header power button)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/devices/ToggleDevice.java:199",
+    "p085h8/p.java:28",
+    "de/jung/junghome/domain/interactors/devices/ToggleDevice.java:113",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:393"
+   ],
+   "details": "Generic OnOff Set (0x8202, ack) [onoff u8][tid] -> OnOff element; new state = OFF if current is ON or unknown, else ON. Afterwards Admin Get 0x0009 (lock state) if unknown and the node has no Scene Action Setup server. Used by Devices tab, favourites, area detail, lamp/socket detail headers."
+  },
+  {
+   "id": "ui:uc:togglefavorite",
+   "title": "Favourite flag for devices, areas and scenes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$toggleFavorite$1.java:17",
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$toggleFavorite$1.java:18",
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$toggleFavorite$1.java:18"
+   ],
+   "details": "Local DB isFavorite (synced with the project); favourites appear on the Favourites dashboard and are sorted first; favourite devices are the only ones state-loaded at app start."
+  },
+  {
+   "id": "ui:uc:updatedevicedata",
+   "title": "Rename device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$updateDeviceName$1.java:6"
+   ],
+   "details": "Local name update (no mesh traffic)."
+  },
+  {
+   "id": "ui:uc:updatedeviceinfo",
+   "title": "Local device notes/flags",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/d.java:26"
+   ],
+   "details": "Stores gateway note text / consumption-card flags locally."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.dim.group",
+   "title": "Central function: Dim all lamps of an area",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:53"
+   ],
+   "details": "Light Lightness Set Unacknowledged (0x824D) [lightness u16 = pct/100*65535][tid] -> the area group address (room membership subscribes the Lightness server). One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.dim.lamps",
+   "title": "Central function: Dim all lamps (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:87"
+   ],
+   "details": "Light Lightness Set Unacknowledged (0x824D) -> device-type group 0xFEF5 (all lamps). One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.move.blinds",
+   "title": "Central function: All blinds to position (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:124"
+   ],
+   "details": "Generic Level Set Unacknowledged (0x8207) [level s16][tid] -> 0xFEF6 (all blind position elements); open = 0 %, close = 100 %. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.move.slats",
+   "title": "Central function: All slats (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:152"
+   ],
+   "details": "Generic Level Set Unacknowledged (0x8207) -> 0xFEF7 (all slat elements). One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.openclose.blinds",
+   "title": "Central function: Stop all blinds (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:190"
+   ],
+   "details": "Generic Delta Set [delta s32 = LevelStep value, stop = 0] sent without waiting for status -> 0xFEF6. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.openclose.group",
+   "title": "Central function: Stop blinds of an area",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:223"
+   ],
+   "details": "Generic Delta Set [0] -> area group address. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.targettemperature.rtrs",
+   "title": "Central function: All thermostats target temperature (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:268"
+   ],
+   "details": "Generic Level Set Unacknowledged (0x8207) -> 0xFEF9, pct = int((t-5)/25*100) (truncated), level = -32768 + pct/100*65535. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.toggle.lamps",
+   "title": "Central function: All lamps on/off (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:301"
+   ],
+   "details": "Generic OnOff Set Unacknowledged (0x8203) [onoff][tid] -> 0xFEF5. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updatedevicetypegroup.toggle.sockets",
+   "title": "Central function: All sockets on/off (home)",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/manufacturer/UpdateDeviceTypeGroup.java:329"
+   ],
+   "details": "Generic OnOff Set Unacknowledged (0x8203) -> 0xFEF8. One unacknowledged message, no per-device feedback."
+  },
+  {
+   "id": "ui:uc:updategroup",
+   "title": "Update area name/icon",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$updateGroupIcon$1.java:7"
+   ],
+   "details": "Local area metadata."
+  },
+  {
+   "id": "ui:uc:updatesceneicon",
+   "title": "Change a scene's icon",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/iconSelection/a.java:117"
+   ],
+   "details": "new UpdateSceneIcon.Params(sceneNumber, SceneIcon) from the icon picker (common_icons_title); project meta only, no mesh traffic."
+  },
+  {
+   "id": "ui:uc:updatescenename",
+   "title": "Rename scene",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsActivity$setupClickListener$1$5.java:9"
+   ],
+   "details": "Local scene name."
+  },
+  {
+   "id": "ui:unused:strings",
+   "title": "Runtime-looking strings with no reference in code or XML (not implemented in 2.2.0)",
+   "apk_refs": [
+    "res/values/strings.xml:76",
+    "res/values/strings.xml:77",
+    "res/values/strings.xml:78",
+    "res/values/strings.xml:88",
+    "res/values/strings.xml:255",
+    "res/values/strings.xml:437",
+    "res/values/strings.xml:443",
+    "res/values/strings.xml:970",
+    "res/values/strings.xml:984",
+    "res/values/strings.xml:1318",
+    "res/values/strings.xml:1327",
+    "res/values/strings.xml:1335",
+    "res/values/strings.xml:1349",
+    "res/values/strings.xml:1350",
+    "res/values/strings.xml:1351",
+    "res/values/strings.xml:1352",
+    "res/values/strings.xml:1462",
+    "res/values/strings.xml:1463",
+    "res/values/strings.xml:1464",
+    "res/values/strings.xml:1466",
+    "res/values/strings.xml:1467",
+    "res/values/strings.xml:1474",
+    "res/values/strings.xml:1475",
+    "res/values/strings.xml:1478",
+    "res/values/strings.xml:1618",
+    "res/values/strings.xml:1619",
+    "res/values/strings.xml:1621"
+   ],
+   "details": "Not referenced by any R.string.* in sources nor any @string/ in res (except strings.xml/public.xml): blind_detail_parameter_minimum_reversal_time_title=\"Sheet tightening time\"; blind_detail_parameter_minute_picker_minute_title=\"min\"; blind_detail_parameter_minute_picker_seconds_title=\"s\"; blind_detail_parameter_ventilation_position_title=\"Ventilation position\"; common_unit_kwh=\"kWh\"; device_detail_rtr_current=\"currently %.1f °C\"; device_detail_rtr_target=\"target %.1f °C\"; lock_function_lockout_protection_rocker_connection_subtitle=\"Lockout protection\"; lock_function_wind_alarm_rocker_connection_subtitle=\"Wind alarm\"; scene_detail_create=\"Create\"; scene_detail_error_create_failed_device_not_reachable_message=\"The connection to a device was interrupted. Check the connection and try again.\"; scene_detail_name_error=\"Scene name invalid\"; scene_scheduling_create_text=\"Create timer program\"; scene_scheduling_message=\"Create an automation to allow your scene to be automatically activated.\"; scene_scheduling_subtitle=\"Automatically activate scene.\"; scene_scheduling_title=\"Automation\"; socket_consumption_info_=\"No data collection possible\"; socket_consumption_info_activation_duration_hour=\"%d hr.\"; socket_consumption_info_activation_duration_label=\"runtime\"; socket_consumption_info_invalid_data=\"No data collection possible\"; socket_consumption_info_last_activation_label=\"Last switch-on\"; socket_consumption_showing_label=\"Display\"; socket_history_title=\"History\"; socket_measure_type_monthly=\"Monthly Report\"; unit_degree=\"%d°\"; unit_degree_one_decimal=\"%.1f°\"; unit_kelvin=\"K\". Notably the socket \"Last switch-on\" / \"runtime\" / \"History\" / \"Monthly Report\" displays and RTR \"currently/target %.1f\" texts do not exist in the 2.2.0 UI."
+  },
+  {
+   "id": "ui:view:blinds",
+   "title": "Blind position slider",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/slider/Blinds.java:288"
+   ],
+   "details": "Vertical shutter drawing: shaded part = present position, thumb = target; value sent on release only (0 % open .. 100 % closed)."
+  },
+  {
+   "id": "ui:view:chartline",
+   "title": "Consumption line/bar chart",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/chart/ChartLine.java:38",
+    "res/layout/fragment_power_consumption.xml:21"
+   ],
+   "details": "Chart of the 0x5010 (24 h, hourly) or 0x5011 (31 days, daily) samples in Wh; invalid samples (0xFFFF) skipped; empty state when no data. Other strings on this surface: common_unit_w=\"W\"; month_format=\"dd MMM\"; time_with_day_format=\"HH:mm EEE\"."
+  },
+  {
+   "id": "ui:view:cloudstatusview",
+   "title": "Cloud sync offline indicator",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/CloudStatusView.java:19",
+    "de/jung/junghome/app/ui/base/e.java:262"
+   ],
+   "details": "Shows \"offline\" (cloud_offline) when project cloud sync is unreachable; editing controls wrapped in CloudStatusWrapperView are disabled and a tap shows cloud_offline_dialog_title / cloud_offline_dialog_message."
+  },
+  {
+   "id": "ui:view:controlswitchkeyassignmentview",
+   "title": "Push-button key assignment card (per key: press / hold)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/components/ControlSwitchKeyAssignmentView.java:27",
+    "res/layout/fragment_control_switch_configuration.xml:51"
+   ],
+   "details": "Card per key (icons ic_control_switch_key_top_left / _top_center / top_right / bottom_left / bottom_center / bottom_right) with the Interactions header (control_switch_action_title=\"Interactions\") and the Press / Hold (control_switch_item_key_hold=\"Hold\") targets of that key (layout view_control_switch_key_assignment)."
+  },
+  {
+   "id": "ui:view:controlswitchsleepmodeview",
+   "title": "Sleep-mode banner for battery push-buttons",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/ControlSwitchSleepModeView.java:79",
+    "de/jung/junghome/app/ui/devices/controlSwitch/ControlSwitchDetailActivity.java:147"
+   ],
+   "details": "Banner \"Press the button to wake it from power saving mode.\" (control_switch_sleep_mode_text); info dialog control_switch_sleep_mode_title / control_switch_sleep_mode_dialog_text; \"not responding\" dialog update_walltransmitter_no_wake_up_title / update_walltransmitter_no_wake_up_text."
+  },
+  {
+   "id": "ui:view:controlswitchview",
+   "title": "Push-button rocker drawing with key selection and lock markers",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/components/ControlSwitchView.java:36",
+    "de/jung/junghome/app/ui/devices/controlSwitch/components/ControlSwitchView.java:249"
+   ],
+   "details": "Draws the rocker per ControlSwitchKeyPosition with action indicators (ic_action_indicator_left / _right) and, for keys driving a lock function, lock markers ic_lock_closed / ic_lock_open / ic_lock_wind / ic_lock_disable_wind_alarm."
+  },
+  {
+   "id": "ui:view:detectorview",
+   "title": "Detector activation-area view",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/controls/DetectorView.java:39",
+    "de/jung/junghome/app/ui/devices/detectors/c.java:23"
+   ],
+   "details": "Draws 2 (motion 0x0007/0x0008) or 3 (presence 0x0009) PIR segments labelled A/B/C (pir_sensor_a/b/c_description); segment ring radius = sensitivity 0/25/50/75/100 %; drag changes sensitivity; segment highlighted when its PIR bit is set in 0x6005 during the walking test."
+  },
+  {
+   "id": "ui:view:devicedetailheader",
+   "title": "Detail page header card",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/DeviceDetailHeader.java:36",
+    "res/layout/view_device_detail_header.xml:34",
+    "de/jung/junghome/app/ui/devices/d.java:457"
+   ],
+   "details": "Icon, editable name, subtitle text (state line), status icon slot (battery), favourite toggle, action (power) button, \"No connection\" label, lock icon. See ui:screen:devicedetailsactivity."
+  },
+  {
+   "id": "ui:view:deviceviewholder",
+   "title": "Device tile (item_device) common behaviour",
+   "apk_refs": [
+    "I6/c.java:42",
+    "I6/c.java:69",
+    "I6/c.java:162",
+    "I6/c.java:83",
+    "de/jung/junghome/app/ui/home/devices/adapter/a.java:307",
+    "res/layout/item_device.xml:88"
+   ],
+   "details": "Every tile: icon (disabled look when unreachable), name, state text, \"No connection\" label (device_not_reachable_title) when !S1() && !Q1() (battery devices never show it), skeleton shimmer until the first state is known (OnOff known for OnOff devices, level known for blinds, temperature known for RTR), lock icon when locked (P1()) with ic_lock_wind for wind alarm, favourite star when M1(), action (toggle) button only for GenericOnOffCompatible devices and hidden while locked, checked = on, enabled only when reachable and not RTR-controlled (isActionDisabled via IsAnyRtrDeviceConnected). Selected/highlighted tile colour inversion (y()). Partial redraw payloads: name, reachability, highlight, favourite, OnOff state, lock state, blind level, RTR temperature, button layout. Other strings on this surface: switch_layout_type_1_1_text=\"Rocker | Rocker\"; switch_layout_type_1_2_text=\"Rocker | Button\"; switch_layout_type_2_1_text=\"Button | Rocker\"; switch_layout_type_2_2_text=\"Button | Button\"; switch_layout_type_one_rocker_text=\"Rocker\"."
+  },
+  {
+   "id": "ui:view:dimslider",
+   "title": "Brightness slider",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/controls/DimSlider.java:365",
+    "de/jung/junghome/app/ui/devices/lamp/controls/DimSlider.java:120"
+   ],
+   "details": "Pill slider 0..100 % showing \"%d%%\"; range bounds drawn from LightnessRange (min..max); used on the lamp Dim tab and the central lamp tab. Other strings on this surface: unit_percent=\"%\"."
+  },
+  {
+   "id": "ui:view:forcedoffview",
+   "title": "Detector forced ON/OFF banner on the load page",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/ForcedOffView.java:51",
+    "de/jung/junghome/app/ui/devices/lamp/LampDetailActivity.java:192",
+    "res/layout/view_forced_off.xml:7"
+   ],
+   "details": "Hidden for INACTIVE. Title detector_forced_off_on_title \"Continuous ON activated\" (ON) / detector_forced_off_off_title \"Continuous OFF activated\" (OFF). Message + image depend on detector product id: 0x0007 -> detector_forced_off_message_short (slider switch to middle), forced_off_off_short/on_short; 0x0008 -> detector_forced_off_on/off_message_long (press ON/OFF button), forced_off_on/off_long; 0x0009 -> detector_forced_off_on/off_message_presence (programming button), forced_off_on/off_presence. Other strings on this surface: detector_forced_off_off_message_long=\"Press the OFF Button to deactive continous OFF.\"; detector_forced_off_off_message_presence=\"Press the programming button to activate continous OFF.\"; detector_forced_off_on_message_long=\"Press the ON Button to deactive continous ON.\"; detector_forced_off_on_message_presence=\"Press the programming button to activate continous ON.\"."
+  },
+  {
+   "id": "ui:view:lockfunctionview",
+   "title": "Lock-function card (Permanent On|Off / Lock-out protection / Wind alarm)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/LockFunctionView.java:129",
+    "de/jung/junghome/app/ui/shared/LockFunctionView.java:217",
+    "de/jung/junghome/app/ui/shared/LockFunctionView.java:222",
+    "de/jung/junghome/app/ui/base/i.java:272",
+    "res/layout/view_locking_function.xml:100"
+   ],
+   "details": "LockType SWITCH: title lock_function_switch_title \"Permanent On | Off\" + lock_function_switch_description; LockType BLIND: lock_function_lockout_protection_title \"Lock-out protection\" + description, plus wind-alarm block (lock_function_wind_alarm_title/description, button \"Start wind alarm\"/\"End wind alarm\"). Time limit picker H:MM:SS (lock_function_time_limit_title), disabled while locked. Main button \"Lock device\"/\"Unlock device\" with ic_function_lock_closed/open. Click: if locked -> unlock (r()); else BLIND type -> startLockOutProtection(duration) (D()), SWITCH -> lockDevice(duration) (o()); wind button -> startWindAlarm (j()) or unlock when wind alarm active. Enable rules: priority LOCKOUT(0xFE) or normal lock -> only unlock allowed; wind alarm (0xFF) -> wind button acts as \"End\"; unknown state -> follow page enable. Other strings on this surface: lock_device=\"Lock device\"; lock_function_lockout_protection_description=\"The set position is held permanently and the operation is locked. You can set a time after which the locking function is automatically terminated.\"; lock_function_wind_alarm_description=\"The blind moves to the upper end position. Operation is locked during the wind alarm.\"; lock_function_wind_alarm_start=\"Start wind alarm\"; lock_function_wind_alarm_stop=\"End wind alarm\"; unlock_device=\"Unlock device\"."
+  },
+  {
+   "id": "ui:view:miniactuatorkeyassignmentview",
+   "title": "Mini-actuator input assignment card (short press / hold)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/components/MiniActuatorKeyAssignmentView.java:88",
+    "res/layout/fragment_mini_actuator_configuration.xml:292"
+   ],
+   "details": "Per BinaryInputNumber (E1 / E2) the short-press and hold targets: mini_actuator_connected_beaviour_press_title=\"short press\", mini_actuator_connected_behaviour_press_long_title=\"Hold\" (layout view_mini_actuator_key_assignment)."
+  },
+  {
+   "id": "ui:view:proxystatusview",
+   "title": "Mesh proxy connection indicator",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/ProxyStatusView.java:38",
+    "de/jung/junghome/app/service/ConnectionViewService$updateProxyStatus$1.java:90",
+    "de/jung/junghome/app/service/ConnectionViewService$updateProxyStatus$1.java:95"
+   ],
+   "details": "Toolbar pill: Connected -> \"Devices conntected\" (proxy_connection_established, colour success), auto-hidden after 4000 ms; any other DeviceState (Connecting / CommunicationError / Disconnected) -> \"No connection to Mesh\" (no_proxy_connection, colour carissma_600) with a blinking dot (alpha 0.4, 700 ms, repeat)."
+  },
+  {
+   "id": "ui:view:roomtemperatureslider",
+   "title": "Thermostat arc slider",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/controls/RoomTemperatureSlider.java:534",
+    "de/jung/junghome/app/ui/devices/rtr/controls/ValueDisplayMode.java:22",
+    "res/layout/view_detail_temperature_slider.xml:23"
+   ],
+   "details": "Arc 5..30 degC in 0.5 steps; primary value \"%s°C\" with label Target/Current (ValueDisplayMode Current|Target, tap toggles), secondary value; Auto/Manu indicator (RtrDevice.OperationMode) clickable to switch scheduler; greyed while boost. Other strings on this surface: device_detail_rtr_operation_mode_manu=\"Manu\"; device_detail_rtr_temperature=\"%s°C\"; device_detail_rtr_temperature_degree=\"%s°\"; unit_celsius=\"°C\"."
+  },
+  {
+   "id": "ui:view:slatslider",
+   "title": "Slat angle slider",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/slider/SlatSlider.java:282",
+    "de/jung/junghome/app/ui/devices/blinds/slider/SlatSlider.java:180"
+   ],
+   "details": "Slat position 0..100 % (\"%d%%\"), sent on release; only for operation mode BLINDS."
+  },
+  {
+   "id": "ui:view:tunablewhitewheel",
+   "title": "Colour-temperature wheel",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/controls/TunableWhiteWheel.java:254",
+    "res/layout/fragment_tunable_white.xml:8"
+   ],
+   "details": "Circular slider 2000..10000 K (layout attrs), label \"%s K\" rounded to 100 K; range bounds from the CTL temperature range (mapped into the 2..98 % arc)."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.blindsclosing",
+   "title": "Blind: close (down arrow)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$blindsClosing$1.java:25",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$blindsClosing$1.java:77"
+   ],
+   "details": "Generic Delta Set (0x8209, acked) [delta s32 LE = +1][tid] -> position element (LevelStep Increase=+1); skipped when already at 100 %. No Generic Move Set anywhere in the app."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.blindsopening",
+   "title": "Blind: open (up arrow)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$blindsOpening$1.java:25",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$blindsOpening$1.java:77"
+   ],
+   "details": "Generic Delta Set (0x8209, acked) [delta = -1][tid] -> position element (LevelStep Decrease=-1); skipped when already at 0 %."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.observecompatibles",
+   "title": "Blind page open: read position, slat, operation mode",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$observeCompatibles$1.java:34",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$observeCompatibles$1.java:190"
+   ],
+   "details": "On first device emission: Generic Level Get (0x8205, ack) -> position element; Generic Level Get -> slat element (last element with 0x1002 server); LBC Admin Property Get 0x1104 BlindMoveOperationMode (C2 27 05 [04 11]). Controls stay disabled until these answered. Status Generic Level Status 0x8208 [present s16][target s16][remaining u8]: pct=round((level+32768)*100/65535); target := present for the short form."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.stopblinds",
+   "title": "Blind: stop",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$stopBlinds$1.java:24",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$stopBlinds$1.java:73"
+   ],
+   "details": "Generic Delta Set (0x8209, acked) [delta = 0] -> position element (LevelStep Stop)."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.updateblindlevel",
+   "title": "Blind: set position (slider release)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$updateBlindLevel$1.java:26",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$updateBlindLevel$1.java:84"
+   ],
+   "details": "Generic Level Set (0x8206, acked) [level s16 LE][tid], no transition, level = clamp(round(-32768 + pct/100*65535)) -> position element. 0 % = open, 100 % = closed."
+  },
+  {
+   "id": "ui:vm:blindsviewmodel.updateslatlevel",
+   "title": "Blind: set slat angle (slider release)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$updateSlatLevel$1.java:27",
+    "de/jung/junghome/app/ui/devices/blinds/elements/BlindsViewModel$updateSlatLevel$1.java:93"
+   ],
+   "details": "Generic Level Set (0x8206, acked) -> slat element, same percent->level mapping. BLINDS mode (0x1104=0) only; disabled while blind is fully open."
+  },
+  {
+   "id": "ui:vm:bluetoothoffviewmodel.observeconnection",
+   "title": "Bluetooth-off screen: wait for adapter",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/bluetooth/BluetoothOffViewModel$observeConnection$1.java:16"
+   ],
+   "details": "ObserveBluetoothState; finishes BluetoothOffActivity when the adapter is on again."
+  },
+  {
+   "id": "ui:vm:centralfunctionshelper.getavailabledevices",
+   "title": "Central control: collect devices per type",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/centralFunction/CentralFunctionsHelper$getAvailableDevices$1.java:26"
+   ],
+   "details": "ObserveDevices(filter = whole home, or DeviceFilter.Group(groupAddress) for an area) -> decides which of the lamp/socket/blind/RTR tabs exist; the area device list is used for per-device fan-out."
+  },
+  {
+   "id": "ui:vm:centralfunctionshelper.observegroup",
+   "title": "Central control: resolve area",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/centralFunction/CentralFunctionsHelper$observeGroup$1$1.java:13"
+   ],
+   "details": "Observes the area (group) for its name (central_function_description_in_group \"in %s\") and address."
+  },
+  {
+   "id": "ui:vm:configurationconsumptionviewmodel.observeconsumptioninput",
+   "title": "Consumption settings: price input",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$observeConsumptionInput$1.java:17"
+   ],
+   "details": "Electricity price entry in cents per kWh (consumption_price_edit_label / consumption_price_edit_sub_label), stored locally; preview card shows cost of 100 Wh."
+  },
+  {
+   "id": "ui:vm:configurationconsumptionviewmodel.observedeviceinfo",
+   "title": "Consumption settings: card switches",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$observeDeviceInfo$1.java:18"
+   ],
+   "details": "Local DeviceInfo flags: show Current Power card, show Energy/Total consumption card, show Electricity cost card on the consumption page (socket_configuration_consumption_title)."
+  },
+  {
+   "id": "ui:vm:configurationconsumptionviewmodel.observetotalenergyuse",
+   "title": "Consumption settings: total preview",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$observeTotalEnergyUse$1.java:14"
+   ],
+   "details": "Updates the total-consumption / cost preview when 0x006A changes."
+  },
+  {
+   "id": "ui:vm:configurationconsumptionviewmodel.requestdata",
+   "title": "Consumption settings open: read counters",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$requestData$1.java:19",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$requestData$1.java:98"
+   ],
+   "details": "Acked reads: Sensor Get 0x0081 active power, SIG Generic Admin Property Get 0x006D power-on time, 0x822D 0x006A total energy (previews)."
+  },
+  {
+   "id": "ui:vm:configurationconsumptionviewmodel.resettotalconsumption",
+   "title": "Reset energy counters",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$resetTotalConsumption$1.java:21",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$resetTotalConsumption$1.java:99"
+   ],
+   "details": "Button socket_reset_total_consumption (\"Reset\"): SIG Generic Admin Property Set (0x48, ack) 0x006D power-on time = 0, then 0x006A total energy = 0 ([pid u16][access 03][value LE 0])."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.cardstate",
+   "title": "Push-button page: key card state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$cardState$1.java:14"
+   ],
+   "details": "Derives which key-assignment cards are shown/enabled (reachable, awake, role, cloud)."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.controlswitchitemstate",
+   "title": "Push-button page: per-key state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$controlSwitchItemState$1.java:14"
+   ],
+   "details": "Maps each rocker/key position to its assignment text (Press/Hold -> function or \"No interaction\")."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.observecontrolswitchkeyassignment",
+   "title": "Push-button page: key assignment",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeControlSwitchKeyAssignment$1.java:15"
+   ],
+   "details": "ObserveControlSwitchKeyAssignment (local DB + cached publications/Key modes) for the selected key."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.observedevice",
+   "title": "Push-button page: device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeDevice$1.java:28"
+   ],
+   "details": "ObserveDevice; on first emission triggers requestBatteryAndLockFunction."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.observedeviceinfo",
+   "title": "Push-button page: local notes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeDeviceInfo$1.java:14"
+   ],
+   "details": "ObserveDeviceInfo (gateway connection note text shown in gatewayConnectionNotes)."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.observeisinsleepmodechannel",
+   "title": "Push-button page: sleep flag",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeIsInSleepModeChannel$1$1$1.java:15"
+   ],
+   "details": "Listens to the shared isInSleepModeChannel fed by the keep-alive (SleepMode) to disable editing while the transmitter sleeps."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.observeitems",
+   "title": "Push-button page: items",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeItems$1.java:14"
+   ],
+   "details": "Builds the key list (layout from ButtonLayout 0x5001, LayoutMode)."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.requestbatteryandlockfunction",
+   "title": "Push-button page: read battery + lock targets",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$requestBatteryAndLockFunction$1.java:13"
+   ],
+   "details": "Generic Battery Get (0x8223) -> primary element, CommunicationType REQUEST, waitForStatus=false; status 0x8224 -> BatteryCapability (only flags bits 3:2 battery indicator used). Then requestLockFunction."
+  },
+  {
+   "id": "ui:vm:controlswitchconfigurationviewmodel.requestlockfunction",
+   "title": "Push-button page: read lock functions of assigned keys",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$requestLockFunction$1.java:12"
+   ],
+   "details": "RequestLockFunctionForControlKeySelection: reads the 0x0009 lock-function setting of keys assigned to lock functions (to label them \"Duration On/Off\", \"Lockout protection\", \"Wind alarm\")."
+  },
+  {
+   "id": "ui:vm:demomodeawareviewmodel.deactivatedemomode",
+   "title": "Leave the demo project (toolbar Exit)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/DemoModeAwareViewModel$deactivateDemoMode$1.java:44"
+   ],
+   "details": "ToggleDemoMode.Params.Deactivate from the exploration indicator's Exit button on Home / Areas / Scenes."
+  },
+  {
+   "id": "ui:vm:demomodeawareviewmodel.toggledemomode",
+   "title": "Toggle the demo project",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/base/DemoModeAwareViewModel$toggleDemoMode$1.java:12"
+   ],
+   "details": "ToggleDemoMode.Params.Toggle."
+  },
+  {
+   "id": "ui:vm:detectorsensorviewmodel.observedevice",
+   "title": "Detector page open: walking-test flag + PIR poll",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java:42",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java:234"
+   ],
+   "details": "Admin Get 0x6001 PresenceTest (ack) on first emission; while the test flag is true starts FlowOperatorsKt repeating job every 1000 ms: LBC Manufacturer Property Get 0x6005 PresenceControlPir (C8 27 05 [05 60]); stops when false."
+  },
+  {
+   "id": "ui:vm:detectorsensorviewmodel.observepirsensorflow",
+   "title": "Detector: PIR bits -> segment highlight",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observePirSensorFlow$$inlined$filter$1$2.java:13"
+   ],
+   "details": "Status CB 27 05 [05 60][access][u8]: bit0 PIR A, bit1 PIR B, bit2 PIR C -> DetectorView highlights; only during the walking test."
+  },
+  {
+   "id": "ui:vm:detectorsensorviewmodel.requestsensitiveconfigurations",
+   "title": "Detector page open: read PIR sensitivities",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$requestSensitiveConfigurations$1.java:22",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$requestSensitiveConfigurations$1.java:79"
+   ],
+   "details": "Admin Get 0x6008, 0x6009 (+0x600A presence detector) sequentially, ack; status u8 raw 0..255 -> pct = raw*100/255 shown as 0/25/50/75/100 %."
+  },
+  {
+   "id": "ui:vm:devicedetailsviewmodel.checkforupdate",
+   "title": "Detail page: firmware update available",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$checkForUpdate$$inlined$filter$1$2.java:12"
+   ],
+   "details": "CheckForDeviceUpdate for this node; if newer firmware -> snackbar update_available_snackbar_title with action update_available_snackbar_action_text (opens UpdateActivity NavigateToGroup)."
+  },
+  {
+   "id": "ui:vm:devicedetailsviewmodel.observedevice",
+   "title": "Detail page: observe device + read lock state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$observeDevice$1.java:25",
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$observeDevice$1.java:171"
+   ],
+   "details": "ObserveDevice; on first emission for LockFunctionCompatible devices sends LBC Admin Property Get 0x0009 (C2 27 05 [09 00], ack) to read the lock function."
+  },
+  {
+   "id": "ui:vm:devicedetailsviewmodel.togglefavorite",
+   "title": "Detail page: favourite star",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$toggleFavorite$1.java:17"
+   ],
+   "details": "ToggleFavorite (local DB isFavorite); snackbar favorite_device_add_snackbar_message / favorite_device_remove_snackbar_message; haptic feedback. No mesh traffic."
+  },
+  {
+   "id": "ui:vm:devicedetailsviewmodel.updatedevicename",
+   "title": "Detail page: rename device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/DeviceDetailsViewModel$updateDeviceName$1.java:18"
+   ],
+   "details": "Local DB (and cloud/gateway sync) name update after 300 ms debounce; failure dialog device_detail_error_change_name_failed_title / _message. No mesh traffic."
+  },
+  {
+   "id": "ui:vm:deviceinfoviewmodel.checkforupdate",
+   "title": "Device info: update available links",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel$checkForUpdate$1.java:16"
+   ],
+   "details": "CheckForDeviceUpdate -> shows \"(Update available)\" (update_available_link) next to software version and STM32 version."
+  },
+  {
+   "id": "ui:vm:deviceinfoviewmodel.observedevices",
+   "title": "Device info: devices",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel$observeDevices$1.java:16"
+   ],
+   "details": "ObserveDevices for the node; on load RequestManufacturerInfos (SIG Generic Manufacturer Property Get 0x822B for 0x0010 hardware revision / 0x001A software version; RTR: Manufacturer 0x0005 STM32 version)."
+  },
+  {
+   "id": "ui:vm:deviceinfoviewmodel.observeselectedgroups",
+   "title": "Device info: areas count",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/configuration/deviceInfo/DeviceInfoViewModel$observeSelectedGroups$1$1.java:15"
+   ],
+   "details": "Areas the device belongs to (DeviceInfoStatusCard \"x / y\")."
+  },
+  {
+   "id": "ui:vm:devicesviewmodel.isactiondisabled",
+   "title": "Tile: toggle disabled when RTR-controlled",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel$isActionDisabled$1.java:11"
+   ],
+   "details": "IsAnyRtrDeviceConnected(deviceId): true if an RTR OnOff client publishes to this output -> tile action disabled."
+  },
+  {
+   "id": "ui:vm:devicesviewmodel.observecloudstatus",
+   "title": "Devices tab: cloud status",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel$observeCloudStatus$1.java:14"
+   ],
+   "details": "ObserveCloudStatus -> enables/disables long-press editing."
+  },
+  {
+   "id": "ui:vm:devicesviewmodel.observedevices",
+   "title": "Devices tab: list + state load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/devices/DevicesViewModel$observeDevices$1.java:22"
+   ],
+   "details": "ObserveDevices(DeviceFilter for the tab) sorted favourites first then name; LoadStateForDevices for the listed devices; emits UnreachableIndicesEvent."
+  },
+  {
+   "id": "ui:vm:dimviewmodel.displaylightnesslevel",
+   "title": "Dim tab: render lightness",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/DimViewModel$displayLightnessLevel$2.java:17"
+   ],
+   "details": "Present lightness % (round(l*100/65535)) -> slider/header, on main thread."
+  },
+  {
+   "id": "ui:vm:dimviewmodel.observelightnesslevel",
+   "title": "Dim tab: slider -> Lightness Set",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/DimViewModel$observeLightnessLevel$1.java:16"
+   ],
+   "details": "Flow 1: slider state sampled every 500 ms -> Light Lightness Set (0x824C, ack) [lightness u16 LE = round(pct/100*65535)][tid] -> Lightness element. Flow 2: incoming Lightness Status debounced 300 ms -> display."
+  },
+  {
+   "id": "ui:vm:dimviewmodel.requestlightnesslevel",
+   "title": "Dim tab open: read range + level",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/dim/DimViewModel$requestLightnessLevel$1.java:19"
+   ],
+   "details": "Light Lightness Range Get (0x8257, ack) -> status 0x8258 [status][min u16][max u16] (slider bounds) and Light Lightness Get (0x824B, ack) -> 0x824E."
+  },
+  {
+   "id": "ui:vm:favoritesviewmodel.isactiondisabled",
+   "title": "Favourites tile: RTR-controlled check",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel$isActionDisabled$1.java:11"
+   ],
+   "details": "Same as DevicesViewModel.isActionDisabled (IsAnyRtrDeviceConnected)."
+  },
+  {
+   "id": "ui:vm:favoritesviewmodel.observecloudstatus",
+   "title": "Favourites: cloud status",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel$observeCloudStatus$1.java:14"
+   ],
+   "details": "ObserveCloudStatus for editing permissions."
+  },
+  {
+   "id": "ui:vm:favoritesviewmodel.observefavorites",
+   "title": "Favourites: combine favourite devices/areas/scenes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/favorites/FavoritesViewModel$observeFavorites$1.java:18"
+   ],
+   "details": "ObserveDevices(IsFavorite) + ObserveGroups(IsFavorite) + ObserveScenes(IsFavorite) + search text -> three sections."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.creategroup",
+   "title": "Area: create (admin)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$createGroup$1.java:18"
+   ],
+   "details": "CreateGroup (allocates group address, subscribes devices) - configuration domain; errors group_detail_error_create_failed_*."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.isactiondisabled",
+   "title": "Area tile: RTR-controlled check",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$isActionDisabled$1.java:11"
+   ],
+   "details": "IsAnyRtrDeviceConnected for tile toggles."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.observegroup",
+   "title": "Area detail: observe area",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$observeGroup$1.java:15"
+   ],
+   "details": "ObserveGroup (name, icon, favourite, address)."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.observegroups",
+   "title": "Area detail: name uniqueness",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$observeGroups$1.java:18"
+   ],
+   "details": "ObserveGroups for duplicate-name validation (group_detail_name_already_taken_error)."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.startobservingdevices",
+   "title": "Area detail: devices + state load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$startObservingDevices$1.java:26"
+   ],
+   "details": "ObserveDevices(DeviceFilter.Group) and LoadStateForDevices for them."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.togglefavorite",
+   "title": "Area favourite",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$toggleFavorite$1.java:18"
+   ],
+   "details": "ToggleFavorite for the group; snackbar favorite_group_add/remove_snackbar_message."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.updategroupicon",
+   "title": "Area icon",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$updateGroupIcon$1.java:19"
+   ],
+   "details": "UpdateGroup icon (local)."
+  },
+  {
+   "id": "ui:vm:groupdetailsviewmodel.updategroupname",
+   "title": "Area rename",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groupDetail/GroupDetailsViewModel$updateGroupName$1.java:17"
+   ],
+   "details": "UpdateGroup name (local); errors group_detail_error_update_failed_*."
+  },
+  {
+   "id": "ui:vm:groupsviewmodel.observecloudstatus",
+   "title": "Areas tab: cloud status",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groups/GroupsViewModel$observeCloudStatus$1.java:14"
+   ],
+   "details": "ObserveCloudStatus."
+  },
+  {
+   "id": "ui:vm:groupsviewmodel.startobserving",
+   "title": "Areas tab: list",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/groups/GroupsViewModel$startObserving$1$invokeSuspend$$inlined$map$1$2.java:17"
+   ],
+   "details": "ObserveGroups -> GroupItem (name, icon, device count, favourite)."
+  },
+  {
+   "id": "ui:vm:homeviewmodel.observedata",
+   "title": "Home: compute visible filter tabs",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/HomeViewModel$observeData$1.java:27"
+   ],
+   "details": "From all devices + admin role: FAVORITE if any device; LAMP/BLIND/RTR/SOCKET if such exist; CONTROL_SWITCH/DETECTOR/MINI_ACTUATOR only for admins."
+  },
+  {
+   "id": "ui:vm:homeviewmodel.selecttab",
+   "title": "Home: select filter tab",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/home/HomeViewModel$selectTab$1.java:38"
+   ],
+   "details": "Stores the selected DeviceFilterView in deviceFilterChannel; falls back to the first visible tab when an admin-only tab disappears."
+  },
+  {
+   "id": "ui:vm:keeplowpowerdeviceawakeviewmodeldelegate.keeplowpowerdeviceawake",
+   "title": "Battery device keep-alive",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/KeepLowPowerDeviceAwakeViewModelDelegate$keepLowPowerDeviceAwake$1.java:13"
+   ],
+   "details": "KeepLowPowerDeviceAwake: while the page is open and no other BLE process runs, acked LBC Admin Property Get 0x5001 ButtonLayout (C2 27 05 [01 50]) every 6 s; success -> SleepMode.DeviceAwake, timeout -> DeviceNotAwake (+ retry after 1 s); third state DeviceNotAvailable makes the page cancel the keep-alive job (work body only recoverable in jadx simple mode; timings per docs/android/network-logic.md 5.4)."
+  },
+  {
+   "id": "ui:vm:lampviewmodel._forceoffmode",
+   "title": "Lamp page: detector forced ON/OFF",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/LampViewModel$_forceOffMode$3.java:24",
+    "de/jung/junghome/app/ui/devices/lamp/LampViewModel$_forceOffMode$3.java:89"
+   ],
+   "details": "For loads attached to a detector insert (DeviceFilter.AttachmentWithInsert): LBC Admin Property Get 0x6016 ForcedOff (ack) -> detector element; status u8 0 INACTIVE, 2 OFF, 3 ON -> ForcedOffView."
+  },
+  {
+   "id": "ui:vm:lampviewmodel.connectionmodeandforcedoff",
+   "title": "Lamp page: combine RTR binding + forced mode",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/LampViewModel$connectionModeAndForcedOff$3.java:14"
+   ],
+   "details": "ObserveRtrConnectionMode + forced-off -> enable controls only if !rtrControlled && forced == INACTIVE; RTR card text."
+  },
+  {
+   "id": "ui:vm:lockfunctionviewmodeldelegate.lockdevice",
+   "title": "Lock device (keep current state) with time limit",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$lockDevice$1.java:20",
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$lockDevice$1.java:80"
+   ],
+   "details": "LBC Admin Property Set 0x0009 (C3 27 05, ack) [09 00][userAccess 03][cmd 02 = lock current][priority 01][time u16 LE seconds, 0 = unlimited]."
+  },
+  {
+   "id": "ui:vm:lockfunctionviewmodeldelegate.startlockoutprotection",
+   "title": "Blind lock-out protection with time limit",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$startLockOutProtection$1.java:20",
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$startLockOutProtection$1.java:87"
+   ],
+   "details": "Admin Set 0x0009 [09 00][03][cmd 02][priority FE][time u16 LE s] (keeps the hanging position)."
+  },
+  {
+   "id": "ui:vm:lockfunctionviewmodeldelegate.startwindalarm",
+   "title": "Blind wind alarm start",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$startWindAlarm$1.java:20",
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$startWindAlarm$1.java:83"
+   ],
+   "details": "Admin Set 0x0009 [09 00][03][cmd 01 = enforce value][priority FF][time 00 00][value 00 00] (move to 0 % = open/upper end and lock, no time limit). End = unlockDevice."
+  },
+  {
+   "id": "ui:vm:lockfunctionviewmodeldelegate.unlockdevice",
+   "title": "Unlock device / end wind alarm / end lock-out",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$unlockDevice$1.java:19",
+    "de/jung/junghome/app/ui/devices/LockFunctionViewModelDelegate$unlockDevice$1.java:78"
+   ],
+   "details": "Admin Set 0x0009 [09 00][03][cmd 00][previous priority][previous time][previous value...]."
+  },
+  {
+   "id": "ui:vm:mainviewmodel.observebluetoothstate",
+   "title": "App: Bluetooth adapter state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$observeBluetoothState$1.java:15"
+   ],
+   "details": "ObserveBluetoothState -> opens BluetoothOffActivity when off; location permission dialog permissions_import_dialog_title/body when needed."
+  },
+  {
+   "id": "ui:vm:mainviewmodel.observeindicators",
+   "title": "App: bottom-bar bubbles",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$observeIndicators$1.java:13"
+   ],
+   "details": "ObserveProjectBubbleIndicators / ObserveUpdateAvailable / participant requests -> badge dots on bottom navigation items (settings: updates available, pending requests)."
+  },
+  {
+   "id": "ui:vm:mainviewmodel.observejungmeshnetwork",
+   "title": "App: mesh network loaded",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$observeJungMeshNetwork$1.java:21"
+   ],
+   "details": "ObserveMeshNetwork; triggers RequestSoftwareVersion and RemoveInvalidDevices after load."
+  },
+  {
+   "id": "ui:vm:mainviewmodel.showbanner",
+   "title": "App: new user-role banner",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$showBanner$1.java:20"
+   ],
+   "details": "CheckNewUserModeBanner -> Banner snackbar user_mode_new_banner_title + _message_admin / _message_member, action user_mode_new_banner_action_text (opens UserModeInfoActivity)."
+  },
+  {
+   "id": "ui:vm:mainviewmodel.startconnectingtoproxy",
+   "title": "App: connect to mesh proxy",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/main/MainViewModel$startConnectingToProxy$1.java:13"
+   ],
+   "details": "ConnectToProxy (GATT proxy scan/connect, reconnect loop); drives ProxyStatusView and the loading screen."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.observeassignment",
+   "title": "Inputs page: assignment",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$observeAssignment$1.java:15"
+   ],
+   "details": "ObserveBinaryInputAssignment for E1/E2 (what each input controls)."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.observedevice",
+   "title": "Inputs page: device",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$observeDevice$1.java:24"
+   ],
+   "details": "ObserveDevice; on first emission triggers requestBattery/requestKeyModes/requestInputDetections/requestPropertyConnections."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.observedeviceinfo",
+   "title": "Inputs page: notes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$observeDeviceInfo$1.java:14"
+   ],
+   "details": "ObserveDeviceInfo (gateway note)."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.reloaddevice",
+   "title": "Inputs page: reload after change",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$reloadDevice$$inlined$filterIsInstance$1$2.java:12"
+   ],
+   "details": "Re-reads the device after a configuration change."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.removeconnections",
+   "title": "Inputs page: remove input connections",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$removeConnections$1.java:11"
+   ],
+   "details": "Removes the publications/links of an input (configuration)."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.requestbattery",
+   "title": "Inputs page: battery (battery puck 0x0016)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestBattery$1.java:19",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestBattery$1.java:81"
+   ],
+   "details": "Generic Battery Get (0x8223) REQUEST, waitForStatus=false -> BatteryCapability indicator."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.requestinputdetections",
+   "title": "Inputs page: edge detection",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestInputDetections$1.java:19",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestInputDetections$1.java:81"
+   ],
+   "details": "Admin Get 0x5009 InputEdgeDetection (ack) -> rising/falling edge display."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.requestkeymodes",
+   "title": "Inputs page: key modes",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestKeyModes$1.java:19",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestKeyModes$1.java:81"
+   ],
+   "details": "Admin Get 0x5003 KeyMode per input element (ack)."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.requestpropertyconnections",
+   "title": "Inputs page: property links",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$requestPropertyConnections$1.java:16"
+   ],
+   "details": "Admin Get 0x5006 / 0x5007 KeySetPropertyValue Up/Down per input (ack)."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.selectedbinaryinputassignment",
+   "title": "Inputs page: selected input",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$selectedBinaryInputAssignment$1.java:16"
+   ],
+   "details": "Tracks selected input E1/E2 card."
+  },
+  {
+   "id": "ui:vm:miniactuatorconfigurationviewmodel.updatelayout",
+   "title": "Inputs page: connect inputs switch",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationViewModel$updateLayout$1.java:14"
+   ],
+   "details": "Changes the input layout (E1+E2 combined vs separate) - configuration."
+  },
+  {
+   "id": "ui:vm:nameconfigviewmodel.observedevice",
+   "title": "Rename dialog: current device name",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/nameConfig/NameConfigViewModel$observeDevice$1.java:15"
+   ],
+   "details": "ObserveDevice -> prefills the device's project name."
+  },
+  {
+   "id": "ui:vm:nameconfigviewmodel.observegroup",
+   "title": "Rename dialog: current area name",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/nameConfig/NameConfigViewModel$observeGroup$1.java:15"
+   ],
+   "details": "ObserveGroup -> prefills the area's name."
+  },
+  {
+   "id": "ui:vm:nameconfigviewmodel.observescene",
+   "title": "Rename dialog: current scene name",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/nameConfig/NameConfigViewModel$observeScene$1.java:15"
+   ],
+   "details": "ObserveScene -> prefills the scene's name."
+  },
+  {
+   "id": "ui:vm:nameconfigviewmodel.updatename",
+   "title": "Rename dialog: save",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/shared/nameConfig/NameConfigViewModel$updateName$1.java:62"
+   ],
+   "details": "UpdateDeviceData / UpdateGroup / UpdateSceneName with the new name (CheckNameInput errors shown inline). Project meta only, no mesh traffic."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.isreachableandconnectionmode",
+   "title": "Consumption: enable state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$isReachableAndConnectionMode$3.java:12"
+   ],
+   "details": "Combines reachability and RTR binding to enable the page controls."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.observedevice",
+   "title": "Consumption page open: start 5 s polling + chart load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$observeDevice$1.java:27"
+   ],
+   "details": "Starts FlowOperatorsKt.h repeating job (requestData) every 5 s while open, and requestConsumptionData on spinner change."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.observedeviceinfo",
+   "title": "Consumption: card visibility",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$observeDeviceInfo$1.java:15"
+   ],
+   "details": "Local DeviceInfo flags (set on the configuration consumption page) decide which of total consumption / operating hours / price cards show."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.observepricepercent",
+   "title": "Consumption: price",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$observePricePerCent$1.java:14"
+   ],
+   "details": "Local price per kWh in cents -> cost = (price/100) * (totalEnergy Wh / 1000) EUR, \"%.2f €\"."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.observetotalenergyuse",
+   "title": "Consumption: total energy",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$observeTotalEnergyUse$1.java:14"
+   ],
+   "details": "Recomputes the cost when the total energy value changes."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.requestconsumptiondata",
+   "title": "Consumption chart load",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestConsumptionData$1.java:25",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestConsumptionData$1.java:61"
+   ],
+   "details": "LBC User Property Get (CE 27 05) 0x5010 (DAILY, 24 hourly u16 BE samples x0.1, 0xFFFF invalid) or 0x5011 (THIRTY_ONE_DAYS, u24 BE x0.1 per day); logs analytics event; segmented reply D1 27 05."
+  },
+  {
+   "id": "ui:vm:powerconsumptionviewmodel.requestdata",
+   "title": "Consumption 5 s poll",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestData$1.java:20",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestData$1.java:99"
+   ],
+   "details": "Sequential acked: SIG Generic Admin Property Get (0x822D) 0x006D power-on time (hours) -> 0x4A; 0x822D 0x006A total energy (Wh, LE int) -> 0x4A; Sensor Get (0x8231) [81 00] -> Sensor Status 0x0081 active power LE x0.1 W."
+  },
+  {
+   "id": "ui:vm:referencerunloadingviewmodel.observedevice",
+   "title": "Blind reference run (calibration) start",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingViewModel$observeDevice$1.java:28",
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingViewModel$observeDevice$1.java:142"
+   ],
+   "details": "When the ReferenceRun capability is requested: LBC Admin Property Set 0x110D ReferenceRun [01] (ack) to the blind; then waitForReferenceRun."
+  },
+  {
+   "id": "ui:vm:referencerunloadingviewmodel.waitforreferencerun",
+   "title": "Blind reference run: wait",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingViewModel$waitForReferenceRun$1.java:22"
+   ],
+   "details": "Waits BlindMoveUpDownTime (Admin 0x1102, s) + 10 s, nothing is read back (no calibration status property); screen text blind_reference_run_description."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.changemode",
+   "title": "RTR: select Comfort / ECO / Frost (FW >= 2.2.0.0)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$changeMode$1.java:20",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$changeMode$1.java:73"
+   ],
+   "details": "LBC Admin Property Set 0x120B RtrHvacMode (C3 27 05 [0B 12][03][mode u8], ack): 1 COMFORT, 2 ECO, 3 FREEZE. Older firmware (no 0x120B support): the preset temperature (0x1203/0x1204/0x1205) is written as the new target via Level Set."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.changetargettemperature",
+   "title": "RTR: slider value input",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$changeTargetTemperature$1.java:17"
+   ],
+   "details": "Pushes the slider value into a StateFlow; see observeTemperatureToUpdate."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.decreasetemperature",
+   "title": "RTR: minus button",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$decreaseTemperature$1.java:16"
+   ],
+   "details": "target - 0.5 degC (clamped 5..30) -> same path as the slider."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.getconnecteddevices",
+   "title": "RTR: list bound heating actuators",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$getConnectedDevices$1.java:24"
+   ],
+   "details": "GetConnectedDevices (local DB: outputs whose OnOff server subscribes to the RTR OnOff-client publish address) -> compose list."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.increasetemperature",
+   "title": "RTR: plus button",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$increaseTemperature$1.java:16"
+   ],
+   "details": "target + 0.5 degC (clamped 5..30)."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.observecompatible",
+   "title": "RTR page open: reads + 5 s boost poll",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$observeCompatible$1.java:29"
+   ],
+   "details": "One-shot: requestTemperature, requestRtrModes, requestSchedulerEnabledValue; then FlowOperatorsKt.h repeating requestBoostFunction every 5 s while open. Mode shown = HvacMode from 0x120B, or on old FW the preset (Comfort/ECO/Frost) equal to the current target."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.observetemperaturetoupdate",
+   "title": "RTR: sample slider 500 ms",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$observeTemperatureToUpdate$1.java:17"
+   ],
+   "details": "StateFlow sampled every 500 ms -> updateTargetTemperature."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.removeconnection",
+   "title": "RTR: unlink heating actuator",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$removeConnection$1.java:19"
+   ],
+   "details": "RemoveMultiConnection (config unsubscribe + Admin Set 0x1014 = 0 on the actuator); dialogs remove_rtr_connection_*."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.requestboostfunction",
+   "title": "RTR: read boost",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestBoostFunction$1.java:18",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestBoostFunction$1.java:74"
+   ],
+   "details": "LBC Admin Property Get 0x120D BoostMode (ack), polled every 5 s; status u8 1 active / 0 off."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.requestrtrmodes",
+   "title": "RTR: read mode/presets",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestRtrModes$1.java:23",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestRtrModes$1.java:114"
+   ],
+   "details": "FW >= 2.2.0.0: Admin Get 0x120B RtrHvacMode; else Admin Get 0x1203 Comfort, 0x1204 Eco, 0x1205 Frost preset (int16 LE degC x100)."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.requestschedulerenabledvalue",
+   "title": "RTR: read Auto/Manu",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestSchedulerEnabledValue$1.java:22",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestSchedulerEnabledValue$1.java:78"
+   ],
+   "details": "Admin Get 0x1246 SchedulerEnabled (ack); u8 1 = AUTO, 0 = MANU."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.requesttemperature",
+   "title": "RTR: read current + target temperature",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestTemperature$1.java:20",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestTemperature$1.java:100"
+   ],
+   "details": "Sensor Get (0x8231) [4F 00] -> sensor element (Present Ambient Temperature, raw s8 x0.5 degC clamped 5..30) and Generic Level Get (0x8205) -> set-point element (t = 5 + 25*pct/100)."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.switchoperationmode",
+   "title": "RTR: toggle Auto/Manu",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$switchOperationMode$1.java:20",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$switchOperationMode$1.java:72"
+   ],
+   "details": "Admin Set 0x1246 SchedulerEnabled [46 12][03][01|00] (ack) = inverse of current."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.updateboostmode",
+   "title": "RTR: start/stop boost",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$updateBoostMode$1.java:19",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$updateBoostMode$1.java:72"
+   ],
+   "details": "Admin Set 0x120D BoostMode [0D 12][03][01|00] (ack); boost = full heating power for 5 minutes, slider + mode buttons disabled meanwhile."
+  },
+  {
+   "id": "ui:vm:roomtemperatureviewmodel.updatetargettemperature",
+   "title": "RTR: send target temperature",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$updateTargetTemperature$1$1.java:19",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$updateTargetTemperature$1$1.java:72"
+   ],
+   "details": "Generic Level Set (0x8206, ack) -> set-point element: pct = round((t-5)/25*100), level = clamp(round(-32768 + pct/100*65535)); 0.5 degC UI steps (~0.25 degC resolution on air)."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.isanyrtrconnected",
+   "title": "Scene detail: RTR-controlled marks",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$isAnyRtrConnected$1.java:11"
+   ],
+   "details": "IsAnyRtrDeviceConnected per listed device -> \"Temperature-controlled\" label."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.mapcreatesceneitemstosceneresultitems",
+   "title": "Scene detail: build result list",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$mapCreateSceneItemsToSceneResultItems$1.java:15"
+   ],
+   "details": "Maps stored scene actions to display rows (state per device)."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.observescene",
+   "title": "Scene detail: observe",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$observeScene$1.java:18"
+   ],
+   "details": "ObserveScene (name, icon, favourite, members)."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.togglefavorite",
+   "title": "Scene favourite",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$toggleFavorite$1.java:18"
+   ],
+   "details": "ToggleFavorite for the scene; snackbar favorite_scene_add/remove_snackbar_message."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.updateitems",
+   "title": "Scene detail: edit list",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$updateItems$1.java:18"
+   ],
+   "details": "Scene editing (scenes domain)."
+  },
+  {
+   "id": "ui:vm:scenedetailsviewmodel.updatescene",
+   "title": "Scene detail: save",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/SceneDetailsViewModel$updateScene$1.java:30"
+   ],
+   "details": "Scene editing / store (scenes domain); errors scene_detail_error_*."
+  },
+  {
+   "id": "ui:vm:sceneiconselectionviewmodel.observescene",
+   "title": "Scene icon picker: current icon",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/sceneDetail/iconSelection/SceneIconSelectionViewModel$observeScene$1.java:20"
+   ],
+   "details": "ObserveScene -> highlights the scene's current icon."
+  },
+  {
+   "id": "ui:vm:scenesviewmodel.observecloudstatus",
+   "title": "Scenes tab: cloud status",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/scenes/ScenesViewModel$observeCloudStatus$1.java:15"
+   ],
+   "details": "ObserveCloudStatus."
+  },
+  {
+   "id": "ui:vm:scenesviewmodel.observescenes",
+   "title": "Scenes tab: list",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/scenes/ScenesViewModel$observeScenes$1.java:30"
+   ],
+   "details": "ObserveScenes -> tiles (name, number, isFavorite, icon)."
+  },
+  {
+   "id": "ui:vm:simpleswitchviewmodel.internalstateflow",
+   "title": "Switch tab: state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchViewModel$internalStateFlow$1.java:17"
+   ],
+   "details": "Combines device OnOff, lock function, RTR binding, reachability into the compose UI state."
+  },
+  {
+   "id": "ui:vm:simpleswitchviewmodel.ontimepickerclicked",
+   "title": "Switch tab: lock time-limit picker",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchViewModel$onTimePickerClicked$1.java:17"
+   ],
+   "details": "Opens the duration picker (JungDurationPickerDialog, max 4 h 59 min 59 s) for the lock time limit - not a timed-on."
+  },
+  {
+   "id": "ui:vm:simpleswitchviewmodel.requestgenericonoffifmissing",
+   "title": "Switch tab open: read OnOff if unknown",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchViewModel$requestGenericOnOffIfMissing$1.java:13"
+   ],
+   "details": "Generic OnOff Get (0x8201) REQUEST, waitForStatus=false -> OnOff element, only if no cached OnOff state."
+  },
+  {
+   "id": "ui:vm:simpleswitchviewmodel.state",
+   "title": "Switch tab: exposed state",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/shared/SimpleSwitchViewModel$state$1.java:19"
+   ],
+   "details": "StateFlow for the compose screen (illustration on/off, lock button text Lock/Unlock, time limit)."
+  },
+  {
+   "id": "ui:vm:tunablewhiteviewmodel.observetunablewhitelevel",
+   "title": "Colour temperature: wheel -> CTL Set",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/tunableWhite/TunableWhiteViewModel$observeTunableWhiteLevel$1.java:15"
+   ],
+   "details": "Wheel value debounced 500 ms -> Light CTL Set (0x825E, ack) [lightness u16 = current lightness][temperature K u16][deltaUV s16 = 0][tid]; Light CTL Temperature Set 0x8264 never used. K = round((2000 + 8000*pct/100)/100)*100."
+  },
+  {
+   "id": "ui:vm:tunablewhiteviewmodel.requesttunablewhite",
+   "title": "Colour temperature tab open: read range + CTL",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/devices/lamp/elements/tunableWhite/TunableWhiteViewModel$requestTunableWhite$1.java:20"
+   ],
+   "details": "Light CTL Temperature Range Get (0x8262, ack) -> 0x8263 [status][min K][max K]; Light CTL Get (0x825D, ack) -> Light CTL Status 0x8260 (present lightness, present temperature)."
+  }
+ ]
+}

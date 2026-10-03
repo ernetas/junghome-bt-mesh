@@ -1,0 +1,1674 @@
+{
+ "domain": "prop",
+ "apk": "JUNG HOME 2.2.0",
+ "method": "All paths relative to android/jadx-out/sources. (1) Property catalogue: parse p056e8/r.java (Kotlin sealed class Property.kt) - every `class X extends b|c|T|AbstractC2064g0|AbstractC2080v` with its `super(<id>)` (CipherSuite/MeshAddress constants resolved: TLS_DHE_DSS_WITH_AES_256_CBC_SHA256=0x6A, TLS_DH_anon_WITH_AES_256_CBC_SHA256=0x6D, TLS_ECDH_ECDSA_WITH_NULL_SHA=0xC001, _RC4_128_SHA=0xC002, _3DES_EDE_CBC_SHA=0xC003, START_GROUP_ADDRESS=0xC000) and `toString()` name; 94 classes = 5 SIG (r.b.*), 87 LBC (r.c.*), 2 dynamic LED (r.c.T.a/b, ids from T.e(): base 0xA001/0xA002 + 3k, k=0..5) - cross-checked against the sealed lists in de/jung/junghome/app/ui/project/shareViaFile/f.java cases 25 (SIG) and 26 (LBC). (2) For each singleton field (grep `f47[0-9]+[a-z]? = new` in r.java) grep -rlw the field name to find MessageBuilders (p234v7, p245w7, p254x7, p266y7, B7, C7, J7); model = builder status opcode `this.fNNNb = <int>` (12920581 LBC Admin, 13313797 LBC Manufacturer, 13707013 LBC User, 70 SIG Manufacturer, 74 SIG Admin, 82 Sensor) plus G7.a-f imports, access from `UserAccess.*`, value size from `W.a(n)`/put*. (3) Resolvers: grep `e8\\.r\\.[bc]\\.[A-Za-z0-9.]+\\.class` in de/jung/junghome/data/mesh/resolver -> property class, capability via `instanceof`, decode via dispatcher case (`new C1901b0(n,`, `new ...gateway.detail.z(n,`, `new e2(n,`, `new A0(`, threshold/devices/d.java; `throw null` = TODO). (4) Capability -> UI: grep the capability class in de/jung/junghome/app (deviceParameter/providers/*Parameter$1.java names give the parameter). (5) Sensor/SIG ids: grep `DeviceProperty\\.[A-Z_]+` outside no/nordicsemi (C2347a, C2349b, P0, C2364i0, L0, F7/b, F7/c, SensorSettingsViewModel o() and t()), resolve numbers in no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java. (6) Second sweep: grep `new (GenericPropertyGet|GenericAdminPropertySet|GenericManufacturerPropertySet|GenericUserPropertySet)(`, `r\\.a\\.a(` dynamic lookups (JungMeshApiImpl readProperty/q1, KeySet target p085h8/e, LED builders p266y7), model-id constants 86446097/98/99/101 and 4113/4114/4115/4352, and res/values/strings.xml `device_parameter_*_title` keys mapped back to providers (floor-temperature string has no Java user; night-mode string = LED mode byte). Ids: prop:0xNNNN = LBC vendor property id; prop:sig:0xNNNN = SIG Generic property; prop:sensor:0xNNNN = SIG sensor property; prop:model:<model id hex, vendor as 0xCCCCMMMM>; prop:meta:<lowercased class/method name>. Firmware-only ids (not in the APK) are deliberately excluded. Verification sweep (different angle, for reruns): (a) every class 'compiled from: *MessageBuilder.kt' outside no/ mapped to the r.b/r.c singleton or DeviceProperty it references (128 builders, no property outside this list); (b) every 'compiled from: *Capability.kt' name not mentioned in the items, each checked for a property id (none: they are SIG/config/scheduler capabilities); (c) every 'new (Generic*Propert*|Sensor(Get|Descriptor|Cadence|Setting|Settings))(' outside no/; (d) the resolver base classes AbstractC1972z0 (LBC) and AbstractC1929k1 (SIG) and their subclasses; (e) model-id literals 8644609x/864461xx and 4113-4116/4352/4353 in de/, E7/, P7/ (adds prop:model:0x1101); (f) every res/values/strings.xml device_parameter_* key not quoted in an item, resolved to its R.string user (hotel, night light, presence simulation, floor temperature, time role, wind alarm, operation lock and sync rocker strings have no Java user; sensor_values_for_gateway = Sensor Server publication, not a property); (g) the configuration interactors (domain/interactors/configuration/*.java 'CommunicateWithDevice.Params(') for commissioning-time property writes (ConfigureDetector: 0x6021 = 50, 0x100B = true, 0x1007 = 120 s); (h) on-air property ids in captures-inventory.json not in this inventory (0x000D, 0x000E, 0x0072, 0x5012-0x5014 SIG/LBC) are firmware-only and live in inventory-air.json.",
+ "items": [
+  {
+   "id": "prop:0x0001",
+   "title": "LBC 0x0001 DeviceKeyLock / device key configuration (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1893",
+    "de/jung/junghome/data/mesh/resolver/C.java:15",
+    "p234v7/C2384t.java:32",
+    "J8/C0541i.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/S.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java",
+    "V7/C0849f.java:63",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java:468"
+   ],
+   "details": "name=DeviceKeyLockProperty; capability=DeviceKeyConfigurationCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Value uint16 LE bit-field of 5 flags. Encoder J8/C0541i.toByteArray: MSB-first writer 11 zero bits then isConfigurationLockActive, isKeyLockActive, isLocalDevicesLockActive, isFactoryResetWithTimeLimitActive, isLocalFactoryResetLockActive, then byte-reversed => bit0=LocalFactoryResetLock, bit1=FactoryResetWithTimeLimit, bit2=LocalDevicesLock, bit3=KeyLock, bit4=ConfigurationLock. Decoder (gateway/detail/z.java case 25) reads reversed bytes, skips 11 bits and assigns in field order a..e => bit4->LocalFactoryResetLock ... bit0->ConfigurationLock (mirrored vs encoder; app bug in one direction). UI: SharedDeviceParametersProvider deviceLockParameter/keyLockParameter/lockConfigurationParameter/lockFactoryResetParameter (strings device_parameter_lock_title, _key_lock_title, _configuration_lock_title, _lock_factory_reset_title, _local_devices_lock_title). Products: control switches/rockers, wall transmitters, sockets, detectors, RTR, mini actuators."
+  },
+  {
+   "id": "prop:0x0002",
+   "title": "LBC 0x0002 InsertId / actuator function (read-only, User server)",
+   "apk_refs": [
+    "p056e8/r.java:600",
+    "de/jung/junghome/data/mesh/resolver/C1922i0.java:21",
+    "p234v7/C2351c.java:30",
+    "p096i8/a.java",
+    "de/jung/junghome/app/utils/g.java",
+    "de/jung/junghome/app/ui/meshnetwork/nodeDetails/NodeDetailsActivity.java"
+   ],
+   "details": "name=InsertIdProperty; capability=ActuatorCapability; LBC User (vendor 0x0527:0x1013): Get 0xC5270E (337678, G7.e) `[id u16 LE]`, Status 0xD12705 (13707013). Read-only: Set throws UnsupportedOperationException (ActuatorMessageBuilder C2351c). Value 2 or 4 bytes; parser takes actuatorFunctionId u16 and, if 4 bytes, insertType u16 (on air `[functionId u16 LE][insertType u16 LE]`). ActuatorFunctionId: 0 Switch, 1 TwoGangSwitch, 2 Dimming, 3 TwoGangDimming, 4 TwDimming, 5 Blind, 6 Extension, 7 NotAvailable, 8 Rtr, 9 Gateway, 0xFFFF Unset, else Unknown. InsertType: 0 Unknown, 1 NoInsert, 2 GenericInsert, else NotSupported. Drives DeviceMapper load-device creation (Y7/C0919h). Requested once per element holding LBC User Property Server; shown in NodeDetailsActivity. All products."
+  },
+  {
+   "id": "prop:0x0003",
+   "title": "LBC 0x0003 Secure element version (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:2377",
+    "de/jung/junghome/data/mesh/resolver/G1.java:14",
+    "C7/c.java:29",
+    "Y8/c.java",
+    "de/jung/junghome/app/ui/meshnetwork/nodeDetails/NodeDetailsViewModel$getSoftwareVersion$1.java"
+   ],
+   "details": "name=SecureElementVersionProperty; capability=SecureElementVersionCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only (Get only). Bytes rendered as dotted decimal (UtilsKt.h); on air little-endian (reverse bytes for display, e.g. 0d 02 01 00 -> 0.1.2.13). Shown in node details software-version section. All products."
+  },
+  {
+   "id": "prop:0x0004",
+   "title": "LBC 0x0004 Bootloader version (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:1468",
+    "de/jung/junghome/data/mesh/resolver/C1933m.java:15",
+    "C7/a.java:28",
+    "Y8/a.java",
+    "de/jung/junghome/app/ui/meshnetwork/nodeDetails/NodeDetailsViewModel$getSoftwareVersion$1.java"
+   ],
+   "details": "name=BootloaderVersionProperty; capability=BootloaderVersionCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only. Same dotted-decimal formatting as 0x0003 (00 00 04 02 -> 2.4.0.0). Node details. All products."
+  },
+  {
+   "id": "prop:0x0005",
+   "title": "LBC 0x0005 STM32 (application co-processor) version (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:2287",
+    "de/jung/junghome/data/mesh/resolver/C1964w1.java:18",
+    "C7/b.java:28",
+    "Y8/b.java",
+    "de/jung/junghome/app/ui/meshnetwork/nodeDetails/NodeDetailsViewModel$getSoftwareVersion$1.java"
+   ],
+   "details": "name=STM32VersionProperty; capability=STM32VersionCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only, dotted decimal; stored as 'STM software version'. Only RTR (pid 0x000A) carries STM32VersionCapability (Y8.b); read at RTR provisioning, shown in node details."
+  },
+  {
+   "id": "prop:0x0007",
+   "title": "LBC 0x0007 Astro scheduler register (RW, indexed Get)",
+   "apk_refs": [
+    "p056e8/r.java:1111",
+    "de/jung/junghome/data/mesh/resolver/C1903c.java:18",
+    "B7/a.java:40",
+    "g9/a.java",
+    "de/jung/junghome/app/ui/timer/profiles/q.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/k.java"
+   ],
+   "details": "name=AstroSchedulerRegisterProperty; capability=AstroSchedulerRegisterCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Get carries 1 extra byte = register index (B7/a). Value 5 bytes = LE 40-bit field: bits3:0 registerIndex, 7:4 AstroTimerMode (0 STATIC_POINT_OF_TIME, 1 SUNRISE, 2 SUNSET, 3 reserved), 15:8 timeOffset int8 minutes (two's complement), 20:16 earliest hour, 26:21 earliest minute, 31:27 latest hour, 37:32 latest minute, 39:38 = 0. Set access=3. UI: timer profiles (astro timers). Base Device (all products with scheduler)."
+  },
+  {
+   "id": "prop:0x0008",
+   "title": "LBC 0x0008 Astro scheduler status (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1159",
+    "de/jung/junghome/data/mesh/resolver/C1906d.java:15",
+    "B7/b.java:35",
+    "g9/b.java",
+    "de/jung/junghome/app/ui/timer/profiles/TimerProfilesViewModel$state$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=AstroSchedulerStatusProperty; capability=AstroSchedulerStatusCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint32 LE: low 16 bits bit i = register i active; high 16 bits bit i = mode (0 STATIC, 1 ASTRO). Set access=3 (B7/b). UI: timer profiles overview. Base Device."
+  },
+  {
+   "id": "prop:0x0009",
+   "title": "LBC 0x0009 EnforceOutput / lock function & wind alarm (RW)",
+   "apk_refs": [
+    "p056e8/r.java:2217",
+    "de/jung/junghome/data/mesh/resolver/M0.java:14",
+    "de/jung/junghome/app/ui/devices/controlSwitch/components/ControlSwitchView.java:243",
+    "de/jung/junghome/data/mesh/MeshMessengerImpl$processRequest$2.java:97",
+    "p085h8/e.java:16",
+    "p179q6/b.java:143",
+    "p234v7/O.java:30",
+    "p244w6/c.java:99",
+    "D8/a.java",
+    "de/jung/junghome/app/utils/g.java",
+    "de/jung/junghome/app/ui/scene/create/configure/SceneTunableWhiteViewModel$setPreview$1.java",
+    "de/jung/junghome/app/ui/scene/create/configure/SceneConfigureViewModel$requestLockFunction$1.java"
+   ],
+   "details": "name=EnforceOutputProperty; capability=LockFunctionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Value `[controlCommand u8][priority u8][time u16 LE seconds][value bytes...]` (encoder D8/a, decoder C8/a; time 0 = NoLimit, value = remaining bytes, e.g. target level). controlCommand: 0 unlock, 1 wind alarm (sent with priority 255, time 0, value [0,0]), 2 lock-out protection, 3 unused, 0xFF unknown. priority u8 (254/255 special, default 1). Set access=3 (LockFunctionMessageBuilder O). Also a selectable target of KeySetPropertyMode 0x5006 (p085h8/e). UI: device details lock function, scene configure, control-switch key assignment. Products: lamps, sockets, blinds, mini actuators."
+  },
+  {
+   "id": "prop:0x000f",
+   "title": "LBC 0x000F Automatic daylight saving time (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1207",
+    "de/jung/junghome/data/mesh/resolver/C1909e.java:15",
+    "p234v7/C2357f.java:33",
+    "P8/b.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java"
+   ],
+   "details": "name=AutomaticDaylightSavingTime; capability=AutomaticDaylightSavingTimeEnabledCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool 1/0 (C2357f). Set access=3. UI: SharedDeviceParametersProvider.automaticDaylightSavingTimeParameter (string device_parameter_changing_clocks_title). Products: lamps, sockets, blinds (devices with local scheduler)."
+  },
+  {
+   "id": "prop:0x0012",
+   "title": "LBC 0x0012 RTR touch sensitivity (RW bool, FW-gated)",
+   "apk_refs": [
+    "p056e8/r.java:2240",
+    "de/jung/junghome/data/mesh/resolver/C1961v1.java:15",
+    "p234v7/B0.java:31",
+    "J8/H.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java"
+   ],
+   "details": "name=RtrTouchSensitivity; capability=RtrTouchSensitivityCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool. Only offered when node SW (SIG 0x001A) >= 1.0.3.3 (C1901b0 case 23). UI: RtrParametersProvider.touchSensitivityParameter (device_parameter_rtr_touch_sensitivity_title). Product: RTR 0x000A."
+  },
+  {
+   "id": "prop:0x0013",
+   "title": "LBC 0x0013 Dim mode (leading/trailing edge)",
+   "apk_refs": [
+    "p056e8/r.java:1940",
+    "de/jung/junghome/data/mesh/resolver/D.java:15",
+    "p234v7/C2386u.java:32",
+    "J8/C0542j.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1853i.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=DimMode; capability=DimModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 DimModeType: 1 LEADING_EDGE (RL), 2 TRAILING_EDGE (RC), 5 UNKNOWN. Set is sent with userAccess=1 (READ) instead of 3 (DimModeMessageBuilder C2386u) - the only such property. UI: LampParametersProvider.dimModeParameter (device_parameter_dim_mode_title). Product: dim lamp (Dimming/TwoGangDimming inserts, puck dimmer 0x0012)."
+  },
+  {
+   "id": "prop:0x1001",
+   "title": "LBC 0x1001 Switch-on delay (RW)",
+   "apk_refs": [
+    "p056e8/r.java:370",
+    "de/jung/junghome/data/mesh/resolver/O.java:15",
+    "p234v7/C2392x.java:32",
+    "J8/C0545m.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/V.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=GeneralOnDelayProperty; capability=GeneralOnDelayCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint32 LE milliseconds; 0 = off; valid 1..86 400 000, app clamps reads to <= 14 400 000 (4 h) (z.java default case, p056e8/d). UI: SharedDeviceParametersProvider.onDelayParameter (device_parameter_switch_on_delay_title). Products: lamps, sockets."
+  },
+  {
+   "id": "prop:0x1002",
+   "title": "LBC 0x1002 Switch-off delay (RW)",
+   "apk_refs": [
+    "p056e8/r.java:324",
+    "de/jung/junghome/data/mesh/resolver/N.java:15",
+    "p234v7/C2390w.java:32",
+    "J8/C0544l.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/U.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=GeneralOffDelayProperty; capability=GeneralOffDelayCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint32 LE ms, same range/clamp as 0x1001 (z.java case 28, p056e8/c). UI: offDelayParameter (device_parameter_switch_off_delay_title). Products: lamps, sockets."
+  },
+  {
+   "id": "prop:0x1007",
+   "title": "LBC 0x1007 Timed-on duration / run-on time (RW)",
+   "apk_refs": [
+    "p056e8/r.java:439",
+    "de/jung/junghome/data/mesh/resolver/W1.java:14",
+    "p234v7/O0.java:31",
+    "J8/M.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java"
+   ],
+   "details": "name=TimedOnDurationProperty; capability=TimedOnDurationCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint32 LE ms, max 4 h; detectors get default 120 s at configuration (ConfigureDetector). UI: SharedDeviceParametersProvider.runOnTimeParameter (device_parameter_timed_on_duration_title / detector_stopping_time_title). Products: lamps, sockets, detector loads."
+  },
+  {
+   "id": "prop:0x100a",
+   "title": "LBC 0x100A Switch-off prewarning (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1728",
+    "de/jung/junghome/data/mesh/resolver/C1926j1.java:15",
+    "p234v7/C2378p0.java:32",
+    "J8/E.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java"
+   ],
+   "details": "name=PrewarningProperty; capability=PrewarningCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (C1901b0 case 15). UI: LampParametersProvider.prewarningParameter (device_parameter_prewarning_title). Products: lamps."
+  },
+  {
+   "id": "prop:0x100b",
+   "title": "LBC 0x100B Manual off enable (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:924",
+    "de/jung/junghome/data/mesh/resolver/N0.java:14",
+    "p234v7/P.java:31",
+    "p096i8/l.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java"
+   ],
+   "details": "name=ManualOffEnableProperty; capability=ManualOffEnableCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool, read as 1==byte (C1901b0 case 4). UI: SharedDeviceParametersProvider.manualOffParameter (device_parameter_manual_off_enable_title). Products: lamps, sockets."
+  },
+  {
+   "id": "prop:0x100c",
+   "title": "LBC 0x100C Invert output (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:623",
+    "de/jung/junghome/data/mesh/resolver/C1925j0.java:15",
+    "p234v7/D.java:31",
+    "P8/k.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=InvertOutputProperty; capability=InvertOutputCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool, read as 1==byte (C1901b0 case 1). UI: LampParametersProvider.invertOutputParameter (device_parameter_invert_output_title). Products: lamps."
+  },
+  {
+   "id": "prop:0x100d",
+   "title": "LBC 0x100D Switch blocking time (RW)",
+   "apk_refs": [
+    "p056e8/r.java:209",
+    "de/jung/junghome/data/mesh/resolver/R1.java:14",
+    "p234v7/J0.java:31",
+    "J8/L.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1856l.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=SwitchBlockingTime; capability=SwitchBlockingTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint16 LE ms, 100..10 000 (I8/Q range). UI: SharedDeviceParametersProvider.switchBlockingTimeParameter (device_parameter_switch_blocking_time_title). Products: lamps, sockets."
+  },
+  {
+   "id": "prop:0x100e",
+   "title": "LBC 0x100E Dim-to-warm (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1987",
+    "de/jung/junghome/data/mesh/resolver/E.java:15",
+    "p234v7/C2388v.java:32",
+    "J8/C0543k.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=DimToWarm; capability=DimToWarmCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (z.java case 27). UI: LampParametersProvider.dimToWarmParameter (device_parameter_dim_to_warm_title). Products: dim / tunable-white lamps."
+  },
+  {
+   "id": "prop:0x1014",
+   "title": "LBC 0x1014 RTR operation mode of a switch output (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:2010",
+    "de/jung/junghome/data/mesh/resolver/C1949r1.java:15",
+    "p234v7/z0.java:31",
+    "p096i8/r.java",
+    "de/jung/junghome/domain/interactors/connection/RemoveMultiConnection$work$1.java:221"
+   ],
+   "details": "name=RtrOperationMode; capability=RtrOperationModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool: set TRUE when a relay output is linked to a room thermostat as heating actuator, FALSE when the link is removed (RemoveMultiConnection). No parameter screen; set by connection interactors. Products: switch lamp, measure lamp, sockets. (Firmware name SWITCH_OPERATION_MODE.)"
+  },
+  {
+   "id": "prop:0x1101",
+   "title": "LBC 0x1101 Slat move revision time (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1135",
+    "de/jung/junghome/data/mesh/resolver/U0.java:14",
+    "p234v7/C2350b0.java:32",
+    "J8/y.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1852h.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1849e.java"
+   ],
+   "details": "name=MoveRevisionTimeProperty; capability=MoveRevisionTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint16 LE ms, 300..10 000 (I8/C). UI: BlindParametersProvider.moveRevisionTimeParameter; blinds setup SlatMoveRevisionTime step. Product: blind (Blind insert, blinds actuator mini 0x000D, puck blinds 0x0013)."
+  },
+  {
+   "id": "prop:0x1102",
+   "title": "LBC 0x1102 Blind move (hang) time - two app encodings",
+   "apk_refs": [
+    "p056e8/r.java:1303",
+    "de/jung/junghome/data/mesh/resolver/C1927k.java:16",
+    "p234v7/C2363i.java:32",
+    "J8/C0534b.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1849e.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java",
+    "de/jung/junghome/app/ui/devices/blinds/parameter/ReferenceRunLoadingViewModel$waitForReferenceRun$1.java",
+    "p056e8/r.java:1327",
+    "de/jung/junghome/data/mesh/resolver/Y0.java:14",
+    "p234v7/C2358f0.java",
+    "p056e8/a.java",
+    "de/jung/junghome/app/ui/project/shareViaFile/f.java:81",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:52"
+   ],
+   "details": "name=BlindMoveUpDownTime; capability=BlindMoveTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared twice: BlindMoveUpDownTime (r.c.C2061f, uint16 LE SECONDS 5..600, p056e8/a, BlindMoveTimeMessageBuilder C2363i) and MoveUpDownTimeProperty (r.c.C2062f0, uint32 LE ms, MoveUpDownTimeMessageBuilder C2358f0). Status lookup r.a.a() returns the first LBC list entry with the id (C2061f), so incoming statuses are only parsed as u16 seconds; the u32 resolver Y0 can never match. UI: BlindParametersProvider.moveTimeParameter, blinds setup BlindHangTimeViewModel. Product: blind."
+  },
+  {
+   "id": "prop:0x1103",
+   "title": "LBC 0x1103 Slat move time (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1231",
+    "de/jung/junghome/data/mesh/resolver/W0.java:14",
+    "p234v7/C2354d0.java:32",
+    "J8/A.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1855k.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1853i.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1856l.java"
+   ],
+   "details": "name=MoveSlatsTimeProperty; capability=MoveSlatsTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint16 LE ms 0..10 000 (>=300 in BLINDS mode); defaults per operation mode BLINDS=2000, SHUTTER=0, AWNING=300 (p056e8/m). UI: BlindParametersProvider.slatReversalTimeParameter, operation-mode screen. Product: blind."
+  },
+  {
+   "id": "prop:0x1104",
+   "title": "LBC 0x1104 Blind operation mode (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1087",
+    "de/jung/junghome/data/mesh/resolver/C1924j.java:18",
+    "p234v7/C2365j.java:32",
+    "J8/C0535c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1855k.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1854j.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1857m.java"
+   ],
+   "details": "name=MoveOperationMode; capability=BlindOperationModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 BlindMoveOperationMode: 0 BLINDS, 1 SHUTTER, 3 AWNING, 4 UNKNOWN. UI: BlindParametersProvider.operationModeParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x1105",
+   "title": "LBC 0x1105 Blind behaviour on power return (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1039",
+    "de/jung/junghome/data/mesh/resolver/T0.java:14",
+    "p234v7/C2348a0.java:32",
+    "J8/x.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1854j.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1851g.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1849e.java"
+   ],
+   "details": "name=MoveOnPowerMode; capability=MoveOnPowerModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 MoveOnPowerMode: 0 NO_REACTION, 1 MOVE_UP, 2 MOVE_DOWN, 3 STOP, 4 MOVE_TO_STORED_POSITION, 5 POSITION_FOR_NETWORK_FAILURE; unknown -> NO_REACTION (C1901b0 case 7). UI: BlindParametersProvider.onPowerUpBehaviorParameter (device_parameter_blind_behaviour_power_failure_*). Product: blind."
+  },
+  {
+   "id": "prop:0x1106",
+   "title": "LBC 0x1106 Blind position on power return (RW)",
+   "apk_refs": [
+    "p056e8/r.java:993",
+    "de/jung/junghome/data/mesh/resolver/R0.java:14",
+    "p234v7/Y.java:31",
+    "J8/v.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1851g.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java",
+    "p056e8/q.java"
+   ],
+   "details": "name=MoveBlindPositionOnPower; capability=MoveBlindPositionOnPowerCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 Position 0..255: encoder J8/v writes Position.a() = clamp(raw,0..255) with 0<->255 swapped; percent ctor maps 100% -> 254 else round(pct/100*255). Read via BitReader 8 bits into Position(raw). UI: BlindParametersProvider.moveBlindPositionOnPowerParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x1107",
+   "title": "LBC 0x1107 Slat position on power return (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1183",
+    "de/jung/junghome/data/mesh/resolver/V0.java:14",
+    "p234v7/C2352c0.java:32",
+    "J8/z.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1854j.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=MoveSlatPositionOnPower; capability=MoveSlatPositionOnPowerCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 Position (same codec as 0x1106). UI: BlindParametersProvider.moveSlatPositionOnPowerParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x1108",
+   "title": "LBC 0x1108 Blind invert output (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1351",
+    "de/jung/junghome/data/mesh/resolver/C1918h.java:16",
+    "p234v7/C2367k.java:32",
+    "J8/C0536d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1849e.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=BlindsInvertOutputProperty; capability=BlindsInvertOutputCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (z.java case 20). UI: BlindParametersProvider.invertOutputParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x110a",
+   "title": "LBC 0x110A Blind ventilation position (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1016",
+    "de/jung/junghome/data/mesh/resolver/S0.java:14",
+    "p234v7/Z.java:31",
+    "J8/w.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1847c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=MoveBlindsVentilationPosition; capability=MoveBlindsVentilationPositionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 Position (codec as 0x1106). UI: BlindParametersProvider.blindVentilationPositionParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x110b",
+   "title": "LBC 0x110B Slat ventilation position (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1279",
+    "de/jung/junghome/data/mesh/resolver/X0.java:14",
+    "p234v7/C2356e0.java:32",
+    "J8/B.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1847c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=MoveSlatsVentilationPosition; capability=MoveSlatsVentilationPositionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 Position (codec as 0x1106). UI: BlindParametersProvider.slatVentilationPositionParameter. Product: blind."
+  },
+  {
+   "id": "prop:0x110d",
+   "title": "LBC 0x110D Reference run (trigger + status)",
+   "apk_refs": [
+    "p056e8/r.java:1822",
+    "de/jung/junghome/data/mesh/resolver/C1935m1.java:15",
+    "p234v7/C2385t0.java:32",
+    "p096i8/p.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/BlindParametersProvider$updateAndCheckForReferenceRun$1$1.java",
+    "de/jung/junghome/app/ui/devices/blinds/setup/setps/BlindsReferenceRunViewModel.java",
+    "de/jung/junghome/app/ui/devices/blinds/setup/setps/BlindsReferenceRunViewModel$waitForReferenceRun$1.java"
+   ],
+   "details": "name=ReferenceRunProperty; capability=ReferenceRunCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Set always writes [0x01] (start reference run, access=3, C2385t0); read u8, 1 = running (polled by BlindsReferenceRunViewModel.waitForReferenceRun). Product: blind. (Firmware name REFERENCING_REQUEST.)"
+  },
+  {
+   "id": "prop:0x1201",
+   "title": "LBC 0x1201 RTR controller type (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1611",
+    "de/jung/junghome/data/mesh/resolver/C1941o1.java:16",
+    "p234v7/C2377p.java:32",
+    "J8/C0537e.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/M.java"
+   ],
+   "details": "name=ControllerTypeProperty; capability=ControllerTypeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 RtrControllerType: 1 PI_CONTROL ('PWM'), 2 TWO_POINT_CONTROL, 3 UNKNOWN. UI: RtrParametersProvider.controllerTypeParameter (device_parameter_rtr_controller_typ_*). Product: RTR."
+  },
+  {
+   "id": "prop:0x1203",
+   "title": "LBC 0x1203 RTR comfort set-point (RW)",
+   "apk_refs": [
+    "p056e8/r.java:301",
+    "de/jung/junghome/data/mesh/resolver/C1945q.java:15",
+    "p234v7/y0.java:41",
+    "P8/w.java",
+    "de/jung/junghome/app/ui/scene/create/configure/SceneRtrViewModel.java",
+    "de/jung/junghome/app/ui/scheduler/JHSchedulerRtrViewModel.java",
+    "de/jung/junghome/app/ui/scheduler/n.java"
+   ],
+   "details": "name=TempComfortProperty; capability=RtrModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. int16 LE in 0.01 degC (RtrModeMessageBuilder y0: putShort(temp/0.01); read BigInteger(reversed) x 0.01). UI range 5..30 degC (RtrMode, p056e8/v). UI: RTR modes screen, scenes, JH scheduler RTR. Product: RTR."
+  },
+  {
+   "id": "prop:0x1204",
+   "title": "LBC 0x1204 RTR eco/standby set-point (RW)",
+   "apk_refs": [
+    "p056e8/r.java:393",
+    "de/jung/junghome/data/mesh/resolver/O1.java:14",
+    "p234v7/y0.java:43",
+    "P8/w.java",
+    "de/jung/junghome/app/ui/scene/create/configure/SceneRtrViewModel.java",
+    "de/jung/junghome/app/ui/scheduler/JHSchedulerRtrViewModel.java",
+    "de/jung/junghome/app/ui/scheduler/n.java"
+   ],
+   "details": "name=TempStandbyProperty; capability=RtrModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. int16 LE 0.01 degC, as 0x1203. UI: RtrModesViewModel.updateEcoTemperature. Product: RTR."
+  },
+  {
+   "id": "prop:0x1205",
+   "title": "LBC 0x1205 RTR frost-protection set-point (RW)",
+   "apk_refs": [
+    "p056e8/r.java:347",
+    "de/jung/junghome/data/mesh/resolver/J.java:14",
+    "p234v7/y0.java:48",
+    "P8/w.java",
+    "de/jung/junghome/app/ui/scene/create/configure/SceneRtrViewModel.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestRtrModes$1.java",
+    "de/jung/junghome/app/ui/scheduler/n.java"
+   ],
+   "details": "name=TempFreezeProperty; capability=RtrModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. int16 LE 0.01 degC, as 0x1203. UI: RtrModesViewModel.updateFreezeTemperature. Product: RTR."
+  },
+  {
+   "id": "prop:0x1208",
+   "title": "LBC 0x1208 RTR heating optimisation (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:416",
+    "de/jung/junghome/data/mesh/resolver/C1904c0.java:16",
+    "p234v7/B.java:30",
+    "J8/C0547o.java"
+   ],
+   "details": "name=HeatingOptionProperty; capability=HeatingOptionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (C1901b0 case 0). UI: device_parameter_rtr_heating_option_title. Product: RTR."
+  },
+  {
+   "id": "prop:0x120a",
+   "title": "LBC 0x120A RTR valve output type (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1775",
+    "de/jung/junghome/data/mesh/resolver/f2.java:14",
+    "p234v7/X0.java:31",
+    "J8/S.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/M.java"
+   ],
+   "details": "name=RTRValveOutput; capability=ValveOutputCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 RtrValveOutput: 0 NORMALLY_CLOSED, 1 NORMALLY_OPEN, 2 UNKNOWN (resolver e2 case 0). UI: RtrParametersProvider.valveTypeParameter. Product: RTR."
+  },
+  {
+   "id": "prop:0x120b",
+   "title": "LBC 0x120B RTR HVAC mode (RW, FW-gated)",
+   "apk_refs": [
+    "p056e8/r.java:1916",
+    "de/jung/junghome/data/mesh/resolver/C1944p1.java:15",
+    "p085h8/e.java:22",
+    "p234v7/C2391w0.java:32",
+    "p244w6/c.java:103",
+    "p096i8/q.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestRtrModes$1.java",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$changeMode$1.java"
+   ],
+   "details": "name=RtrHvacMode; capability=RtrHvacModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 HvacMode: 0 NONE, 1 COMFORT, 2 ECO, 3 FREEZE. Capability carries a 'supported' flag = node SW >= 2.2.0.0 (C1901b0 case 17). Also a KeySetPropertyMode target (p085h8/e). UI: RoomTemperatureViewModel changeMode / requestRtrModes; mini-actuator key configuration. Product: RTR."
+  },
+  {
+   "id": "prop:0x120d",
+   "title": "LBC 0x120D RTR boost mode (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1869",
+    "de/jung/junghome/data/mesh/resolver/C1930l.java:15",
+    "p234v7/C2369l.java:32",
+    "p096i8/c.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$updateBoostMode$1.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestBoostFunction$1.java"
+   ],
+   "details": "name=RtrBoostModeProperty; capability=BoostModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (z.java case 22). UI: RoomTemperatureViewModel updateBoostMode / requestBoostFunction. Product: RTR."
+  },
+  {
+   "id": "prop:0x120f",
+   "title": "LBC 0x120F BtSensProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:1516",
+    "de/jung/junghome/data/mesh/resolver/C1936n.java:15",
+    "P8/c.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=BtSensProperty; capability=BtSensCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x1212",
+   "title": "LBC 0x1212 DropOfTempStateProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:2034",
+    "de/jung/junghome/data/mesh/resolver/F.java:14",
+    "P8/e.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=DropOfTempStateProperty; capability=DropOfTempStateCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x1218",
+   "title": "LBC 0x1218 ExtendedModeProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:2264",
+    "de/jung/junghome/data/mesh/resolver/H.java:14",
+    "P8/g.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=ExtendedModeProperty; capability=ExtendedModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x121c",
+   "title": "LBC 0x121C KeyLockProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:669",
+    "de/jung/junghome/data/mesh/resolver/C1946q0.java:15",
+    "P8/l.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=KeyLockProperty; capability=KeyLockCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x121d",
+   "title": "LBC 0x121D KeyLockLocalProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:646",
+    "de/jung/junghome/data/mesh/resolver/C1943p0.java:15",
+    "P8/m.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=KeyLockLocalProperty; capability=KeyLockLocalCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x121f",
+   "title": "LBC 0x121F KeyLockStateProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:692",
+    "de/jung/junghome/data/mesh/resolver/C1948r0.java:15",
+    "P8/n.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=KeyLockStateProperty; capability=KeyLockStateCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x1221",
+   "title": "LBC 0x1221 RTR sensor selection (RW)",
+   "apk_refs": [
+    "p056e8/r.java:2193",
+    "de/jung/junghome/data/mesh/resolver/C1958u1.java:15",
+    "p234v7/G0.java:31",
+    "J8/J.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1855k.java"
+   ],
+   "details": "name=RtrSensorSelectionProperty; capability=SensorSelectionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 RtrSensorSelection: 1 INTERNAL_SENSOR (room / BT-sensor), 2 EXTERNAL_SENSOR (floor), 3 INTERNAL_AND_EXTERNAL_SENSOR, 4 UNKNOWN. UI: RtrParametersProvider.sensorSelectionParameter (device_parameter_rtr_sensor_selection_*). Product: RTR."
+  },
+  {
+   "id": "prop:0x1224",
+   "title": "LBC 0x1224 RTR sensor offset (RW)",
+   "apk_refs": [
+    "p056e8/r.java:2104",
+    "de/jung/junghome/data/mesh/resolver/C1955t1.java:15",
+    "p234v7/A0.java:31",
+    "J8/G.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java"
+   ],
+   "details": "name=RtrSensorOffsetProperty; capability=RtrSensorOffsetCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. int16 LE in 0.01 K (read BigInteger(reversed) x 0.01, C1901b0 case 21). UI: RtrParametersProvider.sensorOffsetParameter. Product: RTR."
+  },
+  {
+   "id": "prop:0x1240",
+   "title": "LBC 0x1240 RTR main display page (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1963",
+    "de/jung/junghome/data/mesh/resolver/C1947q1.java:15",
+    "p234v7/C2393x0.java:32",
+    "J8/F.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/M.java"
+   ],
+   "details": "name=RtrMainPageProperty; capability=RtrMainPageSelectionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 RtrMainPage: 1 TARGET_TEMPERATURE_PAGE, 2 CURRENT_TEMPERATURE_PAGE, 3 CLOCK_PAGE, 4 UNKNOWN. UI: RtrParametersProvider.mainDisplayParameter (device_parameter_rtr_main_page_*). Product: RTR."
+  },
+  {
+   "id": "prop:0x1246",
+   "title": "LBC 0x1246 RTR scheduler enabled (auto/manual) (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:2334",
+    "de/jung/junghome/data/mesh/resolver/E1.java:14",
+    "p085h8/e.java:19",
+    "p234v7/C0.java:31",
+    "p244w6/c.java:100",
+    "J8/I.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$switchOperationMode$1.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestSchedulerEnabledValue$1.java",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java"
+   ],
+   "details": "name=SchedulerEnabledProperty; capability=SchedulerEnabledCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (C1901b0 case 25). Also a KeySetPropertyMode target (p085h8/e). UI: RoomTemperatureViewModel switchOperationMode / requestSchedulerEnabledValue; mini-actuator key config. Product: RTR."
+  },
+  {
+   "id": "prop:0x1247",
+   "title": "LBC 0x1247 RTR display backlight auto-off (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1255",
+    "de/jung/junghome/data/mesh/resolver/C1915g.java:16",
+    "p234v7/C2361h.java:32",
+    "J8/C0533a.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=BlAutoOffProperty; capability=BlAutoOffCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (z.java case 19). UI: RtrParametersProvider.switchOffDisplayParameter (device_parameter_rtr_back_light_auto_title). Product: RTR."
+  },
+  {
+   "id": "prop:0x1249",
+   "title": "LBC 0x1249 RTR scheduler function status (status-only)",
+   "apk_refs": [
+    "p056e8/r.java:2057",
+    "de/jung/junghome/data/mesh/resolver/C1952s1.java:15",
+    "J8/I.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$requestSchedulerEnabledValue$1.java",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java",
+    "de/jung/junghome/app/ui/devices/rtr/roomtemperature/RoomTemperatureViewModel$switchOperationMode$1.java"
+   ],
+   "details": "name=RtrSchedulerFunctionStatus; capability=SchedulerEnabledCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. No builder (never requested); resolver C1952s1 parses u8 bool into the same SchedulerEnabledCapability (J8.I) as 0x1246 when the device reports it. Product: RTR."
+  },
+  {
+   "id": "prop:0x5001",
+   "title": "LBC 0x5001 Button layout (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1564",
+    "de/jung/junghome/data/mesh/resolver/C1942p.java:19",
+    "p234v7/C2371m.java:36",
+    "p096i8/d.java",
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/ControlSwitchConfigurationViewModel$observeDevice$1.java",
+    "de/jung/junghome/app/ui/devices/controlSwitch/configuration/d.java",
+    "de/jung/junghome/app/ui/devices/controlSwitch/buttonLayout/ButtonLayoutViewModel.java"
+   ],
+   "details": "name=ButtonLayoutProperty; capability=ButtonLayoutCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint16 LE LayoutMode: 0 ONE_TOP_ONE_BOTTOM, 1 ONE_ROCKER, 2 TWO_LEFT_TWO_RIGHT, 3 ONE_LEFT_TWO_RIGHT, 4 TWO_LEFT_ONE_RIGHT, 5 ONE_LEFT_ONE_RIGHT, 255 UNKNOWN (ByteBuffer.allocate(2) LE). Read at provisioning (ConfigureDevice.requestButtonLayout). UI: ButtonLayoutViewModel / control-switch configuration. Products: rockers 0x0001/0x0002, wall transmitters 0x0005/0x0006, mini actuators/pucks."
+  },
+  {
+   "id": "prop:0x5002",
+   "title": "LBC 0x5002 Key scene configuration (RW, per button element)",
+   "apk_refs": [
+    "p056e8/r.java:738",
+    "de/jung/junghome/data/mesh/resolver/C1954t0.java:22",
+    "p254x7/b.java:36",
+    "p278z8/b.java",
+    "de/jung/junghome/app/ui/projectSync/x.java"
+   ],
+   "details": "name=KeyModeSceneConfigProperty; capability=KeyModeSceneConfigCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 6 bytes `[sceneId u16 LE][transitionTime u32 LE ms]` (KeyModeSceneConfigMessageBuilder W.a(6)). Addressed to the button element; used with KeyMode 2 (Scene). UI: key assignment / project sync. Products: control switches, mini actuators."
+  },
+  {
+   "id": "prop:0x5003",
+   "title": "LBC 0x5003 Key mode (RW, per button element)",
+   "apk_refs": [
+    "p056e8/r.java:715",
+    "de/jung/junghome/data/mesh/resolver/C1960v0.java:19",
+    "p254x7/a.java:33",
+    "p278z8/a.java",
+    "de/jung/junghome/app/ui/projectSync/x.java"
+   ],
+   "details": "name=KeyModeProperty; capability=KeyModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 KeyMode: 0 Light, 1 Move, 2 Scene, 3 Property, 4 RTR, 5 Switch, 6 Gateway, 0xFF Unknown (p056e8/i). Written to the button element (access=3). Also served by the LBC User server on devices (gateway polls it via User Get). UI: key assignment (ControlSwitch / MiniActuator configuration). Products: control switches, mini actuators."
+  },
+  {
+   "id": "prop:0x5004",
+   "title": "LBC 0x5004 Power threshold ON action (RW)",
+   "apk_refs": [
+    "p056e8/r.java:577",
+    "de/jung/junghome/data/mesh/resolver/T1.java:14",
+    "p234v7/L0.java:71",
+    "p096i8/t.java",
+    "de/jung/junghome/app/ui/timer/threshold/edit/EditThresholdViewModel$observeThreshold$2.java",
+    "de/jung/junghome/app/ui/timer/profiles/JHSchedulerScheduleListViewModel.java",
+    "de/jung/junghome/app/ui/timer/profiles/TimerProfilesViewModel$state$1.java"
+   ],
+   "details": "name=TurnOnThreshold; capability=ThresholdCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 8 bytes `[sensorPropertyId u16 LE = 0x0081][time u16 LE seconds][value uint24 LE x0.1 W, 0xFFFFFF = none][active u8]` (ThresholdMessageBuilder L0 with ThresholdAction.ON; decoder p057e9/a). UI: timer/threshold edit (EditThresholdViewModel), strings threshold_*. Product: measuring socket 0x0003."
+  },
+  {
+   "id": "prop:0x5005",
+   "title": "LBC 0x5005 Power threshold OFF action (RW)",
+   "apk_refs": [
+    "p056e8/r.java:531",
+    "de/jung/junghome/data/mesh/resolver/S1.java:14",
+    "p234v7/L0.java:71",
+    "p096i8/t.java",
+    "de/jung/junghome/app/ui/timer/threshold/edit/EditThresholdViewModel$observeThreshold$2.java",
+    "de/jung/junghome/app/ui/timer/profiles/TimerProfilesViewModel$state$1.java",
+    "de/jung/junghome/app/ui/timer/profiles/JHSchedulerScheduleListViewModel.java"
+   ],
+   "details": "name=TurnOffThreshold; capability=ThresholdCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Same 8-byte layout as 0x5004 (ThresholdAction.OFF). Product: measuring socket."
+  },
+  {
+   "id": "prop:0x5006",
+   "title": "LBC 0x5006 Key \"set property\" target + mode (RW)",
+   "apk_refs": [
+    "p056e8/r.java:761",
+    "de/jung/junghome/data/mesh/resolver/C1963w0.java:17",
+    "p234v7/E.java:35",
+    "p278z8/c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/k.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/cells/C1840v.java"
+   ],
+   "details": "name=KeySetPropertyMode; capability=KeySetPropertyModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 3 bytes `[targetPropertyId u16 LE][mode u8: 0 STATELESS, 1 STATEFUL]` (E builder W.a(3)). Resolver C1963w0 resolves the target id via r.a.a(). Targets the app can build values for (p085h8/e): EnforceOutput 0x0009, SchedulerEnabled 0x1246, RtrHvacMode 0x120B. Used with KeyMode 3. UI: deviceParameter/k.java, cells/C1840v. Products: control switches, mini actuators."
+  },
+  {
+   "id": "prop:0x5007",
+   "title": "LBC 0x5007 Key \"set property\" value for up/on (RW)",
+   "apk_refs": [
+    "p056e8/r.java:807",
+    "de/jung/junghome/data/mesh/resolver/C1969y0.java:15",
+    "p234v7/G.java:30",
+    "p278z8/e.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/k.java"
+   ],
+   "details": "name=KeySetPropertyValueUpOn; capability=KeySetPropertyValueUpOnCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Raw value bytes of the target property selected in 0x5006 (EnforceOutput struct / bool / HvacMode u8), decoded via p085h8/e. Products: control switches, mini actuators."
+  },
+  {
+   "id": "prop:0x5008",
+   "title": "LBC 0x5008 Key \"set property\" value for down/off (RW)",
+   "apk_refs": [
+    "p056e8/r.java:784",
+    "de/jung/junghome/data/mesh/resolver/C1966x0.java:15",
+    "p234v7/F.java:31",
+    "p278z8/d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/k.java"
+   ],
+   "details": "name=KeySetPropertyValueDownOff; capability=KeySetPropertyValueDownOffCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Same as 0x5007 for the down/off key half. Products: control switches, mini actuators."
+  },
+  {
+   "id": "prop:0x5009",
+   "title": "LBC 0x5009 Binary-input edge detection (RW, per input element)",
+   "apk_refs": [
+    "p056e8/r.java:554",
+    "de/jung/junghome/data/mesh/resolver/C1916g0.java:16",
+    "p234v7/C.java:35",
+    "p096i8/h.java",
+    "de/jung/junghome/app/ui/devices/miniActuator/configuration/MiniActuatorConfigurationFragment.java"
+   ],
+   "details": "name=InputEdgeDetectionProperty; capability=InputEdgeDetectionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 1 byte MSB-first: bits7:5 = 0, bits4:3 falling-edge behaviour, bits2:1 rising-edge behaviour, bit0 mode. Mode 0 STATE, 1 EDGE (2 UNKNOWN); behaviour 0 NO_REACTION, 1 ON, 2 OFF, 3 TOGGLE (4 UNKNOWN). UI: MiniActuatorConfigurationFragment. Products: mini actuators / binary-input pucks 0x0015/0x0016."
+  },
+  {
+   "id": "prop:0x5010",
+   "title": "LBC 0x5010 Daily (24 h) energy chart (read-only, User server)",
+   "apk_refs": [
+    "p056e8/r.java:2135",
+    "de/jung/junghome/data/mesh/resolver/C1968y.java:15",
+    "J7/a.java:22",
+    "p234v7/U.java:39",
+    "p096i8/m.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestConsumptionData$1.java"
+   ],
+   "details": "name=DailyEnergyChart; capability=MeasureConsumptionCapability; LBC User (vendor 0x0527:0x1013): Get 0xC5270E (337678, G7.e) `[id u16 LE]`, Status 0xD12705 (13707013). Read-only. Array of uint16 BIG-endian samples x0.1 (Wh presumed); entry i = i hours ago; 0xFFFF = invalid -> 0 (J7/b). MeasureType.DAILY. UI: PowerConsumptionViewModel.requestConsumptionData. Products: measuring socket, measure lamp, energy puck."
+  },
+  {
+   "id": "prop:0x5011",
+   "title": "LBC 0x5011 31-day energy chart (read-only, User server)",
+   "apk_refs": [
+    "p056e8/r.java:2159",
+    "de/jung/junghome/data/mesh/resolver/Q0.java:14",
+    "J7/c.java:22",
+    "p234v7/U.java:44",
+    "p096i8/m.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestConsumptionData$1.java"
+   ],
+   "details": "name=MonthlyEnergyChart; capability=MeasureConsumptionCapability; LBC User (vendor 0x0527:0x1013): Get 0xC5270E (337678, G7.e) `[id u16 LE]`, Status 0xD12705 (13707013). Read-only. Array of uint24 big-endian samples x0.1; entry i = i days ago; 0xFFFFFF = invalid -> 0 (J7/b). MeasureType.THIRTY_ONE_DAYS. Same products/UI as 0x5010."
+  },
+  {
+   "id": "prop:0x6001",
+   "title": "LBC 0x6001 Detector walk test (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1681",
+    "de/jung/junghome/data/mesh/resolver/C1923i1.java:15",
+    "p234v7/C2376o0.java:32",
+    "J8/D.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java"
+   ],
+   "details": "name=PresenceTestProperty; capability=PresenceTestCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (C1901b0 case 14). UI: detector sensor screen (device_parameter_detector_test_enable_title). Products: detectors 0x0007/0x0008/0x0009."
+  },
+  {
+   "id": "prop:0x6003",
+   "title": "LBC 0x6003 Presence control (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1587",
+    "de/jung/junghome/data/mesh/resolver/C1908d1.java:15",
+    "p234v7/C2368k0.java:34",
+    "P8/s.java"
+   ],
+   "details": "name=PresenceControlProperty; capability=PresenceControlCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (C2368k0). No parameter screen reference found beyond the capability on detector classes. Products: detectors."
+  },
+  {
+   "id": "prop:0x6004",
+   "title": "LBC 0x6004 Detector current brightness (Manufacturer server)",
+   "apk_refs": [
+    "p056e8/r.java:1492",
+    "de/jung/junghome/data/mesh/resolver/C1905c1.java:15",
+    "p234v7/C2366j0.java:33",
+    "P8/r.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/DetectorParametersProvider$currentBrightnessParameter$$inlined$genericParameter$default$1$1$1.java"
+   ],
+   "details": "name=PresenceBrightnessProperty; capability=PresenceBrightnessCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). uint16 LE (lux presumed). Set builder exists (C2366j0 via G7.d) but UI only displays it: DetectorParametersProvider.currentBrightnessParameter (device_parameter_detector_light_intensity_title 'Lighting strength'). Products: detectors."
+  },
+  {
+   "id": "prop:0x6005",
+   "title": "LBC 0x6005 Presence control PIR (Manufacturer server)",
+   "apk_refs": [
+    "p056e8/r.java:1540",
+    "de/jung/junghome/data/mesh/resolver/C1911e1.java:15",
+    "p234v7/C2370l0.java:32",
+    "P8/t.java"
+   ],
+   "details": "name=PresenceControlPirProperty; capability=PresenceControlPirCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). u8 (C2370l0 via G7.d, no access byte). No UI reference found. Products: detectors."
+  },
+  {
+   "id": "prop:0x6006",
+   "title": "LBC 0x6006 Detector operation mode (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1752",
+    "de/jung/junghome/data/mesh/resolver/B.java:15",
+    "p234v7/C2382s.java:32",
+    "J8/C0539g.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1860p.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/z.java"
+   ],
+   "details": "name=DetectorOperationModeProperty; capability=DetectorOperationModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 DetectorOperationMode: 0 GUARD, 1 PRESENCE, 2 UNKNOWN (z.java case 24). UI: DetectorParametersProvider.operatingModeParameter. Products: detectors."
+  },
+  {
+   "id": "prop:0x6007",
+   "title": "LBC 0x6007 PresenceSimulationProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:1634",
+    "de/jung/junghome/data/mesh/resolver/C1917g1.java:15",
+    "P8/u.java",
+    "de/jung/junghome/data/mesh/resolver/A0.java"
+   ],
+   "details": "name=PresenceSimulationProperty; capability=PresenceSimulationCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6008",
+   "title": "LBC 0x6008 PIR sensor A sensitivity (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1385",
+    "de/jung/junghome/data/mesh/resolver/Z0.java:14",
+    "de/jung/junghome/app/ui/devices/detectors/controls/DetectorView.java:328",
+    "de/jung/junghome/app/ui/scheduler/n.java:266",
+    "de/jung/junghome/data/mesh/resolver/Z0.java:44",
+    "p012a8/a.java:2261",
+    "p012a8/b.java:2178",
+    "p096i8/n.java",
+    "de/jung/junghome/app/ui/scheduler/n.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$requestSensitiveConfigurations$1.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java",
+    "p234v7/C2362h0.java:47",
+    "p012a8/a.java",
+    "p012a8/b.java"
+   ],
+   "details": "name=PirSensorA; capability=PirSensorCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 0..255; UI shows percent, write = round(pct/100*255) clamped (PIR builder C2362h0, shared for A/B/C via PirSensorCapability p096i8/n, Get has empty param); read via A0 into percent. UI: DetectorSensorViewModel requestSensitiveConfigurations, DetectorView. Products: detectors (motion 0x0007/0x0008, presence 0x0009)."
+  },
+  {
+   "id": "prop:0x6009",
+   "title": "LBC 0x6009 PIR sensor B sensitivity (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1409",
+    "de/jung/junghome/data/mesh/resolver/C1899a1.java:15",
+    "de/jung/junghome/app/ui/devices/detectors/controls/DetectorView.java:328",
+    "de/jung/junghome/app/ui/scheduler/n.java:272",
+    "de/jung/junghome/data/mesh/resolver/C1899a1.java:45",
+    "p012a8/a.java:2265",
+    "p012a8/b.java:2182",
+    "p096i8/n.java",
+    "de/jung/junghome/app/ui/scheduler/n.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$requestSensitiveConfigurations$1.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java",
+    "p234v7/C2362h0.java:47",
+    "p012a8/a.java",
+    "p012a8/b.java"
+   ],
+   "details": "name=PirSensorB; capability=PirSensorCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 0..255; UI shows percent, write = round(pct/100*255) clamped (PIR builder C2362h0, shared for A/B/C via PirSensorCapability p096i8/n, Get has empty param); read via A0 into percent. UI: DetectorSensorViewModel requestSensitiveConfigurations, DetectorView. Products: detectors (motion 0x0007/0x0008, presence 0x0009)."
+  },
+  {
+   "id": "prop:0x600a",
+   "title": "LBC 0x600A PIR sensor C sensitivity (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1433",
+    "de/jung/junghome/data/mesh/resolver/C1902b1.java:15",
+    "de/jung/junghome/app/ui/devices/detectors/controls/DetectorView.java:328",
+    "de/jung/junghome/app/ui/scheduler/n.java:278",
+    "de/jung/junghome/data/mesh/resolver/C1902b1.java:45",
+    "p012a8/a.java:2263",
+    "p012a8/b.java:2180",
+    "p096i8/n.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$requestSensitiveConfigurations$1.java",
+    "de/jung/junghome/app/ui/scheduler/n.java",
+    "de/jung/junghome/app/ui/devices/detectors/DetectorSensorViewModel$observeDevice$1.java",
+    "p234v7/C2362h0.java:47",
+    "p012a8/a.java",
+    "p012a8/b.java"
+   ],
+   "details": "name=PirSensorC; capability=PirSensorCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 0..255; UI shows percent, write = round(pct/100*255) clamped (PIR builder C2362h0, shared for A/B/C via PirSensorCapability p096i8/n, Get has empty param); read via A0 into percent. UI: DetectorSensorViewModel requestSensitiveConfigurations, DetectorView. Products: detectors (motion 0x0007/0x0008, presence 0x0009)."
+  },
+  {
+   "id": "prop:0x600b",
+   "title": "LBC 0x600B HysteresisOffsetProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:462",
+    "de/jung/junghome/data/mesh/resolver/C1907d0.java:15",
+    "P8/i.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=HysteresisOffsetProperty; capability=HysteresisOffsetCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x600c",
+   "title": "LBC 0x600C MinBrightnessChangeProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:947",
+    "de/jung/junghome/data/mesh/resolver/O0.java:14",
+    "P8/o.java",
+    "de/jung/junghome/data/mesh/resolver/A0.java"
+   ],
+   "details": "name=MinBrightnessChangeProperty; capability=MinBrightnessChangeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x600d",
+   "title": "LBC 0x600D MinHysteresisProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:970",
+    "de/jung/junghome/data/mesh/resolver/P0.java:14",
+    "P8/p.java",
+    "de/jung/junghome/data/mesh/resolver/A0.java"
+   ],
+   "details": "name=MinHysteresisProperty; capability=MinHysteresisCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x600f",
+   "title": "LBC 0x600F Detector switch-on brightness threshold (RW)",
+   "apk_refs": [
+    "p056e8/r.java:255",
+    "de/jung/junghome/data/mesh/resolver/C1920h1.java:15",
+    "p234v7/C2374n0.java:32",
+    "J8/C.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1847c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1848d.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/Y.java"
+   ],
+   "details": "name=SwitchOnBrightnessProperty; capability=PresenceSwitchOnBrightnessCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. uint16 LE lux (C1901b0 case 13). UI: DetectorParametersProvider.switchOnBrightnessParameter (device_parameter_detector_switch_on_brightness_title). Products: detectors."
+  },
+  {
+   "id": "prop:0x6010",
+   "title": "LBC 0x6010 FollowupTimeProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:2311",
+    "de/jung/junghome/data/mesh/resolver/I.java:14",
+    "P8/h.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=FollowupTimeProperty; capability=FollowupTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6011",
+   "title": "LBC 0x6011 AlarmFunctionProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:1063",
+    "de/jung/junghome/data/mesh/resolver/C1897a.java:15",
+    "P8/a.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=AlarmFunctionProperty; capability=AlarmFunctionCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6012",
+   "title": "LBC 0x6012 ImpulseModeProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:508",
+    "de/jung/junghome/data/mesh/resolver/C1910e0.java:15",
+    "P8/j.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=ImpulseModeProperty; capability=ImpulseModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6013",
+   "title": "LBC 0x6013 DynamicFollowupTimeProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:2081",
+    "de/jung/junghome/data/mesh/resolver/G.java:14",
+    "P8/f.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java"
+   ],
+   "details": "name=DynamicFollowupTimeProperty; capability=DynamicFollowupTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6014",
+   "title": "LBC 0x6014 TurnOffPrewarningProperty (declared, undecodable)",
+   "apk_refs": [
+    "p056e8/r.java:485",
+    "de/jung/junghome/data/mesh/resolver/d2.java:14",
+    "P8/y.java",
+    "de/jung/junghome/data/mesh/resolver/A0.java"
+   ],
+   "details": "name=TurnOffPrewarningProperty; capability=TurnOffPrewarningCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. Declared and parsed only: resolver reads 1 byte then hits Kotlin TODO (`throw null`) in the dispatcher; no MessageBuilder, no Get ever sent, no device class/UI carries the capability. Value layout unknown to the app."
+  },
+  {
+   "id": "prop:0x6015",
+   "title": "LBC 0x6015 Detector daytime operation (RW bool)",
+   "apk_refs": [
+    "p056e8/r.java:1658",
+    "de/jung/junghome/data/mesh/resolver/C1971z.java:16",
+    "p234v7/C2379q.java:32",
+    "J8/C0538f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1850f.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1847c.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1859o.java"
+   ],
+   "details": "name=DayModeProperty; capability=DayModeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 bool (z.java case 23). UI: DetectorParametersProvider.dayModeParameter (device_parameter_detector_day_operation_switch_title). Products: detectors."
+  },
+  {
+   "id": "prop:0x6016",
+   "title": "LBC 0x6016 Detector forced off / forced on (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1705",
+    "de/jung/junghome/data/mesh/resolver/A.java:14",
+    "p234v7/r.java:32",
+    "P8/d.java",
+    "de/jung/junghome/app/ui/timer/threshold/devices/d.java",
+    "de/jung/junghome/app/ui/devices/lamp/LampViewModel$_forceOffMode$3.java"
+   ],
+   "details": "name=DetectorForcedOff; capability=DetectorForcedOffCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 ForcedOffMode: 0 INACTIVE, 2 OFF, 3 ON (DetectorForcedOffMessageBuilder r). UI: LampViewModel forceOffMode, threshold/devices/d.java case 18. Products: detectors."
+  },
+  {
+   "id": "prop:0x6017",
+   "title": "LBC 0x6017 Detector operation site (indoor/outdoor) (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1799",
+    "de/jung/junghome/data/mesh/resolver/C1914f1.java:16",
+    "p234v7/C2372m0.java:32",
+    "J8/C0540h.java",
+    "de/jung/junghome/app/ui/configuration/deviceParameter/providers/C1860p.java"
+   ],
+   "details": "name=DetectorOperationSiteProperty; capability=DetectorOperationSiteCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 DetectorOperationSite: 7 INDOOR, 0x70 OUTDOOR, 0 UNKNOWN (C1901b0 case 12). Firmware name MELDER_BASIS_SENSITIVITY. UI: DetectorParametersProvider.operatingSiteParameter. Products: detectors."
+  },
+  {
+   "id": "prop:0x6021",
+   "title": "LBC 0x6021 Detector repetition time (RW)",
+   "apk_refs": [
+    "p056e8/r.java:1846",
+    "de/jung/junghome/data/mesh/resolver/C1938n1.java:15",
+    "p234v7/C2389v0.java:34",
+    "P8/v.java"
+   ],
+   "details": "name=DetectorRepetitionTime; capability=RepetitionTimeCapability; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. u8 (unit not visible in code) (RepetitionTimeMessageBuilder C2389v0, read A0). No parameter-screen reference. Products: detectors."
+  },
+  {
+   "id": "prop:0xa001",
+   "title": "LBC 0xA001 LedModeOn LED 1",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA001); LED 1 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Sent by the app: LedPosition FIRST -> id = base + 3*(pos-1). UI: LedColorParametersProvider on/offLedColorParameter, nightModeParameter (device_parameter_led_night_mode_title; toggles all on+off LED props), syncLedColorParameter. Products: control switches/rockers, sockets (compatibles.h)."
+  },
+  {
+   "id": "prop:0xa002",
+   "title": "LBC 0xA002 LedModeOff LED 1",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA002); LED 1 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Sent by the app: LedPosition FIRST -> id = base + 3*(pos-1). UI: LedColorParametersProvider on/offLedColorParameter, nightModeParameter (device_parameter_led_night_mode_title; toggles all on+off LED props), syncLedColorParameter. Products: control switches/rockers, sockets (compatibles.h)."
+  },
+  {
+   "id": "prop:0xa004",
+   "title": "LBC 0xA004 LedModeOn LED 2",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA004); LED 2 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Sent by the app: LedPosition SECOND -> id = base + 3*(pos-1). UI: LedColorParametersProvider on/offLedColorParameter, nightModeParameter (device_parameter_led_night_mode_title; toggles all on+off LED props), syncLedColorParameter. Products: control switches/rockers, sockets (compatibles.h)."
+  },
+  {
+   "id": "prop:0xa005",
+   "title": "LBC 0xA005 LedModeOff LED 2",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA005); LED 2 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Sent by the app: LedPosition SECOND -> id = base + 3*(pos-1). UI: LedColorParametersProvider on/offLedColorParameter, nightModeParameter (device_parameter_led_night_mode_title; toggles all on+off LED props), syncLedColorParameter. Products: control switches/rockers, sockets (compatibles.h)."
+  },
+  {
+   "id": "prop:0xa007",
+   "title": "LBC 0xA007 LedModeOn LED 3 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA007); LED 3 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa008",
+   "title": "LBC 0xA008 LedModeOff LED 3 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA008); LED 3 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa00a",
+   "title": "LBC 0xA00A LedModeOn LED 4 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA00A); LED 4 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa00b",
+   "title": "LBC 0xA00B LedModeOff LED 4 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA00B); LED 4 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa00d",
+   "title": "LBC 0xA00D LedModeOn LED 5 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA00D); LED 5 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa00e",
+   "title": "LBC 0xA00E LedModeOff LED 5 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA00E); LED 5 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa010",
+   "title": "LBC 0xA010 LedModeOn LED 6 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:870",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/C0.java:16",
+    "p266y7/b.java:35",
+    "p266y7/b.java:46",
+    "J8/C0549q.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOn(id=0xA010); LED 6 on-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xa011",
+   "title": "LBC 0xA011 LedModeOff LED 6 (parse-only)",
+   "apk_refs": [
+    "p056e8/r.java:833",
+    "p056e8/r.java:909",
+    "de/jung/junghome/data/mesh/resolver/B0.java:16",
+    "p266y7/a.java:35",
+    "p266y7/a.java:46",
+    "J8/C0548p.java",
+    "de/jung/junghome/domain/item/mesh/nodes/models/led/LedPosition.java:58",
+    "A8/b.java",
+    "C6/a.java:156"
+   ],
+   "details": "name=LedModeOff(id=0xA011); LED 6 off-state; LBC Admin (vendor 0x0527:0x1011): Get opcode 0xC52702 (337666, G7.a) `[id u16 LE]`, Set 0xC52703 (337667, G7.b) `[id u16 LE][userAccess u8][value]`, Status 0xC52705 (12920581) `[id u16 LE][userAccess u8][value]`. 4 bytes `[red u8][green u8][blue u8][mode u8]`; RGB 0..100 per-product palette (Red/Green/White/Blue/Violet/Orange/Yellow/Cyan/NoColor); mode byte 5 = night mode ON (status LED lights max 5 s after a button press), 0 = night mode off (C6/a case 3, A8/b). Read: first 3 bytes RGB, last byte == 5 -> night mode (C1901b0 cases 2/3). Parse-only: r.c.T.e() accepts ids base..base+15 step 3 (6 LEDs) so a status with this id resolves, but LedPosition only has FIRST=1/SECOND=2, so the app never requests or writes it."
+  },
+  {
+   "id": "prop:0xc000",
+   "title": "LBC 0xC000 Gateway API status (declared only)",
+   "apk_refs": [
+    "p056e8/r.java:2358",
+    "de/jung/junghome/app/ui/project/shareViaFile/f.java:80"
+   ],
+   "details": "name=GatewayAPIStatus; capability=(no capability/resolver); Declared as r.c.C2084z with id MeshAddress.START_GROUP_ADDRESS (0xC000) and present in the LBC lookup list, but no MessageBuilder, no resolver and no capability reference it; the app never reads it. (Gateway firmware: Manufacturer server, 1-byte bit field.)"
+  },
+  {
+   "id": "prop:0xc001",
+   "title": "LBC 0xC001 Gateway API token (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:186",
+    "de/jung/junghome/data/mesh/resolver/K.java:20",
+    "p245w7/a.java:29",
+    "p246w8/a.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$observeGateway$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$requestData$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayDetailConfigurationViewModel$requestConnectionData$1.java"
+   ],
+   "details": "name=GatewayAPIToken; capability=GatewayNetworkCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only; UTF-8 string, NULs stripped (UtilsKt.c) into GatewayNetworkCapability (w8.a). UI: GatewayConnectionViewModel / GatewayDetailConfigurationViewModel requestConnectionData. Product: gateway 0x000B."
+  },
+  {
+   "id": "prop:0xc002",
+   "title": "LBC 0xC002 Gateway IP address (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:278",
+    "de/jung/junghome/data/mesh/resolver/M.java:20",
+    "p245w7/c.java:28",
+    "p246w8/a.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$observeGateway$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayDetailConfigurationViewModel$requestConnectionData$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$requestData$1.java"
+   ],
+   "details": "name=GatewayIP; capability=GatewayNetworkCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only; UTF-8 string into GatewayNetworkCapability. Same UI. Product: gateway."
+  },
+  {
+   "id": "prop:0xc003",
+   "title": "LBC 0xC003 Gateway TLS fingerprint (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:232",
+    "de/jung/junghome/data/mesh/resolver/L.java:20",
+    "p245w7/b.java:29",
+    "p246w8/a.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$observeGateway$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayConnectionViewModel$requestData$1.java",
+    "de/jung/junghome/app/ui/project/gateway/detail/GatewayDetailConfigurationViewModel$requestConnectionData$1.java"
+   ],
+   "details": "name=GatewayFingerprint; capability=GatewayNetworkCapability; LBC Manufacturer (vendor 0x0527:0x1012): Get 0xC52708 (337672, G7.c) `[id u16 LE]`, Set 0xC52709 (337673, G7.d) `[id u16 LE][value]` (no access byte), Status 0xCB2705 (13313797). Read-only; UTF-8 string, trimmed, into GatewayNetworkCapability. Same UI. Product: gateway."
+  },
+  {
+   "id": "prop:meta:jungmeshapi-readproperty",
+   "title": "Generic property read path (developer mesh-model screen)",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:253",
+    "de/jung/junghome/app/ui/meshnetwork/model/MeshModelViewModel$writeProperty$1.java:68"
+   ],
+   "details": "JungMeshApiImpl.readProperty(propertyId, element, modelId): LBC Admin -> G7.a (empty params), LBC User -> G7.e, SIG 0x1013 -> GenericPropertyGet 0x822F, SIG 0x1011 -> 0x822D, LBC Manufacturer -> G7.c, SIG 0x1012 -> 0x822B, SIG 0x1100 -> SensorGet; any other model -> IllegalArgumentException. Arbitrary property id typed by the user."
+  },
+  {
+   "id": "prop:meta:jungmeshapi-writeproperty",
+   "title": "Generic property write path (developer mesh-model screen)",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:290",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:312",
+    "de/jung/common/UtilsKt.java:153"
+   ],
+   "details": "JungMeshApiImpl.q1(propertyId, element, hexString, userAccess, size, modelId): value = UtilsKt.i(size, hex) (hex typed by user, left-padded, bytes in typed order). LBC Admin -> G7.b(access), LBC User -> raw vendor opcode 337679 `[id u16 LE][value]`, SIG Admin -> GenericAdminPropertySet(access), LBC Manufacturer -> G7.d, SIG Manufacturer -> GenericManufacturerPropertySet(access) (no value), SIG User -> GenericUserPropertySet."
+  },
+  {
+   "id": "prop:meta:status-parse",
+   "title": "LBC property status parsing / id resolution",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:43",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:52",
+    "p056e8/r.java:25",
+    "de/jung/junghome/data/mesh/resolver/Q1.java:78"
+   ],
+   "details": "Accepted status opcodes 13707013/12920581/13313797; payload `[propId u16 LE][userAccess u8][value]`; empty value -> ignored (UtilsKt.k). Id -> class via r.a.a(): LED ranges first (T.b then T.a), then LBC sealed list (shareViaFile/f case 26) then SIG list (case 25), else UnknownProperty(id) (r.d). Resolver matched by property class equality, so duplicate ids resolve to the first list entry. Value handed to resolvers both as LE ByteBuffer and as BitReader over the byte-reversed value."
+  },
+  {
+   "id": "prop:meta:statusmessageresolver",
+   "title": "SIG Generic property status parsing (StatusMessageResolver)",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:29",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:32",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1929k1.java:37",
+    "de/jung/junghome/data/mesh/resolver/U.java",
+    "de/jung/junghome/data/mesh/resolver/V.java",
+    "de/jung/junghome/data/mesh/resolver/X.java",
+    "de/jung/junghome/data/mesh/resolver/X1.java",
+    "de/jung/junghome/data/mesh/resolver/Y1.java"
+   ],
+   "details": "Base of the five SIG property resolvers (U 0x0010, V 0x0011, X 0x001A, X1 0x006A, Y1 0x006D; compiled from StatusMessageResolver.kt): accepts any Nordic GenericPropertyStatus (Manufacturer 0x46 / Admin 0x4A / User 0x4E), drops it when the property value is empty (UtilsKt.k on getPropertyValue(), line 29), resolves the id through the same r.a.a() lookup as the LBC statuses (LED ranges, LBC list, SIG list, else UnknownProperty -> no resolver), passes the user-access byte on. So a status that carries [pid][access] but no value never changes a stored capability (energy, power-on time, version, manufacturer info). Found by the second-angle sweep: the resolver base classes (extends AbstractC1972z0 / AbstractC1929k1) rather than the property classes."
+  },
+  {
+   "id": "prop:meta:unknownproperty",
+   "title": "UnknownProperty fallback (r.d)",
+   "apk_refs": [
+    "p056e8/r.java:2411",
+    "p056e8/r.java:2436"
+   ],
+   "details": "Any id not in the LED ranges, LBC list or SIG list becomes UnknownProperty(id); no resolver matches, so the status is dropped."
+  },
+  {
+   "id": "prop:meta:useraccess",
+   "title": "UserAccess enum (access byte in LBC Set/Status)",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/UserAccess.java:23"
+   ],
+   "details": "READ=1, WRITE=2, READ_AND_WRITE=3, UNKNOWN=0. Present in LBC Admin Set and all LBC Status messages; devices report 1 for read-only manufacturer/user properties."
+  },
+  {
+   "id": "prop:model:0x05271011",
+   "title": "Model LBC Generic Admin Property Server (vendor 0x0527:0x1011)",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/server/LBCGenericAdminPropertyServer.java:18",
+    "G7/a.java",
+    "G7/b.java",
+    "de/jung/junghome/data/mesh/resolver/AbstractC1972z0.java:43"
+   ],
+   "details": "Model id 86446097. Get opcode 337666 (0xC52702 3-byte vendor opcode) `[propId u16 LE][extra]`, Set 337667 (0xC52703) `[propId u16 LE][userAccess u8][value]`, status 12920581 (0xC52705). Carries almost all JUNG config properties. App always sets userAccess=3 except DimMode 0x0013 (1)."
+  },
+  {
+   "id": "prop:model:0x05271012",
+   "title": "Model LBC Generic Manufacturer Property Server (vendor 0x0527:0x1012)",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/server/LBCGenericManufacturerPropertyServer.java:18",
+    "G7/c.java",
+    "G7/d.java"
+   ],
+   "details": "Model id 86446098. Get 337672 (0xC52708), Set 337673 (0xC52709) `[propId u16 LE][value]` (no access byte), status 13313797 (0xCB2705). Used for 0x0003/0x0004/0x0005 versions, 0x6004/0x6005 detector, 0xC001-0xC003 gateway strings."
+  },
+  {
+   "id": "prop:model:0x05271013",
+   "title": "Model LBC Generic User Property Server (vendor 0x0527:0x1013)",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/server/LBCGenericUserPropertyServer.java:18",
+    "G7/e.java",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:318"
+   ],
+   "details": "Model id 86446099. Get 337678 (0xC5270E), Set 337679 (0xC5270F, only in the debug writeProperty path), status 13707013 (0xD12705). Used for InsertId 0x0002 and energy charts 0x5010/0x5011."
+  },
+  {
+   "id": "prop:model:0x05271015",
+   "title": "Model LBC property client (vendor 0x0527:0x1015) on button elements",
+   "apk_refs": [
+    "de/jung/junghome/domain/interactors/connection/GetModelsForDeviceConnection.java:163",
+    "E7/f.java:240",
+    "P7/a.java:27"
+   ],
+   "details": "Model id 86446101: vendor property client on key/button elements; bound/published in device connections (GetModelsForDeviceConnection) for KeyMode Property/Gateway. App never sends property messages from it itself."
+  },
+  {
+   "id": "prop:model:0x1011",
+   "title": "Model SIG Generic Admin Property Server 0x1011",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/server/GenericAdminPropertyServer.java:18",
+    "p234v7/P0.java:33",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:261"
+   ],
+   "details": "SIG model 4113. Get = GenericPropertyGet opcode 0x822D (33325), status 0x4A (74). Set = GenericAdminPropertySet `[propId u16 LE][access u8][value]`. App uses it for 0x006A and 0x006D (read + reset)."
+  },
+  {
+   "id": "prop:model:0x1012",
+   "title": "Model SIG Generic Manufacturer Property Server 0x1012",
+   "apk_refs": [
+    "p234v7/Q.java:22",
+    "p234v7/S.java:29",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:265",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:324"
+   ],
+   "details": "SIG model 4114. Get = GenericPropertyGet 0x822B (33323), status 0x46 (70). Used for SIG 0x0010, 0x0011, 0x001A at provisioning. Set (GenericManufacturerPropertySet, access only) only in the debug write path."
+  },
+  {
+   "id": "prop:model:0x1013",
+   "title": "Model SIG Generic User Property Server 0x1013 (debug only)",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:259",
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:329"
+   ],
+   "details": "SIG model 4115. Only reachable from the developer mesh-model screen: GenericPropertyGet 0x822F (33327) / GenericUserPropertySet. No production property uses it."
+  },
+  {
+   "id": "prop:model:0x1100",
+   "title": "Model SIG Sensor Server 0x1100",
+   "apk_refs": [
+    "de/jung/junghome/data/mesh/api/JungMeshApiImpl.java:270",
+    "p234v7/C2347a.java:23",
+    "p234v7/D0.java:37",
+    "p234v7/E0.java:31",
+    "p234v7/H0.java:40",
+    "p234v7/I0.java:30"
+   ],
+   "details": "SIG model 4352. SensorGet(propertyId) with status 0x52 (82) for 0x004F and 0x0081; developer sensor-settings screen also uses SensorDescriptorGet (E0), SensorCadenceGet/Set (D0: cadence with StatusTriggerDelta.Percent(0,1)), SensorSettingsGet (I0), SensorSettingGet/Set (H0) on the ids of prop:sensor:* items."
+  },
+  {
+   "id": "prop:model:0x1101",
+   "title": "Model SIG Sensor Setup Server 0x1101",
+   "apk_refs": [
+    "de/jung/junghome/domain/item/mesh/nodes/server/MeshModel.java:3606",
+    "E7/f.java:312",
+    "P7/a.java:27",
+    "p234v7/D0.java:37",
+    "p234v7/D0.java:50",
+    "p234v7/H0.java:40",
+    "p234v7/H0.java:58",
+    "p234v7/I0.java:30"
+   ],
+   "details": "SIG model 4353 (MeshModel.SensorSetupServer, mapped in E7/f). In the app's bind list P7/a (bound to the AppKey at configuration together with 0x1100). It is the server of the property-keyed setup messages the developer sensor-settings screen sends for the prop:sensor:* ids: Sensor Cadence Get/Set (D0, cadence with StatusTriggerDelta.Percent(0,1), fast-cadence divisor / min interval from the UI), Sensor Settings Get (I0) and Sensor Setting Get/Set (H0: sensor property id + setting property id taken from the Settings Status, value written raw). No production screen uses it."
+  },
+  {
+   "id": "prop:sensor:0x004d",
+   "title": "Sensor 0x004D PRESENCE_DETECTED (debug sensor-settings list, detectors)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:846",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:569",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:90"
+   ],
+   "details": "Nordic DeviceProperty.PRESENCE_DETECTED(77). Only appears as a string in SensorSettingsViewModel.t() for detector devices (AbstractC0915d); the name->id mapper o() has no case for it and returns -1, so the developer sensor-settings screen cannot actually address it. No builder/resolver."
+  },
+  {
+   "id": "prop:sensor:0x004f",
+   "title": "Sensor 0x004F PRESENT_AMBIENT_TEMPERATURE (RTR actual temperature)",
+   "apk_refs": [
+    "p234v7/C2349b.java:30",
+    "F7/c.java:19",
+    "F7/a.java:42",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:844",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:92"
+   ],
+   "details": "SIG Sensor Server 0x1100: SensorGet(PRESENT_AMBIENT_TEMPERATURE) builder C2349b, expected status opcode 0x52 (82, Sensor Status). Decoder F7/a default branch: raw LE signed integer x 0.5 (2^-1) degC, clamped to 5..30 for the UI, into d9.a (actual temperature). Read on app open/refresh (LoadStateForDevices) for the room thermostat pid 0x000A. Listed as the only sensor for RtrDevice in the debug sensor-settings screen, but o() does not map this name (-1). Read-only."
+  },
+  {
+   "id": "prop:sensor:0x0052",
+   "title": "Sensor 0x0052 PRESENT_DEVICE_INPUT_POWER (debug sensor-settings only)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:573",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:841",
+    "p234v7/D0.java:37",
+    "p234v7/H0.java:40",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:95"
+   ],
+   "details": "Nordic DeviceProperty(82). Listed in SensorSettingsViewModel.t() for measuring socket (r0), measure lamp (n0) and energy puck (b8.a); o() maps it to 0x0052 for SensorCadenceGet/Set (D0), SensorSettingsGet (I0), SensorSettingGet/Set (H0), SensorDescriptorGet (E0). Debug/developer screen only; no value decoder in app."
+  },
+  {
+   "id": "prop:sensor:0x0055",
+   "title": "Sensor 0x0055 PRESENT_ILLUMINANCE (debug sensor-settings list, detectors)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:846",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:98"
+   ],
+   "details": "Nordic DeviceProperty.PRESENT_ILLUMINANCE(85). Listed for detectors in SensorSettingsViewModel.t(), but o() returns -1 for it (unmapped). No builder/resolver."
+  },
+  {
+   "id": "prop:sensor:0x0057",
+   "title": "Sensor 0x0057 PRESENT_INPUT_CURRENT (debug sensor-settings only)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:584",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:841",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:100"
+   ],
+   "details": "Nordic DeviceProperty(87). Same handling as 0x0052: measuring devices, mapped by o() for cadence/settings/descriptor messages in the developer sensor-settings screen. No app decoder."
+  },
+  {
+   "id": "prop:sensor:0x005c",
+   "title": "Sensor 0x005C PRESENT_OUTPUT_CURRENT (debug sensor-settings only)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:589",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:841",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:105"
+   ],
+   "details": "Nordic DeviceProperty(92). Same handling as 0x0052 (measuring devices, developer sensor-settings screen). No app decoder."
+  },
+  {
+   "id": "prop:sensor:0x005d",
+   "title": "Sensor 0x005D PRESENT_OUTPUT_VOLTAGE (debug sensor-settings only)",
+   "apk_refs": [
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:579",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:841",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:106"
+   ],
+   "details": "Nordic DeviceProperty(93). Same handling as 0x0052 (measuring devices, developer sensor-settings screen). No app decoder."
+  },
+  {
+   "id": "prop:sensor:0x0081",
+   "title": "Sensor 0x0081 ACTIVE_POWER_LOAD_SIDE (live power, thresholds)",
+   "apk_refs": [
+    "p234v7/C2347a.java:30",
+    "F7/b.java:19",
+    "F7/a.java:31",
+    "p234v7/L0.java:39",
+    "de/jung/junghome/app/ui/meshnetwork/SensorSettingsViewModel.java:594",
+    "no/nordicsemi/android/mesh/sensorutils/DeviceProperty.java:136"
+   ],
+   "details": "SIG Sensor Server: SensorGet(ACTIVE_POWER_LOAD_SIDE) builder C2347a, status 0x52. Decoder F7/a case 0: raw LE integer x 0.1 W into M8.a. Also the sensor property id embedded (u16 LE 0x0081) in TurnOn/TurnOffThreshold 0x5004/0x5005 values (L0). Listed first in the developer sensor-settings list for r0/n0/b8.a. Products: measuring socket 0x0003, energy puck 0x0010, measure lamp. Read-only."
+  },
+  {
+   "id": "prop:sig:0x0010",
+   "title": "SIG 0x0010 Device Hardware Revision (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:53",
+    "de/jung/junghome/data/mesh/resolver/U.java:15",
+    "p234v7/Q.java:29",
+    "G8/a.java"
+   ],
+   "details": "name=ManufacturerHardwareRevisionProperty; capability=ManufacturerInfosCapability; SIG Generic Manufacturer Property Server 0x1012: GenericPropertyGet opcode 0x822B (33323), status 0x46 (70, Generic Manufacturer Property Status). Read-only (no Set builder). Raw bytes stored in ManufacturerInfosCapability (G8.a, together with 0x0011). Read at provisioning by RequestManufacturerInfos for every node (base Device). Numeric overlap with firmware LBC ids 0x0010/0x0011 (LPN_STATE_TIMEOUT/BAT_TEST_RAW_DATA) is irrelevant: different server."
+  },
+  {
+   "id": "prop:sig:0x0011",
+   "title": "SIG 0x0011 Device Manufacturer Name (read-only)",
+   "apk_refs": [
+    "p056e8/r.java:77",
+    "de/jung/junghome/data/mesh/resolver/V.java:15",
+    "p234v7/S.java:29",
+    "G8/a.java"
+   ],
+   "details": "name=ManufacturerNameProperty; capability=ManufacturerInfosCapability; SIG Generic Manufacturer Property Server: GenericPropertyGet 0x822B, status 0x46. Read-only. Raw bytes (UTF-8 name) into G8.a. Read at provisioning (RequestManufacturerInfos), all products."
+  },
+  {
+   "id": "prop:sig:0x001a",
+   "title": "SIG 0x001A Device Software Revision (read-only, ASCII digits)",
+   "apk_refs": [
+    "p056e8/r.java:100",
+    "de/jung/junghome/data/mesh/resolver/X.java:19",
+    "p234v7/T.java:29",
+    "G8/a.java",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:291",
+    "de/jung/junghome/data/mesh/resolver/C1901b0.java:385"
+   ],
+   "details": "name=ManufacturerSoftwareVersionProperty; capability=ManufacturerInfosCapability; SIG Generic Manufacturer Property Server: GenericPropertyGet 0x822B, status 0x46. Read-only. Parsed as ASCII string, NULs removed, split into 2-char groups, leading '0' stripped, joined by '.' (\"02020002\" -> \"2.2.0.2\"). Stored in G8.b; used as node firmware version for gates: RtrHvacMode 0x120B needs >= 2.2.0.0, RtrTouchSensitivity 0x0012 needs >= 1.0.3.3 (resolver C1901b0 cases 17/23). All products."
+  },
+  {
+   "id": "prop:sig:0x006a",
+   "title": "SIG 0x006A Total Device Energy Use (read + reset)",
+   "apk_refs": [
+    "p056e8/r.java:123",
+    "de/jung/junghome/data/mesh/resolver/X1.java:15",
+    "p213t8/b.java",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$resetTotalConsumption$1.java",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$requestData$1.java",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestData$1.java",
+    "p234v7/P0.java:26",
+    "p234v7/P0.java:33",
+    "p234v7/P0.java:49"
+   ],
+   "details": "name=TotalDeviceEnergyUse; capability=TotalEnergyUseCapability; SIG Generic Admin Property Server 0x1011: Get = GenericPropertyGet opcode 0x822D (33325), status 0x4A (74). Read: whole value as little-endian unsigned integer x1, app treats as Wh (/1000 -> kWh in ConfigurationConsumptionViewModel). Write (reset total consumption) = GenericAdminPropertySet(access=3, int32 LE of the new value, app sends 0). Capability TotalEnergyUseCapability (t8.b). Products: measuring socket pid 0x0003 (Y7.r0), measure lamp (n0) and energy puck pid 0x0010 (b8.a). UI: consumption screen + 'reset total consumption'."
+  },
+  {
+   "id": "prop:sig:0x006d",
+   "title": "SIG 0x006D Total Device Power On Time (read + reset)",
+   "apk_refs": [
+    "p056e8/r.java:146",
+    "de/jung/junghome/data/mesh/resolver/Y1.java:16",
+    "p213t8/a.java",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$requestData$1.java",
+    "de/jung/junghome/app/ui/configuration/consumption/ConfigurationConsumptionViewModel$resetTotalConsumption$1.java",
+    "de/jung/junghome/app/ui/devices/socket/consumption/PowerConsumptionViewModel$requestData$1.java",
+    "p234v7/C2364i0.java:26",
+    "p234v7/C2364i0.java:34",
+    "p234v7/C2364i0.java:50"
+   ],
+   "details": "name=TotalDevicePowerOnTime; capability=PowerOnTimeCapability; SIG Generic Admin Property Server: GenericPropertyGet 0x822D, status 0x4A. Read LE unsigned integer x1 (on-air: uint24 hours). Write = GenericAdminPropertySet(access=3, int32 LE) issued together with the energy reset. Capability PowerOnTimeCapability (t8.a). Products: measuring socket / energy devices. UI: consumption configuration screen."
+  }
+ ]
+}

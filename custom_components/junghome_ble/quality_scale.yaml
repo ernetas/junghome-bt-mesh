@@ -1,0 +1,93 @@
+# The status of every Integration Quality Scale rule, checked against the code. A tier holds only when each of its rules
+# and of every tier below is done or exempt, so manifest.json claims none: one Bronze rule is open
+# (`dependency-transparency`), and Silver also waits for `reauthentication-flow`. The other rules up to Platinum are
+# done or exempt as recorded below; once those two are done too, manifest.json can claim `platinum` again. hassfest
+# does not check this file for a custom integration, so nothing but keeping it true keeps the claim honest.
+rules:
+  # Bronze
+  action-setup: done
+  appropriate-polling:
+    status: done
+    comment: 'local_push - load state arrives as the devices'' status publications. What is polled is what nothing publishes, no more often than its data needs - the metered loads'' energy counters every 5 min (ENERGY_POLL_INTERVAL, only with a metered load: a metering socket or an energy puck), a device that stopped answering once every 5 min (UNREACHABLE_REPROBE), a keep-alive Get only after 11 min without any traffic (LINK_IDLE_TIMEOUT), the Time Set broadcast once a day (device timers have no other clock) and, with node heartbeats on, the publications renewed every 6 h and a silent node asked again every 2 min. An entry set up from the gateway polls the gateway''s REST status every 30 s and its error log every 5 min, only while one of their diagnostic entities (off by default) is enabled (gateway_status.py; the app polls the status every 5 s while open). The 30 s heartbeat check, the 10 min sequence-space check and the 5 min update of the link diagnostics sensors read local state only.'
+  brands:
+    status: done
+    comment: The integration ships its brand images in `brand/` (icon, icon@2x, dark_icon, dark_icon@2x), the JUNG HOME brand as home-assistant/brands publishes it for `custom_integrations/junghome`. Since Home Assistant 2026.3 custom integrations carry their own images there (the brands repository no longer takes custom integrations), local images take priority over the brands CDN, and the HACS `brands` validator accepts a local `brand/icon.png`; tests/test_brand.py checks the files.
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency:
+    status: todo
+    comment: The integration declares no requirements; bleak, bleak-retry-connector and cryptography come from Home Assistant core. The mesh library (jhmesh) is bundled (custom_components/junghome_ble/jhmesh, imported relatively) instead of being pulled from PyPI. It is MIT-licensed, packaged via pyproject.toml (ci.yml builds the sdist + wheel and runs twine check --strict on every push), and release.yml publishes those very files to PyPI through trusted publishing on every vX.Y.Z tag once PyPI lists this repository as the project's trusted publisher (before the first release a pending publisher, a one-time step on pypi.org). What is still open is that step, the first tagged publication, and then a manifest `requirements` entry of `jhmesh==X.Y.Z` with absolute imports in place of the bundled copy - plus the rule's "public repository" while this one is private.
+  docs-actions: done
+  docs-triggers: done
+  docs-conditions:
+    status: exempt
+    comment: No custom conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  entity-event-setup: done
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: done
+    comment: The config-entry data is covered under "Configuration parameters"; the options flow (click delay, node heartbeats) under "Options" in docs/ha-integration.md.
+  docs-installation-parameters: done
+  entity-unavailable:
+    status: done
+    comment: Entities are unavailable without a proxy link; with the "Node heartbeats" option each device is asked for Bluetooth Mesh Heartbeats and its entities go unavailable when it has been silent for three missed beats (coordinator.node_alive); a missing device, or one whose beats stopped while its other traffic keeps it alive, is asked again every two minutes, so one that restarted comes back (and beats again) by itself.
+  integration-owner: done
+  log-when-unavailable:
+    status: done
+    comment: The link logs once when lost and once when back; a device that stops beating logs one warning and one info line when heard again.
+  parallel-updates: done
+  reauthentication-flow:
+    status: todo
+    comment: Not exempt - an entry set up from the gateway holds the gateway's API token, and the token is revocable (access removed in the app). The mesh keys themselves come from the export file and do not expire. When the gateway rejects the token only the gateway sync stops - the devices keep working over Bluetooth - and the repair issue gateway_token_rejected points to the reconfigure flow's "fetch again", which requests access anew (app approval) and loads the gateway's current export. The rule asks for a reauth step (ConfigEntryAuthFailed starting `async_step_reauth`), which the integration does not have; until it does, Silver is not met.
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery-update-info:
+    status: done
+    comment: The Bluetooth discovery carries only the mesh Network ID, which is the entry's unique id; the discovery flow sets it and aborts on an already configured entry. There is no host or address in the entry that could go stale, so nothing is passed as updates - a Bluetooth Mesh proxy advertisement names no fixed endpoint, Bluetooth adapters and ESPHome proxies are interchangeable, and the node to talk through is picked from the live advertisements at every connection (config_flow.async_step_bluetooth, coordinator connection loop).
+  discovery: done
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: done
+    comment: Devices are derived from the app's export file (nodes, keys and names live there, not on the mesh). A node added in the JUNG HOME app is noticed the moment it advertises - JUNG nodes advertise the mesh's Network ID from their MAC, which the export encodes in the node UUID (coordinator._check_unknown_node). An entry set up from the gateway then fetches the gateway's current export by itself (the app uploads its project right after provisioning), stores it and reloads, so the new device and its entities appear without user action (coordinator._refresh_export_from_gateway). An entry set up from a file gets the repair issue "devices missing from the export" pointing at the reconfigure flow instead, since only the app holds the export then.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations:
+    status: done
+    comment: Every HomeAssistantError / ServiceValidationError raised to the user carries a translation key from the exceptions section. The last three untranslated raise sites were the rejected config-entity value (config_entities.py, value_rejected), the unknown preset temperature of the thermostat (climate.py, preset_temperature_unknown) and the LED colour a night-mode write needs but the device never reported (switch.py, led_colour_unknown); tests/test_translations.py checks that every key the code uses exists.
+  icon-translations:
+    status: done
+    comment: icons.json only carries icons that differ from what the device class or platform already provides (the duplicates of device-class defaults were removed); every entry is tied to an entity translation key by tests/test_translations.py.
+  reconfiguration-flow: done
+  repair-issues:
+    status: done
+    comment: key_refresh, export_stale (nothing decrypts with the export's keys after a completed key refresh), pdus_dropped, unknown_nodes (a node of this mesh advertises from a MAC the export lacks), gateway_import (an enabled entry of the JUNG HOME Gateway integration exists next to ours; points at the reconfigure menu's import step, which takes the gateway entities over), gateway_certificate_changed (the gateway presents a TLS certificate other than the pinned one, or its mesh node reports another one; the gateway is then not used until Reconfigure), gateway_token_rejected (the gateway no longer accepts the entry's token; points at Reconfigure) and gateway_sync_failed (a changed export was not handed to the gateway; the sync_gateway action retries it).
+  stale-devices: done
+
+  # Platinum
+  async-dependency: done
+  inject-websession: done
+  strict-typing: done

@@ -1,0 +1,4790 @@
+{
+ "domain": "air",
+ "source": "docs/parity/captures-inventory.json",
+ "source_records": 658,
+ "method": "Input: docs/parity/captures-inventory.json (658 records; each record = one (kind, opcode, key, name, prop, src-role, dst-role) tuple with n, files, param_lens, produced by jhmesh.sniffer over ~/nrfsniff captures including settings.json, the phone app's settings session). No other source is read; nothing is invented, so a rerun on the same input yields the same item set. Enumeration: for every record compute an id and group by it; every group is one item (fields merged: n summed, who = sorted distinct 'src->dst' strings with per-pair counts in who_n, files = count of distinct capture files, param_lens = union, decoder_names = distinct record names). Id rules (purely mechanical): kind=='access' -> 'air:access:' + opcode.lower().replace(':','-') [+ ':' + prop.lower() when prop is not null]; vendor opcodes keep the inventory's '<6-bit op>:<company>' form, e.g. '02:0527' -> '02-0527' (opcode_onair gives the 3-byte on-air form, (0xC0|op) followed by company LE, e.g. C22705). Non-access kinds -> 'air:<kind>:<slug>', slug = record name with any '(...' tail and trailing 2-hex-digit tokens stripped, lowercased, non-alphanumerics -> '-', leading '<kind>-' (and 'foreign-') removed; this folds the per-sample payload-byte suffixes ('PB-ADV c5', 'foreign beacon a0') and splits kind 'control' into heartbeat / segment-ack and kind 'foreign' into beacon / network-pdu. Distinct names under one access id (Generic OnOff Set ON/OFF, Scene Action Setup Get list/scene) are parameter variants and stay one item. Titles/notes are keyed by id in a hand table; the generator fails on any id without a note and on any stale note, so a new decoder output forces a new item rather than silent loss. Decoder kinds present: access, beacon, control, copy, foreign, pbadv, segment. Decoder kinds defined in jhmesh/sniffer.py DecodedKind but with zero records in the input (closed-world: nothing to list): undecryptable, malformed, proxy, gatt. Role vocabulary as in the input: HA (this integration), gateway (JUNG HOME gateway), pidN/elM (product id N, element index M), group (a virtual/group address), fixed-group (SIG fixed group, e.g. all-nodes), unicast-unknown (a unicast not in the export: an earlier development-tool / provisioner session and the sets.json ad-hoc session), pidNone/el0 (a node of the export without a product id: unicast 0001, the JUNG HOME phone app's provisioner node, in settings.json). Reproduce: python3 over captures-inventory.json applying the id rule above; expected result 155 items (147 access, 8 non-access). Mechanical cross-check: sorted({id(r) for r in records}) must equal the item id list. SUPPLEMENT (adversarial verification pass, different angle: the sniffer's input filter): jhmesh/sniffer.py AD_KINDS keeps only AD types 0x29/0x2A/0x2B (tests/jhmesh/test_sniffer.py::test_mesh_records_keep_only_mesh_ad_types), so every other advertising-channel structure the installation emits never reaches captures-inventory.json although an nRF scan shows it. Those are enumerated from docs/bluetooth-recheck.md section 1 (the table of advertising-bearer observations; only rows marked verified on air that report a JUNG-originated structure; rows reporting 'none' - Node Identity, Unprovisioned Device Beacons - and non-JUNG radios are excluded): one item per (AD type, discriminator), id 'air:adv:<AD type as 0xNN>[:<16-bit UUID or company id, 4 hex>[:<first service-data byte / record type, 2 hex>]]', or 'air:adv:local-name' where the AD type byte is not recorded. kind='adv', n/files/who_n empty (no sniffer counts), 'source'/'evidence' name the recheck row. Expected: 6 adv items; total 161 = 155 + 6. Re-derivation check done in the same pass: recomputing the id of all 477 records reproduces exactly the 99 capture ids and every n. UPDATE (input regenerated with settings.json, 658 records): the id rule applied to the new input gives the 99 earlier capture ids plus 56 new ones (155 capture items); the 56 are exactly what `tools/parity.py air` reported for settings.json. n / who / who_n / files / param_lens / decoder_names of every capture item were recomputed from the new records (the decoder now ends some Config status names with ':'; ids are unaffected); an earlier item the phone app also sends or receives got one sentence appended to its note. Titles/notes of the 56 new items are hand-written from the decoded timeline of the session.",
+ "items": [
+  {
+   "id": "air:access:02-0527:0x0001",
+   "title": "LBC Admin Property Get 0x0001 (DeviceLock)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x0001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid1/el0": 2,
+    "pidNone/el0->pid2/el0": 12,
+    "pidNone/el0->pid3/el0": 24
+   },
+   "n": 38,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Sent only by the phone app in the app's settings session (settings.json): every device page (socket 0174, 2-gang 0293, 1-gang 01A4) reads DeviceLock, usually twice back to back, and once more right before each flag write (read-modify-write). Answered by 05-0527 with the same prop."
+  },
+  {
+   "id": "air:access:02-0527:0x0009",
+   "title": "LBC Admin Property Get 0x0009 (EnforcedOutput / lock function)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x0009",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid1/el1",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid2/el1",
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid4/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid1/el0": 8,
+    "pidNone/el0->pid1/el1": 2,
+    "pidNone/el0->pid2/el0": 15,
+    "pidNone/el0->pid2/el1": 9,
+    "pidNone/el0->pid3/el0": 24,
+    "pidNone/el0->pid4/el0": 9
+   },
+   "n": 67,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Sent only by the phone app in the app's settings session (settings.json): opening the device list reads the lock function of every load element (26 nodes, el0 and el1), the socket page reads it again before each OnOff Get. Answered by 05-0527 (5-byte value on the socket, 8-byte on the others)."
+  },
+  {
+   "id": "air:access:02-0527:0x000f",
+   "title": "LBC Admin Property Get 0x000F (AutomaticDaylightSavingTime)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x000F",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 83,
+    "HA->pid2/el0": 127,
+    "HA->pid3/el0": 24,
+    "HA->pid4/el0": 46,
+    "pidNone/el0->pid3/el0": 16
+   },
+   "n": 296,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the AutomaticDaylightSavingTime setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0x1001",
+   "title": "LBC Admin Property Get 0x1001 (GeneralOnDelay)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x1001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 6
+   },
+   "n": 6,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's parameters page (expert mode) reads the switch-on delay of the load element 0174."
+  },
+  {
+   "id": "air:access:02-0527:0x1002",
+   "title": "LBC Admin Property Get 0x1002 (GeneralOffDelay)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x1002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 5
+   },
+   "n": 5,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's parameters page reads the switch-off delay of 0174; the factory value read was FFFFFFFF."
+  },
+  {
+   "id": "air:access:02-0527:0x1007",
+   "title": "LBC Admin Property Get 0x1007 (TimedOnDuration)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid1/el1",
+    "HA->pid2/el0",
+    "HA->pid2/el1",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "pidNone/el0->pid3/el0",
+    "unicast-unknown->pid1/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 89,
+    "HA->pid1/el1": 13,
+    "HA->pid2/el0": 131,
+    "HA->pid2/el1": 42,
+    "HA->pid3/el0": 28,
+    "HA->pid4/el0": 46,
+    "pidNone/el0->pid3/el0": 21,
+    "unicast-unknown->pid1/el0": 4
+   },
+   "n": 374,
+   "files": 7,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the TimedOnDuration setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0x100b",
+   "title": "LBC Admin Property Get 0x100B (ManualOffEnable)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x100B",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid1/el1",
+    "HA->pid2/el0",
+    "HA->pid2/el1",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 82,
+    "HA->pid1/el1": 11,
+    "HA->pid2/el0": 125,
+    "HA->pid2/el1": 35,
+    "HA->pid3/el0": 27,
+    "HA->pid4/el0": 46,
+    "pidNone/el0->pid3/el0": 14
+   },
+   "n": 340,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the ManualOffEnable setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0x100d",
+   "title": "LBC Admin Property Get 0x100D (SwitchBlockingTime)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x100D",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 5
+   },
+   "n": 5,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's parameters page reads the minimum switching repetition time of 0174 (1000 ms)."
+  },
+  {
+   "id": "air:access:02-0527:0x100e",
+   "title": "LBC Admin Property Get 0x100E (DimToWarm)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x100E",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 11,
+    "HA->pid2/el0": 33
+   },
+   "n": 44,
+   "files": 5,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the DimToWarm setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. Only on pid1/pid2 el0 (dimmable / tunable loads)."
+  },
+  {
+   "id": "air:access:02-0527:0x5004",
+   "title": "LBC Admin Property Get 0x5004 (TurnOnThreshold)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x5004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 16
+   },
+   "n": 16,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's automation page reads the switch-on threshold of the meter element 0175 (pid3/el1) on every visit."
+  },
+  {
+   "id": "air:access:02-0527:0x5005",
+   "title": "LBC Admin Property Get 0x5005 (TurnOffThreshold)",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0x5005",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 15
+   },
+   "n": 15,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): as 0x5004, for the switch-off threshold."
+  },
+  {
+   "id": "air:access:02-0527:0xa001",
+   "title": "LBC Admin Property Get 0xA001 (LedModeOn(1))",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0xA001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 221,
+    "HA->pid2/el0": 292,
+    "HA->pid3/el0": 56,
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 17
+   },
+   "n": 593,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the LedModeOn(1) setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0xa002",
+   "title": "LBC Admin Property Get 0xA002 (LedModeOff(1))",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0xA002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 212,
+    "HA->pid2/el0": 285,
+    "HA->pid3/el0": 46,
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 16
+   },
+   "n": 566,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the LedModeOff(1) setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0xa004",
+   "title": "LBC Admin Property Get 0xA004 (LedModeOn(2))",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0xA004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid2/el0",
+    "pidNone/el0->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid2/el0": 200,
+    "pidNone/el0->pid2/el0": 8
+   },
+   "n": 208,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the LedModeOn(2) setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. Seen on pid2 only: the second LED channel (0xA001+3*(n-1), n=2) exists on the 2-gang push-button. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:02-0527:0xa005",
+   "title": "LBC Admin Property Get 0xA005 (LedModeOff(2))",
+   "kind": "access",
+   "opcode": "02:0527",
+   "opcode_onair": "C22705",
+   "prop": "0xA005",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid2/el0",
+    "pidNone/el0->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid2/el0": 198,
+    "pidNone/el0->pid2/el0": 6
+   },
+   "n": 204,
+   "files": 6,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x02 (C2 27 05, JUNG vendor model 0x0527 (LBC property server)). Only HA sends it (the one unknown-unicast Get of 0x1007 is the ad-hoc sets.json session): HA reads the LedModeOff(2) setting of load/LED elements on demand/refresh; the JUNG gateway never reads it. Answered by 05-0527 with the same prop. Seen on pid2 only (second LED channel). The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:03",
+   "title": "Config Model Publication Set",
+   "kind": "access",
+   "opcode": "03",
+   "opcode_onair": "03",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Publication Set"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 5
+   },
+   "n": 5,
+   "files": 1,
+   "param_lens": [
+    11
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the threshold automation sets the meter element's (0175) Generic OnOff Client publication to the element group C007 (TTL 255, no period, no retransmission), clears it to 0000 (TTL 0) on disable / delete and sets it back to C007. Sent with the socket's device key to its primary 0174."
+  },
+  {
+   "id": "air:access:03-0527:0x0001",
+   "title": "LBC Admin Property Set 0x0001 (DeviceLock)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x0001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): Lock operation 0x0004 and back to 0x0000, then Lock factory reset 0x0002, on 0174, userAccess 1 (READ); the node reports access=1 afterwards (it had reported 3)."
+  },
+  {
+   "id": "air:access:03-0527:0x000e",
+   "title": "LBC Admin Property Set 0x000E (SERVER_STATE_PUBLISH_REQUEST)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x000E",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "unicast-unknown->pid1/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->pid1/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x03 (C3 27 05). Seen once, from an address not in the export (ad-hoc tool session sets.json) to pid1/el0. Neither HA in steady state nor the gateway sends it. Proves the acknowledged Admin Set framing [prop u16][value] for the state-publish trigger."
+  },
+  {
+   "id": "air:access:03-0527:0x000f",
+   "title": "LBC Admin Property Set 0x000F (AutomaticDaylightSavingTime)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x000F",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): automatic DST off then on, on 0174, userAccess 3 (the node had reported 1 before)."
+  },
+  {
+   "id": "air:access:03-0527:0x1001",
+   "title": "LBC Admin Property Set 0x1001 (GeneralOnDelay)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x1001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): switch-on delay 60 s (60000 ms), userAccess 1."
+  },
+  {
+   "id": "air:access:03-0527:0x1002",
+   "title": "LBC Admin Property Set 0x1002 (GeneralOffDelay)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x1002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): switch-off delay 60 s, userAccess 1."
+  },
+  {
+   "id": "air:access:03-0527:0x1007",
+   "title": "LBC Admin Property Set 0x1007 (TimedOnDuration)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0",
+    "unicast-unknown->pid1/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 2,
+    "unicast-unknown->pid1/el0": 2
+   },
+   "n": 4,
+   "files": 2,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x03 acknowledged Admin Set, 7-byte params = [prop u16][uint32 LE ms][+1?]; only in the ad-hoc sets.json session to pid1/el0, answered by 05-0527:0x1007. Ground truth for writing TimedOnDuration. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:03-0527:0x100b",
+   "title": "LBC Admin Property Set 0x100B (ManualOffEnable)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x100B",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): manual switching off during the run-on time on, then off, userAccess 3."
+  },
+  {
+   "id": "air:access:03-0527:0x100d",
+   "title": "LBC Admin Property Set 0x100D (SwitchBlockingTime)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x100D",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): minimum switching repetition time 1001 ms (E9 03), userAccess 3."
+  },
+  {
+   "id": "air:access:03-0527:0x5003",
+   "title": "LBC Admin Property Set 0x5003 (KeyMode)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x5003",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): KeyMode 5 (switch) written to the metering socket's meter element 0175 at threshold create, disable and delete; the socket answers with a 2-byte Status (property id only: no such Admin property on that element)."
+  },
+  {
+   "id": "air:access:03-0527:0x5004",
+   "title": "LBC Admin Property Set 0x5004 (TurnOnThreshold)",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0x5004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    11
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): switch-on threshold 20 W for 5 s active (81 00 05 00 C8 00 00 01), then inactive, then cleared (81 00 00 00 FF FF FF 00), userAccess 3."
+  },
+  {
+   "id": "air:access:03-0527:0xa001",
+   "title": "LBC Admin Property Set 0xA001 (LedModeOn(1))",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0xA001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid2/el0": 7,
+    "pidNone/el0->pid3/el0": 5
+   },
+   "n": 12,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): LED 1 on-colour of the socket (green 0/60/0, none) and of the 2-gang 0293 (sync, green 4/100/0), night-mode byte 5 set / cleared with the colour kept, userAccess 3."
+  },
+  {
+   "id": "air:access:03-0527:0xa002",
+   "title": "LBC Admin Property Set 0xA002 (LedModeOff(1))",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0xA002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid2/el0": 8,
+    "pidNone/el0->pid3/el0": 3
+   },
+   "n": 11,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): LED 1 off-colour (socket red 100/0/0; 2-gang red 75/0/0) and night mode, userAccess 3."
+  },
+  {
+   "id": "air:access:03-0527:0xa004",
+   "title": "LBC Admin Property Set 0xA004 (LedModeOn(2))",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0xA004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid2/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid2/el0": 8
+   },
+   "n": 8,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): LED 2 on-colour of the 2-gang 0293: 'Synchronise colours' writes LED 1's value here, 'Right on white' 80/66/32, night mode; userAccess 3 (the node had reported 1)."
+  },
+  {
+   "id": "air:access:03-0527:0xa005",
+   "title": "LBC Admin Property Set 0xA005 (LedModeOff(2))",
+   "kind": "access",
+   "opcode": "03:0527",
+   "opcode_onair": "C32705",
+   "prop": "0xA005",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set prop"
+   ],
+   "who": [
+    "pidNone/el0->pid2/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid2/el0": 7
+   },
+   "n": 7,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): LED 2 off-colour of 0293 (sync copy, yellow 96/77/0, night mode), userAccess 3."
+  },
+  {
+   "id": "air:access:04-0527:0x1007",
+   "title": "LBC Admin Property Set Unack 0x1007 (TimedOnDuration)",
+   "kind": "access",
+   "opcode": "04:0527",
+   "opcode_onair": "C42705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Set Unack prop"
+   ],
+   "who": [
+    "unicast-unknown->pid1/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->pid1/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x04 unacknowledged Admin Set; once in sets.json. Shows the Unack variant is accepted (no reply expected)."
+  },
+  {
+   "id": "air:access:05",
+   "title": "Health Fault Status",
+   "kind": "access",
+   "opcode": "05",
+   "opcode_onair": "05",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Health Fault Status"
+   ],
+   "who": [
+    "gateway->HA",
+    "pid1/el0->HA",
+    "pid2/el0->HA",
+    "pid3/el0->HA",
+    "pid4/el0->HA"
+   ],
+   "who_n": {
+    "gateway->HA": 12,
+    "pid1/el0->HA": 111,
+    "pid2/el0->HA": 145,
+    "pid3/el0->HA": 25,
+    "pid4/el0->HA": 61
+   },
+   "n": 354,
+   "files": 5,
+   "param_lens": [
+    3
+   ],
+   "notes": "SIG opcode 0x05. Replies of every node class (gateway, pid1..pid4 el0) to HA's Health Fault Get (8031), 3-byte params = test id + company id (no faults). n matches 8031. Nodes never publish it unsolicited."
+  },
+  {
+   "id": "air:access:05-0527:0x0001",
+   "title": "LBC Admin Property Status 0x0001 (DeviceLock)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x0001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->pidNone/el0": 2,
+    "pid2/el0->pidNone/el0": 12,
+    "pid3/el0->pidNone/el0": 26
+   },
+   "n": 40,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "Replies to the app's DeviceLock Gets and Sets (the app's settings session (settings.json)); access 3 on 0174 before the app's Set, 1 after; 1 on 0293 and 01A4."
+  },
+  {
+   "id": "air:access:05-0527:0x0009",
+   "title": "LBC Admin Property Status 0x0009 (EnforcedOutput / lock function)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x0009",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->pidNone/el0",
+    "pid1/el1->pidNone/el0",
+    "pid2/el0->pidNone/el0",
+    "pid2/el1->pidNone/el0",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->pidNone/el0": 8,
+    "pid1/el1->pidNone/el0": 1,
+    "pid2/el0->pidNone/el0": 16,
+    "pid2/el1->pidNone/el0": 4,
+    "pid3/el0->pidNone/el0": 20,
+    "pid4/el0->pidNone/el0": 8
+   },
+   "n": 57,
+   "files": 1,
+   "param_lens": [
+    8,
+    11
+   ],
+   "notes": "Replies to the app's lock-function sweep (the app's settings session (settings.json)): 5-byte value on the socket load, 8-byte on the others (value field 1 or 4 bytes)."
+  },
+  {
+   "id": "air:access:05-0527:0x000e",
+   "title": "LBC Admin Property Status 0x000E (SERVER_STATE_PUBLISH_REQUEST)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x000E",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->unicast-unknown"
+   ],
+   "who_n": {
+    "pid1/el0->unicast-unknown": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Reply to the single Admin Set 0x000E in the sets.json session; the property reads back empty (2-byte status = prop id only). Tells us 0x000E is a write-trigger (publish your state now), not a stored setting."
+  },
+  {
+   "id": "air:access:05-0527:0x000f",
+   "title": "LBC Admin Property Status 0x000F (AutomaticDaylightSavingTime)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x000F",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid2/el0->HA",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 83,
+    "pid2/el0->HA": 128,
+    "pid3/el0->HA": 23,
+    "pid3/el0->pidNone/el0": 16,
+    "pid4/el0->HA": 57
+   },
+   "n": 307,
+   "files": 6,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms AutomaticDaylightSavingTime is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0x1001",
+   "title": "LBC Admin Property Status 0x1001 (GeneralOnDelay)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x1001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 7
+   },
+   "n": 7,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Replies to the app's switch-on delay Get / Set on 0174 (the app's settings session (settings.json)), access 1."
+  },
+  {
+   "id": "air:access:05-0527:0x1002",
+   "title": "LBC Admin Property Status 0x1002 (GeneralOffDelay)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x1002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 6
+   },
+   "n": 6,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Replies to the app's switch-off delay Get / Set on 0174 (the app's settings session (settings.json)), access 1; the first read FFFFFFFF."
+  },
+  {
+   "id": "air:access:05-0527:0x1007",
+   "title": "LBC Admin Property Status 0x1007 (TimedOnDuration)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->unicast-unknown",
+    "pid1/el1->HA",
+    "pid2/el0->HA",
+    "pid2/el1->HA",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 86,
+    "pid1/el0->unicast-unknown": 6,
+    "pid1/el1->HA": 13,
+    "pid2/el0->HA": 129,
+    "pid2/el1->HA": 41,
+    "pid3/el0->HA": 22,
+    "pid3/el0->pidNone/el0": 17,
+    "pid4/el0->HA": 57
+   },
+   "n": 371,
+   "files": 7,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms TimedOnDuration is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0x100b",
+   "title": "LBC Admin Property Status 0x100B (ManualOffEnable)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x100B",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el1->HA",
+    "pid2/el0->HA",
+    "pid2/el1->HA",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 81,
+    "pid1/el1->HA": 11,
+    "pid2/el0->HA": 125,
+    "pid2/el1->HA": 35,
+    "pid3/el0->HA": 21,
+    "pid3/el0->pidNone/el0": 16,
+    "pid4/el0->HA": 57
+   },
+   "n": 346,
+   "files": 6,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms ManualOffEnable is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0x100d",
+   "title": "LBC Admin Property Status 0x100D (SwitchBlockingTime)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x100D",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 6
+   },
+   "n": 6,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "Replies to the app's switching repetition time Get / Set on 0174 (the app's settings session (settings.json)), access 3."
+  },
+  {
+   "id": "air:access:05-0527:0x100e",
+   "title": "LBC Admin Property Status 0x100E (DimToWarm)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x100E",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid2/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 11,
+    "pid2/el0->HA": 33
+   },
+   "n": 44,
+   "files": 5,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms DimToWarm is readable over AppKey on the elements listed in who."
+  },
+  {
+   "id": "air:access:05-0527:0x5003",
+   "title": "LBC Admin Property Status 0x5003 (KeyMode)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x5003",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->pidNone/el0": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "The metering socket's meter element 0175 answers the app's KeyMode Admin Set with a 2-byte Status: the property id alone, no access byte and no value (the app's settings session (settings.json))."
+  },
+  {
+   "id": "air:access:05-0527:0x5004",
+   "title": "LBC Admin Property Status 0x5004 (TurnOnThreshold)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x5004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->pidNone/el0": 18
+   },
+   "n": 18,
+   "files": 1,
+   "param_lens": [
+    11
+   ],
+   "notes": "Replies to the app's switch-on threshold Gets / Sets on 0175 (the app's settings session (settings.json)), 11-byte parameters (id, access 3, 8-byte threshold)."
+  },
+  {
+   "id": "air:access:05-0527:0x5005",
+   "title": "LBC Admin Property Status 0x5005 (TurnOffThreshold)",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0x5005",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->pidNone/el0": 15
+   },
+   "n": 15,
+   "files": 1,
+   "param_lens": [
+    11
+   ],
+   "notes": "Replies to the app's switch-off threshold Gets on 0175 (the app's settings session (settings.json)); never set in the session."
+  },
+  {
+   "id": "air:access:05-0527:0xa001",
+   "title": "LBC Admin Property Status 0xA001 (LedModeOn(1))",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0xA001",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 217,
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->HA": 289,
+    "pid2/el0->pidNone/el0": 13,
+    "pid3/el0->HA": 46,
+    "pid3/el0->pidNone/el0": 21
+   },
+   "n": 587,
+   "files": 6,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms LedModeOn(1) is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0xa002",
+   "title": "LBC Admin Property Status 0xA002 (LedModeOff(1))",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0xA002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 210,
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->HA": 284,
+    "pid2/el0->pidNone/el0": 14,
+    "pid3/el0->HA": 44,
+    "pid3/el0->pidNone/el0": 17
+   },
+   "n": 570,
+   "files": 6,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms LedModeOff(1) is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0xa004",
+   "title": "LBC Admin Property Status 0xA004 (LedModeOn(2))",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0xA004",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid2/el0->HA",
+    "pid2/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid2/el0->HA": 201,
+    "pid2/el0->pidNone/el0": 16
+   },
+   "n": 217,
+   "files": 6,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms LedModeOn(2) is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:05-0527:0xa005",
+   "title": "LBC Admin Property Status 0xA005 (LedModeOff(2))",
+   "kind": "access",
+   "opcode": "05:0527",
+   "opcode_onair": "C52705",
+   "prop": "0xA005",
+   "key": "app",
+   "decoder_names": [
+    "LBC Admin Property Status prop"
+   ],
+   "who": [
+    "pid2/el0->HA",
+    "pid2/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid2/el0->HA": 198,
+    "pid2/el0->pidNone/el0": 13
+   },
+   "n": 211,
+   "files": 6,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x05 (C5 27 05). Unicast reply of the node to HA's Admin Get (and to Sets in sets.json); n tracks the Get count 1:1 so the nodes answer every read. Confirms LedModeOff(2) is readable over AppKey on the elements listed in who. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:06",
+   "title": "Config Heartbeat Publication Status (Success)",
+   "kind": "access",
+   "opcode": "06",
+   "opcode_onair": "06",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Publication Status Success:"
+   ],
+   "who": [
+    "gateway->HA",
+    "gateway->unicast-unknown",
+    "pid1/el0->HA",
+    "pid1/el0->unicast-unknown",
+    "pid2/el0->HA",
+    "pid2/el0->unicast-unknown",
+    "pid3/el0->HA",
+    "pid3/el0->unicast-unknown",
+    "pid4/el0->HA",
+    "pid4/el0->unicast-unknown"
+   ],
+   "who_n": {
+    "gateway->HA": 29,
+    "gateway->unicast-unknown": 3,
+    "pid1/el0->HA": 259,
+    "pid1/el0->unicast-unknown": 33,
+    "pid2/el0->HA": 346,
+    "pid2/el0->unicast-unknown": 36,
+    "pid3/el0->HA": 60,
+    "pid3/el0->unicast-unknown": 9,
+    "pid4/el0->HA": 151,
+    "pid4/el0->unicast-unknown": 15
+   },
+   "n": 941,
+   "files": 7,
+   "param_lens": [
+    10
+   ],
+   "notes": "SIG opcode 0x06, DevKey. Nodes and the gateway confirm Heartbeat Publication Set/Get, to HA and (on one capture day only) to the unknown unicast. Proves HA configures heartbeat publication on the gateway too."
+  },
+  {
+   "id": "air:access:08-0527:0x5014",
+   "title": "LBC Manufacturer Property Get 0x5014 (meter manufacture/commission timestamp)",
+   "kind": "access",
+   "opcode": "08:0527",
+   "opcode_onair": "C82705",
+   "prop": "0x5014",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 22
+   },
+   "n": 22,
+   "files": 5,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x08 (C8 27 05). HA reads the socket meter element pid3/el1; the gateway never does. Not in the app."
+  },
+  {
+   "id": "air:access:08-0527:0xc000",
+   "title": "LBC Manufacturer Property Get 0xC000 (GatewayAPIStatus)",
+   "kind": "access",
+   "opcode": "08:0527",
+   "opcode_onair": "C82705",
+   "prop": "0xC000",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->gateway"
+   ],
+   "who_n": {
+    "HA->gateway": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads the JUNG gateway's API status bitfield (rarely: 3 in 7 days, i.e. on setup/diagnostics)."
+  },
+  {
+   "id": "air:access:08-0527:0xc002",
+   "title": "LBC Manufacturer Property Get 0xC002 (GatewayIP)",
+   "kind": "access",
+   "opcode": "08:0527",
+   "opcode_onair": "C82705",
+   "prop": "0xC002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->gateway"
+   ],
+   "who_n": {
+    "HA->gateway": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads the gateway IP string (2 in 7 days)."
+  },
+  {
+   "id": "air:access:0b-0527:0x5014",
+   "title": "LBC Manufacturer Property Status 0x5014",
+   "kind": "access",
+   "opcode": "0B:0527",
+   "opcode_onair": "CB2705",
+   "prop": "0x5014",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->HA"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 22
+   },
+   "n": 22,
+   "files": 5,
+   "param_lens": [
+    10
+   ],
+   "notes": "Vendor opcode 0x0B. Reply from pid3/el1 to HA: 10-byte params = prop + 7-byte [year-1900 u16][mon][day][h][m][s], constant per device."
+  },
+  {
+   "id": "air:access:0b-0527:0xc000",
+   "title": "LBC Manufacturer Property Status 0xC000 (GatewayAPIStatus)",
+   "kind": "access",
+   "opcode": "0B:0527",
+   "opcode_onair": "CB2705",
+   "prop": "0xC000",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Status prop"
+   ],
+   "who": [
+    "gateway->HA"
+   ],
+   "who_n": {
+    "gateway->HA": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Gateway reply to HA: 4-byte params = prop + u8 bitfield (+pad). The gateway is a Manufacturer-property server reachable with the AppKey."
+  },
+  {
+   "id": "air:access:0b-0527:0xc002",
+   "title": "LBC Manufacturer Property Status 0xC002 (GatewayIP)",
+   "kind": "access",
+   "opcode": "0B:0527",
+   "opcode_onair": "CB2705",
+   "prop": "0xC002",
+   "key": "app",
+   "decoder_names": [
+    "LBC Manufacturer Property Status prop"
+   ],
+   "who": [
+    "gateway->HA"
+   ],
+   "who_n": {
+    "gateway->HA": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [
+    15
+   ],
+   "notes": "Gateway reply: 15-byte params = prop + ASCII IPv4 string; segmented on air."
+  },
+  {
+   "id": "air:access:0e-0527:0x1007",
+   "title": "LBC User Property Get 0x1007 (TimedOnDuration)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "unicast-unknown->pid1/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->pid1/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Vendor opcode 0x0E (CE 27 05) read of TimedOnDuration via the User server; once in sets.json. Shows the User server mirrors the Admin value."
+  },
+  {
+   "id": "air:access:0e-0527:0x1014",
+   "title": "LBC User Property Get 0x1014 (RtrOperationMode)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0x1014",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0"
+   ],
+   "who_n": {
+    "gateway->pid1/el0": 1138,
+    "gateway->pid1/el1": 379,
+    "gateway->pid2/el0": 1136
+   },
+   "n": 2653,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "Gateway poll: the gateway reads RtrOperationMode of pid1/el0, pid1/el1, pid2/el0 as part of its ~12 s round-robin; ~380/day. HA does not."
+  },
+  {
+   "id": "air:access:0e-0527:0x5003",
+   "title": "LBC User Property Get 0x5003 (KeyMode)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0x5003",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0",
+    "gateway->pid2/el1",
+    "gateway->pid2/el2",
+    "gateway->pid2/el3",
+    "gateway->pid2/el4",
+    "gateway->pid2/el5"
+   ],
+   "who_n": {
+    "gateway->pid1/el0": 381,
+    "gateway->pid1/el1": 379,
+    "gateway->pid2/el0": 380,
+    "gateway->pid2/el1": 1526,
+    "gateway->pid2/el2": 1895,
+    "gateway->pid2/el3": 8921,
+    "gateway->pid2/el4": 1132,
+    "gateway->pid2/el5": 380
+   },
+   "n": 14994,
+   "files": 13,
+   "param_lens": [
+    2
+   ],
+   "notes": "The single most frequent gateway poll: the gateway reads KeyMode of every key element (pid1 el0/el1, pid2 el0..el5) round-robin, ~2100/day; pid2/el3 is asked far more often (8901) than the rest (~380) - the gateway re-reads that element repeatedly (possible retry loop / KeyMode it cannot resolve). HA never reads KeyMode."
+  },
+  {
+   "id": "air:access:0e-0527:0x5010",
+   "title": "LBC User Property Get 0x5010 (DailyEnergyChart)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0x5010",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): opening the socket reads the daily energy chart of the meter element 0175."
+  },
+  {
+   "id": "air:access:0e-0527:0x5011",
+   "title": "LBC User Property Get 0x5011 (MonthlyEnergyChart)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0x5011",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el1": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's consumption page reads the monthly energy chart of 0175."
+  },
+  {
+   "id": "air:access:0e-0527:0xc001",
+   "title": "LBC User Property Get 0xC001 (GatewayAPIToken)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0xC001",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->gateway"
+   ],
+   "who_n": {
+    "pidNone/el0->gateway": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [],
+   "notes": "Phone app only (the app's settings session (settings.json)): the gateway settings page reads the API token from the gateway 00DC through its User server. The capture was decoded with the token value redacted, so no parameter lengths are recorded."
+  },
+  {
+   "id": "air:access:0e-0527:0xc002",
+   "title": "LBC User Property Get 0xC002 (GatewayIP)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0xC002",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->gateway"
+   ],
+   "who_n": {
+    "pidNone/el0->gateway": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the gateway settings page reads the gateway's IP address through the User server (HA uses the Manufacturer server: 08-0527)."
+  },
+  {
+   "id": "air:access:0e-0527:0xc003",
+   "title": "LBC User Property Get 0xC003 (GatewayCertificateFingerprint)",
+   "kind": "access",
+   "opcode": "0E:0527",
+   "opcode_onair": "CE2705",
+   "prop": "0xC003",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->gateway"
+   ],
+   "who_n": {
+    "pidNone/el0->gateway": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): 'check for updates' reads the gateway's certificate fingerprint through the User server."
+  },
+  {
+   "id": "air:access:10-0527:0x5012",
+   "title": "LBC User Property Set Unack 0x5012 (KEY_EVT)",
+   "kind": "access",
+   "opcode": "10:0527",
+   "opcode_onair": "D02705",
+   "prop": "0x5012",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Set Unack prop"
+   ],
+   "who": [
+    "pid2/el1->group",
+    "pid2/el2->group"
+   ],
+   "who_n": {
+    "pid2/el1->group": 17,
+    "pid2/el2->group": 41
+   },
+   "n": 58,
+   "files": 5,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x10 (D0 27 05) published by key elements pid2/el1 and pid2/el2 to their group on each press: 4 bytes = prop + [counter u8][event u8] (0/1 push down/up, 2/3 held). This is how raw button events are exposed; HA can subscribe to the group to get press/hold events."
+  },
+  {
+   "id": "air:access:11-0527:0x1007",
+   "title": "LBC User Property Status 0x1007",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x1007",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->unicast-unknown"
+   ],
+   "who_n": {
+    "pid1/el0->unicast-unknown": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "Vendor opcode 0x11 reply to the sets.json User Get; 7 bytes = prop + uint32 LE ms (+1)."
+  },
+  {
+   "id": "air:access:11-0527:0x1014",
+   "title": "LBC User Property Status 0x1014",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x1014",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->gateway",
+    "pid1/el1->gateway",
+    "pid2/el0->gateway"
+   ],
+   "who_n": {
+    "pid1/el0->gateway": 1137,
+    "pid1/el1->gateway": 379,
+    "pid2/el0->gateway": 1136
+   },
+   "n": 2652,
+   "files": 9,
+   "param_lens": [
+    4
+   ],
+   "notes": "Unicast reply to the gateway (4 bytes = prop + u8 bool + pad). 1:1 with the Gets."
+  },
+  {
+   "id": "air:access:11-0527:0x5003",
+   "title": "LBC User Property Status 0x5003 (KeyMode)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x5003",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "pid1/el0->gateway",
+    "pid1/el1->gateway",
+    "pid2/el0->gateway",
+    "pid2/el1->gateway",
+    "pid2/el2->gateway",
+    "pid2/el3->gateway",
+    "pid2/el4->gateway",
+    "pid2/el5->gateway"
+   ],
+   "who_n": {
+    "pid1/el0->gateway": 381,
+    "pid1/el1->gateway": 378,
+    "pid2/el0->gateway": 380,
+    "pid2/el1->gateway": 1525,
+    "pid2/el2->gateway": 1895,
+    "pid2/el3->gateway": 8920,
+    "pid2/el4->gateway": 1132,
+    "pid2/el5->gateway": 380
+   },
+   "n": 14991,
+   "files": 13,
+   "param_lens": [
+    4
+   ],
+   "notes": "Unicast replies to the gateway, 4 bytes = prop + u8 KeyMode + pad; 1:1 with Gets. Passive HA could learn every key element's KeyMode from these without polling."
+  },
+  {
+   "id": "air:access:11-0527:0x5010",
+   "title": "LBC User Property Status 0x5010 (DailyEnergyChart)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x5010",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->pidNone/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    53
+   ],
+   "notes": "Reply of 0175 to the app's daily chart Get: 25 u16 values (53-byte parameters)."
+  },
+  {
+   "id": "air:access:11-0527:0x5011",
+   "title": "LBC User Property Status 0x5011 (MonthlyEnergyChart)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x5011",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->pidNone/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    99
+   ],
+   "notes": "Reply of 0175 to the app's monthly chart Get: 32 u24 values (99-byte parameters)."
+  },
+  {
+   "id": "air:access:11-0527:0x5013",
+   "title": "LBC User Property Status 0x5013 (KEY_STATUS / status LED)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0x5013",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "HA->pid2/el2",
+    "gateway->pid2/el1",
+    "gateway->pid2/el2"
+   ],
+   "who_n": {
+    "HA->pid2/el2": 27,
+    "gateway->pid2/el1": 18,
+    "gateway->pid2/el2": 20
+   },
+   "n": 65,
+   "files": 7,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x11 used as a WRITE: the gateway (to pid2/el1, pid2/el2) and HA (to pid2/el2) send a User Property Status carrying the key status-LED value; no reply follows. The gateway does not use a Set for the status LED."
+  },
+  {
+   "id": "air:access:11-0527:0xc001",
+   "title": "LBC User Property Status 0xC001 (GatewayAPIToken)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0xC001",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "gateway->pidNone/el0"
+   ],
+   "who_n": {
+    "gateway->pidNone/el0": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [],
+   "notes": "The gateway's reply with the API token (value redacted in the decode; no lengths recorded)."
+  },
+  {
+   "id": "air:access:11-0527:0xc002",
+   "title": "LBC User Property Status 0xC002 (GatewayIP)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0xC002",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "gateway->pidNone/el0"
+   ],
+   "who_n": {
+    "gateway->pidNone/el0": 3
+   },
+   "n": 3,
+   "files": 1,
+   "param_lens": [
+    15
+   ],
+   "notes": "The gateway's reply with its IP address as ASCII (15-byte parameters)."
+  },
+  {
+   "id": "air:access:11-0527:0xc003",
+   "title": "LBC User Property Status 0xC003 (GatewayCertificateFingerprint)",
+   "kind": "access",
+   "opcode": "11:0527",
+   "opcode_onair": "D12705",
+   "prop": "0xC003",
+   "key": "app",
+   "decoder_names": [
+    "LBC User Property Status prop"
+   ],
+   "who": [
+    "gateway->pidNone/el0"
+   ],
+   "who_n": {
+    "gateway->pidNone/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    67
+   ],
+   "notes": "The gateway's reply with the certificate fingerprint as 64 hex characters (67-byte parameters)."
+  },
+  {
+   "id": "air:access:12-0527",
+   "title": "JH Scheduler Get (slot list)",
+   "kind": "access",
+   "opcode": "12:0527",
+   "opcode_onair": "D22705",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "JH Scheduler Get slots (central id"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 20
+   },
+   "n": 20,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): every visit of the socket's page reads the scheduler slot list of 0174 (sub-command 15, central id 0) - 'JH Scheduler Get slots (central id 0)'."
+  },
+  {
+   "id": "air:access:13-0527",
+   "title": "JH Scheduler Status (slot list)",
+   "kind": "access",
+   "opcode": "13:0527",
+   "opcode_onair": "D32705",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "JH Scheduler Status slots (central id"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 17
+   },
+   "n": 17,
+   "files": 1,
+   "param_lens": [
+    6
+   ],
+   "notes": "Reply of 0174 to the slot-list Get: 16 slots available (6-byte parameters)."
+  },
+  {
+   "id": "air:access:16-0527",
+   "title": "Scene Action Setup Get",
+   "kind": "access",
+   "opcode": "16:0527",
+   "opcode_onair": "D62705",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Scene Action Setup Get list",
+    "Scene Action Setup Get scene"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid4/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 122,
+    "HA->pid2/el0": 127,
+    "HA->pid4/el0": 131
+   },
+   "n": 380,
+   "files": 5,
+   "param_lens": [
+    4
+   ],
+   "notes": "Vendor opcode 0x16 (D6 27 05, model 0x0527:1017). Only HA sends it, to pid1/el0, pid2/el0, pid4/el0 - two forms (4-byte params): list request and per-scene request. HA enumerates the scenes stored in the actuators; the gateway never asks."
+  },
+  {
+   "id": "air:access:17-0527",
+   "title": "Scene Action Setup Status",
+   "kind": "access",
+   "opcode": "17:0527",
+   "opcode_onair": "D72705",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Scene Action Setup Status",
+    "Scene Action Setup Status scene"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid2/el0->HA",
+    "pid4/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 119,
+    "pid2/el0->HA": 125,
+    "pid4/el0->HA": 182
+   },
+   "n": 426,
+   "files": 5,
+   "param_lens": [
+    8,
+    12
+   ],
+   "notes": "Vendor opcode 0x17 (D7 27 05). Replies to HA: 8-byte per-scene entry or 12-byte list form (pid2/pid4). Carries stored scene actions (e.g. colour temperature in Kelvin)."
+  },
+  {
+   "id": "air:access:42",
+   "title": "Generic Location Global Set Unack",
+   "kind": "access",
+   "opcode": "42",
+   "opcode_onair": "42",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic Location Global Set Unack"
+   ],
+   "who": [
+    "HA->fixed-group"
+   ],
+   "who_n": {
+    "HA->fixed-group": 4
+   },
+   "n": 4,
+   "files": 2,
+   "param_lens": [
+    10
+   ],
+   "notes": "SIG 0x42, 10-byte params (lat/long/alt). Only HA, to a SIG fixed group (all-nodes), 4 times over two days: HA pushes the site location (for astro/sunrise schedules), as the app does."
+  },
+  {
+   "id": "air:access:46:0x000d",
+   "title": "Generic Manufacturer Property Status 0x000D",
+   "kind": "access",
+   "opcode": "46",
+   "opcode_onair": "46",
+   "prop": "0x000D",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid3/el1->HA"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 3047
+   },
+   "n": 3047,
+   "files": 9,
+   "param_lens": [
+    7
+   ],
+   "notes": "SIG 0x46 reply from pid3/el1 to HA, 7 bytes (prop, access, uint24 energy)."
+  },
+  {
+   "id": "air:access:46:0x0010",
+   "title": "Generic Manufacturer Property Status 0x0010",
+   "kind": "access",
+   "opcode": "46",
+   "opcode_onair": "46",
+   "prop": "0x0010",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->pidNone/el0": 6,
+    "pid3/el0->pidNone/el0": 14
+   },
+   "n": 21,
+   "files": 1,
+   "param_lens": [
+    19
+   ],
+   "notes": "Replies to the app's hardware revision Gets (19-byte parameters: ASCII '10000000' padded with zeros)."
+  },
+  {
+   "id": "air:access:46:0x0011",
+   "title": "Generic Manufacturer Property Status 0x0011",
+   "kind": "access",
+   "opcode": "46",
+   "opcode_onair": "46",
+   "prop": "0x0011",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->pidNone/el0": 6,
+    "pid3/el0->pidNone/el0": 14
+   },
+   "n": 21,
+   "files": 1,
+   "param_lens": [
+    39
+   ],
+   "notes": "Replies to the app's manufacturer name Gets (39 bytes: 'Albrecht Jung GmbH & Co.KG' zero-padded)."
+  },
+  {
+   "id": "air:access:46:0x001a",
+   "title": "Generic Manufacturer Property Status 0x001A",
+   "kind": "access",
+   "opcode": "46",
+   "opcode_onair": "46",
+   "prop": "0x001A",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "gateway->HA",
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->gateway",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->gateway",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA",
+    "pid4/el0->gateway"
+   ],
+   "who_n": {
+    "gateway->HA": 2,
+    "pid1/el0->HA": 36,
+    "pid1/el0->gateway": 983,
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->HA": 48,
+    "pid2/el0->gateway": 2827,
+    "pid2/el0->pidNone/el0": 6,
+    "pid3/el0->HA": 8,
+    "pid3/el0->gateway": 246,
+    "pid3/el0->pidNone/el0": 14,
+    "pid4/el0->HA": 20,
+    "pid4/el0->gateway": 615
+   },
+   "n": 4806,
+   "files": 11,
+   "param_lens": [
+    2,
+    11
+   ],
+   "notes": "SIG 0x46 replies (segmented, 11 bytes; 2-byte = property absent) from all node classes to HA and gateway: firmware revision string. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:46:0x0072",
+   "title": "Generic Manufacturer Property Status 0x0072",
+   "kind": "access",
+   "opcode": "46",
+   "opcode_onair": "46",
+   "prop": "0x0072",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid3/el1->HA"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 2998
+   },
+   "n": 2998,
+   "files": 9,
+   "param_lens": [
+    7
+   ],
+   "notes": "SIG 0x46 reply from pid3/el1 to HA, 7 bytes."
+  },
+  {
+   "id": "air:access:4a:0x006a",
+   "title": "Generic Admin Property Status 0x006A",
+   "kind": "access",
+   "opcode": "4A",
+   "opcode_onair": "4A",
+   "prop": "0x006A",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid3/el1->HA",
+    "pid3/el1->gateway",
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 3043,
+    "pid3/el1->gateway": 244,
+    "pid3/el1->pidNone/el0": 2
+   },
+   "n": 3289,
+   "files": 9,
+   "param_lens": [
+    7
+   ],
+   "notes": "SIG 0x4A reply from pid3/el1 to HA and gateway, 7 bytes: total energy counter. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:4a:0x006d",
+   "title": "Generic Admin Property Status 0x006D",
+   "kind": "access",
+   "opcode": "4A",
+   "opcode_onair": "4A",
+   "prop": "0x006D",
+   "key": "app",
+   "decoder_names": [
+    "SIG Property Status"
+   ],
+   "who": [
+    "pid3/el0->HA",
+    "pid3/el0->gateway",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->HA": 3015,
+    "pid3/el0->gateway": 756,
+    "pid3/el0->pidNone/el0": 1
+   },
+   "n": 3772,
+   "files": 10,
+   "param_lens": [
+    6
+   ],
+   "notes": "SIG 0x4A reply from pid3/el0 to HA and gateway, 6 bytes: power-on time. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:52:0x0052",
+   "title": "Sensor Status 0x0052",
+   "kind": "access",
+   "opcode": "52",
+   "opcode_onair": "52",
+   "prop": "0x0052",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Status"
+   ],
+   "who": [
+    "pid3/el1->gateway"
+   ],
+   "who_n": {
+    "pid3/el1->gateway": 753
+   },
+   "n": 753,
+   "files": 9,
+   "param_lens": [
+    5
+   ],
+   "notes": "Only as a reply to the gateway's Sensor Get (5 bytes); never published."
+  },
+  {
+   "id": "air:access:52:0x005c",
+   "title": "Sensor Status 0x005C",
+   "kind": "access",
+   "opcode": "52",
+   "opcode_onair": "52",
+   "prop": "0x005C",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Status"
+   ],
+   "who": [
+    "pid3/el1->HA",
+    "pid3/el1->gateway",
+    "pid3/el1->group"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 22,
+    "pid3/el1->gateway": 364,
+    "pid3/el1->group": 10669
+   },
+   "n": 11055,
+   "files": 12,
+   "param_lens": [
+    4
+   ],
+   "notes": "pid3/el1 publishes current to its group every ~65 s and on change, plus replies to HA/gateway Gets (4 bytes, uint16 x0.01 A)."
+  },
+  {
+   "id": "air:access:52:0x005d",
+   "title": "Sensor Status 0x005D",
+   "kind": "access",
+   "opcode": "52",
+   "opcode_onair": "52",
+   "prop": "0x005D",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Status"
+   ],
+   "who": [
+    "pid3/el1->HA",
+    "pid3/el1->group"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 21,
+    "pid3/el1->group": 15495
+   },
+   "n": 15516,
+   "files": 13,
+   "param_lens": [
+    4
+   ],
+   "notes": "pid3/el1 publishes voltage (1 V steps) every ~65 s to its group (idle sockets publish only voltage); replies to HA."
+  },
+  {
+   "id": "air:access:52:0x0081",
+   "title": "Sensor Status 0x0081",
+   "kind": "access",
+   "opcode": "52",
+   "opcode_onair": "52",
+   "prop": "0x0081",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Status"
+   ],
+   "who": [
+    "pid3/el1->HA",
+    "pid3/el1->gateway",
+    "pid3/el1->group",
+    "pid3/el1->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el1->HA": 22,
+    "pid3/el1->gateway": 3,
+    "pid3/el1->group": 17597,
+    "pid3/el1->pidNone/el0": 43
+   },
+   "n": 17665,
+   "files": 13,
+   "param_lens": [
+    5
+   ],
+   "notes": "pid3/el1 publishes active power (uint24 x0.1 W) every ~65 s / on change; replies to HA and gateway. The dominant sensor stream. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:5c",
+   "title": "Time Set",
+   "kind": "access",
+   "opcode": "5C",
+   "opcode_onair": "5C",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Time Set"
+   ],
+   "who": [
+    "HA->fixed-group",
+    "pidNone/el0->fixed-group"
+   ],
+   "who_n": {
+    "HA->fixed-group": 13,
+    "pidNone/el0->fixed-group": 3
+   },
+   "n": 16,
+   "files": 7,
+   "param_lens": [
+    10
+   ],
+   "notes": "SIG 0x5C, 10-byte TAI time. Only HA, to a fixed group (all-nodes), ~daily (TIME_SET_INTERVAL 86400 s) and after connect/DST. The JUNG gateway does not broadcast Time Set in this installation. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:5d",
+   "title": "Time Status",
+   "kind": "access",
+   "opcode": "5D",
+   "opcode_onair": "5D",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Time Status"
+   ],
+   "who": [
+    "gateway->HA",
+    "gateway->pidNone/el0",
+    "pid1/el0->HA",
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA",
+    "pid4/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "gateway->HA": 13,
+    "gateway->pidNone/el0": 3,
+    "pid1/el0->HA": 111,
+    "pid1/el0->pidNone/el0": 24,
+    "pid2/el0->HA": 147,
+    "pid2/el0->pidNone/el0": 35,
+    "pid3/el0->HA": 20,
+    "pid3/el0->pidNone/el0": 4,
+    "pid4/el0->HA": 62,
+    "pid4/el0->pidNone/el0": 15
+   },
+   "n": 434,
+   "files": 7,
+   "param_lens": [
+    10
+   ],
+   "notes": "SIG 0x5D. Every node class (gateway, pid1..pid4 el0) replies unicast to HA after each Time Set that HA broadcasts to all-nodes (13 Sets x ~27 nodes = 353); no Time Get is ever sent. Confirms all nodes host a Time Server and acknowledge a group Time Set. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:5e",
+   "title": "Scene Status",
+   "kind": "access",
+   "opcode": "5E",
+   "opcode_onair": "5E",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Scene Status"
+   ],
+   "who": [
+    "pid1/el0->group",
+    "pid2/el0->group",
+    "pid4/el0->group"
+   ],
+   "who_n": {
+    "pid1/el0->group": 131,
+    "pid2/el0->group": 117,
+    "pid4/el0->group": 177
+   },
+   "n": 425,
+   "files": 8,
+   "param_lens": [
+    3
+   ],
+   "notes": "SIG 0x5E, 3-byte params. pid1/pid2/pid4 el0 publish Scene Status to their group after a scene recall (key-triggered 8243 or a scene)."
+  },
+  {
+   "id": "air:access:8018",
+   "title": "Config Model Publication Get",
+   "kind": "access",
+   "opcode": "8018",
+   "opcode_onair": "8018",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Publication Get"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 14
+   },
+   "n": 14,
+   "files": 1,
+   "param_lens": [
+    4
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's settings page reads the meter element's Sensor Server (0x1100) publication - the state of 'Sensor values for IoT systems'."
+  },
+  {
+   "id": "air:access:8019",
+   "title": "Config Model Publication Status (Success)",
+   "kind": "access",
+   "opcode": "8019",
+   "opcode_onair": "8019",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Publication Status Success:"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 19
+   },
+   "n": 19,
+   "files": 1,
+   "param_lens": [
+    12
+   ],
+   "notes": "Replies of 0174 to the app's Publication Gets and Sets (publish C007 or 0000 for 0175)."
+  },
+  {
+   "id": "air:access:801b",
+   "title": "Config Model Subscription Add",
+   "kind": "access",
+   "opcode": "801B",
+   "opcode_onair": "801B",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Subscription Add"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid4/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 2,
+    "pidNone/el0->pid4/el0": 2
+   },
+   "n": 4,
+   "files": 1,
+   "param_lens": [
+    6,
+    8
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): threshold wiring (0175 OnOff Client 0x1001 to C007; target light 0133 vendor 0x0527:1013 then OnOff Server 0x1000 to C007) and the room assignment (0174 OnOff Server 0x1000 to the room group C010)."
+  },
+  {
+   "id": "air:access:801c",
+   "title": "Config Model Subscription Delete",
+   "kind": "access",
+   "opcode": "801C",
+   "opcode_onair": "801C",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Subscription Delete"
+   ],
+   "who": [
+    "pidNone/el0->pid4/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid4/el0": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [
+    6,
+    8
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): threshold disable unsubscribes the target 0133 (0x1000 then 0x0527:1013) from C007."
+  },
+  {
+   "id": "air:access:801f",
+   "title": "Config Model Subscription Status (Success)",
+   "kind": "access",
+   "opcode": "801F",
+   "opcode_onair": "801F",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model Subscription Status Success:"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 2,
+    "pid4/el0->pidNone/el0": 4
+   },
+   "n": 6,
+   "files": 1,
+   "param_lens": [
+    7,
+    9
+   ],
+   "notes": "Replies (Success) of 0174 and 0133 to the app's Subscription Add / Delete."
+  },
+  {
+   "id": "air:access:8031",
+   "title": "Health Fault Get",
+   "kind": "access",
+   "opcode": "8031",
+   "opcode_onair": "8031",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Health Fault Get"
+   ],
+   "who": [
+    "HA->gateway",
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "HA->pid4/el0"
+   ],
+   "who_n": {
+    "HA->gateway": 12,
+    "HA->pid1/el0": 110,
+    "HA->pid2/el0": 145,
+    "HA->pid3/el0": 25,
+    "HA->pid4/el0": 49
+   },
+   "n": 341,
+   "files": 5,
+   "param_lens": [
+    2
+   ],
+   "notes": "SIG Health Fault Get (company 0x0527), only HA sends it, to every node primary element: HA's periodic fault-register read (~50/day network wide)."
+  },
+  {
+   "id": "air:access:8038",
+   "title": "Config Heartbeat Publication Get",
+   "kind": "access",
+   "opcode": "8038",
+   "opcode_onair": "8038",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Publication Get"
+   ],
+   "who": [
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->gateway": 1,
+    "unicast-unknown->pid1/el0": 11,
+    "unicast-unknown->pid2/el0": 11,
+    "unicast-unknown->pid3/el0": 3,
+    "unicast-unknown->pid4/el0": 5
+   },
+   "n": 31,
+   "files": 1,
+   "param_lens": [
+    0
+   ],
+   "notes": "DevKey. Only from the unknown unicast on one capture day (a provisioner/tool address absent from the export, most likely an earlier HA provisioner address during development) to all node classes."
+  },
+  {
+   "id": "air:access:8039",
+   "title": "Config Heartbeat Publication Set",
+   "kind": "access",
+   "opcode": "8039",
+   "opcode_onair": "8039",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Publication Set"
+   ],
+   "who": [
+    "HA->gateway",
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "HA->gateway": 29,
+    "HA->pid1/el0": 260,
+    "HA->pid2/el0": 341,
+    "HA->pid3/el0": 59,
+    "HA->pid4/el0": 122,
+    "unicast-unknown->gateway": 2,
+    "unicast-unknown->pid1/el0": 22,
+    "unicast-unknown->pid2/el0": 22,
+    "unicast-unknown->pid3/el0": 6,
+    "unicast-unknown->pid4/el0": 10
+   },
+   "n": 873,
+   "files": 7,
+   "param_lens": [
+    9
+   ],
+   "notes": "DevKey, 9-byte params. HA (re)configures heartbeat publication (period log 7 = 64 s, dst = HA, count 0xFF) on every node including the gateway - every ~6 h and on re-probe of dead nodes; the unknown unicast did the same on one capture day."
+  },
+  {
+   "id": "air:access:803a",
+   "title": "Config Heartbeat Subscription Get",
+   "kind": "access",
+   "opcode": "803A",
+   "opcode_onair": "803A",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Subscription Get"
+   ],
+   "who": [
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->gateway": 28,
+    "unicast-unknown->pid1/el0": 253,
+    "unicast-unknown->pid2/el0": 306,
+    "unicast-unknown->pid3/el0": 61,
+    "unicast-unknown->pid4/el0": 139
+   },
+   "n": 787,
+   "files": 1,
+   "param_lens": [
+    0
+   ],
+   "notes": "DevKey, only from the unknown unicast, only on one capture day (787 in one file) - a heartbeat-subscription probing loop by a development tool. Not part of steady-state traffic."
+  },
+  {
+   "id": "air:access:803b",
+   "title": "Config Heartbeat Subscription Set",
+   "kind": "access",
+   "opcode": "803B",
+   "opcode_onair": "803B",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Subscription Set"
+   ],
+   "who": [
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "unicast-unknown->gateway": 56,
+    "unicast-unknown->pid1/el0": 509,
+    "unicast-unknown->pid2/el0": 615,
+    "unicast-unknown->pid3/el0": 118,
+    "unicast-unknown->pid4/el0": 278
+   },
+   "n": 1576,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "DevKey 5-byte params, only from the unknown unicast on one capture day (1576), to gateway and all nodes. Development-era experiment; neither HA steady state nor the gateway does this."
+  },
+  {
+   "id": "air:access:803c",
+   "title": "Config Heartbeat Subscription Status (Success)",
+   "kind": "access",
+   "opcode": "803C",
+   "opcode_onair": "803C",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Heartbeat Subscription Status Success:"
+   ],
+   "who": [
+    "gateway->unicast-unknown",
+    "pid1/el0->unicast-unknown",
+    "pid2/el0->unicast-unknown",
+    "pid3/el0->unicast-unknown",
+    "pid4/el0->unicast-unknown"
+   ],
+   "who_n": {
+    "gateway->unicast-unknown": 84,
+    "pid1/el0->unicast-unknown": 766,
+    "pid2/el0->unicast-unknown": 1007,
+    "pid3/el0->unicast-unknown": 177,
+    "pid4/el0->unicast-unknown": 420
+   },
+   "n": 2454,
+   "files": 1,
+   "param_lens": [
+    9
+   ],
+   "notes": "DevKey replies to the unknown unicast's subscription Set/Get loop (9 bytes, 2 segments -> the segment/segment-ack bursts that day)."
+  },
+  {
+   "id": "air:access:803d",
+   "title": "Config Model App Bind",
+   "kind": "access",
+   "opcode": "803D",
+   "opcode_onair": "803D",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model App Bind"
+   ],
+   "who": [
+    "pidNone/el0->gateway"
+   ],
+   "who_n": {
+    "pidNone/el0->gateway": 7
+   },
+   "n": 7,
+   "files": 1,
+   "param_lens": [
+    6
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): every visit of the gateway settings binds AppKey 0 to SIG model 0x0004 (Remote Provisioning Server) on the gateway 00DC, device key."
+  },
+  {
+   "id": "air:access:803e",
+   "title": "Config Model App Status (Cannot Bind)",
+   "kind": "access",
+   "opcode": "803E",
+   "opcode_onair": "803E",
+   "prop": null,
+   "key": "dev",
+   "decoder_names": [
+    "Config Model App Status Cannot Bind:"
+   ],
+   "who": [
+    "gateway->pidNone/el0"
+   ],
+   "who_n": {
+    "gateway->pidNone/el0": 7
+   },
+   "n": 7,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "The gateway answers each of those binds with Cannot Bind (7-byte parameters)."
+  },
+  {
+   "id": "air:access:8201",
+   "title": "Generic OnOff Get",
+   "kind": "access",
+   "opcode": "8201",
+   "opcode_onair": "8201",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic OnOff Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid1/el1",
+    "HA->pid2/el0",
+    "HA->pid2/el1",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0",
+    "gateway->pid2/el1",
+    "gateway->pid3/el0",
+    "gateway->pid4/el0",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid1/el1",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid2/el1",
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid4/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 77,
+    "HA->pid1/el1": 13,
+    "HA->pid2/el0": 101,
+    "HA->pid2/el1": 37,
+    "HA->pid3/el0": 27,
+    "HA->pid4/el0": 49,
+    "gateway->pid1/el0": 2707,
+    "gateway->pid1/el1": 412,
+    "gateway->pid2/el0": 4325,
+    "gateway->pid2/el1": 1187,
+    "gateway->pid3/el0": 757,
+    "gateway->pid4/el0": 1956,
+    "pidNone/el0->pid1/el0": 7,
+    "pidNone/el0->pid1/el1": 1,
+    "pidNone/el0->pid2/el0": 11,
+    "pidNone/el0->pid2/el1": 4,
+    "pidNone/el0->pid3/el0": 20,
+    "pidNone/el0->pid4/el0": 5
+   },
+   "n": 11696,
+   "files": 12,
+   "param_lens": [
+    0
+   ],
+   "notes": "The gateway dominates (~11.3k of 11.6k): it polls OnOff of every load element (pid1..pid4) in its ~12 s round-robin. HA reads OnOff only on connect/refresh (~300 in 7 days) and otherwise relies on the nodes' group publications. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:8202",
+   "title": "Generic OnOff Set (ON/OFF)",
+   "kind": "access",
+   "opcode": "8202",
+   "opcode_onair": "8202",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic OnOff Set OFF",
+    "Generic OnOff Set ON"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid2/el1",
+    "HA->pid4/el0",
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0",
+    "gateway->pid2/el1",
+    "gateway->pid4/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 2,
+    "HA->pid2/el0": 4,
+    "HA->pid2/el1": 2,
+    "HA->pid4/el0": 4,
+    "gateway->pid1/el0": 871,
+    "gateway->pid1/el1": 70,
+    "gateway->pid2/el0": 247,
+    "gateway->pid2/el1": 61,
+    "gateway->pid4/el0": 400
+   },
+   "n": 1661,
+   "files": 9,
+   "param_lens": [
+    4
+   ],
+   "notes": "Acknowledged Set (4 bytes = on/off, TID, transition, delay). Mostly the gateway (~1650: JUNG app/scenes/automations driven through the gateway); HA 12 (user actions). Node replies unicast only if the state is unchanged; otherwise it publishes OnOff Status twice to its group."
+  },
+  {
+   "id": "air:access:8203",
+   "title": "Generic OnOff Set Unack (ON/OFF)",
+   "kind": "access",
+   "opcode": "8203",
+   "opcode_onair": "8203",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic OnOff Set Unack OFF",
+    "Generic OnOff Set Unack ON"
+   ],
+   "who": [
+    "pid1/el1->group",
+    "pid2/el1->group",
+    "pid2/el2->group",
+    "pid2/el3->group",
+    "pid4/el1->group"
+   ],
+   "who_n": {
+    "pid1/el1->group": 9,
+    "pid2/el1->group": 2,
+    "pid2/el2->group": 51,
+    "pid2/el3->group": 26,
+    "pid4/el1->group": 30
+   },
+   "n": 118,
+   "files": 7,
+   "param_lens": [
+    4
+   ],
+   "notes": "Published by key/input elements (pid1/el1, pid2/el1..el3, pid4/el1) to groups when a key bound in OnOff mode is pressed - the on-air form of a wall switch press."
+  },
+  {
+   "id": "air:access:8204",
+   "title": "Generic OnOff Status",
+   "kind": "access",
+   "opcode": "8204",
+   "opcode_onair": "8204",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic OnOff Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid1/el0->group",
+    "pid1/el0->pidNone/el0",
+    "pid1/el1->HA",
+    "pid1/el1->gateway",
+    "pid1/el1->group",
+    "pid1/el1->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->gateway",
+    "pid2/el0->group",
+    "pid2/el0->pidNone/el0",
+    "pid2/el1->HA",
+    "pid2/el1->gateway",
+    "pid2/el1->group",
+    "pid2/el1->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->gateway",
+    "pid3/el0->pidNone/el0",
+    "pid4/el0->HA",
+    "pid4/el0->gateway",
+    "pid4/el0->group",
+    "pid4/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 78,
+    "pid1/el0->gateway": 3105,
+    "pid1/el0->group": 1455,
+    "pid1/el0->pidNone/el0": 7,
+    "pid1/el1->HA": 13,
+    "pid1/el1->gateway": 482,
+    "pid1/el1->group": 4,
+    "pid1/el1->pidNone/el0": 1,
+    "pid2/el0->HA": 102,
+    "pid2/el0->gateway": 4519,
+    "pid2/el0->group": 528,
+    "pid2/el0->pidNone/el0": 12,
+    "pid2/el1->HA": 39,
+    "pid2/el1->gateway": 1246,
+    "pid2/el1->group": 95,
+    "pid2/el1->pidNone/el0": 4,
+    "pid3/el0->HA": 25,
+    "pid3/el0->gateway": 756,
+    "pid3/el0->pidNone/el0": 20,
+    "pid4/el0->HA": 64,
+    "pid4/el0->gateway": 2049,
+    "pid4/el0->group": 1207,
+    "pid4/el0->pidNone/el0": 5
+   },
+   "n": 15816,
+   "files": 12,
+   "param_lens": [
+    1,
+    3
+   ],
+   "notes": "The most common status: nodes reply to Gets (HA, gateway) and publish to their groups on change (twice, 0.9-2.3 s apart). 1-byte (present) or 3-byte (present,target,remaining) forms. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:8205",
+   "title": "Generic Level Get",
+   "kind": "access",
+   "opcode": "8205",
+   "opcode_onair": "8205",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic Level Get"
+   ],
+   "who": [
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0",
+    "gateway->pid2/el1"
+   ],
+   "who_n": {
+    "gateway->pid1/el0": 380,
+    "gateway->pid1/el1": 381,
+    "gateway->pid2/el0": 1163,
+    "gateway->pid2/el1": 1128
+   },
+   "n": 3052,
+   "files": 10,
+   "param_lens": [
+    0
+   ],
+   "notes": "Only the gateway polls Generic Level of pid1/pid2 el0/el1 (round-robin). HA does not."
+  },
+  {
+   "id": "air:access:8208",
+   "title": "Generic Level Status",
+   "kind": "access",
+   "opcode": "8208",
+   "opcode_onair": "8208",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic Level Status"
+   ],
+   "who": [
+    "pid1/el0->gateway",
+    "pid1/el1->gateway",
+    "pid2/el0->HA",
+    "pid2/el0->gateway",
+    "pid2/el0->group",
+    "pid2/el1->gateway",
+    "pid2/el1->group"
+   ],
+   "who_n": {
+    "pid1/el0->gateway": 380,
+    "pid1/el1->gateway": 381,
+    "pid2/el0->HA": 2,
+    "pid2/el0->gateway": 1162,
+    "pid2/el0->group": 224,
+    "pid2/el1->gateway": 1128,
+    "pid2/el1->group": 163
+   },
+   "n": 3440,
+   "files": 10,
+   "param_lens": [
+    2,
+    5
+   ],
+   "notes": "Replies to the gateway, to HA (after HA's Delta/Move tests) and group publications from pid2/el0 on change; 2- or 5-byte forms."
+  },
+  {
+   "id": "air:access:8209",
+   "title": "Generic Delta Set",
+   "kind": "access",
+   "opcode": "8209",
+   "opcode_onair": "8209",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic Delta Set"
+   ],
+   "who": [
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid2/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "HA to pid2/el0 once (on-air test): relative dim step works on the dimmer insert."
+  },
+  {
+   "id": "air:access:820b",
+   "title": "Generic Move Set",
+   "kind": "access",
+   "opcode": "820B",
+   "opcode_onair": "820B",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Generic Move Set"
+   ],
+   "who": [
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid2/el0": 2
+   },
+   "n": 2,
+   "files": 1,
+   "param_lens": [
+    5
+   ],
+   "notes": "HA to pid2/el0 twice (on-air test): continuous dim works; stop via Move with delta 0."
+  },
+  {
+   "id": "air:access:8211",
+   "title": "Generic OnPowerUp Get",
+   "kind": "access",
+   "opcode": "8211",
+   "opcode_onair": "8211",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "OnPowerUp Get"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 5
+   },
+   "n": 5,
+   "files": 1,
+   "param_lens": [
+    0
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): the socket's parameters page reads the load element's OnPowerUp."
+  },
+  {
+   "id": "air:access:8212",
+   "title": "Generic OnPowerUp Status",
+   "kind": "access",
+   "opcode": "8212",
+   "opcode_onair": "8212",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "OnPowerUp Status"
+   ],
+   "who": [
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid3/el0->pidNone/el0": 6
+   },
+   "n": 6,
+   "files": 1,
+   "param_lens": [
+    1
+   ],
+   "notes": "Replies of 0174: 2 (restore) before, 0 (off) after the app's Set."
+  },
+  {
+   "id": "air:access:8213",
+   "title": "Generic OnPowerUp Set",
+   "kind": "access",
+   "opcode": "8213",
+   "opcode_onair": "8213",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "OnPowerUp Set"
+   ],
+   "who": [
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid3/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    1
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): 'behaviour after mains voltage returns - switched off' = acknowledged Set 0."
+  },
+  {
+   "id": "air:access:822b:0x000d",
+   "title": "Generic Manufacturer Property Get 0x000D (DeviceEnergyUseSinceTurnOn)",
+   "kind": "access",
+   "opcode": "822B",
+   "opcode_onair": "822B",
+   "prop": "0x000D",
+   "key": "app",
+   "decoder_names": [
+    "Generic Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 3061
+   },
+   "n": 3061,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads the socket meter element pid3/el1 every 5 min (ENERGY_POLL_INTERVAL); gateway never."
+  },
+  {
+   "id": "air:access:822b:0x0010",
+   "title": "Generic Manufacturer Property Get 0x0010 (hardware revision)",
+   "kind": "access",
+   "opcode": "822B",
+   "opcode_onair": "822B",
+   "prop": "0x0010",
+   "key": "app",
+   "decoder_names": [
+    "Generic Manufacturer Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 14
+   },
+   "n": 21,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): every device page reads the SIG hardware revision (with 0x0011 and 0x001A)."
+  },
+  {
+   "id": "air:access:822b:0x0011",
+   "title": "Generic Manufacturer Property Get 0x0011 (manufacturer name)",
+   "kind": "access",
+   "opcode": "822B",
+   "opcode_onair": "822B",
+   "prop": "0x0011",
+   "key": "app",
+   "decoder_names": [
+    "Generic Manufacturer Property Get prop"
+   ],
+   "who": [
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 14
+   },
+   "n": 21,
+   "files": 1,
+   "param_lens": [
+    2
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): every device page reads the SIG manufacturer name."
+  },
+  {
+   "id": "air:access:822b:0x001a",
+   "title": "Generic Manufacturer Property Get 0x001A (software revision)",
+   "kind": "access",
+   "opcode": "822B",
+   "opcode_onair": "822B",
+   "prop": "0x001A",
+   "key": "app",
+   "decoder_names": [
+    "Generic Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->gateway",
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "HA->pid4/el0",
+    "gateway->pid1/el0",
+    "gateway->pid2/el0",
+    "gateway->pid3/el0",
+    "gateway->pid4/el0",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->gateway": 2,
+    "HA->pid1/el0": 36,
+    "HA->pid2/el0": 51,
+    "HA->pid3/el0": 9,
+    "HA->pid4/el0": 16,
+    "gateway->pid1/el0": 983,
+    "gateway->pid2/el0": 2827,
+    "gateway->pid3/el0": 246,
+    "gateway->pid4/el0": 615,
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 14
+   },
+   "n": 4806,
+   "files": 11,
+   "param_lens": [
+    2
+   ],
+   "notes": "The gateway reads the firmware revision of every node class continuously (~4.6k replies to it in 7 days, part of its round-robin); HA reads it only on setup/refresh (~110). Reply is 2 segments. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:822b:0x0072",
+   "title": "Generic Manufacturer Property Get 0x0072 (PreciseTotalDeviceEnergyUse)",
+   "kind": "access",
+   "opcode": "822B",
+   "opcode_onair": "822B",
+   "prop": "0x0072",
+   "key": "app",
+   "decoder_names": [
+    "Generic Manufacturer Property Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 3063
+   },
+   "n": 3063,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads pid3/el1 every 5 min for the energy total."
+  },
+  {
+   "id": "air:access:822d:0x006a",
+   "title": "Generic Admin Property Get 0x006A (TotalDeviceEnergyUse)",
+   "kind": "access",
+   "opcode": "822D",
+   "opcode_onair": "822D",
+   "prop": "0x006A",
+   "key": "app",
+   "decoder_names": [
+    "Generic Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1",
+    "gateway->pid3/el1",
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 3064,
+    "gateway->pid3/el1": 245,
+    "pidNone/el0->pid3/el1": 2
+   },
+   "n": 3311,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads the socket meter element pid3/el1 every 5 min (3060); the gateway also polls it (245). The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:822d:0x006d",
+   "title": "Generic Admin Property Get 0x006D (TotalDevicePowerOnTime)",
+   "kind": "access",
+   "opcode": "822D",
+   "opcode_onair": "822D",
+   "prop": "0x006D",
+   "key": "app",
+   "decoder_names": [
+    "Generic Admin Property Get prop"
+   ],
+   "who": [
+    "HA->pid3/el0",
+    "gateway->pid3/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "HA->pid3/el0": 3068,
+    "gateway->pid3/el0": 756,
+    "pidNone/el0->pid3/el0": 1
+   },
+   "n": 3825,
+   "files": 10,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA reads pid3/el0 every 5 min (3064); the gateway polls it too (754). The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:8231:0x0052",
+   "title": "Sensor Get 0x0052 (PresentDeviceInputPower)",
+   "kind": "access",
+   "opcode": "8231",
+   "opcode_onair": "8231",
+   "prop": "0x0052",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Get prop"
+   ],
+   "who": [
+    "gateway->pid3/el1"
+   ],
+   "who_n": {
+    "gateway->pid3/el1": 763
+   },
+   "n": 763,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "Only the gateway polls pid3/el1 for 0x0052 (reads 0 on loaded sockets)."
+  },
+  {
+   "id": "air:access:8231:0x005c",
+   "title": "Sensor Get 0x005C (PresentInputCurrent)",
+   "kind": "access",
+   "opcode": "8231",
+   "opcode_onair": "8231",
+   "prop": "0x005C",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1",
+    "gateway->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 24,
+    "gateway->pid3/el1": 386
+   },
+   "n": 410,
+   "files": 9,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA and the gateway read current from pid3/el1."
+  },
+  {
+   "id": "air:access:8231:0x005d",
+   "title": "Sensor Get 0x005D (PresentInputVoltage)",
+   "kind": "access",
+   "opcode": "8231",
+   "opcode_onair": "8231",
+   "prop": "0x005D",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 24
+   },
+   "n": 24,
+   "files": 5,
+   "param_lens": [
+    2
+   ],
+   "notes": "Only HA reads voltage (rarely; the socket publishes it anyway)."
+  },
+  {
+   "id": "air:access:8231:0x0081",
+   "title": "Sensor Get 0x0081 (ActivePowerLoadside)",
+   "kind": "access",
+   "opcode": "8231",
+   "opcode_onair": "8231",
+   "prop": "0x0081",
+   "key": "app",
+   "decoder_names": [
+    "Sensor Get prop"
+   ],
+   "who": [
+    "HA->pid3/el1",
+    "gateway->pid3/el1",
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "HA->pid3/el1": 24,
+    "gateway->pid3/el1": 3,
+    "pidNone/el0->pid3/el1": 47
+   },
+   "n": 74,
+   "files": 8,
+   "param_lens": [
+    2
+   ],
+   "notes": "HA and the gateway read power from pid3/el1 (rarely; publication dominates). The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:8238",
+   "title": "Time Role Get",
+   "kind": "access",
+   "opcode": "8238",
+   "opcode_onair": "8238",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Time Role Get"
+   ],
+   "who": [
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid3/el0"
+   ],
+   "who_n": {
+    "pidNone/el0->pid1/el0": 1,
+    "pidNone/el0->pid2/el0": 6,
+    "pidNone/el0->pid3/el0": 16
+   },
+   "n": 23,
+   "files": 1,
+   "param_lens": [
+    0
+   ],
+   "notes": "Phone app only (the app's settings session (settings.json)): every device page reads the node's Time Role (0174, 0293, 01A4)."
+  },
+  {
+   "id": "air:access:823a",
+   "title": "Time Role Status",
+   "kind": "access",
+   "opcode": "823A",
+   "opcode_onair": "823A",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Time Role Status client"
+   ],
+   "who": [
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->pidNone/el0",
+    "pid3/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->pidNone/el0": 1,
+    "pid2/el0->pidNone/el0": 6,
+    "pid3/el0->pidNone/el0": 16
+   },
+   "n": 23,
+   "files": 1,
+   "param_lens": [
+    1
+   ],
+   "notes": "Replies: every node reports role 'client' (1 byte)."
+  },
+  {
+   "id": "air:access:8243",
+   "title": "Scene Recall Unack",
+   "kind": "access",
+   "opcode": "8243",
+   "opcode_onair": "8243",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Scene Recall Unack"
+   ],
+   "who": [
+    "pid1/el1->fixed-group",
+    "pid1/el2->fixed-group",
+    "pid1/el3->fixed-group",
+    "pidNone/el0->fixed-group"
+   ],
+   "who_n": {
+    "pid1/el1->fixed-group": 10,
+    "pid1/el2->fixed-group": 84,
+    "pid1/el3->fixed-group": 31,
+    "pidNone/el0->fixed-group": 1
+   },
+   "n": 126,
+   "files": 8,
+   "param_lens": [
+    3,
+    5
+   ],
+   "notes": "SIG 0x8243, 5-byte (scene, TID, transition, delay). Published by pid1 key elements el1..el3 to a fixed group when a key in scene KeyMode is pressed - key-to-scene bindings are pure SIG Scene Recall, not doubled. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:824b",
+   "title": "Light Lightness Get",
+   "kind": "access",
+   "opcode": "824B",
+   "opcode_onair": "824B",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Get"
+   ],
+   "who": [
+    "gateway->pid1/el0",
+    "gateway->pid2/el0"
+   ],
+   "who_n": {
+    "gateway->pid1/el0": 377,
+    "gateway->pid2/el0": 1203
+   },
+   "n": 1580,
+   "files": 10,
+   "param_lens": [
+    0
+   ],
+   "notes": "Only the gateway polls Lightness of pid1/pid2 el0."
+  },
+  {
+   "id": "air:access:824e",
+   "title": "Light Lightness Status",
+   "kind": "access",
+   "opcode": "824E",
+   "opcode_onair": "824E",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Status"
+   ],
+   "who": [
+    "pid1/el0->gateway",
+    "pid2/el0->gateway",
+    "pid2/el0->group"
+   ],
+   "who_n": {
+    "pid1/el0->gateway": 377,
+    "pid2/el0->gateway": 1203,
+    "pid2/el0->group": 141
+   },
+   "n": 1721,
+   "files": 10,
+   "param_lens": [
+    2,
+    5
+   ],
+   "notes": "Replies to the gateway and group publications of pid2/el0 on change."
+  },
+  {
+   "id": "air:access:8255",
+   "title": "Light Lightness Default Get",
+   "kind": "access",
+   "opcode": "8255",
+   "opcode_onair": "8255",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Default Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 8,
+    "HA->pid2/el0": 25
+   },
+   "n": 33,
+   "files": 2,
+   "param_lens": [
+    0
+   ],
+   "notes": "Only HA reads the default (power-on) lightness of pid1/pid2 el0 (setup/refresh)."
+  },
+  {
+   "id": "air:access:8256",
+   "title": "Light Lightness Default Status",
+   "kind": "access",
+   "opcode": "8256",
+   "opcode_onair": "8256",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Default Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid2/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 8,
+    "pid2/el0->HA": 25
+   },
+   "n": 33,
+   "files": 2,
+   "param_lens": [
+    2
+   ],
+   "notes": "Replies to HA, 2 bytes."
+  },
+  {
+   "id": "air:access:8257",
+   "title": "Light Lightness Range Get",
+   "kind": "access",
+   "opcode": "8257",
+   "opcode_onair": "8257",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Range Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "gateway->pid1/el0",
+    "gateway->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 5,
+    "HA->pid2/el0": 12,
+    "gateway->pid1/el0": 378,
+    "gateway->pid2/el0": 1137
+   },
+   "n": 1532,
+   "files": 12,
+   "param_lens": [
+    0
+   ],
+   "notes": "Mostly the gateway, which re-reads min/max lightness of pid1/pid2 el0 in its round-robin (1509); HA only on setup/refresh (17)."
+  },
+  {
+   "id": "air:access:8258",
+   "title": "Light Lightness Range Status",
+   "kind": "access",
+   "opcode": "8258",
+   "opcode_onair": "8258",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light Lightness Range Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid2/el0->HA",
+    "pid2/el0->gateway"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 5,
+    "pid1/el0->gateway": 378,
+    "pid2/el0->HA": 12,
+    "pid2/el0->gateway": 1137
+   },
+   "n": 1532,
+   "files": 12,
+   "param_lens": [
+    5
+   ],
+   "notes": "Replies (5 bytes: status, min, max)."
+  },
+  {
+   "id": "air:access:825d",
+   "title": "Light CTL Get",
+   "kind": "access",
+   "opcode": "825D",
+   "opcode_onair": "825D",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "gateway->pid1/el0",
+    "gateway->pid2/el0",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 12,
+    "HA->pid2/el0": 40,
+    "gateway->pid1/el0": 56,
+    "gateway->pid2/el0": 207,
+    "pidNone/el0->pid1/el0": 2,
+    "pidNone/el0->pid2/el0": 6
+   },
+   "n": 323,
+   "files": 9,
+   "param_lens": [
+    0
+   ],
+   "notes": "HA and the gateway read CTL of pid1/pid2 el0. The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:825e",
+   "title": "Light CTL Set",
+   "kind": "access",
+   "opcode": "825E",
+   "opcode_onair": "825E",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Set"
+   ],
+   "who": [
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid2/el0": 1
+   },
+   "n": 1,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "HA to pid2/el0 once (on-air test), 7 bytes (lightness, temperature, delta UV, TID)."
+  },
+  {
+   "id": "air:access:8260",
+   "title": "Light CTL Status",
+   "kind": "access",
+   "opcode": "8260",
+   "opcode_onair": "8260",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid1/el0->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->gateway",
+    "pid2/el0->group",
+    "pid2/el0->pidNone/el0"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 12,
+    "pid1/el0->gateway": 56,
+    "pid1/el0->pidNone/el0": 2,
+    "pid2/el0->HA": 40,
+    "pid2/el0->gateway": 206,
+    "pid2/el0->group": 223,
+    "pid2/el0->pidNone/el0": 7
+   },
+   "n": 546,
+   "files": 9,
+   "param_lens": [
+    4,
+    9
+   ],
+   "notes": "Replies to HA/gateway and group publications of pid2/el0 (4- or 9-byte forms). The phone app (0001, role pidNone/el0) sends / receives it too in the settings session (settings.json)."
+  },
+  {
+   "id": "air:access:8261",
+   "title": "Light CTL Temperature Get",
+   "kind": "access",
+   "opcode": "8261",
+   "opcode_onair": "8261",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Temperature Get"
+   ],
+   "who": [
+    "gateway->pid1/el1",
+    "gateway->pid2/el1"
+   ],
+   "who_n": {
+    "gateway->pid1/el1": 377,
+    "gateway->pid2/el1": 1144
+   },
+   "n": 1521,
+   "files": 10,
+   "param_lens": [
+    0
+   ],
+   "notes": "Only the gateway reads the CTL Temperature element (el1) of pid1/pid2."
+  },
+  {
+   "id": "air:access:8262",
+   "title": "Light CTL Temperature Range Get",
+   "kind": "access",
+   "opcode": "8262",
+   "opcode_onair": "8262",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Temperature Range Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "gateway->pid1/el0",
+    "gateway->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 13,
+    "HA->pid2/el0": 39,
+    "gateway->pid1/el0": 379,
+    "gateway->pid2/el0": 1136
+   },
+   "n": 1567,
+   "files": 9,
+   "param_lens": [
+    0
+   ],
+   "notes": "Mostly the gateway round-robin (1511); HA on setup/refresh (52)."
+  },
+  {
+   "id": "air:access:8263",
+   "title": "Light CTL Temperature Range Status",
+   "kind": "access",
+   "opcode": "8263",
+   "opcode_onair": "8263",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Temperature Range Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid2/el0->HA",
+    "pid2/el0->gateway"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 13,
+    "pid1/el0->gateway": 379,
+    "pid2/el0->HA": 39,
+    "pid2/el0->gateway": 1136
+   },
+   "n": 1567,
+   "files": 9,
+   "param_lens": [
+    5
+   ],
+   "notes": "Replies, 5 bytes (status, min K, max K)."
+  },
+  {
+   "id": "air:access:8264",
+   "title": "Light CTL Temperature Set",
+   "kind": "access",
+   "opcode": "8264",
+   "opcode_onair": "8264",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Temperature Set"
+   ],
+   "who": [
+    "gateway->pid2/el1"
+   ],
+   "who_n": {
+    "gateway->pid2/el1": 79
+   },
+   "n": 79,
+   "files": 1,
+   "param_lens": [
+    7
+   ],
+   "notes": "The gateway (not HA) sets colour temperature on pid2/el1 (79 in one day: a scene/automation in the JUNG system, or the app via the gateway)."
+  },
+  {
+   "id": "air:access:8266",
+   "title": "Light CTL Temperature Status",
+   "kind": "access",
+   "opcode": "8266",
+   "opcode_onair": "8266",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Temperature Status"
+   ],
+   "who": [
+    "pid1/el1->gateway",
+    "pid2/el1->gateway",
+    "pid2/el1->group"
+   ],
+   "who_n": {
+    "pid1/el1->gateway": 377,
+    "pid2/el1->gateway": 1222,
+    "pid2/el1->group": 108
+   },
+   "n": 1707,
+   "files": 10,
+   "param_lens": [
+    4,
+    9
+   ],
+   "notes": "From the temperature element el1 of pid1/pid2 to the gateway and group publications."
+  },
+  {
+   "id": "air:access:8267",
+   "title": "Light CTL Default Get",
+   "kind": "access",
+   "opcode": "8267",
+   "opcode_onair": "8267",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Default Get"
+   ],
+   "who": [
+    "HA->pid1/el0",
+    "HA->pid2/el0"
+   ],
+   "who_n": {
+    "HA->pid1/el0": 4,
+    "HA->pid2/el0": 13
+   },
+   "n": 17,
+   "files": 2,
+   "param_lens": [
+    0
+   ],
+   "notes": "Only HA reads the CTL default of pid1/pid2 el0."
+  },
+  {
+   "id": "air:access:8268",
+   "title": "Light CTL Default Status",
+   "kind": "access",
+   "opcode": "8268",
+   "opcode_onair": "8268",
+   "prop": null,
+   "key": "app",
+   "decoder_names": [
+    "Light CTL Default Status"
+   ],
+   "who": [
+    "pid1/el0->HA",
+    "pid2/el0->HA"
+   ],
+   "who_n": {
+    "pid1/el0->HA": 4,
+    "pid2/el0->HA": 13
+   },
+   "n": 17,
+   "files": 2,
+   "param_lens": [
+    6
+   ],
+   "notes": "Replies to HA, 6 bytes."
+  },
+  {
+   "id": "air:beacon:beacon",
+   "title": "Secure Network Beacon (own network)",
+   "kind": "beacon",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "beacon"
+   ],
+   "who": [
+    "-->-"
+   ],
+   "who_n": {
+    "-->-": 20049
+   },
+   "n": 20049,
+   "files": 12,
+   "param_lens": [],
+   "notes": "AD 0x2B beacons authenticated with the installation NetKey: about one every ~10 s network wide (adaptive rate). IV index follows these; no IV-update or key-refresh flag transition is recorded as a separate item in this inventory (the decoder name was collapsed to \"beacon\")."
+  },
+  {
+   "id": "air:control:heartbeat",
+   "title": "Heartbeat (transport control opcode 0x0A)",
+   "kind": "control",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "Heartbeat"
+   ],
+   "who": [
+    "gateway->HA",
+    "gateway->fixed-group",
+    "pid1/el0->HA",
+    "pid1/el0->fixed-group",
+    "pid2/el0->HA",
+    "pid2/el0->fixed-group",
+    "pid3/el0->HA",
+    "pid3/el0->fixed-group",
+    "pid4/el0->HA",
+    "pid4/el0->fixed-group"
+   ],
+   "who_n": {
+    "gateway->HA": 7203,
+    "gateway->fixed-group": 4,
+    "pid1/el0->HA": 64645,
+    "pid1/el0->fixed-group": 44,
+    "pid2/el0->HA": 86208,
+    "pid2/el0->fixed-group": 48,
+    "pid3/el0->HA": 14144,
+    "pid3/el0->fixed-group": 12,
+    "pid4/el0->HA": 35895,
+    "pid4/el0->fixed-group": 20
+   },
+   "n": 208223,
+   "files": 12,
+   "param_lens": [],
+   "notes": "Every node class (gateway, pid1..pid4 el0) publishes heartbeats to HA (period log 7 = 64 s) - result of HA's Heartbeat Publication Set; also briefly to a fixed group in one file. HA's liveness detection relies on this; ~31k/day."
+  },
+  {
+   "id": "air:control:segment-ack",
+   "title": "Segment Acknowledgment (transport control opcode 0x00)",
+   "kind": "control",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "Segment Ack"
+   ],
+   "who": [
+    "HA->gateway",
+    "HA->pid1/el0",
+    "HA->pid2/el0",
+    "HA->pid3/el0",
+    "HA->pid3/el1",
+    "HA->pid4/el0",
+    "gateway->pid1/el0",
+    "gateway->pid2/el0",
+    "gateway->pid3/el0",
+    "gateway->pid4/el0",
+    "pid3/el0->pidNone/el0",
+    "pid3/el1->pidNone/el0",
+    "pidNone/el0->gateway",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid1/el1",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid2/el1",
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid3/el1",
+    "pidNone/el0->pid4/el0",
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "HA->gateway": 56,
+    "HA->pid1/el0": 483,
+    "HA->pid2/el0": 680,
+    "HA->pid3/el0": 117,
+    "HA->pid3/el1": 33,
+    "HA->pid4/el0": 249,
+    "gateway->pid1/el0": 1169,
+    "gateway->pid2/el0": 3128,
+    "gateway->pid3/el0": 344,
+    "gateway->pid4/el0": 710,
+    "pid3/el0->pidNone/el0": 16,
+    "pid3/el1->pidNone/el0": 7,
+    "pidNone/el0->gateway": 19,
+    "pidNone/el0->pid1/el0": 28,
+    "pidNone/el0->pid1/el1": 2,
+    "pidNone/el0->pid2/el0": 66,
+    "pidNone/el0->pid2/el1": 12,
+    "pidNone/el0->pid3/el0": 99,
+    "pidNone/el0->pid3/el1": 59,
+    "pidNone/el0->pid4/el0": 23,
+    "unicast-unknown->gateway": 111,
+    "unicast-unknown->pid1/el0": 1231,
+    "unicast-unknown->pid2/el0": 1354,
+    "unicast-unknown->pid3/el0": 285,
+    "unicast-unknown->pid4/el0": 613
+   },
+   "n": 10894,
+   "files": 11,
+   "param_lens": [],
+   "notes": "HA and the gateway ack segmented replies (0x001A version, CTL/Scene statuses, config statuses); the unknown unicast acked its heartbeat subscription statuses. The gateway acks first segment block=1 then all."
+  },
+  {
+   "id": "air:copy:copy",
+   "title": "Relay / network-transmit copy",
+   "kind": "copy",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "copy"
+   ],
+   "who": [
+    "HA->fixed-group",
+    "HA->gateway",
+    "HA->pid1/el0",
+    "HA->pid1/el1",
+    "HA->pid2/el0",
+    "HA->pid2/el1",
+    "HA->pid2/el2",
+    "HA->pid3/el0",
+    "HA->pid3/el1",
+    "HA->pid4/el0",
+    "gateway->HA",
+    "gateway->fixed-group",
+    "gateway->pid1/el0",
+    "gateway->pid1/el1",
+    "gateway->pid2/el0",
+    "gateway->pid2/el1",
+    "gateway->pid2/el2",
+    "gateway->pid2/el3",
+    "gateway->pid2/el4",
+    "gateway->pid2/el5",
+    "gateway->pid3/el0",
+    "gateway->pid3/el1",
+    "gateway->pid4/el0",
+    "gateway->pidNone/el0",
+    "gateway->unicast-unknown",
+    "pid1/el0->HA",
+    "pid1/el0->fixed-group",
+    "pid1/el0->gateway",
+    "pid1/el0->group",
+    "pid1/el0->pidNone/el0",
+    "pid1/el0->unicast-unknown",
+    "pid1/el1->HA",
+    "pid1/el1->fixed-group",
+    "pid1/el1->gateway",
+    "pid1/el1->group",
+    "pid1/el1->pidNone/el0",
+    "pid1/el2->fixed-group",
+    "pid1/el3->fixed-group",
+    "pid2/el0->HA",
+    "pid2/el0->fixed-group",
+    "pid2/el0->gateway",
+    "pid2/el0->group",
+    "pid2/el0->pidNone/el0",
+    "pid2/el0->unicast-unknown",
+    "pid2/el1->HA",
+    "pid2/el1->gateway",
+    "pid2/el1->group",
+    "pid2/el1->pidNone/el0",
+    "pid2/el2->gateway",
+    "pid2/el2->group",
+    "pid2/el3->gateway",
+    "pid2/el3->group",
+    "pid2/el4->gateway",
+    "pid2/el5->gateway",
+    "pid3/el0->HA",
+    "pid3/el0->fixed-group",
+    "pid3/el0->gateway",
+    "pid3/el0->pidNone/el0",
+    "pid3/el0->unicast-unknown",
+    "pid3/el1->HA",
+    "pid3/el1->gateway",
+    "pid3/el1->group",
+    "pid3/el1->pidNone/el0",
+    "pid4/el0->HA",
+    "pid4/el0->fixed-group",
+    "pid4/el0->gateway",
+    "pid4/el0->group",
+    "pid4/el0->pidNone/el0",
+    "pid4/el0->unicast-unknown",
+    "pid4/el1->group",
+    "pidNone/el0->fixed-group",
+    "pidNone/el0->gateway",
+    "pidNone/el0->pid1/el0",
+    "pidNone/el0->pid1/el1",
+    "pidNone/el0->pid2/el0",
+    "pidNone/el0->pid2/el1",
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid3/el1",
+    "pidNone/el0->pid4/el0",
+    "unicast-unknown->gateway",
+    "unicast-unknown->pid1/el0",
+    "unicast-unknown->pid2/el0",
+    "unicast-unknown->pid3/el0",
+    "unicast-unknown->pid4/el0"
+   ],
+   "who_n": {
+    "HA->fixed-group": 21,
+    "HA->gateway": 156,
+    "HA->pid1/el0": 2951,
+    "HA->pid1/el1": 58,
+    "HA->pid2/el0": 4792,
+    "HA->pid2/el1": 193,
+    "HA->pid2/el2": 42,
+    "HA->pid3/el0": 6110,
+    "HA->pid3/el1": 17432,
+    "HA->pid4/el0": 1186,
+    "gateway->HA": 16297,
+    "gateway->fixed-group": 8,
+    "gateway->pid1/el0": 20426,
+    "gateway->pid1/el1": 4486,
+    "gateway->pid2/el0": 39785,
+    "gateway->pid2/el1": 11656,
+    "gateway->pid2/el2": 4225,
+    "gateway->pid2/el3": 19806,
+    "gateway->pid2/el4": 2520,
+    "gateway->pid2/el5": 803,
+    "gateway->pid3/el0": 4877,
+    "gateway->pid3/el1": 3167,
+    "gateway->pid4/el0": 8590,
+    "gateway->pidNone/el0": 879,
+    "gateway->unicast-unknown": 504,
+    "pid1/el0->HA": 116594,
+    "pid1/el0->fixed-group": 83,
+    "pid1/el0->gateway": 13804,
+    "pid1/el0->group": 2764,
+    "pid1/el0->pidNone/el0": 752,
+    "pid1/el0->unicast-unknown": 4014,
+    "pid1/el1->HA": 74,
+    "pid1/el1->fixed-group": 16,
+    "pid1/el1->gateway": 3095,
+    "pid1/el1->group": 18,
+    "pid1/el1->pidNone/el0": 68,
+    "pid1/el2->fixed-group": 127,
+    "pid1/el3->fixed-group": 37,
+    "pid2/el0->HA": 156704,
+    "pid2/el0->fixed-group": 88,
+    "pid2/el0->gateway": 29123,
+    "pid2/el0->group": 2188,
+    "pid2/el0->pidNone/el0": 3086,
+    "pid2/el0->unicast-unknown": 4876,
+    "pid2/el1->HA": 221,
+    "pid2/el1->gateway": 9085,
+    "pid2/el1->group": 672,
+    "pid2/el1->pidNone/el0": 249,
+    "pid2/el2->gateway": 3921,
+    "pid2/el2->group": 134,
+    "pid2/el3->gateway": 16974,
+    "pid2/el3->group": 47,
+    "pid2/el4->gateway": 2322,
+    "pid2/el5->gateway": 804,
+    "pid3/el0->HA": 32249,
+    "pid3/el0->fixed-group": 22,
+    "pid3/el0->gateway": 3536,
+    "pid3/el0->pidNone/el0": 6441,
+    "pid3/el0->unicast-unknown": 895,
+    "pid3/el1->HA": 16537,
+    "pid3/el1->gateway": 2600,
+    "pid3/el1->group": 77116,
+    "pid3/el1->pidNone/el0": 2134,
+    "pid4/el0->HA": 73017,
+    "pid4/el0->fixed-group": 33,
+    "pid4/el0->gateway": 6201,
+    "pid4/el0->group": 2923,
+    "pid4/el0->pidNone/el0": 783,
+    "pid4/el0->unicast-unknown": 2282,
+    "pid4/el1->group": 70,
+    "pidNone/el0->fixed-group": 33,
+    "pidNone/el0->gateway": 348,
+    "pidNone/el0->pid1/el0": 460,
+    "pidNone/el0->pid1/el1": 51,
+    "pidNone/el0->pid2/el0": 2409,
+    "pidNone/el0->pid2/el1": 257,
+    "pidNone/el0->pid3/el0": 6551,
+    "pidNone/el0->pid3/el1": 2295,
+    "pidNone/el0->pid4/el0": 415,
+    "unicast-unknown->gateway": 240,
+    "unicast-unknown->pid1/el0": 2660,
+    "unicast-unknown->pid2/el0": 2805,
+    "unicast-unknown->pid3/el0": 558,
+    "unicast-unknown->pid4/el0": 1264
+   },
+   "n": 790095,
+   "files": 14,
+   "param_lens": [],
+   "notes": "Not a message: repeated copies of already-decoded network PDUs (networkTransmit 3x100 ms, relayRetransmit 3x90 ms, TTL decrement). who lists every src->dst pair whose traffic was relayed. Useful for mesh topology/relay-load analysis only."
+  },
+  {
+   "id": "air:foreign:beacon",
+   "title": "Foreign / unprovisioned beacon",
+   "kind": "foreign",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "foreign beacon",
+    "foreign beacon a0",
+    "foreign beacon a2",
+    "foreign beacon a6",
+    "foreign beacon ab",
+    "foreign beacon ac",
+    "foreign beacon b1",
+    "foreign beacon b5",
+    "foreign beacon b6",
+    "foreign beacon b8",
+    "foreign beacon c2",
+    "foreign beacon d1",
+    "foreign beacon d2",
+    "foreign beacon d3",
+    "foreign beacon d4",
+    "foreign beacon d7",
+    "foreign beacon db",
+    "foreign beacon df",
+    "foreign beacon e3",
+    "foreign beacon eb",
+    "foreign beacon ec",
+    "foreign beacon ef",
+    "foreign beacon f0",
+    "foreign beacon f3"
+   ],
+   "who": [
+    "-->-"
+   ],
+   "who_n": {
+    "-->-": 140
+   },
+   "n": 140,
+   "files": 7,
+   "param_lens": [],
+   "notes": "AD 0x2B beacons not matching the installation NetKey: unprovisioned device beacons (type 0x00) or other networks' secure beacons. ~115 plus scattered single payloads over 7 days; nothing actionable, but an unprovisioned device beacon would indicate a factory-reset JUNG device nearby."
+  },
+  {
+   "id": "air:foreign:network-pdu",
+   "title": "Foreign network PDU",
+   "kind": "foreign",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "foreign network PDU (NID"
+   ],
+   "who": [
+    "-->-"
+   ],
+   "who_n": {
+    "-->-": 164
+   },
+   "n": 164,
+   "files": 8,
+   "param_lens": [],
+   "notes": "AD 0x2A PDUs with an NID not matching the installation - another BLE mesh network within sniffer range (neighbours). Must be ignored by the integration."
+  },
+  {
+   "id": "air:pbadv:pb-adv",
+   "title": "PB-ADV provisioning bearer",
+   "kind": "pbadv",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "PB-ADV",
+    "PB-ADV a1",
+    "PB-ADV a7",
+    "PB-ADV a8",
+    "PB-ADV a9",
+    "PB-ADV af",
+    "PB-ADV b2",
+    "PB-ADV bd",
+    "PB-ADV be",
+    "PB-ADV bf",
+    "PB-ADV c5",
+    "PB-ADV ca",
+    "PB-ADV cc",
+    "PB-ADV cf",
+    "PB-ADV d1",
+    "PB-ADV da",
+    "PB-ADV e4",
+    "PB-ADV e5",
+    "PB-ADV ef",
+    "PB-ADV f3",
+    "PB-ADV f4",
+    "PB-ADV fa"
+   ],
+   "who": [
+    "-->-"
+   ],
+   "who_n": {
+    "-->-": 142
+   },
+   "n": 142,
+   "files": 8,
+   "param_lens": [],
+   "notes": "AD 0x29 PB-ADV PDUs (not decoded): some device nearby is being provisioned or probing links (e.g. an unprovisioned device / a foreign provisioner). No provisioning of this installation happened in the window."
+  },
+  {
+   "id": "air:segment:segment",
+   "title": "Segment of an incomplete segmented message",
+   "kind": "segment",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [
+    "segment"
+   ],
+   "who": [
+    "gateway->HA",
+    "gateway->pidNone/el0",
+    "gateway->unicast-unknown",
+    "pid1/el0->HA",
+    "pid1/el0->gateway",
+    "pid1/el0->pidNone/el0",
+    "pid1/el0->unicast-unknown",
+    "pid1/el1->pidNone/el0",
+    "pid2/el0->HA",
+    "pid2/el0->gateway",
+    "pid2/el0->pidNone/el0",
+    "pid2/el0->unicast-unknown",
+    "pid2/el1->pidNone/el0",
+    "pid3/el0->HA",
+    "pid3/el0->gateway",
+    "pid3/el0->pidNone/el0",
+    "pid3/el0->unicast-unknown",
+    "pid3/el1->HA",
+    "pid3/el1->pidNone/el0",
+    "pid4/el0->HA",
+    "pid4/el0->gateway",
+    "pid4/el0->pidNone/el0",
+    "pid4/el0->unicast-unknown",
+    "pidNone/el0->pid3/el0",
+    "pidNone/el0->pid3/el1"
+   ],
+   "who_n": {
+    "gateway->HA": 46,
+    "gateway->pidNone/el0": 59,
+    "gateway->unicast-unknown": 111,
+    "pid1/el0->HA": 498,
+    "pid1/el0->gateway": 1126,
+    "pid1/el0->pidNone/el0": 41,
+    "pid1/el0->unicast-unknown": 1204,
+    "pid1/el1->pidNone/el0": 5,
+    "pid2/el0->HA": 710,
+    "pid2/el0->gateway": 3041,
+    "pid2/el0->pidNone/el0": 108,
+    "pid2/el0->unicast-unknown": 1445,
+    "pid2/el1->pidNone/el0": 16,
+    "pid3/el0->HA": 103,
+    "pid3/el0->gateway": 319,
+    "pid3/el0->pidNone/el0": 111,
+    "pid3/el0->unicast-unknown": 289,
+    "pid3/el1->HA": 33,
+    "pid3/el1->pidNone/el0": 57,
+    "pid4/el0->HA": 309,
+    "pid4/el0->gateway": 687,
+    "pid4/el0->pidNone/el0": 40,
+    "pid4/el0->unicast-unknown": 600,
+    "pidNone/el0->pid3/el0": 13,
+    "pidNone/el0->pid3/el1": 5
+   },
+   "n": 10976,
+   "files": 11,
+   "param_lens": [],
+   "notes": "Individual SAR segments counted before reassembly (the complete message is reported under its access opcode). Senders: nodes to HA/gateway and the unknown unicast."
+  },
+  {
+   "id": "air:adv:0x01",
+   "title": "Flags AD structure (0x06) of the proxy advert",
+   "kind": "adv",
+   "ad_type": "0x01",
+   "value": "06",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'Proxy advert content': Flags 06",
+   "notes": "GAP flags (LE General Discoverable, BR/EDR not supported) on every node's connectable ADV_IND proxy advert.",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  },
+  {
+   "id": "air:adv:0x03:1828",
+   "title": "16-bit Service UUID list with Mesh Proxy 0x1828",
+   "kind": "adv",
+   "ad_type": "0x03",
+   "value": "1828",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'Proxy advert content': 16-bit UUID list 1828",
+   "notes": "Every provisioned node and the gateway, from its public MAC, ~28/s per node over the three channels.",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  },
+  {
+   "id": "air:adv:0x16:1828:00",
+   "title": "Mesh Proxy service data, Network ID form (type 0x00 + k3(NetKey))",
+   "kind": "adv",
+   "ad_type": "0x16",
+   "value": "1828 00 <network id 8 B>",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'Proxy advert content': service data 1828 type 00 + Network ID",
+   "notes": "Identifies proxy nodes of this network; Node Identity (type 0x01) was not observed on air (row 'Node Identity adverts': none), so it is not an air item.",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  },
+  {
+   "id": "air:adv:0x19",
+   "title": "Appearance AD structure on the JUNG-record advert",
+   "kind": "adv",
+   "ad_type": "0x19",
+   "value": "04C7 / 04C8 / 0780",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'Appearance (0x19)'",
+   "notes": "Seen on the ADV_NONCONN_IND that carries the JUNG manufacturer record.",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  },
+  {
+   "id": "air:adv:0xff:0527:03",
+   "title": "JUNG manufacturer record (company 0x0527, LBCAdvertisementData type 3)",
+   "kind": "adv",
+   "ad_type": "0xFF",
+   "value": "2705 03 <pid u16><afid u16><layout u16><MAC 6 B>",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'JUNG manufacturer record (0xFF, 0527)'",
+   "notes": "Every ~1.2 s from every device node (not the gateway), same public MAC; also from one stray unpaired 1-gang push-button 30:FB:10:60:A3:82 without any mesh service (row 'Other radios').",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  },
+  {
+   "id": "air:adv:local-name",
+   "title": "Local name in the scan response",
+   "kind": "adv",
+   "ad_type": "name (scan response)",
+   "value": "'JUNG push-button 2gang', 'JUNG gateway'",
+   "evidence": "docs/bluetooth-recheck.md §1 row 'Local name'",
+   "notes": "Only in SCAN_RSP to an active scanner; the AD type byte (0x08/0x09) is not recorded, so the id uses the field name.",
+   "opcode": null,
+   "opcode_onair": null,
+   "prop": null,
+   "key": null,
+   "decoder_names": [],
+   "who": [
+    "node->-"
+   ],
+   "who_n": {},
+   "n": null,
+   "files": [],
+   "param_lens": [],
+   "source": "docs/bluetooth-recheck.md §1"
+  }
+ ]
+}

@@ -1,0 +1,16 @@
+[
+ 1,
+ {
+  "icon": "SceneAbsent",
+  "isFavorite": false,
+  "name": "WC off",
+  "sceneNumber": 1
+ },
+ 2,
+ {
+  "icon": "SceneNight",
+  "isFavorite": false,
+  "name": "All off",
+  "sceneNumber": 2
+ }
+]

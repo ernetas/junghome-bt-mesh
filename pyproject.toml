@@ -1,0 +1,142 @@
+[build-system]
+# Pinned: what builds the published sdist and wheel is part of what gets published (a new setuptools release changes
+# the metadata ci.yml `library` checks and release.yml publishes), so it moves only through a Renovate PR that runs
+# those checks. At least 77 in any case: `license` below is a PEP 639 SPDX expression, which older releases reject.
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jhmesh"
+version = "1.0.0"
+description = "Bluetooth Mesh (GATT proxy) client for JUNG HOME installations — crypto, PDUs, device model"
+readme = "README-pypi.md" # the library's own page; README.md is the repository (reverse-engineering log, HA integration)
+license = "MIT" # PEP 639: an SPDX expression (so no `License ::` classifier), with the file it refers to
+license-files = ["LICENSE"]
+requires-python = ">=3.13"
+authors = [{ name = "Ernestas Lukoševičius" }]
+dependencies = ["cryptography>=42", "bleak>=0.22"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13", # ci.yml `library` job
+    "Programming Language :: Python :: 3.14", # ci.yml `tests` job (Home Assistant 2026.9 needs 3.14)
+    "Topic :: Home Automation",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/ernetas/junghome-bt-mesh"
+
+[tool.setuptools]
+packages = ["jhmesh"]
+package-dir = { jhmesh = "custom_components/junghome_ble/jhmesh" }
+
+[tool.setuptools.package-data]
+jhmesh = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "link_loss_grace: keep the hub's link-loss grace (every other test sees entities go unavailable at once)",
+    "slow_ok: exempt from the 5 s per-test budget of `tests/conftest.py` (`CALL_BUDGET`)",
+]
+# pytest-timeout (pinned by pytest-homeassistant-custom-component): a test that hangs (an awaited future nobody
+# resolves, a wait on an executor job that never ends) fails with its stack instead of stalling the run until the CI
+# job's own limit. Tests take milliseconds; the bound only has to survive a slow runner.
+timeout = 120
+# The suite raises no DeprecationWarning (neither the integration's run nor the library's alone on 3.13), so a
+# new one (bleak, cryptography, Home Assistant deprecating something the integration calls) fails the test that
+# triggers it instead of scrolling past until the removal breaks it. If a dependency starts emitting one from its
+# own code, narrow this to our modules (`error::DeprecationWarning:custom_components|jhmesh|tools`) rather than
+# dropping it.
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.coverage.run]
+# The package, the integration and the CLIs: one gate for everything that ships or that the docs tell people to run.
+source = ["custom_components/junghome_ble", "tools"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+# Line + branch coverage of everything above, at what the suite reaches (99.84 %): every line is run,
+# a few `tools/` and integration branches are not. The integration's own promise, every line covered, is checked by
+# ci.yml `tests` on its own; this total cannot express it.
+fail_under = 99.8
+precision = 2
+# a CLI's `sys.exit(main())` guard only runs as a script; `main()` itself is what the tests call
+exclude_also = ['if __name__ == "__main__":']
+
+[tool.mypy]
+strict = true
+python_version = "3.14"
+files = ["custom_components/junghome_ble", "tools"]
+# tools/ is a namespace package (`from tools import cli_ops`): module names come from the path under the repository
+# root, otherwise mypy sees tools/cli_ops.py as both `cli_ops` and `tools.cli_ops`.
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["bleak.*", "bleak_retry_connector.*", "habluetooth.*"]
+ignore_missing_imports = true
+
+# Ruff: mirrors the sibling gateway integration's .ruff.toml (itself based on Home Assistant core's pyproject.toml).
+[tool.ruff]
+target-version = "py313"
+# Never traverse the app backup (live mesh keys), the decompiled APK, or the packaged copy of custom_components.
+extend-exclude = ["ios", "android", "dist"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+    "D203", # no-blank-line-before-class (incompatible with formatter)
+    "D213", # multi-line-summary-second-line (we summarise on the first line)
+    "COM812", # incompatible with formatter
+    "ISC001", # incompatible with formatter
+    "CPY001", # missing copyright notice (Home Assistant ignores this too)
+
+    # Families this (largely pre-existing) codebase does not follow; relaxed so
+    # CI lint is green without rewriting working code.
+    "ARG", # unused arguments are common in Home Assistant callback signatures
+    "FBT", # boolean positional args are common in HA APIs
+    "EM", # exception messages as string literals
+    "TRY", # tryceratops opinions (TRY003/TRY300/TRY400)
+    "BLE001", # blind "except Exception" is intentional in places
+    "E501", # line length (formatter handles wrapping; long URLs/strings remain)
+    "SIM102", # nested if (clearer as-is in places)
+    "SIM105", # contextlib.suppress
+    "SIM117", # nested with statements
+    "PLR0912", # too many branches
+    "PLR2004", # magic value comparison
+    "RUF012", # mutable class attributes need ClassVar
+    "N818", # exception names need an Error suffix
+    "TC003", # move stdlib import into TYPE_CHECKING block
+    "UP041", # asyncio.TimeoutError alias
+
+    # Additions for this repository (beyond the gateway integration's list).
+    "S101", # asserts narrow types for mypy (config flow) and state PDU-size invariants (pdu.py); HA core ignores it too
+    "ASYNC109", # `timeout=` parameters are the mesh client's public API (per-request budgets); HA core ignores it too
+    "PLR0913", # mesh crypto/PDU primitives take the spec's parameter lists (key, IV index, seq, src, dst, ...)
+    "PLR0917", # ... and callers pass them positionally, as the spec names them; tests take many fixtures
+    "N812", # `from jhmesh import messages as M` is the codebase-wide alias for the message builders
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Reference prototypes (tools/mesh_poc.py, tools/mesh_report.py): CLI-style scripts, intentional prints /
+# passthroughs; not held to the integration's docstring convention.
+"tools/**" = ["T201", "SLF001", "EXE001", "INP001", "D", "ANN"]
+# Tests (tests/, tests/jhmesh/, tests/helpers.py, the fixture generator): asserts are the point; private-member
+# access is fine; descriptive test names stand in for docstrings.
+"tests/**" = ["S101", "S105", "S106", "SLF001", "INP001", "D", "ANN"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25

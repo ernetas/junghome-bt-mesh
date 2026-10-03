@@ -1,0 +1,36 @@
+# App backup with live mesh keys (NetKey/AppKey/DevKeys) — never commit
+ios/
+# Downloaded APK + decompile output (large, redistributable? no)
+android/*.xapk
+android/xapk/
+android/jadx-out/
+android/jadx.log
+__pycache__/
+.venv/
+dist/
+build/
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+# The CLI's per-address sequence counters (+ their .lock / .bak / temp siblings) and the device keys `provision`
+# writes — never commit, never share
+tools/.jhmesh_state*
+tools/.jhmesh_devkey*
+# the temporary file an atomic write renames into place (`.<name>.<pid>.<thread>.tmp`)
+tools/..jhmesh_*
+.claude/worktrees/
+# What the docs tell you to create in the repository root: app exports (every mesh key), decoded captures (a day
+# of decrypted household traffic), hop matrices, `tee` logs, editor/HA backup copies. Fixtures under tests/ are
+# tracked explicitly and matched by none of these.
+/JungHome*.json
+/MeshNetwork*.json
+/android/*.json
+*.bak
+/hops.json
+*.ndjson
+*.pcap
+*.pcapng
+capture-*.log
+.hypothesis/

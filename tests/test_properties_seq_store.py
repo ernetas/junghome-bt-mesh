@@ -1,0 +1,781 @@
+"""A Hypothesis state machine over `HAState`, the integration's sequence store: no (IV index, seq) is sent twice.
+
+The machine is one mesh's counter for one address in Home Assistant: sends (single numbers and whole segmented
+rounds), beacons and IV Updates, the debounced save firing, the hub reloaded in the same process (closed
+cleanly, or a successor started while the old hub is still stopping — HAC-02), Home Assistant killed with writes
+still pending, the storage writes of the store or of its `.backup` copy failing (a full disk, a filesystem gone
+read-only), a copy lost or unreadable, the `seq_store_lost` repair (and the floor file it keeps), a Home Assistant
+backup taken (the integration's `backup` platform hooks around it) and restored later — and after every step checks
+that nothing it was handed was handed before under the same transmit IV index. A hub is created the way the integration creates
+it: `JungHomeHub.async_create` picks the record (the store, else the backup, else the repair issue) and builds
+the `HAState`.
+
+Hypothesis runs in an executor thread; every step is a coroutine on Home Assistant's loop, where the store and
+`HAState` live.
+
+What the design does not claim to survive is left out: both copies deleted without a trace (no record, no corrupt
+file to show numbers were sent: the address starts at 0, documented), the repair's floor file damaged, an address
+sending SEQ_SKIP_UNKNOWN numbers past the last point a repair can still find (0, or where the previous repair
+continued: `copy_damaged`), two hubs of one mesh running side by side (refused by `_refuse_duplicate_mesh`), and
+of backups: restoring one whose pre-backup write did not land (the hook logs it and lets the backup go on) or that
+was taken while the address's setup was refused (no hub owned its counter), restoring the same backup twice, and
+restoring any after a Home Assistant that stopped during a backup — nothing on disk survives a restore, so a restore
+continues from what the archive holds alone, and a second start from the same marked records lands on the numbers
+the first one sent (`backup_taken`, `restore`; documented).
+"""
+
+from __future__ import annotations
+
+import asyncio
+import copy
+import itertools
+from collections.abc import Coroutine
+from typing import TYPE_CHECKING, Any
+
+import pytest
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.util.file import WriteError
+from hypothesis import strategies as st
+from hypothesis.stateful import (
+    RuleBasedStateMachine,
+    initialize,
+    invariant,
+    precondition,
+    rule,
+    run_state_machine_as_test,
+)
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.junghome_ble.backup import async_post_backup, async_pre_backup
+from custom_components.junghome_ble.const import (
+    CONF_CDB_PATH,
+    CONF_METADATA_DIR,
+    CONF_UNICAST,
+    DOMAIN,
+    SEQ_SKIP_UNKNOWN,
+)
+from custom_components.junghome_ble.coordinator import (
+    SEQ_BACKUP_STORES,
+    SEQ_BACKUP_TOKEN,
+    SEQ_FLOOR_STORES,
+    SEQ_OWNERS,
+    SEQ_RESTART_MARGIN,
+    SEQ_STALL_RETRY,
+    SEQ_STORES,
+    STORAGE_VERSION,
+    HAState,
+    JungHomeHub,
+    SeqStore,
+    async_skip_seq_store_ahead,
+)
+from custom_components.junghome_ble.jhmesh.client import (
+    IV_RECOVERY_MIN_INTERVAL,
+    IV_UPDATE_MIN_STATE,
+    SEQ_GUARD_FIRST_BEACON,
+    SEQ_TX_LIMIT,
+    SequenceExhausted,
+)
+
+from .conftest import CDB_PATH, META_DIR
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
+# Hypothesis runs in an executor thread here; the first time it does, it registers the thread's own PRNG and its
+# garbage-collection heuristic takes the thread-local reference for none at all (hypothesis/internal/entropy.py)
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:It looks like `register_random` was passed an object"
+)
+
+UNICAST = 0x0D00
+KEY = f"{UNICAST:04X}"
+_meshes = itertools.count(1)
+
+
+class Disk:
+    """Which writes fail right now, and which store objects belong to a Home Assistant that was killed."""
+
+    def __init__(self) -> None:
+        self.failing: set[str] = set()  # "primary" / "backup" / "floor"
+        # id() of store objects of a killed process: what they still write is lost
+        self.dead: set[int] = set()
+
+
+class FlakySeqStore(SeqStore):
+    """One of the mesh's files — the store, its `.backup` copy (sends are bounded by what it has written too) or the
+    repair's `.floor` (`role`) — with writes that fail (logged by `Store`, not raised) or never land (process
+    killed)."""
+
+    disk: Disk
+    role: str
+
+    async def _async_write_data(self, data: dict[str, Any]) -> None:
+        if id(self) in self.disk.dead:
+            return
+        if self.role in self.disk.failing:
+            raise WriteError("No space left on device (injected)")
+        await super()._async_write_data(data)
+
+
+class _Hub:
+    """What `JungHomeHub.async_create` builds its hub from; the machine only needs the `HAState`."""
+
+    def __new__(
+        cls,
+        hass: HomeAssistant,
+        entry: Any,
+        cdb: Any,
+        devices: Any,
+        state: HAState,
+        *_rest: Any,  # the vault and whatever else the hub takes after its state
+    ) -> Any:
+        return state
+
+
+class _Cdb:
+    def __init__(self, mesh_uuid: str) -> None:
+        self.mesh_uuid = mesh_uuid
+
+
+class HAStateMachine(RuleBasedStateMachine):
+    """One address's counter in one mesh's store, across reloads, crashes, failing writes and lost copies."""
+
+    def __init__(
+        self, hass: HomeAssistant, hass_storage: dict[str, Any], entry: MockConfigEntry
+    ) -> None:
+        super().__init__()
+        self.hass, self.storage, self.entry = hass, hass_storage, entry
+        self.uuid = f"00000000-0000-4000-8000-{next(_meshes):012x}"
+        self.primary_key = f"{DOMAIN}.seq.{self.uuid}"
+        self.backup_key = f"{self.primary_key}.backup"
+        self.disk = Disk()
+        self.state: HAState | None = None
+        # every store object built, for the tear-down
+        self.stores: list[SeqStore] = []
+        self.used: dict[tuple[int, int], int] = {}
+        self.step = 0
+        self.refused = False  # the last start raised the seq_store_lost issue
+        self.network_iv = 0  # the highest IV index a beacon announced: the network's
+        self.now = 0.0  # the wall clock beacons are applied at (`time_passes` moves it past the IV Update timing)
+        # where the counter last started from a point known for sure: 0, or where the last repair continued
+        self.origin = 0
+        # the sequence-number files of the last backup taken, and whether a restore of it is one the design covers
+        self.archive: dict[str, Any] | None = None
+        self.archive_covered = False
+
+    # ------------------------------------------------------------------ plumbing
+    def run(self, coro: Coroutine[Any, Any, Any]) -> Any:
+        """Run one step on Home Assistant's loop (this thread is Hypothesis's)."""
+        return asyncio.run_coroutine_threadsafe(coro, self.hass.loop).result(30)
+
+    def _install_stores(self) -> None:
+        """Fresh store objects for this mesh, as a newly started Home Assistant builds them."""
+        for role, key, stores in (
+            ("primary", self.primary_key, SEQ_STORES),
+            ("backup", self.backup_key, SEQ_BACKUP_STORES),
+            ("floor", f"{self.primary_key}.floor", SEQ_FLOOR_STORES),
+        ):
+            store = FlakySeqStore(self.hass, STORAGE_VERSION, key, atomic_writes=True)
+            store.disk, store.role = self.disk, role
+            self.hass.data.setdefault(stores, {})[self.uuid] = store
+            self.stores.append(store)
+
+    async def _create(self) -> None:
+        """`JungHomeHub.async_create` as `async_setup_entry` calls it (the hub itself replaced by its `HAState`)."""
+        self.state = None
+        try:
+            self.state = await JungHomeHub.async_create.__func__(
+                _Hub, self.hass, self.entry, _Cdb(self.uuid), None, UNICAST
+            )
+            self.refused = False
+        except ConfigEntryError:
+            # the seq_store_lost issue: nothing starts until it is repaired
+            self.refused = True
+        except ConfigEntryNotReady:
+            # a restored record whose floor could not be written: Home Assistant retries the setup later
+            self.refused = False
+
+    async def _die(self) -> None:
+        """Home Assistant stops dead: whatever it has not written is lost, and nothing of its memory survives."""
+        for store in self._stores():
+            store._async_cleanup_delay_listener()
+            store._async_cleanup_final_write_listener()
+            self.disk.dead.add(id(store))
+        # writes still queued: they go nowhere
+        await self.hass.async_block_till_done()
+        self.hass.data.get(SEQ_OWNERS, {}).pop(self.uuid, None)
+        self.hass.data.pop(SEQ_BACKUP_TOKEN, None)
+
+    def _seq_keys(self) -> tuple[str, ...]:
+        """The mesh's sequence-number files in `.storage`: the store, its backup copy and the repair's floor."""
+        return (self.primary_key, self.backup_key, f"{self.primary_key}.floor")
+
+    def _stores(self) -> list[SeqStore]:
+        return [s for s in self.stores if id(s) not in self.disk.dead]
+
+    def record(self, key: str) -> dict[str, Any] | None:
+        """Our address's record as the given store holds it on "disk" right now; None when missing or garbage."""
+        try:
+            rec = self.storage[key]["data"]["addresses"][KEY]
+            int(rec["seq"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        return rec
+
+    # ------------------------------------------------------------------ set-up / tear-down
+    @initialize(
+        start=st.sampled_from((None, 0, 5000, SEQ_TX_LIMIT - 600)),
+        iv_index=st.sampled_from((0, 7)),
+    )
+    def start(self, start: int | None, iv_index: int) -> None:
+        """A mesh never seen, or one whose store a previous run left (possibly near the end of the sequence space)."""
+        self.network_iv = iv_index
+        if start is not None:
+            record = {
+                "seq": start,
+                "iv_index": iv_index,
+                "iv_update_active": False,
+                "clean": False,
+            }
+            for key in (self.primary_key, self.backup_key):
+                self.storage[key] = {
+                    "version": STORAGE_VERSION,
+                    "key": key,
+                    "data": {"addresses": {KEY: record}},
+                }
+        self._install_stores()
+        self.run(self._create())
+
+    def teardown(self) -> None:
+        async def clean_up() -> None:
+            await self.hass.async_block_till_done()
+            for store in self.stores:
+                store._async_cleanup_delay_listener()
+                store._async_cleanup_final_write_listener()
+            self.hass.data.get(SEQ_STORES, {}).pop(self.uuid, None)
+            self.hass.data.get(SEQ_BACKUP_STORES, {}).pop(self.uuid, None)
+            self.hass.data.get(SEQ_FLOOR_STORES, {}).pop(self.uuid, None)
+            self.hass.data.get(SEQ_OWNERS, {}).pop(self.uuid, None)
+            self.hass.data.pop(SEQ_BACKUP_TOKEN, None)
+            self.storage.pop(self.primary_key, None)
+            self.storage.pop(self.backup_key, None)
+            self.storage.pop(f"{self.primary_key}.floor", None)
+
+        self.run(clean_up())
+
+    # ------------------------------------------------------------------ the hub
+    @precondition(lambda self: self.state is not None)
+    @rule(count=st.integers(1, 32))
+    def send(self, count: int) -> None:
+        """A message: one number, or a segmented message's round (up to 32 at once)."""
+        self._note(self.run(self._reserve(count)), count)
+
+    async def _reserve(self, count: int) -> tuple[int, int] | None:
+        """(transmit IV index, first number) the hub hands out for a message of `count` numbers, if it sends one."""
+        state = self.state
+        assert state is not None
+        tx = state.tx_iv_index
+        try:
+            return tx, state.reserve_seq(count)
+        except SequenceExhausted:
+            return None  # held back (the store is behind, or the space is used up): nothing sent
+
+    def _note(self, got: tuple[int, int] | None, count: int) -> None:
+        """Record what a message went out with; fail on a number handed out before under the same index."""
+        if got is None:
+            return
+        tx, first = got
+        self.step += 1
+        for seq in range(first, first + count):
+            assert 0 <= seq <= SEQ_TX_LIMIT
+            assert (tx, seq) not in self.used, (
+                f"nonce reuse: IV {tx} seq {seq:06X} (first sent at step {self.used[(tx, seq)]})"
+            )
+            self.used[(tx, seq)] = self.step
+
+    @precondition(lambda self: self.state is not None)
+    @rule(delta=st.sampled_from((-1, 0, 1, 2, 42)), update=st.booleans())
+    def beacon(self, delta: int, update: bool) -> None:
+        """A Secure Network Beacon from the proxy."""
+        state = self.state
+        assert state is not None
+        iv_index = self._beacon_index(delta)
+        if iv_index is None:
+            return
+
+        async def apply() -> None:
+            state.apply_beacon(iv_index, update, now=self.now)
+
+        self.run(apply())
+
+    def _beacon_index(self, delta: int) -> int | None:
+        """The index a beacon announces: relative to the network's (the highest index announced so far) once the
+        client has caught up with it, never below it before — the first beacon a client hears after a lost record
+        comes from a node on the network's index, not from one lagging behind it (the guard trusts it:
+        `LocalState.seq_guard`)."""
+        assert self.state is not None
+        if delta < 0 and self.state.iv_index < self.network_iv:
+            return None
+        iv_index = max(self.state.iv_index, self.network_iv) + delta
+        if not 0 <= iv_index <= 0xFFFFFFFF:
+            return None
+        self.network_iv = max(self.network_iv, iv_index)
+        return iv_index
+
+    @precondition(lambda self: self.state is not None)
+    @rule()
+    def iv_update(self) -> None:
+        """A whole IV Update: index + 1 "in progress", then normal operation (the sequence restarts at 0)."""
+        state = self.state
+        assert state is not None
+
+        iv_index = self._beacon_index(1)
+        if iv_index is None:
+            return
+
+        async def apply() -> None:
+            self.now += IV_UPDATE_MIN_STATE  # the spec's minimum time in each state
+            state.apply_beacon(iv_index, iv_update=True, now=self.now)
+            self.now += IV_UPDATE_MIN_STATE
+            state.apply_beacon(iv_index, iv_update=False, now=self.now)
+
+        self.run(apply())
+
+    @rule()
+    def time_passes(self) -> None:
+        """Pending writes run, the 2 s debounce fires, a held-back hub's retry interval elapses — and the wall clock
+        moves past the IV Update timing (`LocalState.apply_beacon`: a recovery may follow 192 hours later)."""
+        self.now += IV_RECOVERY_MIN_INTERVAL
+        self.run(self._elapse())
+
+    async def _elapse(self) -> None:
+        await self.hass.async_block_till_done()
+        for store in self._stores():
+            if store._delay_handle is not None:
+                store._async_cleanup_delay_listener()
+                await store._async_callback_delayed_write()
+        if self.state is not None and self.state._stalled_at is not None:
+            self.state._stalled_at -= SEQ_STALL_RETRY
+        await self.hass.async_block_till_done()
+
+    @precondition(lambda self: self.state is not None)
+    @rule(rounds=st.integers(1, 40))
+    def busy(self, rounds: int) -> None:
+        """A busy stretch: segmented rounds, time passing after each — the counter runs well past what any copy
+        held when it began (what a restore, or a copy lost now, would have to account for)."""
+
+        async def stretch() -> list[tuple[int, int] | None]:
+            sent = []
+            for _ in range(rounds):
+                sent.append(await self._reserve(32))
+                await self._elapse()
+            return sent
+
+        for got in self.run(stretch()):
+            self._note(got, 32)
+
+    @precondition(lambda self: self.state is not None)
+    @rule()
+    def reload(self) -> None:
+        """The entry reloads (options, a new export): the hub stops — its counter saved as cleanly closed — and
+        a new one starts in the same Home Assistant, on the same store objects."""
+        state = self.state
+        assert state is not None
+
+        async def reload() -> None:
+            await state.async_close()
+            await self._create()
+
+        self.run(reload())
+
+    @precondition(lambda self: self.state is not None)
+    @rule()
+    def reload_while_stopping(self) -> None:
+        """HAC-02: the successor starts while the old hub's stop still runs; the old one must not send or save."""
+        old = self.state
+        assert old is not None
+
+        async def reload() -> None:
+            await self._create()
+            # (a successor that refused to start supersedes nothing)
+            if self.state is not None:
+                try:
+                    old.reserve_seq(1)
+                except SequenceExhausted:
+                    pass
+                else:
+                    raise AssertionError(
+                        "a superseded HAState handed out a sequence number"
+                    )
+            await old.async_close()
+
+        self.run(reload())
+
+    @rule()
+    def killed(self) -> None:
+        """Home Assistant dies: whatever it has not written is lost; it starts again from the storage files."""
+
+        async def restart() -> None:
+            await self._die()
+            self._install_stores()
+            await self._create()
+
+        self.run(restart())
+
+    @rule(during=st.sampled_from(("nothing", "reload", "killed")))
+    def backup_taken(self, during: str) -> None:
+        """A Home Assistant backup: the integration's pre-backup hook, the archive of the sequence-number files, the
+        post-backup hook. `during` the backup the entry may reload (a successor starts between the hooks: its record
+        must carry the backup's mark too, and its start must not take the mark for a restore), or Home Assistant may
+        die before the post-backup hook ran (the files keep the mark: the next start skips ahead once).
+
+        A restore is covered when a hub owned the counter and both copies could be written when the backup was
+        taken; otherwise the archive is kept but never restored. A backup Home Assistant died during leaves no
+        archive, and the one before it is not restored any more either: the start after the stop skipped ahead from
+        the very records a restore of it may continue from (the module docstring's exclusions).
+        """
+
+        async def take() -> dict[str, Any] | None:
+            await async_pre_backup(self.hass)
+            if during == "reload" and self.state is not None:
+                await self.state.async_close()
+                await self._create()
+            self.archive_covered = self.state is not None and not (
+                {"primary", "backup"} & self.disk.failing
+            )
+            archive = {
+                key: copy.deepcopy(self.storage[key])
+                for key in self._seq_keys()
+                if key in self.storage
+            }
+            if during == "killed":
+                await self._die()
+                self._install_stores()
+                await self._create()
+                return None
+            await async_post_backup(self.hass)
+            return archive
+
+        self.archive = self.run(take())
+
+    @precondition(lambda self: self.archive is not None and self.archive_covered)
+    @rule()
+    def restore(self) -> None:
+        """The last backup is restored, once: Home Assistant stops, its configuration directory is replaced by the
+        archive's — the store, its backup copy and the floor come back together, readable — and it starts again.
+        The network does not go back with it: its IV index stays, and so does every number already sent."""
+        archive = self.archive
+        assert archive is not None
+        self.archive = None
+
+        async def restore() -> None:
+            await self._die()
+            for key in self._seq_keys():
+                if key in archive:
+                    self.storage[key] = copy.deepcopy(archive[key])
+                else:
+                    self.storage.pop(key, None)
+            self._install_stores()
+            await self._create()
+
+        self.run(restore())
+        if self.state is not None:
+            self.origin = self.state.seq
+            # a restored hub sends at once (the proxy filter, the connect-time refresh)
+            self.send(count=1)
+
+    @precondition(lambda self: self.refused)
+    @rule()
+    def repair(self) -> None:
+        """The user runs the `seq_store_lost` repair: the address continues far past any number left anywhere."""
+
+        async def fix() -> None:
+            await async_skip_seq_store_ahead(self.hass, self.uuid, KEY)
+            await self._create()
+
+        self.run(fix())
+        if self.state is not None:
+            self.origin = self.state.seq
+
+    # ------------------------------------------------------------------ the disk
+    @rule(
+        failing=st.sampled_from(
+            ((), ("primary",), ("backup",), ("floor",), ("primary", "backup", "floor"))
+        )
+    )
+    def disk_fails(self, failing: tuple[str, ...]) -> None:
+        """What fails from now on: nothing, one file (EIO on its inode) or the whole disk (every file)."""
+        self.disk.failing = set(failing)
+
+    @rule(
+        which=st.sampled_from(("primary", "backup")),
+        how=st.sampled_from(("lost", "garbled")),
+    )
+    def copy_damaged(self, which: str, how: str) -> None:
+        """One copy becomes unusable on disk: gone (HA renamed a corrupt file aside and loads nothing) or holding
+        garbage for our address. A copy is only deleted while the other holds our record: both gone without a
+        trace is the documented start-at-0 case.
+
+        Both copies unreadable is the `seq_store_lost` repair's case: it continues SEQ_SKIP_UNKNOWN past the last
+        point known for sure — 0, or where the previous repair continued (its floor file) — which is what it
+        promises to cover: so only while the counter is not that far past it (`_repair_covers`). The premise is
+        the model's own (`origin`), not read from the floor file: a repair that forgot its predecessor reuses.
+        """
+        key, other = (
+            (self.primary_key, self.backup_key)
+            if which == "primary"
+            else (self.backup_key, self.primary_key)
+        )
+        if how == "lost":
+            if self.record(other) is not None:
+                self.storage.pop(key, None)
+        elif self.record(key) is not None and (
+            self.record(other) is not None or self._repair_covers()
+        ):
+            self.storage[key]["data"]["addresses"][KEY] = {"seq": "garbage"}
+
+    def _repair_covers(self) -> bool:
+        """Whether everything the address sent, and may still send before a restart (the counter, plus what its
+        written limit lets it run on: two restart margins), lies within SEQ_SKIP_UNKNOWN of `origin`."""
+        high = max(
+            [seq for _, seq in self.used]
+            + [0 if self.state is None else self.state.seq]
+        )
+        return high + 2 * SEQ_RESTART_MARGIN < self.origin + SEQ_SKIP_UNKNOWN
+
+    @invariant()
+    def superseded_hubs_stay_quiet(self) -> None:
+        """Only the newest `HAState` owns the mesh's counters."""
+        if self.state is not None:
+            assert self.hass.data[SEQ_OWNERS].get(self.uuid) is self.state
+
+
+@pytest.mark.slow_ok
+async def test_ha_state_never_reuses_a_nonce(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+    await hass.async_add_executor_job(
+        run_state_machine_as_test, lambda: HAStateMachine(hass, hass_storage, entry)
+    )
+
+
+async def test_a_backup_whose_writes_fail_holds_sends_back(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # the counterexample the machine found before the fix: the backup's writes fail while the store's land,
+        # the store is then lost, and the restart restores from the stale copy
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.disk.failing.add("backup")
+            machine.killed()
+            machine.killed()
+            machine.send(count=1)
+            machine.copy_damaged(how="lost", which="primary")
+            machine.killed()
+            machine.killed()
+            machine.send(count=1)
+        finally:
+            machine.teardown()
+        # and a hub whose backup cannot be written sends no further than a restore from the stuck copy starts
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.time_passes()
+            backup = machine.record(machine.backup_key)
+            assert backup is not None
+            machine.disk.failing.add("backup")
+            for _ in range(40):
+                machine.send(count=32)
+                machine.time_passes()
+            assert machine.used
+            sent = max(seq for _tx, seq in machine.used)
+            assert sent < backup["seq"] + SEQ_RESTART_MARGIN
+            assert machine.record(machine.backup_key) == backup
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_a_second_loss_of_both_copies_continues_past_the_first_repair(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # the machine's counterexample: both copies lost, repaired (SEQ_SKIP_UNKNOWN from 0), both lost again after
+        # a send there — and the second repair, with nothing readable, went to SEQ_SKIP_UNKNOWN from 0 again,
+        # repeating IV 0 seq 0x400200. The floor file now remembers where the first one continued.
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.copy_damaged(how="lost", which="primary")
+            machine.copy_damaged(how="garbled", which="backup")
+            machine.killed()
+            assert machine.refused
+            machine.repair()
+            assert machine.state is not None
+            assert machine.state.seq == SEQ_SKIP_UNKNOWN + SEQ_RESTART_MARGIN
+            machine.copy_damaged(how="lost", which="backup")
+            machine.copy_damaged(how="garbled", which="primary")
+            assert machine.record(machine.primary_key) is None
+            assert machine.record(machine.backup_key) is None
+            machine.send(count=1)
+            for _ in range(4):
+                machine.killed()
+                assert machine.refused
+            machine.repair()
+            assert machine.state is not None
+            assert machine.state.seq == 2 * SEQ_SKIP_UNKNOWN + SEQ_RESTART_MARGIN
+            machine.send(count=1)
+            # a floor that cannot be written stops the repair before the copies are touched: still refused
+            machine.copy_damaged(how="lost", which="backup")
+            machine.copy_damaged(how="garbled", which="primary")
+            machine.disk.failing.add("floor")
+            machine.killed()
+            machine.repair()
+            assert machine.refused
+            assert machine.record(machine.primary_key) is None
+            machine.disk.failing.clear()
+            machine.repair()
+            assert machine.state is not None
+            assert machine.state.seq == 3 * SEQ_SKIP_UNKNOWN + SEQ_RESTART_MARGIN
+            machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_the_repair_without_a_readable_record_keeps_counting_under_the_mesh_index(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # what the machine found before the fix: the repair continued under IV index 0, and the beacons that took
+        # it to the mesh's index 2 restarted the sequence at 0 there, over the numbers the lost record had sent
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.beacon(delta=2, update=False)  # the mesh is at IV index 2
+            machine.send(count=1)
+            machine.storage.pop(machine.primary_key)
+            machine.storage[machine.backup_key]["data"]["addresses"][KEY] = {"seq": "x"}
+            machine.killed()
+            assert machine.refused  # the seq_store_lost issue
+            machine.repair()
+            assert machine.state is not None
+            assert machine.state.seq_guard == SEQ_GUARD_FIRST_BEACON
+            machine.killed()  # a restart before any beacon keeps the guard (it is in the record)
+            assert machine.state is not None
+            assert machine.state.seq_guard == SEQ_GUARD_FIRST_BEACON
+            machine.beacon(delta=0, update=False)  # the proxy's first beacon: index 2
+            assert machine.state.tx_iv_index == 2
+            assert (
+                machine.state.seq_guard == 3
+            )  # one past it: the proxy may still be behind an update
+            assert machine.state.seq >= SEQ_SKIP_UNKNOWN
+            machine.send(count=1)
+            machine.time_passes()
+            machine.killed()  # the guard survives a restart too
+            assert machine.state is not None
+            assert machine.state.seq_guard == 3
+            machine.iv_update()  # index 3 is still guarded: the counter carries on
+            assert (machine.state.tx_iv_index, machine.state.seq_guard) == (3, 3)
+            assert machine.state.seq >= SEQ_SKIP_UNKNOWN
+            machine.send(count=1)
+            machine.iv_update()  # index 4 was never used: the sequence starts over
+            assert (machine.state.tx_iv_index, machine.state.seq_guard) == (4, None)
+            assert machine.state.seq == 0
+            machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_a_restored_backup_never_resumes_below_numbers_sent(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # review-4 S4-1, the reviewer's reproduction: a backup taken mid-run, sends going on, the backup restored —
+        # primary, backup copy and floor all come back readable, and the restart resumed below the numbers sent
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.send(count=1)
+            machine.time_passes()
+            machine.backup_taken(during="nothing")
+            for _ in range(40):
+                machine.send(count=32)
+            machine.time_passes()
+            machine.restore()
+            machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_a_restored_backup_keeps_counting_under_an_index_moved_on_since(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # the IV index moved on between the backup and the restore: the first beacon after the restore restarted
+        # the counter at 0 under the index the numbers sent since the backup went out with
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=5000, iv_index=7)
+            machine.beacon(delta=0, update=False)
+            machine.backup_taken(during="nothing")
+            machine.iv_update()
+            for _ in range(40):
+                machine.send(count=32)
+            machine.time_passes()
+            machine.restore()
+            machine.beacon(delta=0, update=False)
+            machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)

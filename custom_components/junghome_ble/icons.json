@@ -1,0 +1,389 @@
+{
+  "entity": {
+    "button": {
+      "clear_faults": {
+        "default": "mdi:alert-remove"
+      },
+      "reset_consumption": {
+        "default": "mdi:counter"
+      },
+      "reference_run": {
+        "default": "mdi:window-shutter-auto"
+      }
+    },
+    "climate": {
+      "all_thermostats": {
+        "default": "mdi:home-thermometer-outline"
+      },
+      "room_thermostats": {
+        "default": "mdi:home-thermometer-outline"
+      },
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "mdi:snowflake-thermometer"
+            }
+          }
+        }
+      }
+    },
+    "cover": {
+      "all_blinds": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "room_blinds": {
+        "default": "mdi:blinds-horizontal"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "default": "mdi:window-shutter-settings"
+      },
+      "blind_ventilation_position": {
+        "default": "mdi:window-shutter-open"
+      },
+      "color_temp_max": {
+        "default": "mdi:white-balance-sunny"
+      },
+      "color_temp_min": {
+        "default": "mdi:white-balance-incandescent"
+      },
+      "comfort_temperature": {
+        "default": "mdi:thermometer-high"
+      },
+      "default_color_temp": {
+        "default": "mdi:thermometer-lines"
+      },
+      "default_lightness": {
+        "default": "mdi:brightness-6"
+      },
+      "eco_temperature": {
+        "default": "mdi:thermometer-low"
+      },
+      "frost_protection_temperature": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "lightness_max": {
+        "default": "mdi:brightness-7"
+      },
+      "lightness_min": {
+        "default": "mdi:brightness-4"
+      },
+      "lock_time_limit": {
+        "default": "mdi:lock-clock"
+      },
+      "motor_reversal_time": {
+        "default": "mdi:timer-refresh-outline"
+      },
+      "off_delay": {
+        "default": "mdi:timer-stop-outline"
+      },
+      "on_delay": {
+        "default": "mdi:timer-play-outline"
+      },
+      "pir_sensor_a": {
+        "default": "mdi:motion-sensor"
+      },
+      "pir_sensor_b": {
+        "default": "mdi:motion-sensor"
+      },
+      "pir_sensor_c": {
+        "default": "mdi:motion-sensor"
+      },
+      "repetition_time": {
+        "default": "mdi:timer-sync-outline"
+      },
+      "running_time": {
+        "default": "mdi:timer-outline"
+      },
+      "sensor_offset": {
+        "default": "mdi:thermometer-plus"
+      },
+      "slat_position_on_power": {
+        "default": "mdi:window-shutter-settings"
+      },
+      "slat_ventilation_position": {
+        "default": "mdi:window-shutter-open"
+      },
+      "slats_move_time": {
+        "default": "mdi:timer-outline"
+      },
+      "switch_blocking_time": {
+        "default": "mdi:timer-lock-outline"
+      },
+      "switch_on_brightness": {
+        "default": "mdi:brightness-6"
+      },
+      "timed_on_duration": {
+        "default": "mdi:timer-outline"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "default": "mdi:window-shutter-cog"
+      },
+      "controller_type": {
+        "default": "mdi:tune-vertical"
+      },
+      "detector_operation_mode": {
+        "default": "mdi:motion-sensor"
+      },
+      "dim_mode": {
+        "default": "mdi:sine-wave"
+      },
+      "hvac_mode": {
+        "default": "mdi:thermostat"
+      },
+      "input_edge_falling": {
+        "default": "mdi:arrow-down-bold-box-outline"
+      },
+      "input_edge_falling_key": {
+        "default": "mdi:arrow-down-bold-box-outline"
+      },
+      "input_edge_rising": {
+        "default": "mdi:arrow-up-bold-box-outline"
+      },
+      "input_edge_rising_key": {
+        "default": "mdi:arrow-up-bold-box-outline"
+      },
+      "led_colour_off": {
+        "default": "mdi:led-off"
+      },
+      "led_colour_off_key": {
+        "default": "mdi:led-off"
+      },
+      "led_colour_on": {
+        "default": "mdi:led-on"
+      },
+      "led_colour_on_key": {
+        "default": "mdi:led-on"
+      },
+      "main_page": {
+        "default": "mdi:monitor-dashboard"
+      },
+      "move_on_power_mode": {
+        "default": "mdi:power-plug-outline"
+      },
+      "operation_site": {
+        "default": "mdi:home-map-marker"
+      },
+      "power_on_behaviour": {
+        "default": "mdi:power-plug-outline"
+      },
+      "sensor_selection": {
+        "default": "mdi:thermometer-lines"
+      },
+      "valve_output": {
+        "default": "mdi:valve"
+      },
+      "lock_function": {
+        "default": "mdi:lock-outline"
+      }
+    },
+    "sensor": {
+      "key_mode": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "key_mode_key": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "power_on_time": {
+        "default": "mdi:timer-outline"
+      },
+      "proxy_node": {
+        "default": "mdi:access-point"
+      },
+      "scenes": {
+        "default": "mdi:palette-outline"
+      },
+      "link_state": {
+        "default": "mdi:bluetooth-connect",
+        "state": {
+          "bluetooth_off": "mdi:bluetooth-off",
+          "searching": "mdi:bluetooth-audio",
+          "connecting": "mdi:bluetooth-settings",
+          "updating": "mdi:bluetooth-transfer",
+          "failed": "mdi:bluetooth-off",
+          "disconnected": "mdi:bluetooth-off"
+        }
+      },
+      "schedules": {
+        "default": "mdi:calendar-clock"
+      },
+      "switch_off_threshold": {
+        "default": "mdi:flash-off-outline"
+      },
+      "switch_on_threshold": {
+        "default": "mdi:flash-outline"
+      },
+      "gateway_ip": {
+        "default": "mdi:ip-network"
+      },
+      "gateway_firmware": {
+        "default": "mdi:package-variant"
+      },
+      "gateway_firmware_build": {
+        "default": "mdi:package-variant"
+      },
+      "gateway_serial": {
+        "default": "mdi:barcode"
+      },
+      "gateway_access_requests": {
+        "default": "mdi:account-clock"
+      },
+      "gateway_api_clients": {
+        "default": "mdi:account-key"
+      },
+      "gateway_error_log": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "gateway_last_sync": {
+        "default": "mdi:cloud-upload-outline"
+      },
+      "forced_off": {
+        "default": "mdi:power-settings"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "default": "mdi:lightbulb-group"
+      },
+      "room_lights": {
+        "default": "mdi:lightbulb-group"
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "default": "mdi:power-socket-eu"
+      },
+      "room_sockets": {
+        "default": "mdi:power-socket-eu"
+      },
+      "automatic_dst": {
+        "default": "mdi:clock-time-four-outline"
+      },
+      "backlight_auto_off": {
+        "default": "mdi:monitor-off"
+      },
+      "blinds_invert_output": {
+        "default": "mdi:swap-vertical"
+      },
+      "boost_mode": {
+        "default": "mdi:rocket-launch-outline"
+      },
+      "day_mode": {
+        "default": "mdi:weather-sunny"
+      },
+      "dim_to_warm": {
+        "default": "mdi:lightbulb-variant-outline"
+      },
+      "input_edge_mode": {
+        "default": "mdi:square-wave"
+      },
+      "input_edge_mode_key": {
+        "default": "mdi:square-wave"
+      },
+      "invert_output": {
+        "default": "mdi:swap-vertical"
+      },
+      "led_colour_sync": {
+        "default": "mdi:link-variant"
+      },
+      "led_night_mode": {
+        "default": "mdi:weather-night"
+      },
+      "lock": {
+        "default": "mdi:lock-open-variant-outline",
+        "state": {
+          "on": "mdi:lock"
+        }
+      },
+      "manual_off_enable": {
+        "default": "mdi:hand-back-left-outline"
+      },
+      "prewarning": {
+        "default": "mdi:alert-outline"
+      },
+      "scheduler_enabled": {
+        "default": "mdi:calendar-clock"
+      },
+      "sensor_publication": {
+        "default": "mdi:access-point-network"
+      },
+      "status_led": {
+        "default": "mdi:led-outline"
+      },
+      "status_led_key": {
+        "default": "mdi:led-outline"
+      },
+      "touch_sensitivity": {
+        "default": "mdi:gesture-tap"
+      },
+      "use_last_lightness": {
+        "default": "mdi:history"
+      },
+      "walking_test": {
+        "default": "mdi:walk"
+      }
+    },
+    "binary_sensor": {
+      "wind_alarm": {
+        "default": "mdi:weather-windy"
+      }
+    }
+  },
+  "services": {
+    "get_schedules": {
+      "service": "mdi:calendar-search"
+    },
+    "create_schedule": {
+      "service": "mdi:calendar-plus"
+    },
+    "enable_schedule": {
+      "service": "mdi:calendar-check"
+    },
+    "disable_schedule": {
+      "service": "mdi:calendar-remove"
+    },
+    "delete_schedule": {
+      "service": "mdi:calendar-minus"
+    },
+    "set_threshold": {
+      "service": "mdi:flash-auto"
+    },
+    "delete_threshold": {
+      "service": "mdi:flash-off"
+    },
+    "audit_network": {
+      "service": "mdi:clipboard-check-outline"
+    },
+    "export_network": {
+      "service": "mdi:file-export-outline"
+    },
+    "find_new_devices": {
+      "service": "mdi:bluetooth-audio"
+    },
+    "add_device": {
+      "service": "mdi:plus-network"
+    },
+    "delete_unused_scenes": {
+      "service": "mdi:broom"
+    },
+    "remove_device": {
+      "service": "mdi:minus-network"
+    },
+    "reset_pending_device": {
+      "service": "mdi:restore-alert"
+    },
+    "start_dim": {
+      "service": "mdi:brightness-auto"
+    },
+    "stop_dim": {
+      "service": "mdi:stop"
+    },
+    "step_dim": {
+      "service": "mdi:brightness-6"
+    }
+  }
+}

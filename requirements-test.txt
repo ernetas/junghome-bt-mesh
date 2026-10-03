@@ -1,0 +1,11 @@
+# The integration's test and typing stack: ci.yml `tests` installs exactly this, and so does a development venv
+# (`.venv/bin/pip install -r requirements-test.txt`). pytest-homeassistant-custom-component pins the Home Assistant
+# release it was built for and its whole test runner (pytest, pytest-asyncio, pytest-cov, pytest-xdist,
+# pytest-timeout, syrupy, ...) to exact versions, so it is the one pin for all of them: they move together when
+# Renovate moves it, and none can be proposed on its own ahead of what it supports. The ci.yml `library` job reads
+# its test-runner pins (pytest, pytest-asyncio, pytest-timeout, pytest-cov, coverage) from the same release's metadata
+# and installs the mypy and hypothesis below. Hypothesis (the property tests) is not among what
+# pytest-homeassistant-custom-component pins, so it is pinned here on its own.
+pytest-homeassistant-custom-component==0.13.366
+mypy==2.3.1
+hypothesis==6.168.1

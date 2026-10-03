@@ -1,0 +1,5 @@
+# The sdist is the jhmesh library alone: the Home Assistant integration tests at the top level are not part of it,
+# nor is the repository's README (the integration's and the reverse-engineering log's); `README-pypi.md` is the
+# package's own, the one `project.readme` names.
+prune tests
+exclude README.md
