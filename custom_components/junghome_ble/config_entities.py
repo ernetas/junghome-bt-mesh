@@ -46,6 +46,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from . import const
 from .const import (
+    CONFIG_REREAD_INTERVAL,
     DOMAIN,
     LINK_WAIT_STEP,
     LOCK_EXPIRY_MARGIN,
@@ -91,6 +92,7 @@ if TYPE_CHECKING:
 
     from homeassistant.helpers.device_registry import DeviceInfo
 
+    from .entity import UpdateRead
     from .jhmesh.cdb import Element, Node
     from .jhmesh.client import AccessMessage
     from .jhmesh.properties import PropertySpec
@@ -1597,14 +1599,18 @@ class PropertyReader:
         st = self.hub.states.get(addr)
         return st.setup.get(state.status) if st else None
 
-    async def read_setup(self, addr: int, state: SetupState) -> bool:
-        """Ask the element for the setup state, like `read`: True when it is cached afterwards."""
+    async def read_setup(
+        self, addr: int, state: SetupState, *, since: float | None = None
+    ) -> bool:
+        """Ask the element for the setup state, like `read` (`since` too): True when it is cached afterwards."""
         async with self._locks[addr]:
-            fresh = time.monotonic() - self._read_at.get((addr, state.name), -1e9)
-            if (
-                fresh < PROPERTY_READ_FRESH
-                and self.cached_setup(addr, state) is not None
-            ):
+            read_at = self._read_at.get((addr, state.name), -1e9)
+            fresh = (
+                read_at >= since
+                if since is not None
+                else time.monotonic() - read_at < PROPERTY_READ_FRESH
+            )
+            if fresh and self.cached_setup(addr, state) is not None:
                 return True
             try:
                 await self._get_setup(addr, state)
@@ -1717,11 +1723,14 @@ def cached_value(hub: JungHomeHub, addr: int, spec: PropertySpec) -> Any:
 
 
 class ConfigEntity(JungHomeEntity):
-    """A config entity of one element, read once per link through the hub's reader (`_read`).
+    """A config entity of one element, read through the hub's reader (`_read`) until it answers, then again later.
 
-    A battery node's (`BATTERY_PIDS`) sleeps at link-up and would not answer: it is read when one of the node's
-    keys reports an event instead (`_on_key_event`). A change to it runs under `changing` and a silent node is
-    reported as asleep (`asleep`): the user wakes it with a key press and tries again (review-3 W4 / F24).
+    A value changed in the app is answered to the app's address, so Home Assistant hears nothing of it (review-4
+    H4-10): once read, the entity is read again on a later link when CONFIG_REREAD_INTERVAL has passed, and
+    `homeassistant.update_entity` reads it at once (`_reread`). A battery node's (`BATTERY_PIDS`) sleeps at link-up
+    and would not answer: it is read when one of the node's keys reports an event instead (`_on_key_event`). A
+    change to it runs under `changing` and a silent node is reported as asleep (`asleep`): the user wakes it with a
+    key press and tries again (review-3 W4 / F24).
     """
 
     _attr_entity_category: EntityCategory | None = EntityCategory.CONFIG
@@ -1736,6 +1745,9 @@ class ConfigEntity(JungHomeEntity):
         self._attr_entity_registry_enabled_default = target.enabled_default
         self._attr_extra_state_attributes = {"mesh_address": f"{target.address:04X}"}
         self._read_done = not target.read
+        self._read_at: float | None = (
+            None  # when the last read that got every value ended (`time.monotonic()`)
+        )
         self._read_pending = False
         self._read_link: int | None = (
             None  # `hub.link_count` of the link the read was last queued on
@@ -1774,18 +1786,19 @@ class ConfigEntity(JungHomeEntity):
 
     @callback
     def _maybe_read(self) -> None:
-        """Queue the read when the link is up and no value is cached yet — once per link.
+        """Queue the read when the link is up and it is due (`_read_due`) — once per link.
 
         A read that got no answer (or was cut by a lost link) is queued again on the next link, not on the next
         update of this one: the element was asked and stayed silent, asking again through the same link would only
-        add to the traffic that may have drowned the first attempt. Never for a battery node (`_on_key_event`).
-        A read still queued from a lost link is queued again regardless: the reader drops the lost link's copy
-        (`PropertyReader.schedule`) and keeps one.
+        add to the traffic that may have drowned the first attempt. So is the re-read of values read
+        CONFIG_REREAD_INTERVAL ago: at most once per link and per interval, behind the connect-time traffic like
+        the first read. Never for a battery node (`_on_key_event`). A read still queued from a lost link is queued
+        again regardless: the reader drops the lost link's copy (`PropertyReader.schedule`) and keeps one.
         """
         if not self.hub.connected or self._battery:
             return
         self.reader.schedule_version(self.target.node)
-        if self._read_done or self._read_link == self.hub.link_count:
+        if not self._read_due() or self._read_link == self.hub.link_count:
             return
         self._read_pending = True
         self._read_link = self.hub.link_count
@@ -1796,9 +1809,10 @@ class ConfigEntity(JungHomeEntity):
         """Read now that a key of the battery node reported: it is awake for a moment, too short for the queue.
 
         A read that got no answer is tried again at the next key event, as the battery level is
-        (`sensor.JungHomeBatterySensor`).
+        (`sensor.JungHomeBatterySensor`); one that got every value at the first key event after
+        CONFIG_REREAD_INTERVAL (`_read_due`).
         """
-        if not self.hub.connected or self._read_done or self._read_pending:
+        if not self.hub.connected or self._read_pending or not self._read_due():
             return
         self._read_pending = True
         self.hub.entry.async_create_background_task(
@@ -1807,15 +1821,39 @@ class ConfigEntity(JungHomeEntity):
             f"{DOMAIN} property read {self.address:04X}",
         )
 
+    def _read_due(self) -> bool:
+        """Whether to read: nothing read yet (or the last read went unanswered), or the last full read is old.
+
+        An entity with nothing to read (`EntityTarget.read` off) is never due.
+        """
+        if not self._read_done:
+            return True
+        return (
+            self._read_at is not None
+            and time.monotonic() - self._read_at >= CONFIG_REREAD_INTERVAL
+        )
+
     async def _initial_read(self) -> None:
         try:
             self._read_done = await self._read()
+            if self._read_done:
+                self._read_at = time.monotonic()
         finally:
             self._read_pending = False
 
     async def _read(self) -> bool:
         """Read what the entity shows; True when all of it is cached afterwards."""
         raise NotImplementedError
+
+    def _update_read(self) -> UpdateRead | None:
+        """`homeassistant.update_entity` reads the values now (`_reread`); an entity with nothing to read, nothing."""
+        if not self.target.read:
+            return None
+        return self.target.unique_id, self._reread
+
+    async def _reread(self) -> None:
+        """Read what the entity shows now, for `homeassistant.update_entity`: by default the per-link read."""
+        await self._read()
 
     @asynccontextmanager
     async def changing(self) -> AsyncIterator[None]:
@@ -1853,13 +1891,23 @@ class PropertyEntity(ConfigEntity):
             done = await self.reader.read(self.address, spec) and done
         return done
 
-    async def read_current(self, spec: PropertySpec) -> None:
+    async def _reread(self) -> None:
+        """Ask for every property of the entity, however recently another entity read it (`read_current`'s `since`)."""
+        since = time.monotonic()
+        for spec in self.specs:
+            await self.read_current(spec, since=since)
+
+    async def read_current(
+        self, spec: PropertySpec, *, since: float | None = None
+    ) -> None:
         """Read `spec` before a change that keeps the rest of its value; a battery node that stays silent is asleep.
 
         A lost link fails the change as a send failure, a battery node's included: it is not the node's sleep.
+        `since`: ask unless the element answered after that moment (`PropertyReader.read`), for
+        `homeassistant.update_entity` — by default a value read within PROPERTY_READ_FRESH is taken as it is.
         """
         try:
-            answered = await self.reader.fetch(self.address, spec)
+            answered = await self.reader.fetch(self.address, spec, since=since)
         except (ConnectionError, OSError) as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="send_failed"
@@ -2076,6 +2124,12 @@ class SetupStateEntity(ConfigEntity):
 
     async def _read(self) -> bool:
         return await self.reader.read_setup(self.address, self.target.state)
+
+    async def _reread(self) -> None:
+        """Ask for the state now, however recently another entity read it (`homeassistant.update_entity`)."""
+        await self.reader.read_setup(
+            self.address, self.target.state, since=time.monotonic()
+        )
 
     @property
     def setup_value(self) -> bytes | None:

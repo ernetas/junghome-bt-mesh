@@ -170,6 +170,27 @@ async def test_availability_follows_the_link(
     assert hass.states.get(eid).state == STATE_UNKNOWN
 
 
+async def test_update_entity_asks_the_socket_now(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-10: `homeassistant.update_entity` sends the socket a Generic OnOff Get; it shows the answer."""
+    eid = entity_id(hass, "switch", UID_SOCKET)
+    fake_link.inject(SOCKET, 0xC000, onoff_status(True))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == STATE_ON
+    fake_link.sent.clear()
+    await hass.services.async_call(
+        "homeassistant", "update_entity", {ATTR_ENTITY_ID: eid}, blocking=True
+    )
+    assert [(dst, pdu) for _, dst, pdu in fake_link.sent] == [
+        (SOCKET, M.generic_onoff_get())
+    ]
+    assert hass.states.get(eid).state == STATE_OFF  # what the socket answered
+
+
 # --------------------------------------------------------------------------- config switches
 
 

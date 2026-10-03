@@ -22,8 +22,11 @@ again from the new model and carry the change over to the running entities, rath
 
 from __future__ import annotations
 
+import logging
+import time
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass, field
+from functools import partial
 from typing import TYPE_CHECKING, Any, Self
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -37,6 +40,7 @@ from homeassistant.helpers.device_registry import (
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
+from homeassistant.util.hass_dict import HassKey
 
 from .const import (
     DOMAIN,
@@ -46,6 +50,7 @@ from .const import (
     SIG_SOFTWARE_VERSION,
     SIGNAL_CONNECTION,
     SIGNAL_UPDATE,
+    UPDATE_READ_INTERVAL,
 )
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
@@ -57,6 +62,15 @@ if TYPE_CHECKING:
     from .coordinator import JungHomeHub
     from .jhmesh.cdb import Node
     from .jhmesh.devices import Button, Device, MeteredLoad
+
+_LOGGER = logging.getLogger(__name__)
+
+# what `homeassistant.update_entity` reads: a name for the rate limit (`update_reads`), and the read itself
+type UpdateRead = tuple[str, Callable[[], Awaitable[object]]]
+# entry id -> (element, what was read) -> when `homeassistant.update_entity` last asked for it (`time.monotonic()`)
+UPDATE_READS: HassKey[dict[str, dict[tuple[int, str], float]]] = HassKey(
+    f"{DOMAIN}_update_reads"
+)
 
 # Product ids from the gateway firmware's `btmesh_product_ids.js` (docs/cross-repo-analysis.md §1.4).
 PRODUCT_NAMES = {
@@ -462,11 +476,27 @@ def async_setup_platform(
     add(list(entities.values()))
 
 
+def update_reads(hub: JungHomeHub) -> dict[tuple[int, str], float]:
+    """Return the hub's record of `homeassistant.update_entity` reads, created on first use, dropped on unload."""
+    reads = hub.hass.data.setdefault(UPDATE_READS, {})
+    entry_id = hub.entry.entry_id
+    if entry_id not in reads:
+        reads[entry_id] = {}
+
+        def forget() -> None:
+            reads.pop(entry_id, None)
+
+        hub.entry.async_on_unload(forget)
+    return reads[entry_id]
+
+
 class JungHomeEntity(Entity):
     """Push-updated entity bound to one mesh element."""
 
     _attr_should_poll = False
     _attr_has_entity_name = True
+    # the state Get `homeassistant.update_entity` asks the element with (`STATE_GETS`); None: nothing to ask
+    _refresh_kind: str | None = None
 
     def __init__(
         self,
@@ -548,6 +578,55 @@ class JungHomeEntity(Entity):
             current.state == rendered.state
             and current.attributes == rendered.attributes
         )
+
+    async def async_update(self) -> None:
+        """Ask the device for what the entity shows (`homeassistant.update_entity`), rate-limited; never raises.
+
+        The entity is push-updated (`should_poll` is off), so Home Assistant calls this for the action alone: an
+        automation that wants a value fresh rather than as last heard (an LED colour or a run-on time changed in the
+        app, answered to the app's address only; review-4 H4-10). The answers update the state cache as every
+        status does. What is read is the entity's `_update_read`; the same thing of an element is asked at most once
+        per UPDATE_READ_INTERVAL, so an automation updating a whole device, or a loop, does not flood the mesh. A
+        battery node sleeps and would not answer (its values are read when a key wakes it), and without a link
+        there is nobody to ask: both keep the cached state and log at DEBUG — so does a read the link drops under
+        it, since Home Assistant logs a failed update as an error, and an unanswered read is no error either.
+        """
+        read = self._update_read()
+        if read is None:
+            return
+        what, job = read
+        node = self.hub.cdb.node_by_addr(self.address)
+        if node is not None and node.pid in BATTERY_PIDS:
+            _LOGGER.debug(
+                "%04X: not read for %s: a battery node sleeps", self.address, what
+            )
+            return
+        if not self.hub.connected:
+            _LOGGER.debug("%04X: not read for %s: no link", self.address, what)
+            return
+        reads = update_reads(self.hub)
+        now = time.monotonic()
+        last = reads.get((self.address, what))
+        if last is not None and now - last < UPDATE_READ_INTERVAL:
+            _LOGGER.debug(
+                "%04X: %s was read %.1f s ago; not again yet",
+                self.address,
+                what,
+                now - last,
+            )
+            return
+        reads[self.address, what] = now
+        try:
+            await job()
+        except (HomeAssistantError, ConnectionError, OSError) as err:
+            _LOGGER.debug("%04X: %s not read: %r", self.address, what, err)
+
+    def _update_read(self) -> UpdateRead | None:
+        """Return what `async_update` reads: by default the state Get of the element's kind (`_refresh_kind`), if any."""
+        kind = self._refresh_kind
+        if kind is None:
+            return None
+        return kind, partial(self.hub.async_refresh_element, self.address, kind)
 
     async def _send(self, command: Awaitable[None]) -> None:
         """Run a command; report a load that did not answer it, or a link that could not carry it.

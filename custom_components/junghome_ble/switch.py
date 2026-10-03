@@ -197,6 +197,7 @@ class JungHomeSocket(JungHomeEntity, SwitchEntity):
 
     _attr_device_class = SwitchDeviceClass.OUTLET
     _attr_name = None  # the device *is* the socket
+    _refresh_kind = "switch"  # `homeassistant.update_entity`: Generic OnOff Get
 
     def __init__(self, hub: JungHomeHub, socket: Socket) -> None:
         """Bind to `socket`."""

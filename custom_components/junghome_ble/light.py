@@ -107,6 +107,9 @@ class JungHomeLight(JungHomeEntity, LightEntity):
             hub, light.address, light.unique_id, light_device_info(hub, light)
         )
         self.light = light
+        self._refresh_kind = (
+            light.kind
+        )  # `homeassistant.update_entity`: the connect-time refresh's Get
         if light.kind == "ctl":
             self._attr_supported_color_modes = {ColorMode.COLOR_TEMP}
             self._attr_color_mode = ColorMode.COLOR_TEMP

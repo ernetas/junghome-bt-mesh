@@ -1600,12 +1600,14 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance",
-    "custom_components/junghome_ble/const.py::DETECTOR_BRIGHTNESS_POLL"
+    "custom_components/junghome_ble/const.py::DETECTOR_BRIGHTNESS_POLL",
+    "custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now"
    ],
    "tests": [
-    "tests/test_sensor.py::test_illuminance_falls_back_to_the_brightness_property"
+    "tests/test_sensor.py::test_illuminance_falls_back_to_the_brightness_property",
+    "tests/test_sensor.py::test_update_entity_reads_the_detector_illuminance_now"
    ],
-   "missing": "the app reads 0x6004 every 5 s while the detector parameter page is open; JungHomeDetectorIlluminance polls it every DETECTOR_BRIGHTNESS_POLL = 60 s only while the detector delivered no Present Illuminance Sensor Status (documented in docs/ha-integration.md, Sensor table), and homeassistant.update_entity does not trigger an immediate read; no detector here",
+   "missing": "the app reads 0x6004 every 5 s while the detector parameter page is open; JungHomeDetectorIlluminance polls it every DETECTOR_BRIGHTNESS_POLL = 60 s only while the detector delivered no Present Illuminance Sensor Status (documented in docs/ha-integration.md, Sensor table); homeassistant.update_entity reads at once (the Present Illuminance Sensor Get, then 0x6004 while there is no reading; JungHomeDetectorIlluminance._read_now, rate-limited by UPDATE_READ_INTERVAL); no detector here",
    "class": "build",
    "verify": "absent-hardware"
   },
@@ -4024,7 +4026,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_refresh_meter",
-    "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor.async_update",
+    "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor._update_read",
+    "custom_components/junghome_ble/entity.py::JungHomeEntity.async_update",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._poll_energy",
     "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL"
    ],
@@ -4033,7 +4036,7 @@
     "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
     "tests/test_sensor.py::test_power_sensor"
    ],
-   "note": "The app reads power 0x0081 and the counters every 5 s while its consumption page is open. HA has no open page: power comes from the meter's publications, the counters are read every ENERGY_POLL_INTERVAL = 300 s, and homeassistant.update_entity on any meter sensor reads the load's Sensor Gets and counters at once (coordinator.async_refresh_meter; concurrent updates of one load share one read). A 5 s poll with nobody looking would only load the mesh (docs/ha-integration.md '## Data updates')."
+   "note": "The app reads power 0x0081 and the counters every 5 s while its consumption page is open. HA has no open page: power comes from the meter's publications, the counters are read every ENERGY_POLL_INTERVAL = 300 s, and homeassistant.update_entity on any meter sensor reads the load's Sensor Gets and counters at once (coordinator.async_refresh_meter; concurrent updates of one load share one read, and entity.JungHomeEntity.async_update asks a load's meter at most once per UPDATE_READ_INTERVAL = 2 s). A 5 s poll with nobody looking would only load the mesh (docs/ha-integration.md '## Data updates')."
   },
   {
    "id": "ui:vm:referencerunloadingviewmodel.observedevice",
@@ -4153,13 +4156,15 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/climate.py::BOOST_SPEC",
-    "custom_components/junghome_ble/climate.py::JungHomeClimate._boost_over"
+    "custom_components/junghome_ble/climate.py::JungHomeClimate._boost_over",
+    "custom_components/junghome_ble/climate.py::JungHomeClimate._update_read"
    ],
    "tests": [
     "tests/test_climate.py::test_boost_is_a_preset_read_back_until_the_thermostat_ends_it",
-    "tests/test_climate.py::test_a_boost_started_elsewhere_is_followed_and_any_other_preset_ends_it"
+    "tests/test_climate.py::test_a_boost_started_elsewhere_is_followed_and_any_other_preset_ends_it",
+    "tests/test_climate.py::test_update_entity_reads_the_thermostat_and_a_boost_started_on_it"
    ],
-   "missing": "the app polls LBC Admin Get 0x120D every 5 s while the RTR page is open; the climate entity reads boost at connect and RTR_BOOST_DURATION + RTR_BOOST_READBACK_MARGIN after it saw one start (docs/ha-integration.md '### Climate', Presets), so a boost started on the thermostat itself shows only if the RTR publishes the 0x120D Status (unverified) or at the next link; homeassistant.update_entity does not trigger a read; no RTR here",
+   "missing": "the app polls LBC Admin Get 0x120D every 5 s while the RTR page is open; the climate entity reads boost at connect and RTR_BOOST_DURATION + RTR_BOOST_READBACK_MARGIN after it saw one start (docs/ha-integration.md '### Climate', Presets), so a boost started on the thermostat itself shows only if the RTR publishes the 0x120D Status (unverified) or at the next link; homeassistant.update_entity reads it at once with the rest of the thermostat (JungHomeClimate._update_read, rate-limited by UPDATE_READ_INTERVAL); no RTR here",
    "class": "build",
    "verify": "absent-hardware"
   },

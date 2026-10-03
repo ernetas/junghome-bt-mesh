@@ -691,6 +691,28 @@ async def test_tilt_follows_the_slat_element(
     assert state.state == CoverState.OPEN  # slats moving is not the blind moving
 
 
+async def test_update_entity_asks_the_position_and_the_slats(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    levels: LevelMesh,
+) -> None:
+    """Review-4 H4-10 (unverified on air): `homeassistant.update_entity` sends a Generic Level Get to the position
+    element and, on a blind with slats, to the slat element; the cover shows the answers."""
+    eid = entity_id(hass, "cover", UID_BLIND)
+    levels.levels[BLIND], levels.levels[BLIND_SLAT] = (
+        LEVEL_OPEN,
+        LEVEL_OPEN,
+    )  # moved on the device
+    levels.gets.clear()
+    await hass.services.async_call(
+        "homeassistant", "update_entity", {ATTR_ENTITY_ID: eid}, blocking=True
+    )
+    assert levels.gets == [BLIND, BLIND_SLAT]
+    state = hass.states.get(eid)
+    assert state.attributes[ATTR_CURRENT_POSITION] == 100
+    assert state.attributes[ATTR_CURRENT_TILT_POSITION] == 100
+
+
 async def test_nothing_known_before_the_first_status(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,

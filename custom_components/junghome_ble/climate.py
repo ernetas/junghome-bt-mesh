@@ -27,7 +27,8 @@ writing them from here is **unverified on air**, like the rest of the entity. Th
 layout or no documented way in, so they are not used (`docs/android/properties.md` §1.10).
 
 The hub's connect-time refresh does not know thermostats, so the entity queues its own Gets through the property
-reader after every connection; they run after the hub's refresh, like the config entities' initial reads. Status
+reader after every connection; they run after the hub's refresh, like the config entities' initial reads, and
+`homeassistant.update_entity` runs them at once (boost included). Status
 handlers: Generic Level Status and OnOff Status are the hub's own (`ElementState.level` / `.on`); Sensor Status
 wraps the hub's socket handler and adds 0x004F.
 """
@@ -37,6 +38,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.climate import ClimateEntity
@@ -92,6 +94,7 @@ if TYPE_CHECKING:
     from . import JungHomeConfigEntry
     from .config_entities import PropertyReader
     from .coordinator import JungHomeHub
+    from .entity import UpdateRead
     from .jhmesh.client import AccessMessage
     from .jhmesh.devices import Device
 
@@ -340,8 +343,19 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         self.reader.schedule_version(self.thermostat.node)
         self.reader.schedule(self.address, self._refresh)
 
-    async def _refresh(self) -> None:
-        """Ask the RTR for its set-point, heating demand and room temperature, then its preset temperatures and mode."""
+    def _update_read(self) -> UpdateRead:
+        """`homeassistant.update_entity` runs the per-link refresh now, its properties asked whatever was read last.
+
+        Boost included: it ends on its own and says so to no one (`_follow_boost`). Unverified on air.
+        """
+        return "thermostat", partial(self._refresh, fresh=True)
+
+    async def _refresh(self, *, fresh: bool = False) -> None:
+        """Ask the RTR for its set-point, heating demand and room temperature, then its preset temperatures and mode.
+
+        `fresh`: ask every property even when another entity read it within PROPERTY_READ_FRESH.
+        """
+        since = time.monotonic() if fresh else None
         gets: list[tuple[int | None, bytes, int, str]] = [
             (self.address, M.generic_level_get(), M.GEN_LEVEL_STATUS, "Level"),
             (
@@ -377,7 +391,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         # a preset the RTR does not answer is not the others' problem (and all of them are asked again on the next
         # link, `_maybe_refresh`); on a lost link every read fails at once
         for spec in self._property_specs():
-            await self.reader.read(self.primary, spec)
+            await self.reader.read(self.primary, spec, since=since)
 
     def _property_specs(self) -> list[P.PropertySpec]:
         """Return the preset temperatures, the mode property when the firmware (if known) has it, boost, automatic."""

@@ -255,6 +255,10 @@
   answers a command only when it shows the state the command asked for (at present or as the target of a running
   transition, within the load's own 1 % or 100 K step) or nothing else waits for it; otherwise the command is sent
   again within its usual attempts. Found by the flapping-link soak over the simulated mesh; unverified on air.
+- A device parameter changed in the JUNG HOME app now shows in Home Assistant (review-4 H4-10): the device answers
+  such a change to the app only, and each parameter was read once, so Home Assistant kept the old value until the
+  next restart or reload. A parameter is now read again on the first connection three hours or more after its last
+  read (a battery device's at its first key event after that), through the same paced queue as the first read.
 
 ### Added
 
@@ -286,6 +290,12 @@
   *All lights*' Unacknowledged Sets when every member fades); the light is read again a second after the remaining
   time its status announced. `scene.SCENE_TRANSITIONS` does the same for a scene's recall. Until then nothing
   changes on air: no light declares the feature and every Set keeps the bytes it had. Unverified on air.
+- `homeassistant.update_entity` reads the device now on every JUNG entity, not only the meter sensors (review-4
+  H4-10, F4-7, H I-13): lights, sockets and covers get a state Get, a room thermostat its set-point, temperatures,
+  presets, mode and boost, a detector's illuminance its reading, a device parameter its value — so an automation can
+  pick up a change made in the app at once. One request per value and device every 2 s at most; a battery device is
+  not asked (it sleeps), and without a link the entity keeps its state and the action does not fail. Covers,
+  thermostats and detectors are unverified on air.
 
 ### CLI tools and library
 

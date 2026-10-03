@@ -815,6 +815,35 @@ async def test_a_boost_started_elsewhere_is_followed_and_any_other_preset_ends_i
     assert exc.value.translation_key == "setting_no_answer"
 
 
+async def test_update_entity_reads_the_thermostat_and_a_boost_started_on_it(
+    hass: HomeAssistant, init_rtr: MockConfigEntry, rtr_mesh: RtrMesh
+) -> None:
+    """Review-4 H4-10: a boost started on the thermostat itself shows only if the RTR publishes it (unverified);
+    `homeassistant.update_entity` runs the per-link refresh now, every property asked however recently read."""
+    mesh = rtr_mesh.mesh
+    mesh.values[RTR, PID_BOOST] = b"\x01"  # started on the device; nobody told
+    rtr_mesh.ambient = 44  # 22 °C
+    mesh.gets.clear()
+    rtr_mesh.gets.clear()
+    await hass.services.async_call(
+        "homeassistant",
+        "update_entity",
+        {ATTR_ENTITY_ID: entity_id(hass, "climate", UID_RTR)},
+        blocking=True,
+    )
+    assert rtr_mesh.gets == [M.GEN_LEVEL_GET, M.GEN_ONOFF_GET, M.SENSOR_GET]
+    assert {pid for addr, pid in mesh.gets if addr == RTR} >= {
+        PID_COMFORT,
+        PID_ECO,
+        PID_FROST,
+        PID_BOOST,
+        PID_AUTOMATIC,
+    }
+    state = climate_state(hass)
+    assert state.attributes[ATTR_PRESET_MODE] == PRESET_BOOST
+    assert state.attributes[ATTR_CURRENT_TEMPERATURE] == 22.0
+
+
 async def test_unload_drops_a_pending_boost_read_back(
     hass: HomeAssistant, init_rtr: MockConfigEntry, rtr_mesh: RtrMesh
 ) -> None:

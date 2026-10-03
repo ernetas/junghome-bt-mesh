@@ -273,7 +273,8 @@ own state refresh goes first), then reads the preset temperatures, the mode, boo
 configuration entities read theirs (the mode only on firmware that has it, when the version is known); afterwards it
 relies on the thermostat publishing its changes (the set-point element and the sensor publish to the element group by
 the app's standard wiring — whether a wheel turn or a local mode change actually produces such a publication is one
-of the open questions). A preset temperature the thermostat has not reported is read when the preset is selected; if it still does
+of the open questions). `homeassistant.update_entity` runs the same reads at once, boost included, so an automation
+can see a boost started on the thermostat itself (unverified on air). A preset temperature the thermostat has not reported is read when the preset is selected; if it still does
 not answer, the selection fails. *Boost* and *Automatic operation* are also the `boost_mode` / `scheduler_enabled`
 configuration switches of the node device (disabled by default; they share the values the climate entity shows).
 Attributes: `mesh_address`, `rooms`.
@@ -311,7 +312,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Energy since switched on | `energy` | Wh | No (diagnostic) | Metered loads only; energy since the load was last switched on (`0x000D`), same poll |
 | Power-on time | `duration` | h | No (diagnostic) | Metering sockets only; hours the socket has been switched on, read every 5 minutes — nothing publishes it |
 | Installed | `timestamp` | – | Yes (diagnostic) | Metered loads only (on the energy puck from the firmware's property list, unverified); the moment the load was commissioned, a date and time the meter element keeps (JUNG firmware property `0x5014`, `hidden-features.md` §10 — the two sockets that revealed it were installed on the days it names, October 2024). Local wall time on the device, shown in Home Assistant's time zone; read once per link, never polled |
-| Illuminance | `illuminance` | lx | Yes | Detectors only, on the node device — **unverified on hardware**: the Present Illuminance (SIG `0x0055`) of the detector's `Sensor Status`, published like the presence value (see [Binary sensor](#binary-sensor)) and asked for once after every connection; the device reports 0.01 lx steps (whole lux on device software up to 1.4.0.0, when the version is known), shown as whole lux. While the detector has delivered no such value (or reports all ones), the detector's own *Current brightness* instead (vendor property `0x6004`, whole lux, what the app's parameter page shows), read every minute while the link is up; attribute `source` (`present_illuminance` / `brightness`) says which |
+| Illuminance | `illuminance` | lx | Yes | Detectors only, on the node device — **unverified on hardware**: the Present Illuminance (SIG `0x0055`) of the detector's `Sensor Status`, published like the presence value (see [Binary sensor](#binary-sensor)) and asked for once after every connection; the device reports 0.01 lx steps (whole lux on device software up to 1.4.0.0, when the version is known), shown as whole lux. While the detector has delivered no such value (or reports all ones), the detector's own *Current brightness* instead (vendor property `0x6004`, whole lux, what the app's parameter page shows), read every minute while the link is up; attribute `source` (`present_illuminance` / `brightness`) says which. `homeassistant.update_entity` asks for the Present Illuminance at once, and for the brightness when the answer carries no reading |
 | Continuous on/off | `enum` | – | No (diagnostic) | Detectors only, on the node device — **unverified on hardware**: `inactive`, `off` or `on`, whether the detector holds its load off or on through its own slider or keys (vendor property `0x6016`). The app only shows it (on the load's page), so it is read once per link and never written |
 | Battery | `battery` | % | Yes (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device — **unverified on hardware**: read with `Generic Battery Get` right after one of the node's keys reported an event (the node sleeps otherwise and would not answer), never polled; the level from before a restart until then; while the node reports no level (0xFF) the level its battery indicator stands for (good 50 %, low 15 %, critically low 5 %) |
 | Schedules | – | – | No (diagnostic) | Every light, socket, blind and room thermostat whose element hosts the JH Scheduler (all current products): how many of the 16 schedule slots the device holds; attribute `schedules` lists them in the fields [`create_schedule`](#actions-schedules) takes (not recorded in the history). Read once per link, updated by the schedule actions; not yet tried on a real device |
@@ -534,7 +535,11 @@ switch, driven the way the JUNG HOME Gateway drives it (it only has an effect on
 be read back, so its state is assumed; it follows the gateway's own writes of the LED too, which the gateway sends to
 the key the same way). Values are read from the device once when the entity is added or enabled — a
 few seconds after the connection is up, five devices at a time (a battery device's right after one of its keys
-reported, the moment it is awake) — and never polled; a change is written as an acknowledged command and confirmed
+reported, the moment it is awake) — and read again on the first connection three hours or more after that (a
+battery device's at its first key event after three hours): a setting changed in the JUNG HOME app is answered to
+the app only, so Home Assistant hears nothing of it. They are never polled. To see such a change at once, call
+`homeassistant.update_entity` on the entity (not on a battery device: it sleeps; see
+[Data updates](#data-updates)); a change is written as an acknowledged command and confirmed
 by the device's reply (or read back half a second later). A change the device answers neither way fails with *did not
 answer*, one the read-back shows another value for with *did not take the new value*, and one the device answers with
 the property id alone (as an element answers for a property it does not have) with *does not have the setting* — like
@@ -953,6 +958,15 @@ message it hears. Because all mains-powered JUNG nodes relay, this covers the wh
   a socket's power-on time), read every five minutes. `homeassistant.update_entity` on any of a metered load's power,
   voltage, current, energy or power-on sensors reads that load's meter readings and counters at once (the app reads
   them every 5 s while its consumption page is open); an update of several of its sensors together is one read.
+- `homeassistant.update_entity` asks the device for a fresh value on the other entities too: a light, socket or cover
+  gets the state Get of the connect-time refresh (a cover's slat element too), a room thermostat its set-point, heating
+  output, room temperature, preset temperatures, mode, boost and automatic operation, a detector's illuminance its
+  Present Illuminance (or its brightness), a device parameter its value — useful after changing a setting in the JUNG
+  HOME app, which answers the app only. The same value of the same device is asked at most once every 2 s (an update
+  of several entities together, or an automation in a loop, sends one request). A battery device is not asked (it
+  sleeps; its values are read at its next key event), and without a link nothing is: the entity keeps what it shows
+  and the action does not fail. The central entities (*All lights*, a room's lights) read nothing of their own: their
+  members publish. The cover, thermostat and detector reads are unverified on air.
 - The colour-temperature limits come from the light itself: after every connection the integration asks each
   tunable-white light for its supported range (`Light CTL Temperature Range Get`), and the light's
   `min_color_temp_kelvin` / `max_color_temp_kelvin` attributes and the clamp applied to commands follow that answer.
@@ -2142,7 +2156,14 @@ Behaviour worth knowing:
   it was last queued on, and dropped when its link is gone — review-4 R4-5; a node's version read once per hub and
   again after `hub.restarted` names a restart since), one status handler for the three vendor Status opcodes fills
   `ElementState.properties`. The status LED is written with a User Property *Status* (never read); such a Status the
-  gateway sends to a push-button's key is cached as that key's value (`config_entities.status_owner`).
+  gateway sends to a push-button's key is cached as that key's value (`config_entities.status_owner`). An entity
+  whose read got every value queues it again on a later link once `CONFIG_REREAD_INTERVAL` (3 h) has passed, once
+  per link (`ConfigEntity._read_due`; review-4 H4-10).
+- `homeassistant.update_entity` (`JungHomeEntity.async_update`): each entity names what it reads (`_update_read`:
+  the state Get of `_refresh_kind` for a light or socket, both level elements of a cover, the meter, the thermostat's
+  refresh with `since`, the detector's illuminance, a config entity's values with `since` so a read within
+  `PROPERTY_READ_FRESH` does not answer it); the base skips battery nodes and a missing link, keeps one read per
+  element and name per `UPDATE_READ_INTERVAL` (`entity.update_reads`, per entry) and logs instead of raising.
 - Services (`services.py` → `mesh_config.py`): registered once in `async_setup`; each entry contributes a
   `MeshConfigurator` (per-hub lock). Operations plan `ProjectFile` mutations, send the Config messages over the device
   key with `request_config`, write the KeyMode property, save the file atomically and have the hub follow the

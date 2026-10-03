@@ -367,6 +367,13 @@ PROPERTY_READ_TIMEOUT: Final = (
 )
 PROPERTY_READ_RETRIES: Final = REQUEST_ATTEMPTS  # Get attempts before a property counts as unanswered (stays unknown)
 PROPERTY_READ_FRESH: Final = 10.0  # seconds within which a property answered once is not read again by another entity
+# A config entity whose values were read is read again on a later link once this many seconds have passed since
+# (`ConfigEntity._maybe_read`): a value changed in the app is answered to the app's address, so nothing else tells
+# Home Assistant (review-4 H4-10). Once per link at most, through the reader's queue.
+CONFIG_REREAD_INTERVAL: Final = 3 * 3600.0
+# `homeassistant.update_entity` asks an element for the same thing at most once per this many seconds
+# (`JungHomeEntity.async_update`); a call within it keeps the cached state.
+UPDATE_READ_INTERVAL: Final = 2.0
 PROPERTY_WRITE_TIMEOUT: Final = (
     3.0  # seconds to wait for the Status answering an acknowledged property Set
 )

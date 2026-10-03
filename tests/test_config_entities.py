@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import timedelta
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 from homeassistant.components.bluetooth import BluetoothChange
@@ -46,6 +46,7 @@ from custom_components.junghome_ble.const import (
     SIG_SOFTWARE_VERSION,
     SIGNAL_UPDATE,
 )
+from custom_components.junghome_ble.entity import update_reads
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh.cdb import CDB, Element, Node
@@ -75,7 +76,9 @@ from .helpers import (
     ROCKER_A,
     SOCKET,
     SOCKET_SENSOR,
+    UID_BUTTON_WC,
     UID_LIGHT_CTL,
+    UID_LIGHT_DIMMER,
     UID_LIGHT_SWITCH,
     UID_SOCKET,
     entity_id,
@@ -1908,3 +1911,181 @@ async def test_a_walking_test_found_running_is_ended_and_a_silent_detector_logge
             hass, lambda: "the walking test was not stopped" in caplog.text
         )
         assert (DETECTOR_MOTION, PID_WALKING_TEST, b"\x00") in mesh.sets
+
+
+# --------------------------------------------------------------------------- update entity, re-reads, review-4 H4-10
+
+
+async def update_entity(hass: HomeAssistant, eid: str) -> None:
+    await hass.services.async_call(
+        "homeassistant", "update_entity", {ATTR_ENTITY_ID: eid}, blocking=True
+    )
+
+
+UID_RUN_ON = f"{UID_LIGHT_SWITCH}-timed_on_duration"
+
+
+async def test_update_entity_reads_a_config_entity_now(
+    hass: HomeAssistant,
+    init_with_mesh: MockConfigEntry,
+    mesh: PropertyMesh,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-10: a value changed in the app is answered to the app only; `homeassistant.update_entity` asks
+    the device again at once — even within PROPERTY_READ_FRESH of the last read — and shows the new value. The same
+    element and value are asked at most once per UPDATE_READ_INTERVAL."""
+    hub: JungHomeHub = init_with_mesh.runtime_data
+    eid = entity_id(hass, "number", UID_RUN_ON)
+    before = hass.states.get(eid).state
+    changed = (90_000).to_bytes(4, "little")
+    mesh.values[LIGHT_SWITCH, PID_RUN_ON] = changed  # set in the app
+    gets = mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON))
+    await update_entity(hass, eid)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+    assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == changed
+    assert hass.states.get(eid).state != before
+    await update_entity(hass, eid)  # at once again: rate-limited
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+
+    # a setup state is asked again too, however fresh its last answer
+    fake_link.sent.clear()
+    await update_entity(
+        hass, entity_id(hass, "number", f"{UID_LIGHT_DIMMER}-lightness_min")
+    )
+    assert (LIGHT_DIMMER, M.light_lightness_range_get()) in {
+        (dst, pdu) for _, dst, pdu in fake_link.sent
+    }
+
+    # a switch with nothing to read (the status LED, written the gateway's way) asks nothing
+    fake_link.sent.clear()
+    await update_entity(
+        hass, entity_id(hass, "switch", f"{UID_BUTTON_WC}-key_status_led")
+    )
+    assert fake_link.sent == []
+
+    # without a link nothing is asked; a link lost under the read is only logged (no error from the action)
+    update_reads(hub).clear()
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await update_entity(hass, eid)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+    with patch.object(
+        C.PropertyReader, "fetch", AsyncMock(side_effect=ConnectionError("gone"))
+    ) as fetch:
+        await update_entity(hass, eid)
+    fetch.assert_awaited_once()
+    assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == changed
+
+
+async def test_config_entity_reread_defaults_to_its_read() -> None:
+    """An entity that reads something else than properties or a setup state re-reads with its own read."""
+    hub = fake_hub()
+    node = hub.cdb.node_by_addr(LIGHT_SWITCH)
+    assert node is not None
+    target = C.SetupTarget(
+        node=node,
+        address=LIGHT_SWITCH,
+        unique_id="x",
+        device_info={"name": "x"},
+        page="lamp",
+        state=C.ON_POWER_UP,
+        entity="power_on_behaviour",
+    )
+    entity = C.ConfigEntity(hub, target)
+    read = AsyncMock(return_value=True)
+    with patch.object(entity, "_read", read):
+        assert entity._update_read() == ("x", entity._reread)
+        await entity._reread()
+    read.assert_awaited_once()
+
+
+def age(entity: C.ConfigEntity) -> None:
+    """Move the entity's last read, and every answer its reader holds, CONFIG_REREAD_INTERVAL into the past."""
+    assert entity._read_at is not None
+    entity._read_at -= const.CONFIG_REREAD_INTERVAL
+    read_at = entity.reader._read_at
+    for key in read_at:
+        read_at[key] -= const.CONFIG_REREAD_INTERVAL
+
+
+async def test_config_values_are_read_again_on_a_link_after_the_interval(
+    hass: HomeAssistant,
+    init_with_mesh: MockConfigEntry,
+    mesh: PropertyMesh,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-10: values read once were never read again, so a change made in the app stayed hidden. They are
+    read again on a later link once CONFIG_REREAD_INTERVAL has passed — not on a link before that, and once per
+    link — through the reader's queue like the first read."""
+    eid = entity_id(hass, "number", UID_RUN_ON)
+    number = hass.data[DATA_INSTANCES]["number"].get_entity(eid)
+    assert isinstance(number, C.PropertyEntity)
+    assert number._read_done
+    assert number._read_at is not None
+
+    async def new_link() -> None:
+        fake_link.drop_link()
+        await wait_for_link(hass, init_with_mesh, connected=False)
+        await wait_for_link(hass, init_with_mesh)
+        await settle(hass)
+
+    gets = mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON))
+    await new_link()  # within the interval: not asked
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets
+
+    changed = (90_000).to_bytes(4, "little")
+    mesh.values[LIGHT_SWITCH, PID_RUN_ON] = changed  # set in the app meanwhile
+    hub: JungHomeHub = init_with_mesh.runtime_data
+    age(number)
+    await new_link()
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+    assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == changed
+    # once per link: another update of the element on this link asks nothing, even were the interval over
+    age(number)
+    async_dispatcher_send(
+        hass, SIGNAL_UPDATE.format(init_with_mesh.entry_id, LIGHT_SWITCH)
+    )
+    await settle(hass)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+
+
+async def test_battery_node_update_entity_is_skipped_and_reread_at_a_key_event(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    fast_timeouts: None,
+) -> None:
+    """A wall transmitter sleeps: `homeassistant.update_entity` asks it nothing (it would not answer). Its values
+    are read again at the first key event after CONFIG_REREAD_INTERVAL, the moment it is awake."""
+    mesh = PropertyMesh(fake_link)
+    entry = await start_detectors(hass, make_detectors_entry(), fake_link)
+    await settle(hass)
+    eid = next(
+        e.entity_id
+        for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if e.unique_id.startswith(UUID_1G.lower())
+        and e.unique_id.endswith("-led1_mode_on")
+    )
+    select = hass.data[DATA_INSTANCES]["select"].get_entity(eid)
+    assert isinstance(select, C.PropertyEntity)
+
+    async def key_event(counter: int) -> None:
+        fake_link.inject(
+            KEY_1G, GROUP_GATEWAY, vendor_button_event(counter, BUTTON_CLICK)
+        )
+        await hass.async_block_till_done()
+        await wait_until(hass, lambda: not select._read_pending)
+
+    await key_event(1)
+    assert select._read_done
+    gets = len(mesh.gets)
+    fake_link.sent.clear()
+    await update_entity(hass, eid)
+    assert fake_link.sent == []
+    await key_event(2)  # read within the interval: nothing to ask
+    assert (TRANSMITTER_1G, PID_LED1_ON) not in mesh.gets[gets:]
+    age(select)
+    await key_event(3)
+    assert (TRANSMITTER_1G, PID_LED1_ON) in mesh.gets[gets:]

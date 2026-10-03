@@ -48,6 +48,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import (
@@ -98,6 +99,7 @@ from .const import (
     DETECTOR_PROPERTY_ILLUMINANCE,
     DOMAIN,
     LINK_STATES,
+    REFRESH_RETRIES,
     SIGNAL_BATTERY,
     SIGNAL_CONNECTION,
     SIGNAL_GATEWAY_SYNCED,
@@ -142,6 +144,7 @@ if TYPE_CHECKING:
     from . import JungHomeConfigEntry
     from .config_entities import ValueTarget
     from .coordinator import ElementState
+    from .entity import UpdateRead
     from .jhmesh.cdb import Node
     from .jhmesh.client import AccessMessage
     from .jhmesh.devices import Button, Detector, MeteredLoad
@@ -490,9 +493,9 @@ class JungHomeMeterSensor(JungHomeEntity, SensorEntity):
         self.entity_description = description
         self._load = load
 
-    async def async_update(self) -> None:
-        """Read the load's meter now (`homeassistant.update_entity`); its answers update the cache as any status does."""
-        await self.hub.async_refresh_meter(self._load)
+    def _update_read(self) -> UpdateRead:
+        """`homeassistant.update_entity` reads the load's meter now; its answers update the cache as any status does."""
+        return "meter", partial(self.hub.async_refresh_meter, self._load)
 
     @property
     def native_value(self) -> float | None:
@@ -838,12 +841,25 @@ class JungHomeThreshold(PropertyEntity, SensorEntity):
         return out
 
 
+def carries_sensor_value(pid: int) -> Callable[[AccessMessage], bool]:
+    """Return a reply matcher for a qualified Sensor Get: a Sensor Status carrying `pid` (a malformed one carries none)."""
+
+    def carries(m: AccessMessage) -> bool:
+        try:
+            return any(prop == pid for prop, _raw in M.sensor_values(m.params))
+        except ValueError:
+            return False
+
+    return carries
+
+
 class JungHomeDetectorIlluminance(JungHomeEntity, SensorEntity):
     """The light level a detector measures (unverified on hardware): its Present Illuminance, else its brightness property.
 
     The SIG value comes with the detector's Sensor Status (`binary_sensor.py`). A detector that has not delivered one
     (it does not publish, or does not answer the Sensor Get) is asked for its *Current brightness* (0x6004) every
     `DETECTOR_BRIGHTNESS_POLL` seconds instead, while the link is up; `source` says which one is shown.
+    `homeassistant.update_entity` asks for both at once (`_read_now`).
     """
 
     entity_description = ILLUMINANCE_SENSOR
@@ -896,6 +912,32 @@ class JungHomeDetectorIlluminance(JungHomeEntity, SensorEntity):
             "mesh_address": f"{self.address:04X}",
             "source": self._reading()[1],
         }
+
+    def _update_read(self) -> UpdateRead:
+        """`homeassistant.update_entity` asks for the Present Illuminance, then the brightness while there is none."""
+        return "illuminance", self._read_now
+
+    async def _read_now(self) -> None:
+        """Send the qualified Sensor Get of 0x0055 (as the occupancy refresh); without a reading, read 0x6004.
+
+        Unverified on air (no detector here). A lost link raises; `async_update` logs it.
+        """
+        try:
+            await self.hub.proxy.request(
+                self.address,
+                M.sensor_get(DETECTOR_PROPERTY_ILLUMINANCE),
+                M.SENSOR_STATUS,
+                retries=REFRESH_RETRIES,
+                match=carries_sensor_value(DETECTOR_PROPERTY_ILLUMINANCE),
+            )
+        except TimeoutError:
+            _LOGGER.debug(
+                "%04X did not answer its illuminance Sensor Get", self.address
+            )
+        if self._present_illuminance() is None:
+            await property_reader(self.hass, self.hub).fetch(
+                self.address, BRIGHTNESS_SPEC, since=time.monotonic()
+            )
 
     @callback
     def _poll_brightness(self, _now: datetime) -> None:

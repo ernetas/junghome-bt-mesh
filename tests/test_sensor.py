@@ -17,6 +17,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
+    ATTR_ENTITY_ID,
     ATTR_UNIT_OF_MEASUREMENT,
     LIGHT_LUX,
     PERCENTAGE,
@@ -53,7 +54,11 @@ from custom_components.junghome_ble.coordinator import (
     NODE_VERSIONS,
     ElementState,
 )
-from custom_components.junghome_ble.entity import node_identifier, update_node_device
+from custom_components.junghome_ble.entity import (
+    node_identifier,
+    update_node_device,
+    update_reads,
+)
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 from custom_components.junghome_ble.sensor import (
@@ -661,6 +666,61 @@ async def test_illuminance_falls_back_to_the_brightness_property(
     await settle(hass)
     assert mesh.gets[gets:] == [(DETECTOR_PRESENCE, PID_BRIGHTNESS)] * 3
     assert entry.runtime_data.connected is False
+
+
+async def test_update_entity_reads_the_detector_illuminance_now(
+    hass: HomeAssistant,
+    detectors_with_mesh: tuple[MockConfigEntry, PropertyMesh],
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-10 (unverified on air: no detector here): `homeassistant.update_entity` sends the qualified Sensor
+    Get of the Present Illuminance; a detector that answers without a reading is asked for its brightness."""
+    entry, mesh = detectors_with_mesh
+    hub = entry.runtime_data
+    eid = entity_id(hass, "sensor", f"{UUID_MOTION.lower()}-0040-illuminance")
+    replies = {
+        DETECTOR_MOTION: sensor_status(
+            (DETECTOR_PROPERTY_ILLUMINANCE, (12345).to_bytes(3, "little"))
+        )
+    }
+
+    def sensor_server(dst: int, pdu: bytes) -> bytes | None:
+        if pdu != M.sensor_get(DETECTOR_PROPERTY_ILLUMINANCE):
+            return None
+        return replies.get(dst)
+
+    fake_link.app_reply = sensor_server
+
+    async def update() -> None:
+        update_reads(hub).clear()
+        await hass.services.async_call(
+            "homeassistant", "update_entity", {ATTR_ENTITY_ID: eid}, blocking=True
+        )
+
+    await update()
+    state = hass.states.get(eid)
+    assert state.state == "123.45"
+    assert state.attributes["source"] == "present_illuminance"
+    assert (DETECTOR_MOTION, PID_BRIGHTNESS) not in mesh.gets
+    # answered without a reading (all ones): the brightness property is read instead
+    replies[DETECTOR_MOTION] = sensor_status(
+        (DETECTOR_PROPERTY_ILLUMINANCE, b"\xff\xff\xff")
+    )
+    await update()
+    state = hass.states.get(eid)
+    assert state.state == "321.0"
+    assert state.attributes["source"] == "brightness"
+    assert mesh.gets.count((DETECTOR_MOTION, PID_BRIGHTNESS)) == 1
+    # silent: the cached reading stays
+    with patch.object(hub.proxy, "request", side_effect=TimeoutError):
+        await update()
+    assert hass.states.get(eid).state == "321.0"
+
+
+def test_a_malformed_sensor_status_carries_no_value() -> None:
+    carries = sensor.carries_sensor_value(DETECTOR_PROPERTY_ILLUMINANCE)
+    assert not carries(SimpleNamespace(params=b"\x01"))  # type: ignore[arg-type]
+    assert not carries(SimpleNamespace(params=b""))  # type: ignore[arg-type]
 
 
 UID_FORCED_OFF = f"{UUID_MOTION.lower()}-0040-forced_off"

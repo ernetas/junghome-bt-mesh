@@ -37,7 +37,12 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from voluptuous import Invalid
 
 from custom_components.junghome_ble import light as light_platform
-from custom_components.junghome_ble.const import DIM_MOVE_TRANSITION, DOMAIN
+from custom_components.junghome_ble.const import (
+    DIM_MOVE_TRANSITION,
+    DOMAIN,
+    UPDATE_READ_INTERVAL,
+)
+from custom_components.junghome_ble.entity import UPDATE_READS, update_reads
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS, Light
 
@@ -807,3 +812,86 @@ async def test_all_lights_pass_the_transition_on(
             M.generic_onoff_set(True, ack=False, tid=tids[2][1], transition=0x14),
         ),
     ]
+
+
+# ----------------------------------------------------------------------------- update entity, review-4 H4-10
+
+
+async def update_entity(hass: HomeAssistant, eid: str) -> None:
+    await hass.services.async_call(
+        "homeassistant", "update_entity", {ATTR_ENTITY_ID: eid}, blocking=True
+    )
+
+
+async def test_update_entity_asks_the_light_now(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-10: `homeassistant.update_entity` on a light sends the connect-time refresh's Get for its kind,
+    and the entity shows the answer; the same Get to the same light again within UPDATE_READ_INTERVAL is not sent."""
+    hub = init_integration.runtime_data
+    switch = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(True))  # published on: cached
+    await hass.async_block_till_done()
+    assert hass.states.get(switch).state == STATE_ON
+    for uid, address, get in (
+        (UID_LIGHT_SWITCH, LIGHT_SWITCH, M.generic_onoff_get()),
+        (UID_LIGHT_DIMMER, LIGHT_DIMMER, M.light_lightness_get()),
+        (UID_LIGHT_CTL, LIGHT_CTL, M.light_ctl_get()),
+    ):
+        fake_link.sent.clear()
+        await update_entity(hass, entity_id(hass, "light", uid))
+        assert [(dst, pdu) for _, dst, pdu in fake_link.sent] == [(address, get)]
+    assert hass.states.get(switch).state == STATE_OFF  # what the light answered
+
+    # rate-limited per element and Get: asked again only once the interval has passed
+    fake_link.sent.clear()
+    await update_entity(hass, switch)
+    assert fake_link.sent == []
+    update_reads(hub)[LIGHT_SWITCH, "switch"] -= UPDATE_READ_INTERVAL
+    await update_entity(hass, switch)
+    assert [(dst, pdu) for _, dst, pdu in fake_link.sent] == [
+        (LIGHT_SWITCH, M.generic_onoff_get())
+    ]
+
+    # *All lights* reads nothing of its own: its members publish
+    fake_link.sent.clear()
+    await update_entity(hass, entity_id(hass, "light", f"{MESH_UUID}-central-fef5"))
+    assert fake_link.sent == []
+
+    # the record goes with the entry
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert init_integration.entry_id not in hass.data[UPDATE_READS]
+
+
+async def test_update_entity_without_a_link_keeps_the_state(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """No link: nothing is sent and nothing raised (Home Assistant logs a failed update as an error); a write that
+    fails under the read is only logged too, and the cached state stays."""
+    eid = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(True))
+    await hass.async_block_till_done()
+    fake_link.write_error = OSError("GATT write failed")
+    try:
+        await update_entity(hass, eid)
+    finally:
+        fake_link.write_error = None
+    assert hass.config_entries.async_get_entry(init_integration.entry_id) is not None
+    assert init_integration.runtime_data.states[LIGHT_SWITCH].on is True
+
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()
+    await settle(hass)
+    assert not init_integration.runtime_data.connected
+    update_reads(init_integration.runtime_data).clear()
+    fake_link.sent.clear()
+    await update_entity(hass, eid)
+    assert fake_link.sent == []
+    assert init_integration.runtime_data.states[LIGHT_SWITCH].on is True

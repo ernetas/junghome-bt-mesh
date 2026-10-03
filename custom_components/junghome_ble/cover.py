@@ -81,6 +81,7 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .coordinator import ElementState, JungHomeHub
+    from .entity import UpdateRead
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)
@@ -320,6 +321,15 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
             )
         finally:
             self._mode_read_pending = False
+
+    def _update_read(self) -> UpdateRead:
+        """`homeassistant.update_entity` asks the position and, when there is one, the slat element (unverified on air)."""
+
+        async def read() -> None:
+            for address in self.blind.level_elements:
+                await self.hub.async_refresh_element(address, "level")
+
+        return "level", read
 
     # ------------------------------------------------------------------ locks
     def _lock(self) -> P.EnforcedOutput | None:
