@@ -906,10 +906,11 @@ and the logbook lines of key presses, scene recalls and plans. The diagnostics s
 
 1. **The mesh export of the JUNG HOME app.** You can provide it in three ways; the first needs no file handling at all:
    - **From the JUNG HOME Gateway** (if you have one, firmware 2.1 or newer). The gateway holds a copy of the app's
-     project file. During setup enter the gateway's address (`junghome.local` or its IP from the app under *Settings →
-     Gateway*) and either its network-key password (from the app; access is granted at once) or leave the password
-     empty and approve the request *Home Assistant (Bluetooth Mesh)* in the app under *Settings → Gateway → Access
-     permissions → Open requests* within three minutes. Home Assistant downloads the export and keeps the gateway's
+     project file. During setup enter the gateway's address (filled in when the gateway was discovered; else
+     `junghome.local` or its IP from the app under *Settings → Gateway*) and either its network-key password (from
+     the app; access is granted at once) or leave the password empty and approve the request *Home Assistant
+     (Bluetooth Mesh)* in the app under *Settings → Gateway → Access permissions → Open requests* within three
+     minutes. Home Assistant downloads the export and keeps the gateway's
      access token so it can fetch a fresh copy later with one click.
    - **Upload**: in the app open *Project → Share via file*, send yourself the `JungHome.json` it creates (it contains
      the mesh network, Base64-encoded in its `network` field, **and** the names of your loads, buttons and scenes in its
@@ -975,12 +976,22 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
    `unzip junghome_ble.zip -d /config/custom_components/`).
 3. Restart Home Assistant.
 4. Add the integration:
-   - **Discovery.** As soon as a Bluetooth Mesh proxy is seen, a *Bluetooth Mesh network &lt;network id&gt;* card appears
-     under **Settings → Devices & services → Discovered**. Select **Add** and confirm; you are then asked for the
-     export. A mesh that is already set up is not offered again: neither by its Network ID, nor during or after a
-     key refresh (by the new key's Network ID once Home Assistant follows the refresh, and by the MACs of the
-     export's nodes whatever they advertise). When the refresh completes, a card of the new Network ID still
-     pending, or one you ignored, is removed. The key-refresh cases are unverified on air.
+   - **Discovery.** As soon as a Bluetooth Mesh proxy is seen, a *Bluetooth Mesh &lt;network id&gt;* card appears
+     under **Settings → Devices & services → Discovered**. Select **Add** and confirm (*Is this your JUNG HOME
+     installation?* — any brand's mesh is offered); you are then asked for the export. A mesh that is already set up
+     is not offered again: neither by its Network ID, nor during or after a key refresh (by the new key's Network ID
+     once Home Assistant follows the refresh, and by the MACs of the export's nodes whatever they advertise). When
+     the refresh completes, a card of the new Network ID still pending, or one you ignored, is removed. The
+     key-refresh cases are unverified on air.
+   - **Gateway discovery (zeroconf).** The JUNG HOME Gateway announces itself over mDNS (service
+     `_junghome._tcp.local.`, TXT records `serial`, `mac`, `version`, `manufacturer=JUNG`); a *JUNG HOME Gateway
+     &lt;address&gt;* card appears. Confirming it opens the gateway form with the announced IPv4 address filled in;
+     the rest is the gateway source as below, the certificate pinned at first contact exactly as for a typed address
+     (the announcement itself is not trusted: it only prefills the form). One card per gateway serial number,
+     however often it announces itself; none for an announcement whose `manufacturer` is not JUNG or that carries no
+     serial, and none for a gateway an entry already names by the announced address or host name. An entry that
+     names it `junghome.local` is not recognised: its card is offered, and finishing it ends with *already
+     configured* (the Network ID of the fetched export). Setting up from the card is unverified on air.
    - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME (Bluetooth Mesh)*,
      choose where the export comes from (gateway, upload, or a path on the host) and fill in the
      [configuration parameters](#configuration-parameters). The discovery card leads to the same choice.
@@ -997,12 +1008,12 @@ All three settings are entered in the configuration dialog and can be changed la
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
-| Gateway address | Gateway source only | `junghome.local` | IP address or hostname of the JUNG HOME Gateway. |
+| Gateway address | Gateway source only | `junghome.local` (a discovered gateway: its announced address) | IP address or hostname of the JUNG HOME Gateway. |
 | Network-key password | No | – | The gateway's network-key password from the app. With it access is granted immediately; without it you approve the request in the app. Never stored. |
 | Mesh export file (upload) | Upload source only | – | `JungHome.json` from *Share via file* (or `MeshNetwork.json`). |
 | Mesh export file | Path source only | – | Absolute path on the Home Assistant host to the app's mesh export, for example `/config/junghome/MeshNetwork.json`. Must be the CDB JSON with a top-level `meshNetwork` object (see [Prerequisites](#prerequisites)). |
 | App metadata directory | No | empty | Absolute path to a directory containing the app's `device_metadata.json` and/or `scene_metadata.json` (the iOS app's `Application Support` folder). Must be an existing directory if given. Missing files inside it are ignored. |
-| Our unicast address | Yes | `0D00` | Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. |
+| Our unicast address | Yes | `0D00` | In the collapsed *Advanced* section of every source form (gateway, upload, path, fetch again): leave it closed for the default. Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. An invalid or taken address is reported on the section. |
 
 ## Options
 
@@ -2134,9 +2145,10 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   `bluetooth_proxy: active: true`, and each proxy offers a small number of connection slots (three by default) that all
   Bluetooth integrations share. This integration occupies one slot permanently.
 - **Discovery reacts to any Bluetooth Mesh proxy.** The discovery card is shown for every Bluetooth Mesh network in
-  range, not only JUNG HOME; ignore cards for networks you do not own. The matcher (`manifest.json`) keys on the Mesh
-  Proxy service `0x1828` alone. The proxy advertisement itself carries nothing vendor-specific (the Network ID is a
-  hash of the NetKey, the Node Identity form a hash of the node address); provisioned JUNG devices send the JUNG
+  range, not only JUNG HOME; its confirmation asks *Is this your JUNG HOME installation?* and says so — ignore cards
+  for networks you do not own. (The gateway's own zeroconf card is JUNG-only.) The matcher (`manifest.json`) keys on
+  the Mesh Proxy service `0x1828` alone. The proxy advertisement itself carries nothing vendor-specific (the Network
+  ID is a hash of the NetKey, the Node Identity form a hash of the node address); provisioned JUNG devices send the JUNG
   manufacturer record (company `0x0527`, 1319) in separate, non-connectable advertisements from the same MAC, which
   Home Assistant merges into the device's data (`docs/bluetooth-recheck.md` §5; the gateway sends none). Narrowing
   discovery to JUNG — `"manufacturer_id": 1319` in the matcher, or a `not_jung` abort in the discovery step — is a
@@ -2245,9 +2257,9 @@ app still update, because those are received, not sent. Two situations cause it:
   remember.
   (Removing and re-adding the integration is *not* this case — the store is kept and the counters continue.)
 
-Fix: give Home Assistant an address the mesh has never seen: enter a different *Our unicast address* (for example
-`0D02`) through **Reconfigure**; an address without a record in the store starts with a fresh sequence-number space
-(the log says so: *Address 0D02 has no sequence-number record in this mesh's store*). Do not reuse an address a
+Fix: give Home Assistant an address the mesh has never seen: enter a different *Advanced → Our unicast address* (for
+example `0D02`) through **Reconfigure**; an address without a record in the store starts with a fresh sequence-number
+space (the log says so: *Address 0D02 has no sequence-number record in this mesh's store*). Do not reuse an address a
 command-line tool has used. The diagnostics download shows the address and counter in use under `local`. Restoring
 the store from a backup is not a fix: an older copy only repeats numbers the nodes have already seen.
 
@@ -2504,17 +2516,17 @@ go astray), so the setup is refused (an export with such a node taken over at ru
 refusal). **Submit**
 (unverified on air) moves Home Assistant to the free address the issue names — worked out from the export on disk
 when the repair opens (`CDB.suggest_unicast`) and checked again before it is used — and sets the entry up again, as
-*Reconfigure → Our unicast address* would. The sequence-number store keeps one record per address: the new address
-continues its own record, or starts 2^20 in when Home Assistant has none for it but has sent from another (see
-*Known limitations*), so no number is sent twice. Make sure no other client (the command-line tools, another Home
+*Reconfigure → Advanced → Our unicast address* would. The sequence-number store keeps one record per address: the
+new address continues its own record, or starts 2^20 in when Home Assistant has none for it but has sent from another
+(see *Known limitations*), so no number is sent twice. Make sure no other client (the command-line tools, another Home
 Assistant) sends from the new address.
 
 ### Repair issue "Home Assistant's JUNG HOME address may be handed out"
 
 Home Assistant's address lies inside the address range of one of the app's provisioners, or a removed node used it:
 it keeps working until the app provisions a device there. Move Home Assistant to the free address the issue names
-before that, under **Reconfigure → Our unicast address**. The issue is checked at every setup and with every export
-taken over.
+before that, under **Reconfigure → Advanced → Our unicast address**. The issue is checked at every setup and with
+every export taken over.
 
 ### Entities go unavailable every few minutes
 
@@ -2624,6 +2636,11 @@ permissions → Open requests*, approve *Home Assistant (Bluetooth Mesh)*, then 
 The gateway only stores a project once the app has been connected to it (the app uploads its project after every
 change); open the app while connected to the gateway once. Gateway firmware older than 2.1 has no project routes —
 use the upload or path source instead.
+
+### "The gateway is busy with another configuration request"
+
+The gateway takes one configuration request at a time and answered HTTP 429: the app, or another client, is changing
+the installation through it. Submit the dialog again in a minute.
 
 ### Enabling debug logging
 

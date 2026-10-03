@@ -35,18 +35,24 @@ Assistant.
 
 ## Add your installation
 
-Home Assistant may find the installation by itself: a card *Bluetooth Mesh network …* appears under *Settings →
-Devices & services → Discovered*. Select **Add**. Otherwise go to *Settings → Devices & services → Add integration*
-and search for **JUNG HOME (Bluetooth Mesh)**. Either way you are asked where the network export comes from. Pick
-one of the three:
+Home Assistant may find the installation by itself, under *Settings → Devices & services → Discovered*:
+
+- a card *JUNG HOME Gateway …* when a JUNG HOME Gateway is on your network. Select **Add** and confirm: you go straight
+  to the gateway form below, with the gateway's address filled in. (Setting up from this card has not been tried on
+  a real installation yet: **unverified on air**.)
+- a card *Bluetooth Mesh …* when a Bluetooth Mesh network is in range. Home Assistant offers every one it sees, other
+  brands' too: confirm only if it is your JUNG HOME installation.
+
+Otherwise go to *Settings → Devices & services → Add integration* and search for **JUNG HOME (Bluetooth Mesh)**.
+Either way (but for the gateway card) you are asked where the network export comes from. Pick one of the three:
 
 ### From the JUNG HOME Gateway
 
 If you have a JUNG HOME Gateway (firmware 2.1 or newer), this is the easiest: nothing to copy.
 
 1. Choose **Fetch it from the JUNG HOME Gateway**.
-2. Enter the gateway's address: `junghome.local` usually works; otherwise its IP address, which the app shows under
-   *Settings → Gateway*.
+2. Enter the gateway's address (a discovered gateway's is filled in already): `junghome.local` usually works;
+   otherwise its IP address, which the app shows under *Settings → Gateway*.
 3. Either enter the gateway's network-key password from the app — access is granted at once — or leave it empty:
    the app then shows an access request *Home Assistant (Bluetooth Mesh)* under *Settings → Gateway → Access
    permissions → Open requests*. Approve it within three minutes.
@@ -74,11 +80,11 @@ enter the path. With `MeshNetwork.json` from a backup, the device names are in a
 (`Library/Application Support/` of the app's backup); enter it as the *App metadata directory*, or your devices are
 named by type and address.
 
-### The last field
+### Advanced
 
-*Our unicast address* is the address Home Assistant uses in the JUNG HOME network. Keep the default `0D00`. Only if
-you run a second Home Assistant (or the repository's command-line tools) on the same installation does each one need
-an address of its own.
+Each of these forms has a collapsed *Advanced* section with one field, *Our unicast address*: the address Home
+Assistant uses in the JUNG HOME network. Leave it closed to keep the default `0D00`. Only if you run a second Home
+Assistant (or the repository's command-line tools) on the same installation does each one need an address of its own.
 
 Before the setup finishes, Home Assistant checks that it can read the file and that it sees at least one device of
 *this* installation over Bluetooth. If it cannot, see [Maintenance](maintenance.md#setup-problems).

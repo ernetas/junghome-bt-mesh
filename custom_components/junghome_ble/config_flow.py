@@ -1,9 +1,12 @@
 """Config flow: point the integration at the JUNG HOME app's mesh export.
 
-Entry points: manual (user), Bluetooth discovery of any Mesh Proxy advertisement, reconfigure, and reauth. All but
-reauth lead to the same menu: fetch the export from the JUNG HOME Gateway, upload the app's export file, or name a file
-that is already on the Home Assistant host. Fetched and uploaded exports are kept under
-`<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold every mesh key).
+Entry points: manual (user), Bluetooth discovery of any Mesh Proxy advertisement, zeroconf discovery of the JUNG HOME
+Gateway, reconfigure, and reauth. All but reauth and zeroconf lead to the same menu: fetch the export from the JUNG HOME
+Gateway, upload the app's export file, or name a file that is already on the Home Assistant host; zeroconf goes
+straight to the gateway form with the address the gateway announced. Our unicast address sits in a collapsed
+*Advanced* section of every source form (review-4 U4-8): the default suits every installation with one Home
+Assistant. Fetched and uploaded exports are kept under `<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold
+every mesh key).
 
 Whatever the source, the export is validated by loading it (`CDB.load` checks the document's shape; the mesh
 UUID that names the stored file is a UUID by then) and by checking that at least one proxy node of *that* network
@@ -13,7 +16,9 @@ lives as `.incoming-<flow id>.json` until it passes; every failure path, and the
 
 Discovery offers any Mesh Proxy (the manifest matches service 0x1828 alone) and never a configured mesh: not by the
 entry's unique id (the Network ID), nor by a Network ID or node MAC the entry's mesh is known by after a key refresh
-(`coordinator.KnownMesh`).
+(`coordinator.KnownMesh`). The gateway's mDNS announcement (`_junghome._tcp`, TXT `serial`, `manufacturer=JUNG`) is
+offered once per gateway serial, and never for a gateway an entry already names by that address; the address is only
+prefilled, and the certificate is pinned exactly as for a typed one.
 
 The gateway is only ever spoken to over a connection pinned to its certificate (`tls.py`). The pin comes from the
 mesh when the hub is connected (the gateway node reports its own certificate fingerprint), else from the entry
@@ -66,6 +71,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
@@ -134,6 +140,7 @@ from .coordinator import (
 from .entity import device_rooms
 from .gateway_api import (
     GatewayAuthError,
+    GatewayBusy,
     GatewayCertificateMismatch,
     GatewayError,
     GatewayNoProject,
@@ -168,6 +175,7 @@ if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers import entity_registry as er
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -182,6 +190,11 @@ STEP_REGISTER = "gateway_register"
 STEP_REAUTH = "reauth_confirm"
 STEP_REAUTH_DONE = "reauth_done"
 STEP_AREAS = "areas"
+STEP_ZEROCONF_CONFIRM = "zeroconf_confirm"
+# the collapsed section of the source forms that holds our unicast address (its strings: `sections.advanced`)
+SECTION_ADVANCED = "advanced"
+# the gateway's mDNS TXT record `manufacturer`, when it carries one; anything else is not a JUNG HOME Gateway
+GATEWAY_MANUFACTURER = "JUNG"
 
 # Exceptions a malformed export can raise from `CDB.load` beyond `InvalidExport` (which covers the validated shape):
 # an unreadable file, JSON that is not JSON, and — should a shape slip past the validation — the bare Python errors.
@@ -214,19 +227,43 @@ def certificate_issue_id(entry_id: str) -> str:
     return f"{ISSUE_GATEWAY_CERTIFICATE}_{entry_id}"
 
 
-def _schema(defaults: dict[str, Any] | None) -> vol.Schema:
-    d = defaults or {}
+def _advanced(unicast: str) -> dict[Any, Any]:
+    """Return the collapsed *Advanced* section of a source form: our unicast address, which hardly anyone changes."""
+    return {
+        vol.Required(SECTION_ADVANCED): section(
+            vol.Schema({vol.Required(CONF_UNICAST, default=unicast): TextSelector()}),
+            {"collapsed": True},
+        )
+    }
+
+
+def _unicast_input(user_input: Mapping[str, Any]) -> str:
+    """Return our unicast address as a source form submitted it, inside its *Advanced* section."""
+    return str(user_input[SECTION_ADVANCED][CONF_UNICAST])
+
+
+def _form_errors(errors: dict[str, str]) -> dict[str, str]:
+    """Show an error of our unicast address on the *Advanced* section that holds the field.
+
+    `validate_input` names the field (the repairs sharing it have no such field and show it as their form's own);
+    the frontend shows the error of a field inside a section on the section.
+    """
+    return {
+        (SECTION_ADVANCED if key == CONF_UNICAST else key): value
+        for key, value in errors.items()
+    }
+
+
+def _schema(defaults: Mapping[str, Any], unicast: str) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
-                CONF_CDB_PATH, default=d.get(CONF_CDB_PATH, "")
+                CONF_CDB_PATH, default=defaults.get(CONF_CDB_PATH, "")
             ): TextSelector(),
             vol.Optional(
-                CONF_METADATA_DIR, default=d.get(CONF_METADATA_DIR, "")
+                CONF_METADATA_DIR, default=defaults.get(CONF_METADATA_DIR, "")
             ): TextSelector(),
-            vol.Required(
-                CONF_UNICAST, default=d.get(CONF_UNICAST, DEFAULT_UNICAST)
-            ): TextSelector(),
+            **_advanced(unicast),
         }
     )
 
@@ -237,7 +274,7 @@ def _upload_schema(unicast: str) -> vol.Schema:
             vol.Required(CONF_EXPORT_FILE): FileSelector(
                 FileSelectorConfig(accept=".json,application/json")
             ),
-            vol.Required(CONF_UNICAST, default=unicast): TextSelector(),
+            **_advanced(unicast),
         }
     )
 
@@ -248,7 +285,7 @@ def _gateway_schema(host: str, unicast: str) -> vol.Schema:
         {
             vol.Required(CONF_GATEWAY_HOST, default=host): TextSelector(),
             vol.Optional(CONF_GATEWAY_PASSWORD): _PASSWORD,
-            vol.Required(CONF_UNICAST, default=unicast): TextSelector(),
+            **_advanced(unicast),
         }
     )
 
@@ -400,6 +437,8 @@ def _gateway_error_key(err: GatewayError) -> str:
         return "no_project"
     if isinstance(err, GatewayUnreachable):
         return "cannot_connect"
+    if isinstance(err, GatewayBusy):
+        return "gateway_busy"
     return "gateway_error"
 
 
@@ -898,6 +937,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Start with no discovered network, no gateway and no file in flight."""
         self._discovered_network_id: bytes | None = None
+        # the address the gateway announced over mDNS: the gateway form's default, nothing more
+        self._discovered_host: str | None = None
         self._host: str | None = None
         self._token: str | None = None
         # SHA-256 of the certificate every request to `_host` is pinned to; None until `_async_pin` decided it
@@ -957,20 +998,69 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.hass.config_entries.async_schedule_reload(entry.entry_id)
                 return self.async_abort(reason="already_configured")
         self.context["title_placeholders"] = {
-            "network_id": self._discovered_network_id.hex()
+            "name": f"Bluetooth Mesh {self._discovered_network_id.hex()}"
         }
         return await self.async_step_bluetooth_confirm()
 
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Confirm the discovered network before asking for the export."""
+        """Confirm the discovered network before asking for the export: any brand's mesh is offered here."""
         if user_input is not None:
             return await self.async_step_user()
         assert self._discovered_network_id is not None
+        self._set_confirm_only()
         return self.async_show_form(
             step_id="bluetooth_confirm",
             description_placeholders={"network_id": self._discovered_network_id.hex()},
+        )
+
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle the JUNG HOME Gateway's mDNS announcement: one flow per gateway serial, none for a configured one.
+
+        The manifest matches the service type `_junghome._tcp.local.`; a TXT `manufacturer` other than JUNG, or no
+        `serial`, is not the gateway. A gateway an entry already names by this address (or the announced host name)
+        aborts. Nothing is sent to the address: it only prefills the gateway form, and the certificate is pinned
+        there as for a typed address (`_async_pin`). The entry's own unique id stays the Network ID, set when the
+        export is loaded (`_async_finish_checked`); this flow's `gateway-<serial>` only collapses the announcements.
+        """
+        properties = discovery_info.properties
+        manufacturer = properties.get("manufacturer")
+        serial = str(properties.get("serial") or "").strip().lower()
+        if (
+            manufacturer is not None
+            and str(manufacturer).strip().upper() != GATEWAY_MANUFACTURER
+        ) or not serial:
+            return self.async_abort(reason="not_junghome_gateway")
+        if discovery_info.ip_address.version != 4:
+            return self.async_abort(reason="not_ipv4_address")
+        await self.async_set_unique_id(f"gateway-{serial}")
+        self._abort_if_unique_id_configured()
+        host = discovery_info.host
+        names = {host, discovery_info.hostname.rstrip(".").lower()}
+        for entry in self._async_current_entries(include_ignore=False):
+            if _normalize_host(str(entry.data.get(CONF_GATEWAY_HOST) or "")) in names:
+                return self.async_abort(reason="already_configured")
+        self._discovered_host = host
+        self.context["title_placeholders"] = {
+            "name": f"JUNG HOME Gateway {host}",
+            "host": host,
+        }
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm the discovered gateway, then show the gateway form with its address. Unverified on air."""
+        if user_input is not None:
+            return await self.async_step_gateway()
+        assert self._discovered_host is not None
+        self._set_confirm_only()
+        return self.async_show_form(
+            step_id=STEP_ZEROCONF_CONFIRM,
+            description_placeholders={"host": self._discovered_host},
         )
 
     async def async_step_user(
@@ -1013,25 +1103,29 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Use a file already on the Home Assistant host (plus the optional iOS metadata directory)."""
         errors: dict[str, str] = {}
+        defaults: Mapping[str, Any] = {}
+        unicast = self._default_unicast()
         if user_input is not None:
+            defaults, unicast = user_input, _unicast_input(user_input)
+            data = {
+                CONF_CDB_PATH: user_input[CONF_CDB_PATH],
+                CONF_METADATA_DIR: user_input.get(CONF_METADATA_DIR, ""),
+                CONF_UNICAST: unicast,
+            }
             try:
-                cdb = await self._async_validate(user_input)
+                cdb = await self._async_validate(data)
                 return await self._async_finish(
-                    {
-                        CONF_SOURCE: SOURCE_PATH,
-                        CONF_CDB_PATH: user_input[CONF_CDB_PATH],
-                        CONF_METADATA_DIR: user_input.get(CONF_METADATA_DIR, ""),
-                        CONF_UNICAST: _hex4(user_input[CONF_UNICAST]),
-                    },
+                    {CONF_SOURCE: SOURCE_PATH, **data, CONF_UNICAST: _hex4(unicast)},
                     cdb,
                 )
             except _FormError as err:
                 errors = err.errors
-        defaults = user_input
-        if defaults is None and self.source == SOURCE_RECONFIGURE:
-            defaults = dict(self._get_reconfigure_entry().data)
+        elif self.source == SOURCE_RECONFIGURE:
+            defaults = self._get_reconfigure_entry().data
         return self.async_show_form(
-            step_id=SOURCE_PATH, data_schema=_schema(defaults), errors=errors
+            step_id=SOURCE_PATH,
+            data_schema=_schema(defaults, unicast),
+            errors=_form_errors(errors),
         )
 
     async def async_step_upload(
@@ -1049,25 +1143,26 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 finally:
                     self._incoming = incoming  # its removal deletes a copy left behind
-                if _parse_unicast(user_input[CONF_UNICAST]) is None:
+                unicast = _unicast_input(user_input)
+                if _parse_unicast(unicast) is None:
                     await self._async_discard_incoming()
                     raise _FormError({CONF_UNICAST: "invalid_address"})
-                cdb = await self._async_validate_incoming(
-                    incoming, user_input[CONF_UNICAST]
-                )
+                cdb = await self._async_validate_incoming(incoming, unicast)
                 return await self._async_finish(
                     {
                         CONF_SOURCE: SOURCE_UPLOAD,
                         CONF_METADATA_DIR: "",
-                        CONF_UNICAST: _hex4(user_input[CONF_UNICAST]),
+                        CONF_UNICAST: _hex4(unicast),
                     },
                     cdb,
                 )
             except _FormError as err:
                 errors = err.errors
-        unicast = user_input[CONF_UNICAST] if user_input else self._default_unicast()
+        unicast = _unicast_input(user_input) if user_input else self._default_unicast()
         return self.async_show_form(
-            step_id=SOURCE_UPLOAD, data_schema=_upload_schema(unicast), errors=errors
+            step_id=SOURCE_UPLOAD,
+            data_schema=_upload_schema(unicast),
+            errors=_form_errors(errors),
         )
 
     async def async_step_gateway(
@@ -1177,15 +1272,13 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                if _parse_unicast(user_input[CONF_UNICAST]) is None:
+                unicast = _unicast_input(user_input)
+                if _parse_unicast(unicast) is None:
                     raise _FormError({CONF_UNICAST: "invalid_address"})
-                self._unicast = _hex4(user_input[CONF_UNICAST])
+                self._unicast = _hex4(unicast)
                 self._host = str(entry.data[CONF_GATEWAY_HOST])
                 self._token = str(entry.data[CONF_GATEWAY_TOKEN])
-                self._gateway_input = {
-                    CONF_GATEWAY_HOST: self._host,
-                    CONF_UNICAST: self._unicast,
-                }
+                self._gateway_input = self._gateway_form_input(self._host)
                 self._resume = (STEP_REFETCH, user_input)
                 await self._async_pin(self._host)
                 return await self._async_fetch_and_finish(reregister_on_401=True)
@@ -1193,13 +1286,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors = err.errors
             except _CertificateChanged as err:
                 return self._async_show_certificate(err.mismatch)
-        unicast = user_input[CONF_UNICAST] if user_input else self._default_unicast()
+        unicast = _unicast_input(user_input) if user_input else self._default_unicast()
         return self.async_show_form(
             step_id=STEP_REFETCH,
-            data_schema=vol.Schema(
-                {vol.Required(CONF_UNICAST, default=unicast): TextSelector()}
-            ),
-            errors=errors,
+            data_schema=vol.Schema(_advanced(unicast)),
+            errors=_form_errors(errors),
             description_placeholders={"host": str(entry.data[CONF_GATEWAY_HOST])},
         )
 
@@ -1447,16 +1538,23 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None, errors: dict[str, str]
     ) -> ConfigFlowResult:
         if user_input:
-            host, unicast = user_input[CONF_GATEWAY_HOST], user_input[CONF_UNICAST]
+            host, unicast = user_input[CONF_GATEWAY_HOST], _unicast_input(user_input)
         else:
             host = self._host or self._default_host()
             unicast = self._unicast if self._host else self._default_unicast()
         return self.async_show_form(
             step_id=SOURCE_GATEWAY,
             data_schema=_gateway_schema(host, unicast),
-            errors=errors,
+            errors=_form_errors(errors),
             description_placeholders={"user_name": GATEWAY_USER_NAME},
         )
+
+    def _gateway_form_input(self, host: str) -> dict[str, Any]:
+        """Return what the gateway form held (host and our address, never the password), to submit it again."""
+        return {
+            CONF_GATEWAY_HOST: host,
+            SECTION_ADVANCED: {CONF_UNICAST: self._unicast},
+        }
 
     async def _async_gateway_submit(
         self, user_input: dict[str, Any]
@@ -1465,12 +1563,13 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         host = _normalize_host(user_input[CONF_GATEWAY_HOST])
         if not host:
             raise _FormError({CONF_GATEWAY_HOST: "invalid_host"})
-        if _parse_unicast(user_input[CONF_UNICAST]) is None:
+        unicast = _unicast_input(user_input)
+        if _parse_unicast(unicast) is None:
             raise _FormError({CONF_UNICAST: "invalid_address"})
-        self._unicast = _hex4(user_input[CONF_UNICAST])
+        self._unicast = _hex4(unicast)
         if host != self._host:
             self._host, self._token, self._fingerprint = host, None, None
-        self._gateway_input = {CONF_GATEWAY_HOST: host, CONF_UNICAST: self._unicast}
+        self._gateway_input = self._gateway_form_input(host)
         self._resume = (SOURCE_GATEWAY, user_input)
         password = user_input.get(CONF_GATEWAY_PASSWORD) or ""
         reregister_on_401 = False
@@ -1595,6 +1694,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         return DEFAULT_UNICAST
 
     def _default_host(self) -> str:
+        if self._discovered_host is not None:
+            return self._discovered_host
         if self.source == SOURCE_RECONFIGURE:
             host = self._get_reconfigure_entry().data.get(CONF_GATEWAY_HOST)
             if host:

@@ -287,6 +287,12 @@
   such a change to the app only, and each parameter was read once, so Home Assistant kept the old value until the
   next restart or reload. A parameter is now read again on the first connection three hours or more after its last
   read (a battery device's at its first key event after that), through the same paced queue as the first read.
+- Setting up no longer asks about *Our unicast address* up front (review-4 U4-8): the field sits in a collapsed
+  *Advanced* section of the gateway, upload, path and *fetch again* forms, with the default `0D00` (an invalid or
+  taken address is reported on the section). The Bluetooth discovery card asks *Is this your JUNG HOME
+  installation?*, says that other brands' meshes show up too, and is a plain confirmation. A gateway that is busy
+  with another configuration request (HTTP 429) now says so in the setup, Reconfigure and the repairs that fetch,
+  instead of a generic gateway error. Every action has an icon in the action picker (review-4 H4-9).
 
 ### Added
 
@@ -520,6 +526,12 @@
   (*Taster 1-fach (Schalteinsatz)*, *Schaltbare Leuchte*, …) and the logbook lines of key presses and scene recalls
   now follow Home Assistant's language too, from the translations it cached for the server's language; English
   where a language has no text. A key added in English later shows in English until it is translated.
+
+- The JUNG HOME Gateway is discovered (review-4 U4-8): its mDNS announcement (`_junghome._tcp`) shows a card *JUNG
+  HOME Gateway …* under *Discovered*; confirming it opens the gateway form with the announced address filled in, and
+  the setup continues as with a typed address — the certificate pinned at first contact, before anything is sent.
+  One card per gateway, however often it announces itself; none for an announcement that is not JUNG's or names no
+  serial, and none for a gateway an entry already names by that address or host name. Unverified on air.
 
 ### CLI tools and library
 

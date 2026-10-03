@@ -75,7 +75,7 @@ from .conftest import (
     wait_for_link,
     wait_until,
 )
-from .helpers import through_areas
+from .helpers import advanced, through_areas
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -350,7 +350,7 @@ async def test_user_flow_learns_the_certificate_before_the_password_leaves(
         {
             CONF_GATEWAY_HOST: servers.gateway.host,
             CONF_GATEWAY_PASSWORD: PASSWORD,
-            CONF_UNICAST: "0d00",
+            **advanced("0d00"),
         },
     )
     await hass.async_block_till_done()
@@ -383,7 +383,7 @@ async def test_refetch_with_a_changed_certificate_asks_before_the_token_leaves(
     result = await entry.start_reconfigure_flow(hass)
     result = await _choose(hass, result, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway_certificate"
@@ -430,7 +430,7 @@ async def test_gateway_form_with_a_changed_certificate_resumes_after_confirmatio
     form_input = {
         CONF_GATEWAY_HOST: servers.impostor.host,
         CONF_GATEWAY_PASSWORD: PASSWORD,
-        CONF_UNICAST: "0d00",
+        **advanced("0d00"),
     }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], form_input
@@ -464,7 +464,7 @@ async def test_legacy_entry_without_a_pin_learns_it_on_refetch(
     result = await entry.start_reconfigure_flow(hass)
     result = await _choose(hass, result, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -492,7 +492,7 @@ async def test_unreachable_host_at_the_learn_step(
         {
             CONF_GATEWAY_HOST: servers.gateway.host,
             CONF_GATEWAY_PASSWORD: PASSWORD,
-            CONF_UNICAST: "0d00",
+            **advanced("0d00"),
         },
     )
     assert result["type"] is FlowResultType.FORM
@@ -602,7 +602,7 @@ async def test_mesh_provided_fingerprint_wins_over_the_stored_one(
         result = await entry.start_reconfigure_flow(hass)
         result = await _choose(hass, result, "gateway_refetch")
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_UNICAST: "0D00"}
+            result["flow_id"], advanced("0D00")
         )
         await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -631,7 +631,7 @@ async def test_mesh_provided_fingerprint_refuses_an_impostor(
     result = await entry.start_reconfigure_flow(hass)
     result = await _choose(hass, result, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "certificate_vouched_by_mesh"
@@ -723,7 +723,7 @@ async def test_mesh_fingerprint_needs_a_link_and_a_gateway_node(
         result = await _choose(hass, result, "gateway")
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {CONF_GATEWAY_HOST: "10.0.0.9", CONF_UNICAST: "0d00"},
+            {CONF_GATEWAY_HOST: "10.0.0.9", **advanced("0d00")},
         )
     assert result["errors"] == {"base": "cannot_connect"}
     learn.assert_awaited_once()

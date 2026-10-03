@@ -51,7 +51,10 @@ The messages the setup dialog can show, and what to do:
   the network again (or fetch it from the gateway again) and use the new one.
 - **"The export belongs to a different mesh network"** — the file is from another installation.
 - **"This mesh is already set up as another entry"** — use that entry's *Reconfigure* instead of adding it again.
-- **"That address belongs to a node in the mesh"** — pick another *Our unicast address*, such as `0D02`.
+- **"That address belongs to a node in the mesh"** — open *Advanced* and pick another *Our unicast address*, such as
+  `0D02`.
+- **"The gateway is busy with another configuration request"** — the app or another client is changing the
+  installation through the gateway; submit again in a minute.
 - **"The access request was not approved in time"** — approve *Home Assistant (Bluetooth Mesh)* in the app under
   *Settings → Gateway → Access permissions → Open requests* within three minutes, then submit again.
 - **"The gateway holds no network export"** — open the JUNG HOME app once while it is connected to the gateway (it
@@ -169,9 +172,9 @@ Assistant another address.) [Details](../ha-integration.md#repair-issue-another-
 #### Home Assistant's JUNG HOME address is taken
 
 A device of the installation has Home Assistant's address, so the integration does not start. **Submit** moves
-Home Assistant to the free address the notice suggests and starts it again (the same as *Reconfigure → Our unicast
-address*); make sure nothing else, such as the command-line tools, sends from that address. **Unverified on air.**
-[Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-is-taken)
+Home Assistant to the free address the notice suggests and starts it again (the same as *Reconfigure → Advanced → Our
+unicast address*); make sure nothing else, such as the command-line tools, sends from that address. **Unverified on
+air.** [Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-is-taken)
 
 #### Home Assistant's JUNG HOME address may be handed out
 

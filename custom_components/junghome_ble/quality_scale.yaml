@@ -59,7 +59,7 @@ rules:
   diagnostics: done
   discovery-update-info:
     status: done
-    comment: The Bluetooth discovery carries only the mesh Network ID, which is the entry's unique id; the discovery flow sets it and aborts on an already configured entry. There is no host or address in the entry that could go stale, so nothing is passed as updates - a Bluetooth Mesh proxy advertisement names no fixed endpoint, Bluetooth adapters and ESPHome proxies are interchangeable, and the node to talk through is picked from the live advertisements at every connection (config_flow.async_step_bluetooth, coordinator connection loop).
+    comment: The Bluetooth discovery carries only the mesh Network ID, which is the entry's unique id; the discovery flow sets it and aborts on an already configured entry. The entry holds no Bluetooth address that could go stale, so nothing is passed as updates - a Bluetooth Mesh proxy advertisement names no fixed endpoint, Bluetooth adapters and ESPHome proxies are interchangeable, and the node to talk through is picked from the live advertisements at every connection (config_flow.async_step_bluetooth, coordinator connection loop). The gateway's zeroconf discovery does not update the entry's gateway host either, since an mDNS announcement is unauthenticated (anyone on the LAN can send one), it only prefills a new setup and aborts for a gateway an entry names by the announced address or host name; a gateway whose address changed is followed by the address its node reports over the authenticated mesh (JungHomeHub.async_follow_gateway), under the same certificate pin (config_flow.async_step_zeroconf).
   discovery: done
   docs-data-update: done
   docs-examples: done
@@ -80,7 +80,7 @@ rules:
     comment: Every HomeAssistantError / ServiceValidationError raised to the user carries a translation key from the exceptions section. The last three untranslated raise sites were the rejected config-entity value (config_entities.py, value_rejected), the unknown preset temperature of the thermostat (climate.py, preset_temperature_unknown) and the LED colour a night-mode write needs but the device never reported (switch.py, led_colour_unknown); tests/test_translations.py checks that every key the code uses exists.
   icon-translations:
     status: done
-    comment: icons.json only carries icons that differ from what the device class or platform already provides (the duplicates of device-class defaults were removed); every entry is tied to an entity translation key by tests/test_translations.py.
+    comment: icons.json only carries icons that differ from what the device class or platform already provides (the duplicates of device-class defaults were removed); every entry is tied to an entity translation key by tests/test_translations.py, which also checks that every action of services.yaml has an icon.
   reconfiguration-flow: done
   repair-issues:
     status: done

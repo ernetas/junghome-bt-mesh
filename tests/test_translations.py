@@ -8,7 +8,7 @@ checks below are the only automated guard:
 
 - same leaf keys, and equal values once `[%key:...%]` references in `strings.json` are resolved,
 - the same `{placeholder}` set per key,
-- every `icons.json` entry points at an entity translation key or an action,
+- every `icons.json` entry points at an entity translation key or an action, and every action has an icon,
 - every translation key the code uses (literal or a `CONSTANT` reference, per-property config entity, service
   error, repair issue, event type, device trigger, select option) exists in `strings.json`,
 - `services.yaml` and the `services` section agree (names, fields), its select options match the enums the
@@ -302,6 +302,18 @@ def test_icons_resolve_to_entity_translation_keys(strings: dict[str, Any]) -> No
         if key not in strings["entity"].get(platform, {})
     )
     assert not orphans, f"icons.json entries without a translation key: {orphans}"
+
+
+def test_every_action_has_an_icon(services_yaml: dict[str, Any]) -> None:
+    """Review-4 H4-9: the action picker shows an icon for every action, a new one included."""
+    icons = _load(ICONS)["services"]
+    assert set(icons) == set(services_yaml), (
+        f"actions without an icon: {sorted(set(services_yaml) - set(icons))}"
+    )
+    assert all(
+        set(icon) == {"service"} and icon["service"].startswith("mdi:")
+        for icon in icons.values()
+    )
 
 
 # ----------------------------------------------------------------------------- keys the code uses
@@ -602,7 +614,13 @@ def test_config_flow_keys_exist(strings: dict[str, Any]) -> None:
 
     fields = {_flow_constant(m.group("ref")) for m in FLOW_FIELD.finditer(source)}
     assert fields, "no form fields found (regex out of date?)"
+    # a section is a field of its step (`sections.<name>`), and its fields are translated inside it (review-4 U4-8)
+    sections = [step.get("sections", {}) for step in steps.values()]
     data_translations = {key for step in steps.values() for key in step.get("data", {})}
+    data_translations |= {name for each in sections for name in each}
+    data_translations |= {
+        key for each in sections for part in each.values() for key in part["data"]
+    }
     assert fields <= data_translations, (
         f"form fields without a data translation: {sorted(fields - data_translations)}"
     )

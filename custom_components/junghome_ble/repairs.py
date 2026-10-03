@@ -292,9 +292,9 @@ class FreeAddressFlow(_IssueFlow):
     """`address_in_use`: confirm, then move Home Assistant to the free address the export leaves (`CDB.suggest_unicast`).
 
     The address is worked out from the export on disk when the flow starts and checked again before it is used. Only
-    the entry's address changes, as *Reconfigure → Our unicast address* would change it, and the entry is set up again
-    from it; the sequence-number store keeps one record per address, so the new one continues its own record or
-    starts one by the store's rules (`HAState`): no number is sent twice. Unverified on air.
+    the entry's address changes, as *Reconfigure → Advanced → Our unicast address* would change it, and the entry is
+    set up again from it; the sequence-number store keeps one record per address, so the new one continues its own
+    record or starts one by the store's rules (`HAState`): no number is sent twice. Unverified on air.
     """
 
     def __init__(self, data: dict[str, Any]) -> None:

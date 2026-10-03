@@ -1,6 +1,6 @@
 {
   "config": {
-    "flow_title": "Bluetooth Mesh network {network_id}",
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "JUNG HOME over Bluetooth",
@@ -22,21 +22,35 @@
         }
       },
       "bluetooth_confirm": {
-        "title": "Bluetooth Mesh network found",
-        "description": "A Bluetooth Mesh proxy of network {network_id} is in range. If this is your JUNG HOME installation, continue and provide the app's mesh export."
+        "title": "Is this your JUNG HOME installation?",
+        "description": "A Bluetooth Mesh proxy of network {network_id} is in range. Home Assistant offers every Bluetooth Mesh network it sees, also those of other brands — a neighbour's lights, for example. Continue only if this is your JUNG HOME installation; you are then asked for the app's mesh export."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME Gateway found",
+        "description": "A JUNG HOME Gateway announces itself at {host}. Continue to fetch the JUNG HOME app's network export from it: you then enter its network-key password, or approve an access request in the app. As for an address you type, its certificate is pinned at first contact before anything is sent. Setting up from the discovered gateway is unverified on air."
       },
       "gateway": {
         "title": "Fetch the export from the JUNG HOME Gateway",
         "description": "The gateway holds a copy of the app's network export. Enter its address and either its network-key password (from the JUNG HOME app) for immediate access, or leave the password empty and approve the access request in the app after you continue (Settings → Gateway → Access permissions → Open requests, within three minutes; it appears as “{user_name}”). The export is stored under `junghome_ble/` in the Home Assistant configuration directory. It contains every mesh key, like the phone export — keep backups of that directory private.",
         "data": {
           "gateway_host": "Gateway address",
-          "gateway_password": "Network-key password",
-          "unicast": "[%key:component::junghome_ble::config::step::path::data::unicast%]"
+          "gateway_password": "Network-key password"
         },
         "data_description": {
-          "gateway_host": "IP address or hostname of the JUNG HOME Gateway. The default `junghome.local` works on many networks; otherwise use its IP address (shown in the app under Settings → Gateway).",
-          "gateway_password": "Optional. With it the gateway grants access immediately; without it you approve the request in the app.",
-          "unicast": "[%key:component::junghome_ble::config::step::path::data_description::unicast%]"
+          "gateway_host": "IP address or hostname of the JUNG HOME Gateway. A gateway Home Assistant found on the network is filled in already. Otherwise the default `junghome.local` works on many networks, or use its IP address (shown in the app under Settings → Gateway).",
+          "gateway_password": "Optional. With it the gateway grants access immediately; without it you approve the request in the app."
+        },
+        "sections": {
+          "advanced": {
+            "name": "[%key:component::junghome_ble::config::step::path::sections::advanced::name%]",
+            "description": "[%key:component::junghome_ble::config::step::path::sections::advanced::description%]",
+            "data": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data::unicast%]"
+            },
+            "data_description": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data_description::unicast%]"
+            }
+          }
         }
       },
       "gateway_register": {
@@ -45,23 +59,39 @@
       "gateway_refetch": {
         "title": "Fetch the export again",
         "description": "Fetches the current network export from the gateway at {host} with the stored access. If the gateway no longer accepts it, you are asked to approve a new access request in the app.",
-        "data": {
-          "unicast": "[%key:component::junghome_ble::config::step::path::data::unicast%]"
-        },
-        "data_description": {
-          "unicast": "[%key:component::junghome_ble::config::step::path::data_description::unicast%]"
+        "sections": {
+          "advanced": {
+            "name": "[%key:component::junghome_ble::config::step::path::sections::advanced::name%]",
+            "description": "[%key:component::junghome_ble::config::step::path::sections::advanced::description%]",
+            "data": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data::unicast%]"
+            },
+            "data_description": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data_description::unicast%]"
+            }
+          }
         }
       },
       "upload": {
         "title": "Upload the app's export file",
         "description": "In the JUNG HOME app open Project → Share via file and send yourself the `JungHome.json` it creates, then upload it here. It is stored under `junghome_ble/` in the Home Assistant configuration directory. It contains every mesh key — keep backups of that directory private.",
         "data": {
-          "export_file": "Mesh export file",
-          "unicast": "[%key:component::junghome_ble::config::step::path::data::unicast%]"
+          "export_file": "Mesh export file"
         },
         "data_description": {
-          "export_file": "`JungHome.json` from the app (Share via file) or `MeshNetwork.json` from an iOS backup.",
-          "unicast": "[%key:component::junghome_ble::config::step::path::data_description::unicast%]"
+          "export_file": "`JungHome.json` from the app (Share via file) or `MeshNetwork.json` from an iOS backup."
+        },
+        "sections": {
+          "advanced": {
+            "name": "[%key:component::junghome_ble::config::step::path::sections::advanced::name%]",
+            "description": "[%key:component::junghome_ble::config::step::path::sections::advanced::description%]",
+            "data": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data::unicast%]"
+            },
+            "data_description": {
+              "unicast": "[%key:component::junghome_ble::config::step::path::sections::advanced::data_description::unicast%]"
+            }
+          }
         }
       },
       "path": {
@@ -69,13 +99,23 @@
         "description": "Copy the app's `JungHome.json` (Project → Share via file; includes your device names) or `MeshNetwork.json` (iOS backup) to the Home Assistant host first and enter its path.",
         "data": {
           "cdb_path": "Mesh export file",
-          "metadata_dir": "App metadata directory",
-          "unicast": "Our unicast address"
+          "metadata_dir": "App metadata directory"
         },
         "data_description": {
           "cdb_path": "Absolute path on the Home Assistant host, e.g. `/config/junghome/JungHome.json`.",
-          "metadata_dir": "Optional, only for `MeshNetwork.json` from an iOS backup: the app's `Application Support` folder with `device_metadata.json` and `scene_metadata.json`, so entities get the names you gave them in the app. `JungHome.json` already carries the names.",
-          "unicast": "Hexadecimal mesh address Home Assistant will use as a node (0001–7FFF). Must not be used by another node; the default is outside the app's range."
+          "metadata_dir": "Optional, only for `MeshNetwork.json` from an iOS backup: the app's `Application Support` folder with `device_metadata.json` and `scene_metadata.json`, so entities get the names you gave them in the app. `JungHome.json` already carries the names."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Advanced",
+            "description": "Keep the default unless a second Home Assistant, or the repository's command-line tools, also join this installation: each needs an address of its own.",
+            "data": {
+              "unicast": "Our unicast address"
+            },
+            "data_description": {
+              "unicast": "Hexadecimal mesh address Home Assistant will use as a node (0001–7FFF). Must not be used by another node; the default is outside the app's range."
+            }
+          }
         }
       },
       "reconfigure": {
@@ -149,10 +189,10 @@
       "not_approved": "The access request was not approved in the app in time. Submit again and approve it under Settings → Gateway → Access permissions → Open requests.",
       "no_project": "The gateway holds no network export. Open the JUNG HOME app once while it is connected to the gateway (it uploads the project automatically), and make sure the gateway firmware is 2.1 or newer.",
       "gateway_error": "The gateway answered with an error. Check its status in the JUNG HOME app and try again.",
+      "gateway_busy": "The gateway is busy with another configuration request. Try again in a minute.",
       "upload_failed": "The uploaded file could not be processed. Try uploading it again.",
       "cannot_store": "The export could not be written to the Home Assistant configuration directory.",
-      "invalid_export": "The file is not a JUNG HOME mesh export (or it is damaged): it must contain the network with its keys, nodes and one network key at index 0.",
-      "certificate_changed": "The gateway's certificate differs from the one recorded for this entry. Confirm below if you replaced the gateway or its certificate."
+      "invalid_export": "The file is not a JUNG HOME mesh export (or it is damaged): it must contain the network with its keys, nodes and one network key at index 0."
     },
     "abort": {
       "already_configured": "This mesh network is already configured.",
@@ -168,7 +208,9 @@
       "import_unload_failed": "{title} could not be unloaded, so nothing was imported; every entry the import had unloaded is set up again. Check the log, then try the import again.",
       "reauth_successful": "The JUNG HOME Gateway accepts Home Assistant again. Changes made in Home Assistant meanwhile reach it with the next change, or at once with the action Sync gateway.",
       "areas_updated": "The rooms' areas are saved; {count} devices moved to their room's new area.",
-      "not_loaded": "The integration is not running: set it up again first."
+      "not_loaded": "The integration is not running: set it up again first.",
+      "not_junghome_gateway": "This device does not announce itself as a JUNG HOME Gateway (no JUNG manufacturer or no serial number).",
+      "not_ipv4_address": "The gateway announced no IPv4 address. Add the integration by hand and enter the gateway's address."
     }
   },
   "options": {
@@ -1575,12 +1617,13 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
           "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
           "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "gateway_busy": "[%key:component::junghome_ble::config::error::gateway_busy%]",
           "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
           "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
@@ -1621,12 +1664,13 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
           "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
           "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "gateway_busy": "[%key:component::junghome_ble::config::error::gateway_busy%]",
           "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
           "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
@@ -1667,12 +1711,13 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
           "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
           "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "gateway_busy": "[%key:component::junghome_ble::config::error::gateway_busy%]",
           "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
           "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
@@ -1732,12 +1777,13 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
           "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
           "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "gateway_busy": "[%key:component::junghome_ble::config::error::gateway_busy%]",
           "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
           "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
@@ -1764,7 +1810,7 @@
         "step": {
           "confirm": {
             "title": "Skip ahead past the numbers the devices know",
-            "description": "Home Assistant hears the JUNG HOME mesh {title} through its proxy node, but not one device answered its state requests. The nodes are discarding Home Assistant's messages as replays. Two causes are likely: the sequence-number store of this integration (`.storage/junghome_ble.*`) was lost or restored from an older backup, so Home Assistant now sends sequence numbers the nodes have already seen; or another mesh client (for example the `mesh_poc.py` tool) transmits with the same unicast address {unicast}. Either give Home Assistant a fresh, unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address, and make sure no other client uses it) or, if the store was lost or restored (and no other client uses the address), confirm to let Home Assistant jump its sequence numbers 1 048 576 ahead and reconnect. Do not restore the sequence-number store from a backup to fix this: an older copy only repeats numbers the devices have already seen. The issue clears itself as soon as a device answers Home Assistant again."
+            "description": "Home Assistant hears the JUNG HOME mesh {title} through its proxy node, but not one device answered its state requests. The nodes are discarding Home Assistant's messages as replays. Two causes are likely: the sequence-number store of this integration (`.storage/junghome_ble.*`) was lost or restored from an older backup, so Home Assistant now sends sequence numbers the nodes have already seen; or another mesh client (for example the `mesh_poc.py` tool) transmits with the same unicast address {unicast}. Either give Home Assistant a fresh, unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address, and make sure no other client uses it) or, if the store was lost or restored (and no other client uses the address), confirm to let Home Assistant jump its sequence numbers 1 048 576 ahead and reconnect. Do not restore the sequence-number store from a backup to fix this: an older copy only repeats numbers the devices have already seen. The issue clears itself as soon as a device answers Home Assistant again."
           }
         },
         "abort": {
@@ -1778,7 +1824,7 @@
         "step": {
           "confirm": {
             "title": "Skip past the other client's sequence numbers",
-            "description": "Home Assistant received a message of the JUNG HOME mesh {title} sent from its own unicast address {unicast} with a sequence number it never used: another mesh client transmits with the same address — a second Home Assistant installation, the `mesh_poc.py` tool configured with this address, or a copy of this installation started elsewhere. Two senders on one address reuse each other's sequence numbers, and the devices discard whatever lies below the other client's, so Home Assistant sends nothing to the mesh until this is repaired (commands fail, states are not refreshed). Stop the other client, or give it or Home Assistant another unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address). Then confirm to let Home Assistant continue its sequence numbers past the ones the other client was seen with and send again. If the other client keeps sending from this address, the issue comes back. Do not restore the sequence-number store from a backup to fix this. Unverified on air: a second client on Home Assistant's address has only been simulated."
+            "description": "Home Assistant received a message of the JUNG HOME mesh {title} sent from its own unicast address {unicast} with a sequence number it never used: another mesh client transmits with the same address — a second Home Assistant installation, the `mesh_poc.py` tool configured with this address, or a copy of this installation started elsewhere. Two senders on one address reuse each other's sequence numbers, and the devices discard whatever lies below the other client's, so Home Assistant sends nothing to the mesh until this is repaired (commands fail, states are not refreshed). Stop the other client, or give it or Home Assistant another unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address). Then confirm to let Home Assistant continue its sequence numbers past the ones the other client was seen with and send again. If the other client keeps sending from this address, the issue comes back. Do not restore the sequence-number store from a backup to fix this. Unverified on air: a second client on Home Assistant's address has only been simulated."
           }
         },
         "abort": {
@@ -1792,7 +1838,7 @@
         "step": {
           "confirm": {
             "title": "Skip past the other client's sequence numbers again",
-            "description": "Home Assistant skipped past the sequence numbers of another mesh client on its address {unicast} in the JUNG HOME mesh {title}, and the other client has sent from that address again since: it is still running. Skipping ahead does not help while it does. Give Home Assistant a fresh, unused unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), or stop the other client or move it to another address. Until then Home Assistant sends nothing to the mesh. Confirm only once the other client no longer uses this address: Home Assistant then continues past its numbers again and resumes sending. Unverified on air: a second client on Home Assistant's address has only been simulated."
+            "description": "Home Assistant skipped past the sequence numbers of another mesh client on its address {unicast} in the JUNG HOME mesh {title}, and the other client has sent from that address again since: it is still running. Skipping ahead does not help while it does. Give Home Assistant a fresh, unused unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), or stop the other client or move it to another address. Until then Home Assistant sends nothing to the mesh. Confirm only once the other client no longer uses this address: Home Assistant then continues past its numbers again and resumes sending. Unverified on air: a second client on Home Assistant's address has only been simulated."
           }
         },
         "abort": {
@@ -1832,12 +1878,13 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
           "export_keys_stale": "[%key:component::junghome_ble::config::error::export_keys_stale%]",
           "gateway_error": "[%key:component::junghome_ble::config::error::gateway_error%]",
+          "gateway_busy": "[%key:component::junghome_ble::config::error::gateway_busy%]",
           "invalid_address": "[%key:component::junghome_ble::config::error::invalid_address%]",
           "invalid_export": "[%key:component::junghome_ble::config::error::invalid_export%]",
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
@@ -1962,7 +2009,7 @@
         "step": {
           "confirm": {
             "title": "Move Home Assistant to {suggestion}",
-            "description": "In the export of the mesh {title}, a node occupies the unicast address {unicast} that Home Assistant sends from. Both would be taken for one sender: the devices drop one of them as a replay, and answers go to the wrong one. Confirm to give Home Assistant the free address {suggestion} and set the integration up again, as Reconfigure → Our unicast address does. Make sure no other mesh client (the command-line tools of this integration, another Home Assistant) sends from {suggestion}. Sequence numbers are kept per address: the new one continues its own record, or starts far enough in when Home Assistant has none for it, so no number is sent twice. Unverified on air."
+            "description": "In the export of the mesh {title}, a node occupies the unicast address {unicast} that Home Assistant sends from. Both would be taken for one sender: the devices drop one of them as a replay, and answers go to the wrong one. Confirm to give Home Assistant the free address {suggestion} and set the integration up again, as Reconfigure → Advanced → Our unicast address does. Make sure no other mesh client (the command-line tools of this integration, another Home Assistant) sends from {suggestion}. Sequence numbers are kept per address: the new one continues its own record, or starts far enough in when Home Assistant has none for it, so no number is sent twice. Unverified on air."
           }
         },
         "abort": {
@@ -1975,7 +2022,7 @@
     },
     "address_reserved": {
       "title": "Home Assistant's JUNG HOME address may be handed out",
-      "description": "The unicast address {unicast} that Home Assistant sends from in the mesh {title} lies inside the address range of one of the app's provisioners, or was used by a removed node. It keeps working until the app provisions a node there; move Home Assistant to a free address before that (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address; {suggestion} is free)."
+      "description": "The unicast address {unicast} that Home Assistant sends from in the mesh {title} lies inside the address range of one of the app's provisioners, or was used by a removed node. It keeps working until the app provisions a node there; move Home Assistant to a free address before that (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address; {suggestion} is free)."
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
@@ -1983,7 +2030,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh is at another IV index",
-      "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours}: too far apart for Home Assistant to follow (it follows the mesh up to 42 ahead, at most once every 192 hours, and never back). The devices ignore Home Assistant meanwhile. This happens when Home Assistant was away through many IV updates, when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Give Home Assistant a new unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Our unicast address): it starts from the mesh's IV index there. Do not restore the store from a backup or edit it: an older or edited record repeats sequence numbers the devices already saw, and the next start overwrites a hand edit anyway. The issue clears itself when a beacon within reach arrives."
+      "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours}: too far apart for Home Assistant to follow (it follows the mesh up to 42 ahead, at most once every 192 hours, and never back). The devices ignore Home Assistant meanwhile. This happens when Home Assistant was away through many IV updates, when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Give Home Assistant a new unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address): it starts from the mesh's IV index there. Do not restore the store from a backup or edit it: an older or edited record repeats sequence numbers the devices already saw, and the next start overwrites a hand edit anyway. The issue clears itself when a beacon within reach arrives."
     },
     "iv_index_ahead": {
       "title": "Home Assistant is ahead of the JUNG HOME mesh's IV index",

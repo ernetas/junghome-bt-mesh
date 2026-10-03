@@ -31,7 +31,10 @@ key to the gateway; without a gateway, or for a key that should only drive Home 
 ## Why is there a "Bluetooth Mesh network" in Discovered that is not mine?
 
 Home Assistant offers every Bluetooth Mesh network it sees, not only JUNG HOME ones — a neighbour's lights, for
-example. Ignore the card. Your own installation is offered once and not again after you set it up.
+example. The card (*Bluetooth Mesh* and the network's id) asks *Is this your JUNG HOME installation?*; if it is not,
+ignore the card. Your own installation is offered once and not again after you set it up. A *JUNG HOME Gateway* card
+is different: only a JUNG HOME Gateway announces itself that way, and one an entry already uses at that address is
+not offered.
 
 ## Why are there three devices for one push-button?
 
@@ -81,7 +84,8 @@ new export.
 
 ## Can I run two Home Assistant installations on one JUNG HOME installation?
 
-Yes, if each one has its own *Our unicast address* (for example `0D00` and `0D02`). Two installations with the same
+Yes, if each one has its own *Our unicast address* (under *Advanced* in the setup and Reconfigure forms; for example
+`0D00` and `0D02`). Two installations with the same
 address get in each other's way, and a repair notice says so.
 
 ## Does it work with battery wall transmitters?

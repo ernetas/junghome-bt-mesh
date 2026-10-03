@@ -114,6 +114,7 @@ pass removed the markers of the checks that passed.
 | [A7](#a7--firmware-only-properties-read-only-f4-3-f4-9-f4-10-f4-11) | Firmware-only properties, read only | push-buttons, a mini, a socket | nothing | — |
 | [A8](#a8--keys-held-and-friend-in-the-audit-f4-15) | Audit: keys held and Friend (`msg:op:8001`, `8042`, `800f`) | any mains node | nothing | — |
 | [A9](#a9--firmware-entities-f4-18-u4-11) | *Firmware* `update` entities | any node | nothing | — |
+| [A10](#a10--gateway-discovery-u4-8) | The gateway's mDNS card, the gateway form prefilled | gateway | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -344,6 +345,28 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Pass:** installed and latest version both shown (`2.2.0.2` on a push-button, `2.2.0.1` on a socket or mini
   actuator), *Up-to-date*, no *Install* button; the release summary names the JUNG HOME app.
 - **Markers:** none in the code (the comparison is offline); the docs' *Firmware* section ends on it.
+
+### A10 · Gateway discovery (U4-8)
+
+- **Checks:** review-4 U4-8 (brief 50) — the gateway's mDNS announcement (`_junghome._tcp`, its shape already seen on
+  air) starts the integration's zeroconf flow: no card when the entry names the gateway by the announced address or
+  host name, else one *JUNG HOME Gateway &lt;address&gt;* card whose confirmation opens the gateway form with that
+  address filled in; nothing goes to the gateway before that form is submitted.
+- **Needs:** the gateway entry, the gateway on the LAN. **Safety:** nothing is submitted (submitting would ask the
+  gateway for another token); the card is left as it is.
+- **Do:**
+  1. Note the address the entry uses: *Reconfigure* names it in *Fetch it again from the gateway at …*; close the
+     menu. Optionally compare with the gateway's announcement from a LAN host (`avahi-browse -rt _junghome._tcp`).
+  2. Restart Home Assistant, wait a minute, open *Settings → Devices & services → Discovered*.
+  3. If a *JUNG HOME Gateway* card is there: **Add**, read the confirmation (*JUNG HOME Gateway found*), **Submit**,
+     check the *Gateway address* field and open *Advanced*; then close the dialog without submitting.
+- **Capture:** none (mDNS, not Bluetooth); the debug log of `custom_components.junghome_ble.config_flow`.
+- **Pass:** an entry naming the announced IPv4 address or the `junghome-….local` name: no card. An entry naming
+  `junghome.local`: one card (not one per announcement), the form shows the announced address and `0D00` under
+  *Advanced*, and the log has no *certificate pinned* line for it. Finishing it would end with *already configured*;
+  not needed.
+- **Markers:** `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_zeroconf_confirm`,
+  `custom_components/junghome_ble/strings.json::config.step.zeroconf_confirm.description`.
 
 ## B · Momentary control
 

@@ -16,6 +16,7 @@ import stat
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
+from ipaddress import ip_address
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
@@ -29,11 +30,14 @@ from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_IGNORE,
     SOURCE_USER,
+    SOURCE_ZEROCONF,
     ConfigEntryState,
 )
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+from homeassistant.loader import async_get_zeroconf
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
@@ -44,6 +48,7 @@ from custom_components import junghome_ble
 from custom_components.junghome_ble import config_flow
 from custom_components.junghome_ble.config_flow import (
     CONF_MESH_UUID,
+    SECTION_ADVANCED,
     JungHomeConfigFlow,
     forget_stored_export,
     pre_reconfigure_path,
@@ -104,21 +109,23 @@ from .conftest import (
     setup_entry,
     wait_for_link,
 )
-from .helpers import areas_prefill, through_areas
+from .helpers import advanced, areas_prefill, through_areas
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 MESH_UUID = "1BAF3ADE-0000-4000-8000-000000000001"
 OTHER_MESH_UUID = "2BEC62AA-0000-4000-8000-000000000002"
-USER_INPUT = {CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: "d00"}
+USER_INPUT = {CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, **advanced("d00")}
 FORM_INPUT = {
     CONF_CDB_PATH: CDB_PATH,
     CONF_METADATA_DIR: META_DIR,
-    CONF_UNICAST: "0D00",
+    **advanced("0D00"),
 }  # what the form holds
 ENTRY_DATA = {
-    **FORM_INPUT,
+    CONF_CDB_PATH: CDB_PATH,
+    CONF_METADATA_DIR: META_DIR,
+    CONF_UNICAST: "0D00",
     CONF_MESH_UUID: MESH_UUID,
     CONF_SOURCE: "path",
 }  # what the entry records
@@ -131,7 +138,7 @@ TOKEN = "tok-first"
 TOKEN_2 = "tok-second"
 FINGERPRINT = "ab" * 32  # what the (stubbed) learn step reports for every host
 OTHER_FINGERPRINT = "cd" * 32
-GATEWAY_INPUT = {CONF_GATEWAY_HOST: HOST, CONF_UNICAST: "0d00"}
+GATEWAY_INPUT = {CONF_GATEWAY_HOST: HOST, **advanced("0d00")}
 PASSWORD_INPUT = {**GATEWAY_INPUT, CONF_GATEWAY_PASSWORD: "netkey-pw"}
 PROGRESS = (FlowResultType.SHOW_PROGRESS, FlowResultType.SHOW_PROGRESS_DONE)
 GATEWAY_DATA = {
@@ -322,14 +329,16 @@ def _sequence(*responses: dict[str, Any]) -> Any:
 
 
 def _mock_gateway(
-    aioclient_mock: AiohttpClientMocker, export: dict[str, Any] | None = None
+    aioclient_mock: AiohttpClientMocker,
+    export: dict[str, Any] | None = None,
+    api: str = API,
 ) -> None:
     """A gateway that answers the probe, both registrations and the project fetch."""
-    aioclient_mock.get(f"{API}/version/", json={"api_version": "1.5.0"})
-    aioclient_mock.post(f"{API}/register", json={"token": TOKEN})
-    aioclient_mock.post(f"{API}/register/by-password", json={"token": TOKEN})
+    aioclient_mock.get(f"{api}/version/", json={"api_version": "1.5.0"})
+    aioclient_mock.post(f"{api}/register", json={"token": TOKEN})
+    aioclient_mock.post(f"{api}/register/by-password", json={"token": TOKEN})
     aioclient_mock.get(
-        f"{API}/project/junghome",
+        f"{api}/project/junghome",
         json=export if export is not None else _share_export(),
     )
 
@@ -372,7 +381,7 @@ async def test_user_flow_share_export(
     """The app's `JungHome.json` (share via file) is accepted as well; it needs no metadata directory."""
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {CONF_CDB_PATH: SHARE_EXPORT_PATH, CONF_UNICAST: "0D00"}
+        flow_id, {CONF_CDB_PATH: SHARE_EXPORT_PATH, **advanced("0D00")}
     )
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -464,7 +473,7 @@ async def test_user_flow_cannot_load(
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": error}
     # the form keeps what was typed
-    assert result["data_schema"]({})[CONF_CDB_PATH] == make_path(tmp_path)
+    assert result["data_schema"](advanced())[CONF_CDB_PATH] == make_path(tmp_path)
 
 
 async def test_user_flow_metadata_not_a_directory(
@@ -598,10 +607,10 @@ async def test_user_flow_invalid_address(
 ) -> None:
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {**USER_INPUT, CONF_UNICAST: unicast}
+        flow_id, {**USER_INPUT, **advanced(unicast)}
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {CONF_UNICAST: "invalid_address"}
+    assert result["errors"] == {SECTION_ADVANCED: "invalid_address"}
 
 
 @pytest.mark.parametrize(
@@ -624,14 +633,14 @@ async def test_user_flow_address_in_use(
     )
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {**USER_INPUT, CONF_CDB_PATH: path, CONF_UNICAST: unicast}
+        flow_id, {**USER_INPUT, CONF_CDB_PATH: path, **advanced(unicast)}
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {CONF_UNICAST: "address_in_use"}
+    assert result["errors"] == {SECTION_ADVANCED: "address_in_use"}
 
     # the first address above the phone's range is fine (so is the default, 0D00: test_user_flow)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {**USER_INPUT, CONF_CDB_PATH: path, CONF_UNICAST: "0CCD"}
+        flow_id, {**USER_INPUT, CONF_CDB_PATH: path, **advanced("0CCD")}
     )
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -693,7 +702,7 @@ async def test_user_flow_metadata_optional(
 ) -> None:
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {CONF_CDB_PATH: CDB_PATH, CONF_UNICAST: "0D00"}
+        flow_id, {CONF_CDB_PATH: CDB_PATH, **advanced("0D00")}
     )
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -756,7 +765,7 @@ async def test_gateway_flow_password(
     """With the network-key password the token comes at once; the export is fetched, stored and validated."""
     _mock_gateway(aioclient_mock)
     result = await _start_gateway_flow(hass)
-    assert result["data_schema"]({})[CONF_GATEWAY_HOST] == GATEWAY_DEFAULT_HOST
+    assert result["data_schema"](advanced())[CONF_GATEWAY_HOST] == GATEWAY_DEFAULT_HOST
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], PASSWORD_INPUT
     )
@@ -859,7 +868,7 @@ async def test_gateway_flow_not_approved_then_retry(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway"
     assert result["errors"] == {"base": "not_approved"}
-    assert result["data_schema"]({})[CONF_GATEWAY_HOST] == HOST  # kept
+    assert result["data_schema"](advanced())[CONF_GATEWAY_HOST] == HOST  # kept
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], GATEWAY_INPUT
@@ -891,7 +900,10 @@ async def test_gateway_flow_fetch_fails_after_approval(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway"
     assert result["errors"] == {"base": "no_project"}
-    assert result["data_schema"]({}) == {CONF_GATEWAY_HOST: HOST, CONF_UNICAST: "0D00"}
+    assert result["data_schema"](advanced()) == {
+        CONF_GATEWAY_HOST: HOST,
+        **advanced("0D00"),
+    }
 
 
 @pytest.mark.parametrize(
@@ -929,6 +941,11 @@ async def test_gateway_flow_fetch_fails_after_approval(
             PASSWORD_INPUT,
             {"base": "token_rejected"},
         ),
+        (  # review-4 U4-8: a busy gateway (HTTP 429) says so, not a generic error
+            [("get", "/project/junghome", {"status": 429})],
+            PASSWORD_INPUT,
+            {"base": "gateway_busy"},
+        ),
         (
             [],
             {**PASSWORD_INPUT, CONF_GATEWAY_HOST: " "},
@@ -936,13 +953,13 @@ async def test_gateway_flow_fetch_fails_after_approval(
         ),
         (
             [],
-            {**PASSWORD_INPUT, CONF_UNICAST: "9000"},
-            {CONF_UNICAST: "invalid_address"},
+            {**PASSWORD_INPUT, **advanced("9000")},
+            {SECTION_ADVANCED: "invalid_address"},
         ),
         (
             [],
-            {**PASSWORD_INPUT, CONF_UNICAST: "0148"},  # an element of the fetched mesh
-            {CONF_UNICAST: "address_in_use"},
+            {**PASSWORD_INPUT, **advanced("0148")},  # an element of the fetched mesh
+            {SECTION_ADVANCED: "address_in_use"},
         ),
     ],
     ids=[
@@ -952,6 +969,7 @@ async def test_gateway_flow_fetch_fails_after_approval(
         "gateway_error",
         "no_project",
         "token_rejected",
+        "gateway_busy",
         "invalid_host",
         "invalid_address",
         "address_in_use",
@@ -1308,7 +1326,7 @@ async def test_reconfigure_refetch_certificate_changed_clears_the_repairs(
     entry.add_to_hass(hass)
     abandoned = await _start_reconfigure(hass, entry, "gateway_refetch")
     abandoned = await hass.config_entries.flow.async_configure(
-        abandoned["flow_id"], {CONF_UNICAST: "0D00"}
+        abandoned["flow_id"], advanced("0D00")
     )
     assert abandoned["step_id"] == "gateway_certificate"
     hass.config_entries.flow.async_abort(abandoned["flow_id"])
@@ -1317,7 +1335,7 @@ async def test_reconfigure_refetch_certificate_changed_clears_the_repairs(
     issues = _raise_gateway_issues(hass, entry)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway_certificate"
@@ -1347,7 +1365,7 @@ async def test_reconfigure_refuses_to_override_a_pin_the_mesh_vouched_for(
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "certificate_vouched_by_mesh"
@@ -1369,7 +1387,7 @@ async def test_reconfigure_refetch_with_a_corrupt_pin_learns_anew(
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -1656,7 +1674,7 @@ async def test_reconfigure_ends_a_pending_reauth(
     reauth = await _start_reauth(hass, entry)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -1832,8 +1850,8 @@ def _uploaded(path: str) -> Generator[Path]:
     yield Path(path)
 
 
-def _upload_input(unicast: str = "0d00") -> dict[str, str]:
-    return {CONF_EXPORT_FILE: str(uuid.uuid4()), CONF_UNICAST: unicast}
+def _upload_input(unicast: str = "0d00") -> dict[str, Any]:
+    return {CONF_EXPORT_FILE: str(uuid.uuid4()), **advanced(unicast)}
 
 
 async def test_upload_flow(
@@ -1879,8 +1897,16 @@ async def test_upload_flow(
     ("upload", "user_input", "errors"),
     [
         (ValueError("File does not exist"), _upload_input(), {"base": "upload_failed"}),
-        (_uploaded(CDB_PATH), _upload_input("0148"), {CONF_UNICAST: "address_in_use"}),
-        (_uploaded(CDB_PATH), _upload_input("xyz"), {CONF_UNICAST: "invalid_address"}),
+        (
+            _uploaded(CDB_PATH),
+            _upload_input("0148"),
+            {SECTION_ADVANCED: "address_in_use"},
+        ),
+        (
+            _uploaded(CDB_PATH),
+            _upload_input("xyz"),
+            {SECTION_ADVANCED: "invalid_address"},
+        ),
         ("garbage", _upload_input(), {"base": "cannot_load"}),
         ("malformed", _upload_input(), {"base": "invalid_export"}),
     ],
@@ -1928,8 +1954,10 @@ async def test_upload_flow_errors(
     assert result["step_id"] == "upload"
     assert result["errors"] == errors
     assert (
-        result["data_schema"]({CONF_EXPORT_FILE: str(uuid.uuid4())})[CONF_UNICAST]
-        == user_input[CONF_UNICAST]
+        result["data_schema"]({CONF_EXPORT_FILE: str(uuid.uuid4()), **advanced()})[
+            SECTION_ADVANCED
+        ]
+        == user_input[SECTION_ADVANCED]
     )  # the address typed is kept
     assert _incoming_files(hass) == []
     assert not _stored(hass).exists()
@@ -1952,7 +1980,12 @@ async def test_bluetooth_flow(
     assert result["step_id"] == "bluetooth_confirm"
     assert result["description_placeholders"] == {"network_id": network_id.hex()}
     flow = hass.config_entries.flow.async_get(result["flow_id"])
-    assert flow["context"]["title_placeholders"] == {"network_id": network_id.hex()}
+    assert flow["context"]["title_placeholders"] == {
+        "name": f"Bluetooth Mesh {network_id.hex()}"
+    }
+    # every brand's mesh is offered: the user only confirms (review-4 U4-8)
+    assert result["data_schema"] is None
+    assert flow["context"]["confirm_only"] is True
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.MENU
@@ -2122,6 +2155,194 @@ async def test_bluetooth_flow_offers_a_mesh_beside_an_entry_whose_export_is_unre
     assert entry.entry_id not in hass.data[KNOWN_MESHES]
 
 
+# --------------------------------------------------------------------------- zeroconf (the gateway's mDNS announcement)
+
+# the announcement's shape as seen on air, with synthetic values only (RFC 5737 / RFC 3849 documentation addresses)
+ZC_HOST = "192.0.2.10"
+ZC_API = f"https://{ZC_HOST}/api/junghome"
+ZC_HOSTNAME = "junghome-0022d1000001.local."
+ZC_SERIAL = "00000000a1b2c3d4"
+
+
+def _announcement(address: str = ZC_HOST, **txt: str | None) -> ZeroconfServiceInfo:
+    """The gateway's `_junghome._tcp` announcement; `txt` replaces TXT records (None leaves one out)."""
+    records: dict[str, str | None] = {
+        "version": "2.1.3 Release (2840)",
+        "serial": ZC_SERIAL,
+        "mac": "00:22:d1:00:00:01",
+        "manufacturer": "JUNG",
+        **txt,
+    }
+    return ZeroconfServiceInfo(
+        ip_address=ip_address(address),
+        ip_addresses=[ip_address(address)],
+        port=443,
+        hostname=ZC_HOSTNAME,
+        type="_junghome._tcp.local.",
+        name=f"Jung Home Gateway - {ZC_HOSTNAME.rstrip('.')}._junghome._tcp.local.",
+        properties={key: value for key, value in records.items() if value is not None},
+    )
+
+
+async def _announce(hass: HomeAssistant, info: ZeroconfServiceInfo) -> Any:
+    return await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
+    )
+
+
+async def test_zeroconf_matches_the_gateway_service_only(hass: HomeAssistant) -> None:
+    """The manifest matches the gateway's service type; its `_workstation._tcp` record is not ours."""
+    matchers = await async_get_zeroconf(hass)
+    assert {"domain": DOMAIN} in matchers["_junghome._tcp.local."]
+    assert all(
+        matcher["domain"] != DOMAIN
+        for matcher in matchers.get("_workstation._tcp.local.", [])
+    )
+
+
+async def test_zeroconf_flow_prefills_the_gateway_form(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+    network_id: bytes,
+    mock_learn: AsyncMock,
+) -> None:
+    """A confirm-only card, then the gateway form with the announced address; the entry is a gateway entry.
+
+    Nothing reaches the address before the form is submitted, and then its certificate is learned as for a typed
+    address. The flow's `gateway-<serial>` gives way to the Network ID.
+    """
+    _mock_gateway(aioclient_mock, api=ZC_API)
+    result = await _announce(hass, _announcement())
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_confirm"
+    assert result["data_schema"] is None
+    assert result["description_placeholders"] == {"host": ZC_HOST}
+    flow = hass.config_entries.flow.async_get(result["flow_id"])
+    assert flow["context"]["confirm_only"] is True
+    assert flow["context"]["unique_id"] == f"gateway-{ZC_SERIAL}"
+    assert flow["context"]["title_placeholders"] == {
+        "name": f"JUNG HOME Gateway {ZC_HOST}",
+        "host": ZC_HOST,
+    }
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "gateway"
+    assert result["errors"] == {}
+    assert result["data_schema"](advanced()) == {
+        CONF_GATEWAY_HOST: ZC_HOST,
+        **advanced("0D00"),
+    }
+    mock_learn.assert_not_awaited()
+    assert aioclient_mock.mock_calls == []
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_GATEWAY_HOST: ZC_HOST,
+            CONF_GATEWAY_PASSWORD: "netkey-pw",
+            **advanced("0D00"),
+        },
+    )
+    await hass.async_block_till_done()
+    result = await through_areas(hass, result)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id == network_id.hex()
+    assert result["data"][CONF_SOURCE] == "gateway"
+    assert result["data"][CONF_GATEWAY_HOST] == ZC_HOST
+    assert result["data"][CONF_GATEWAY_FINGERPRINT] == FINGERPRINT
+    mock_learn.assert_awaited_once()
+    assert mock_learn.call_args[0][1] == ZC_HOST
+    assert len(mock_setup_entry.mock_calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("entry_host", "reason"),
+    [
+        (ZC_HOST, "already_configured"),
+        ("JungHome-0022D1000001.local", "already_configured"),  # the announced name
+        (f"https://{ZC_HOST}/", "already_configured"),
+        ("junghome.local", None),  # not known to be this gateway: offered
+    ],
+    ids=["address", "hostname", "url", "generic_name"],
+)
+async def test_zeroconf_flow_skips_a_gateway_an_entry_names(
+    hass: HomeAssistant,
+    mock_learn: AsyncMock,
+    entry_host: str,
+    reason: str | None,
+) -> None:
+    """A gateway an entry already uses (by the announced address or host name) is not offered again."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="1fbd2c61a4b6e5a4",
+        data={**ENTRY_DATA, CONF_SOURCE: "gateway", CONF_GATEWAY_HOST: entry_host},
+    ).add_to_hass(hass)
+    result = await _announce(hass, _announcement())
+    if reason is None:
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "zeroconf_confirm"
+    else:
+        assert result["type"] is FlowResultType.ABORT
+        assert result["reason"] == reason
+    mock_learn.assert_not_awaited()
+
+
+async def test_zeroconf_announcements_make_one_flow(hass: HomeAssistant) -> None:
+    """The gateway announces itself again and again: one flow per serial, none once the card is ignored."""
+    first = await _announce(hass, _announcement())
+    assert first["type"] is FlowResultType.FORM
+    again = await _announce(hass, _announcement())
+    assert again["type"] is FlowResultType.ABORT
+    assert again["reason"] == "already_in_progress"
+    assert len(hass.config_entries.flow.async_progress_by_handler(DOMAIN)) == 1
+
+    hass.config_entries.flow.async_abort(first["flow_id"])
+    MockConfigEntry(
+        domain=DOMAIN, source=SOURCE_IGNORE, unique_id=f"gateway-{ZC_SERIAL}", data={}
+    ).add_to_hass(hass)
+    ignored = await _announce(hass, _announcement())
+    assert ignored["type"] is FlowResultType.ABORT
+    assert ignored["reason"] == "already_configured"
+
+
+@pytest.mark.parametrize(
+    ("info", "reason"),
+    [
+        (_announcement(manufacturer="Other"), "not_junghome_gateway"),
+        (_announcement(serial=None), "not_junghome_gateway"),
+        (_announcement(serial=" "), "not_junghome_gateway"),
+        (_announcement("2001:db8::10"), "not_ipv4_address"),
+        (
+            _announcement(manufacturer=None),
+            None,
+        ),  # no record: the service type is the gateway's
+        (_announcement(manufacturer="jung "), None),
+    ],
+    ids=[
+        "other_manufacturer",
+        "no_serial",
+        "blank_serial",
+        "ipv6",
+        "no_manufacturer",
+        "manufacturer_spelling",
+    ],
+)
+async def test_zeroconf_flow_checks_the_announcement(
+    hass: HomeAssistant, info: ZeroconfServiceInfo, reason: str | None
+) -> None:
+    """Another manufacturer, or no serial to tell gateways apart, is not offered; an IPv6-only gateway neither."""
+    result = await _announce(hass, info)
+    if reason is None:
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "zeroconf_confirm"
+    else:
+        assert result["type"] is FlowResultType.ABORT
+        assert result["reason"] == reason
+
+
 # --------------------------------------------------------------------------- reconfigure
 
 
@@ -2152,13 +2373,16 @@ async def test_reconfigure_flow(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "path"
     assert result["errors"] == {}
-    assert result["data_schema"]({}) == dict(
-        mock_config_entry.data
-    )  # pre-filled with the current values
+    data = dict(mock_config_entry.data)
+    assert result["data_schema"](advanced()) == {
+        CONF_CDB_PATH: data[CONF_CDB_PATH],
+        CONF_METADATA_DIR: data[CONF_METADATA_DIR],
+        **advanced(data[CONF_UNICAST]),
+    }  # pre-filled with the current values, the address in the collapsed section
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        {CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: "", CONF_UNICAST: "0d01"},
+        {CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: "", **advanced("0d01")},
     )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -2191,7 +2415,7 @@ async def test_reconfigure_flow_error(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "path"
     assert result["errors"] == {"base": "cannot_load"}
-    assert result["data_schema"]({})[CONF_CDB_PATH] == "/nowhere.json"
+    assert result["data_schema"](advanced())[CONF_CDB_PATH] == "/nowhere.json"
     assert mock_config_entry.data == before
 
     result = await hass.config_entries.flow.async_configure(
@@ -2448,10 +2672,10 @@ async def test_reconfigure_refetch(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway_refetch"
     assert result["description_placeholders"] == {"host": HOST}
-    assert result["data_schema"]({}) == {CONF_UNICAST: "0D00"}
+    assert result["data_schema"](advanced()) == advanced("0D00")
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0d02"}
+        result["flow_id"], advanced("0d02")
     )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -2501,7 +2725,7 @@ async def test_reconfigure_keeps_the_export_it_replaces(
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     with patch.object(config_flow, "fsync_dir", spy):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_UNICAST: "0D00"}
+            result["flow_id"], advanced("0D00")
         )
         result = await through_areas(hass, result)
     await hass.async_block_till_done()
@@ -2531,7 +2755,7 @@ async def test_reconfigure_refetch_token_rejected(
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     assert result["step_id"] == "gateway_register"
@@ -2559,21 +2783,21 @@ async def test_reconfigure_refetch_registration_fails(
     before = dict(entry.data)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     result = await _advance_progress(hass, result)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway"
     assert result["errors"] == {"base": "cannot_connect"}
-    assert result["data_schema"]({})[CONF_GATEWAY_HOST] == HOST
+    assert result["data_schema"](advanced())[CONF_GATEWAY_HOST] == HOST
     assert entry.data == before
 
 
 @pytest.mark.parametrize(
     ("user_input", "errors"),
     [
-        ({CONF_UNICAST: "0"}, {CONF_UNICAST: "invalid_address"}),
-        ({CONF_UNICAST: "0148"}, {CONF_UNICAST: "address_in_use"}),
+        (advanced("0"), {SECTION_ADVANCED: "invalid_address"}),
+        (advanced("0148"), {SECTION_ADVANCED: "address_in_use"}),
     ],
     ids=["invalid_address", "address_in_use"],
 )
@@ -2595,7 +2819,10 @@ async def test_reconfigure_refetch_bad_address(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway_refetch"
     assert result["errors"] == errors
-    assert result["data_schema"]({})[CONF_UNICAST] == user_input[CONF_UNICAST]
+    assert (
+        result["data_schema"](advanced())[SECTION_ADVANCED]
+        == user_input[SECTION_ADVANCED]
+    )
     assert _incoming_files(hass) == []
 
 
@@ -2617,7 +2844,7 @@ async def test_reconfigure_refetch_network_mismatch(
     before = dict(entry.data)
     result = await _start_reconfigure(hass, entry, "gateway_refetch")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_UNICAST: "0D00"}
+        result["flow_id"], advanced("0D00")
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "network_mismatch"
@@ -2642,7 +2869,10 @@ async def test_reconfigure_gateway_step_reuses_token(
     entry = _gateway_entry(hass)
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "gateway")
-    assert result["data_schema"]({}) == {CONF_GATEWAY_HOST: HOST, CONF_UNICAST: "0D00"}
+    assert result["data_schema"](advanced()) == {
+        CONF_GATEWAY_HOST: HOST,
+        **advanced("0D00"),
+    }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], GATEWAY_INPUT
     )
@@ -2667,7 +2897,7 @@ async def test_reconfigure_gateway_step_new_host(
     _mock_gateway(aioclient_mock)
     mock_config_entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, mock_config_entry, "gateway")
-    assert result["data_schema"]({})[CONF_GATEWAY_HOST] == GATEWAY_DEFAULT_HOST
+    assert result["data_schema"](advanced())[CONF_GATEWAY_HOST] == GATEWAY_DEFAULT_HOST
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], PASSWORD_INPUT
     )
@@ -2727,10 +2957,9 @@ async def test_reconfigure_upload(
     entry = _gateway_entry(hass)
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "upload")
-    assert (
-        result["data_schema"]({CONF_EXPORT_FILE: str(uuid.uuid4())})[CONF_UNICAST]
-        == "0D00"
-    )
+    assert result["data_schema"]({CONF_EXPORT_FILE: str(uuid.uuid4()), **advanced()})[
+        SECTION_ADVANCED
+    ] == {CONF_UNICAST: "0D00"}
     with patch(
         "custom_components.junghome_ble.config_flow.process_uploaded_file",
         return_value=_uploaded(SHARE_EXPORT_PATH),
@@ -2777,7 +3006,7 @@ async def test_reconfigure_replacing_the_export_drops_the_stale_merge_base(
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {CONF_UNICAST: "0d00"} if option == "gateway_refetch" else _upload_input(),
+            advanced("0d00") if option == "gateway_refetch" else _upload_input(),
         )
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
@@ -2841,7 +3070,7 @@ async def test_reconfigure_of_a_loaded_entry_reloads_once_through_the_listener(
     count_setups.reset_mock()
     result = await _start_reconfigure(hass, entry, "path")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**FORM_INPUT, CONF_UNICAST: "0d05"}
+        result["flow_id"], {**FORM_INPUT, **advanced("0d05")}
     )
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT

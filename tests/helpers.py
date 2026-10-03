@@ -12,7 +12,8 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 
-from custom_components.junghome_ble.const import DOMAIN
+from custom_components.junghome_ble.config_flow import SECTION_ADVANCED
+from custom_components.junghome_ble.const import CONF_UNICAST, DOMAIN
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 
@@ -239,6 +240,11 @@ def device_name_of(hass: HomeAssistant, eid: str) -> str | None:
     assert entry.device_id is not None
     device = dr.async_get(hass).async_get(entry.device_id)
     return device.name if device else None
+
+
+def advanced(unicast: str | None = None) -> dict[str, Any]:
+    """A source form's *Advanced* section as the frontend submits it: our unicast address, or empty (the default)."""
+    return {SECTION_ADVANCED: {} if unicast is None else {CONF_UNICAST: unicast}}
 
 
 def areas_prefill(result: Any) -> dict[str, Any]:

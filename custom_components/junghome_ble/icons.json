@@ -346,11 +346,50 @@
     }
   },
   "services": {
+    "set_room": {
+      "service": "mdi:home-switch-outline"
+    },
     "add_to_room": {
       "service": "mdi:home-plus-outline"
     },
     "remove_from_room": {
       "service": "mdi:home-minus-outline"
+    },
+    "create_room": {
+      "service": "mdi:home-plus"
+    },
+    "rename_room": {
+      "service": "mdi:home-edit-outline"
+    },
+    "delete_room": {
+      "service": "mdi:home-remove-outline"
+    },
+    "assign_key": {
+      "service": "mdi:gesture-tap-button"
+    },
+    "clear_key": {
+      "service": "mdi:link-variant-off"
+    },
+    "create_scene": {
+      "service": "mdi:movie-open-plus-outline"
+    },
+    "rename_scene": {
+      "service": "mdi:movie-open-edit-outline"
+    },
+    "store_scene": {
+      "service": "mdi:content-save-outline"
+    },
+    "remove_from_scene": {
+      "service": "mdi:movie-open-minus-outline"
+    },
+    "delete_scene": {
+      "service": "mdi:movie-open-remove-outline"
+    },
+    "delete_unused_scenes": {
+      "service": "mdi:broom"
+    },
+    "sync_gateway": {
+      "service": "mdi:cloud-upload"
     },
     "get_schedules": {
       "service": "mdi:calendar-search"
@@ -387,9 +426,6 @@
     },
     "add_device": {
       "service": "mdi:plus-network"
-    },
-    "delete_unused_scenes": {
-      "service": "mdi:broom"
     },
     "remove_device": {
       "service": "mdi:minus-network"
