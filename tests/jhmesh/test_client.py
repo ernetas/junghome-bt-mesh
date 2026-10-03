@@ -2719,7 +2719,7 @@ async def test_detach_fails_pending_requests_like_a_lost_link(
     answered: asyncio.Future[AccessMessage] = asyncio.get_running_loop().create_future()
     answered.set_result(recorder.messages[0] if recorder.messages else None)  # type: ignore[arg-type]
     attached._waiters.append(
-        (lambda m: False, answered)
+        (lambda m: False, answered, None)
     )  # a waiter already resolved: left alone
     await attached.detach()
     with pytest.raises(ConnectionError, match="proxy detached"):
@@ -5026,3 +5026,157 @@ async def test_proxy_configuration_needs_its_header_and_is_replay_protected(
     await attached.attach(link)
     assert attached.proxy_addr == PROXY_NODE
     assert attached.rx_proxy_config_dropped == 0
+
+
+# ============================================================================= review-4 D32
+
+
+async def test_a_status_that_does_not_show_a_lost_set_answers_the_get_out_with_it(
+    attached: ProxyClient, link: FakeBleak
+):
+    """D32: a Set lost on the air while a Get to the same element is out. The Get's Status shows the old state at
+    rest; it answers the Get, not the older Set, which keeps waiting — and takes the Status that shows its state."""
+    switch_on = asyncio.create_task(
+        attached.request(
+            PROXY_NODE,
+            M.generic_onoff_set(True, transition=0),
+            M.GEN_ONOFF_STATUS,
+            timeout=1.0,
+            retries=1,
+        )
+    )
+    await settle()
+    get = asyncio.create_task(
+        attached.request(
+            PROXY_NODE, M.generic_onoff_get(), M.GEN_ONOFF_STATUS, timeout=1.0
+        )
+    )
+    await settle()
+    link.send_access(PROXY_NODE, OUR_SRC, ONOFF_STATUS_OFF)  # the Get's answer
+    assert (await get).params == b"\x00"
+    assert not switch_on.done()
+    link.send_access(
+        PROXY_NODE, ELEMENT_GROUP_148, ONOFF_STATUS_ON
+    )  # the Set's publication
+    assert (await switch_on).params == b"\x01"
+
+
+async def test_a_lost_set_passed_over_is_sent_again(
+    attached: ProxyClient, link: FakeBleak
+):
+    """D32: the Set whose wait the Get's Status no longer ends goes out again (same PDU, same TID) within its
+    attempts, and the load's answer to that confirms it."""
+    access = M.generic_onoff_set(True, transition=0)
+    asked: list[bytes] = []
+
+    def answer(n: NetworkPDU) -> None:
+        if n.dst == PROXY_NODE and not n.ctl:
+            asked.append(n.transport_pdu)
+            if len(asked) == 2:  # the Get; the Set before it was lost
+                link.send_access(PROXY_NODE, OUR_SRC, ONOFF_STATUS_OFF)
+            if len(asked) == 3:  # the Set again
+                link.send_access(PROXY_NODE, ELEMENT_GROUP_148, ONOFF_STATUS_ON)
+
+    link.responders.append(answer)
+    switch_on = asyncio.create_task(
+        attached.request(PROXY_NODE, access, M.GEN_ONOFF_STATUS, timeout=0.05)
+    )
+    await settle()
+    get = await attached.request(PROXY_NODE, M.generic_onoff_get(), M.GEN_ONOFF_STATUS)
+    assert get.params == b"\x00"
+    assert (await switch_on).params == b"\x01"
+    assert [m[4] for m in link.sent_access()] == [
+        access,
+        M.generic_onoff_get(),
+        access,
+    ]
+
+
+@pytest.mark.parametrize(
+    ("access", "get_pdu", "status", "shown"),
+    [
+        # a transition under way: the target is the requested one
+        (
+            M.light_lightness_set(0x8000),
+            M.light_lightness_get(),
+            M.LIGHT_LIGHTNESS_STATUS,
+            h("00100080" + "05"),
+        ),
+        # the load's own step: within one percent of the requested lightness
+        (
+            M.light_lightness_set(0x8000),
+            M.light_lightness_get(),
+            M.LIGHT_LIGHTNESS_STATUS,
+            h("2882"),
+        ),
+        (
+            M.generic_level_set(-0x1000),
+            M.generic_level_get(),
+            M.GEN_LEVEL_STATUS,
+            h("00f0"),
+        ),
+        (
+            M.light_ctl_set(0x8000, 3000),
+            M.light_ctl_get(),
+            M.LIGHT_CTL_STATUS,
+            h("0080b80b"),
+        ),
+        # the CTL Temperature Status's delta UV is the light's own, not compared
+        (
+            M.light_ctl_temperature_set(4000),
+            M.light_ctl_temperature_get(),
+            M.LIGHT_CTL_TEMP_STATUS,
+            h("a00f0500"),
+        ),
+    ],
+    ids=["target", "step", "level", "ctl", "ctl-temperature"],  # a Set's TID is random
+)
+async def test_a_status_that_shows_a_sets_state_answers_the_older_set(
+    attached: ProxyClient,
+    link: FakeBleak,
+    access: bytes,
+    get_pdu: bytes,
+    status: int,
+    shown: bytes,
+):
+    """D32: a Status that shows the requested state (present, or target while a transition runs) answers the
+    oldest Set waiting, as before; the Get out to the element waits for the next one."""
+    opcode = encode_opcode(status)
+    put = asyncio.create_task(
+        attached.request(PROXY_NODE, access, status, timeout=1.0, retries=1)
+    )
+    await settle()
+    get = asyncio.create_task(
+        attached.request(PROXY_NODE, get_pdu, status, timeout=1.0, retries=1)
+    )
+    await settle()
+    link.send_access(PROXY_NODE, ELEMENT_GROUP_148, opcode + shown)
+    assert (await put).params == shown
+    assert not get.done()
+    link.send_access(PROXY_NODE, OUR_SRC, opcode + shown)
+    assert (await get).params == shown
+
+
+async def test_a_status_no_other_request_takes_still_answers_the_set(
+    attached: ProxyClient, link: FakeBleak
+):
+    """D32: a load that clamps the value (a lightness under its range minimum) answers with a state the Set did not
+    ask for; with nothing else waiting for it, that Status still confirms the Set, and of two Sets the older."""
+    first = asyncio.create_task(
+        attached.request(
+            PROXY_NODE, M.light_lightness_set(1), M.LIGHT_LIGHTNESS_STATUS, timeout=1.0
+        )
+    )
+    await settle()
+    second = asyncio.create_task(
+        attached.request(
+            PROXY_NODE, M.light_lightness_set(2), M.LIGHT_LIGHTNESS_STATUS, timeout=1.0
+        )
+    )
+    await settle()
+    clamped = encode_opcode(M.LIGHT_LIGHTNESS_STATUS) + h("000d")
+    link.send_access(PROXY_NODE, ELEMENT_GROUP_148, clamped)
+    assert (await first).params == h("000d")
+    assert not second.done()
+    link.send_access(PROXY_NODE, OUR_SRC, clamped)
+    assert (await second).params == h("000d")

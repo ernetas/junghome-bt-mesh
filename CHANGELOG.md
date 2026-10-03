@@ -239,6 +239,12 @@
   600 sources in the replay list), and an entity whose state and attributes a status leaves as they are no longer
   writes its state (a busy element has over twenty entities listening; their `last_reported` stays put). A change of
   availability is always written.
+- A light, socket, blind or set-point command no longer succeeds when it never reached the load (review-4 D32):
+  when its Set was lost on the air while the hub asked the same element for its state (the refresh after a
+  reconnection, say), the state reply, still showing the old value, was taken as the command's answer. A reply now
+  answers a command only when it shows the state the command asked for (at present or as the target of a running
+  transition, within the load's own 1 % or 100 K step) or nothing else waits for it; otherwise the command is sent
+  again within its usual attempts. Found by the flapping-link soak over the simulated mesh; unverified on air.
 
 ### Added
 

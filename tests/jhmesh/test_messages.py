@@ -1534,3 +1534,41 @@ def test_lbc_opcode_tables_are_consistent():
         0x822F: "Generic User Property Get",
     }
     assert M.JUNG_CID is V.JUNG_CID
+
+
+def test_set_shown_by_reads_the_state_a_load_set_asks_for():
+    """review-4 D32: a Status shows an acknowledged load Set's state in its present or (with a remaining time) its
+    target field, within the load's own step; at rest with another state, or too short to tell, it does not."""
+    on = M.set_shown_by(M.generic_onoff_set(True, transition=0))
+    assert on is not None
+    assert on(h("01"))
+    assert on(h("00" + "01" + "0a"))  # switching on: the target
+    assert not on(h("00"))
+    assert not on(h("0000"))  # a target without its remaining time is no target
+    assert not on(b"")
+    ctl = M.set_shown_by(M.light_ctl_set(0x8000, 3000))
+    assert ctl is not None
+    assert ctl(h("0080" + "1c0c"))  # 3100 K: within the step
+    assert not ctl(h("0080" + "200d"))  # 3360 K
+    assert not ctl(h("ff7f"))  # short of its temperature
+    dim = M.set_shown_by(M.light_lightness_set(0x8000))
+    assert dim is not None
+    assert dim(h("707d"))  # one step under it
+    assert not dim(h("6f7d"))
+
+
+@pytest.mark.parametrize(
+    "access",
+    [
+        M.generic_onoff_set(True, ack=False),  # nothing answers it
+        M.generic_onoff_get(),
+        M.scene_recall(1),
+        M.generic_delta_set(1),  # no absolute state to compare
+        h("8202"),  # an OnOff Set without its state
+        b"",
+        h("82"),  # a truncated opcode
+    ],
+    ids=["unack", "get", "scene", "delta", "short", "empty", "truncated"],
+)
+def test_set_shown_by_has_nothing_to_compare_for_other_messages(access: bytes):
+    assert M.set_shown_by(access) is None

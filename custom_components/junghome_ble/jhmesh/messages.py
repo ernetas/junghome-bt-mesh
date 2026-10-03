@@ -772,6 +772,66 @@ def _set_tail(p: bytes, i: int) -> str:
     return s
 
 
+# A load's own step, what it rounds a Set to (1 % of the lightness / level range, 100 K): a Status within it of the
+# requested value shows the Set applied.
+STATE_STEP, KELVIN_STEP = 0x0290, 100
+# acknowledged load Set → (size of its Status's present block, the state's fields as (offset, size, signed, step)):
+# the fields sit at the same offsets in the Set and in the Status's present block, and again in its target block
+# (Mesh Model spec §3.2.1.4, §3.2.2.5, §6.3.1.4, §6.3.2.4, §6.3.2.8). The CTL Temperature Status's delta UV is
+# not compared: a light without one reports its own.
+_SET_STATES: dict[int, tuple[int, tuple[tuple[int, int, bool, int], ...]]] = {
+    GEN_ONOFF_SET: (1, ((0, 1, False, 0),)),
+    GEN_LEVEL_SET: (2, ((0, 2, True, STATE_STEP),)),
+    LIGHT_LIGHTNESS_SET: (2, ((0, 2, False, STATE_STEP),)),
+    LIGHT_CTL_SET: (4, ((0, 2, False, STATE_STEP), (2, 2, False, KELVIN_STEP))),
+    LIGHT_CTL_TEMP_SET: (4, ((0, 2, False, KELVIN_STEP),)),
+}
+
+
+def set_shown_by(access_pdu: bytes) -> Callable[[bytes], bool] | None:
+    """For an acknowledged load Set, a test of a Status's parameters: whether they show the state the Set asks for.
+
+    A Status answering an acknowledged Set reports the present state, and the target with the remaining time
+    while a transition runs: the Set took effect when either is the requested one, within the load's own step
+    (`STATE_STEP`, `KELVIN_STEP`). A Status reporting another state at rest did not come from the Set: a Get to
+    the same element answered with the old state while the Set was lost on the air (review-4 D32) — or the load
+    clamped the value (a lightness under its range minimum), which only the caller can tell. None for any other
+    message (an Unacknowledged Set, a Get, a scene or property Set): there is no state to compare.
+    """
+    try:
+        opcode, _cid, params = decode_opcode(access_pdu)
+    except ValueError:
+        return None
+    spec = _SET_STATES.get(opcode)
+    if spec is None or len(params) < spec[0]:
+        return None
+    block, fields = spec
+
+    def values(p: bytes, at: int) -> list[int]:
+        return [
+            int.from_bytes(p[at + i : at + i + n], "little", signed=signed)
+            for i, n, signed, _ in fields
+        ]
+
+    wanted = values(params, 0)
+
+    def near(p: bytes, at: int) -> bool:
+        return all(
+            abs(value - want) <= step
+            for value, want, (_, _, _, step) in zip(
+                values(p, at), wanted, fields, strict=True
+            )
+        )
+
+    def shown(status: bytes) -> bool:
+        if len(status) < block:
+            return False
+        # present, or the target with its remaining time after it
+        return near(status, 0) or (len(status) > 2 * block and near(status, block))
+
+    return shown
+
+
 def _describe_level_set(op: int, p: bytes) -> str:
     return f"Generic Level Set{'' if op == GEN_LEVEL_SET else ' Unack'} level={_s16(p)}{_set_tail(p, 2)}"
 

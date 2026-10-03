@@ -457,7 +457,9 @@ Dependencies (hard unless marked *soft*):
   unchanged states not written (26); the hub over the simulated mesh, a flapping-link soak and fake conformance (27).
 - **New finding D32 (from brief 27's soak):** a Set lost on air while a Get of the same element is out is confirmed
   by the Get's Status (`ProxyClient.request` matches on element and status opcode), so the action succeeds though
-  the load never changed. Being fixed as a follow-up of wave 6.
+  the load never changed. **Fixed:** a Status answers an acknowledged load Set only when it shows the requested state
+  (present, or target while transitioning, within the load's step) or no other request waits for it; the Set is sent
+  again otherwise. The soak fails on the case for seeds 27, 4, 5 and 14; unverified on air.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in

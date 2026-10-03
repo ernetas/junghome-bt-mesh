@@ -35,7 +35,7 @@ from .config_messages import (
 from .crypto import NetKeyMaterial
 from .fileio import PRIVATE_MODE, atomic_write
 from .keyrefresh import KeyRefreshFollower, KeyRefreshRecord, Moved, describe_proof
-from .messages import describe
+from .messages import describe, set_shown_by
 from .pdu import (
     BEACON_PRIVATE,
     FILTER_BLACKLIST,
@@ -1033,8 +1033,14 @@ class ProxyClient:
         # source -> (IV index, SeqAuth) of its last segmented message delivered: a retransmission of it (fresh
         # sequence numbers, the sender missed our ack) after its reassembly expired is not delivered twice
         self._seq_auth_done: dict[int, tuple[int, int]] = {}
+        # (match, future, shows): `shows` tests whether a status shows an acknowledged Set's requested state
+        # (`set_shown_by`), None for any other request (`_deliver`, review-4 D32)
         self._waiters: list[
-            tuple[Callable[[AccessMessage], bool], asyncio.Future[AccessMessage]]
+            tuple[
+                Callable[[AccessMessage], bool],
+                asyncio.Future[AccessMessage],
+                Callable[[bytes], bool] | None,
+            ]
         ] = []
         self._ack_waiters: dict[tuple[int, int], _AckState] = {}
         self._send_lock = asyncio.Lock()
@@ -1413,7 +1419,7 @@ class ProxyClient:
         self._filter_type = None
         self.filter_writes = 0  # the next link starts with none
         self._cancel_tasks()
-        for _, fut in self._waiters:
+        for _, fut, _ in self._waiters:
             if not fut.done():
                 fut.set_exception(ConnectionError(reason))
         self._waiters.clear()
@@ -1943,7 +1949,10 @@ class ProxyClient:
 
         `match` narrows the reply further (a predicate over the decoded status — the scene number of a
         Scene Register Status, say) so a late reply to an earlier request to the same element cannot
-        satisfy this one. Only the oldest waiter a status fits is resolved by it.
+        satisfy this one. Only the oldest waiter a status fits is resolved by it — except that an acknowledged
+        load Set's waiter passes over a status that does not show the state it asks for while a later request
+        takes it (`set_shown_by`, `_deliver`): a Get out to the same element answered with the old state while the
+        Set was lost on the air does not confirm the Set (review-4 D32), which is sent again on its next attempt.
         """
         extra = match
 
@@ -1956,7 +1965,13 @@ class ProxyClient:
             )
 
         return await self._request(
-            dst, access_pdu, self._app_key, match_status, timeout, retries
+            dst,
+            access_pdu,
+            self._app_key,
+            match_status,
+            timeout,
+            retries,
+            set_shown_by(access_pdu),
         )
 
     async def request_config(
@@ -2008,6 +2023,7 @@ class ProxyClient:
         match: Callable[[AccessMessage], bool],
         timeout: float,
         retries: int,
+        shows: Callable[[bytes], bool] | None = None,
     ) -> AccessMessage:
         for attempt in range(retries):
             fut: asyncio.Future[AccessMessage] = (
@@ -2019,7 +2035,7 @@ class ProxyClient:
                     access_pdu,
                     None,
                     key,
-                    partial(self._waiters.append, (match, fut)),
+                    partial(self._waiters.append, (match, fut, shows)),
                 )
                 return await asyncio.wait_for(fut, timeout)
             except asyncio.TimeoutError:
@@ -2054,7 +2070,7 @@ class ProxyClient:
             return False  # never resolves the future: only a link loss does
 
         fut: asyncio.Future[AccessMessage] = asyncio.get_running_loop().create_future()
-        register = partial(self._waiters.append, (match, fut))
+        register = partial(self._waiters.append, (match, fut, None))
         try:
             # registered once the send lock is ours (`_send`): nothing published while queued is collected
             await self._send(dst, access_pdu, None, self._app_key, register)
@@ -2660,15 +2676,22 @@ class ProxyClient:
         log.debug(
             "RX %s", msg
         )  # per-message traffic stays out of INFO (a token read would show up there)
-        resolved = False
-        for match, fut in list(self._waiters):
-            if fut.done():
-                continue
-            # every pending predicate sees it (collect() gathers through its own, never resolving), but one status
-            # answers one request: the oldest waiter it fits
-            if match(msg) and not resolved:
-                fut.set_result(msg)
-                resolved = True
+        # every pending predicate sees it (collect() gathers through its own, never resolving), but one status
+        # answers one request: the oldest waiter it fits, skipping an acknowledged Set's when the status does not
+        # show the state the Set asks for and a later waiter takes it — a Get to the same element answered with the
+        # old state while the Set was lost on the air (review-4 D32). With no other waiter it still answers the
+        # oldest: a load that clamped the value answers its Set with a state the Set did not ask for.
+        fits = [
+            (fut, shows)
+            for match, fut, shows in list(self._waiters)
+            if not fut.done() and match(msg)
+        ]
+        answered = next(
+            (fut for fut, shows in fits if shows is None or shows(msg.params)),
+            fits[0][0] if fits else None,
+        )
+        if answered is not None:
+            answered.set_result(msg)
         if self.on_message:
             try:
                 self.on_message(msg)

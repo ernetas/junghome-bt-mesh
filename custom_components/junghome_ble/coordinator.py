@@ -5729,12 +5729,14 @@ class JungHomeHub:
 
         Up to REQUEST_ATTEMPTS attempts of REQUEST_TIMEOUT, each the same PDU (same TID: the load applies it once and
         answers the repeat), matched on the element and the status opcode — JUNG firmware answers a Set that changed
-        something by publishing that status to the element group. Unanswered, the link watchdog probes the proxy at
-        once, and the node is marked unreachable (`_missed_answer`: `load` and `kind` name the load element and
-        state Get its re-asks use, the light's for a colour-temperature element) only once the proxy answered the
-        probe: a proxy that stopped forwarding leaves every command unanswered, and the nodes are not to blame (the
-        link is dropped, and the next one's refresh asks them all). The TimeoutError is raised for the caller to
-        report either way.
+        something by publishing that status to the element group. A status that does not show the requested state
+        answers a state Get out to the element rather than the Set (review-4 D32: the Set was lost, the Get's reply
+        shows the old state), and the Set goes out again on its next attempt (`ProxyClient.request`). Unanswered,
+        the link watchdog probes the proxy at once, and the node is marked unreachable (`_missed_answer`: `load` and
+        `kind` name the load element and state Get its re-asks use, the light's for a colour-temperature element)
+        only once the proxy answered the probe: a proxy that stopped forwarding leaves every command unanswered, and
+        the nodes are not to blame (the link is dropped, and the next one's refresh asks them all). The TimeoutError
+        is raised for the caller to report either way.
 
         A link that ended or changed while the command was out (review-4 R I-11) says nothing about the load: the
         command is sent once more, on the next link (`_wait_for_link`) — same PDU, same TID, so a load that did

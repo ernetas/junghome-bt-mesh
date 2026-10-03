@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import selectors
+import threading
 import time
 from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Any
@@ -101,6 +102,29 @@ class VirtualTimeLoop(asyncio.SelectorEventLoop):
         else:
             job.set_result(running.result())
         return job
+
+    async def shutdown_default_executor(self, timeout: float | None = None) -> None:
+        """Join the default executor's threads as an executor job: on the real clock, not within `timeout`.
+
+        asyncio waits for the join under a timer (300 s), which the virtual clock passes at once when the threads
+        are not through in the same instant — a warning at the loop's close after a short test.
+        """
+        self._executor_shutdown_called = True
+        executor = self._default_executor
+        if executor is None:
+            return
+        joined = self.create_future()
+
+        def join() -> None:
+            try:
+                executor.shutdown(wait=True)
+            finally:
+                self.call_soon_threadsafe(joined.set_result, None)
+
+        threading.Thread(target=join, name="asyncio-join", daemon=True).start()
+        self.executor_jobs.add(joined)
+        joined.add_done_callback(self.executor_jobs.discard)
+        await joined
 
     def _virtual_time(self) -> float:
         return self._virtual_now

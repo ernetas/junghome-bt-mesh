@@ -2290,10 +2290,13 @@ Behaviour worth knowing:
   link-loss grace, and checks the grace, the bounds of the property reader's queue and of every container and task
   of the hub, and the refresh once the link holds; the integration's and Home Assistant's clocks follow the virtual
   one. By default 80 nodes and six links in a few seconds; `SIM_SOAK=long` runs 300 nodes through 40 links (a minute
-  or two), and `SIM_SOAK_SEED` picks another seed. Seeds 4, 5 and 14 show a command reported done although it never
-  reached the load: its Set was lost on the air while the new link's refresh had a Get out to the same element, and
-  the Get's Status answered the Set (`ProxyClient.request` matches on element and status opcode). The light then
-  shows the load's real state; the soak counts the case (`confirmed, not applied`) without failing on it.
+  or two), and `SIM_SOAK_SEED` picks another seed. Seeds 4, 5 and 14 found a command reported done although it never
+  reached the load (review-4 D32): its Set was lost on the air while the new link's refresh had a Get out to the same
+  element, and the Get's Status answered the Set (`ProxyClient.request` matches on element and status opcode). A
+  Status now answers an acknowledged load Set only when it shows the requested state, present or target, within
+  the load's step (`messages.set_shown_by`), or nothing else waits for it; the Set is sent again otherwise. The
+  default run takes those seeds as well as 27 and fails on such a command (`confirmed, not applied`);
+  `tests/soak/test_lost_set.py` drops the Set on purpose and checks the same in one short run.
   `tests/test_fake_conformance.py` drives `FakeProxyLink`, the library's `FakeBleak` and the simulated proxy through
   one bare GATT client and holds them to the same behaviour: the filter type asked for is the one answered, segments
   to an element are acknowledged in full and a node's segmented message takes the client's acknowledgement, a

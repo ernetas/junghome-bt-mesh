@@ -12,11 +12,14 @@ link is left alone. Throughout, and at the end:
 - bounded: the `PropertyReader` queue holds each job once and never more than the first links queued, and no
   container of the hub, its reader or its proxy client holds more than the network has entities and elements; the
   tasks on the loop do not pile up from link to link;
+- a command reported done reached the load: none is confirmed by a Status that answered another request (review-4
+  D32, a Set lost on the air while the new link's refresh had a Get out to the element);
 - once the link holds, the connect-time refresh completes (the link state turns `connected`) and every load's state
   is known.
 
 Everything runs on virtual time (`tests/soak/conftest.py`): by default 80 nodes and a handful of links in a few
-seconds of wall time; `SIM_SOAK=long` runs 300 nodes through 40 links (a minute or two).
+seconds of wall time, for the seed 27 and the seeds that found D32 (`REGRESSION_SEEDS`); `SIM_SOAK=long` runs 300
+nodes through 40 links (a minute or two), and `SIM_SOAK_SEED` runs one seed of either size.
 """
 
 from __future__ import annotations
@@ -85,6 +88,9 @@ _LOGGER = logging.getLogger(__name__)
 
 LONG = os.environ.get("SIM_SOAK") == "long"
 SEED = int(os.environ.get("SIM_SOAK_SEED", "27"))
+# seeds whose air lost a command's Set while the refresh had a Get out to the same element (review-4 D32)
+REGRESSION_SEEDS = (4, 5, 14)
+SEEDS = (SEED,) if LONG or "SIM_SOAK_SEED" in os.environ else (SEED, *REGRESSION_SEEDS)
 NODES = 300 if LONG else 80
 FLAPS = 40 if LONG else 6
 # virtual seconds a link holds, drawn (seeded) for each link: mostly short (under `SHORT_LINK`: the back-off grows,
@@ -112,13 +118,19 @@ TIMED = (
 pytestmark = [pytest.mark.sim, pytest.mark.slow_ok, pytest.mark.link_loss_grace]
 
 
+@pytest.fixture(params=SEEDS, ids=lambda seed: f"seed{seed}")
+def seed(request: pytest.FixtureRequest) -> int:
+    """The seed of the network, its air and the links' schedule."""
+    return int(request.param)
+
+
 @pytest.fixture
-async def sim_mesh(tmp_path: Path) -> AsyncGenerator[Mesh]:
+async def sim_mesh(tmp_path: Path, seed: int) -> AsyncGenerator[Mesh]:
     """The scaled synthetic network on a lossy air (seeded), its export in `tmp_path`; closed and checked after."""
     mesh = build_mesh(
-        scaled_network(NODES, seed=SEED),
+        scaled_network(NODES, seed=seed),
         tmp_path / "MeshNetwork.json",
-        seed=SEED,
+        seed=seed,
         loss=LOSS,
     )
     yield mesh
@@ -195,7 +207,8 @@ async def command_in_the_grace(
     grace ran out first), and the load is untouched; "unanswered": it went out, and the air lost what the load
     answered or what it was sent — the load is either way. "confirmed, not applied": it went through although the
     load is not as asked — a Set lost on the air whose waiter took the Status that answered another request to the
-    element (a Get of the new link's refresh). The light's state shows the load's either way.
+    element (a Get of the new link's refresh, review-4 D32); the soak fails on it. The light's state shows the
+    load's either way.
     """
     on = flap % 2 == 0
     before = load.on
@@ -240,14 +253,16 @@ class Record:
     outcomes: list[str] = field(default_factory=list)
 
 
-async def flap(hass: HomeAssistant, hub: Any, mesh: Mesh, record: Record) -> None:
+async def flap(
+    hass: HomeAssistant, hub: Any, mesh: Mesh, record: Record, seed: int
+) -> None:
     """Drop the link `FLAPS` times, a command to the far light right after each drop; then wait for a full refresh."""
     loop = asyncio.get_running_loop()
     far = entity_id(hass, "light", UID_FAR)
     servers = mesh.node(LIGHT_OUT1).servers
     assert servers is not None
     await until(lambda: hub.connected, 120, "the first link")
-    holds = random.Random(SEED)  # noqa: S311  # a repeatable schedule, not a secret
+    holds = random.Random(seed)  # noqa: S311  # a repeatable schedule, not a secret
     for link in range(FLAPS):
         await asyncio.sleep(holds.choice(HOLDS))
         mesh.proxy(PROXY).drop_link()
@@ -298,6 +313,7 @@ async def test_flapping_links_keep_the_invariants(
     sim_mesh: Mesh,
     sim_link: SimLinks,
     monkeypatch: pytest.MonkeyPatch,
+    seed: int,
 ) -> None:
     virtual_clocks(monkeypatch)
     loop = asyncio.get_running_loop()
@@ -335,12 +351,13 @@ async def test_flapping_links_keep_the_invariants(
 
     sampler = asyncio.create_task(sample())
     try:
-        await flap(hass, hub, sim_mesh, record)
+        await flap(hass, hub, sim_mesh, record, seed)
     finally:
         sampler.cancel()
         await asyncio.gather(sampler, return_exceptions=True)
     _LOGGER.info(
-        "soak: %d nodes, %d connects, %.0f virtual s in %.1f s, commands %s, %s",
+        "soak: seed %d, %d nodes, %d connects, %.0f virtual s in %.1f s, commands %s, %s",
+        seed,
         NODES,
         sim_link.connect_count,
         loop.time(),
@@ -351,6 +368,9 @@ async def test_flapping_links_keep_the_invariants(
     assert sim_link.connect_count >= FLAPS + 1
     assert "applied" in record.outcomes, (
         "no command went through in the grace: nothing of it was tested"
+    )
+    assert "confirmed, not applied" not in record.outcomes, (
+        f"a command was reported done but never reached the load: {record.outcomes}"
     )
     # every load's state is known once the link held
     loads = [d.address for d in (*hub.devices.lights, *hub.devices.sockets)]
