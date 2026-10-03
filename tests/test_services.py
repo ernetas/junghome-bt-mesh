@@ -2561,7 +2561,8 @@ async def test_a_newer_export_on_the_gateway_is_adopted_before_a_change_and_bloc
     ):
         # the gateway holds what we hold: nothing to adopt
         await call(hass, "create_room", {"name": "Attic"})
-        assert "adopted" not in caplog.text
+        # the log line, not the bare word: a slow-task warning under load quotes this test's name ("…_is_adopted_…")
+        assert "holds a newer export" not in caplog.text
         assert len(uploads) == 1
         # the app added a room since: the gateway's export is adopted first, the change made on top of it
         gateway_holds.append(newer_export(env.path, "From the app"))
