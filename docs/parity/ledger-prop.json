@@ -813,7 +813,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_set_threshold"
+    "custom_components/junghome_ble/actions/thresholds.py::_set_threshold"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_threshold_codec",
@@ -829,7 +829,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_set_threshold"
+    "custom_components/junghome_ble/actions/thresholds.py::_set_threshold"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_threshold_codec",

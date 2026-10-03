@@ -1047,7 +1047,7 @@
    "id": "net:debug:exportdebugviewmodel.createjson",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/services.py::_export_network",
+    "custom_components/junghome_ble/actions/audit.py::_export_network",
     "custom_components/junghome_ble/configurator/store.py::ExportStore.async_export"
    ],
    "tests": [
@@ -1380,7 +1380,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/audit.py::model_queries",
-    "custom_components/junghome_ble/services.py::_audit_network"
+    "custom_components/junghome_ble/actions/audit.py::_audit_network"
    ],
    "tests": [
     "tests/test_audit.py::test_every_mains_node_is_audited_and_battery_nodes_are_skipped",
@@ -1522,7 +1522,7 @@
    "code": [
     "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
-    "custom_components/junghome_ble/services.py::_remove_device"
+    "custom_components/junghome_ble/actions/devices.py::_remove_device"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_resets_it_and_takes_it_out",
@@ -2024,7 +2024,7 @@
    "id": "net:enum:deviceconnection.element",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_resolve_target",
+    "custom_components/junghome_ble/actions/keys.py::_resolve_target",
     "custom_components/junghome_ble/configurator/wiring.py::plan_device_link",
     "custom_components/junghome_ble/configurator/wiring.py::pick_target_element",
     "custom_components/junghome_ble/configurator/wiring.py::TARGET_ELEMENTS",
@@ -2045,7 +2045,7 @@
    "id": "net:enum:devicefilter",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/services.py::_resolve_loads",
+    "custom_components/junghome_ble/actions/resolve.py::_resolve_loads",
     "custom_components/junghome_ble/thresholds.py::switched_devices"
    ],
    "tests": [
@@ -2689,7 +2689,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/gateway_api.py::JungHomeGatewayApi.approve_client",
-    "custom_components/junghome_ble/services.py::_approve_gateway_client"
+    "custom_components/junghome_ble/actions/audit.py::_approve_gateway_client"
    ],
    "tests": [
     "tests/test_gateway_api.py::test_approve_client",
@@ -3002,7 +3002,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
-    "custom_components/junghome_ble/services.py::_store_scene"
+    "custom_components/junghome_ble/actions/scenes.py::_store_scene"
    ],
    "tests": [
     "tests/test_services.py::test_store_and_remove_from_scene",
@@ -3015,8 +3015,8 @@
    "code": [
     "custom_components/junghome_ble/configurator/rooms.py::Rooms.add_to_rooms",
     "custom_components/junghome_ble/configurator/rooms.py::Rooms.set_rooms",
-    "custom_components/junghome_ble/services.py::_add_to_room",
-    "custom_components/junghome_ble/services.py::_set_room"
+    "custom_components/junghome_ble/actions/rooms.py::_add_to_room",
+    "custom_components/junghome_ble/actions/rooms.py::_set_room"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_add_to_room_keeps_the_rooms_a_load_is_in",
@@ -3397,7 +3397,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room",
-    "custom_components/junghome_ble/services.py::_create_room"
+    "custom_components/junghome_ble/actions/rooms.py::_create_room"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_create_rename_delete_room",
@@ -3412,8 +3412,8 @@
     "custom_components/junghome_ble/schedules.py::Scheduler.create",
     "custom_components/junghome_ble/schedules.py::Scheduler.update",
     "custom_components/junghome_ble/schedules.py::Scheduler._send_location",
-    "custom_components/junghome_ble/services.py::_create_schedule",
-    "custom_components/junghome_ble/services.py::_update_schedule"
+    "custom_components/junghome_ble/actions/schedules.py::_create_schedule",
+    "custom_components/junghome_ble/actions/schedules.py::_update_schedule"
    ],
    "tests": [
     "tests/test_schedules.py::test_create_list_toggle_delete",
@@ -3449,7 +3449,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.create_scene",
-    "custom_components/junghome_ble/services.py::_create_scene"
+    "custom_components/junghome_ble/actions/scenes.py::_create_scene"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_create_and_rename_scene",
@@ -3469,7 +3469,7 @@
    "id": "net:uc:createthreshold",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_set_threshold",
+    "custom_components/junghome_ble/actions/thresholds.py::_set_threshold",
     "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.set_threshold_devices",
     "custom_components/junghome_ble/configurator/wiring.py::THRESHOLD_TARGET_MODELS",
     "custom_components/junghome_ble/thresholds.py::write_threshold",
@@ -3497,7 +3497,7 @@
    "code": [
     "custom_components/junghome_ble/configurator/rooms.py::Rooms.remove_from_rooms",
     "custom_components/junghome_ble/configurator/rooms.py::Rooms._refuse_room_keys",
-    "custom_components/junghome_ble/services.py::_remove_from_room",
+    "custom_components/junghome_ble/actions/rooms.py::_remove_from_room",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_room"
    ],
    "tests": [
@@ -3526,7 +3526,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.remove_from_scenes",
-    "custom_components/junghome_ble/services.py::_remove_from_scene"
+    "custom_components/junghome_ble/actions/scenes.py::_remove_from_scene"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_remove_from_scenes_records_the_loads_removed_before_the_one_that_failed",
@@ -3564,7 +3564,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/schedules.py::Scheduler.delete",
-    "custom_components/junghome_ble/services.py::_delete_schedule"
+    "custom_components/junghome_ble/actions/schedules.py::_delete_schedule"
    ],
    "tests": [
     "tests/test_schedules.py::test_create_list_toggle_delete",
@@ -3586,7 +3586,7 @@
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.delete_scene",
     "custom_components/junghome_ble/configurator/wiring.py::scene_key_steps",
-    "custom_components/junghome_ble/services.py::_delete_scene"
+    "custom_components/junghome_ble/actions/scenes.py::_delete_scene"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_remove_from_scene_and_delete_scene",
@@ -3602,7 +3602,7 @@
    "id": "net:uc:deletethreshold",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_delete_threshold",
+    "custom_components/junghome_ble/actions/thresholds.py::_delete_threshold",
     "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.unwire_threshold",
     "custom_components/junghome_ble/configurator/wiring.py::threshold_wiring",
     "custom_components/junghome_ble/configurator/executor.py::PlanExecutor.send"
@@ -3629,7 +3629,7 @@
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.delete_unused_scenes",
     "custom_components/junghome_ble/configurator/plan.py::applied_unused_deleted",
-    "custom_components/junghome_ble/services.py::_delete_unused_scenes"
+    "custom_components/junghome_ble/actions/scenes.py::_delete_unused_scenes"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_delete_unused_scenes_deletes_what_the_export_does_not_know",
@@ -3705,7 +3705,7 @@
    "id": "net:uc:exportprojectfile",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_export_network",
+    "custom_components/junghome_ble/actions/audit.py::_export_network",
     "custom_components/junghome_ble/configurator/store.py::ExportStore.async_export"
    ],
    "tests": [
@@ -3911,7 +3911,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/configurator/store.py::ExportStore.async_identity_ranges",
-    "custom_components/junghome_ble/services.py::_wait_for_link"
+    "custom_components/junghome_ble/actions/common.py::_wait_for_link"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_operations_are_serialised_by_the_lock",
@@ -4161,7 +4161,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/schedules.py::Scheduler.read",
-    "custom_components/junghome_ble/services.py::_on_schedules.operation"
+    "custom_components/junghome_ble/actions/schedules.py::_on_schedules.operation"
    ],
    "tests": [
     "tests/test_schedules.py::test_create_list_toggle_delete",
@@ -4538,7 +4538,7 @@
    "code": [
     "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
-    "custom_components/junghome_ble/services.py::_remove_device"
+    "custom_components/junghome_ble/actions/devices.py::_remove_device"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_resets_it_and_takes_it_out",
@@ -4760,7 +4760,7 @@
    "id": "net:uc:togglethreshold",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_set_threshold",
+    "custom_components/junghome_ble/actions/thresholds.py::_set_threshold",
     "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.unwire_threshold",
     "custom_components/junghome_ble/configurator/wiring.py::threshold_wiring",
     "custom_components/junghome_ble/thresholds.py::OTHER_THRESHOLD"
@@ -5032,7 +5032,7 @@
    "id": "net:ui:projectshare",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_export_network",
+    "custom_components/junghome_ble/actions/audit.py::_export_network",
     "custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_upload"
    ],
    "tests": [

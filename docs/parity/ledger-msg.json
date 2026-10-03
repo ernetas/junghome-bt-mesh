@@ -1155,7 +1155,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::node_identity_set",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_locate",
-    "custom_components/junghome_ble/services.py::_locate_node"
+    "custom_components/junghome_ble/actions/devices.py::_locate_node"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_identity_get_set_and_status",

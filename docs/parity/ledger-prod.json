@@ -2052,7 +2052,7 @@
     "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/configurator/wiring.py::MODE_TEMPERATURE",
     "custom_components/junghome_ble/configurator/wiring.py::derive_mode",
-    "custom_components/junghome_ble/services.py::KEY_TARGET_TYPES"
+    "custom_components/junghome_ble/actions/common.py::KEY_TARGET_TYPES"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -3932,8 +3932,8 @@
     "custom_components/junghome_ble/jhmesh/devices.py::Detector",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_detector",
     "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
-    "custom_components/junghome_ble/services.py::_resolve_key",
-    "custom_components/junghome_ble/services.py::_detector_behind"
+    "custom_components/junghome_ble/actions/keys.py::_resolve_key",
+    "custom_components/junghome_ble/actions/keys.py::_detector_behind"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_blinds_detectors_and_thermostats_of_the_other_fixture_networks",
@@ -4063,7 +4063,7 @@
    "id": "prod:ui:device_remove",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/services.py::_remove_device",
+    "custom_components/junghome_ble/actions/devices.py::_remove_device",
     "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [

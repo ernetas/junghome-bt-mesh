@@ -51,6 +51,7 @@ Layout of `custom_components/junghome_ble/`:
 | `number.py`, `select.py`, `button.py` (+ the config switches in `switch.py`) | The device-parameter entities generated from `config_entities.py` (`PropertySpec` → platform by codec) |
 | `device_trigger.py`, `logbook.py` | Device triggers for the rocker events (per key, the event types its wiring produces) and the logbook descriptions of the `junghome_ble_button_action` / `junghome_ble_scene_recalled` bus events |
 | `services.py`, `mesh_config.py`, `services.yaml` | The room / key-connection actions and the mesh configurator behind them: `mesh_config.MeshConfigurator` is the facade every caller uses (each operation delegates; a planner's `PlanError` becomes the translated service error) |
+| `actions/` | The actions' handlers and schemas, one module per domain (`rooms`, `keys`, `scenes`, `schedules`, `thresholds`, `devices`, `audit`); `common.py` runs an operation (the entry's lock, the link wait, following the export, the plan's logbook line), `resolve.py` turns the ids a call names into mesh elements; `services.py` is the registration table |
 | `configurator/` | The configurator's parts (review-4 brief 55): `plan.py` (the plan model — `ConfigStep`, `ordered`, `replay`, what a stopped plan applied, `KeyPlan`, `PlanError`) and `wiring.py` (modes and models, the wiring read from an export, the export's paths and digest, the room / key-link / scene planners as plain functions), both without a Home Assistant import; `store.py` (`ExportStore`: the export read and written, the provisioner identity, the plan journal, dry runs, the gateway's copy adopted, uploaded and retried); `executor.py` (`PlanExecutor`: a plan sent and judged step by step, a stop recorded, the journal replayed, the requests that wait for an answer and their timeouts); `rooms.py`, `scenes.py`, `thresholds.py`, `nodes.py` (the operations) |
 | `schedules.py` | `Scheduler` (one per hub, `scheduler`): a load's JH Scheduler slots — read once per link for the *Schedules* sensor, written by the `get_schedules` … `delete_schedule` actions (`update_schedule` rewrites a slot in place); an astro schedule is preceded by Home Assistant's home location. Not tried on a device yet |
 | `thresholds.py` | A metering socket's switch-on / switch-off thresholds (`0x5004` / `0x5005`): the two sensors and the reads and writes behind `set_threshold` / `delete_threshold`; the loads they switch are wiring, done by `MeshConfigurator` |
@@ -147,7 +148,7 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   refresh with `since`, the detector's illuminance, a config entity's values with `since` so a read within
   `PROPERTY_READ_FRESH` does not answer it); the base skips battery nodes and a missing link, keeps one read per
   element and name per `UPDATE_READ_INTERVAL` (`entity.update_reads`, per entry) and logs instead of raising.
-- Services (`services.py` → `mesh_config.py`): registered once in `async_setup`; each entry contributes a
+- Services (`services.py` → `actions/` → `mesh_config.py`): registered once in `async_setup`; each entry contributes a
   `MeshConfigurator` (per-hub lock). Operations plan `ProjectFile` mutations, send the Config messages over the device
   key with `request_config`, write the KeyMode property, save the file atomically and have the hub follow the
   export (`model_update`).

@@ -621,6 +621,10 @@
   journal and the upload retry (`store.py`), the plan executor (`executor.py`) and the rooms / keys, scenes,
   thresholds and nodes operations. The operations, their Config messages and their order, the export writes, the
   journal and the vault are unchanged; the upload retry reads the export through `ExportStore.read` / `upload`.
+- Internal: `services.py` is only the registration table (review-4 A4-8): the actions' handlers and schemas moved
+  verbatim into `custom_components/junghome_ble/actions/`, one module per domain (`rooms`, `keys`, `scenes`,
+  `schedules`, `thresholds`, `devices`, `audit`) plus `common.py` (running an operation) and `resolve.py` (the ids a
+  call names). Action names, schemas, responses, errors and the administrator-only registrations are unchanged.
 - Internal: `docs/on-air-sweep.md` is the checklist of the on-air sweep (review-4 brief 30): every behaviour still
   unverified that this installation can check, from watch-only to key-changing, with its steps, captures, pass
   criterion, hardware and whether it can be undone, and what cannot be checked here and why. `tools/on_air.py`

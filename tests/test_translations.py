@@ -71,7 +71,7 @@ TRANSLATED = sorted(p for p in EN.parent.glob("*.json") if p != EN)
 ICONS = COMPONENT / "icons.json"
 SERVICES_YAML = COMPONENT / "services.yaml"
 CONFIG_FLOW = COMPONENT / "config_flow.py"
-# the integration's modules, its packages' too (`configurator/`, review-4 brief 55)
+# the integration's modules, its packages' too (`configurator/`, `actions/`, review-4 briefs 55 and 56)
 SOURCES = sorted(COMPONENT.rglob("*.py"))
 
 REFERENCE = re.compile(r"^\[%key:(?P<path>[^%]+)%\]$")
@@ -85,7 +85,7 @@ LITERAL_KEY = re.compile(r'translation_key\s*=\s*"(?P<key>[a-z0-9_]+)"')
 # `translation_key=ISSUE_X` / `translation_key=ex.SOME_KEY`: a name, not a string (f-strings excluded by the
 # lookahead — `f"..."` starts with a letter too). Lower-case names are runtime values and cannot be checked here.
 CONSTANT_KEY = re.compile(r"translation_key\s*=\s*(?P<ref>[A-Za-z_][\w.]*)(?![\w\"'])")
-# the logbook lines of a plan (`services._report_plan`): translation keys of the `exceptions` section
+# the logbook lines of a plan (`actions.common._report_plan`): translation keys of the `exceptions` section
 PLAN_KEY = re.compile(r'"(?P<key>plan_[a-z_]+)"')
 # the logbook's own lines: `logbook_message(hass, "x"` is the `exceptions` key `logbook_x`
 LOGBOOK_KEY = re.compile(r'logbook_message\(\s*hass,\s*"(?P<key>[a-z_]+)"')
@@ -498,7 +498,7 @@ def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
     found = {
         match.group("key")
         for path in (
-            COMPONENT / "services.py",
+            *sorted((COMPONENT / "actions").glob("*.py")),
             *sorted((COMPONENT / "configurator").glob("*.py")),
         )
         for match in PLAN_KEY.finditer(path.read_text(encoding="utf-8"))

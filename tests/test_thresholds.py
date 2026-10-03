@@ -16,6 +16,8 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.junghome_ble import mesh_config
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import thresholds as T
+from custom_components.junghome_ble.actions import common
+from custom_components.junghome_ble.actions import thresholds as threshold_actions
 from custom_components.junghome_ble.config_entities import PropertyReader
 from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
 from custom_components.junghome_ble.const import DOMAIN
@@ -349,7 +351,7 @@ async def test_a_later_socket_failing_still_has_the_model_follow_an_earlier_one(
 ) -> None:
     """One call wires socket by socket, each its own plan: when the second socket fails after the first one's
     wiring was written to the export, the device model still follows the file."""
-    real_sockets = svc._threshold_sockets
+    real_sockets = threshold_actions._threshold_sockets
     real_wiring = mesh_config.MeshConfigurator.set_threshold_devices
     wired: list[int] = []
 
@@ -376,12 +378,12 @@ async def test_a_later_socket_failing_still_has_the_model_follow_an_earlier_one(
             )  # fails after its _load
 
     with (
-        patch.object(svc, "_threshold_sockets", two_sockets),
+        patch.object(threshold_actions, "_threshold_sockets", two_sockets),
         patch.object(
             mesh_config.MeshConfigurator, "set_threshold_devices", second_fails
         ),
         patch.object(
-            svc, "async_follow_export", wraps=svc.async_follow_export
+            common, "async_follow_export", wraps=common.async_follow_export
         ) as follow,
         pytest.raises(ServiceValidationError) as err,
     ):
@@ -489,7 +491,7 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
 ) -> None:
     """Review-4 W4-13: a write that fails after others of the same call took says which — the thresholds of the
     socket under way, the sockets done — not that nothing before it was applied."""
-    real_sockets = svc._threshold_sockets
+    real_sockets = threshold_actions._threshold_sockets
     real_write = PropertyReader.write
     writes: list[int] = []
     fail_at = 0
@@ -516,7 +518,7 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
         "the action again with the same target to finish.",
     }
     with (
-        patch.object(svc, "_threshold_sockets", two_sockets),
+        patch.object(threshold_actions, "_threshold_sockets", two_sockets),
         patch.object(PropertyReader, "write", write),
     ):
         for fail_at, applied in expected.items():  # noqa: B007  # read by `write`
@@ -746,7 +748,7 @@ async def test_threshold_targets_are_checked(hass: HomeAssistant, env: Env) -> N
         )
     assert err.value.translation_key == "service_not_a_load"
     with (
-        patch.object(svc, "has_thresholds", return_value=False),
+        patch.object(threshold_actions, "has_thresholds", return_value=False),
         pytest.raises(ServiceValidationError) as err,
     ):
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
@@ -756,7 +758,7 @@ async def test_threshold_targets_are_checked(hass: HomeAssistant, env: Env) -> N
     with pytest.raises(ServiceValidationError) as err:
         await call(hass, "set_threshold", {**data, "devices": [key]})
     assert err.value.translation_key == "service_not_a_load"
-    real = svc._device_of_entity
+    real = threshold_actions._device_of_entity
     dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
 
     def elsewhere(hass: HomeAssistant, entity: str) -> Any:
@@ -764,7 +766,7 @@ async def test_threshold_targets_are_checked(hass: HomeAssistant, env: Env) -> N
         return ("another-entry" if entity == dimmer else entry), device, registry_id
 
     with (
-        patch.object(svc, "_device_of_entity", elsewhere),
+        patch.object(threshold_actions, "_device_of_entity", elsewhere),
         pytest.raises(ServiceValidationError) as err,
     ):
         await call(

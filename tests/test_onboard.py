@@ -23,7 +23,7 @@ from homeassistant.util.file import WriteError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import mesh_config, onboard
-from custom_components.junghome_ble import services as svc
+from custom_components.junghome_ble.actions import common
 from custom_components.junghome_ble.configurator import nodes as nodes_mod
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -955,7 +955,7 @@ async def test_adding_and_removing_run_on_the_hub_the_lock_hands_them(
     """A call that waited for the entry's lock while a previous call's reload replaced the hub runs on the new
     hub and its configurator, once its link is up — not on the ones it saw when it was made."""
     entry_id = provisioning_entry.entry_id
-    real_lock = svc._lock
+    real_lock = common._lock
     current: list[bool] = []
 
     @asynccontextmanager
@@ -999,7 +999,7 @@ async def test_adding_and_removing_run_on_the_hub_the_lock_hands_them(
 
     device = node_device_id(hass, provisioning_entry.runtime_data, 0x0300)
     with (
-        patch.object(svc, "_lock", lock_after_a_reload),
+        patch.object(common, "_lock", lock_after_a_reload),
         patch.object(onboard, "async_add_device", add),
         patch.object(mesh_config.MeshConfigurator, "remove_node", remove),
     ):

@@ -207,7 +207,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_threshold_devices",
+    "custom_components/junghome_ble/actions/thresholds.py::_threshold_devices",
     "custom_components/junghome_ble/thresholds.py::current_threshold"
    ],
    "tests": [
@@ -233,7 +233,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_threshold_devices",
+    "custom_components/junghome_ble/actions/thresholds.py::_threshold_devices",
     "custom_components/junghome_ble/thresholds.py::current_threshold"
    ],
    "tests": [
@@ -535,7 +535,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_threshold_devices"
+    "custom_components/junghome_ble/actions/thresholds.py::_threshold_devices"
    ],
    "tests": [
     "tests/test_number.py::test_set_value_confirmed_by_the_status",
@@ -852,7 +852,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_threshold_devices"
+    "custom_components/junghome_ble/actions/thresholds.py::_threshold_devices"
    ],
    "tests": [
     "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",
@@ -873,7 +873,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/thresholds.py::THRESHOLD_PROPERTIES",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold",
-    "custom_components/junghome_ble/services.py::_threshold_devices"
+    "custom_components/junghome_ble/actions/thresholds.py::_threshold_devices"
    ],
    "tests": [
     "tests/test_config_entities.py::test_vendor_status_is_cached_and_signalled",

@@ -43,6 +43,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble import mesh_config, repairs
 from custom_components.junghome_ble import services as svc
+from custom_components.junghome_ble.actions import common
 from custom_components.junghome_ble.climate import temperature_to_level
 from custom_components.junghome_ble.configurator import executor as executor_mod
 from custom_components.junghome_ble.configurator import plan as plan_mod
@@ -1611,7 +1612,7 @@ async def test_a_call_gives_up_when_no_link_comes(
 ) -> None:
     """PLT-04: the wait is bounded; with no link in sight the call is refused with its own message, untouched."""
     before = env.path.read_bytes()
-    with patch.object(svc, "SERVICE_LINK_WAIT", 0.01):
+    with patch.object(common, "SERVICE_LINK_WAIT", 0.01):
         env.link.connect_errors = [ConnectionError("busy")] * 100_000
         env.link.drop_link()
         await hass.async_block_till_done()
@@ -1693,7 +1694,7 @@ async def test_a_call_gives_up_when_the_replaced_hub_does_not_connect_in_time(
 
     with (
         patch.object(type(old), "async_wait_connected", wait_and_replace),
-        patch.object(svc, "SERVICE_LINK_WAIT", 0.05),
+        patch.object(common, "SERVICE_LINK_WAIT", 0.05),
         pytest.raises(HomeAssistantError) as exc,
     ):
         await call(
@@ -1722,7 +1723,7 @@ async def test_a_stopped_plan_still_has_the_model_follow_the_export(
     with (
         patch.object(mesh_config.MeshConfigurator, "set_rooms", stopped),
         patch.object(
-            svc, "async_follow_export", wraps=svc.async_follow_export
+            common, "async_follow_export", wraps=common.async_follow_export
         ) as follow,
         patch.object(
             hass.config_entries, "async_reload", wraps=hass.config_entries.async_reload
@@ -1747,7 +1748,7 @@ async def test_a_failed_operation_that_recorded_nothing_does_not_reload(
     """CFG-15: an operation that failed before writing anything leaves the entry and its model alone."""
     with (
         patch.object(
-            svc, "async_follow_export", wraps=svc.async_follow_export
+            common, "async_follow_export", wraps=common.async_follow_export
         ) as follow,
         pytest.raises(ServiceValidationError),
     ):
@@ -1768,7 +1769,7 @@ async def test_a_failure_does_not_reload_for_what_an_earlier_call_recorded(
     with (
         patch.object(mesh_config.MeshConfigurator, "set_rooms", refused),
         patch.object(
-            svc, "async_follow_export", wraps=svc.async_follow_export
+            common, "async_follow_export", wraps=common.async_follow_export
         ) as follow,
         pytest.raises(HomeAssistantError, match="refused before planning"),
     ):
@@ -1790,7 +1791,7 @@ async def test_a_room_assignment_that_is_already_so_does_not_reload(
         "create": True,
     }
     with patch.object(
-        svc, "async_follow_export", wraps=svc.async_follow_export
+        common, "async_follow_export", wraps=common.async_follow_export
     ) as follow:
         await call(hass, "set_room", target)
         follow.assert_awaited_once_with(hass, env.entry.entry_id, scenes=False)
@@ -1814,7 +1815,7 @@ async def test_creating_a_room_follows_the_gateways_export_it_adopted(
         return address
 
     with patch.object(
-        svc, "async_follow_export", wraps=svc.async_follow_export
+        common, "async_follow_export", wraps=common.async_follow_export
     ) as follow:
         await call(hass, "create_room", {"name": "Attic"})
         follow.assert_not_awaited()
@@ -1868,7 +1869,7 @@ async def test_a_call_follows_a_hub_replaced_while_the_link_was_down(
     """PLT-04 re-review: a hub torn down by an unlocked reload while disconnected never connects again; the wait
     moves on to its replacement instead of sitting out the whole SERVICE_LINK_WAIT on it."""
     loop = asyncio.get_running_loop()
-    with patch.object(svc, "SERVICE_LINK_WAIT", 5.0):
+    with patch.object(common, "SERVICE_LINK_WAIT", 5.0):
         env.link.connect_errors = [ConnectionError("busy")] * 100_000
         env.link.drop_link()
         await hass.async_block_till_done()
@@ -1899,7 +1900,7 @@ async def test_a_wait_that_catches_the_entry_mid_reload_looks_again(
 ) -> None:
     """PLT-04 re-review: an entry briefly not loaded (a reload in progress) when the wait looks it up costs a step,
     not the call."""
-    real = svc._configurator
+    real = common._configurator
     lookups = [0]
 
     def configurator(hass_: HomeAssistant, entry_id: str) -> Any:
@@ -1908,7 +1909,7 @@ async def test_a_wait_that_catches_the_entry_mid_reload_looks_again(
             raise svc._validation("service_entry_not_loaded")
         return real(hass_, entry_id)
 
-    with patch.object(svc, "_configurator", configurator):
+    with patch.object(common, "_configurator", configurator):
         await call(
             hass,
             "set_room",
@@ -1926,7 +1927,7 @@ async def test_a_wait_gives_up_when_the_entry_stays_unloaded(
     hass: HomeAssistant, env: Env
 ) -> None:
     """PLT-04 re-review: an entry that never comes back within the wait is "not loaded", not a hang."""
-    real = svc._configurator
+    real = common._configurator
     lookups = [0]
 
     def configurator(hass_: HomeAssistant, entry_id: str) -> Any:
@@ -1936,9 +1937,9 @@ async def test_a_wait_gives_up_when_the_entry_stays_unloaded(
         return real(hass_, entry_id)
 
     with (
-        patch.object(svc, "_configurator", configurator),
-        patch.object(svc, "SERVICE_LINK_WAIT", 0.05),
-        patch.object(svc, "LINK_WAIT_SLICE", 0.01),
+        patch.object(common, "_configurator", configurator),
+        patch.object(common, "SERVICE_LINK_WAIT", 0.05),
+        patch.object(common, "LINK_WAIT_SLICE", 0.01),
         pytest.raises(ServiceValidationError) as exc,
     ):
         await call(
@@ -3047,7 +3048,7 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
         await reload_may_end.wait()
         reloads.append(entry_id)
 
-    with patch.object(svc, "async_follow_export", slow_follow):
+    with patch.object(common, "async_follow_export", slow_follow):
         task = asyncio.ensure_future(
             svc._run(hass, env.entry.entry_id, recorded_then_waits, needs_link=False)
         )
@@ -3077,7 +3078,7 @@ async def test_a_cancelled_call_that_recorded_nothing_does_not_reload(
 
     with (
         patch.object(
-            svc, "async_follow_export", wraps=svc.async_follow_export
+            common, "async_follow_export", wraps=common.async_follow_export
         ) as follow,
         pytest.raises(asyncio.CancelledError),
     ):
