@@ -472,6 +472,13 @@ Dependencies (hard unless marked *soft*):
   while locked, a locked load not marked unreachable (35); firmware-only properties held back until the supervised
   probe (on-air sweep A7 / C6), *Switches off at* from a reported remaining time (36); several rooms per load,
   `add_to_room` / `remove_from_room` (37). All unverified on air; the sweep has the checks.
+- **Wave 10 (briefs 38–42): done.** F4-4 key connections: a tunable-white light's colour temperature, slats,
+  lock-function keys (38); F4-6 the app's rows written back: scene values, `update_schedule`, removal clean-up, insert
+  and layout rows (39); F4-13 / F4-14 / P4-8 commissioning by the app's rules, the time keeper, Static OOB and the
+  HMAC algorithm (40; the specification's provisioning sample covers the CMAC algorithm only); F4-15 / F4-17 / F4-18
+  audit keys and Friend, `locate_node`, `approve_gateway_client`, a read-only firmware entity (41); F4-16 the app's
+  rules for blinds, room thermostats, detectors and battery devices, merged onto 38 with thermostats taking only the
+  temperature mode and detectors only the load's own mode (42). All unverified on air; the sweep has the checks.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -479,4 +486,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 38–67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 43–67 are TODO; the on-air sweep is the maintainer's.
