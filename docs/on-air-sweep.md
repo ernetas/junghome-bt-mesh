@@ -105,6 +105,7 @@ pass removed the markers of the checks that passed.
 | [A2](#a2--connect-time-order-and-the-15-minute-freshness) | Connect-time order, 15-minute freshness, location broadcast | any | nothing | — |
 | [A3](#a3--software-version-once-per-start-property-reads-queued-once) | Software version once per start, reads queued once | any | nothing | — |
 | [A4](#a4--passive-checks-over-every-capture) | Own echoes, proxy configuration checks, bounded disconnect | any | nothing | — |
+| [A5](#a5--inserts-and-key-layouts-from-the-adverts-f4-12) | Inserts and key layouts from the adverts | push-buttons | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -193,6 +194,28 @@ says connected and the state refresh is through (a few minutes), then do the lin
   *Another client uses Home Assistant's JUNG HOME address* repair, and the log no *disconnect … timed out* warning.
   Provoking them is not possible here (see F).
 - **Markers:** `custom_components/junghome_ble/jhmesh/client.py::ProxyClient._disconnect` (passive only).
+
+### A5 · Inserts and key layouts from the adverts (F4-12)
+
+- **Checks:** review-4 F4-12 — each push-button's insert and key layout as the node advertises them, the InsertId /
+  ButtonLayout Gets asked only of a push-button nothing told about, the device models and the keys' `position`
+  attribute, and whether the *insert does not match the export* repair fires on this installation.
+- **Needs:** the push-buttons. **Safety:** read-only (two Gets per push-button the export and adverts say nothing
+  about, once).
+- **Do:** `tools/mesh_poc.py scan` and compare each push-button's advertised function and layout with the export's
+  InsertId (`docs/hidden-features.md` §8 records the 2-gang `028A` advertising function 6, an extension); in Home
+  Assistant look at the push-button node devices' *model*, the buttons devices' *model* and an event entity's
+  `position`; open *Settings → Repairs*.
+- **Capture:** `--src <ha> --grep 'InsertId|ButtonLayout'` after a restart: Gets only to push-buttons without an
+  export InsertId and without an advert, each once.
+- **Pass:** the models name the inserts and layouts the app shows; positions match the keys; the repair appears only
+  for a push-button whose advert really differs from the export (then the export or the device is out of date).
+- **Markers:** `custom_components/junghome_ble/inserts.py::<module>`,
+  `custom_components/junghome_ble/jhmesh/devices.py::key_position`,
+  `custom_components/junghome_ble/strings.json::issues.insert_mismatch.description`,
+  `custom_components/junghome_ble/translations/en.json::issues.insert_mismatch.description`,
+  `net:uc:observecontrolswitchkeyassignment`, `prod:insert-type:generic-insert`, `prod:insert-type:no-insert`,
+  `prod:insert-type:not-supported`, `prod:insert-type:unknown`, `prop:0x0002`.
 
 ## B · Momentary control
 
@@ -651,7 +674,7 @@ spend.
 | **Detectors** (none): walking test, illuminance, continuous on / off, *update entity* | `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now`, `custom_components/junghome_ble/switch.py::JungHomeWalkingTest`, `custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance`, `custom_components/junghome_ble/sensor.py::JungHomeForcedOff`, `custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE` |
 | **Battery nodes** (none): keep-awake, how long a transmitter stays awake | `custom_components/junghome_ble/keep_awake.py::<module>` |
 | **Mesh 1.1 privacy**: the installation's devices do not use it | `custom_components/junghome_ble/config_flow.py::proxy_in_range`, `custom_components/junghome_ble/jhmesh/client.py::classify_proxy_advert`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon` |
-| **A spare device** (none): `add_device`, `remove_device`, `reset_pending_device`, the vault, its key refresh (D2, D11, D15, D20, W4-7) | `custom_components/junghome_ble/onboard.py::<module>`, `custom_components/junghome_ble/onboard.py::_keep_key`, `custom_components/junghome_ble/onboard.py::async_reset_pending_device`, `custom_components/junghome_ble/services.py::_reset_pending_device`, `custom_components/junghome_ble/jhmesh/provisioning.py::<module>`, `custom_components/junghome_ble/jhmesh/provisioning.py::provision`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_unconfirmed`, `custom_components/junghome_ble/vault_refresh.py::<module>`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config`, `custom_components/junghome_ble/strings.json::issues.pending_device.description`, `custom_components/junghome_ble/strings.json::issues.vault_unwritable.description`, `custom_components/junghome_ble/strings.json::issues.vault_key_refresh_lagging.description`, `custom_components/junghome_ble/strings.json::services.reset_pending_device.description`, `msg:op:8016`, `msg:op:8045`, `net:alloc:element-group` |
+| **A spare device** (none): `add_device`, `remove_device`, `reset_pending_device`, the vault, its key refresh (D2, D11, D15, D20, W4-7) | `custom_components/junghome_ble/onboard.py::<module>`, `custom_components/junghome_ble/onboard.py::_keep_key`, `custom_components/junghome_ble/onboard.py::async_reset_pending_device`, `custom_components/junghome_ble/services.py::_reset_pending_device`, `custom_components/junghome_ble/jhmesh/provisioning.py::<module>`, `mgmt:flow:checkformissingdevices`, `custom_components/junghome_ble/jhmesh/provisioning.py::provision`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node`, `custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_unconfirmed`, `custom_components/junghome_ble/vault_refresh.py::<module>`, `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config`, `custom_components/junghome_ble/strings.json::issues.pending_device.description`, `custom_components/junghome_ble/strings.json::issues.vault_unwritable.description`, `custom_components/junghome_ble/strings.json::issues.vault_key_refresh_lagging.description`, `custom_components/junghome_ble/strings.json::services.reset_pending_device.description`, `msg:op:8016`, `msg:op:8045`, `net:alloc:element-group` |
 | **A spare app install**: the provisioner identity option | `custom_components/junghome_ble/strings.json::options.step.init.data.provisioner_identity` |
 | **Another client on Home Assistant's address** (S I2): the CLI refuses Home Assistant's address by design, and a client starting below Home Assistant's counter would not even be detected; provoking it means two clients on one address, i.e. reused nonces. *Decision for the maintainer:* leave it simulated (the docs' *to check it, run `tools/mesh_poc.py` with `--source` set to Home Assistant's address* cannot be followed as written) | `custom_components/junghome_ble/strings.json::issues.address_shared.fix_flow.step.confirm.description`, `custom_components/junghome_ble/strings.json::issues.address_shared_again.fix_flow.step.confirm.description` |
 | **Home Assistant ahead of the mesh's IV index**: never happens on its own; not to be provoked | `custom_components/junghome_ble/strings.json::issues.iv_index_ahead.fix_flow.step.confirm.description` |
