@@ -102,6 +102,8 @@ class ProxyNode(SimNode):
         self._out: list[tuple[list[bytes], Key | None]] = []
         self._drain: asyncio.TimerHandle | None = None
         self.filter_statuses = 0
+        # the copies `Quirks.proxy_forwards_every_copy` handed on to the client
+        self.repeats_forwarded = 0
 
     # ------------------------------------------------------------------ the link
     def connect(self, mtu: int = 69) -> SimGattClient:
@@ -123,6 +125,16 @@ class ProxyNode(SimNode):
         self.closed(link)
         if link.disconnected_callback is not None:
             link.disconnected_callback(link)
+
+    def stop(self) -> list[asyncio.Task[Any]]:
+        """The node's timers and tasks (`SimNode.stop`), its link (closed without the callback) and its queue."""
+        if self.link is not None:
+            self.link.is_connected = False
+            self.closed(self.link)
+        if self._drain is not None:
+            self._drain.cancel()
+            self._drain = None
+        return super().stop()
 
     def closed(self, link: SimGattClient) -> None:
         if link is self.link:
@@ -275,6 +287,7 @@ class ProxyNode(SimNode):
             and net.dst not in self.element_set
             and net.src not in self.element_set
         ):
+            self.repeats_forwarded += 1
             self._forward_to_client(net, nk)
 
     def _forward_to_client(self, net: NetworkPDU, nk: NetKeyMaterial) -> None:

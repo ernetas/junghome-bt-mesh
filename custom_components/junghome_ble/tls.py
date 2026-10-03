@@ -146,7 +146,6 @@ async def async_read_mesh_fingerprint(hub: JungHomeHub) -> str | None:
                 timeout=MESH_READ_TIMEOUT,
                 retries=MESH_READ_ATTEMPTS,
                 expect_cid=M.JUNG_CID,
-                quiet=True,
                 match=lambda m: m.params[:2] == key,
             )
         except (TimeoutError, ConnectionError, OSError) as err:

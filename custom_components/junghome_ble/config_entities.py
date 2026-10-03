@@ -1399,7 +1399,6 @@ class PropertyReader:
                 timeout=const.PROPERTY_READ_TIMEOUT,
                 retries=PROPERTY_READ_RETRIES,
                 expect_cid=cid,
-                quiet=True,
                 match=match,
             )
         except TimeoutError:
@@ -1527,7 +1526,6 @@ class PropertyReader:
                 timeout=const.PROPERTY_READ_TIMEOUT,
                 retries=PROPERTY_READ_RETRIES,
                 expect_cid=M.JUNG_CID,
-                quiet=True,
                 match=partial(is_status_of, spec.id),
             )
         except TimeoutError:
@@ -1623,7 +1621,6 @@ class PropertyReader:
                 state.status,
                 timeout=const.PROPERTY_READ_TIMEOUT,
                 retries=PROPERTY_READ_RETRIES,
-                quiet=True,
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer the Get of its %s", addr, state.name)

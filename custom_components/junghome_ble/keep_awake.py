@@ -129,7 +129,6 @@ class KeepAwake:
                     timeout=KEEP_AWAKE_TIMEOUT,
                     retries=1,
                     expect_cid=M.JUNG_CID,
-                    quiet=True,
                     match=_is_layout,
                 )
             except (TimeoutError, ConnectionError, OSError) as err:

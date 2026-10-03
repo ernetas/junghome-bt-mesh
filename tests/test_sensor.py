@@ -63,7 +63,14 @@ from custom_components.junghome_ble.sensor import (
 )
 
 from . import property_helpers as ph
-from .conftest import PROXY_ADDRESS, FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import (
+    PROXY_ADDRESS,
+    FakeProxyLink,
+    settle,
+    setup_entry,
+    wait_for_link,
+    wait_until,
+)
 from .helpers import (
     OUR_ADDRESS,
     PROPERTY_ENERGY_SINCE_TURN_ON,
@@ -255,7 +262,7 @@ async def test_installed_sensor_is_read_once_from_the_meter_element(
     assert entry is not None
     assert entry.entity_category is EntityCategory.DIAGNOSTIC
     assert entry.disabled_by is None
-    await ph.wait_until(hass, lambda: (SOCKET_SENSOR, PROPERTY_INSTALLED) in mesh.gets)
+    await wait_until(hass, lambda: (SOCKET_SENSOR, PROPERTY_INSTALLED) in mesh.gets)
     await settle(hass, 50)
     state = hass.states.get(eid)
     assert state is not None
@@ -290,7 +297,7 @@ async def test_wear_counters_are_read_from_the_load(
     mesh.values[SOCKET, 0x1010] = (79).to_bytes(4, "little")
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
-    await ph.wait_until(hass, lambda: (SOCKET, 0x1010) in mesh.gets)
+    await wait_until(hass, lambda: (SOCKET, 0x1010) in mesh.gets)
     await settle(hass, 50)
     switching = hass.states.get(
         entity_id(hass, "sensor", f"{UID_SOCKET}-switching_cycles")
@@ -644,7 +651,7 @@ async def test_illuminance_falls_back_to_the_brightness_property(
     gets = len(mesh.gets)
     entity._poll_brightness(None)
     entity._poll_brightness(None)
-    await ph.wait_until(hass, entity._brightness_read.done)
+    await wait_until(hass, entity._brightness_read.done)
     assert mesh.gets[gets:] == [(DETECTOR_PRESENCE, PID_BRIGHTNESS)] * 3
     # and nothing without a link
     mock_bluetooth_env["infos"] = []
@@ -685,7 +692,7 @@ async def test_forced_off_sensor_reads_the_detector(
     eid = entity_id(hass, "sensor", UID_FORCED_OFF)
     assert eid == "sensor.wc_motion_detector_1_m_0500_continuous_on_off"
     # read from the detector element, once the queue gets there
-    await ph.wait_until(hass, lambda: hass.states.get(eid).state != STATE_UNKNOWN)
+    await wait_until(hass, lambda: hass.states.get(eid).state != STATE_UNKNOWN)
     assert (DETECTOR_MOTION, PID_FORCED_OFF) in mesh.gets
     state = hass.states.get(eid)
     assert state.state == "inactive"
@@ -805,9 +812,9 @@ async def test_node_versions_survive_a_restart_and_go_with_the_entry(
     key = f"{DOMAIN}.{init_detectors.entry_id}.node_versions"
     hub = init_detectors.runtime_data
     # the link-up read of the nodes' information is through (its last Get: the time role), and saved
-    await ph.wait_until(hass, lambda: "time_role" in hub.node_info(RELAY_MOTION))
+    await wait_until(hass, lambda: "time_role" in hub.node_info(RELAY_MOTION))
     fake_link.inject(RELAY_MOTION, OUR_ADDRESS, version_status(b"01040000"))
-    await ph.wait_until(
+    await wait_until(
         hass,
         lambda: (
             "software_version"

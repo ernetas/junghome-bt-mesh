@@ -17,7 +17,7 @@ import ipaddress
 import logging
 import re
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, NoReturn
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntryState
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
@@ -94,6 +94,7 @@ from .const import (
     ISSUE_SEQ_STORE_UNWRITABLE,
     ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_UNKNOWN_NODES,
+    ISSUE_UNKNOWN_NODES_GATEWAY,
     ISSUE_VAULT_KEY_REFRESH,
     KEEP_ALIVE_ATTEMPTS,
     KEEP_ALIVE_TIMEOUT,
@@ -1043,6 +1044,88 @@ async def async_apply_followed_key_refresh(
     cdb.net_key_refresh.pop(NET_KEY_INDEX, None)
 
 
+@dataclass
+class KnownMesh:
+    """What Bluetooth discovery recognises an entry's mesh by (review-4 H4-4), beyond the entry's unique id.
+
+    `network_ids`: the export's keys (both of an export written mid key refresh) and the key of a refresh the hub
+    follows, whatever its phase — mid refresh, and after one completed while the hub was not looking at the unique
+    id, the proxies advertise a Network ID the unique id does not hold. `macs`: the export's nodes, which advertise
+    from their public MAC (`jhmesh.advert.mac_from_uuid`) whatever key they hold — a node of this mesh after a key
+    refresh the export lacks is still this mesh, and a new entry for it could only end at `mesh_already_configured`.
+    Unverified on air (no key refresh on this installation); the MAC is the node UUID on every node here.
+    """
+
+    network_ids: set[bytes]
+    macs: frozenset[str]
+
+
+# `KnownMesh` by entry id: every setup records it (`__init__.async_setup_entry`, before the not-ready check), the hub
+# adds a followed key as the refresh moves (`JungHomeHub._on_key_refresh`), discovery loads the export of an entry
+# that never got that far once (`config_flow.async_known_mesh_of`). A reconfigure and the removal forget it.
+KNOWN_MESHES: HassKey[dict[str, KnownMesh]] = HassKey(f"{DOMAIN}_known_meshes")
+
+
+def node_macs(cdb: CDB) -> frozenset[str]:
+    """Return the public MACs the export's nodes advertise from (upper case); a node UUID of another shape has none."""
+    return frozenset(
+        mac for n in cdb.nodes if (mac := mac_from_uuid(n.uuid)) is not None
+    )
+
+
+async def async_known_mesh(hass: HomeAssistant, cdb: CDB, unicast: int) -> KnownMesh:
+    """Return what discovery knows `cdb`'s mesh by: its keys, the stored followed refresh's key, its nodes' MACs.
+
+    The followed refresh is the one a hub at address `unicast` reads (`_stored_key_refresh`), proven or not: an
+    unproven key only stops discovery offering that Network ID, it is never used to transmit.
+    """
+    ids = {nk.network_id for nk in cdb.rx_net_keys(NET_KEY_INDEX)}
+    data = await seq_store(hass, cdb).async_load()
+    if (stored := _stored_key_refresh(data, f"{unicast:04X}")) is not None:
+        ids.add(
+            NetKeyMaterial.derive(KeyRefreshRecord.from_stored(stored).key).network_id
+        )
+    return KnownMesh(ids, node_macs(cdb))
+
+
+def remember_known_mesh(hass: HomeAssistant, entry_id: str, known: KnownMesh) -> None:
+    """Record what discovery knows the entry's mesh by (`KNOWN_MESHES`), in place of anything recorded before."""
+    hass.data.setdefault(KNOWN_MESHES, {})[entry_id] = known
+
+
+def forget_known_mesh(hass: HomeAssistant, entry_id: str) -> None:
+    """Drop the entry's `KNOWN_MESHES` record: its export changed or it is gone."""
+    hass.data.get(KNOWN_MESHES, {}).pop(entry_id, None)
+
+
+async def async_release_network_id(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    network_id: str,
+    *,
+    keep_flow: str | None = None,
+) -> None:
+    """Free `network_id` for `entry`'s unique id: no discovery flow of it left, no ignored entry holding it (H4-4).
+
+    After a key refresh the proxies advertise the new Network ID before the entry's unique id holds it: a discovery
+    flow it started is the entry's own mesh, and an entry the user made by *Ignore* on that flow would make the
+    unique-id update collide (Home Assistant logs an error and raises a core repair). `keep_flow` is the flow
+    asking (a reconfigure), which must not abort itself. Unverified on air.
+    """
+    for flow in hass.config_entries.flow.async_progress_by_handler(
+        DOMAIN, include_uninitialized=True, match_context={"unique_id": network_id}
+    ):
+        if flow["flow_id"] != keep_flow:
+            hass.config_entries.flow.async_abort(flow["flow_id"])
+    holder = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, network_id)
+    if holder is not None and holder.source == SOURCE_IGNORE:
+        _LOGGER.info(
+            "Removing the ignored discovery of %s's mesh: it advertised the mesh's new network key",
+            entry.title,
+        )
+        await hass.config_entries.async_remove(holder.entry_id)
+
+
 def next_utc_offset_change(now: datetime) -> datetime | None:
     """Return the first moment (UTC) after `now` at which `now`'s time zone changes its UTC offset, within a year.
 
@@ -1287,6 +1370,9 @@ class HAState(LocalState):
         self._floor_store = floor
         # (tx IV index, seq) of the floor write last asked for: another is asked SEQ_FLOOR_EVERY on, or by a stall
         self._floor_asked: tuple[int, int] | None = None
+        # `_restart_point` per copy (allow_clean: True = the store, False = the backup): the `written` object it was
+        # read from (kept, so its id cannot be reused by another), our address then, and the point (None: no record)
+        self._restart_points: dict[bool, tuple[Any, int, tuple[int, int] | None]] = {}
         hass = store.hass
         hass.data.setdefault(SEQ_OWNERS, {})[key] = self
         # a backup being taken right now (`backup.async_pre_backup`): its mark goes into every record this one
@@ -1306,6 +1392,8 @@ class HAState(LocalState):
         # monotonic time reserve_seq() first refused since the last one that succeeded; told to `stall_listener`
         # (the hub: it times `report_unwritable`, and cancels that timer when it stops)
         self._stalled_since: float | None = None
+        # seconds of the stalls that ended (`held_back_total`: the link history's per-link share)
+        self._stalled_before = 0.0
         self.stall_listener: Callable[[], None] | None = None
         # `seq_store_unwritable` was raised and not cleared since (the hub's stop clears it too, `_clear_issues`)
         self._stall_issue_open = False
@@ -1465,13 +1553,25 @@ class HAState(LocalState):
         store only: a restore from the backup always adds it, as `JungHomeHub.async_create` reads it (the copy is
         written with `clean: False`, `_snapshot`). Any other record gets `SEQ_RESTART_MARGIN`, exactly as a real
         restart's `LocalState.load()` would add.
+
+        Read once per written content (review-4 R4-9): checking the record parses the whole replay list, and
+        `reserve_seq` asks for every PDU sent — a quarter of a millisecond with 600 sources, twice. A write never
+        edits what landed before, it replaces `written` (`SeqStore._async_write_data`, the setup's own
+        `store.written = data`), so the object it is read from tells whether the point still holds.
         """
-        record = _usable_record(written, f"{self.src:04X}")
-        if record is None:
-            return self.tx_iv_index, 0
-        tx, seq = _tx_rank(record)
-        clean = allow_clean and bool(record.get("clean"))
-        return tx, seq + (0 if clean else SEQ_RESTART_MARGIN)
+        cached = self._restart_points.get(allow_clean)
+        if cached is not None and cached[0] is written and cached[1] == self.src:
+            point = cached[2]
+        else:
+            record = _usable_record(written, f"{self.src:04X}")
+            if record is None:
+                point = None
+            else:
+                tx, seq = _tx_rank(record)
+                clean = allow_clean and bool(record.get("clean"))
+                point = (tx, seq + (0 if clean else SEQ_RESTART_MARGIN))
+            self._restart_points[allow_clean] = (written, self.src, point)
+        return (self.tx_iv_index, 0) if point is None else point
 
     def reserve_seq(self, count: int) -> int:
         """Refuse to hand out numbers a restart could not tell were already used (HAC-05).
@@ -1536,7 +1636,7 @@ class HAState(LocalState):
         if self._stalled_since is None or not self._owns_the_store():
             return
         if not self._held_back(1):
-            self._stalled_since = None
+            self._close_stall()
             return
         path, error = self._stall_cause()
         _LOGGER.error(
@@ -1589,7 +1689,7 @@ class HAState(LocalState):
                 "Sequence-number store written again after %.0f s: sending resumes",
                 time.monotonic() - self._stalled_since,
             )
-        self._stalled_since = None
+        self._close_stall()
         if self._stall_issue_open and self.entry_id is not None:
             ir.async_delete_issue(
                 self._store.hass,
@@ -1597,6 +1697,17 @@ class HAState(LocalState):
                 f"{ISSUE_SEQ_STORE_UNWRITABLE}_{self.entry_id}",
             )
         self._stall_issue_open = False
+
+    def _close_stall(self) -> None:
+        """Add the stall that ends now to `held_back_total`."""
+        if self._stalled_since is not None:
+            self._stalled_before += time.monotonic() - self._stalled_since
+        self._stalled_since = None
+
+    @property
+    def held_back_total(self) -> float:
+        """Seconds sends were held back in all, the running stall included (the hub's link history takes differences)."""
+        return self._stalled_before + (self.stalled_for or 0.0)
 
     @property
     def stalled_for(self) -> float | None:
@@ -1939,6 +2050,27 @@ class LinkEnd:
 
 # what `JungHomeHub._link_end` holds while no link is up: before the first, and while one is being set up
 NO_LINK = LinkEnd("no link yet", False, 0.0)
+LINK_HISTORY = 20  # links the diagnostics describe (`JungHomeHub.link_history`)
+
+
+@dataclass(frozen=True)
+class LinkRecord:
+    """One past link, for the diagnostics (review-4 R I-9: nothing told why the links of the last hours ended).
+
+    The proxy is named by its mesh address only, never by its Bluetooth MAC.
+    """
+
+    proxy_node: (
+        int | None
+    )  # the proxy's unicast address, None when it never named itself
+    ended: float  # monotonic time the link ended
+    lasted: float  # seconds the link was up
+    reason: str
+    penalise: bool | None  # as in `LinkEnd`
+    refresh: (
+        float | None
+    )  # seconds from link-up to the end of its state refresh, None when it never got through
+    held_back: float  # seconds sends were held back for the sequence-number store during the link
 
 
 class JungHomeHub:
@@ -2108,6 +2240,11 @@ class JungHomeHub:
         # proxy MAC → its links in a row that ended within SHORT_LINK (`_judge_link`)
         self._short_links: dict[str, int] = {}
         self._link_loss_listeners: list[Callable[[LinkEnd], None]] = []
+        # the last LINK_HISTORY links, oldest first (`_link_ended`); for the current one: how long its state refresh
+        # took (None until it is through) and the store's `held_back_total` when it came up
+        self.link_history: deque[LinkRecord] = deque(maxlen=LINK_HISTORY)
+        self._link_refresh: float | None = None
+        self._held_back_at_link = 0.0
         self._probe_link = (
             asyncio.Event()
         )  # a command went unanswered: the watchdog asks the proxy now
@@ -2536,13 +2673,13 @@ class JungHomeHub:
         Those heard within PROXY_ADVERT_MAX_AGE come first (review-3 C5): a node switched off keeps its last,
         possibly strongest, advertisement in the history for a long time, and connecting to it costs a timeout.
         """
-        out = []
-        for info in bluetooth.async_discovered_service_info(
-            self.hass, connectable=True
-        ):
-            sd = info.service_data.get(MESH_PROXY_SERVICE)
-            if sd and self.proxy.classify_service_data(bytes(sd)):
-                out.append(info)
+        out = [
+            info
+            for info in bluetooth.async_discovered_service_info(
+                self.hass, connectable=True
+            )
+            if self._ours(info)
+        ]
         now = bluetooth.MONOTONIC_TIME()
         return sorted(
             out,
@@ -2555,12 +2692,22 @@ class JungHomeHub:
         info: bluetooth.BluetoothServiceInfoBleak,
         change: bluetooth.BluetoothChange,
     ) -> None:
-        if not self.proxy.connected:
-            self._link_lost.set()  # wake the loop: a candidate may have appeared
+        if not self.proxy.connected and self._ours(info):
+            self._link_lost.set()  # wake the loop: a candidate appeared
         if (node := self.node_for_address(info.address)) is not None:
             self.node_rssi[node.unicast] = info.rssi
             self._signal_node(node.unicast)
         self._check_unknown_node(info)
+
+    def _ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
+        """Whether a proxy advert is of *this* network (Network ID or one of our nodes' Node Identity).
+
+        Only such an advert wakes the connection loop while unlinked (review-4 R4-8): every other network's proxies
+        in range woke it before, each wake-up a `visible_proxies` pass over every advert HA holds, to find nothing.
+        """
+        if not (sd := info.service_data.get(MESH_PROXY_SERVICE)):
+            return False
+        return self.proxy.classify_service_data(bytes(sd)) is not None
 
     def node_for_address(self, address: str) -> Node | None:
         """Return the node advertising from Bluetooth `address` (its public MAC); None when the export has no such node."""
@@ -2580,8 +2727,7 @@ class JungHomeHub:
             return
         if len(address) != 17 or address.count(":") != 5:
             return
-        sd = info.service_data.get(MESH_PROXY_SERVICE)
-        if not sd or not self.proxy.classify_service_data(bytes(sd)):
+        if not self._ours(info):
             return
         self.unknown_nodes[address] = parse_manufacturer_data(info.manufacturer_data)
         _LOGGER.warning(
@@ -2648,29 +2794,31 @@ class JungHomeHub:
         return api_for_entry(self.hass, self.entry)
 
     def _report_unknown_nodes(self) -> None:
+        """Raise (or update) the `unknown_nodes` repair; an entry from the gateway gets the wording that names it.
+
+        Two translation keys rather than a sentence in a placeholder (review-4 H4-8): translators get the whole
+        text, and the gateway variant's only extra placeholder is its `host`.
+        """
         gateway = self._gateway_for_refresh()
+        placeholders = {
+            "title": self.entry.title,
+            "count": str(len(self.unknown_nodes)),
+            "devices": ", ".join(
+                self._describe_unknown(mac) for mac in sorted(self.unknown_nodes)
+            ),
+        }
+        key = ISSUE_UNKNOWN_NODES
+        if gateway is not None:
+            key = ISSUE_UNKNOWN_NODES_GATEWAY
+            placeholders["host"] = gateway.host
         ir.async_create_issue(
             self.hass,
             DOMAIN,
             issue_id(self.entry, ISSUE_UNKNOWN_NODES),
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_UNKNOWN_NODES,
-            translation_placeholders={
-                "title": self.entry.title,
-                "count": str(len(self.unknown_nodes)),
-                "devices": ", ".join(
-                    self._describe_unknown(mac) for mac in sorted(self.unknown_nodes)
-                ),
-                "gateway": (
-                    f" Home Assistant also asks the gateway {gateway.host} for its current export and reloads"
-                    " by itself when that lists them; if this issue stays, the gateway's export does not know"
-                    " them either — open the JUNG HOME app once while it is connected to the gateway (it uploads"
-                    " its project), or export from the app."
-                    if gateway is not None
-                    else ""
-                ),
-            },
+            translation_key=key,
+            translation_placeholders=placeholders,
         )
 
     async def async_follow_gateway(self) -> bool:
@@ -2824,7 +2972,6 @@ class JungHomeHub:
                 M.VENDOR_PROPERTY_STATUS_OPCODES["manufacturer"],
                 expect_cid=M.JUNG_CID,
                 retries=1,
-                quiet=True,
                 match=lambda m: m.params[:2] == key,
             )
         except (TimeoutError, ConnectionError):
@@ -3110,7 +3257,6 @@ class JungHomeHub:
                         M.GEN_ONOFF_STATUS,
                         timeout=KEEP_ALIVE_TIMEOUT,
                         retries=1,
-                        quiet=True,
                     )
                 )
             except TimeoutError:
@@ -3205,6 +3351,8 @@ class JungHomeHub:
         self._previous_link = self._link_end or NO_LINK
         self._link_end = None
         self._link_since = time.monotonic()
+        self._link_refresh = None
+        self._held_back_at_link = self.state.held_back_total
         self._connect_failure_logged = False
         self.proxy_address = info.address
         # silence while the link was down was the link's fault, not the nodes': every node gets a full timeout
@@ -3352,15 +3500,25 @@ class JungHomeHub:
         self._link_lost.set()  # the watchdog, when another task dropped the link
 
     def _link_ended(self, reason: str, penalise: bool | None) -> None:
-        """Handle the end of a link, whoever ended it: record why, start the grace, tell the listeners.
+        """Handle the end of a link, whoever ended it: record why (`link_history`), start the grace, tell the listeners.
 
         Nothing to do when no link is up: one lost while `attach()` was still settling is a failed connection
         (`_connect_to`), and a link ends once however many paths notice.
         """
         if self._link_end is not None:
             return
-        end = self._link_end = LinkEnd(
-            reason, penalise, time.monotonic() - self._link_since
+        now = time.monotonic()
+        end = self._link_end = LinkEnd(reason, penalise, now - self._link_since)
+        self.link_history.append(
+            LinkRecord(
+                self.proxy_node,
+                now,
+                end.lasted,
+                reason,
+                penalise,
+                self._link_refresh,
+                self.state.held_back_total - self._held_back_at_link,
+            )
         )
         self._cancel_refresh()
         self._start_grace()
@@ -3429,6 +3587,7 @@ class JungHomeHub:
         if not await self._refresh_all():
             return
         # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
+        self._link_refresh = time.monotonic() - self._link_since
         self._set_link_state(LINK_CONNECTED)
         await self._poll_energy()
         await self._backfill_energy_history()
@@ -3495,7 +3654,6 @@ class JungHomeHub:
                 M.health_fault_get(),
                 M.HEALTH_FAULT_STATUS,
                 retries=REFRESH_RETRIES,
-                quiet=True,
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer its Health Fault Get", addr)
@@ -3559,7 +3717,6 @@ class JungHomeHub:
                 M.scene_get(),
                 M.SCENE_STATUS,
                 retries=REFRESH_RETRIES,
-                quiet=True,
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer its Scene Get", addr)
@@ -3631,7 +3788,6 @@ class JungHomeHub:
                 V.SCENE_ACTION_SETUP_STATUS,
                 expect_cid=M.JUNG_CID,
                 retries=REFRESH_RETRIES,
-                quiet=True,
                 match=answers(V.SCENE_LIST),
             )
             listed = V.decode_scene_action_status(reply.params).scenes or ()
@@ -3647,7 +3803,6 @@ class JungHomeHub:
                     V.SCENE_ACTION_SETUP_STATUS,
                     expect_cid=M.JUNG_CID,
                     retries=REFRESH_RETRIES,
-                    quiet=True,
                     match=answers(scene),
                 )
                 status = V.decode_scene_action_status(reply.params)
@@ -3938,7 +4093,7 @@ class JungHomeHub:
         """Ask one load for its state now, with the connect-time refresh's Get for its kind; best effort.
 
         The reply lands in `states` through `_on_message`, as every status does. A lost link is left for the
-        caller's next send to report. `quiet`: one attempt, its silence logged at DEBUG (the periodic re-probe of
+        caller's next send to report. `quiet`: one attempt, its miss no verdict on the node (the periodic re-probe of
         a node already known to be unreachable).
         """
         try:
@@ -3958,7 +4113,6 @@ class JungHomeHub:
                 get(),
                 status,
                 retries=1 if quiet else REFRESH_RETRIES,
-                quiet=quiet,
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer its state Get", addr)
@@ -3975,7 +4129,7 @@ class JungHomeHub:
         the old state at rest. `kind` picks the Get (`STATE_GETS`, `level` for a blind or thermostat).
 
         At most SETTLE_ATTEMPTS Gets within SETTLE_TIMEOUT: a load that does not answer at all costs one deadline,
-        not a full timeout per Get, and its silence is logged at DEBUG (`quiet`) — the caller reports it.
+        not a full timeout per Get, and its silence is logged at DEBUG (as every unanswered attempt) — the caller reports it.
         """
         get, status = STATE_GETS.get(kind, ONOFF_GET)
         try:
@@ -3984,9 +4138,7 @@ class JungHomeHub:
                     if attempt:
                         await asyncio.sleep(SETTLE_PAUSE)
                     try:
-                        await self.proxy.request(
-                            addr, get(), status, retries=1, quiet=True
-                        )
+                        await self.proxy.request(addr, get(), status, retries=1)
                     except TimeoutError:
                         continue
                     st = self.states.get(addr)
@@ -4038,7 +4190,7 @@ class JungHomeHub:
         for pid in meter_readings(load):
             try:
                 await self.proxy.request(
-                    addr, M.sensor_get(pid), M.SENSOR_STATUS, retries=1, quiet=True
+                    addr, M.sensor_get(pid), M.SENSOR_STATUS, retries=1
                 )
             except TimeoutError:
                 _LOGGER.debug(
@@ -4062,7 +4214,6 @@ class JungHomeHub:
                         M.generic_property_get(read.server, read.pid),
                         SIG_PROPERTY_STATUS_BY_SERVER[read.server],
                         retries=1,
-                        quiet=True,  # a missed read waits for the next round; not worth a WARNING
                     )
                 except TimeoutError:
                     _LOGGER.debug(
@@ -4096,7 +4247,6 @@ class JungHomeHub:
                 M.generic_property_set("admin", pid, codec.encode(0)),
                 M.GEN_ADMIN_PROP_STATUS,
                 retries=1,
-                quiet=True,  # the read-back below decides
                 match=for_pid,
             )
         except TimeoutError:
@@ -4693,14 +4843,8 @@ class JungHomeHub:
         device = self.devices.by_address.get(addr)
         if isinstance(device, Light):
             return addr if device.kind == "ctl" else None
-        return next(
-            (
-                light.address
-                for light in self.devices.lights
-                if light.temperature_address == addr
-            ),
-            None,
-        )
+        light = self.devices.by_temperature(addr)
+        return None if light is None else light.address
 
     @register_status_handler(M.GEN_LEVEL_STATUS)
     def _on_level_status(self, m: AccessMessage, p: bytes) -> None:
@@ -5385,12 +5529,29 @@ class JungHomeHub:
         new key's: the entry's unique id follows, so discovery keeps recognising this mesh. The export keeps the old key until it is fetched again; every setup puts the
         followed one in its place (`async_apply_followed_key_refresh`). Every move — a proven Phase 1 included —
         takes the devices Home Assistant added along as far as it is proven (`vault_refresh.py`, review-4 D11).
+
+        Review-4 H4-4: from the first move on, discovery recognises the new key's Network ID as this mesh
+        (`KNOWN_MESHES`); at completion a discovery flow it started before is aborted and an ignored entry holding
+        it removed before the unique id moves (`async_release_network_id`).
         """
         ir.async_delete_issue(
             self.hass, DOMAIN, issue_id(self.entry, ISSUE_KEY_REFRESH)
         )
         self.vault_refresh.schedule()
+        if (
+            known := self.hass.data.get(KNOWN_MESHES, {}).get(self.entry.entry_id)
+        ) is not None:
+            known.network_ids.add(key.network_id)
         if phase == 0 and self.entry.unique_id != (network_id := key.network_id.hex()):
+            # eager: without an ignored entry to remove, the unique id has moved when this returns
+            self.hass.async_create_task(
+                self._async_follow_network_id(network_id), eager_start=True
+            )
+
+    async def _async_follow_network_id(self, network_id: str) -> None:
+        """Move the entry's unique id to the completed refresh's Network ID, once nothing else holds it."""
+        await async_release_network_id(self.hass, self.entry, network_id)
+        if self.hass.config_entries.async_get_entry(self.entry.entry_id) is self.entry:
             self.hass.config_entries.async_update_entry(
                 self.entry, unique_id=network_id
             )

@@ -11,6 +11,7 @@ Assistant without any connectable Bluetooth scanner raises `bluetooth_unavailabl
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -358,7 +359,7 @@ async def test_link_state_follows_the_link_and_bluetooth(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """connecting → updating (the connect-time refresh) → connected; a lost link, a search, no Bluetooth at all (a
-    repair issue), a failed attempt; the sensor is a diagnostic, off by default, and shows each of them."""
+    repair issue), a failed attempt; the sensor is a diagnostic, and shows each of them."""
     registry = er.async_get(hass)
     registry.async_get_or_create("sensor", DOMAIN, UID_LINK_STATE, disabled_by=None)
     seen: list[str] = []
@@ -415,12 +416,13 @@ async def test_link_state_follows_the_link_and_bluetooth(
     assert find_issue(hass, ISSUE_BLUETOOTH_UNAVAILABLE) is None
 
 
-async def test_the_link_state_sensor_is_a_hidden_diagnostic(
+async def test_the_link_state_sensor_is_an_enabled_diagnostic(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
+    """Review-4 H I-5: the mesh's visible health indicator is on by default (new registrations)."""
     entry = er.async_get(hass).async_get(entity_id(hass, "sensor", UID_LINK_STATE))
     assert entry is not None
-    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert entry.disabled_by is None
     assert entry.entity_category is not None
     assert entry.translation_key == "link_state"
 
@@ -441,3 +443,39 @@ async def test_the_wait_for_a_connection_is_bleak_retry_connectors(
         await hub._connect_to(info)
     assert establish.call_args.kwargs["max_attempts"] == 2
     assert "timeout" not in establish.call_args.kwargs
+
+
+async def test_an_unreachable_load_logs_one_line_and_no_library_warning(
+    hass: HomeAssistant,
+    fast_requests: None,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 H4-7: the library logged a WARNING per unanswered attempt, so every dead load wrote several lines at
+    each hub start. The attempts are DEBUG now; the hub's one WARNING per node that goes unreachable stays."""
+    caplog.set_level(logging.DEBUG, logger="jhmesh")
+    await setup_entry(
+        hass, mock_config_entry
+    )  # the fake answers no state Get: every load stays silent
+    await wait_for_link(hass, mock_config_entry)
+    hub = hub_of(mock_config_entry)
+    await wait_until(hass, lambda: bool(hub.unreachable), what="a verdict")
+    await settle(hass)
+    attempts = [
+        r
+        for r in caplog.records
+        if r.name == "jhmesh" and r.getMessage().startswith("no response from")
+    ]
+    assert attempts  # the attempts are still there to read, at DEBUG
+    assert {r.levelno for r in attempts} == {logging.DEBUG}
+    assert not [
+        r for r in caplog.records if r.name == "jhmesh" and r.levelno >= logging.WARNING
+    ]
+    verdicts = [
+        r for r in caplog.records if "did not answer a request" in r.getMessage()
+    ]
+    assert {r.levelno for r in verdicts} == {logging.WARNING}
+    assert len(verdicts) == len(hub.unreachable)  # one line per node

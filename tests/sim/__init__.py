@@ -13,7 +13,10 @@ Home-Assistant-free (it imports `jhmesh` and pytest only), so the library tests 
   properties, Scenes;
 - `proxy`: the GATT proxy bearer, filter and beacons, and the bleak-like client `ProxyClient.attach` takes;
 - `mesh`: the whole network, network-wide procedures (IV Update, a provisioner's key refresh) and the invariants
-  checked at teardown.
+  checked at teardown; `Mesh.close` clears what it scheduled from a loop that outlives it (Home Assistant's);
+- `synthetic`: the fixture network grown to a few hundred nodes on a relay tree, for the hub's soak (`tests/soak`).
+
+The integration's tests put the hub on it through `tests/conftest.py` (`sim_mesh`, `sim_link`).
 """
 
 from .clock import VirtualTimeLoop, patch_monotonic, run

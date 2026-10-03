@@ -515,7 +515,6 @@ async def cmd_scene_actions(args: argparse.Namespace) -> None:
                     expect_cid=M.JUNG_CID,
                     timeout=args.timeout,
                     retries=1,
-                    quiet=True,
                 )
             except TimeoutError:
                 print(f"  scene {n}: no answer")
@@ -557,7 +556,6 @@ async def cmd_sched(args: argparse.Namespace) -> None:
                         expect_cid=M.JUNG_CID,
                         timeout=args.timeout,
                         retries=1,
-                        quiet=True,
                     )
                 except TimeoutError:
                     print(f"  slot {i} {V.SUB_NAMES[sub]}: no answer")
@@ -895,7 +893,6 @@ async def cmd_prop_lists(args: argparse.Namespace) -> None:
                     expect_cid=req.expect_cid,
                     retries=1,
                     timeout=args.timeout,
-                    quiet=True,
                 )
             except TimeoutError:
                 print(f"  {req.server:16s} no answer")
@@ -910,7 +907,6 @@ async def cmd_prop_lists(args: argparse.Namespace) -> None:
                     M.SENSOR_DESCRIPTOR_STATUS,
                     retries=1,
                     timeout=args.timeout,
-                    quiet=True,
                 )
             except TimeoutError:
                 print("  sensor           no descriptor answer")

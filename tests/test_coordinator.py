@@ -7,10 +7,11 @@ import base64
 import copy
 import json
 import logging
+import re
 import shutil
 import time
 from collections import defaultdict
-from collections.abc import Awaitable, Callable, Generator
+from collections.abc import Awaitable, Callable, Generator, Mapping
 from datetime import UTC, datetime, timedelta, timezone
 from itertools import pairwise
 from pathlib import Path
@@ -24,6 +25,7 @@ from homeassistant.components.bluetooth import BluetoothChange
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
     EVENT_STATE_CHANGED,
+    EVENT_STATE_REPORTED,
     STATE_OFF,
     STATE_ON,
     STATE_UNAVAILABLE,
@@ -65,6 +67,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_KEY_REFRESH,
     ISSUE_PDUS_DROPPED,
     ISSUE_UNKNOWN_NODES,
+    ISSUE_UNKNOWN_NODES_GATEWAY,
     KEEP_ALIVE_TIMEOUT,
     LINK_IDLE_TIMEOUT,
     OPTION_CLICK_DELAY,
@@ -612,6 +615,80 @@ async def test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement(
         mock_bluetooth_env["infos"][0], BluetoothChange.ADVERTISEMENT
     )
     assert not hub._link_lost.is_set()
+
+
+async def test_another_networks_adverts_do_not_wake_the_unlinked_loop(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+) -> None:
+    """Review-4 R4-8: while unlinked, only an advert of *this* network wakes the connection loop. Every other
+    network's proxies in range woke it before, each wake-up a `visible_proxies` pass that found nothing."""
+    hub = hub_of(init_integration)
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()
+    await settle(hass)
+    assert not hub.connected
+    with patch.object(hub, "visible_proxies", wraps=hub.visible_proxies) as visible:
+        for n in range(100):
+            foreign = make_service_info(
+                bytes([n + 1]) * 8, address=f"30:FB:10:00:01:{n:02X}"
+            )
+            mock_bluetooth_env["callbacks"][0](foreign, BluetoothChange.ADVERTISEMENT)
+            await asyncio.sleep(0)
+        await settle(hass)
+        assert not hub._link_lost.is_set()
+        assert visible.call_count == 0
+        assert not hub.unknown_nodes  # not ours either
+        # a node of ours: woken at once
+        mock_bluetooth_env["infos"] = [
+            make_service_info(network_id, address=SECOND_PROXY)
+        ]
+        mock_bluetooth_env["callbacks"][0](
+            mock_bluetooth_env["infos"][0], BluetoothChange.ADVERTISEMENT
+        )
+        await wait_for_link(hass, init_integration)
+        assert visible.call_count >= 1
+    assert hub.proxy_address == SECOND_PROXY
+
+
+async def test_an_unchanged_status_writes_no_state(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """Review-4 R I-10: a status that changes nothing an entity shows writes nothing; one that does is written, and
+    so is a change of availability."""
+    light = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(True))
+    await hass.async_block_till_done()
+    assert hass.states.get(light).state == STATE_ON
+    written: list[str] = []
+
+    @callback
+    def ours(data: Mapping[str, Any]) -> bool:
+        return bool(data["entity_id"] == light)
+
+    @callback
+    def note(event: Event[Any]) -> None:
+        written.append(event.event_type)
+
+    hass.bus.async_listen(EVENT_STATE_CHANGED, note, event_filter=ours)
+    hass.bus.async_listen(EVENT_STATE_REPORTED, note, event_filter=ours)
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(True))
+    await hass.async_block_till_done()
+    assert written == []
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(False))
+    await hass.async_block_till_done()
+    assert written == [EVENT_STATE_CHANGED]
+    assert hass.states.get(light).state == STATE_OFF
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()  # nothing a status changed, but the link went
+    await settle(hass)
+    assert hass.states.get(light).state == STATE_UNAVAILABLE
 
 
 async def test_reconnects_to_the_strongest_visible_proxy(
@@ -4516,12 +4593,16 @@ async def test_unknown_node_of_our_network_raises_a_repair(
     issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.WARNING
+    # not set up from a gateway: nothing to fetch, the wording without one (review-4 H4-8: no prose in placeholders)
+    assert issue.translation_key == ISSUE_UNKNOWN_NODES
     assert issue.translation_placeholders == {
         "title": "JUNG HOME mesh test",
         "count": "1",
         "devices": "Push-button 2-gang 30:FB:10:00:00:9E",
-        "gateway": "",  # not set up from a gateway: nothing to fetch
     }
+    assert set(issue.translation_placeholders) == issue_text_placeholders(
+        ISSUE_UNKNOWN_NODES
+    )
     assert (
         "30:FB:10:00:00:9E belongs to this mesh but is not in the export (Push-button 2-gang 30:FB:10:00:00:9E)"
         in caplog.text
@@ -4551,6 +4632,17 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         {"address": "**REDACTED**", "product_id": 2},
     ]
     assert "30:FB:10:00:00:9E" not in str(diagnostics)
+
+
+STRINGS_JSON = (
+    Path(__file__).parent.parent / "custom_components" / "junghome_ble" / "strings.json"
+)
+
+
+def issue_text_placeholders(key: str) -> set[str]:
+    """The placeholders the `key` repair's title and description use (strings.json)."""
+    issue = json.loads(STRINGS_JSON.read_text())["issues"][key]
+    return set(re.findall(r"\{(\w+)\}", issue["title"] + issue["description"]))
 
 
 async def test_unknown_node_issue_is_gone_after_a_reload_with_it_in_the_export(
@@ -4830,7 +4922,10 @@ async def test_unknown_node_leaves_a_users_export_alone(
     assert _read_bytes(str(path)) == original
     issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
     assert issue is not None
-    assert issue.translation_placeholders["gateway"] == ""
+    assert (
+        issue.translation_key == ISSUE_UNKNOWN_NODES
+    )  # the gateway is not where its export comes from
+    assert "host" not in issue.translation_placeholders
     assert hub_of(entry)._export_refresh is None
 
 
@@ -4863,9 +4958,16 @@ async def test_unknown_node_fetches_the_gateways_export_and_reloads(
         )
         issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
         assert issue is not None  # raised at once; the fetch runs in the background
-        assert (
-            "asks the gateway junghome.local"
-            in issue.translation_placeholders["gateway"]
+        # the wording that names the gateway, whose host is its one extra placeholder (review-4 H4-8)
+        assert issue.translation_key == ISSUE_UNKNOWN_NODES_GATEWAY
+        assert issue.translation_placeholders == {
+            "title": gateway_entry.title,
+            "count": "1",
+            "devices": NEW_MAC,
+            "host": "junghome.local",
+        }
+        assert set(issue.translation_placeholders) == issue_text_placeholders(
+            ISSUE_UNKNOWN_NODES_GATEWAY
         )
         await hass.async_block_till_done()
         await wait_until(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -21,7 +21,6 @@ from custom_components.junghome_ble.jhmesh.pdu import decode_opcode
 from .conftest import (
     CDB_PATH,
     META_DIR,
-    WAIT_TIMEOUT,
     FakeProxyLink,
     settle,
     setup_entry,
@@ -153,22 +152,6 @@ async def real_wait(seconds: float) -> None:
     fut: asyncio.Future[None] = loop.create_future()
     loop.call_later(seconds, fut.set_result, None)
     await fut
-
-
-async def wait_until(
-    hass: HomeAssistant, predicate: Callable[[], bool], timeout: float = WAIT_TIMEOUT
-) -> None:
-    """Spin (real time) until `predicate` holds, then flush HA.
-
-    The bound is the suite's real-time one, not the app's 3 s: setting the platforms up resolves integrations and
-    loads translations in the executor a few dozen times, which a busy CI runner can stretch past a few seconds.
-    """
-    loop = asyncio.get_running_loop()
-    deadline = loop.time() + timeout
-    while not predicate():
-        assert loop.time() < deadline, "condition not met in time"
-        await real_wait(0.01)
-    await hass.async_block_till_done()
 
 
 def fake_hub(states: dict[int, Any] | None = None) -> Any:

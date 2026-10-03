@@ -331,7 +331,7 @@ def test_requests_through_relays() -> None:
         ):  # a property the server does not hold goes unanswered
             await s.client.request(
                 FAR, M.vendor_property_get("user", 0x7777), M.VENDOR_PROPERTY_STATUS_OPCODES["user"],
-                expect_cid=M.JUNG_CID, timeout=0.5, retries=1, quiet=True,
+                expect_cid=M.JUNG_CID, timeout=0.5, retries=1,
             )  # fmt: skip
         # scenes: store the dimmer's state, change it, recall it
         stored = await s.client.request(

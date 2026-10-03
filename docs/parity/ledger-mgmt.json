@@ -5088,10 +5088,10 @@
    ],
    "tests": [
     "tests/test_reachability.py::test_link_state_follows_the_link_and_bluetooth",
-    "tests/test_reachability.py::test_the_link_state_sensor_is_a_hidden_diagnostic",
+    "tests/test_reachability.py::test_the_link_state_sensor_is_an_enabled_diagnostic",
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
    ],
-   "note": "the diagnostic Link state sensor (enum, off by default) on the mesh device: connecting, updating, connected, failed (FailedToConnect; the reason is in the log), disconnected (Disconnecting / Disconnected: the loop reconnects at once), plus searching (no proxy node in range) and bluetooth_off. CommunicationError(status) has no state of its own: a GATT error ends the link (disconnected) and a proxy that discards our PDUs raises pdus_dropped"
+   "note": "the diagnostic Link state sensor (enum) on the mesh device: connecting, updating, connected, failed (FailedToConnect; the reason is in the log), disconnected (Disconnecting / Disconnected: the loop reconnects at once), plus searching (no proxy node in range) and bluetooth_off. CommunicationError(status) has no state of its own: a GATT error ends the link (disconnected) and a proxy that discards our PDUs raises pdus_dropped"
   },
   {
    "id": "mgmt:flow:observemeshnetwork",

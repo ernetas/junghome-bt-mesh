@@ -22,7 +22,6 @@ from jhmesh.pdu import (
     is_unicast,
     lower_segments_access,
     lower_unsegmented_access,
-    network_decrypt,
     network_encrypt,
     parse_lower,
     segment_ack,
@@ -216,6 +215,16 @@ class SimNode:
             task.cancel()
         self._tasks.clear()
 
+    def stop(self) -> list[asyncio.Task[Any]]:
+        """Cancel every timer and task of this node (`Mesh.close`); returns the tasks, to be awaited."""
+        for sid in list(self._rx_sar):
+            self._abandon(sid)
+        tasks = list(self._tasks)
+        for task in tasks:
+            task.cancel()
+        self._tasks.clear()
+        return tasks
+
     def spawn(self, coro: Any) -> None:
         task = asyncio.get_running_loop().create_task(coro)
         self._tasks.add(task)
@@ -238,7 +247,7 @@ class SimNode:
         self, raw: bytes, *, proxy: bool = False
     ) -> tuple[NetworkPDU, NetKeyMaterial] | None:
         for nk in self.rx_net_keys:
-            net = network_decrypt(nk, self.iv_index, raw, proxy=proxy)
+            net = self.mesh.open(nk, self.iv_index, raw, proxy=proxy)
             if net is not None:
                 return net, nk
         return None

@@ -5,18 +5,28 @@ Bluetooth MAC addresses are redacted, and so are the gateway's address and any s
 in the state cache (`config_entities.redacted`). A JUNG node's UUID *is* its MAC (`jhmesh.advert.mac_from_uuid`: `30fb10ff-fe12-3456-…` is
 `30:FB:10:12:34:56`), so wherever a UUID appears — the node, device identifiers, unique ids — its EUI-64 half is
 replaced by the node's unicast address (`redact_node_uuids`): the document stays cross-referenced, the MAC stays out.
+An OS error text names the file it failed on, whose path can carry a user name: the path is redacted, the error kept
+(`redact_paths`).
+
+The download works in every entry state (review-4 H4-6): an entry that is retrying or failed — exactly when the
+download helps — has no hub, and gets its state, why it is not loaded, what Bluetooth sees and what its export holds
+instead (`_unloaded_diagnostics`).
 """
 
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, cast
 
+from homeassistant.components import bluetooth
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import issue_registry as ir
 
 from .config_entities import redacted
+from .config_flow import LOAD_ERRORS
 from .const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
@@ -30,7 +40,7 @@ from .const import (
     NODE_INFO_UNSUPPORTED,
     NODE_INFO_VENDOR,
 )
-from .coordinator import issue_id
+from .coordinator import issue_id, load_network
 from .entity import (
     button_gang,
     buttons_device_id,
@@ -41,6 +51,7 @@ from .entity import (
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
+from .jhmesh.client import MESH_PROXY_SERVICE
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -48,7 +59,7 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .coordinator import ElementState, JungHomeHub
-    from .jhmesh.cdb import Node
+    from .jhmesh.cdb import CDB, Node
     from .jhmesh.devices import Blind, Light, Socket
 
 TO_REDACT_ENTRY = {
@@ -68,6 +79,16 @@ _PATH_UUID = re.compile(r"[0-9A-Fa-f]{32}")
 UUID_MAC_PART = (
     18  # `xxxxxxxx-xxxx-xxxx` — the EUI-64 the MAC is stuffed into, in a JUNG node UUID
 )
+# a file name in an error text: quoted, as `OSError` writes it (`[Errno 28] No space left on device: '/config/…'`), or
+# a bare absolute path
+_PATH = re.compile(r"""'[^']*'|"[^"]*"|(?<![\w.:/~])~?/[^\s'",;)]*""")
+# the first byte of Mesh Proxy service data (Mesh Profile §7.2.2.2.2-3; 2 and 3 are the Mesh 1.1 private kinds)
+PROXY_KINDS = {0: "network_id", 1: "node_identity"}
+
+
+def redact_paths(text: str | None) -> str | None:
+    """Return `text` with every file path in it redacted: an OS error's text without the path that can name the user."""
+    return None if text is None else _PATH.sub(REDACTED, text)
 
 
 def redact_node_uuids(hub: JungHomeHub, data: dict[str, Any]) -> dict[str, Any]:
@@ -208,7 +229,9 @@ def _device_summary(hub: JungHomeHub, node: Node | None = None) -> dict[str, Any
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: JungHomeConfigEntry
 ) -> dict[str, Any]:
-    """Describe the link, our node state, the export summary and the derived devices."""
+    """Describe the link, our node state, the export summary and the derived devices; an entry not loaded briefly."""
+    if entry.state is not ConfigEntryState.LOADED:
+        return await _unloaded_diagnostics(hass, entry)
     hub = entry.runtime_data
     st = hub.proxy.state
     link = {
@@ -235,18 +258,15 @@ async def async_get_config_entry_diagnostics(
             }
             for mac, advert in sorted(hub.unknown_nodes.items())
         ],
+        # why the last links ended, newest first (review-4 R I-9)
+        "history": _link_history(hub),
     }
     return redact_node_uuids(
         hub,
         {
             "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
-            "network": {
-                "mesh_uuid": hub.cdb.mesh_uuid,
-                "network_id": hub.proxy.nk.network_id.hex(),
-                "nodes": len(hub.cdb.nodes),
-                "groups": len(hub.cdb.groups),
-                "scenes": sorted(hub.cdb.scenes),
-            },
+            "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
+            "network": _network(hub.cdb, hub.proxy.nk.network_id),
             "local": {
                 "src": f"{st.src:04X}",
                 "seq": st.seq,
@@ -255,7 +275,7 @@ async def async_get_config_entry_diagnostics(
                 # the sequence-number store's back-pressure: how long sends have been held back (None: they are
                 # not), the last write's error, and how many numbers may go out before the next hold
                 "stalled_for": hub.state.stalled_for,
-                "last_write_error": hub.state.last_write_error,
+                "last_write_error": redact_paths(hub.state.last_write_error),
                 "durable_headroom": hub.state.durable_headroom,
                 # another client seen sending from our address (the open `address_shared` repair): the highest
                 # [IV index, seq] it was seen with; None when none was
@@ -278,6 +298,7 @@ async def async_get_config_entry_diagnostics(
             "key_refresh": hub.vault_refresh.diagnostics(),
             # nodes that left a full-budget request unanswered and were not heard from since
             "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
+            "issues": _issues(hass),
             "devices": {
                 **_device_summary(hub),
                 "scenes": [asdict(s) for s in hub.devices.scenes],
@@ -287,6 +308,130 @@ async def async_get_config_entry_diagnostics(
             },
         },
     )
+
+
+def _network(cdb: CDB, network_id: bytes) -> dict[str, Any]:
+    """Summarise the export: the mesh, the public Network ID it is known by and how much it holds."""
+    return {
+        "mesh_uuid": cdb.mesh_uuid,
+        "network_id": network_id.hex(),
+        "nodes": len(cdb.nodes),
+        "groups": len(cdb.groups),
+        "scenes": sorted(cdb.scenes),
+    }
+
+
+def _issues(hass: HomeAssistant) -> list[str]:
+    """Return the ids of this integration's open repair issues (each names its entry by id, `issue_id`)."""
+    return sorted(
+        issue.issue_id
+        for (domain, _), issue in ir.async_get(hass).issues.items()
+        if domain == DOMAIN and issue.active
+    )
+
+
+def _link_history(hub: JungHomeHub) -> list[dict[str, Any]]:
+    """Render the hub's last links, newest first: proxy node (never its MAC), age, length, why it ended.
+
+    `refresh` is how long the connect-time state refresh took (None: the link went first), `held_back` how long the
+    sequence-number store held sends back during the link. Times in seconds, `ended_ago` counted from this download.
+    """
+    now = time.monotonic()
+    return [
+        {
+            "proxy_node": None if r.proxy_node is None else f"{r.proxy_node:04X}",
+            "ended_ago": round(now - r.ended),
+            "lasted": round(r.lasted, 1),
+            "reason": r.reason,
+            "penalised": r.penalise,
+            "refresh": None if r.refresh is None else round(r.refresh, 1),
+            "held_back": round(r.held_back, 1),
+        }
+        for r in reversed(hub.link_history)
+    ]
+
+
+async def _unloaded_diagnostics(
+    hass: HomeAssistant, entry: JungHomeConfigEntry
+) -> dict[str, Any]:
+    """Describe an entry that is not loaded (retrying, failed, set up or unloaded): no hub, so what can be had without.
+
+    Its state and why (any path in the reason redacted), the Mesh Proxy nodes Bluetooth sees (MACs redacted; their
+    advert's kind and whether it fits the export), the export's summary when it loads, and the open repairs.
+    """
+    cdb: CDB | None = None
+    try:
+        loaded, _devices = await hass.async_add_executor_job(
+            load_network,
+            entry.data[CONF_CDB_PATH],
+            entry.data.get(CONF_METADATA_DIR) or None,
+        )
+    except LOAD_ERRORS as err:
+        network = {"error": type(err).__name__}
+    else:
+        cdb = loaded
+        network = _network(loaded, loaded.net_keys[0].network_id)
+    return {
+        "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
+        "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
+        "state": entry.state.value,
+        "reason": redact_paths(entry.reason),
+        "reason_key": entry.error_reason_translation_key,
+        "network": network,
+        "bluetooth": {
+            "connectable_scanners": bluetooth.async_scanner_count(
+                hass, connectable=True
+            ),
+            "proxies": async_redact_data(_visible_proxies(hass, cdb), TO_REDACT_LINK),
+        },
+        "issues": _issues(hass),
+    }
+
+
+def _visible_proxies(hass: HomeAssistant, cdb: CDB | None) -> list[dict[str, Any]]:
+    """Every connectable node advertising Mesh Proxy service data, strongest first, checked against the export.
+
+    `matches_export` (None without an export) says whether a Network ID is the export's, or a Node Identity
+    resolves to one of its nodes (`node`) — the check the setup makes (`config_flow.proxy_in_range`), mid key
+    refresh with either key. Another mesh's proxies are listed too, by kind only.
+    """
+    keys = () if cdb is None else cdb.rx_net_keys(0)
+    out = []
+    for info in bluetooth.async_discovered_service_info(hass, connectable=True):
+        sd = info.service_data.get(MESH_PROXY_SERVICE)
+        if not sd:
+            continue
+        data = bytes(sd)
+        node: int | None = None
+        matches: bool | None = None
+        if cdb is not None:
+            if data[0] == 0x00:
+                matches = any(data[1:9] == nk.network_id for nk in keys)
+            elif data[0] == 0x01 and len(data) >= 17:
+                h, rnd = data[1:9], data[9:17]
+                node = next(
+                    (
+                        n.unicast
+                        for n in cdb.nodes
+                        if any(
+                            nk.node_identity_hash(rnd, n.unicast) == h for nk in keys
+                        )
+                    ),
+                    None,
+                )
+                matches = node is not None
+            else:
+                matches = False
+        out.append(
+            {
+                "address": info.address,
+                "rssi": info.rssi,
+                "kind": PROXY_KINDS.get(data[0], f"type {data[0]:02X}"),
+                "matches_export": matches,
+                "node": None if node is None else f"{node:04X}",
+            }
+        )
+    return sorted(out, key=lambda p: -(p["rssi"] or -127))
 
 
 def _carry_over_conflicts(hass: HomeAssistant, entry: JungHomeConfigEntry) -> list[str]:
@@ -348,7 +493,12 @@ def _node_of(hub: JungHomeHub, identifiers: set[str]) -> Node | None:
 async def async_get_device_diagnostics(
     hass: HomeAssistant, entry: JungHomeConfigEntry, device: DeviceEntry
 ) -> dict[str, Any]:
-    """Describe the node behind a device page: composition, what we derived from it and the cached element states."""
+    """Describe the node behind a device page: composition, what we derived from it and the cached element states.
+
+    Without a loaded entry there is no device model to look the node up in: the entry's own diagnostics stand in.
+    """
+    if entry.state is not ConfigEntryState.LOADED:
+        return await _unloaded_diagnostics(hass, entry)
     hub = entry.runtime_data
     identifiers = {ident for domain, ident in device.identifiers if domain == DOMAIN}
     if mesh_identifier(hub) in identifiers:

@@ -55,7 +55,14 @@ from custom_components.junghome_ble.jhmesh.properties import PropertySpec
 from custom_components.junghome_ble.sensor import PROPERTY_INSTALLED
 
 from . import property_helpers as ph
-from .conftest import FIXTURES, FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import (
+    FIXTURES,
+    FakeProxyLink,
+    settle,
+    setup_entry,
+    wait_for_link,
+    wait_until,
+)
 from .helpers import (
     LIGHT_CTL,
     LIGHT_DIMMER,
@@ -93,7 +100,6 @@ from .property_helpers import (
     PropertyMesh,
     fake_hub,
     vendor_status,
-    wait_until,
 )
 from .test_binary_sensor import (
     BUTTON_CLICK,
@@ -1367,7 +1373,11 @@ async def test_reads_wait_for_the_entry_to_load_and_stop_if_it_never_does(
 
     # a loaded entry: the job runs (sleeps are instant under init_with_mesh's fast_sleep)
     reader.schedule(LIGHT_SWITCH, job)
-    await wait_until(hass, lambda: ran == [1])
+    # ... and the worker is through: one still draining its queue would take the next job without waiting
+    await wait_until(
+        hass,
+        lambda: ran == [1] and reader._worker is not None and reader._worker.done(),
+    )
     # still setting up: the worker waits; a failed setup ends it without reading
     entry = hub.entry
     entry._async_set_state(hass, ConfigEntryState.SETUP_IN_PROGRESS, None)

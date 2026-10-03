@@ -7,8 +7,13 @@ that is already on the Home Assistant host. Fetched and uploaded exports are kep
 
 Whatever the source, the export is validated by loading it (`CDB.load` checks the document's shape; the mesh
 UUID that names the stored file is a UUID by then) and by checking that at least one proxy node of *that* network
-is currently advertising (its Network ID is derived from the NetKey in the file). A fetched or uploaded file lives
-as `.incoming-<flow id>.json` until it passes; every failure path, and the flow's removal, deletes it.
+is currently advertising (its Network ID is derived from the NetKey in the file); nodes of the export advertising
+another Network ID mean a stale export (`export_keys_stale`), not a mesh out of range. A fetched or uploaded file
+lives as `.incoming-<flow id>.json` until it passes; every failure path, and the flow's removal, deletes it.
+
+Discovery offers any Mesh Proxy (the manifest matches service 0x1828 alone) and never a configured mesh: not by the
+entry's unique id (the Network ID), nor by a Network ID or node MAC the entry's mesh is known by after a key refresh
+(`coordinator.KnownMesh`).
 
 The gateway is only ever spoken to over a connection pinned to its certificate (`tls.py`). The pin comes from the
 mesh when the hub is connected (the gateway node reports its own certificate fingerprint), else from the entry
@@ -93,7 +98,17 @@ from .const import (
     PIN_FROM_USER,
     STORAGE_DIR,
 )
-from .coordinator import async_apply_followed_key_refresh, hub_data, issue_id
+from .coordinator import (
+    KNOWN_MESHES,
+    KnownMesh,
+    async_apply_followed_key_refresh,
+    async_known_mesh,
+    async_release_network_id,
+    forget_known_mesh,
+    hub_data,
+    issue_id,
+    node_macs,
+)
 from .gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -401,6 +416,53 @@ def proxy_in_range(hass: HomeAssistant, cdb: CDB) -> bool:
     return False
 
 
+def mesh_proxies_without_match(hass: HomeAssistant, cdb: CDB) -> bool:
+    """Whether a node of `cdb` advertises as a proxy under a Network ID none of the export's keys derive (H I-6).
+
+    JUNG nodes advertise from their public MAC, which the export holds in the node UUID (`node_macs`): a node of
+    the export advertising another Network ID is this mesh after a key refresh the export does not have — the
+    export is stale, not out of range. A proxy of another mesh (a neighbour's) from an address the export lacks
+    says nothing either way, and neither does a Node Identity advertisement. Unverified on air (no key refresh on
+    this installation).
+    """
+    macs = node_macs(cdb)
+    ids = {nk.network_id for nk in cdb.rx_net_keys(0)}
+    for info in bluetooth.async_discovered_service_info(hass, connectable=True):
+        sd = info.service_data.get(MESH_PROXY_SERVICE)
+        if (
+            sd
+            and sd[0] == 0x00
+            and len(sd) >= 9
+            and bytes(sd[1:9]) not in ids
+            and info.address.upper() in macs
+        ):
+            return True
+    return False
+
+
+async def async_known_mesh_of(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> KnownMesh | None:
+    """Return what discovery knows `entry`'s mesh by (`coordinator.KNOWN_MESHES`); None when its export is unreadable.
+
+    Every setup records it; an entry that never got that far (disabled, or its export failed to load) has its
+    export loaded here once and kept (H4-4: discovery runs once per proxy, there are dozens). An unreadable export
+    is not kept, so a file fixed on disk counts at the next discovery.
+    """
+    cache = hass.data.setdefault(KNOWN_MESHES, {})
+    if entry.entry_id not in cache:
+        try:
+            cdb = await hass.async_add_executor_job(
+                CDB.load, Path(entry.data[CONF_CDB_PATH])
+            )
+        except LOAD_ERRORS:
+            return None
+        cache[entry.entry_id] = await async_known_mesh(
+            hass, cdb, int(entry.data[CONF_UNICAST], 16)
+        )
+    return cache[entry.entry_id]
+
+
 async def _own_uuid(hass: HomeAssistant, cdb: CDB, unicast: int) -> str | None:
     """Home Assistant's provisioner UUID for the address check: the vault's, or its entry the export still has.
 
@@ -448,7 +510,11 @@ async def validate_input(
         # proxies advertise its new key, and the entry's unique id is that key's Network ID
         await async_apply_followed_key_refresh(hass, cdb, unicast)
     if not errors and not proxy_in_range(hass, cdb):
-        errors["base"] = "no_proxy_visible"
+        errors["base"] = (
+            "export_keys_stale"
+            if mesh_proxies_without_match(hass, cdb)
+            else "no_proxy_visible"
+        )
     return cdb, errors
 
 
@@ -512,13 +578,29 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> ConfigFlowResult:
-        """Handle an advertising Mesh Proxy: de-duplicate on its Network ID and ask for the export."""
+        """Handle an advertising Mesh Proxy: de-duplicate on its Network ID and ask for the export.
+
+        Review-4 H4-4: not only on the entries' unique ids. A configured mesh mid key refresh, or after one the
+        entry's unique id has not caught up with, advertises another Network ID; its nodes keep their MACs
+        (`coordinator.KnownMesh`). Such a discovery is the configured mesh: it aborts, and an entry waiting for a
+        proxy (`SETUP_RETRY`) is retried at once, as Home Assistant does for a unique-id match.
+        """
         sd = discovery_info.service_data.get(MESH_PROXY_SERVICE, b"")
         if not sd or sd[0] != 0x00 or len(sd) < 9:
             return self.async_abort(reason="not_supported")
         self._discovered_network_id = bytes(sd[1:9])
         await self.async_set_unique_id(self._discovered_network_id.hex())
         self._abort_if_unique_id_configured()
+        address = discovery_info.address.upper()
+        for entry in self._async_current_entries(include_ignore=False):
+            known = await async_known_mesh_of(self.hass, entry)
+            if known is not None and (
+                self._discovered_network_id in known.network_ids
+                or address in known.macs
+            ):
+                if entry.state is ConfigEntryState.SETUP_RETRY:
+                    self.hass.config_entries.async_schedule_reload(entry.entry_id)
+                return self.async_abort(reason="already_configured")
         self.context["title_placeholders"] = {
             "network_id": self._discovered_network_id.hex()
         }
@@ -1221,13 +1303,14 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             ):
                 await self._async_discard_incoming()
                 return self.async_abort(reason="mesh_already_configured")
-            # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it started
-            for flow in self._async_in_progress(
-                include_uninitialized=True,
-                match_context={"unique_id": network_id.hex()},
-            ):
-                self.hass.config_entries.flow.async_abort(flow["flow_id"])
+            # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it
+            # started, and an ignored entry holding it (H4-4)
+            await async_release_network_id(
+                self.hass, entry, network_id.hex(), keep_flow=self.flow_id
+            )
             await self._async_keep_incoming(data, cdb)
+            # discovery recognises the mesh by the new export from its next setup on
+            forget_known_mesh(self.hass, entry.entry_id)
             await self._async_forget_replaced_export(entry, data)
             if CONF_GATEWAY_SYNCED in data:
                 # fetched from the gateway: both hold this export now (`mesh_config.GatewaySync`, before the reload)

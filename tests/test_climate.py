@@ -84,6 +84,7 @@ from .conftest import (
     settle,
     setup_entry,
     wait_for_link,
+    wait_until,
 )
 from .helpers import (
     NODE_THERMOSTAT,
@@ -215,7 +216,7 @@ async def init_rtr(
 async def reads_done(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     """Wait for the property reader's queue (our reads and the parameter entities') to drain."""
     reader = property_reader(hass, entry.runtime_data)
-    await ph.wait_until(hass, lambda: reader._worker is None or reader._worker.done())
+    await wait_until(hass, lambda: reader._worker is None or reader._worker.done())
 
 
 def hub_of(entry: MockConfigEntry) -> JungHomeHub:

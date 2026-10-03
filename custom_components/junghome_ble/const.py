@@ -484,6 +484,8 @@ ISSUE_GATEWAY_CERTIFICATE: Final = "gateway_certificate_changed"  # the gateway,
 ISSUE_UNKNOWN_NODES: Final = (
     "unknown_nodes"  # nodes of our network advertise from MACs the export does not know
 )
+# ... the same issue's wording for an entry set up from the gateway, whose export Home Assistant fetches by itself
+ISSUE_UNKNOWN_NODES_GATEWAY: Final = "unknown_nodes_gateway"
 ISSUE_DUPLICATE_MESH: Final = (
     "duplicate_mesh"  # another entry already covers this mesh UUID: their sequence-number
     # records can roll each other back (the config flow refuses this for anything set up

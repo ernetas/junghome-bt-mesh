@@ -128,6 +128,7 @@
       "invalid_address": "The address must be hexadecimal between 0001 and 7FFF.",
       "address_in_use": "That address belongs to a node in the mesh; pick an unused one.",
       "no_proxy_visible": "No node of this mesh network is currently visible over Bluetooth. Make sure a Bluetooth adapter or ESPHome Bluetooth proxy is within range of a mains-powered JUNG device.",
+      "export_keys_stale": "Devices of this mesh are visible over Bluetooth, but none advertises the network key in this export: the network's keys were renewed (a key refresh in the JUNG HOME app) after the export was made. Export the network again from the JUNG HOME app, or fetch it from the gateway again, and use that file.",
       "network_mismatch": "The export belongs to a different mesh network than the one that was discovered.",
       "mesh_already_configured": "This mesh is already set up as another entry (its network key has probably been refreshed since Home Assistant last saw it). Use that entry's Reconfigure instead of adding a new one.",
       "invalid_host": "Enter the gateway's IP address or hostname.",
@@ -927,6 +928,9 @@
     "no_proxy_visible": {
       "message": "No node of the JUNG mesh is visible over Bluetooth yet."
     },
+    "export_keys_stale": {
+      "message": "Devices of the JUNG mesh are visible over Bluetooth, but none advertises the network key in the export: the keys were renewed after the export was made. Export the network again from the JUNG HOME app and use it under Settings → Devices & services → JUNG HOME → Reconfigure."
+    },
     "bluetooth_unavailable": {
       "message": "Home Assistant has no connectable Bluetooth adapter or proxy: the JUNG mesh cannot be reached."
     },
@@ -1309,7 +1313,11 @@
   "issues": {
     "unknown_nodes": {
       "title": "JUNG HOME devices missing from the export",
-      "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them. Export the network again from the JUNG HOME app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure); the issue clears once the new export is loaded.{gateway}"
+      "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them. Export the network again from the JUNG HOME app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure); the issue clears once the new export is loaded."
+    },
+    "unknown_nodes_gateway": {
+      "title": "JUNG HOME devices missing from the export",
+      "description": "{count} device(s) of the JUNG HOME mesh {title} advertise themselves over Bluetooth but are not in the export Home Assistant loaded: {devices}. They were added to the installation (or re-provisioned) after that export was made, so Home Assistant has no entities for them yet. Home Assistant asks the gateway {host} for its current export and reloads by itself when that lists them. If this issue stays, the gateway's export does not know them either: open the JUNG HOME app once while it is connected to the gateway (it uploads its project), or export the network from the app and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure)."
     },
     "key_refresh": {
       "title": "JUNG HOME mesh keys are changing",

@@ -434,7 +434,6 @@ class JungHomeDetectorOccupancy(JungHomeEntity, BinarySensorEntity):
                 M.sensor_get(pid),
                 M.SENSOR_STATUS,
                 retries=REFRESH_RETRIES,
-                quiet=True,
                 match=carries,
             )
         except TimeoutError:

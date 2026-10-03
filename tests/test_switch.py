@@ -48,7 +48,7 @@ from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.switch import lock_mode
 
 from . import property_helpers as ph
-from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link, wait_until
 from .helpers import (
     BUTTON_WC,
     GATEWAY,
@@ -397,7 +397,7 @@ async def test_night_mode_reads_an_unknown_colour_first(
     eid = entity_id(hass, "switch", f"{UID_SOCKET}-led_night_mode")
     # the connect-time read and its retry went unanswered; every entity showing the property reads it (the LED
     # colour select too) and none is cached, so by the time this looks there may be more than two Gets
-    await ph.wait_until(hass, lambda: mesh.gets.count((SOCKET, PID_LED1_OFF)) >= 2)
+    await wait_until(hass, lambda: mesh.gets.count((SOCKET, PID_LED1_OFF)) >= 2)
     assert hass.states.get(eid).state == STATE_UNKNOWN  # one LED unknown: no verdict
 
     # still silent: nothing is written, the user is told (a translated error naming the switch)

@@ -1036,7 +1036,6 @@ class JungHomeBatterySensor(JungHomeEntity, RestoreSensor):
                 M.GEN_BATTERY_STATUS,
                 timeout=BATTERY_READ_TIMEOUT,
                 retries=1,
-                quiet=True,
             )
         except TimeoutError:
             _LOGGER.debug(
@@ -1080,18 +1079,20 @@ class JungHomeProxySensor(JungHomeEntity, SensorEntity):
 
 
 class JungHomeLinkStateSensor(JungHomeEntity, SensorEntity):
-    """Where the link to the mesh stands (diagnostic, off by default): the app's connection states, and the screens before them.
+    """Where the link to the mesh stands (diagnostic): the app's connection states, and the screens before them.
 
     `bluetooth_off` (no connectable Bluetooth adapter or proxy at all, `bluetooth_unavailable`), `searching` (no
     proxy node of the mesh in range), `connecting`, `updating` (connected, the connect-time state refresh running:
     the app's "the status of your devices is being updated"), `connected`, `failed` (the last attempt failed, the
     next follows after a back-off) and `disconnected` (the link went, the next attempt is due). Follows its own
     signal (`SIGNAL_LINK_STATE`), not every entity's link signal.
+
+    On by default (review-4 H I-5): it is the mesh's visible health indicator, which *Proxy node* (a name, or
+    nothing) is not. Only new registrations: one an earlier version registered disabled stays as it is.
     """
 
     _attr_translation_key = "link_state"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = list(LINK_STATES)
 

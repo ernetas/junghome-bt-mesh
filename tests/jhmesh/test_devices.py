@@ -402,6 +402,33 @@ def test_lookups(cdb: CDB, meta: Metadata):
     assert Devices().by_meter(1) is None
 
 
+def test_meter_and_temperature_lookups_find_what_a_search_found():
+    """Review-4 R4-9: kept up by `add` — a socket's meter before a light's, then the first added; the first CTL
+    light of a temperature element."""
+    node = Node("00000000-0000-4000-8000-0000000000aa", "n", 0x0700, bytes(16), 3)
+    d = Devices()
+    first = Light(
+        0x0700, "a", "A", node, "ctl", temperature_address=0x0701, meter_address=0x0709
+    )
+    second = Light(
+        0x0702, "b", "B", node, "ctl", temperature_address=0x0701, meter_address=0x0709
+    )
+    plain = Light(0x0703, "c", "C", node, "switch")
+    socket = Socket(0x0704, "d", "D", node, 0x0709)
+    later = Socket(0x0705, "e", "E", node, 0x0709)
+    unmetered = Socket(0x0706, "f", "F", node, None)
+    for device in (first, second, plain, socket, later, unmetered):
+        d.add(device)
+    searched = next(load for load in d.metered if load.meter_address == 0x0709)
+    assert d.by_meter(0x0709) is searched is socket
+    assert d.by_temperature(0x0701) is first
+    assert d.by_temperature(0x0700) is None
+    lights_only = Devices()
+    lights_only.add(second)
+    lights_only.add(first)
+    assert lights_only.by_meter(0x0709) is second
+
+
 # ----------------------------------------------------------------------------- rule table
 
 

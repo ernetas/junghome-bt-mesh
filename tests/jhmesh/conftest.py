@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -130,8 +130,9 @@ def upper_encrypt_dev(
 class FakeBleak:
     """A bleak-like GATT client that behaves as a JUNG proxy node of the fixture network.
 
-    Everything the ``ProxyClient`` writes is reassembled and decrypted (``net_pdus`` / ``config_pdus``); the
-    Set Filter Type request is answered with a Filter Status, and ``responders`` may react to network PDUs.
+    Everything the ``ProxyClient`` writes is reassembled and decrypted (``net_pdus`` / ``config_pdus``); a network
+    PDU the replay protection drops lands in ``replayed`` instead; the Set Filter Type request is answered with a
+    Filter Status of the type asked for, and ``responders`` may react to network PDUs.
     Tests inject traffic with ``send_access`` / ``send_devkey`` / ``send_ctl`` / ``send_beacon`` / ``deliver``.
     """
 
@@ -169,6 +170,11 @@ class FakeBleak:
             True  # False: PDUs we cannot decrypt are dropped into ``undecryptable``
         )
         self.undecryptable: list[tuple[int, bytes]] = []
+        # the nodes' replay list: source -> the last (IV index, SEQ) taken from it; and (src, IV index, SEQ) of
+        # every PDU it dropped, which the `link` fixture's teardown fails on unless `expect_replays` is set
+        self.rpl: dict[int, tuple[int, int]] = {}
+        self.replayed: list[tuple[int, int, int]] = []
+        self.expect_replays = False
         self.write_error: Exception | None = None
         self.notify_error: Exception | None = None
         self.disconnect_error: Exception | None = None
@@ -231,9 +237,22 @@ class FakeBleak:
                 )
                 self.undecryptable.append((msg_type, payload))
                 return
+            if self._replay(n):
+                return
             self.net_pdus.append(n)
             for resp in list(self.responders):
                 resp(n)
+
+    def _replay(self, n: NetworkPDU) -> bool:
+        """The nodes' replay protection (§3.8.8): a PDU at or below the last (IV index, SEQ) of its source is
+        dropped and listed in `replayed` — the network PDUs only, as `FakeProxyLink` and the simulated nodes do."""
+        seen = (n.iv_index, n.seq)
+        last = self.rpl.get(n.src)
+        if last is not None and seen <= last:
+            self.replayed.append((n.src, *seen))
+            return True
+        self.rpl[n.src] = seen
+        return False
 
     async def disconnect(self) -> None:
         self.disconnect_calls += 1
@@ -754,8 +773,14 @@ def proxy(
 
 
 @pytest.fixture
-def link(cdb: CDB) -> FakeBleak:
-    return FakeBleak(cdb)
+def link(cdb: CDB) -> Iterator[FakeBleak]:
+    """The fake proxy; the teardown fails on a PDU the nodes dropped as a replay (a reused sequence number),
+    unless the test expects some (`expect_replays`)."""
+    fake = FakeBleak(cdb)
+    yield fake
+    assert fake.expect_replays or not fake.replayed, (
+        f"the client replayed (src, IV index, seq) {fake.replayed[:5]}"
+    )
 
 
 @pytest.fixture

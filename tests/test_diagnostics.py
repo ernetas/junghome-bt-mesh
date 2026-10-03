@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from homeassistant.components.diagnostics import REDACTED
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -29,10 +30,14 @@ from custom_components.junghome_ble.const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
+    OPTION_CLICK_DELAY,
+    OPTION_HEARTBEATS,
 )
 from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
+from custom_components.junghome_ble.diagnostics import redact_paths
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
+from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.pdu import (
     encode_opcode,
 )
@@ -44,6 +49,7 @@ from .conftest import (
     META_DIR,
     PROXY_ADDRESS,
     FakeProxyLink,
+    make_service_info,
     settle,
     setup_entry,
     wait_for_link,
@@ -211,7 +217,7 @@ async def test_diagnostics(
     assert link["visible_proxies"] == [
         {"address": REDACTED, "rssi": -50, "node": "0148"}
     ]  # the MAC names the node
-    assert link["unknown_nodes"] == []
+    assert (link["unknown_nodes"], link["history"]) == ([], [])  # the first link is up
 
     devices = result["devices"]
     assert [light["address"] for light in devices["lights"]] == [
@@ -426,6 +432,40 @@ async def test_gateway_entry_data_is_redacted(
     assert_no_secrets(result)
 
 
+async def test_diagnostics_include_the_options_and_the_open_repairs(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Review-4 H4-6: the options are part of the picture, and so are the repairs this integration has open."""
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    assert (result["options"], result["issues"]) == ({}, [])
+    hass.config_entries.async_update_entry(
+        init_integration, options={OPTION_CLICK_DELAY: True}
+    )
+    await hass.async_block_till_done()  # the entry reloads with them
+    issue = f"unknown_nodes_{init_integration.entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue,
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="unknown_nodes",
+    )
+    ir.async_create_issue(
+        hass,
+        "other_domain",
+        "not_ours",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="x",
+    )
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    assert result["options"] == {OPTION_CLICK_DELAY: True}
+    assert result["issues"] == [issue]
+
+
 async def test_diagnostics_without_link(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
@@ -438,6 +478,8 @@ async def test_diagnostics_without_link(
     await settle(hass)
 
     result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    [ended] = result["link"].pop("history")  # the link that just went
+    assert (ended["reason"], ended["proxy_node"]) == ("the proxy disconnected", "0148")
     assert result["link"] == {
         "connected": False,
         "proxy_address": None,
@@ -647,3 +689,200 @@ async def test_device_diagnostics_of_an_unknown_device(
         hass, hass_client, init_integration, device
     )
     assert result == {"identifiers": ["node:gone"], "node": None}
+
+
+@pytest.mark.parametrize(
+    ("text", "shown"),
+    [
+        (None, None),
+        (
+            "OSError: [Errno 30] Read-only file system",
+            "OSError: [Errno 30] Read-only file system",
+        ),
+        (
+            "[Errno 28] No space left on device: '/srv/someone/ha/.storage/junghome_ble.seq'",
+            f"[Errno 28] No space left on device: {REDACTED}",
+        ),
+        (
+            "[Errno 18] Invalid cross-device link: '/config/a.tmp' -> \"/config/it's.json\"",
+            f"[Errno 18] Invalid cross-device link: {REDACTED} -> {REDACTED}",
+        ),
+        ("cannot open /config/x.json, giving up", f"cannot open {REDACTED}, giving up"),
+        ("cannot open ~/x.json", f"cannot open {REDACTED}"),
+        (
+            "read/write 1/3 failed",
+            "read/write 1/3 failed",
+        ),  # no path: a slash inside a word stays
+    ],
+)
+def test_paths_are_redacted_from_error_texts(
+    text: str | None, shown: str | None
+) -> None:
+    """An OS error's text names its file, whose path can carry the user's name: the path goes, the error stays."""
+    assert redact_paths(text) == shown
+
+
+async def test_the_store_write_error_is_shown_without_its_path(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+) -> None:
+    """`local.last_write_error` is the raw `WriteError` text, which ends in the file it failed on."""
+    store = init_integration.runtime_data.state._store
+    store.write_error = "[Errno 30] Read-only file system: '/srv/someone/.storage/x'"
+    try:
+        result = await get_diagnostics_for_config_entry(
+            hass, hass_client, init_integration
+        )
+    finally:
+        store.write_error = None
+    assert result["local"]["last_write_error"] == (
+        f"[Errno 30] Read-only file system: {REDACTED}"
+    )
+    assert "someone" not in json.dumps(result)
+
+
+OTHER_MESH = bytes.fromhex("1122334455667788")  # another installation's Network ID
+
+
+async def test_diagnostics_while_the_entry_retries(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 H4-6: an entry waiting for a proxy node has no hub; its download used to fail (HTTP 500) exactly when
+    it would help. It shows the state and why, the options, what Bluetooth sees and the export's summary instead."""
+    mock_bluetooth_env["infos"] = [
+        make_service_info(OTHER_MESH, address="00:00:5E:00:53:99", rssi=-70)
+    ]  # a proxy, but of another mesh
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry, options={OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: False}
+    )
+    assert not await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+    result = await get_diagnostics_for_config_entry(
+        hass, hass_client, mock_config_entry
+    )
+
+    assert_no_secrets(result)
+    assert result["entry"] == {
+        CONF_CDB_PATH: REDACTED,
+        CONF_METADATA_DIR: REDACTED,
+        CONF_UNICAST: "0D00",
+        CONF_SOURCE: "path",
+    }
+    assert result["options"] == {OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: False}
+    assert (result["state"], result["reason_key"]) == (
+        "setup_retry",
+        "no_proxy_visible",
+    )
+    assert result["network"] == {
+        "mesh_uuid": "1BAF3ADE-0000-4000-8000-000000000001",
+        "network_id": "1fbd2c61a4b6e5a4",
+        "nodes": 7,
+        "groups": 18,
+        "scenes": [1, 2],
+    }
+    assert result["bluetooth"] == {
+        "connectable_scanners": 1,
+        "proxies": [
+            {
+                "address": REDACTED,
+                "rssi": -70,
+                "kind": "network_id",
+                "matches_export": False,
+                "node": None,
+            }
+        ],
+    }
+    assert result["issues"] == []
+    assert "00:00:5e:00:53:99" not in json.dumps(result).lower()
+
+
+async def test_diagnostics_of_an_unloaded_entry_check_the_proxies_against_the_export(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """Unloaded, the proxies are matched against the export: its Network ID, a Node Identity that resolves to one of
+    its nodes (named by address), one that does not, a Mesh 1.1 private kind; a device page falls back to the same."""
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"mesh:{MESH_UUID}"), init_integration.entry_id
+    )
+    assert device is not None
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    assert init_integration.state is ConfigEntryState.NOT_LOADED
+    netkey = CDB.load(Path(CDB_PATH)).net_keys[0]
+    rnd = bytes(range(8))
+
+    def advert(address: str, rssi: int, data: bytes) -> Any:
+        info = make_service_info(b"", address=address, rssi=rssi)
+        info.service_data[MESH_PROXY_SERVICE] = data
+        return info
+
+    mock_bluetooth_env["infos"] = [
+        mock_bluetooth_env["infos"][0],  # ours, by Network ID (-50)
+        advert(
+            "00:00:5E:00:53:21",
+            -40,
+            b"\x01" + netkey.node_identity_hash(rnd, 0x0232) + rnd,
+        ),
+        advert("00:00:5E:00:53:22", -60, b"\x01" + bytes(8) + rnd),
+        advert("00:00:5E:00:53:23", -80, b"\x02" + bytes(16)),
+        advert(
+            "00:00:5E:00:53:24", -90, b""
+        ),  # no proxy service data at all: not listed
+    ]
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    assert_no_secrets(result)
+    assert result["state"] == "not_loaded"
+    assert result["bluetooth"]["proxies"] == [
+        {"address": REDACTED, "rssi": -40, "kind": "node_identity", "matches_export": True, "node": "0232"},
+        {"address": REDACTED, "rssi": -50, "kind": "network_id", "matches_export": True, "node": None},
+        {"address": REDACTED, "rssi": -60, "kind": "node_identity", "matches_export": False, "node": None},
+        {"address": REDACTED, "rssi": -80, "kind": "type 02", "matches_export": False, "node": None},
+    ]  # fmt: skip
+    assert "00:00:5e:00:53:2" not in json.dumps(result).lower()
+    assert (
+        await get_diagnostics_for_device(hass, hass_client, init_integration, device)
+        == result
+    )
+
+
+async def test_diagnostics_when_the_export_does_not_load(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    tmp_path: Path,
+) -> None:
+    """A failed entry (its export gone) still downloads: the error's kind, never its path; no proxy can be matched."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="JUNG HOME mesh test",
+        unique_id="1fbd2c61a4b6e5a4",
+        data={CONF_CDB_PATH: str(tmp_path / "gone.json"), CONF_UNICAST: "0D00"},
+    )
+    entry.add_to_hass(hass)
+    assert not await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+
+    result = await get_diagnostics_for_config_entry(hass, hass_client, entry)
+
+    assert (result["state"], result["reason_key"]) == ("setup_error", "cannot_load")
+    assert result["network"] == {"error": "FileNotFoundError"}
+    assert result["bluetooth"]["proxies"] == [
+        {
+            "address": REDACTED,
+            "rssi": -50,
+            "kind": "network_id",
+            "matches_export": None,
+            "node": None,
+        }
+    ]
+    assert str(tmp_path) not in json.dumps(result)

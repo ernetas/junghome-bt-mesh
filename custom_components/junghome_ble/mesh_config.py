@@ -3474,7 +3474,6 @@ class MeshConfigurator:
                 expect_cid=M.JUNG_CID
                 if expect == V.SCENE_ACTION_SETUP_STATUS
                 else None,
-                quiet=True,
                 match=None
                 if fits is None
                 else lambda m: len(m.params) < 2 or fits(m.params),

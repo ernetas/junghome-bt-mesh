@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import time
+from collections import OrderedDict
 from collections.abc import Callable, Coroutine, Iterable
 from dataclasses import dataclass, field, replace
 from functools import partial
@@ -99,6 +100,9 @@ GATT_TIMEOUT = 5.0  # one GATT write (a frame, without response), subscription, 
 # a PDU from our own address with a number we never handed out is reported at most this often per link (seconds):
 # another client on the address sends steadily, and one report (with the highest number seen) is the news
 FOREIGN_SOURCE_REPORT_INTERVAL = 60.0
+# proxy service data classified (`ProxyClient.classify_service_data`) kept by its bytes, least recently seen dropped
+# first: a Node Identity costs one AES per node per key, and a proxy repeats the same advert for its whole session
+CLASSIFY_CACHE_SIZE = 256
 
 
 class SequenceExhausted(ConnectionError):
@@ -964,6 +968,11 @@ class ProxyClient:
         # the NetKeys derived so far (`_net_key`), pruned to those we accept whenever the key refresh moves
         self._net_keys: dict[bytes, NetKeyMaterial] = {}
         self._kr = self._resume_key_refresh(cdb, state)
+        # `classify_service_data`'s verdicts by service data, for the keys it was given then (`_kr.rx_keys`)
+        self._classified: OrderedDict[bytes, tuple[str, int | None] | None] = (
+            OrderedDict()
+        )
+        self._classified_for: tuple[bytes, ...] = ()
         self.ak = cdb.app_keys[0]
         self.client: Any = None
         self.proxy_addr: int | None = (
@@ -1087,6 +1096,8 @@ class ProxyClient:
         """Know a node the export does not have yet (one just provisioned): its device key, its elements."""
         if node not in self.cdb.nodes:
             self.cdb.nodes.append(node)
+        self.cdb.reindex()
+        self._classified.clear()  # its Node Identity was nobody's until now
         for element in node.elements:
             self._dev_key_of_element[element.address] = node.dev_key
         self._note_device(node)
@@ -1094,6 +1105,8 @@ class ProxyClient:
     def remove_node(self, node: Node) -> None:
         """Forget a node `add_node` made known (one reset before any export recorded it); the others stay as they are."""
         self.cdb.nodes[:] = [n for n in self.cdb.nodes if n is not node]
+        self.cdb.reindex()
+        self._classified.clear()
         for element in node.elements:
             self._dev_key_of_element.pop(element.address, None)
             if (owner := self.cdb.node_by_addr(element.address)) is not None:
@@ -1137,9 +1150,32 @@ class ProxyClient:
 
     # ------------------------------------------------------------------ discovery helpers
     def classify_service_data(self, sd: bytes) -> tuple[str, int | None] | None:
-        """Interpret Mesh Proxy service data (0x1828). Returns (kind, node_addr) if it belongs to our network."""
+        """Interpret Mesh Proxy service data (0x1828). Returns (kind, node_addr) if it belongs to our network.
+
+        The verdict is kept by the bytes (`CLASSIFY_CACHE_SIZE`, review-4 R4-8): every advert of every proxy in
+        range comes here, a Node Identity costs one AES per node per key, and another network's — the one no node
+        matches, so the whole scan — repeats for as long as its proxy advertises. The kept verdicts are for the
+        keys accepted when they were made: a key refresh moving on (`_kr.rx_keys`) drops them all, and so does a
+        node made known or forgotten (`add_node`, `remove_node`).
+        """
         if not sd:
             return None
+        keys = self._kr.rx_keys
+        if keys != self._classified_for:
+            self._classified.clear()
+            self._classified_for = keys
+        sd = bytes(sd)
+        if sd in self._classified:
+            self._classified.move_to_end(sd)
+            return self._classified[sd]
+        verdict = self._classify(sd)
+        self._classified[sd] = verdict
+        if len(self._classified) > CLASSIFY_CACHE_SIZE:
+            self._classified.popitem(last=False)
+        return verdict
+
+    def _classify(self, sd: bytes) -> tuple[str, int | None] | None:
+        """`classify_service_data` without the cache."""
         keys = (
             self.rx_net_keys
         )  # during a key refresh, proxies advertise either key's identity
@@ -1859,13 +1895,13 @@ class ProxyClient:
         timeout: float = 3.0,
         retries: int = 3,
         expect_cid: int | None = None,
-        quiet: bool = False,
         match: Callable[[AccessMessage], bool] | None = None,
     ) -> AccessMessage:
         """Send and wait for a status from dst (any source if dst is a group).
 
-        `quiet` logs unanswered attempts at DEBUG instead of WARNING — for optional reads (a property the
-        device may simply not have) where silence is an answer, not a fault.
+        Each unanswered attempt is logged at DEBUG only; the `TimeoutError` after the last one is the caller's to
+        report (review-4 H4-7: a WARNING per attempt made every dead element log several lines on each link-up,
+        where the HA hub logs one line per node that goes unreachable).
 
         `timeout` is the wait for the reply of each of the `retries` attempts, counted from when its send is
         through: the wait for the send lock (other sends queued first) and the send itself come on top. Those are
@@ -1891,7 +1927,7 @@ class ProxyClient:
             )
 
         return await self._request(
-            dst, access_pdu, self._app_key, match_status, timeout, retries, quiet=quiet
+            dst, access_pdu, self._app_key, match_status, timeout, retries
         )
 
     async def request_config(
@@ -1943,7 +1979,6 @@ class ProxyClient:
         match: Callable[[AccessMessage], bool],
         timeout: float,
         retries: int,
-        quiet: bool = False,
     ) -> AccessMessage:
         for attempt in range(retries):
             fut: asyncio.Future[AccessMessage] = (
@@ -1962,12 +1997,8 @@ class ProxyClient:
                 if fut.done() and not fut.cancelled() and fut.exception() is None:
                     # a segmented send whose acks got lost: the node applied it and answered all the same
                     return fut.result()
-                log.log(
-                    logging.DEBUG if quiet else logging.WARNING,
-                    "no response from %04X (attempt %d/%d)",
-                    dst,
-                    attempt + 1,
-                    retries,
+                log.debug(
+                    "no response from %04X (attempt %d/%d)", dst, attempt + 1, retries
                 )
             finally:
                 self._drop_waiter(fut)

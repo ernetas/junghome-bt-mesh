@@ -513,14 +513,26 @@ class Devices:
     # room address -> the lights, sockets, blinds and thermostats that listen to it (the app's area filter, for the
     # area's central control); a room without such a load is absent
     room_members: dict[int, list[Device]] = field(default_factory=dict)
+    # meter element → its load (`by_meter`), and temperature element → its CTL light (`by_temperature`): both looked
+    # up per status (review-4 R4-9), so kept up by `add` rather than searched
+    _by_meter: dict[int, MeteredLoad] = field(default_factory=dict, repr=False)
+    _by_temperature: dict[int, Light] = field(default_factory=dict, repr=False)
 
     def add(self, device: Device) -> None:
         """Record `device` under its element address and in the typed list of its class, if it has one."""
         self.by_address[device.address] = device
         if isinstance(device, Light):
             self.lights.append(device)
+            if device.meter_address is not None:
+                self._by_meter.setdefault(device.meter_address, device)
+            if device.temperature_address is not None:
+                self._by_temperature.setdefault(device.temperature_address, device)
         elif isinstance(device, Socket):
             self.sockets.append(device)
+            if device.meter_address is not None and not isinstance(
+                self._by_meter.get(device.meter_address), Socket
+            ):
+                self._by_meter[device.meter_address] = device  # a socket before a light
         elif isinstance(device, Blind):
             self.blinds.append(device)
         elif isinstance(device, Button):
@@ -541,8 +553,12 @@ class Devices:
         return [load for load in loads if load.meter_address is not None]
 
     def by_meter(self, addr: int) -> MeteredLoad | None:
-        """Return the load whose meter element is `addr`."""
-        return next((load for load in self.metered if load.meter_address == addr), None)
+        """Return the load whose meter element is `addr`: the first in `metered` order, as a search of it would."""
+        return self._by_meter.get(addr)
+
+    def by_temperature(self, addr: int) -> Light | None:
+        """Return the first CTL light whose temperature element is `addr` (`Light.temperature_address`)."""
+        return self._by_temperature.get(addr)
 
 
 # ----------------------------------------------------------------------------- rule table

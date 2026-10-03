@@ -356,6 +356,13 @@ class CDB:
     raw: dict[str, Any] | None = field(
         default=None, repr=False
     )  # the parsed `meshNetwork` object; `Element.raw_models` are views into it, `export.ProjectFile` edits it
+    # element address → element (`element`), built on first use; `reindex` drops it after `nodes` changed
+    _by_addr: dict[int, Element] | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+    _indexed_nodes: int = field(
+        default=0, init=False, repr=False, compare=False
+    )  # len(nodes) when `_by_addr` was built
 
     @staticmethod
     def parse(text: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
@@ -527,12 +534,40 @@ class CDB:
         return (refresh[0], self.net_keys[index])
 
     def element(self, addr: int) -> Element | None:
-        """Return the element at unicast `addr`, if a node has one."""
+        """Return the element at unicast `addr`, if a node has one.
+
+        A dictionary lookup (review-4 R4-9): it runs for every message heard, every entity's availability and
+        every keep-alive target, and a scan of every node cost tens of microseconds on a mesh of hundreds. Whoever
+        adds a node to `nodes`, takes one out or moves an element calls `reindex` (`ProxyClient.add_node` /
+        `remove_node`; the export's own edits build a new `CDB`). A list that grew or shrank without it is
+        re-indexed all the same — a net, not the contract: a stale index would hand out the wrong device key.
+        """
+        index = self._by_addr
+        if index is None or self._indexed_nodes != len(self.nodes):
+            index = self._by_addr = self._index()
+            self._indexed_nodes = len(self.nodes)
+        return index.get(addr)
+
+    def _index(self) -> dict[int, Element]:
+        """Every element by address; of two nodes claiming one address the first in `nodes` wins, as a scan found."""
+        index: dict[int, Element] = {}
         for n in self.nodes:
             for e in n.elements:
-                if e.address == addr:
-                    return e
-        return None
+                index.setdefault(e.address, e)
+        return index
+
+    def reindex(self) -> None:
+        """Forget the address index after a change of `nodes` or of an element's address: the next lookup rebuilds it."""
+        self._by_addr = None
+
+    def index_is_current(self) -> bool:
+        """Whether the address index (when built) still matches `nodes`: what a missing `reindex` call breaks (tests)."""
+        if (index := self._by_addr) is None:
+            return True
+        fresh = self._index()
+        return index.keys() == fresh.keys() and all(
+            index[a] is e for a, e in fresh.items()
+        )
 
     def node_by_addr(self, addr: int) -> Node | None:
         """Return the node owning the element at unicast `addr`."""

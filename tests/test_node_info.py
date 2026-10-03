@@ -32,8 +32,7 @@ from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import Element, Node
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 
-from . import property_helpers as ph
-from .conftest import settle, wait_for_link
+from .conftest import settle, wait_for_link, wait_until
 from .helpers import OUR_ADDRESS
 from .test_binary_sensor import RELAY_MOTION, make_detectors_entry, start_detectors
 
@@ -323,9 +322,7 @@ async def test_the_node_device_shows_its_manufacturer_and_hardware_revision(
     fake_link.node_info[RELAY_MOTION, 0x0003] = bytes.fromhex("0d020100")
     entry = await start_detectors(hass, make_detectors_entry(), fake_link)
     hub = entry.runtime_data
-    await ph.wait_until(
-        hass, lambda: NODE_INFO_TIME_ROLE in hub.node_info(RELAY_MOTION)
-    )
+    await wait_until(hass, lambda: NODE_INFO_TIME_ROLE in hub.node_info(RELAY_MOTION))
     assert (
         hub.node_info(RELAY_MOTION)
         == {
@@ -348,7 +345,7 @@ async def test_the_node_device_shows_its_manufacturer_and_hardware_revision(
     fake_link.sent.clear()
     await hass.config_entries.async_reload(entry.entry_id)
     await wait_for_link(hass, entry)
-    await ph.wait_until(
+    await wait_until(
         hass,
         lambda: any(p == sig_get(SIG_SOFTWARE_VERSION) for _, _, p in fake_link.sent),
     )
