@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
@@ -36,6 +38,7 @@ from custom_components.junghome_ble.const import (
     SEQ_SKIP_UNKNOWN,
 )
 from custom_components.junghome_ble.coordinator import (
+    SEQ_FLOOR_EVERY,
     SEQ_RESTART_MARGIN,
     SEQ_SAVE_EVERY,
     SEQ_STALL_RETRY,
@@ -47,17 +50,24 @@ from custom_components.junghome_ble.coordinator import (
     merge_legacy_seq_store,
     seq_store,
 )
+from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import (
+    IV_RECOVERY_MIN_INTERVAL,
     IV_UPDATE_MIN_STATE,
     SEQ_GUARD_FIRST_BEACON,
+    SEQ_MAX,
     SEQ_TX_LIMIT,
     SequenceExhausted,
     SequenceStalled,
 )
+from custom_components.junghome_ble.jhmesh.export import ProjectFile
+from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
+from custom_components.junghome_ble.jhmesh.vault import Vault
 
 from .conftest import (
     CDB_PATH,
     META_DIR,
+    SHARE_EXPORT_PATH,
     FakeProxyLink,
     settle,
     setup_entry,
@@ -359,8 +369,9 @@ async def test_an_address_switched_away_and_back_continues_its_counter(
     hass_storage: dict[str, Any],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Reconfiguring the address to 0D01 starts a fresh sequence space (with the warning: the store cannot know
-    whether 0D01 was used from elsewhere); back on 0D00 the old counter continues, and the store keeps both."""
+    """Reconfiguring the address to 0D01 starts its sequence space SEQ_SKIP_AHEAD in (review-4 S I5, with the
+    warning: the store knows another address, so 0D01 may have been used before and lost its record); back on 0D00
+    the old counter continues, and the store keeps both."""
     entry = init_integration
     seq_0d00 = hub_of(entry).state.seq
     hass.config_entries.async_update_entry(
@@ -371,14 +382,17 @@ async def test_an_address_switched_away_and_back_continues_its_counter(
     state = hub_of(entry).state
     assert state.src == 0x0D01
     assert (
-        "Address 0D01 has no sequence-number record in this mesh's store (known: 0D00)"
+        "Address 0D01 has no sequence-number record, but the store knows other addresses (0D00)"
         in caplog.text
     )
     writes = len(fake_link.raw_writes)
     seq_0d01 = state.seq
+    # past what it may have sent, plus the margin of a record not closed cleanly, plus what this link sent
     assert (
-        0 < seq_0d01 < SEQ_RESTART_MARGIN
-    )  # fresh: no margin, just what this link sent
+        SEQ_SKIP_AHEAD + SEQ_RESTART_MARGIN
+        < seq_0d01
+        < SEQ_SKIP_AHEAD + 2 * SEQ_RESTART_MARGIN
+    )
 
     caplog.clear()
     hass.config_entries.async_update_entry(
@@ -392,15 +406,19 @@ async def test_an_address_switched_away_and_back_continues_its_counter(
     assert "has no sequence-number record" not in caplog.text
     await hass.async_block_till_done()
     addresses = stored_addresses(hass_storage)
-    assert addresses["0D01"] == {
-        "seq": seq_0d01,
-        "iv_index": 0,
-        "iv_update_active": False,
-        "iv_known": True,  # the proxy's connect-time beacon authenticated
-        "clean": True,
-        "seq_peak": 0,
-        "seq_peak_from": 0,
-    }
+    assert (
+        addresses["0D01"]
+        == {
+            "seq": seq_0d01,
+            "iv_index": 0,
+            "iv_update_active": False,
+            "iv_known": True,  # the proxy's connect-time beacon authenticated
+            "clean": True,
+            "seq_peak": 0,
+            "seq_peak_from": 0,
+            "seq_guard": 1,  # the numbers it may have sent: under the beacon's index, or one past it
+        }
+    )
     assert addresses["0D00"]["clean"] is False
 
 
@@ -671,6 +689,303 @@ async def test_seq_store_lost_fix_aborts_without_its_entry(
     )  # ... a form still open
     assert result["type"] == "abort"
     assert result["reason"] == "entry_gone"
+
+
+@pytest.mark.parametrize(
+    ("records", "floor", "target"),
+    [
+        # the reviewer's reproduction: a negative counter put the target at 0 under its index
+        ([{"iv_index": 5, "seq": -2_000_000}], None, (0, SEQ_SKIP_UNKNOWN)),
+        # an index past 32 bits: a record no start could use, and a floor no later repair got past
+        ([{"iv_index": 1 << 40, "seq": 5}], None, (0, SEQ_SKIP_UNKNOWN)),
+        ([{"iv_index": 3, "seq": SEQ_MAX + 1}], None, (0, SEQ_SKIP_UNKNOWN)),
+        # beside garbage, what is in range counts
+        (
+            [{"iv_index": 1 << 40, "seq": 5}, {"iv_index": 3, "seq": 10}],
+            None,
+            (3, 10 + SEQ_SKIP_AHEAD),
+        ),
+        # a floor out of range is no floor; one in range wins over garbage
+        ([], {"iv_index": -1, "seq": 9}, (0, SEQ_SKIP_UNKNOWN)),
+        ([{"seq": -1}], {"iv_index": 2, "seq": 9}, (2, 9 + SEQ_SKIP_UNKNOWN)),
+    ],
+    ids=[
+        "negative_seq",
+        "iv_index_past_32_bits",
+        "seq_past_24_bits",
+        "garbage_beside_a_record",
+        "floor_out_of_range",
+        "floor_beside_garbage",
+    ],
+)
+def test_the_skip_target_trusts_only_numbers_in_range(
+    records: list[dict[str, Any]],
+    floor: dict[str, Any] | None,
+    target: tuple[int, int],
+) -> None:
+    """Review-4 S4-7: `_furthest` took any number that converted, however far out of range."""
+    assert coordinator._seq_skip_target(records, floor) == target
+
+
+async def test_a_record_out_of_range_in_both_copies_is_repaired_into_a_usable_one(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+) -> None:
+    """Review-4 S4-7: an IV index of 2^40 in both copies made the repair write a record no start could use (the
+    issue came back with every repair) and a floor no repair recovered from."""
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup"):
+        hass_storage[key]["data"]["addresses"]["0D00"]["iv_index"] = 1 << 40
+    assert not await hass.config_entries.async_setup(init_integration.entry_id)
+    assert (await run_fix_flow(hass, ISSUE_SEQ_STORE_LOST))["type"] == "create_entry"
+    await hass.async_block_till_done()
+    await wait_for_link(hass, init_integration)
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert hub_of(init_integration).state.seq >= SEQ_SKIP_UNKNOWN
+    assert hass_storage[f"{SEQ_STORE_KEY}.floor"]["data"]["addresses"]["0D00"] == {
+        "iv_index": 0,
+        "seq": SEQ_SKIP_UNKNOWN,
+    }
+
+
+async def test_the_lost_store_repair_keeps_its_issue_when_the_floor_is_not_written(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review-4 S4-7: the repair ignored a failed floor write (`None`) and deleted the issue anyway, leaving a setup
+    refused with nothing to repair it from. It aborts now and the issue stays; repairing again once the disk takes
+    the write sets the entry up."""
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup"):
+        hass_storage[key]["data"]["addresses"]["0D00"]["seq"] = None
+    assert not await hass.config_entries.async_setup(init_integration.entry_id)
+    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    save = floor.async_save
+    monkeypatch.setattr(floor, "async_save", AsyncMock())  # the write never lands
+    result = await run_fix_flow(hass, ISSUE_SEQ_STORE_LOST)
+    assert (result["type"], result["reason"]) == ("abort", "floor_not_written")
+    assert find_issue(hass, ISSUE_SEQ_STORE_LOST) is not None
+    assert init_integration.state is ConfigEntryState.SETUP_ERROR
+    assert hass_storage[SEQ_STORE_KEY]["data"]["addresses"]["0D00"]["seq"] is None
+    monkeypatch.setattr(floor, "async_save", save)
+    assert (await run_fix_flow(hass, ISSUE_SEQ_STORE_LOST))["type"] == "create_entry"
+    await hass.async_block_till_done()
+    await wait_for_link(hass, init_integration)
+    assert init_integration.state is ConfigEntryState.LOADED
+
+
+async def test_the_floor_keeps_up_with_the_counter(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review-4 S4-8: the floor was written by the repair alone, so "a second loss cannot reuse" held only until the
+    address had sent SEQ_SKIP_UNKNOWN past it. The hub writes a new entry every SEQ_FLOOR_EVERY numbers and with
+    every new transmit index, and holds sends back SEQ_SKIP_UNKNOWN past the last entry that landed."""
+    state = hub_of(init_integration).state
+    floor_key = f"{SEQ_STORE_KEY}.floor"
+
+    def entry() -> dict[str, Any]:
+        return hass_storage[floor_key]["data"]["addresses"]["0D00"]
+
+    await hass.async_block_till_done()
+    assert (
+        floor_key not in hass_storage
+    )  # index 0, fewer than SEQ_FLOOR_EVERY numbers: (0, 0) still holds
+    first = state.skip_ahead(SEQ_FLOOR_EVERY)
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 0, "seq": first}
+    state.skip_ahead(SEQ_FLOOR_EVERY - 1)
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 0, "seq": first}  # not yet
+    second = state.next_seq() + 1
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 0, "seq": second}
+    assert state.apply_beacon(
+        1, iv_update=False
+    )  # the counter restarts at 0 under index 1
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 1, "seq": 0}
+    # a floor that cannot be written: sends stop SEQ_SKIP_UNKNOWN past the last entry that landed
+    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    save = floor.async_save
+    monkeypatch.setattr(floor, "async_save", AsyncMock())
+    state.skip_ahead(SEQ_SKIP_UNKNOWN - 1)
+    await hass.async_block_till_done()
+    assert (
+        state.next_seq() == SEQ_SKIP_UNKNOWN - 1
+    )  # the last one a repair would still continue past
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    assert state.durable_headroom == 0
+    assert entry() == {"iv_index": 1, "seq": 0}
+    monkeypatch.setattr(floor, "async_save", save)
+    assert state._stalled_at is not None
+    state._stalled_at -= (
+        SEQ_STALL_RETRY  # the stall's retry: the floor is asked for again
+    )
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 1, "seq": SEQ_SKIP_UNKNOWN}
+    assert state.next_seq() == SEQ_SKIP_UNKNOWN
+    # nothing goes out under a new index before the floor names it: a repair continues under the floor's index, and
+    # a first beacon after it below ours would not carry the counter up to ours
+    monkeypatch.setattr(floor, "async_save", AsyncMock())
+    assert state.iv_recovered_at is not None
+    assert state.apply_beacon(
+        2, iv_update=False, now=state.iv_recovered_at + IV_RECOVERY_MIN_INTERVAL
+    )
+    await hass.async_block_till_done()
+    assert state.durable_headroom == 0
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    monkeypatch.setattr(floor, "async_save", save)
+    state._stalled_at -= SEQ_STALL_RETRY
+    with pytest.raises(SequenceStalled):
+        state.next_seq()
+    await hass.async_block_till_done()
+    assert entry() == {"iv_index": 2, "seq": 0}
+    assert state.next_seq() == 0
+
+
+async def test_the_floor_entry_carries_a_live_guard_and_never_goes_back(
+    hass: HomeAssistant,
+) -> None:
+    """A guard the floor entry or the counter holds (an `iv_index_mismatch` rewind: numbers went out under every
+    index up to it) goes into the new entry while it still covers the index, and is dropped once the index passed
+    it; a counter behind the floor (a restored record, a rewind) writes nothing over it and is not bounded by it."""
+    key = f"{DOMAIN}.seq.test-floor-guard"
+    store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
+    floor = SeqStore(hass, STORAGE_VERSION, f"{key}.floor", atomic_writes=True)
+    other = {"iv_index": 1, "seq": 1}
+    floor.written = {
+        "addresses": {
+            "0D00": {"iv_index": 2, "seq": 7, "seq_guard": 5},
+            "0E00": other,
+        }
+    }
+    data = {"addresses": {"0D00": {"seq": 100, "iv_index": 3, "iv_known": True}}}
+    state = HAState(store, data, 0x0D00, "test-floor-guard", floor=floor)
+    await hass.async_block_till_done()
+    assert floor.written == {
+        "addresses": {
+            "0D00": {"iv_index": 3, "seq": 100 + SEQ_RESTART_MARGIN, "seq_guard": 5},
+            "0E00": other,
+        }
+    }
+    assert state.apply_beacon(
+        6, iv_update=False
+    )  # past the guard: the counter starts over
+    await hass.async_block_till_done()
+    assert floor.written["addresses"]["0D00"] == {"iv_index": 6, "seq": 0}
+    ahead = {"addresses": {"0D00": {"iv_index": 9, "seq": 0}}}
+    floor.written = ahead
+    behind = {"addresses": {"0D00": {"seq": 3 * SEQ_SKIP_UNKNOWN, "iv_index": 6}}}
+    state = HAState(store, behind, 0x0D00, "test-floor-guard", floor=floor)
+    await hass.async_block_till_done()
+    assert floor.written is ahead
+    assert state.durable_headroom == SEQ_RESTART_MARGIN  # the store's bound only
+    state.next_seq()
+
+
+async def test_the_key_refresh_is_kept_at_mesh_level_and_written_at_once(
+    hass: HomeAssistant,
+    hass_storage: dict[str, Any],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 S4-9: the followed key refresh went out with the 2 s debounce (a crash right after lost the new key)
+    and lived in the address's record (another address after a completed refresh lost it). It is written at once
+    now, at mesh level — authoritative, even when it says none — with a copy in the record for an older reader."""
+    key = f"{DOMAIN}.seq.test-mesh-level"
+    stale = {"key": bytes(range(16)).hex(), "phase": 3, "proof": "beacon"}
+    store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
+    data = {
+        "addresses": {"0D00": {"seq": 1, "key_refresh": stale}, "0D01": {"seq": 5}},
+        "mesh": {"key_refresh": None},
+    }
+    state = HAState(store, data, 0x0D00, "test-mesh-level")
+    assert state.key_refresh is None  # the mesh's word beats a stale copy
+    await hass.async_block_till_done()
+    refresh = KeyRefreshRecord(bytes(range(0x40, 0x50)), 2, "beacon")
+    state.set_key_refresh(refresh)
+    await hass.async_block_till_done()  # no 2 s to wait for
+    saved = hass_storage[key]["data"]
+    assert saved["mesh"] == {"key_refresh": refresh.to_stored()}
+    assert saved["addresses"]["0D00"]["key_refresh"] == refresh.to_stored()
+    assert "key_refresh" not in saved["addresses"]["0D01"]
+    assert HAState(store, saved, 0x0D01, "test-mesh-level").key_refresh == refresh
+    # a store an older version wrote: the address's own record
+    older = {"addresses": {"0D00": {"seq": 1, "key_refresh": stale}}}
+    assert HAState(
+        store, older, 0x0D00, "test-mesh-level"
+    ).key_refresh == KeyRefreshRecord.from_stored(stale)
+    # a mesh-level one that does not parse: the record's, with a warning
+    broken = {**older, "mesh": {"key_refresh": {"key": "00", "phase": 3}}}
+    assert HAState(
+        store, broken, 0x0D00, "test-mesh-level"
+    ).key_refresh == KeyRefreshRecord.from_stored(stale)
+    assert (
+        "The mesh's key refresh in the sequence-number store is unusable" in caplog.text
+    )
+    await hass.async_block_till_done()
+
+
+async def test_the_lost_store_repair_keeps_the_mesh_level_part(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+) -> None:
+    """The repair rewrites both copies: the mesh's key refresh next to the records goes along."""
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    mesh = hass_storage[SEQ_STORE_KEY]["data"]["mesh"]
+    assert mesh == {"key_refresh": None}
+    for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup"):
+        hass_storage[key]["data"]["addresses"]["0D00"]["seq"] = None
+    del hass_storage[SEQ_STORE_KEY]["data"]["mesh"]  # the backup copy's is the one left
+    assert not await hass.config_entries.async_setup(init_integration.entry_id)
+    assert (await run_fix_flow(hass, ISSUE_SEQ_STORE_LOST))["type"] == "create_entry"
+    for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup"):
+        assert hass_storage[key]["data"]["mesh"] == mesh
+    await hass.async_block_till_done()
+    await wait_for_link(hass, init_integration)
+
+
+def test_evidence_that_an_address_without_a_record_was_used() -> None:
+    """Review-4 S I5: an address without a record anywhere started at 0 even when the export, the vault or the store
+    showed it was used before (only a warning). What counts, in order; nothing at all is a fresh address."""
+    nobody = SimpleNamespace(vault=None)
+    pf = ProjectFile.load(Path(SHARE_EXPORT_PATH))
+    plain = CDB.load(Path(CDB_PATH))
+    assert coordinator._evidence_of_use(plain, 0x0D00, nobody, None, None) is None
+    Vault.create().merge_into(pf, 0x0D00)
+    assert "provisioner node" in (
+        coordinator._evidence_of_use(pf.cdb, 0x0D00, nobody) or ""
+    )
+    assert "a node of the export" in (
+        coordinator._evidence_of_use(plain, 0x0148, nobody) or ""
+    )
+    assert "the vault" in (
+        coordinator._evidence_of_use(
+            plain, 0x0D00, SimpleNamespace(vault=Vault.create())
+        )
+        or ""
+    )
+    assert coordinator._evidence_of_use(
+        plain,
+        0x0D00,
+        nobody,
+        None,
+        {"addresses": {"0E00": {}}},
+        {"addresses": {"0D07": {}}},
+    ) == ("the store knows other addresses (0D07, 0E00)")
 
 
 async def test_pdus_dropped_fix_skips_ahead_and_reconnects(
@@ -1239,15 +1554,16 @@ def test_store_record_helpers_assume_the_worst_of_garbage() -> None:
     assert coordinator._seq_skip_target([], {"seq": "y"}) == (0, SEQ_SKIP_UNKNOWN)
 
 
-async def test_an_unreadable_store_without_our_record_anywhere_starts_the_address_fresh(
+async def test_an_unreadable_store_without_our_record_anywhere_skips_the_address_ahead(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
     hass_storage: dict[str, Any],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """The primary is gone (no corrupt copy either), the backup only knows other addresses: ours never sent, so it
-    starts at 0 — the backup's other records are kept."""
+    """The primary is gone (no corrupt copy either), the backup only knows other addresses: nothing says ours sent,
+    but the store was used, so it may have (review-4 S I5) — it starts SEQ_SKIP_AHEAD on rather than at 0, and the
+    backup's other records are kept."""
     fake_link.expect_replays = (
         True  # it did send (the store is made up here): the mesh drops the repeats
     )
@@ -1263,15 +1579,19 @@ async def test_an_unreadable_store_without_our_record_anywhere_starts_the_addres
         in caplog.text
     )
     assert "0D07" in hass_storage[SEQ_STORE_KEY]["data"]["addresses"]
-    assert hub_of(init_integration).state.seq < SEQ_RESTART_MARGIN + 100
+    assert (
+        SEQ_SKIP_AHEAD
+        < hub_of(init_integration).state.seq
+        < SEQ_SKIP_AHEAD + 2 * SEQ_RESTART_MARGIN
+    )
 
 
 async def test_store_minor_versions_both_ways(
     hass: HomeAssistant, hass_storage: dict[str, Any]
 ) -> None:
-    """1.1 records (no `seq_guard`, no `in_backup`) load unchanged into this version's store; a 1.3 store (with a
-    guard and a backup's mark) loads unchanged into a reader of 1.1 that has no migration for it — an older
-    integration keeps starting."""
+    """1.1 records (no `seq_guard`, no `in_backup`, no mesh-level part) load unchanged into this version's store; a
+    1.4 store (with a guard, a backup's mark and the mesh's key refresh) loads unchanged into a reader of 1.1 that
+    has no migration for it — an older integration keeps starting."""
     key = f"{DOMAIN}.seq.test-minor"
     record = {"seq": 7, "iv_index": 2, "iv_update_active": False, "clean": False}
     hass_storage[key] = {
@@ -1280,13 +1600,14 @@ async def test_store_minor_versions_both_ways(
         "data": {"addresses": {"0D00": record}},
     }
     store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
-    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 3
+    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 4
     assert await store.async_load() == {"addresses": {"0D00": record}}
-    assert hass_storage[key]["minor_version"] == 3
+    assert hass_storage[key]["minor_version"] == 4
     guarded = {**record, "seq_guard": SEQ_GUARD_FIRST_BEACON, "in_backup": "0" * 32}
-    await store.async_save({"addresses": {"0D00": guarded}})
+    newer = {"addresses": {"0D00": guarded}, "mesh": {"key_refresh": None}}
+    await store.async_save(newer)
     older = Store(hass, STORAGE_VERSION, key)  # minor version 1, no migration
-    assert await older.async_load() == {"addresses": {"0D00": guarded}}
+    assert await older.async_load() == newer
     with pytest.raises(NotImplementedError):
         await store._async_migrate_func(STORAGE_VERSION + 1, 1, {})
 

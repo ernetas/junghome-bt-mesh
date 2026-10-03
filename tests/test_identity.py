@@ -26,6 +26,7 @@ from unittest.mock import patch
 import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.util.file import WriteError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import config_flow, identity
@@ -348,6 +349,211 @@ async def test_keeper_loads_saves_and_sets_an_unreadable_vault_aside(
     assert vault.node_key.hex() not in caplog.text.lower()
 
 
+async def test_a_device_key_whose_write_failed_silently_is_written_by_the_next_save(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    """The lost-device-key scenario (review-4 D15): HA's `Store.async_save` swallows a `WriteError` (a full disk, a
+    filesystem remounted read-only) with only a log line. The keeper must not take that for written: the next save
+    retries, so a restart finds the device key Home Assistant just handed out."""
+    keeper = await async_vault_keeper(hass, "abcd-mesh")
+    keeper.identity().remember_provisioned(NEW_UUID, 0x0D10, 2, NEW_KEY)
+    with patch(
+        "homeassistant.helpers.storage.Store._async_write_data",
+        side_effect=WriteError("read-only file system"),
+    ):
+        landed = await keeper.async_save()
+    key = "junghome_ble.vault.abcd-mesh"
+    assert key not in hass_storage
+    assert landed is False
+    assert keeper.write_error == "read-only file system"
+    assert await keeper.async_save()  # writable again, nothing changed in memory since
+    assert keeper.write_error is None
+    for stored in (key, f"{key}.backup"):
+        nodes = hass_storage[stored]["data"]["nodes"]
+        assert [(n["uuid"], n["deviceKey"]) for n in nodes] == [
+            (NEW_UUID, NEW_KEY.hex().upper())
+        ]
+    # what a restart reads
+    hass.data.pop(identity.VAULT_KEEPERS)
+    again = await async_vault_keeper(hass, "abcd-mesh")
+    assert again.vault is not None
+    assert again.vault.nodes[NEW_UUID].dev_key == NEW_KEY
+
+
+async def test_a_failed_write_is_retried_and_listeners_hear_of_every_save() -> None:
+    """`async_save` says whether the vault landed; a failed one is written by the next save even unchanged, and a
+    copy that fails is retried the same way without failing the save."""
+    store, backup = MemoryStore(), MemoryStore(path="memory.backup")
+    keeper = VaultKeeper(store, lambda _s: MemoryStore(), backup)  # type: ignore[arg-type]
+    heard: list[str | None] = []
+    remove = keeper.async_add_listener(lambda: heard.append(keeper.write_error))
+    assert keeper.path == "memory"
+    keeper.identity().remember_provisioned(NEW_UUID, 0x0D10, 2, NEW_KEY)
+    store.fail = backup.fail = "disk full"
+    assert not await keeper.async_save()
+    assert keeper.write_error == "disk full"
+    assert (
+        store.saves == backup.saves == []
+    )  # the copy follows only a write that landed
+    store.fail = None
+    assert (
+        await keeper.async_save()
+    )  # the copy still fails: retried next time, the save landed all the same
+    assert backup.write_error == "disk full"
+    backup.fail = None
+    assert await keeper.async_save()
+    assert len(store.saves) == 1  # unchanged and written: not again
+    assert backup.saves == store.saves
+    assert await keeper.async_save()
+    assert len(backup.saves) == 1
+    assert heard == ["disk full", None, None, None]
+    remove()
+    await keeper.async_save()
+    assert len(heard) == 4
+
+
+async def test_a_vault_not_written_for_another_reason_says_so() -> None:
+    """A write that neither landed nor reported an error (Home Assistant stopping: `Store` defers it)."""
+
+    class Deferred(MemoryStore):
+        async def async_save(self, data: dict[str, Any]) -> None:
+            pass
+
+    keeper = VaultKeeper(Deferred(), lambda _s: MemoryStore())  # type: ignore[arg-type]
+    keeper.identity()
+    assert not await keeper.async_save()
+    assert keeper.write_error == "not written"
+
+
+async def test_an_unreadable_vault_whose_copy_fails_is_kept_untouched(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 D15: the original is removed only once its copy aside landed. Until then it stays as it is, the
+    vault lives in memory, and every save tries the copy again before it writes."""
+    vault = Vault.create()
+    bad_data = {**vault.to_dict(), "version": 99}
+    stored = MemoryStore(bad_data)
+    aside = MemoryStore(path="memory.unreadable")
+    aside.fail = "read-only file system"
+    keeper = VaultKeeper(stored, lambda _s: aside)  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert keeper.vault is None
+    assert stored.data is bad_data  # kept
+    assert (
+        "could not be copied to memory.unreadable (read-only file system)"
+        in caplog.text
+    )
+    keeper.identity().remember_provisioned(NEW_UUID, 0x0D10, 2, NEW_KEY)
+    assert not await keeper.async_save()
+    assert (
+        keeper.write_error
+        == "the unreadable vault in its place could not be copied aside"
+    )
+    assert stored.data is bad_data  # not written over
+    aside.fail = None
+    assert await keeper.async_save()
+    assert aside.saves == [bad_data]
+    assert stored.data is not None
+    assert Vault.from_dict(stored.data).nodes[NEW_UUID].dev_key == NEW_KEY
+    assert NEW_KEY.hex() not in caplog.text.lower()
+
+
+async def test_the_backup_copy_stands_in_for_a_missing_or_unreadable_vault(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    vault = Vault.create()
+    vault.remember_provisioned(NEW_UUID, 0x0D10, 2, NEW_KEY)
+    good = vault.to_dict()
+    # missing (Home Assistant renamed a file that is no JSON aside): the copy, written back in its place
+    store, backup = MemoryStore(), MemoryStore(good, path="memory.backup")
+    keeper = VaultKeeper(store, lambda _s: MemoryStore(), backup)  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert keeper.vault == vault
+    assert store.saves == [good]
+    assert backup.saves == []  # it holds that already
+    assert "its backup copy memory.backup is used" in caplog.text
+    # unreadable: set aside, then the copy takes its place
+    asides: dict[str, MemoryStore] = {}
+
+    def aside(stamp: str) -> MemoryStore:
+        return asides.setdefault(stamp, MemoryStore())
+
+    bad = {**good, "version": 99}
+    store, backup = MemoryStore(bad), MemoryStore(good, path="memory.backup")
+    keeper = VaultKeeper(store, aside, backup)  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert keeper.vault == vault
+    assert [a.saves for a in asides.values()] == [[bad]]
+    assert store.saves == [good]
+    # both unreadable: both set aside (the copy's under a name of its own), a new vault begun
+    asides.clear()
+    store, backup = MemoryStore(bad), MemoryStore(bad, path="memory.backup")
+    keeper = VaultKeeper(store, aside, backup)  # type: ignore[arg-type]
+    with patch.object(
+        identity.dt_util,
+        "utcnow",
+        return_value=datetime(2000, 1, 1, 0, 0, 1, tzinfo=UTC),
+    ):
+        await keeper.async_load()
+    assert keeper.vault is None
+    assert list(asides) == [
+        "20000101T000001000000Z",
+        "20000101T000001000000Z.backup",
+    ]
+    assert store.data is None
+    assert backup.data is None
+    # nothing at all: nothing to read
+    keeper = VaultKeeper(MemoryStore(), aside, MemoryStore())  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert keeper.vault is None
+    assert NEW_KEY.hex() not in caplog.text.lower()
+
+
+async def test_a_readable_vault_brings_its_copy_up_to_date() -> None:
+    """A vault from before the copy existed gets one at load; a copy that matches is not written again."""
+    good = Vault.create().to_dict()
+    store, backup = MemoryStore(good), MemoryStore(path="memory.backup")
+    keeper = VaultKeeper(store, lambda _s: MemoryStore(), backup)  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert backup.saves == [good]
+    assert store.saves == []
+    store, backup = MemoryStore(good), MemoryStore(good, path="memory.backup")
+    keeper = VaultKeeper(store, lambda _s: MemoryStore(), backup)  # type: ignore[arg-type]
+    await keeper.async_load()
+    assert await keeper.async_save()
+    assert store.saves == backup.saves == []
+
+
+async def test_an_old_vault_file_loads_and_gets_its_copy(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    """A vault file an earlier version wrote (store version 1, a pending node without planned groups, no copy)."""
+    key = "junghome_ble.vault.abcd-mesh"
+    old = {
+        "version": 1,
+        "uuid": NEW_UUID,
+        "name": "Home Assistant",
+        "nodeKey": "00" * 16,
+        "ranges": None,
+        "nodes": [
+            {
+                "uuid": "00005EFF-FE00-5377-0000-000000000000",
+                "unicast": "0D10",
+                "elements": 2,
+                "deviceKey": NEW_KEY.hex().upper(),
+                "entry": None,
+                "groups": [],
+                "devices": [],
+            }
+        ],
+    }
+    hass_storage[key] = {"version": 1, "minor_version": 1, "key": key, "data": old}
+    keeper = await async_vault_keeper(hass, "abcd-mesh")
+    assert keeper.vault is not None
+    assert [n.unicast for n in keeper.vault.groups_unknown] == [0x0D10]
+    assert hass_storage[f"{key}.backup"]["data"] == old
+
+
 async def test_one_keeper_per_mesh_in_private_storage(hass: HomeAssistant) -> None:
     keeper = await async_vault_keeper(hass, "ABCD-mesh")
     assert await async_vault_keeper(hass, "abcd-mesh") is keeper
@@ -356,6 +562,12 @@ async def test_one_keeper_per_mesh_in_private_storage(hass: HomeAssistant) -> No
     await keeper.async_save()
     assert keeper._store.key == "junghome_ble.vault.abcd-mesh"
     assert keeper._aside("T1").key == "junghome_ble.vault.abcd-mesh.unreadable.T1"
+    assert keeper._backup is not None
+    assert keeper._backup.key == "junghome_ble.vault.abcd-mesh.backup"
+    assert all(
+        isinstance(s, identity.TrackedStore) and s._private
+        for s in (keeper._store, keeper._backup, keeper._aside("T1"))
+    )
     assert identity.VAULT_STORAGE_VERSION == 1
 
 

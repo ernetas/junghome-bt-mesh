@@ -1081,7 +1081,7 @@
       "message": "Node {node} is in the mesh export {path} but not in the network Home Assistant loaded from it earlier; reload the integration (Settings → Devices & services → JUNG HOME → Reload) so it follows the export, then retry. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "The JUNG HOME Gateway at {host} holds a newer export ({gateway}) than the file Home Assistant would upload ({file}); uploading it would erase what the JUNG HOME app changed since. Fetch the gateway's export again (Settings → Devices & services → JUNG HOME → Reconfigure), then repeat the change made in Home Assistant."
+      "message": "The JUNG HOME Gateway at {host} holds a newer export ({gateway}) than the file Home Assistant would upload ({file}); uploading it would erase what the JUNG HOME app changed since. The next change made in Home Assistant takes the gateway's export over and carries Home Assistant's own changes onto it. If this error comes back (an entry without a copy of the app's last upload cannot tell them apart), fetch the gateway's export again (Settings → Devices & services → JUNG HOME → Reconfigure; the file it replaces is kept beside it as `.pre-reconfigure`), then repeat the change made in Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "The JUNG HOME Gateway at {host} answered with the bare device database only (no device names or room links); adopting it would erase them from the file Home Assistant keeps. Try again once the gateway is no longer busy, or fetch the app's export again."
@@ -1215,6 +1215,12 @@
     "add_device_provisioning_failed": {
       "message": "Provisioning the new device failed: {error}. It is still new; try again."
     },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Provisioning the new device at {unicast} was not confirmed ({error}). It may have received the network's keys, so Home Assistant keeps it as pending: reset it with the action `junghome_ble.reset_pending_device` (unicast {unicast}; add `force` if it does not answer, as a device that never got its keys cannot), then add it again. Its addresses stay reserved until then."
+    },
+    "add_device_vault_unwritable": {
+      "message": "The new device's key could not be saved in Home Assistant's vault ({error}), so provisioning stopped before the device received anything: it is still new and nothing was reserved for it at {unicast}. Free up space or repair the storage, then try again."
+    },
     "add_device_commissioning_failed": {
       "message": "The device was provisioned at {unicast} but its configuration failed ({error}). The app does not know it: reset it with the action `junghome_ble.reset_pending_device` (unicast {unicast}), then add it again. Its addresses stay reserved until then."
     },
@@ -1334,6 +1340,10 @@
       "title": "A device Home Assistant added is not recorded",
       "description": "Home Assistant provisioned a JUNG device of the mesh {title} with `junghome_ble.add_device`, but its configuration or its recording in the export failed: the device at {addresses} has the network's keys, the JUNG HOME app and the export do not know it, and its addresses and element groups stay reserved so no other device gets them. Reset it with the action `junghome_ble.reset_pending_device` (its unicast address) and add it again; for a device you already reset by hand, or one that is gone, use `force`. Not yet tried on a real device. The issue clears when no such device is left."
     },
+    "vault_unwritable": {
+      "title": "JUNG HOME device keys cannot be saved",
+      "description": "Home Assistant could not write its vault for the mesh {title} ({path}; last error: {error}) while adding the device at {address}. The vault holds the device keys of the devices Home Assistant adds, which nothing else has until the export records them, so the device was not provisioned: it received nothing and is still new. This usually means the disk is full or its filesystem was remounted read-only, often a failing SD card. Free up space or repair the storage (a filesystem remounted read-only usually needs the host restarted), then add the device again; do not edit, delete or replace the vault's files. Not yet tried on a real device. The issue clears itself as soon as a write of the vault lands."
+    },
     "carry_over_conflict": {
       "title": "The JUNG HOME app overrode a change Home Assistant made on {title}",
       "description": "Home Assistant took over the export the JUNG HOME app last handed to the gateway and carried its own changes onto it, but the app had changed the same entries meanwhile. The app's version is kept for: {paths}. The devices may still hold what Home Assistant had written: {held}. Check those rooms, scenes and connections in the app and in Home Assistant, and set them again from one side. The app does not see what Home Assistant adds until it imports a file. The issue clears with the next takeover of the gateway's export that has no such conflict."
@@ -1352,11 +1362,12 @@
         "step": {
           "confirm": {
             "title": "Continue past the numbers already sent",
-            "description": "The sequence-number store of this integration (`.storage/junghome_ble.seq.*`) holds no usable record for Home Assistant's address {unicast}, although that address has sent before. Starting it at 0 again would reuse sequence numbers the devices already saw: they would ignore Home Assistant, and every reused number weakens the mesh's encryption. Restoring the store from a backup does the same — an older copy repeats every number sent since it was taken — so do not restore `junghome_ble.seq.*` files. Confirm to let Home Assistant continue 1 048 576 numbers past the last value it can still read (4 194 304 past where an earlier such repair continued, or past 0, when none is left) and set the integration up again."
+            "description": "The sequence-number store of this integration (`.storage/junghome_ble.seq.*`) holds no usable record for Home Assistant's address {unicast}, although that address has sent before. Starting it at 0 again would reuse sequence numbers the devices already saw: they would ignore Home Assistant, and every reused number weakens the mesh's encryption. Restoring the store from a backup does the same — an older copy repeats every number sent since it was taken — so do not restore `junghome_ble.seq.*` files. Confirm to let Home Assistant continue 1 048 576 numbers past the last value it can still read (4 194 304 past the floor it keeps up with the counter in `junghome_ble.seq.*.floor`, or past 0, when none is left) and set the integration up again."
           }
         },
         "abort": {
-          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up."
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
+          "floor_not_written": "The sequence-number floor (`.storage/junghome_ble.seq.*.floor`) could not be written: nothing was changed and the integration stays stopped. Check the disk Home Assistant's configuration is on, then repair the issue again."
         }
       }
     },

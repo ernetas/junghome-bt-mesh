@@ -111,7 +111,8 @@ Our own node identity (address + sequence number) is kept per address in `tools/
 (owner-only: while a key refresh is followed it holds the new network key; an older, world-readable one is made
 owner-only when loaded) — do not delete it (reusing sequence numbers gets our messages dropped by replay protection; if lost, pick a new address with
 `--source`). The CLI defaults to `7FFF`; the Home Assistant integration uses `0D00` with its own store — never let two
-clients send from the same address, each keeps its own counter and the nodes drop whichever lags.
+clients send from the same address, each keeps its own counter and the nodes drop whichever lags. With
+`--ha-storage <config>/.storage` the CLI also refuses every other address Home Assistant's store of the mesh holds.
 
 Tests (mesh library spec vectors + segmentation round trip, HA integration against a simulated proxy, registry
 snapshots and translation lockstep; 100 % line coverage of `custom_components/junghome_ble` — the package and the

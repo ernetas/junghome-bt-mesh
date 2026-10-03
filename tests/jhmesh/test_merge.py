@@ -251,3 +251,75 @@ def test_odd_shapes() -> None:
     d = {"s": ["B", "A"]}
     assert apply_changes(d, [change]) == ([change], [])
     assert d == {"s": ["B", "A"]}
+
+
+def test_a_key_both_sides_changed_keeps_one_row_per_element_and_reports_the_conflict() -> (
+    None
+):
+    """Review-4 S4-4: HA puts key 328 into mode 5 / scene 5 while the app puts it into mode 3 / scene 7. The
+    `*Exports` rows are matched by `elementAddress` now: one row per element survives (the app's, its Config
+    messages went out later) and both edits are reported — content-matched rows used to keep both versions."""
+    base = doc()
+    base["meta"]["buttonLayoutExports"] = [
+        {"mode": 1, "elementAddress": 328},
+        {"mode": 5, "elementAddress": 562},
+    ]
+    base["meta"]["keyModeSceneConfigExports"] = [
+        {
+            "sceneConfig": {"sceneId": 1, "transitionStepSeconds": 0},
+            "elementAddress": 328,
+        }
+    ]
+    base["meta"]["actuatorExports"] = [
+        {
+            "actuatorId": {"actuatorFunctionId": 0, "insertType": 2},
+            "elementAddress": 328,
+        }
+    ]
+    base["network"]["networkExclusions"] = [{"ivIndex": 0, "addresses": ["0002"]}]
+    ours = copy.deepcopy(base)
+    ours["meta"]["buttonLayoutExports"][0]["mode"] = 5
+    ours["meta"]["keyModeSceneConfigExports"][0]["sceneConfig"]["sceneId"] = 5
+    ours["meta"]["actuatorExports"][0]["actuatorId"]["actuatorFunctionId"] = 4
+    ours["network"]["networkExclusions"][0]["addresses"].append("0003")
+    theirs = copy.deepcopy(base)
+    theirs["meta"]["buttonLayoutExports"][0]["mode"] = 3
+    theirs["meta"]["keyModeSceneConfigExports"][0]["sceneConfig"]["sceneId"] = 7
+    theirs["network"]["networkExclusions"].append({"ivIndex": 1, "addresses": []})
+
+    applied, conflicts = apply_changes(theirs, diff_documents(base, ours))
+
+    meta = theirs["meta"]
+    assert [r["elementAddress"] for r in meta["buttonLayoutExports"]] == [328, 562]
+    assert [r["elementAddress"] for r in meta["keyModeSceneConfigExports"]] == [328]
+    assert [r["elementAddress"] for r in meta["actuatorExports"]] == [328]
+    assert meta["buttonLayoutExports"][0]["mode"] == 3  # the app's
+    assert meta["keyModeSceneConfigExports"][0]["sceneConfig"]["sceneId"] == 7
+    assert sorted(c.where() for c in conflicts) == [
+        "meta.buttonLayoutExports[328].mode",
+        "meta.keyModeSceneConfigExports[328].sceneConfig.sceneId",
+    ]
+    # what only HA changed is carried over, inside the matched rows
+    assert meta["actuatorExports"][0]["actuatorId"]["actuatorFunctionId"] == 4
+    assert theirs["network"]["networkExclusions"] == [
+        {"ivIndex": 0, "addresses": ["0002", "0003"]},
+        {"ivIndex": 1, "addresses": []},
+    ]
+    assert len(applied) == 2
+
+
+def test_element_addresses_may_be_hex_text() -> None:
+    """`meta` rows carry an address as an int or as hex text (`devices.as_int`): both name the same element; text
+    that is no address, or a flag, leaves the array a set of rows."""
+    base = {"meta": {"buttonLayoutExports": [{"mode": 1, "elementAddress": "0148"}]}}
+    ours = copy.deepcopy(base)
+    ours["meta"]["buttonLayoutExports"][0]["mode"] = 5
+    theirs = {"meta": {"buttonLayoutExports": [{"mode": 1, "elementAddress": 328}]}}
+    _applied, conflicts = apply_changes(theirs, diff_documents(base, ours))
+    assert conflicts == []
+    assert theirs["meta"]["buttonLayoutExports"] == [{"mode": 5, "elementAddress": 328}]
+    for odd in ("x", True):
+        rows = {"meta": {"buttonLayoutExports": [{"mode": 1, "elementAddress": odd}]}}
+        changed = copy.deepcopy(rows)
+        changed["meta"]["buttonLayoutExports"][0]["mode"] = 2
+        assert [type(c.path[-1]) for c in diff_documents(rows, changed)] == [Row, Row]

@@ -48,6 +48,7 @@ from .const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_UNKNOWN_NODES,
     ISSUE_VAULT_KEY_REFRESH,
+    ISSUE_VAULT_UNWRITABLE,
     PLATFORMS,
     STORAGE_DIR,
 )
@@ -71,14 +72,20 @@ from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB
 from .jhmesh.client import MESH_PROXY_SERVICE
 from .jhmesh.devices import InvalidMetadata
-from .mesh_config import cancel_upload_retry, held_scenes, plan_journal
+from .mesh_config import (
+    async_remove_gateway_sync,
+    cancel_upload_retry,
+    gateway_sync,
+    held_scenes,
+    plan_journal,
+)
 from .migration import (
     async_update_gateway_issue,
     drop_retired_entities,
     enable_now_default,
 )
 from .migration import issue_id as gateway_import_issue_id
-from .onboard import async_update_pending_issue
+from .onboard import async_clear_vault_issue, async_update_pending_issue
 from .services import (
     async_register_configurator,
     async_setup_services,
@@ -216,6 +223,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     register_parent_devices(hass, hub)
     # registered first: whatever `async_start` got going before a failure is stopped with the failed setup
     entry.async_on_unload(hub.async_stop)
+    # what the entry last exchanged with its gateway (`mesh_config.GatewaySync`), before anything compares with it
+    await gateway_sync(hass, entry.entry_id).async_load(entry)
     # before the start: the adverts the start replays can already name unknown nodes, whose export refresh
     # adopts through the configurator (review-3 C1)
     async_register_configurator(hass, entry)
@@ -233,6 +242,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     async_update_gateway_issue(hass, entry)
     # a device Home Assistant provisioned but never recorded (onboard.py, review-4 D2)
     async_update_pending_issue(hass, entry, hub.vault)
+    # the vault could not be written while a device was added: the next save that lands clears it (review-4 D15)
+    entry.async_on_unload(
+        hub.vault.async_add_listener(
+            partial(async_clear_vault_issue, hass, entry, hub.vault)
+        )
+    )
     return True
 
 
@@ -368,6 +383,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await async_remove_node_versions(hass, entry.entry_id)
     await plan_journal(hass, entry.entry_id).async_remove()
     await held_scenes(hass, entry.entry_id).async_remove()
+    await async_remove_gateway_sync(hass, entry.entry_id)
     # the mesh's proxies were matched to this entry: let discovery offer them again (review-3 C7)
     for info in bluetooth.async_discovered_service_info(hass, connectable=True):
         if MESH_PROXY_SERVICE in info.service_data:
@@ -403,6 +419,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 ISSUE_ADDRESS_RESERVED,
                 ISSUE_DEVICE_NAME,
                 ISSUE_PENDING_DEVICE,
+                ISSUE_VAULT_UNWRITABLE,
                 ISSUE_PLAN_INTERRUPTED,
                 ISSUE_SCENE_HELD,
                 ISSUE_VAULT_KEY_REFRESH,

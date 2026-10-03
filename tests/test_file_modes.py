@@ -20,6 +20,10 @@ from homeassistant.helpers import storage
 from homeassistant.helpers.storage import STORAGE_DIR
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.junghome_ble.config_flow import (
+    _replace_keeping,
+    pre_reconfigure_path,
+)
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
@@ -33,7 +37,10 @@ from custom_components.junghome_ble.coordinator import (
 )
 from custom_components.junghome_ble.identity import async_vault_keeper
 from custom_components.junghome_ble.jhmesh import config_messages as C
-from custom_components.junghome_ble.jhmesh.export import write_private_with_backup
+from custom_components.junghome_ble.jhmesh.export import (
+    write_private,
+    write_private_with_backup,
+)
 from custom_components.junghome_ble.mesh_config import (
     MeshConfigurator,
     app_copy_path,
@@ -71,11 +78,13 @@ KEY_FILES: dict[str, Callable[[HomeAssistant], Path]] = {
     "seq store backup": lambda hass: _storage(hass, f"{DOMAIN}.seq.{MESH_UUID}.backup"),
     "seq floor": lambda hass: _storage(hass, f"{DOMAIN}.seq.{MESH_UUID}.floor"),
     "vault": lambda hass: _storage(hass, f"{DOMAIN}.vault.{MESH_UUID}"),
+    "vault backup": lambda hass: _storage(hass, f"{DOMAIN}.vault.{MESH_UUID}.backup"),
     "export": _export,
     "export .bak": lambda hass: _export(hass).with_name(f"{MESH_UUID}.json.bak"),
     "export .bak.1": lambda hass: _export(hass).with_name(f"{MESH_UUID}.json.bak.1"),
     "export .app": lambda hass: app_copy_path(_export(hass)),
     "export .pre-adopt": lambda hass: pre_adopt_path(_export(hass)),
+    "export .pre-reconfigure": lambda hass: pre_reconfigure_path(_export(hass)),
 }
 
 
@@ -146,6 +155,10 @@ async def key_files_written(
     await hass.async_add_executor_job(
         write_private_with_backup, export, export.read_bytes()
     )
+    # ... and a reconfigure fetching it again, the export it replaces kept beside it
+    incoming = export.with_name(".incoming-flow.json")
+    await hass.async_add_executor_job(write_private, incoming, export.read_bytes())
+    await hass.async_add_executor_job(_replace_keeping, incoming, export)
     keeper = await async_vault_keeper(hass, MESH_UUID)
     keeper.identity()
     await keeper.async_save()

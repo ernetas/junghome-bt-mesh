@@ -1,7 +1,8 @@
 """A Hypothesis state machine over `HAState`, the integration's sequence store: no (IV index, seq) is sent twice.
 
 The machine is one mesh's counter for one address in Home Assistant: sends (single numbers and whole segmented
-rounds), beacons and IV Updates, the debounced save firing, the hub reloaded in the same process (closed
+rounds, and long runs that take the counter millions further), beacons and IV Updates, the debounced save firing,
+the hub reloaded in the same process (closed
 cleanly, or a successor started while the old hub is still stopping — HAC-02), Home Assistant killed with writes
 still pending, the storage writes of the store or of its `.backup` copy failing (a full disk, a filesystem gone
 read-only), a copy lost or unreadable, the `seq_store_lost` repair (and the floor file it keeps), a Home Assistant
@@ -14,9 +15,8 @@ Hypothesis runs in an executor thread; every step is a coroutine on Home Assista
 `HAState` live.
 
 What the design does not claim to survive is left out: both copies deleted without a trace (no record, no corrupt
-file to show numbers were sent: the address starts at 0, documented), the repair's floor file damaged, an address
-sending SEQ_SKIP_UNKNOWN numbers past the last point a repair can still find (0, or where the previous repair
-continued: `copy_damaged`), two hubs of one mesh running side by side (refused by `_refuse_duplicate_mesh`), and
+file to show numbers were sent: the address starts at 0, documented), the repair's floor file damaged, two hubs of
+one mesh running side by side (refused by `_refuse_duplicate_mesh`), and
 of backups: restoring one whose pre-backup write did not land (the hook logs it and lets the backup go on) or that
 was taken while the address's setup was refused (no hub owned its counter), restoring the same backup twice, and
 restoring any after a Home Assistant that stopped during a backup — nothing on disk survives a restore, so a restore
@@ -57,6 +57,7 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.coordinator import (
     SEQ_BACKUP_STORES,
     SEQ_BACKUP_TOKEN,
+    SEQ_FLOOR_EVERY,
     SEQ_FLOOR_STORES,
     SEQ_OWNERS,
     SEQ_RESTART_MARGIN,
@@ -75,6 +76,7 @@ from custom_components.junghome_ble.jhmesh.client import (
     SEQ_TX_LIMIT,
     SequenceExhausted,
 )
+from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
 
 from .conftest import CDB_PATH, META_DIR
 
@@ -133,8 +135,16 @@ class _Hub:
 
 
 class _Cdb:
+    """An export without a node or provisioner at our address (`_evidence_of_use` finds none in it)."""
+
+    provisioners: tuple[()] = ()
+    nodes: tuple[()] = ()
+
     def __init__(self, mesh_uuid: str) -> None:
         self.mesh_uuid = mesh_uuid
+
+    def element(self, _address: int) -> None:
+        return None
 
 
 class HAStateMachine(RuleBasedStateMachine):
@@ -157,8 +167,6 @@ class HAStateMachine(RuleBasedStateMachine):
         self.refused = False  # the last start raised the seq_store_lost issue
         self.network_iv = 0  # the highest IV index a beacon announced: the network's
         self.now = 0.0  # the wall clock beacons are applied at (`time_passes` moves it past the IV Update timing)
-        # where the counter last started from a point known for sure: 0, or where the last repair continued
-        self.origin = 0
         # the sequence-number files of the last backup taken, and whether a restore of it is one the design covers
         self.archive: dict[str, Any] | None = None
         self.archive_covered = False
@@ -375,6 +383,24 @@ class HAStateMachine(RuleBasedStateMachine):
             self._note(got, 32)
 
     @precondition(lambda self: self.state is not None)
+    @rule(chunks=st.integers(1, 5))
+    def long_run(self, chunks: int) -> None:
+        """Months of traffic at once: the counter `chunks` times SEQ_FLOOR_EVERY on (`HAState.skip_ahead`, saved at
+        once), then a send there — past what a repair would continue to from the floor written before, for the
+        floor to keep up with (review-4 S4-8). More than a restored backup covers (SEQ_SKIP_AHEAD): the last backup
+        is no longer one to restore (the module docstring's exclusions)."""
+        state = self.state
+        assert state is not None
+
+        async def run() -> None:
+            state.skip_ahead(chunks * SEQ_FLOOR_EVERY)
+            await self._elapse()
+
+        self.run(run())
+        self.archive_covered = False
+        self.send(count=1)
+
+    @precondition(lambda self: self.state is not None)
     @rule()
     def reload(self) -> None:
         """The entry reloads (options, a new export): the hub stops — its counter saved as cleanly closed — and
@@ -480,7 +506,6 @@ class HAStateMachine(RuleBasedStateMachine):
 
         self.run(restore())
         if self.state is not None:
-            self.origin = self.state.seq
             # a restored hub sends at once (the proxy filter, the connect-time refresh)
             self.send(count=1)
 
@@ -494,8 +519,6 @@ class HAStateMachine(RuleBasedStateMachine):
             await self._create()
 
         self.run(fix())
-        if self.state is not None:
-            self.origin = self.state.seq
 
     # ------------------------------------------------------------------ the disk
     @rule(
@@ -516,10 +539,10 @@ class HAStateMachine(RuleBasedStateMachine):
         garbage for our address. A copy is only deleted while the other holds our record: both gone without a
         trace is the documented start-at-0 case.
 
-        Both copies unreadable is the `seq_store_lost` repair's case: it continues SEQ_SKIP_UNKNOWN past the last
-        point known for sure — 0, or where the previous repair continued (its floor file) — which is what it
-        promises to cover: so only while the counter is not that far past it (`_repair_covers`). The premise is
-        the model's own (`origin`), not read from the floor file: a repair that forgot its predecessor reuses.
+        Both copies unreadable is the `seq_store_lost` repair's case: it continues SEQ_SKIP_UNKNOWN past the floor
+        the hub keeps up with the counter (or past 0 without one), at any time — however far the counter ran since
+        the last repair, and as often as both copies are lost (review-4 S4-8: the floor was the last repair's only,
+        and the next repair reused every number sent beyond that distance).
         """
         key, other = (
             (self.primary_key, self.backup_key)
@@ -529,19 +552,8 @@ class HAStateMachine(RuleBasedStateMachine):
         if how == "lost":
             if self.record(other) is not None:
                 self.storage.pop(key, None)
-        elif self.record(key) is not None and (
-            self.record(other) is not None or self._repair_covers()
-        ):
+        elif self.record(key) is not None:
             self.storage[key]["data"]["addresses"][KEY] = {"seq": "garbage"}
-
-    def _repair_covers(self) -> bool:
-        """Whether everything the address sent, and may still send before a restart (the counter, plus what its
-        written limit lets it run on: two restart margins), lies within SEQ_SKIP_UNKNOWN of `origin`."""
-        high = max(
-            [seq for _, seq in self.used]
-            + [0 if self.state is None else self.state.seq]
-        )
-        return high + 2 * SEQ_RESTART_MARGIN < self.origin + SEQ_SKIP_UNKNOWN
 
     @invariant()
     def superseded_hubs_stay_quiet(self) -> None:
@@ -775,6 +787,97 @@ async def test_a_restored_backup_keeps_counting_under_an_index_moved_on_since(
             machine.restore()
             machine.beacon(delta=0, update=False)
             machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_an_address_far_past_the_last_repair_loses_both_copies_twice(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # review-4 S4-8: the counter runs past SEQ_SKIP_UNKNOWN under one index, then both copies are lost twice.
+        # With the floor only the repair wrote, the first repair continued SEQ_SKIP_UNKNOWN from 0, onto the numbers
+        # sent just before the loss, and the second from the first's floor
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.send(count=1)
+            machine.long_run(chunks=4)
+            machine.busy(rounds=40)
+            for _ in range(2):
+                machine.copy_damaged(how="lost", which="primary")
+                machine.copy_damaged(how="garbled", which="backup")
+                machine.killed()
+                assert machine.refused
+                machine.repair()
+                assert machine.state is not None
+                machine.busy(rounds=40)
+        finally:
+            machine.teardown()
+        # a floor that cannot be written holds the counter back SEQ_SKIP_UNKNOWN past the last entry that landed
+        # (none: from 0), so a repair from it still covers every number sent
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            machine.disk.failing.add("floor")
+            machine.long_run(chunks=5)
+            assert machine.state is not None
+            assert machine.state.durable_headroom == 0
+            assert not machine.used  # the long run's send was held back
+            machine.copy_damaged(how="lost", which="primary")
+            machine.copy_damaged(how="garbled", which="backup")
+            machine.killed()
+            assert machine.refused
+            machine.disk.failing.clear()
+            machine.repair()
+            machine.busy(rounds=40)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_a_key_refresh_survives_a_kill_right_after_it_was_learnt(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+    refresh = KeyRefreshRecord(bytes(range(0x40, 0x50)), 3, "beacon")
+
+    def steps() -> None:
+        # review-4 S4-9: the new key went out with the 2 s debounce; Home Assistant killed within those 2 s came
+        # back with the old key only, the mesh having moved on
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=5000, iv_index=7)
+            assert machine.state is not None
+            state = machine.state
+
+            async def learn() -> None:
+                state.set_key_refresh(refresh)
+                await (
+                    hass.async_block_till_done()
+                )  # the writes started, not the 2 s timer
+
+            machine.run(learn())
+            machine.killed()
+            assert machine.state is not None
+            assert machine.state.key_refresh == refresh
+            data = machine.storage[machine.primary_key]["data"]
+            assert data["mesh"]["key_refresh"] == refresh.to_stored()
         finally:
             machine.teardown()
 

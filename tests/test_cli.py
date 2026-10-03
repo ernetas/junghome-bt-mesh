@@ -1493,6 +1493,77 @@ def test_with_client_refuses_a_source_that_is_not_free(
         mesh_poc.main([*cdb, "scan"])
 
 
+def ha_store(storage: Path, suffix: str, addresses: dict[str, Any]) -> None:
+    """One of Home Assistant's sequence-number files of the fixture's mesh, as its `Store` writes it."""
+    mesh = CDB.load(CDB_PATH).mesh_uuid.lower()
+    (storage / f"junghome_ble.seq.{mesh}{suffix}").write_text(
+        json.dumps({"version": 1, "minor_version": 4, "data": {"addresses": addresses}})
+    )
+
+
+def test_with_client_refuses_every_address_home_assistants_store_holds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    """Review-4 S4-11: only 0D00 was refused, while Home Assistant may be configured with any address. With
+    `--ha-storage` every address its store of this mesh (the store, its `.backup`, the floor) holds a counter for is
+    refused before any state file is touched, and never suggested instead of a taken one."""
+
+    async def no_proxies(_client, _seconds):
+        return []
+
+    monkeypatch.setattr(mesh_poc, "scan_for_proxies", no_proxies)
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    monkeypatch.setattr(mesh_poc, "STATE_DIR", state_dir)
+    monkeypatch.setattr(mesh_poc, "LEGACY_STATE", state_dir / "legacy.json")
+    storage = tmp_path / ".storage"
+    storage.mkdir()
+    cdb = ["--cdb", str(CDB_PATH), "--ha-storage", str(storage)]
+    assert mesh_poc.main([*cdb, "--source", "0D44", "scan"]) == 0  # no store yet
+    ha_store(storage, "", {"0D44": {"seq": 7}})
+    ha_store(storage, ".backup", {"0D45": {"seq": 7}})
+    ha_store(storage, ".floor", {"0D46": {"iv_index": 0, "seq": 7}})
+    for source in ("0D44", "0D45", "0D46"):
+        with pytest.raises(
+            SystemExit,
+            match=f"{source} is an address Home Assistant keeps a sequence counter for",
+        ):
+            mesh_poc.main([*cdb, "--source", source, "scan"])
+    # only 0D44's files, from before the store knew it
+    assert {p.name for p in state_dir.glob(".jhmesh_state*")} == {
+        f".jhmesh_state_0D44.{suffix}" for suffix in ("json", "bak", "lock")
+    }
+    assert mesh_poc.main([*cdb, "--source", "0D47", "scan"]) == 0
+    # the address suggested instead of a taken one is none of Home Assistant's either
+    monkeypatch.setattr(
+        CDB, "unicast_is_free", lambda _self, a, *_: a in (0x0D45, 0x0D47)
+    )
+    with pytest.raises(SystemExit, match=r"range 0001-0CCC .*: pass --source 0D47"):
+        mesh_poc.main([*cdb, "--source", "0C00", "scan"])  # inside the phone's range
+    # a store that does not read: refused, an address it holds would go unnoticed
+    (storage / f"junghome_ble.seq.{CDB.load(CDB_PATH).mesh_uuid.lower()}").write_text(
+        "{"
+    )
+    with pytest.raises(SystemExit, match="cannot read Home Assistant's sequence store"):
+        mesh_poc.main([*cdb, "--source", "0D47", "scan"])
+    with pytest.raises(SystemExit, match="is not a directory"):
+        mesh_poc.main(
+            ["--cdb", str(CDB_PATH), "--ha-storage", str(tmp_path / "none"), "scan"]
+        )
+
+
+def test_cmd_provision_refuses_an_address_home_assistants_store_holds(
+    radio: SimpleNamespace, tmp_path: Path
+):
+    """`provision --unicast` at an address Home Assistant sends from (its store names it) is refused too."""
+    storage = tmp_path / ".storage"
+    storage.mkdir()
+    ha_store(storage, "", {"0D10": {"seq": 7}})
+    with pytest.raises(SystemExit, match="0D10 cannot go to the new node"):
+        mesh_poc.main(["--ha-storage", str(storage), *provision_argv("--yes")])
+    assert not radio.runs
+
+
 # ----------------------------------------------------------------------------- hops: everything restored (P2-24)
 
 

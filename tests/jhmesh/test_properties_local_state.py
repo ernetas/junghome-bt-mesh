@@ -244,13 +244,18 @@ class LocalStateMachine(RuleBasedStateMachine):
                 {
                     "src": f"{OUR_SRC:04X}",
                     "seq": SKIP_UNKNOWN,
-                    "iv_index": 0,
+                    "iv_index": self.skip_iv_index(),
                     "iv_known": False,
                     "seq_guard": self.skip_guard(),
                 }
             )
         )
         self._open()
+
+    def skip_iv_index(self) -> int:
+        """The IV index the repair writes: 0, nothing else being known here (the integration's floor knows the index
+        the address reached, `tests/jhmesh/test_iv_timing.py`)."""
+        return 0
 
     def skip_guard(self) -> int:
         """The guard the repair writes: the first beacon names it (the integration also carries a guard its repair

@@ -29,8 +29,6 @@ from custom_components.junghome_ble import keep_awake as keep_awake_mod
 from custom_components.junghome_ble import mesh_config as mc
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
-    CONF_GATEWAY_LAST_SYNC,
-    CONF_GATEWAY_SYNCED,
     CONF_METADATA_DIR,
 )
 from custom_components.junghome_ble.gateway_api import (
@@ -236,22 +234,43 @@ class KeyServer:
 
 
 class MemoryStore:
-    """`Store` as `VaultKeeper` uses it: load, save, a path for the log; every save kept."""
+    """`identity.TrackedStore` as `VaultKeeper` uses it: load, save, a path for the log; every save kept.
 
-    def __init__(self, data: dict[str, Any] | None = None) -> None:
+    `fail` (a `WriteError` text) makes every write fail as HA's `Store` lets one fail: logged, nothing raised,
+    `written` left as it was.
+    """
+
+    def __init__(
+        self, data: dict[str, Any] | None = None, path: str = "memory"
+    ) -> None:
         self.data = data
         self.saves: list[dict[str, Any]] = []
-        self.path = "memory"
+        self.path = path
+        self.written: dict[str, Any] | None = None
+        self.write_error: str | None = None
+        self.fail: str | None = None
 
     async def async_load(self) -> dict[str, Any] | None:
         return self.data
 
     async def async_save(self, data: dict[str, Any]) -> None:
+        if self.fail is not None:
+            self.write_error = self.fail
+            return
         self.data = data
         self.saves.append(data)
+        self.written = data
+        self.write_error = None
 
     async def async_remove(self) -> None:
         self.data = None
+
+    def async_delay_save(
+        self, data_func: Callable[[], dict[str, Any]], _delay: float
+    ) -> None:
+        """Saved at once: the bench has no timers."""
+        self.data = data_func()
+        self.saves.append(self.data)
 
 
 @dataclass
@@ -293,6 +312,9 @@ class FakeHass:
         self.config_entries = FakeConfigEntries()
         self.data: dict[Any, Any] = {}
         self.is_stopping = False  # `MeshConfigurator._save` skips the gateway upload while Home Assistant stops
+
+    def verify_event_loop_thread(self, what: str) -> None:
+        """`async_dispatcher_send` checks the thread; the bench runs in the loop."""
 
     def async_create_background_task(
         self, target: Coroutine[Any, Any, None], name: str
@@ -387,6 +409,16 @@ class Bench:
         """The entry's held scene numbers."""
         return self.hub.hass.data[mc.HELD_SCENES][self.hub.entry.entry_id]  # type: ignore[no-any-return]
 
+    @property
+    def sync(self) -> mc.GatewaySync:
+        """The entry's record of what it last exchanged with the gateway."""
+        return self.hub.hass.data[mc.GATEWAY_SYNCS][self.hub.entry.entry_id]
+
+    def set_synced(self, digest: str | None) -> None:
+        """Record `digest` as what the entry last synced with the gateway (None: nothing recorded, a legacy entry)."""
+        self.sync.synced = digest
+        self.sync.loaded = True
+
 
 @pytest.fixture
 def fast(monkeypatch: pytest.MonkeyPatch) -> FastAsyncio:
@@ -430,6 +462,10 @@ async def make_bench(
     hub.hass.data[mc.PLAN_JOURNALS] = {hub.entry.entry_id: MemoryStore()}
     # ... and the held scene numbers (`mesh_config.held_scenes`)
     hub.hass.data[mc.HELD_SCENES] = {hub.entry.entry_id: MemoryStore()}
+    # ... and the gateway sync record (`mesh_config.gateway_sync`)
+    hub.hass.data[mc.GATEWAY_SYNCS] = {
+        hub.entry.entry_id: mc.GatewaySync(hub.hass, hub.entry.entry_id, MemoryStore())  # type: ignore[arg-type]
+    }
     return Bench(
         path, hub, link, config, keys, MeshConfigurator(hub), path.read_bytes()
     )  # type: ignore[arg-type]
@@ -3040,10 +3076,7 @@ async def with_gateway(
     monkeypatch.setattr(MeshConfigurator, "gateway", property(lambda _self: gateway))
     monkeypatch.setattr(mc.ir, "async_create_issue", lambda *_a, **_k: None)
     monkeypatch.setattr(mc.ir, "async_delete_issue", lambda *_a, **_k: None)
-    bench.hub.entry.data = {
-        **bench.hub.entry.data,
-        CONF_GATEWAY_SYNCED: mc.export_digest(doc),
-    }
+    bench.set_synced(mc.export_digest(doc))
     yield gateway
     retry = bench.configurator.upload_retry
     bench.configurator.cancel_upload_retry()
@@ -3336,11 +3369,9 @@ async def test_a_legacy_entry_without_a_synced_digest_bootstraps_one_when_the_ga
     """No digest recorded yet (an entry from before this fix) and the gateway is not ahead by the old timestamp
     rule: nothing has changed as far as HA can tell, so today's digest becomes the baseline instead of comparing
     against nothing forever."""
-    bench.hub.entry.data = {
-        k: v for k, v in bench.hub.entry.data.items() if k != CONF_GATEWAY_SYNCED
-    }
+    bench.set_synced(None)
     await bench.configurator.create_room("Attic")
-    assert CONF_GATEWAY_SYNCED in bench.hub.entry.data
+    assert bench.sync.synced is not None
     assert "Attic" in bench.reload().user_groups().values()
 
 
@@ -3350,9 +3381,7 @@ async def test_a_legacy_entry_without_a_synced_digest_adopts_when_the_gateway_is
     """No digest recorded yet and the gateway *is* ahead by the old timestamp rule: treated as "gateway changed,
     local unchanged" — the best a legacy entry can do without history — so it adopts instead of refusing as
     "both changed"."""
-    bench.hub.entry.data = {
-        k: v for k, v in bench.hub.entry.data.items() if k != CONF_GATEWAY_SYNCED
-    }
+    bench.set_synced(None)
     with_gateway.doc = gateway_doc(bench.path, room="From the app")
     await bench.configurator.create_room("Attic")
     rooms = list(bench.reload().user_groups().values())
@@ -3366,9 +3395,7 @@ async def test_a_legacy_entrys_bootstrap_tolerates_an_on_disk_timestamp_it_canno
     """The bootstrap's own timestamp read is best-effort too: unreadable there (though the digest read moments
     earlier succeeded) just means "unknown", not a crash — the missing-on-disk-timestamp case prefers adopting
     the gateway, same as when nothing on disk exists yet."""
-    bench.hub.entry.data = {
-        k: v for k, v in bench.hub.entry.data.items() if k != CONF_GATEWAY_SYNCED
-    }
+    bench.set_synced(None)
     with_gateway.doc = gateway_doc(bench.path, room="From the app")
 
     def boom() -> str | None:
@@ -3460,7 +3487,7 @@ async def test_a_failed_upload_is_retried_like_the_app_does(
 
     with_gateway.upload_project = upload_project  # type: ignore[method-assign]
     with_gateway.serve_uploads = True
-    assert CONF_GATEWAY_LAST_SYNC not in bench.hub.entry.data
+    assert bench.sync.last_sync is None
     before = datetime.now(UTC)
     await bench.configurator.create_room("Attic")
     assert (
@@ -3472,12 +3499,8 @@ async def test_a_failed_upload_is_retried_like_the_app_does(
     assert fa.sleeps == [mc.GATEWAY_UPLOAD_RETRY_DELAY] * 2 == [15.0, 15.0]
     assert len(with_gateway.uploads) == 1
     assert "Attic" in json.dumps(with_gateway.uploads[0]["meta"])
-    assert bench.hub.entry.data[CONF_GATEWAY_SYNCED] == mc.export_digest(
-        with_gateway.uploads[0]
-    )
-    assert (
-        datetime.fromisoformat(bench.hub.entry.data[CONF_GATEWAY_LAST_SYNC]) >= before
-    )
+    assert bench.sync.synced == mc.export_digest(with_gateway.uploads[0])
+    assert datetime.fromisoformat(bench.sync.last_sync or "") >= before
     assert bench.configurator.upload_retry is None
 
     # three failures in a row: the app gives up after the second retry, and so does this (the repair stays)
@@ -3515,10 +3538,7 @@ async def test_a_refused_upload_is_not_retried_and_a_newer_one_supersedes_a_retr
         return gateway_doc(bench.path, room="From the app")
 
     with_gateway.refuse_upload = None
-    bench.hub.entry.data = {
-        **bench.hub.entry.data,
-        CONF_GATEWAY_SYNCED: mc.export_digest(json.loads(bench.reload().share_json())),
-    }
+    bench.set_synced(mc.export_digest(json.loads(bench.reload().share_json())))
     with_gateway.doc = doc
     await bench.configurator.create_room("Cellar")
     assert bench.configurator.upload_retry is None
@@ -3526,10 +3546,7 @@ async def test_a_refused_upload_is_not_retried_and_a_newer_one_supersedes_a_retr
 
     # a pending retry: the next change's upload, or `sync_gateway`, replaces it
     with_gateway.doc = json.loads(bench.reload().share_json())
-    bench.hub.entry.data = {
-        **bench.hub.entry.data,
-        CONF_GATEWAY_SYNCED: mc.export_digest(with_gateway.doc),
-    }
+    bench.set_synced(mc.export_digest(with_gateway.doc))
     with_gateway.refuse_upload = GatewayBusy("busy")
     await bench.configurator.create_room("Loft")
     first = bench.configurator.upload_retry
@@ -3609,16 +3626,63 @@ async def test_a_retry_follows_the_entry_through_a_reload_and_ends_without_it(
     assert len(with_gateway.uploads) == 1
 
 
-async def test_both_sides_changed_is_refused_before_planning(
+async def test_both_sides_changed_merges_onto_the_apps_upload(
+    bench: Bench,
+    with_gateway: FakeGateway,
+    issues: dict[str, dict[str, Any]],
+) -> None:
+    """Review-4 S4-6: HA's own copy changed (its upload never reached the gateway) and the app uploaded a change of
+    its own meanwhile. That was refused until the entry was fetched again — which replaced the file, and with it
+    what HA had wired and the devices still hold. With the app's previous upload kept (`.app`), HA's changes are
+    carried over as when only the gateway changed: merged, handed back to the gateway, the replaced file kept as
+    `.pre-adopt`, and what both changed is the app's and the conflict repair."""
+    app = ProjectFile.load(bench.path)  # the app's copy: it never sees what HA changes
+    with_gateway.doc = GatewayBusy("busy")
+    await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
+    await bench.configurator.create_room(
+        "Attic"
+    )  # planned and saved locally; not uploaded
+    assert with_gateway.uploads == []
+    before = bench.path.read_bytes()
+    rocker = app.cdb.element(ROCKER_A)
+    assert rocker is not None
+    app.set_publication(
+        rocker.node, rocker, "1001", 0xC0FE
+    )  # the app re-linked the same key
+    app.add_group("From the app")
+    with_gateway.doc = app_upload(app)
+    with_gateway.serve_uploads = True
+
+    await bench.configurator.create_room("Loft")
+
+    merged = bench.reload()
+    assert {"Attic", "From the app", "Loft"} <= set(merged.user_groups().values())
+    assert subs(merged, DIMMER_LOAD, "1000")  # HA's wiring of the dimmer kept ...
+    assert (
+        pub(merged, ROCKER_A, "1001") == 0xC0FE
+    )  # ... the key the app re-linked is the app's
+    issue = issues[f"carry_over_conflict_{bench.hub.entry.entry_id}"]
+    assert "models[1001].publish" in issue["paths"]
+    assert mc.pre_adopt_path(bench.path).read_bytes() == before
+    # the merge went up right away, then the new room; what went up last is what HA synced
+    first = json.dumps(with_gateway.uploads[0]["meta"])
+    assert "Attic" in first
+    assert "From the app" in first
+    assert "Loft" in json.dumps(with_gateway.uploads[-1]["meta"])
+    assert bench.sync.synced == mc.export_digest(with_gateway.uploads[-1])
+
+
+async def test_both_sides_changed_without_the_apps_copy_is_refused_before_planning(
     bench: Bench, with_gateway: FakeGateway
 ) -> None:
-    """HA's own copy changed (an earlier upload never reached the gateway) and the app changed the gateway's
-    copy too: neither side is silently dropped by planning on one and uploading over the other."""
+    """Without the app's previous upload nothing tells HA's own changes from the app's: neither side is silently
+    dropped by planning on one and uploading over the other — refused, as before the merge existed."""
     with_gateway.doc = GatewayBusy("busy")
     await bench.configurator.create_room(
         "Attic"
     )  # planned and saved locally; not uploaded
     assert "Attic" in bench.reload().user_groups().values()
+    mc.app_copy_path(bench.path).unlink()  # an entry from before the merge existed
     with_gateway.doc = gateway_doc(bench.path, room="From the app")
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.create_room("Loft")
@@ -3627,6 +3691,33 @@ async def test_both_sides_changed_is_refused_before_planning(
     assert "Loft" not in reloaded.user_groups().values()
     assert "From the app" not in reloaded.user_groups().values()
     assert "Attic" in reloaded.user_groups().values()  # kept: the earlier local change
+    # an app copy that does not load tells nothing either
+    mc.app_copy_path(bench.path).write_text("not json")
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.create_room("Loft")
+    assert exc.value.translation_key == "service_gateway_export_newer"
+    assert "Loft" not in bench.reload().user_groups().values()
+
+
+async def test_the_same_export_on_both_sides_is_synced_whatever_the_record_says(
+    bench: Bench, with_gateway: FakeGateway
+) -> None:
+    """Review-4 S4-6: an upload went through but its record did not (Home Assistant stopped before the delayed
+    save): the gateway and the file then match each other and not the record, which refused every later change
+    and `sync_gateway` as "both changed". Identical content is synced: recorded, and the change goes ahead."""
+    stale = bench.sync.synced
+    with_gateway.serve_uploads = True
+    await bench.configurator.create_room("Attic")
+    assert len(with_gateway.uploads) == 1
+    bench.set_synced(stale)  # the record lost
+    await bench.configurator.create_room("Loft")
+    assert "Loft" in bench.reload().user_groups().values()
+    assert bench.sync.synced == mc.export_digest(with_gateway.uploads[-1])
+    # the upload's own check: the same, for `sync_gateway`
+    bench.set_synced(stale)
+    assert await bench.configurator.sync_gateway() is False
+    assert len(with_gateway.uploads) == 3
+    assert bench.sync.synced == mc.export_digest(with_gateway.uploads[-1])
 
 
 async def test_a_cdb_only_gateway_export_never_replaces_a_share_export(

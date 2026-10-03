@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 from hypothesis import strategies as st
-from hypothesis.stateful import precondition, rule
+from hypothesis.stateful import invariant, precondition, rule
 
 from jhmesh import client as client_mod
 from jhmesh.client import (
@@ -330,6 +330,14 @@ class IvTimingMachine(LocalStateMachine):
     def __init__(self) -> None:
         super().__init__()
         self.floor_guard = SEQ_GUARD_FIRST_BEACON  # what the repair floor would carry (the integration's)
+        # the transmit index the integration's floor holds: `HAState` writes it with every move up and sends
+        # nothing under an index it does not hold yet (review-4 S4-8); a rewind writes the index it goes back to
+        self.floor_iv = 0
+
+    @invariant()
+    def the_floor_follows_the_index(self) -> None:
+        if self.state is not None:
+            self.floor_iv = max(self.floor_iv, self.state.tx_iv_index)
 
     @precondition(lambda self: self.state is not None)
     @rule(delta=st.sampled_from((2, 5, 42)), update=st.booleans())
@@ -371,6 +379,7 @@ class IvTimingMachine(LocalStateMachine):
             pass  # moved in memory; the next send retries the writes (`reserve_seq`)
         assert self.state.seq_guard is not None
         self.floor_guard = max(self.floor_guard, self.state.seq_guard)
+        self.floor_iv = target
 
     @rule(hours=st.sampled_from((1, 96, 24 * 365)))
     def clock_jumps_back(self, hours: int) -> None:
@@ -379,6 +388,12 @@ class IvTimingMachine(LocalStateMachine):
     def skip_guard(self) -> int:
         """The integration's `seq_store_lost` repair carries the guard of an earlier rewind from its floor."""
         return self.floor_guard
+
+    def skip_iv_index(self) -> int:
+        """... and continues under its floor's index: below it, a first beacon forged lower than the index the
+        address had reached set the guard below that index, and the counter restarted at 0 there (the `thorough`
+        profile's counterexample)."""
+        return self.floor_iv
 
 
 @pytest.fixture(autouse=True)

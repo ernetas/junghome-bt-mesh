@@ -54,6 +54,7 @@ from .const import (
     CONF_HEARTBEATS_PUBLISHING,
     CONF_SOURCE,
     CONNECT_BACKOFF_MAX,
+    CONNECT_BACKOFF_MIN,
     CONNECT_BEACON_WAIT,
     DEFAULT_CLICK_DELAY,
     DEFAULT_HEARTBEATS,
@@ -120,6 +121,8 @@ from .const import (
     SEQ_SKIP_UNKNOWN,
     SEQUENCE_CHECK_INTERVAL,
     SEQUENCE_SPACE_WARN,
+    SHORT_LINK,
+    SHORT_LINK_STREAK,
     SIG_SOFTWARE_VERSION,
     SIGNAL_CONNECTION,
     SIGNAL_LINK_STATE,
@@ -143,9 +146,11 @@ from .jhmesh.advert import JungAdvertisement, mac_from_uuid, parse_manufacturer_
 from .jhmesh.audit import NodeAudit, audit_node, client_exchange
 from .jhmesh.cdb import CDB, Node
 from .jhmesh.client import (
+    IV_INDEX_MAX,
     MESH_PROXY_SERVICE,
     NET_KEY_INDEX,
     SEQ_GUARD_FIRST_BEACON,
+    SEQ_MAX,
     SEQ_TX_LIMIT,
     AccessMessage,
     Heartbeat,
@@ -153,6 +158,7 @@ from .jhmesh.client import (
     ProxyClient,
     SequenceExhausted,
     SequenceStalled,
+    _check_range,
 )
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
@@ -169,6 +175,7 @@ from .jhmesh.devices import (
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
 from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, Scaled
+from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
 from .tls import normalize_fingerprint
 from .vault_refresh import VaultKeyRefresh
@@ -204,14 +211,19 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 STORAGE_VERSION = 1
 # The sequence-number store's minor version: 2 adds an address record's optional `seq_guard` (`LocalState.seq_guard`,
 # written by the `seq_store_lost` repair), 3 its optional `in_backup` (the mark of a Home Assistant backup being
-# taken, `backup.py`). A minor bump: Home Assistant loads a store of a higher minor version with the same major one
-# as it is when the reader has no migration for it, so an older integration reads these records (and ignores the
-# fields) rather than failing to start.
-SEQ_STORAGE_MINOR_VERSION = 3
+# taken, `backup.py`), 4 the mesh-level part next to `addresses`, `{"mesh": {"key_refresh": …}}` (the key refresh
+# followed, `HAState`: the address's own record keeps a copy, for an older reader). A minor bump: Home Assistant
+# loads a store of a higher minor version with the same major one as it is when the reader has no migration for it,
+# so an older integration reads these records (and ignores the fields) rather than failing to start.
+SEQ_STORAGE_MINOR_VERSION = 4
 # Sequence-number persistence (`HAState`): the margin added to a counter found in use, and how many numbers may
 # pass between two forced store writes — see the class docstring for the arithmetic.
 SEQ_RESTART_MARGIN = 512
 SEQ_SAVE_EVERY = 64
+# how far the counter may run past the floor entry the `.floor` file durably holds before `HAState` writes a new one
+# (review-4 S4-8): a quarter of what a repair with nothing else left continues past it (SEQ_SKIP_UNKNOWN), so a
+# floor write that fails has three more chances before sends are held back for it
+SEQ_FLOOR_EVERY = 1 << 20
 SEQ_STALL_RETRY = 5.0  # seconds between forced-save retries while reserve_seq() is refusing to hand out numbers
 # how long one send waits for the store to catch up (`JungHomeHub._while_seq_stalls`) before it is given up on: a
 # healthy store lands its write within a second, one that refuses for this long will not do so by waiting
@@ -528,7 +540,10 @@ class SeqStore(Store[dict[str, Any]]):
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: Any
     ) -> Any:
-        """1.1 / 1.2 → 1.3: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark)."""
+        """1.1, 1.2 or 1.3 → 1.4: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark).
+
+        No `mesh` part: the key refresh is read from the address's own record (`_stored_key_refresh`).
+        """
         if old_major_version != STORAGE_VERSION:
             raise NotImplementedError
         return old_data
@@ -617,11 +632,14 @@ SEQ_FLOOR_STORES: HassKey[dict[str, SeqStore]] = HassKey(f"{DOMAIN}_seq_floor_st
 def seq_floor_store_for_uuid(hass: HomeAssistant, mesh_uuid: str) -> SeqStore:
     """Return the mesh's repair floor, `.storage/junghome_ble.seq.<mesh uuid>.floor`, one object per mesh UUID.
 
-    Written only by the `seq_store_lost` repair (`async_skip_seq_store_ahead`): per address, the (IV index,
-    sequence number) the repair continued from. The two copies of the store are what the repair replaces when
-    they are lost; this file is not, so a second loss of both still knows where the first repair put the address
-    — without it, "nothing readable" meant SEQ_SKIP_UNKNOWN from 0 every time, the very numbers the address had
-    sent since the first repair. A record here also counts as history (`JungHomeHub.async_create`).
+    Per address, an (IV index, sequence number) the address is known to have reached: where the `seq_store_lost`
+    repair continued from (`async_skip_seq_store_ahead`), where a restored record or an `iv_index_mismatch` rewind
+    continued from, and — so it keeps up with the counter (review-4 S4-8) — where `HAState` was whenever its
+    transmit index changed and every SEQ_FLOOR_EVERY numbers. The two copies of the store are what the repair
+    replaces when they are lost; this file is not, so a second loss of both still knows where the address got to —
+    without it, "nothing readable" meant SEQ_SKIP_UNKNOWN from 0 every time, the very numbers the address had sent
+    since the first repair, and a floor written by the repair alone was outrun once the address had sent about
+    SEQ_SKIP_UNKNOWN more. A record here also counts as history (`JungHomeHub.async_create`).
     """
     stores = hass.data.setdefault(SEQ_FLOOR_STORES, {})
     key = mesh_uuid.lower()
@@ -700,11 +718,65 @@ def _addresses_of(data: Any) -> dict[str, Any] | None:
     return addresses if isinstance(addresses, dict) else None
 
 
+def _mesh_of(*datas: Any) -> dict[str, Any]:
+    """Return the mesh-level part (`{"mesh": …}`, minor version 4) of the first loaded store that has one, else {}."""
+    for data in datas:
+        mesh = data.get("mesh") if isinstance(data, dict) else None
+        if isinstance(mesh, dict):
+            return mesh
+    return {}
+
+
+def _store_with(data: Any, addresses: dict[str, Any]) -> dict[str, Any]:
+    """Return a store holding `addresses`, with `data`'s mesh-level part (a rewrite of the records must not drop it)."""
+    mesh = _mesh_of(data)
+    return {"addresses": addresses, **({"mesh": mesh} if mesh else {})}
+
+
+def _stored_key_refresh(data: Any, key: str) -> Any:
+    """Return the key refresh a loaded store records for a hub at address `key` (stored form; None: there is none).
+
+    The mesh-level one (review-4 S4-9: a key refresh belongs to the mesh, not to an address, so a new address after
+    a followed refresh keeps its key), whatever it says, None included; a store an older version wrote has none and
+    the address's own record holds it. A mesh-level one that does not parse falls back to the record's too.
+    """
+    mesh = _mesh_of(data)
+    if "key_refresh" in mesh:
+        stored = mesh["key_refresh"]
+        try:
+            if stored is not None:
+                KeyRefreshRecord.from_stored(stored)
+        except (KeyError, ValueError, TypeError) as err:
+            _LOGGER.warning(
+                "The mesh's key refresh in the sequence-number store is unusable (%s): reading the address's own",
+                err,
+            )
+        else:
+            return stored
+    record = _usable_record(data, key)
+    return None if record is None else record.get("key_refresh")
+
+
+def _landed(store: SeqStore, loaded: Any) -> Any:
+    """Return what `store` durably holds: its last write that landed (`written`), else what was `loaded` from disk.
+
+    A write still on its way, which `Store.async_load` hands back, is not on disk yet and may never be.
+    """
+    return loaded if store.written is None else store.written
+
+
 def _furthest(records: Sequence[Any]) -> tuple[int, int] | None:
-    """Return the furthest (transmit IV index, seq) of the `records` that still read as numbers, if any."""
+    """Return the furthest (transmit IV index, seq) of the `records` that still read as numbers in range, if any.
+
+    Out of range is not a number a record can hold (review-4 S4-7): an IV index past 2^32 - 1 made the repair write
+    a record no start could use, and a floor no later repair got past; a negative counter put the target at 0 under
+    its index, over the numbers sent there.
+    """
     best: tuple[int, int] | None = None
     for record in records:
         try:
+            _check_range("IV index", int(record.get("iv_index", 0)), 0, IV_INDEX_MAX)
+            _check_range("sequence number", int(record.get("seq", 0)), 0, SEQ_MAX)
             rank = _tx_rank(record)
         except (AttributeError, ValueError, TypeError):
             continue
@@ -716,9 +788,9 @@ def _furthest(records: Sequence[Any]) -> tuple[int, int] | None:
 def _seq_skip_target(records: Sequence[Any], floor: Any = None) -> tuple[int, int]:
     """(IV index, sequence number) to continue from when no record is usable: past the furthest one left.
 
-    Whatever still reads as numbers counts, however broken the rest of its record; SEQ_SKIP_AHEAD beyond it. When
-    nothing does, SEQ_SKIP_UNKNOWN from the last point known for sure: where an earlier repair continued from
-    (`floor`, `seq_floor_store_for_uuid`), else 0 — the floor also wins over records that are behind it. Never
+    Whatever still reads as numbers in range counts, however broken the rest of its record; SEQ_SKIP_AHEAD beyond
+    it. When nothing does, SEQ_SKIP_UNKNOWN from the last point known for sure: the floor entry (`floor`, as the
+    `.floor` file durably holds it: `_landed`), else 0 — the floor also wins over records that are behind it. Never
     past `SEQ_TX_LIMIT`.
     """
     best = _furthest(records)
@@ -787,7 +859,7 @@ async def async_skip_seq_store_ahead(
     floor_store = seq_floor_store_for_uuid(hass, mesh_uuid)
     data = await store.async_load()
     backup_data = await backup.async_load()
-    floors = _addresses_of(await floor_store.async_load()) or {}
+    floors = _addresses_of(_landed(floor_store, await floor_store.async_load())) or {}
     records = [
         addresses.get(key)
         for addresses in (_addresses_of(data), _addresses_of(backup_data))
@@ -809,8 +881,9 @@ async def async_skip_seq_store_ahead(
         )
         return None
     base = _addresses_of(data) or _addresses_of(backup_data) or {}
-    new = {
-        "addresses": {
+    new = _store_with(
+        data if _mesh_of(data) else backup_data,
+        {
             **base,
             key: {
                 "seq": seq,
@@ -823,8 +896,8 @@ async def async_skip_seq_store_ahead(
                 # the first beacon's (`LocalState.apply_beacon`)
                 "seq_guard": guard,
             },
-        }
-    }
+        },
+    )
     await store.async_save(new)
     await backup.async_save(new)
     _LOGGER.warning(
@@ -902,8 +975,9 @@ async def _async_skip_restored_record(
             translation_domain=DOMAIN, translation_key="seq_floor_not_written"
         )
     restored = {name: value for name, value in record.items() if name != "in_backup"}
-    data = {
-        "addresses": {
+    data = _store_with(
+        data,
+        {
             **(_addresses_of(data) or {}),
             key: {
                 **restored,
@@ -912,8 +986,8 @@ async def _async_skip_restored_record(
                 "seq_guard": guard,
                 **({} if guard == SEQ_GUARD_FIRST_BEACON else {"iv_known": False}),
             },
-        }
-    }
+        },
+    )
     await seq_store_for_uuid(hass, mesh_uuid).async_save(data)
     await seq_backup_store_for_uuid(hass, mesh_uuid).async_save(data)
     return data
@@ -924,9 +998,9 @@ async def async_apply_followed_key_refresh(
 ) -> None:
     """Put the NetKey of a key refresh the hub followed to its end in place of the export's stale one (review-3 N2b).
 
-    The client stores the new key with the address's sequence numbers (`LocalState.key_refresh`, phase 3) until
-    the export holds it. Without this a setup would look for proxies of the old Network ID (none left) and talk
-    with the revoked key. Only the in-memory `cdb` changes; the file is the gateway's or the user's. An export
+    The client stores the new key with the sequence numbers (`LocalState.key_refresh`, phase 3; at mesh level, so
+    whichever address the hub uses: `_stored_key_refresh`) until the export holds it. Without this a setup would
+    look for proxies of the old Network ID (none left) and talk with the revoked key. Only the in-memory `cdb` changes; the file is the gateway's or the user's. An export
     written mid key refresh (`CDB.net_key_refresh`) whose old key is the followed one is newer: it is left alone.
 
     Only a completion the client proved (review-4 D4: the proxy's beacon under the new key, or the nodes' own
@@ -934,10 +1008,10 @@ async def async_apply_followed_key_refresh(
     takes its key up as a candidate only (`KeyRefreshFollower.resume`).
     """
     data = await seq_store(hass, cdb).async_load()
-    record = _usable_record(data, f"{unicast:04X}")
-    if record is None or record.get("key_refresh") is None:
+    stored = _stored_key_refresh(data, f"{unicast:04X}")
+    if stored is None:
         return
-    refresh = KeyRefreshRecord.from_stored(record["key_refresh"])
+    refresh = KeyRefreshRecord.from_stored(stored)
     if refresh.phase != 3:
         return
     if not refresh.proven:
@@ -1044,7 +1118,7 @@ def merge_legacy_seq_store(
     have = addresses.get(src)
     if have is None or _tx_rank(record) >= _tx_rank(have):
         addresses[src] = record
-    return {"addresses": addresses}
+    return _store_with(data, addresses)
 
 
 async def async_migrate_legacy_seq_store(
@@ -1087,6 +1161,29 @@ async def async_migrate_legacy_seq_store(
     return True
 
 
+def _evidence_of_use(
+    cdb: CDB, unicast: int, keeper: VaultKeeper, *stores: Any
+) -> str | None:
+    """Why address `unicast`, which has no sequence-number record, may have sent before; None when nothing says so.
+
+    The export holds Home Assistant's provisioner node, or any node, at it (`jhmesh.vault.recognise`); the vault
+    keeps Home Assistant's identity in this mesh (it ran here, so a store existed); or the loaded `stores` (the store,
+    its `.backup` copy, the floor) know other addresses (this Home Assistant sent in this mesh, a lost record of
+    this one would look the same). Wrong only for a genuinely fresh address on an installation that matches: that
+    one spends SEQ_SKIP_AHEAD of its 2^24 numbers, once.
+    """
+    if recognise(cdb, unicast) is not None:
+        return "the export holds Home Assistant's provisioner node there"
+    if cdb.element(unicast) is not None:
+        return "a node of the export has that address"
+    if keeper.vault is not None:
+        return "the vault keeps Home Assistant's identity in this mesh"
+    known = sorted({src for data in stores for src in _addresses_of(data) or {}})
+    if known:
+        return f"the store knows other addresses ({', '.join(known)})"
+    return None
+
+
 class HAState(LocalState):
     """Sequence-number store backed by HA's storage helper: one store per mesh, one counter per address ever used.
 
@@ -1096,9 +1193,17 @@ class HAState(LocalState):
     survives a key refresh, the Network ID does not) and maps every address this Home Assistant ever sent from in
     that mesh to what `LocalState.to_stored` holds for it (without the address: the counter, the IV state and the
     replay list): `{"addresses": {"0D00": {"seq": …, "iv_index": …, "iv_update_active": …, "rpl": …, "clean": …}}}`.
-    An address the
-    store does not know starts at 0 — with a WARNING when the store knows others, since the address may have been
-    used from elsewhere (the CLI, another Home Assistant) and nothing here can tell.
+    What belongs to the mesh rather than to an address sits next to it, `{"mesh": {"key_refresh": …}}`: the key
+    refresh followed (review-4 S4-9) — a new address after one keeps its key, and a copy in our own record keeps
+    it for an older reader. An address the store does not know starts where `JungHomeHub.async_create` decides
+    (`_evidence_of_use`): 0, or SEQ_SKIP_AHEAD when it may have sent before.
+
+    With a `floor` (the mesh's `.floor` file) the floor entry of our address keeps up with the counter (review-4
+    S4-8): a new one whenever the transmit index moved past the entry's and every SEQ_FLOOR_EVERY numbers, and
+    sends wait for the file to durably hold our transmit index and never run SEQ_SKIP_UNKNOWN past its number
+    (`_limit`) — the index and the distance the `seq_store_lost` repair continues from when both copies of the store
+    are lost. Without that, the floor was only the last repair's, and the repair after a second loss reused every
+    number sent beyond that distance, or under an index above the floor's when the first beacon after it was lower.
 
     Margin arithmetic: a change schedules a save 2 s after the *last* change (`Store.async_delay_save` moves a
     pending write to the latest time asked for, so a connect-time burst on a large installation defers it for as
@@ -1119,8 +1224,9 @@ class HAState(LocalState):
         key: str,
         backup: SeqStore | None = None,
         entry_id: str | None = None,
+        floor: SeqStore | None = None,
     ) -> None:
-        """Wrap `store` (and, if given, its `.backup` copy) and continue the counter of the configured address.
+        """Wrap `store` (and, if given, its `.backup` copy and the `.floor`) and continue the configured address.
 
         `key` is the mesh UUID `seq_store` keys `store` by. Claiming ownership of it (`SEQ_OWNERS`) here, before
         `super().__init__` runs `persist()` for the first time, makes this the one `HAState` allowed to write —
@@ -1134,6 +1240,9 @@ class HAState(LocalState):
         self._key = key
         self.entry_id = entry_id
         self._backup_store = backup
+        self._floor_store = floor
+        # (tx IV index, seq) of the floor write last asked for: another is asked SEQ_FLOOR_EVERY on, or by a stall
+        self._floor_asked: tuple[int, int] | None = None
         hass = store.hass
         hass.data.setdefault(SEQ_OWNERS, {})[key] = self
         # a backup being taken right now (`backup.async_pre_backup`): its mark goes into every record this one
@@ -1156,18 +1265,14 @@ class HAState(LocalState):
         self.stall_listener: Callable[[], None] | None = None
         # `seq_store_unwritable` was raised and not cleared since (the hub's stop clears it too, `_clear_issues`)
         self._stall_issue_open = False
-        record = self._addresses.get(f"{default_src:04X}")
+        self._mesh = _mesh_of(data)
+        src = f"{default_src:04X}"
+        record = self._addresses.get(src)
         self._record = (
-            None if record is None else {"src": f"{default_src:04X}", **record}
+            None
+            if record is None
+            else {**record, "src": src, "key_refresh": _stored_key_refresh(data, src)}
         )
-        if record is None and self._addresses:
-            _LOGGER.warning(
-                "Address %04X has no sequence-number record in this mesh's store (known: %s): its numbers start "
-                "at 0. If it was used before from elsewhere, the nodes will drop our messages until we pass "
-                "the numbers they know — choose an unused address in that case",
-                default_src,
-                ", ".join(sorted(self._addresses)),
-            )
         margin = 0 if record is not None and record.get("clean") else SEQ_RESTART_MARGIN
         super().__init__(
             None, default_src, restart_margin=margin, configured_src_wins=True
@@ -1178,8 +1283,16 @@ class HAState(LocalState):
         return self._store.hass.data.get(SEQ_OWNERS, {}).get(self._key) is self
 
     def load(self) -> dict[str, Any] | None:
-        """Return the configured address's record (with the address), as the store held it when the hub was created."""
+        """Return the configured address's record (with the address), as the store held it when the hub was created.
+
+        Its key refresh is the mesh's (`_stored_key_refresh`).
+        """
         return self._record
+
+    def persist_now(self) -> None:
+        """Start a write of both copies now rather than after the 2 s debounce (`set_key_refresh`)."""
+        self._saved = None  # force the immediate-save branch
+        self.persist()
 
     def persist(self) -> None:
         """Schedule a save: debounced by 2 s, or started at once every SEQ_SAVE_EVERY numbers, on an IV change and after a load.
@@ -1223,6 +1336,49 @@ class HAState(LocalState):
                 )
         else:
             self._store.async_delay_save(self._snapshot, 2)
+        self._advance_floor()
+
+    def _floor_point(self) -> tuple[int, int]:
+        """(tx IV index, seq) of the floor entry the `.floor` file durably holds for us; (0, 0) without one.
+
+        Without one, a repair continues SEQ_SKIP_UNKNOWN from 0 (`_seq_skip_target`): the same as an entry there.
+        """
+        written = None if self._floor_store is None else self._floor_store.written
+        point = _furthest([(_addresses_of(written) or {}).get(f"{self.src:04X}")])
+        return (0, 0) if point is None else point
+
+    def _advance_floor(self) -> None:
+        """Ask for a new floor entry when the counter moved past the one on disk (`SEQ_FLOOR_EVERY`, the class docstring).
+
+        Never one behind it (a restored record or a rewind can leave the counter there). A concrete `seq_guard` the
+        entry or the counter holds that still covers our index is carried: numbers went out under every index up to
+        it (`async_rewind_seq_floor`). Written at once, as a task; `_limit` holds sends back until one lands, should
+        the counter otherwise run too far past the last one that did.
+        """
+        if self._floor_store is None:
+            return
+        current = (self.tx_iv_index, self.seq)
+        landed = self._floor_point()
+        if current[0] < landed[0]:
+            return
+        for point in (landed, self._floor_asked):
+            if (
+                point is not None
+                and current[0] == point[0]
+                and current[1] - point[1] < SEQ_FLOOR_EVERY
+            ):
+                return
+        self._floor_asked = current
+        key = f"{self.src:04X}"
+        floors = _addresses_of(self._floor_store.written) or {}
+        entry: dict[str, Any] = {"iv_index": current[0], "seq": current[1]}
+        guard = _carried_seq_guard([floors.get(key), {"seq_guard": self.seq_guard}])
+        if guard >= current[0]:
+            entry["seq_guard"] = guard
+        self._floor_store.hass.async_create_task(
+            self._floor_store.async_save({"addresses": {**floors, key: entry}}),
+            f"{DOMAIN} seq floor",
+        )
 
     def _limit(self) -> tuple[int, int]:
         """Return the (tx IV index, seq) every restart could continue from, given what both copies *durably* hold.
@@ -1243,6 +1399,15 @@ class HAState(LocalState):
             if backup_tx != tx:
                 return self.tx_iv_index, 0
             limit = min(limit, backup_limit)
+        if self._floor_store is not None:
+            floor_tx, floor_seq = self._floor_point()
+            if floor_tx < tx:
+                # a repair after both copies are lost continues under the floor's index, and its guard keeps the
+                # counter going only up to one past the first beacon's — which may lie below ours (S4-8)
+                return tx, 0
+            if floor_tx == tx:
+                # ... and this far past the floor's number; a floor ahead of us bounds nothing here
+                limit = min(limit, floor_seq + SEQ_SKIP_UNKNOWN)
         return tx, limit
 
     def _restart_point(self, written: Any, *, allow_clean: bool) -> tuple[int, int]:
@@ -1292,6 +1457,9 @@ class HAState(LocalState):
                     )
                 self._stalled_at = now
                 self._saved = None  # force the immediate-save branch
+                self._floor_asked = (
+                    None  # and a floor write, should that be what holds sends back
+                )
                 self.persist()
             raise SequenceStalled(
                 "sequence-number store not written yet: holding back to keep nonces unique"
@@ -1352,10 +1520,12 @@ class HAState(LocalState):
         )
 
     def _stall_cause(self) -> tuple[str, str | None]:
-        """(path, last write error) of the copy holding sends back: the first one whose last write failed."""
+        """(path, last write error) of the copy holding sends back: the first one whose last write failed (or the floor's)."""
         stores = [self._store]
         if self._backup_store is not None:
             stores.append(self._backup_store)
+        if self._floor_store is not None:
+            stores.append(self._floor_store)
         for store in stores:
             if store.write_error is not None:
                 return store.path, store.write_error
@@ -1399,8 +1569,10 @@ class HAState(LocalState):
         """Move the counter `count` numbers ahead (never past `SEQ_TX_LIMIT`), saved at once; return the new counter.
 
         Sends are held back until that save lands (`reserve_seq`), so nothing goes out that a restart could reuse.
+        A counter past `SEQ_TX_LIMIT` already (its last number sent) stays: capping it moved it back onto that
+        number (found by the property tests' state machine).
         """
-        self.seq = min(self.seq + count, SEQ_TX_LIMIT)
+        self.seq = max(self.seq, min(self.seq + count, SEQ_TX_LIMIT))
         self._saved = None  # force the immediate-save branch
         self.persist()
         return self.seq
@@ -1434,7 +1606,9 @@ class HAState(LocalState):
                 src: {"in_backup": token, **other} if isinstance(other, dict) else other
                 for src, other in addresses.items()
             }
-        return {"addresses": addresses}
+        # the mesh's key refresh, whatever it is (None too: it ends a stale one another address's record still has)
+        mesh = {**self._mesh, "key_refresh": record.get("key_refresh")}
+        return {"addresses": addresses, "mesh": mesh}
 
     async def async_save_now(self) -> None:
         """Write both copies now and wait for the writes (the backup hooks: `backup.py`).
@@ -1633,6 +1807,23 @@ class DimHold:
             self.quiet = None
 
 
+@dataclass(frozen=True)
+class LinkEnd:
+    """How a proxy link ended (`JungHomeHub._link_ended`): why, what it says about the proxy, how long it lasted.
+
+    `penalise` True counts the end against the proxy (it went silent), False not at all (we ended a working link
+    ourselves: the repair's skip-ahead, an error of our own), None by how long the link lasted (`SHORT_LINK`).
+    """
+
+    reason: str
+    penalise: bool | None
+    lasted: float  # seconds the link was up
+
+
+# what `JungHomeHub._link_end` holds while no link is up: before the first, and while one is being set up
+NO_LINK = LinkEnd("no link yet", False, 0.0)
+
+
 class JungHomeHub:
     """One mesh network: connection loop, state cache, commands, button gestures."""
 
@@ -1786,6 +1977,12 @@ class JungHomeHub:
             None  # monotonic time the last link was lost, while no new one is up
         )
         self._unsub_grace: CALLBACK_TYPE | None = None  # the end of the link-loss grace
+        # how the last link ended, None while one is up (`_link_ended`); when the current one came up (monotonic)
+        self._link_end: LinkEnd | None = NO_LINK
+        self._link_since = 0.0
+        # proxy MAC → its links in a row that ended within SHORT_LINK (`_judge_link`)
+        self._short_links: dict[str, int] = {}
+        self._link_loss_listeners: list[Callable[[LinkEnd], None]] = []
         self._probe_link = (
             asyncio.Event()
         )  # a command went unanswered: the watchdog asks the proxy now
@@ -1867,7 +2064,8 @@ class JungHomeHub:
 
         One running hub per mesh: another entry's hub already owning the mesh's counters (`SEQ_OWNERS`) refuses
         this one (`_refuse_duplicate_mesh`). A record restored from a Home Assistant backup continues past every
-        number sent since (`_async_skip_restored_record`).
+        number sent since (`_async_skip_restored_record`). An address without a record anywhere starts at 0 only
+        when nothing says it was used before (`_evidence_of_use`); otherwise SEQ_SKIP_AHEAD on.
         """
         if not await async_migrate_legacy_seq_store(hass, entry, cdb.mesh_uuid):
             raise ConfigEntryNotReady(
@@ -1877,9 +2075,11 @@ class JungHomeHub:
         vault = await async_vault_keeper(hass, cdb.mesh_uuid)
         store = seq_store(hass, cdb)
         backup = seq_backup_store(hass, cdb)
+        floor = seq_floor_store_for_uuid(hass, cdb.mesh_uuid)
         data = await store.async_load()
         backup_data = await backup.async_load()
-        floor_data = await seq_floor_store_for_uuid(hass, cdb.mesh_uuid).async_load()
+        floor_data = _landed(floor, await floor.async_load())
+        floor.written = floor_data  # what `HAState` keeps the floor up from
         corrupt = (
             await hass.async_add_executor_job(_newest_corrupt_seq_store, store.path)
             if data is None
@@ -1895,7 +2095,9 @@ class JungHomeHub:
                     key,
                 )
                 base = _addresses_of(data) or _addresses_of(backup_data) or {}
-                data = {"addresses": {**base, key: record}}
+                data = _store_with(
+                    data if _mesh_of(data) else backup_data, {**base, key: record}
+                )
                 await store.async_save(data)
             elif (
                 _has_history(data, key)
@@ -1919,10 +2121,45 @@ class JungHomeHub:
         # what is on disk right now, before anything new is reserved from it (both copies bound it: `_limit`)
         store.written = data
         backup.written = backup_data
+        start = data
+        if _usable_record(data, key) is None and (
+            why := _evidence_of_use(cdb, unicast, vault, data, backup_data, floor_data)
+        ):
+            # review-4 S I5: only in what the `HAState` starts from — on disk it is the first save, which sends
+            # wait for (`_limit`): a crash before it lands starts here again, with nothing sent
+            _LOGGER.warning(
+                "Address %s has no sequence-number record, but %s: its numbers start at %06X, past any it may "
+                "have sent, rather than at 0",
+                key,
+                why,
+                SEQ_SKIP_AHEAD,
+            )
+            start = _store_with(
+                data,
+                {
+                    **(_addresses_of(data) or {}),
+                    key: {
+                        "seq": SEQ_SKIP_AHEAD,
+                        "iv_index": 0,
+                        "iv_update_active": False,
+                        "iv_known": False,
+                        "rpl": {},
+                        "clean": False,
+                        # sent under an index nobody knows: keep counting on up to the first beacon's
+                        "seq_guard": SEQ_GUARD_FIRST_BEACON,
+                    },
+                },
+            )
         # no await from here to the HAState: two entries set up at once cannot both pass the check
         _refuse_duplicate_mesh(hass, entry, cdb.mesh_uuid)
         state = HAState(
-            store, data, unicast, cdb.mesh_uuid.lower(), backup, entry.entry_id
+            store,
+            start,
+            unicast,
+            cdb.mesh_uuid.lower(),
+            backup,
+            entry.entry_id,
+            floor=floor,
         )
         return cls(hass, entry, cdb, devices, state, vault)
 
@@ -2098,9 +2335,11 @@ class JungHomeHub:
         """Whether the entities count as reachable: a link is up, or one was lost less than LINK_LOSS_GRACE ago.
 
         A lost link is usually replaced within seconds by the next proxy node; flapping every entity to unavailable
-        and back for that (and failing a command sent meanwhile) is worse than a short wait (`_command`).
+        and back for that (and failing a command sent meanwhile) is worse than a short wait (`_command`). A link
+        counts once `_connect_to` took it: `connected` turns True inside `attach()` already, and a link lost before
+        that is a failed connection, not one to show as up for a moment (review-4 R4-3).
         """
-        if self.connected:
+        if self.connected and self._link_end is None:
             return True
         return (
             self._lost_at is not None
@@ -2517,9 +2756,8 @@ class JungHomeHub:
         the task, and with it every link until a reload).
         """
         failed: dict[str, float] = {}
-        backoff = [
-            2.0
-        ]  # shared with `_connection_pass`, which doubles it on failure and resets it on success
+        # shared with `_connection_pass`, which doubles it on a failure or a short link and resets it after a long one
+        backoff = [CONNECT_BACKOFF_MIN]
         while not self._stop:
             try:
                 await self._connection_pass(failed, backoff)
@@ -2528,13 +2766,9 @@ class JungHomeHub:
                     "Unexpected error in the JUNG mesh connection loop; trying again in %.0f s",
                     CONNECT_BACKOFF_MAX,
                 )
-                self._cancel_refresh()
-                try:
-                    await self.proxy.detach()
-                except (
-                    Exception
-                ):  # pragma: no cover - detach logs and swallows its own errors
-                    _LOGGER.debug("detach after the error failed", exc_info=True)
+                await self._drop_link(
+                    "an unexpected error in the connection loop", penalise=False
+                )
                 self._set_available(False)
                 self._set_link_state(LINK_FAILED)
                 await asyncio.sleep(CONNECT_BACKOFF_MAX)
@@ -2585,18 +2819,56 @@ class JungHomeHub:
             await asyncio.sleep(backoff[0])
             backoff[0] = min(backoff[0] * 2, CONNECT_BACKOFF_MAX)
             return
-        backoff[0] = 2.0
         self._link_lost.clear()
-        if not await self._watch_link():
-            failed[info.address] = (
-                time.monotonic()
-            )  # a proxy that went silent: prefer another node for a while
+        await self._watch_link()
+        if self._link_end is None:
+            # gone without the disconnected callback (a transport that only turned `is_connected` False): the
+            # client is still attached and nothing ended the link yet
+            await self._drop_link("the transport reported it closed", penalise=None)
         self._set_available(False)
-        self._set_link_state(LINK_DISCONNECTED)
-        await asyncio.sleep(1)
+        await asyncio.sleep(self._judge_link(info.address, failed, backoff))
 
-    async def _watch_link(self) -> bool:
-        """Block while the link is up. Returns False when we dropped it ourselves because the proxy went silent.
+    def _judge_link(
+        self, address: str, failed: dict[str, float], backoff: list[float]
+    ) -> float:
+        """Weigh the link to `address` that just ended (`_link_end`) against its proxy; the pause before the next pass.
+
+        A link lost within SHORT_LINK is a failed connection that only took longer to show (review-4 R4-1): the
+        back-off doubles, and after SHORT_LINK_STREAK of them in a row the node is set aside like one that cannot be
+        connected to (`failed`), so the next pass prefers another node — the strongest one was otherwise picked
+        again and again, each new link restarting the connect-time refresh. Only a long link resets the back-off.
+        A silent proxy is set aside at once, as before; a link we ended for reasons of our own counts for nothing.
+        A node that reached the streak is set aside again by its next short link, until it holds one for SHORT_LINK.
+        Unverified on air.
+        """
+        end = self._link_end
+        assert end is not None  # `_connection_pass` ended it
+        if end.penalise is False:
+            return 1.0
+        now = time.monotonic()
+        if end.penalise:  # a proxy that went silent: prefer another node for a while
+            failed[address] = now
+        if end.lasted >= SHORT_LINK:
+            self._short_links.pop(address, None)
+            backoff[0] = CONNECT_BACKOFF_MIN
+            return 1.0
+        streak = self._short_links[address] = self._short_links.get(address, 0) + 1
+        if streak >= SHORT_LINK_STREAK:
+            failed[address] = now
+            if streak == SHORT_LINK_STREAK:
+                _LOGGER.warning(
+                    "Proxy node %s lost %d links in a row within %.0f s of connecting; preferring another node "
+                    "for a while",
+                    address,
+                    streak,
+                    SHORT_LINK,
+                )
+        pause = backoff[0]
+        backoff[0] = min(pause * 2, CONNECT_BACKOFF_MAX)
+        return pause
+
+    async def _watch_link(self) -> None:
+        """Block while the link is up; drop it (`_drop_link`) when the proxy went silent.
 
         A GATT proxy that stops forwarding (stuck filter, half-dead relay) never disconnects by itself. A mesh with a
         gateway is never quiet (it polls every load every 15 s), but one without can be silent for hours at night, so
@@ -2620,9 +2892,8 @@ class JungHomeHub:
                     self.proxy_address,
                     time.monotonic() - self._last_rx,
                 )
-                self._cancel_refresh()
-                await self.proxy.detach()
-                return False
+                await self._drop_link("the proxy went silent", penalise=True)
+                return
             if self._probe_link.is_set():
                 self._probe_link.clear()
                 unanswered, self._unanswered = self._unanswered, []
@@ -2637,9 +2908,11 @@ class JungHomeHub:
                         "Get; dropping the link",
                         self.proxy_address,
                     )
-                    self._cancel_refresh()
-                    await self.proxy.detach()
-                    return False
+                    await self._drop_link(
+                        "the proxy answered neither a command nor a keep-alive Get",
+                        penalise=True,
+                    )
+                    return
                 continue
             lost = asyncio.ensure_future(self._link_lost.wait())
             probe = asyncio.ensure_future(self._probe_link.wait())
@@ -2652,7 +2925,6 @@ class JungHomeHub:
             finally:
                 lost.cancel()
                 probe.cancel()
-        return True
 
     def _keep_alive_targets(self) -> list[int]:
         """One Generic OnOff Server element per node, nodes heard from before those never heard, the proxy's last.
@@ -2797,6 +3069,12 @@ class JungHomeHub:
         # already see the new link's number (`config_entities.PropertyEntity._maybe_read`)
         self.link_count += 1
         await self.proxy.attach(client, beacon_wait=CONNECT_BEACON_WAIT)
+        if not self.proxy.connected:
+            # lost while attach() settled after the filter request (review-4 R4-3): a failed connection, not a link
+            # to report as up for a moment and then as lost — the entities would flap
+            raise ConnectionError("the link was lost while it was set up")
+        self._link_end = None
+        self._link_since = time.monotonic()
         self._connect_failure_logged = False
         self.proxy_address = info.address
         # silence while the link was down was the link's fault, not the nodes': every node gets a full timeout
@@ -2815,9 +3093,7 @@ class JungHomeHub:
         )
         self.connected_since = time.time()
         self._lost_at = None
-        if self._unsub_grace is not None:
-            self._unsub_grace()
-            self._unsub_grace = None
+        self._cancel_grace()
         self._link_up.set()
         self._last_rx = time.monotonic()
         self._set_available(True)
@@ -2919,16 +3195,70 @@ class JungHomeHub:
             )
 
     def _on_disconnect(self) -> None:
-        self._cancel_refresh()
-        self._set_link_state(LINK_DISCONNECTED)
+        """Handle the link the proxy client lost (its transport's disconnected callback)."""
+        self._link_ended("the proxy disconnected", None)
         self._link_lost.set()
+
+    async def _drop_link(self, reason: str, *, penalise: bool | None) -> None:
+        """End the current link ourselves, for `reason`; `penalise` as in `LinkEnd`.
+
+        Every path that detaches a link it still had goes through here (review-4 R4-3: only a transport's
+        disconnect used to start the link-loss grace, so a link the watchdog or the `pdus_dropped` repair dropped
+        made every entity unavailable at once, and Home Assistant skipped them in a command meanwhile). The end is
+        recorded — and the grace started — before the detach: `detach` clears `connected` at once and then waits
+        for the transport, and a command arriving in that wait must find the grace and wait for the next link
+        (`_wait_for_link`) rather than fail. The detach is bounded like the one of `async_stop`. Unverified on air.
+        """
+        self._link_ended(reason, penalise)
+        try:
+            await asyncio.wait_for(self.proxy.detach(), STOP_TIMEOUT)
+        except TimeoutError:
+            _LOGGER.warning(
+                "The Bluetooth link did not close within %.0f s; leaving it",
+                STOP_TIMEOUT,
+            )
+        except Exception:  # pragma: no cover - detach logs and swallows its own errors
+            _LOGGER.debug("detach failed", exc_info=True)
+        self._link_lost.set()  # the watchdog, when another task dropped the link
+
+    def _link_ended(self, reason: str, penalise: bool | None) -> None:
+        """Handle the end of a link, whoever ended it: record why, start the grace, tell the listeners.
+
+        Nothing to do when no link is up: one lost while `attach()` was still settling is a failed connection
+        (`_connect_to`), and a link ends once however many paths notice.
+        """
+        if self._link_end is not None:
+            return
+        end = self._link_end = LinkEnd(
+            reason, penalise, time.monotonic() - self._link_since
+        )
+        self._cancel_refresh()
         self._start_grace()
+        self._set_link_state(LINK_DISCONNECTED)
+        _LOGGER.info(
+            "The link through proxy node %s ended after %.0f s: %s",
+            self.proxy_address,
+            end.lasted,
+            reason,
+        )
+        for listener in list(self._link_loss_listeners):
+            listener(end)
+
+    @callback
+    def async_on_link_loss(self, listener: Callable[[LinkEnd], None]) -> CALLBACK_TYPE:
+        """Call `listener` with every link's `LinkEnd` the moment it ends, before the grace runs; returns the unsubscribe."""
+        self._link_loss_listeners.append(listener)
+        return partial(self._link_loss_listeners.remove, listener)
+
+    def _cancel_grace(self) -> None:
+        if self._unsub_grace is not None:
+            self._unsub_grace()
+            self._unsub_grace = None
 
     def _start_grace(self) -> None:
         """Keep the entities available for LINK_LOSS_GRACE after a link loss; tell them when it ends."""
         self._lost_at = time.monotonic()
-        if self._unsub_grace is not None:
-            self._unsub_grace()
+        self._cancel_grace()
 
         @callback
         def ended(_now: datetime) -> None:
@@ -4832,9 +5162,8 @@ class JungHomeHub:
             seq,
         )
         if self.proxy.connected:
-            self._cancel_refresh()
-            await self.proxy.detach()
-            self._link_lost.set()
+            # not the proxy's fault: no verdict on it, and the entities keep the grace (review-4 R4-3)
+            await self._drop_link("sequence numbers skipped ahead", penalise=False)
 
     def _report_pdus_dropped(self, dropped: bool) -> None:
         """Raise (or clear) the repair issue for a mesh that ignores us although the link works (the caller logs why).
@@ -4917,21 +5246,38 @@ class JungHomeHub:
         probe: a proxy that stopped forwarding leaves every command unanswered, and the nodes are not to blame (the
         link is dropped, and the next one's refresh asks them all). The TimeoutError is raised for the caller to
         report either way.
+
+        A link that ended or changed while the command was out (review-4 R I-11) says nothing about the load: the
+        command is sent once more, on the next link (`_wait_for_link`) — same PDU, same TID, so a load that did
+        apply it only answers. Unverified on air.
         """
-        await self._wait_for_link()
-        asked = time.monotonic()
-        try:
-            await self.proxy.request(
-                dst,
-                access_pdu,
-                status,
-                retries=REQUEST_ATTEMPTS,
-            )
-        except TimeoutError:
-            if self.connected:  # else the link went meanwhile: the new link's refresh asks the node again
-                self._unanswered.append((dst if load is None else load, kind, asked))
-                self._probe_link.set()
-            raise
+        for retry in (False, True):
+            await self._wait_for_link()
+            link = self.link_count if self.connected else None
+            asked = time.monotonic()
+            try:
+                await self.proxy.request(
+                    dst,
+                    access_pdu,
+                    status,
+                    retries=REQUEST_ATTEMPTS,
+                )
+            except (TimeoutError, ConnectionError) as err:
+                same_link = self.connected and self.link_count == link
+                if link is not None and not same_link and not retry:
+                    _LOGGER.debug(
+                        "The link changed during a command to %04X; sending it again on the next one",
+                        dst,
+                    )
+                    continue
+                if isinstance(err, TimeoutError) and same_link:
+                    # else the link went meanwhile: the new link's refresh asks the node again
+                    self._unanswered.append(
+                        (dst if load is None else load, kind, asked)
+                    )
+                    self._probe_link.set()
+                raise
+            return
 
     async def set_onoff(self, addr: int, on: bool) -> None:
         """Switch the element at `addr` on or off."""

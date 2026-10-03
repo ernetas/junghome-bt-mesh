@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
@@ -16,6 +17,8 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.storage import Store
+from homeassistant.util.file import WriteError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import mesh_config, onboard
@@ -25,6 +28,7 @@ from custom_components.junghome_ble.const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
+    ISSUE_VAULT_UNWRITABLE,
     OPTION_ALLOW_PROVISIONING,
     OPTION_PROVISIONER_IDENTITY,
 )
@@ -45,6 +49,7 @@ from custom_components.junghome_ble.jhmesh.onboarding import (
 )
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
 from custom_components.junghome_ble.jhmesh.provisioning import (
+    DATA,
     MESH_PROVISIONING_SERVICE,
     ProvisioningData,
 )
@@ -59,6 +64,7 @@ from .conftest import (
     setup_entry,
     wait_for_link,
 )
+from .helpers import find_issue
 from .jhmesh.conftest import FakeConfigServers
 from .jhmesh.test_provisioning import FakeDevice
 from .test_services import GATEWAY_DATA
@@ -214,19 +220,18 @@ async def test_find_new_devices_lists_the_jung_devices_not_in_a_mesh(
     }
 
 
-def fail_first_vault_save(hub: JungHomeHub) -> None:
-    """Make the vault's next write fail (a read-only or full disk), the ones after it succeed."""
-    save = hub.vault.async_save
-    calls = 0
+@contextmanager
+def vault_unwritable() -> Iterator[None]:
+    """Every write of a vault store fails as on a read-only or full disk: HA's `Store` logs it and returns."""
+    write = Store._async_write_data
 
-    async def first_save_fails() -> None:
-        nonlocal calls
-        calls += 1
-        if calls == 1:
-            raise OSError("read-only")
-        await save()
+    async def refuse_the_vault(store: Store[Any], data: dict[str, Any]) -> None:
+        if store.key.startswith(f"{DOMAIN}.vault."):
+            raise WriteError("read-only file system")
+        await write(store, data)
 
-    hub.vault.async_save = first_save_fails  # type: ignore[method-assign]
+    with patch.object(Store, "_async_write_data", refuse_the_vault):
+        yield
 
 
 def assert_element_groups_from_the_top(hub: JungHomeHub, node: Node) -> None:
@@ -245,24 +250,16 @@ def assert_element_groups_from_the_top(hub: JungHomeHub, node: Node) -> None:
     assert groups == list(range(0xC64B, 0xC64B - len(groups), -1))
 
 
-@pytest.mark.parametrize(
-    "vault_fails", [False, True], ids=["vault", "vault_unwritable"]
-)
 async def test_add_device_provisions_commissions_and_records_it(
     hass: HomeAssistant,
     provisioning_entry: MockConfigEntry,
     mock_bluetooth_env: dict[str, Any],
     fake_link: FakeProxyLink,
     network_id: bytes,
-    caplog: pytest.LogCaptureFixture,
-    vault_fails: bool,
 ) -> None:
     """The whole path against simulated devices: the provisionee of the spec's protocol, the fresh node's
-    Configuration Server; the export ends up with the node as it answered the read-back. A vault that cannot be
-    written right after provisioning does not stop it: logged without the key, and the node still recorded."""
+    Configuration Server; the export ends up with the node as it answered the read-back."""
     hub = provisioning_entry.runtime_data
-    if vault_fails:
-        fail_first_vault_save(hub)
     template = hub.cdb.node_by_addr(TEMPLATE)
     assert template is not None
     mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
@@ -296,10 +293,6 @@ async def test_add_device_provisions_commissions_and_records_it(
     assert device.data is not None
     assert device.data.unicast == unicast
     assert device.data.net_key == hub.proxy.nk.key
-    if vault_fails:  # (the test harness's mock storage logs what it writes; the integration never does)
-        ours = [r.getMessage() for r in caplog.records if r.name == onboard.__name__]
-        assert any("could not be kept in the vault (OSError)" in m for m in ours)
-        assert not any(device.device_key.hex() in m.lower() for m in ours)
     await hass.async_block_till_done()
     await wait_for_link(hass, provisioning_entry)
     hub = provisioning_entry.runtime_data  # reloaded with the new node
@@ -901,6 +894,98 @@ def learn_new_nodes(hub: JungHomeHub, fake_link: FakeProxyLink) -> list[dict[int
 
     hub.proxy.add_node = add_to_both  # type: ignore[method-assign]
     return seen
+
+
+@pytest.mark.parametrize("earlier", [False, True], ids=["new", "pending_before"])
+async def test_add_device_stops_before_the_data_when_the_vault_cannot_be_written(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+    caplog: pytest.LogCaptureFixture,
+    earlier: bool,
+) -> None:
+    """Review-4 D15: the device key is on disk before the device gets its Provisioning Data. A vault write that
+    fails (HA's `Store` only logs it) stops the provisioning right there: the device learns nothing, nothing is
+    kept or reserved for it (a record of an earlier attempt stays as it was), the repair names its address (never
+    a key), and the next save that lands clears it."""
+    hub = provisioning_entry.runtime_data
+    before = (
+        hub.vault.identity().remember_provisioned(
+            "00005EFF-FE00-5377-0000-000000000000", 0x7F00, 1, bytes(16)
+        )
+        if earlier
+        else None
+    )
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with (
+        vault_unwritable(),
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        refused(HomeAssistantError, "add_device_vault_unwritable") as caught,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "add_device",
+            {"address": NEW_MAC, "name": "Hall light"},
+            blocking=True,
+        )
+    address = caught.value.translation_placeholders["unicast"]
+    assert caught.value.translation_placeholders["error"] == "read-only file system"
+    assert DATA not in [
+        p[0] for p in device.received
+    ]  # neither the NetKey nor an address left
+    assert device.data is None
+    vault = hub.vault.vault
+    assert vault is not None
+    assert vault.nodes == ({} if before is None else {before.uuid: before})
+    if before is None:
+        assert pending_issue(hass, provisioning_entry) is None
+    issue = find_issue(hass, ISSUE_VAULT_UNWRITABLE)
+    assert issue is not None
+    assert issue.translation_placeholders["address"] == address
+    assert issue.translation_placeholders["error"] == "read-only file system"
+    ours = [r.getMessage() for r in caplog.records if r.name == onboard.__name__]
+    assert any(f"new device at {address} could not be written" in m for m in ours)
+    assert not any(re.search("[0-9A-Fa-f]{32}", m) for m in ours)  # no key
+    # writable again: the next save lands (the identity begun for the device) and the repair goes
+    assert await hub.vault.async_save()
+    assert find_issue(hass, ISSUE_VAULT_UNWRITABLE) is None
+
+
+async def test_a_provisioning_not_confirmed_after_the_data_keeps_the_device_pending(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+) -> None:
+    """Once the Data PDU went out, a failure does not prove the device has nothing: the record kept before it
+    stays pending, so its addresses stay reserved and `reset_pending_device` can reach it."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    device.fail_on = (DATA, 0x06)  # Decryption Failed, in answer to the Data PDU
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        refused(HomeAssistantError, "add_device_provisioning_unconfirmed") as caught,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "add_device",
+            {"address": NEW_MAC, "name": "Hall light"},
+            blocking=True,
+        )
+    address = caught.value.translation_placeholders["unicast"]
+    vault = hub.vault.vault
+    assert vault is not None
+    assert [f"{n.unicast:04X}" for n in vault.pending] == [address]
+    issue = pending_issue(hass, provisioning_entry)
+    assert issue is not None
+    assert issue.translation_placeholders["addresses"] == address
 
 
 def pending_issue(hass: HomeAssistant, entry: MockConfigEntry) -> Any:

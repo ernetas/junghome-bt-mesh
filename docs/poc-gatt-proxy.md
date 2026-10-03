@@ -23,7 +23,8 @@ $ .venv/bin/python tools/mesh_poc.py listen --seconds 60     # decrypted live tr
 
 All commands take `--cdb <export>` (default: the iOS app container's `MeshNetwork.json`; a `JungHome.json` share
 export works too) and `--source <hex>` (default `7FFF`, one sequence store per address in
-`tools/.jhmesh_state_<ADDR>.json` — never the integration's `0D00`). Addresses, property ids and model ids are hex
+`tools/.jhmesh_state_<ADDR>.json` — never the integration's `0D00`; with `--ha-storage <config>/.storage` none
+the integration's store of the mesh holds a counter for). Addresses, property ids and model ids are hex
 without a prefix; groups may be given by name; property names are the identifiers of `jhmesh/properties.py`
 (`prop list` shows them). `tools/cli_ops.py` holds the link-free helpers (tested in `tests/test_cli.py`).
 

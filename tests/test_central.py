@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode
@@ -19,6 +21,7 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 
+from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.devices import (
@@ -165,6 +168,38 @@ async def test_send_failure_and_lost_link(
     fake_link.drop_link()
     await settle(hass)
     assert hass.states.get(eid).state == STATE_UNAVAILABLE
+
+
+@pytest.mark.link_loss_grace
+async def test_a_central_entity_keeps_the_grace_and_its_command_waits(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 R4-6: *All lights* went unavailable the moment the link was lost, and Home Assistant silently
+    skipped it in an action meanwhile; like the loads' entities it now waits for the next proxy."""
+    hub = init_integration.runtime_data
+    eid = entity_id(hass, "light", UID_ALL_LIGHTS)
+    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+        fake_link.drop_link()
+        await settle(hass)
+        assert not hub.connected
+        assert hass.states.get(eid).state != STATE_UNAVAILABLE
+        fake_link.sent.clear()
+        call = hass.async_create_task(
+            hass.services.async_call(
+                LIGHT_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: eid}, blocking=True
+            )
+        )
+        for _ in range(10):  # not `settle`: it would wait out the grace
+            await asyncio.sleep(0)
+        assert not call.done()  # waiting for the link, not skipped
+    hub._link_lost.set()  # a proxy advertises again: the loop wakes
+    await call
+    assert hub.connected
+    assert [op for op, _ in group_sends(fake_link, ALL_LIGHTS)] == [
+        M.GEN_ONOFF_SET_UNACK
+    ]  # sent on the next link
 
 
 async def test_switched_loads_only_make_an_on_off_group(
