@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess
+import sys
 from collections import Counter
 from datetime import timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, PropertyMock, patch
@@ -53,6 +56,7 @@ from custom_components.junghome_ble.jhmesh.cdb import CDB, Element, Node
 from custom_components.junghome_ble.jhmesh.devices import Metadata, build_devices
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 from custom_components.junghome_ble.jhmesh.properties import PropertySpec
+from custom_components.junghome_ble.properties import targets as T
 from custom_components.junghome_ble.sensor import PROPERTY_INSTALLED
 
 from . import property_helpers as ph
@@ -581,7 +585,7 @@ def test_firmware_ids_become_entities_only_when_settled(
         assert C.describe(spec(pid)) is None
     cooling = spec(0x1206)  # firmware-only, °C like the RTR's app temperatures
     assert C.describe(cooling) is None
-    monkeypatch.setattr(C, "FIRMWARE_ENTITIES", frozenset({0x1206, 0x1008}))
+    monkeypatch.setattr(T, "FIRMWARE_ENTITIES", frozenset({0x1206, 0x1008}))
     described = C.describe(cooling)
     assert described is not None
     assert (described.platform, described.translation_key) == (
@@ -703,6 +707,32 @@ async def test_config_entity_base_has_nothing_to_read() -> None:
 
 
 # --------------------------------------------------------------------------- status handler and cache
+
+# Run in a fresh interpreter, where importing `config_entities` is the first thing that happens.
+HANDLERS_ON_IMPORT = """
+import custom_components.junghome_ble.config_entities
+from custom_components.junghome_ble.coordinator import STATUS_HANDLERS
+from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.properties import reader, targets
+vendor = {STATUS_HANDLERS.get((M.JUNG_CID, o)) for o in M.VENDOR_PROPERTY_STATUS_OPCODES.values()}
+setup = {STATUS_HANDLERS.get((None, o)) for o in targets.SETUP_STATES}
+assert vendor == {reader._on_vendor_property_status}, vendor
+assert setup == {reader._on_setup_status}, setup
+"""
+
+
+@pytest.mark.slow_ok  # a fresh interpreter importing Home Assistant
+def test_importing_config_entities_registers_the_status_handlers() -> None:
+    """The vendor property and setup-state handlers live in `properties/reader.py` (review-4 A4-4) and register when
+    `config_entities` is imported, as they did before the split: the platforms and `__init__.py` import only it."""
+    result = subprocess.run(  # noqa: S603  # this interpreter on a fixed snippet
+        [sys.executable, "-c", HANDLERS_ON_IMPORT],
+        cwd=Path(__file__).resolve().parent.parent,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 async def test_vendor_status_is_cached_and_signalled(

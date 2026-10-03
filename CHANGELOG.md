@@ -635,6 +635,10 @@
   `errors.mesh_errors`, turns a command's transport errors into the same translated errors as before in the buttons,
   the entities' commands, the scenes and the thermostat's writes; the set-point and blind-position conversions live
   in `conversions.py`, still importable from `climate` and `cover`. No behaviour changes.
+- Internal: `config_entities.py` is split (review-4 A4-4): which config entities exist moved to
+  `properties/targets.py`, the property reader, its cache and the status handlers to `properties/reader.py`;
+  `config_entities.py` keeps the entity bases and re-exports what the platforms import, and still registers the
+  handlers when it is imported. Nothing changes for an installation: the same entities, unique ids and names.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick

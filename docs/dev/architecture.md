@@ -56,7 +56,9 @@ Layout of `custom_components/junghome_ble/`:
 | `onboard.py` | The experimental `add_device` / `remove_device` / `reset_pending_device` actions: template choice, addresses clear of every provisioner and of the vault's nodes, provisioning (`jhmesh.provisioning`), the app's commissioning (`jhmesh.commission`), read-back and recording; the `pending_device` and `vault_unwritable` repairs |
 | `areas.py` | Rooms to areas (review-4 U4-2): the area a room's devices start in (`area_name_for`: the flow's mapping, else the area named or aliased like the room) and moving devices to a changed mapping or room without touching one the user placed (`async_move_devices`) |
 | `device_names.py` | A device renamed in Home Assistant is written into the app's device list of the export (`meta.devices[].name`) the way the app's rename does, in a background task; a name the app would refuse raises `device_name_rejected` |
-| `config_entities.py` | Property → entity mapping, `PropertyReader` (initial reads — held while there is no link —, writes, status handlers) |
+| `config_entities.py` | The config entities' bases (`ConfigEntity`, `PropertyEntity`, `SetupStateEntity`, the lock function's, a load's `LoadLock`); re-exports what the platforms import from `properties/` |
+| `properties/targets.py` | Which config entities exist: property → platform by codec (`describe`), the element and device each one is bound to (`config_targets` and the other `*_targets`), the setup states; no entity code |
+| `properties/reader.py` | `PropertyReader` (initial reads — held while there is no link —, writes) and the status handlers that cache the values (registered when `config_entities.py` imports it) |
 | `identity.py` | `VaultKeeper` (`hub.vault`): the mesh's `jhmesh.vault.Vault` in `.storage/junghome_ble.vault.<mesh uuid>` and its `.backup` copy (private, atomic, every write checked through `TrackedStore.written`: `async_save` says whether it landed, a failed one is retried; an unreadable one is set aside under a timestamped name, never overwritten, removed only once that copy landed; `async_recover` takes Home Assistant's entry back from the export when the vault lost it, `jhmesh.vault.recognise`); the configurator merges it into every file it writes or uploads only with `OPTION_PROVISIONER_IDENTITY` (`MeshConfigurator._with_identity`) |
 | `vault_refresh.py` | `VaultKeyRefresh` (`hub.vault_refresh`): the vault's devices taken through the app's key refresh as far as it is proven (`jhmesh.vaultrefresh`; NetKey Update, Phase Set 2, Phase Set 3), in the background on every move of the followed refresh and every new link; the `vault_key_refresh_lagging` repair; its diagnostics section. Unverified on air |
 | `inserts.py` | `NodeInserts` (`hub.inserts`): each node's insert and key layout from the export, its JUNG advertisement (`_adv_seen`) or a read-only Get (a connect-time step); the device models and key positions they give; the `insert_mismatch` repair; `apply_reported` before the devices are registered. Unverified on air |
@@ -130,15 +132,15 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   `ENERGY_POLL_INTERVAL` (`_poll_energy_periodic`, skipped while disconnected or while a poll is running; cancelled
   with the link). Statuses in the long form carry present and target; the entities show **present** (as the app
   does) and `ElementState.target_*` keeps the target.
-- Config entities (`config_entities.py`): every `PropertySpec` with `access` rw/wo and an `app` source is mapped by
-  codec to `number` / `select` / `switch` / `button`; `PropertyReader` schedules the initial reads (3 s after the first
-  job, 5 distinct elements per round, 0.5 s pause; a job is queued once per element and key, counted for the link
-  it was last queued on, and dropped when its link is gone — review-4 R4-5; a node's version read once per hub and
-  again after `hub.restarted` names a restart since), one status handler for the three vendor Status opcodes fills
-  `ElementState.properties`. The status LED is written with a User Property *Status* (never read); such a Status the
-  gateway sends to a push-button's key is cached as that key's value (`config_entities.status_owner`). An entity
-  whose read got every value queues it again on a later link once `CONFIG_REREAD_INTERVAL` (3 h) has passed, once
-  per link (`ConfigEntity._read_due`; review-4 H4-10).
+- Config entities (`config_entities.py`, `properties/targets.py`, `properties/reader.py`): every `PropertySpec` with
+  `access` rw/wo and an `app` source is mapped by codec to `number` / `select` / `switch` / `button`; `PropertyReader`
+  schedules the initial reads (3 s after the first job, 5 distinct elements per round, 0.5 s pause; a job is queued
+  once per element and key, counted for the link it was last queued on, and dropped when its link is gone — review-4
+  R4-5; a node's version read once per hub and again after `hub.restarted` names a restart since), one status handler
+  for the three vendor Status opcodes fills `ElementState.properties`. The status LED is written with a User Property
+  *Status* (never read); such a Status the gateway sends to a push-button's key is cached as that key's value
+  (`properties.reader.status_owner`). An entity whose read got every value queues it again on a later link once
+  `CONFIG_REREAD_INTERVAL` (3 h) has passed, once per link (`ConfigEntity._read_due`; review-4 H4-10).
 - `homeassistant.update_entity` (`JungHomeEntity.async_update`): each entity names what it reads (`_update_read`:
   the state Get of `_refresh_kind` for a light or socket, both level elements of a cover, the meter, the thermostat's
   refresh with `since`, the detector's illuminance, a config entity's values with `since` so a read within

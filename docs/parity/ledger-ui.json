@@ -27,7 +27,7 @@
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
     "custom_components/junghome_ble/jhmesh/properties.py::PRESENCE_DETECTOR",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber.async_set_native_value",
-    "custom_components/junghome_ble/config_entities.py::retired_unique_ids"
+    "custom_components/junghome_ble/properties/targets.py::retired_unique_ids"
    ],
    "tests": [
     "tests/test_number.py::test_percent_properties_are_sliders_and_units_map",
@@ -1480,7 +1480,7 @@
    "id": "ui:state:inputedgedetectioncapability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::edge_detection_targets",
+    "custom_components/junghome_ble/properties/targets.py::edge_detection_targets",
     "custom_components/junghome_ble/select.py::JungHomeEdgeBehaviour",
     "custom_components/junghome_ble/switch.py::JungHomeEdgeMode"
    ],
@@ -1513,7 +1513,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/number.py::JungHomeLightnessBound",
-    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+    "custom_components/junghome_ble/properties/reader.py::_on_setup_status"
    ],
    "tests": [
     "tests/test_setup_states.py::test_brightness_range_moves_one_end_and_keeps_the_other",
@@ -1570,7 +1570,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/entity.py::software_version",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",
@@ -1814,7 +1814,7 @@
    "id": "ui:tile:gateway",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::gateway_status_targets",
+    "custom_components/junghome_ble/properties/targets.py::gateway_status_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeGatewayIp"
    ],
    "tests": [
@@ -2506,7 +2506,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/entity.py::software_version",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind",
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS"
    ],
    "tests": [
@@ -2521,7 +2521,7 @@
    "id": "ui:uc:requestsoftwareversion",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
     "custom_components/junghome_ble/entity.py::software_version"
    ],
    "tests": [
@@ -3337,7 +3337,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::Job"
+    "custom_components/junghome_ble/properties/reader.py::Job"
    ],
    "tests": [
     "tests/test_number.py::test_percent_properties_are_sliders_and_units_map",
@@ -3360,7 +3360,7 @@
    "id": "ui:vm:devicedetailsviewmodel.observedevice",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::lock_targets",
+    "custom_components/junghome_ble/properties/targets.py::lock_targets",
     "custom_components/junghome_ble/config_entities.py::LockFunctionEntity"
    ],
    "tests": [
@@ -3410,7 +3410,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/entity.py::software_version",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version"
@@ -3494,7 +3494,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
-    "custom_components/junghome_ble/config_entities.py::SetupTarget"
+    "custom_components/junghome_ble/properties/targets.py::SetupTarget"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
@@ -3823,8 +3823,8 @@
    "id": "ui:vm:miniactuatorconfigurationviewmodel.observedevice",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::edge_detection_targets",
-    "custom_components/junghome_ble/config_entities.py::key_mode_targets",
+    "custom_components/junghome_ble/properties/targets.py::edge_detection_targets",
+    "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor"
    ],
    "tests": [
@@ -3883,7 +3883,7 @@
    "id": "ui:vm:miniactuatorconfigurationviewmodel.requestinputdetections",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::edge_detection_targets",
+    "custom_components/junghome_ble/properties/targets.py::edge_detection_targets",
     "custom_components/junghome_ble/config_entities.py::EdgeDetectionEntity"
    ],
    "tests": [
@@ -3895,7 +3895,7 @@
    "id": "ui:vm:miniactuatorconfigurationviewmodel.requestkeymodes",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::key_mode_targets",
+    "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
    ],
    "tests": [

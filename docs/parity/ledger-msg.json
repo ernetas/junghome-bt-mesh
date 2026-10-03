@@ -1395,7 +1395,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_onpowerup_get",
-    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+    "custom_components/junghome_ble/properties/targets.py::ON_POWER_UP"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_onpowerup_builders_and_describe",
@@ -1406,8 +1406,8 @@
    "id": "msg:op:8212",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_on_setup_status",
-    "custom_components/junghome_ble/config_entities.py::ON_POWER_UP"
+    "custom_components/junghome_ble/properties/reader.py::_on_setup_status",
+    "custom_components/junghome_ble/properties/targets.py::ON_POWER_UP"
    ],
    "tests": [
     "tests/test_setup_states.py::test_status_handler_caches_setup_states",
@@ -1590,8 +1590,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::time_role_get",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_time_role"
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_time_role"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_time_role_get_and_status",
@@ -1621,7 +1621,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::decode_time_role_status",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_time_role",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_time_role",
     "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
@@ -1844,7 +1844,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_default_get",
-    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_DEFAULT"
+    "custom_components/junghome_ble/properties/targets.py::LIGHTNESS_DEFAULT"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
@@ -1855,8 +1855,8 @@
    "id": "msg:op:8256",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_DEFAULT",
-    "custom_components/junghome_ble/config_entities.py::_on_setup_status"
+    "custom_components/junghome_ble/properties/targets.py::LIGHTNESS_DEFAULT",
+    "custom_components/junghome_ble/properties/reader.py::_on_setup_status"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
@@ -1868,7 +1868,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_range_get",
-    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_RANGE"
+    "custom_components/junghome_ble/properties/targets.py::LIGHTNESS_RANGE"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_lightness_range_and_default",
@@ -1879,7 +1879,7 @@
    "id": "msg:op:8258",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::LIGHTNESS_RANGE",
+    "custom_components/junghome_ble/properties/targets.py::LIGHTNESS_RANGE",
     "custom_components/junghome_ble/jhmesh/messages.py::_SIG_DESCRIBERS"
    ],
    "tests": [
@@ -2029,7 +2029,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_default_get",
-    "custom_components/junghome_ble/config_entities.py::CTL_DEFAULT"
+    "custom_components/junghome_ble/properties/targets.py::CTL_DEFAULT"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
@@ -2040,7 +2040,7 @@
    "id": "msg:op:8268",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::CTL_DEFAULT"
+    "custom_components/junghome_ble/properties/targets.py::CTL_DEFAULT"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
@@ -2066,7 +2066,7 @@
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_set",
     "custom_components/junghome_ble/number.py::JungHomeColorTempBound",
     "custom_components/junghome_ble/number.py::JungHomeColorTempBound.async_set_native_value",
-    "custom_components/junghome_ble/config_entities.py::CTL_TEMPERATURE_RANGE"
+    "custom_components/junghome_ble/properties/targets.py::CTL_TEMPERATURE_RANGE"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
@@ -2242,7 +2242,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._get"
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._get"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
@@ -2257,7 +2257,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader.write",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_property"
    ],
    "tests": [
@@ -2269,10 +2269,10 @@
    "id": "msg:op:c52705",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
-    "custom_components/junghome_ble/config_entities.py::has_value",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
-    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/properties/reader.py::has_value",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader.write",
+    "custom_components/junghome_ble/properties/reader.py::check_outcome",
     "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
    ],
    "tests": [
@@ -2312,10 +2312,10 @@
    "id": "msg:op:cb2705",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
-    "custom_components/junghome_ble/config_entities.py::has_value",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
-    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/properties/reader.py::has_value",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader.write",
+    "custom_components/junghome_ble/properties/reader.py::check_outcome",
     "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
    ],
    "tests": [
@@ -2354,10 +2354,10 @@
    "id": "msg:op:d12705",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
-    "custom_components/junghome_ble/config_entities.py::has_value",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader.write",
-    "custom_components/junghome_ble/config_entities.py::check_outcome",
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/properties/reader.py::has_value",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader.write",
+    "custom_components/junghome_ble/properties/reader.py::check_outcome",
     "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property"
    ],
    "tests": [

@@ -1110,7 +1110,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -4587,7 +4587,7 @@
    "id": "mgmt:flow:communicatewithdevice",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::Job",
+    "custom_components/junghome_ble/properties/reader.py::Job",
     "custom_components/junghome_ble/config_entities.py::PropertyEntity",
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get"
    ],
@@ -5077,7 +5077,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/node_info.py::node_versions_store",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_versions_survive_a_restart_and_go_with_the_entry",
@@ -5241,7 +5241,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",
@@ -5255,7 +5255,7 @@
    "id": "mgmt:flow:requestsoftwareversion",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind",
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/node_info.py::node_versions_store",
     "custom_components/junghome_ble/entity.py::node_device_info"
    ],
@@ -5268,7 +5268,7 @@
    "id": "mgmt:flow:requestunknownsoftwareversionforupdates",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind",
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/node_info.py::async_load_node_versions"
    ],
    "tests": [
@@ -6502,7 +6502,7 @@
    "id": "mgmt:pref:request_all_software_versions",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind",
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/node_info.py::async_load_node_versions"
    ],
    "tests": [
@@ -7507,7 +7507,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::supported",
-    "custom_components/junghome_ble/config_entities.py::_Element.load_kind"
+    "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
     "tests/test_config_entities.py::test_firmware_gating_uses_the_cached_software_version",

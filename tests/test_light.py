@@ -985,7 +985,9 @@ async def test_a_lock_lifted_unseen_is_read_again_before_a_refusal(
     assert hass.states.get(eid).attributes["locked"] is True
     mesh.values[LIGHT_SWITCH, PID_LOCK] = UNLOCKED  # unlocked in the app
     answering_mesh.sent.clear()
-    with patch("custom_components.junghome_ble.config_entities.PROPERTY_READ_FRESH", 0):
+    with patch(
+        "custom_components.junghome_ble.properties.reader.PROPERTY_READ_FRESH", 0
+    ):
         await turn_on(hass, eid)
     assert mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 2
     assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]

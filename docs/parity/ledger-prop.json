@@ -8,8 +8,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::DEVICE_LOCK_FLAGS",
-    "custom_components/junghome_ble/config_entities.py::DEVICE_LOCK_FLAGS",
-    "custom_components/junghome_ble/config_entities.py::device_lock_targets",
+    "custom_components/junghome_ble/properties/targets.py::DEVICE_LOCK_FLAGS",
+    "custom_components/junghome_ble/properties/targets.py::device_lock_targets",
     "custom_components/junghome_ble/switch.py::JungHomeDeviceLockFlag"
    ],
    "tests": [
@@ -59,8 +59,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_vendor_info",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._unsupported",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_vendor_info",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
@@ -77,8 +77,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_vendor_info",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._unsupported",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_vendor_info",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
@@ -95,9 +95,9 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_vendor_info",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._unsupported",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_vendor_info",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/diagnostics.py::_node_info"
    ],
    "tests": [
@@ -143,7 +143,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::EnforcedOutputCodec",
-    "custom_components/junghome_ble/config_entities.py::lock_targets",
+    "custom_components/junghome_ble/properties/targets.py::lock_targets",
     "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
     "custom_components/junghome_ble/select.py::JungHomeLockFunction",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeWindAlarm"
@@ -161,8 +161,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
-    "custom_components/junghome_ble/config_entities.py::FIRST_PAGE"
+    "custom_components/junghome_ble/properties/targets.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::FIRST_PAGE"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
@@ -175,7 +175,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
@@ -188,8 +188,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader.write"
+    "custom_components/junghome_ble/properties/targets.py::describe",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader.write"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_spec_fields_and_lookups",
@@ -202,7 +202,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -218,7 +218,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -234,7 +234,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeDetectorOccupancy.hold_seconds"
    ],
@@ -254,7 +254,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch"
    ],
    "tests": [
@@ -267,7 +267,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch",
     "custom_components/junghome_ble/jhmesh/commission.py::NOT_COVERED"
    ],
@@ -284,7 +284,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch"
    ],
    "tests": [
@@ -297,7 +297,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -310,8 +310,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PROPERTY_DIM_TO_WARM",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::PROPERTY_DIM_TO_WARM",
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/test_config_entities.py::test_mapping_table",
@@ -323,7 +323,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES"
+    "custom_components/junghome_ble/properties/targets.py::UNSAFE_PROPERTIES"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes",
@@ -338,7 +338,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -351,7 +351,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun"
    ],
    "tests": [
@@ -365,7 +365,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
     "custom_components/junghome_ble/number.py::MODE_MINIMUMS",
     "custom_components/junghome_ble/config_entities.py::VALUE_GATES",
@@ -384,7 +384,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/cover.py::JungHomeCover.operation_mode"
    ],
    "tests": [
@@ -398,7 +398,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -412,7 +412,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
@@ -425,7 +425,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
@@ -437,7 +437,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch"
    ],
    "tests": [
@@ -451,7 +451,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
@@ -464,7 +464,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Position",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_position_codec_follows_the_apps_wire_quirks",
@@ -476,7 +476,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/button.py::JungHomePropertyButton",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun"
    ],
@@ -490,7 +490,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -504,7 +504,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/climate.py::PRESET_TEMPERATURES",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -518,7 +518,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/climate.py::PRESET_TEMPERATURES",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -532,7 +532,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/climate.py::PRESET_TEMPERATURES",
-    "custom_components/junghome_ble/config_entities.py::describe"
+    "custom_components/junghome_ble/properties/targets.py::describe"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -545,7 +545,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES"
+    "custom_components/junghome_ble/properties/targets.py::UNSAFE_PROPERTIES"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_catalogue_covers_every_id_the_app_reads_or_writes",
@@ -557,7 +557,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -668,7 +668,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -681,7 +681,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -694,7 +694,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -719,7 +719,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch"
    ],
    "tests": [
@@ -732,8 +732,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PROPERTY_SCHEDULER_STATUS",
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/properties/reader.py::PROPERTY_SCHEDULER_STATUS",
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeRtrSchedulerStatus"
    ],
    "tests": [
@@ -749,7 +749,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::UNSAFE_PROPERTIES",
+    "custom_components/junghome_ble/properties/targets.py::UNSAFE_PROPERTIES",
     "custom_components/junghome_ble/keep_awake.py::KeepAwake._keep_alive",
     "custom_components/junghome_ble/jhmesh/cdb.py::_note_button_layouts",
     "custom_components/junghome_ble/inserts.py::NodeInserts.layout",
@@ -792,7 +792,7 @@
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode",
     "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/config_entities.py::key_mode_targets",
+    "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
    ],
    "tests": [
@@ -897,7 +897,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::EdgeDetectionCodec",
-    "custom_components/junghome_ble/config_entities.py::edge_detection_targets",
+    "custom_components/junghome_ble/properties/targets.py::edge_detection_targets",
     "custom_components/junghome_ble/switch.py::JungHomeEdgeMode",
     "custom_components/junghome_ble/select.py::JungHomeEdgeBehaviour"
    ],
@@ -990,7 +990,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -1016,7 +1016,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Percent",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -1031,7 +1031,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Percent",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -1046,7 +1046,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::Percent",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -1096,7 +1096,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber"
    ],
    "tests": [
@@ -1169,7 +1169,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/switch.py::JungHomePropertySwitch"
    ],
    "tests": [
@@ -1194,7 +1194,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/select.py::JungHomePropertySelect"
    ],
    "tests": [
@@ -1207,7 +1207,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::describe",
+    "custom_components/junghome_ble/properties/targets.py::describe",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
     "custom_components/junghome_ble/jhmesh/commission.py::NOT_COVERED"
    ],
@@ -1228,7 +1228,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
     "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
     "custom_components/junghome_ble/select.py::JungHomeLedColour",
-    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/properties/targets.py::NightModeTarget",
     "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
    ],
    "tests": [
@@ -1247,7 +1247,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
     "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
     "custom_components/junghome_ble/select.py::JungHomeLedColour",
-    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/properties/targets.py::NightModeTarget",
     "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
    ],
    "tests": [
@@ -1266,7 +1266,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
     "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
     "custom_components/junghome_ble/select.py::JungHomeLedColour",
-    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/properties/targets.py::NightModeTarget",
     "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
    ],
    "tests": [
@@ -1284,7 +1284,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::RgbMode",
     "custom_components/junghome_ble/jhmesh/properties.py::LED_PALETTES",
     "custom_components/junghome_ble/select.py::JungHomeLedColour",
-    "custom_components/junghome_ble/config_entities.py::NightModeTarget",
+    "custom_components/junghome_ble/properties/targets.py::NightModeTarget",
     "custom_components/junghome_ble/switch.py::JungHomeLedNightMode"
    ],
    "tests": [
@@ -1402,7 +1402,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::gateway_status_targets",
+    "custom_components/junghome_ble/properties/targets.py::gateway_status_targets",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeGatewayStatus"
    ],
    "tests": [
@@ -1416,7 +1416,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/config_entities.py::is_secret",
+    "custom_components/junghome_ble/properties/reader.py::is_secret",
     "custom_components/junghome_ble/jhmesh/messages.py::_property_text"
    ],
    "tests": [
@@ -1491,8 +1491,8 @@
    "id": "prop:meta:status-parse",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status",
-    "custom_components/junghome_ble/config_entities.py::redacted",
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status",
+    "custom_components/junghome_ble/properties/reader.py::redacted",
     "custom_components/junghome_ble/jhmesh/messages.py::_describe_vendor_property",
     "tools/cli_ops.py::property_status_text",
     "custom_components/junghome_ble/jhmesh/properties.py::describe_status"
@@ -1510,7 +1510,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/config_entities.py::_on_vendor_property_status"
+    "custom_components/junghome_ble/properties/reader.py::_on_vendor_property_status"
    ],
    "tests": [
     "tests/test_coordinator.py::test_sig_property_status_decoding",
@@ -1525,7 +1525,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::describe_status",
-    "custom_components/junghome_ble/config_entities.py::cacheable",
+    "custom_components/junghome_ble/properties/reader.py::cacheable",
     "custom_components/junghome_ble/jhmesh/messages.py::_property_text"
    ],
    "tests": [
@@ -1555,7 +1555,7 @@
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_status",
-    "custom_components/junghome_ble/config_entities.py::redacted"
+    "custom_components/junghome_ble/properties/reader.py::redacted"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",
@@ -1624,7 +1624,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version"
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -1803,9 +1803,9 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_sig",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._unsupported",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_sig",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.remember_node_info",
     "custom_components/junghome_ble/entity.py::node_registry_fields",
@@ -1825,9 +1825,9 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._ask_sig",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._unsupported",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._ask_sig",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.remember_node_info",
     "custom_components/junghome_ble/entity.py::node_text",
@@ -1847,7 +1847,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::AsciiVersion",
-    "custom_components/junghome_ble/config_entities.py::PropertyReader._read_version",
+    "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
     "custom_components/junghome_ble/entity.py::software_version"
    ],
