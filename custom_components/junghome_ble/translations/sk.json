@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME cez Bluetooth",
+        "description": "Home Assistant sa pripojí k vašej sieti JUNG HOME mesh priamo cez Bluetooth pomocou exportu siete z aplikácie JUNG HOME, ktorý obsahuje kľúče mesh. Vyberte, odkiaľ export pochádza.",
+        "menu_options": {
+          "gateway": "Načítať ho z brány JUNG HOME",
+          "upload": "Nahrať exportný súbor aplikácie",
+          "path": "Použiť súbor na hostiteľovi Home Assistant"
+        },
+        "data": {
+          "cdb_path": "Exportný súbor mesh",
+          "metadata_dir": "Adresár metadát aplikácie",
+          "unicast": "Naša adresa unicast"
+        },
+        "data_description": {
+          "cdb_path": "Absolútna cesta na hostiteľovi Home Assistant, napr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Voliteľné, len pre `MeshNetwork.json` zo zálohy iOS: priečinok `Application Support` aplikácie s `device_metadata.json` a `scene_metadata.json`, aby entity dostali názvy, ktoré ste im dali v aplikácii. `JungHome.json` už názvy obsahuje.",
+          "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Je toto vaša inštalácia JUNG HOME?",
+        "description": "V dosahu je proxy Bluetooth Mesh siete {network_id}. Home Assistant ponúka každú sieť Bluetooth Mesh, ktorú vidí, aj siete iných značiek — napríklad svetlá suseda. Pokračujte, len ak ide o vašu inštaláciu JUNG HOME; potom budete požiadaní o export mesh z aplikácie."
+      },
+      "zeroconf_confirm": {
+        "title": "Nájdená brána JUNG HOME",
+        "description": "Na adrese {host} sa ohlasuje brána JUNG HOME. Pokračujte a načítajte z nej export siete aplikácie JUNG HOME: potom zadáte heslo jej sieťového kľúča alebo schválite žiadosť o prístup v aplikácii. Rovnako ako pri ručne zadanej adrese sa jej certifikát pri prvom kontakte pripne skôr, než sa čokoľvek odošle. Nastavenie z nájdenej brány je zatiaľ neoverené na skutočných zariadeniach."
+      },
+      "gateway": {
+        "title": "Načítať export z brány JUNG HOME",
+        "description": "Brána uchováva kópiu exportu siete z aplikácie. Zadajte jej adresu a buď heslo jej sieťového kľúča (z aplikácie JUNG HOME) na okamžitý prístup, alebo nechajte heslo prázdne a po pokračovaní schváľte žiadosť o prístup v aplikácii (Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti, do troch minút; zobrazí sa ako „{user_name}“). Export sa uloží pod `junghome_ble/` v konfiguračnom adresári Home Assistant. Obsahuje všetky kľúče mesh, rovnako ako export z telefónu — zálohy tohto adresára uchovávajte v súkromí.",
+        "data": {
+          "gateway_host": "Adresa brány",
+          "gateway_password": "Heslo sieťového kľúča"
+        },
+        "data_description": {
+          "gateway_host": "IP adresa alebo názov hostiteľa brány JUNG HOME. Brána, ktorú Home Assistant našiel v sieti, je už vyplnená. Inak v mnohých sieťach funguje predvolená hodnota `junghome.local`, alebo použite jej IP adresu (zobrazenú v aplikácii v časti Nastavenia → Brána).",
+          "gateway_password": "Voliteľné. S ním brána udelí prístup okamžite; bez neho žiadosť schválite v aplikácii."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Rozšírené",
+            "description": "Ponechajte predvolenú hodnotu, pokiaľ sa k tejto inštalácii nepripája aj druhý Home Assistant alebo nástroje príkazového riadka z repozitára: každý potrebuje vlastnú adresu.",
+            "data": {
+              "unicast": "Naša adresa unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Čaká sa na schválenie v aplikácii JUNG HOME"
+      },
+      "gateway_refetch": {
+        "title": "Znova načítať export",
+        "description": "Načíta aktuálny export siete z brány na adrese {host} s uloženým prístupom. Ak ho brána už neakceptuje, budete požiadaní o schválenie novej žiadosti o prístup v aplikácii.",
+        "sections": {
+          "advanced": {
+            "name": "Rozšírené",
+            "description": "Ponechajte predvolenú hodnotu, pokiaľ sa k tejto inštalácii nepripája aj druhý Home Assistant alebo nástroje príkazového riadka z repozitára: každý potrebuje vlastnú adresu.",
+            "data": {
+              "unicast": "Naša adresa unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Nahrať exportný súbor aplikácie",
+        "description": "V aplikácii JUNG HOME otvorte Projekt → Zdieľať cez súbor, pošlite si vytvorený súbor `JungHome.json` a potom ho nahrajte sem. Uloží sa pod `junghome_ble/` v konfiguračnom adresári Home Assistant. Obsahuje všetky kľúče mesh — zálohy tohto adresára uchovávajte v súkromí.",
+        "data": {
+          "export_file": "Exportný súbor mesh"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Rozšírené",
+            "description": "Ponechajte predvolenú hodnotu, pokiaľ sa k tejto inštalácii nepripája aj druhý Home Assistant alebo nástroje príkazového riadka z repozitára: každý potrebuje vlastnú adresu.",
+            "data": {
+              "unicast": "Naša adresa unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Použiť súbor na hostiteľovi Home Assistant",
+        "description": "Najprv skopírujte súbor `JungHome.json` z aplikácie (Projekt → Zdieľať cez súbor; obsahuje názvy vašich zariadení) alebo `MeshNetwork.json` (záloha iOS) na hostiteľa Home Assistant a zadajte jeho cestu.",
+        "data": {
+          "cdb_path": "Exportný súbor mesh",
+          "metadata_dir": "Adresár metadát aplikácie"
+        },
+        "data_description": {
+          "cdb_path": "Absolútna cesta na hostiteľovi Home Assistant, napr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Voliteľné, len pre `MeshNetwork.json` zo zálohy iOS: priečinok `Application Support` aplikácie s `device_metadata.json` a `scene_metadata.json`, aby entity dostali názvy, ktoré ste im dali v aplikácii. `JungHome.json` už názvy obsahuje."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Rozšírené",
+            "description": "Ponechajte predvolenú hodnotu, pokiaľ sa k tejto inštalácii nepripája aj druhý Home Assistant alebo nástroje príkazového riadka z repozitára: každý potrebuje vlastnú adresu.",
+            "data": {
+              "unicast": "Naša adresa unicast"
+            },
+            "data_description": {
+              "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Aktualizovať export JUNG HOME mesh",
+        "description": "Použite po opätovnom provisioningu alebo prepojení zariadení v aplikácii JUNG HOME alebo po obnove kľúčov (Key Refresh): zadajte nový export tej istej siete. Zariadenia, ktoré z exportu zmizli, sa odstránia. Zároveň možno zmeniť vlastnú adresu mesh Home Assistant.",
+        "menu_options": {
+          "gateway_refetch": "Znova ho načítať z brány na adrese {host}",
+          "gateway": "Načítať ho z brány JUNG HOME",
+          "upload": "Nahrať exportný súbor aplikácie",
+          "path": "Použiť súbor na hostiteľovi Home Assistant",
+          "import_gateway": "Importovať entity integrácie JUNG HOME Gateway",
+          "areas": "Zmeniť, do ktorej oblasti idú zariadenia jednotlivých miestností"
+        },
+        "data": {
+          "cdb_path": "Exportný súbor mesh",
+          "metadata_dir": "Adresár metadát aplikácie",
+          "unicast": "Naša adresa unicast"
+        },
+        "data_description": {
+          "cdb_path": "Absolútna cesta na hostiteľovi Home Assistant, napr. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Voliteľné, len pre `MeshNetwork.json` zo zálohy iOS: priečinok `Application Support` aplikácie s `device_metadata.json` a `scene_metadata.json`, aby entity dostali názvy, ktoré ste im dali v aplikácii. `JungHome.json` už názvy obsahuje.",
+          "unicast": "Šestnástková adresa mesh, ktorú bude Home Assistant používať ako uzol (0001–7FFF). Nesmie ju používať iný uzol; predvolená hodnota je mimo rozsahu aplikácie."
+        }
+      },
+      "import_gateway": {
+        "title": "Import z integrácie JUNG HOME Gateway",
+        "description": "Vedľa tejto integrácie je nastavená integrácia JUNG HOME Gateway (`junghome`). Jej entity sa dajú prevziať sem, takže ich ID entít, názvy, oblasti, štítky a história záznamníka pokračujú s integráciou Bluetooth Mesh. Párovanie prebieha podľa názvu zariadenia (názov z aplikácie JUNG HOME) a typu entity; nahradia sa len entity tejto integrácie, ktoré ste ešte nepremenovali ani neprispôsobili.\n\n**Presunie sa {count} entít** (entita brány → nahrádza):\n{matched}\n\n**Zostanú bez zmeny** (tu už prispôsobené; entita brány zostane, kde je):\n{customised}\n\n**Bez náprotivku v bráne** (zostanú bez zmeny):\n{unmatched}\n\n**Entity brány bez náprotivku tu** (zostanú pri zázname brány):\n{gateway_only}\n\nOdoslaním sa obe integrácie uvoľnia, entity sa presunú, oblasť, vlastný názov a štítky každého spárovaného zariadenia brány sa skopírujú na zodpovedajúce zariadenie tu, záznam brány sa zakáže a tento záznam sa znova načíta. Záznam brány potom odstráňte."
+      },
+      "gateway_certificate": {
+        "title": "Certifikát brány sa zmenil",
+        "description": "Brána JUNG HOME na adrese {host} teraz predkladá certifikát {observed}; záznam si uložil {expected}. Pokračujte, len ak ste bránu alebo jej certifikát vymenili sami — inak na vašej sieti odpovedá ako brána iné zariadenie."
+      },
+      "reauth_confirm": {
+        "title": "Znova udeliť Home Assistant prístup k bráne",
+        "description": "Brána JUNG HOME na adrese {host} už neakceptuje prístup, ktorý Home Assistant zaregistroval pre sieť mesh {title} (pravdepodobne bol odstránený v aplikácii JUNG HOME v časti Nastavenia → Brána → Prístupové oprávnenia). Zariadenia naďalej fungujú cez Bluetooth; prestalo len odovzdávanie zmien z Home Assistant bráne. Zadajte heslo sieťového kľúča brány (z aplikácie JUNG HOME) na okamžitý prístup, alebo ho nechajte prázdne a po pokračovaní schváľte žiadosť o prístup v aplikácii (Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti, do troch minút; zobrazí sa ako „{user_name}“). Obnoví sa len prístup: export sa znova nenačíta.",
+        "data": {
+          "gateway_password": "Heslo sieťového kľúča"
+        },
+        "data_description": {
+          "gateway_password": "Voliteľné. S ním brána udelí prístup okamžite; bez neho žiadosť schválite v aplikácii. Neukladá sa."
+        }
+      },
+      "areas": {
+        "title": "Miestnosti a oblasti",
+        "description": "Vyberte oblasť Home Assistant pre každú miestnosť aplikácie JUNG HOME (v aplikácii nazývanú „oblasť“). Miestnosť je predvyplnená oblasťou s rovnakým názvom alebo oblasťou, ktorá má názov miestnosti ako alias. Ak miestnosť necháte prázdnu, zariadenia pôjdu do oblasti pomenovanej podľa miestnosti (vytvorí sa, ak neexistuje). Zariadenia bez vlastnej miestnosti ju tiež dostanú: tlačidlá tlačidlového ovládača miestnosť záťaže vedľa nich, tlačidlá nástenného vysielača miestnosť, ktorú ich tlačidlá spínajú. Z ponuky „Prekonfigurovať“ sa tým presunú zariadenia, ktoré sú stále v oblasti, ktorú im dala predchádzajúca voľba; zariadenie, ktoré ste sami umiestnili do inej oblasti, sa nikdy nepresunie.",
+        "data": {
+          "assign_areas": "Zaradiť zariadenia JUNG HOME do oblastí"
+        },
+        "data_description": {
+          "assign_areas": "Vypnuté: nové zariadenia začínajú bez oblasti a miestnosti nižšie sa ignorujú."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Otvorte aplikáciu JUNG HOME a schváľte žiadosť o prístup „{user_name}“ v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti. Brána na adrese {host} čaká až tri minúty."
+    },
+    "error": {
+      "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+      "not_a_directory": "Cesta k metadátam nie je adresár.",
+      "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+      "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+      "address_in_use": "Táto adresa patrí uzlu v sieti mesh; vyberte nepoužitú.",
+      "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+      "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+      "network_mismatch": "Export patrí inej sieti mesh než tej, ktorá bola nájdená.",
+      "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam (jej sieťový kľúč bol pravdepodobne obnovený, odkedy ho Home Assistant naposledy videl). Namiesto pridania nového použite „Prekonfigurovať“ pri tom zázname.",
+      "invalid_host": "Zadajte IP adresu alebo názov hostiteľa brány.",
+      "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+      "invalid_auth": "Brána odmietla heslo sieťového kľúča.",
+      "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+      "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+      "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+      "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+      "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+      "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova.",
+      "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+      "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0."
+    },
+    "abort": {
+      "already_configured": "Táto sieť mesh je už nakonfigurovaná.",
+      "already_in_progress": "Nastavenie tejto siete mesh už prebieha.",
+      "not_supported": "Toto zariadenie Bluetooth nie je Mesh Proxy.",
+      "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+      "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte.",
+      "reconfigure_successful": "Export mesh bol aktualizovaný.",
+      "no_gateway_entry": "Integrácia JUNG HOME Gateway nie je nastavená; nie je čo importovať.",
+      "nothing_to_import": "Nezostala žiadna entita brány na prevzatie. Entity tejto integrácie bez náprotivku:\n{unmatched}\n\nEntity brány bez náprotivku tu:\n{gateway_only}",
+      "import_successful": "Z integrácie JUNG HOME Gateway sa prevzalo {count} entít:\n{matched}\n\nZostali bez zmeny (tu už prispôsobené):\n{customised}\n\nBez náprotivku v bráne:\n{unmatched}\n\nStále pri zázname brány:\n{gateway_only}\n\nZáznam brány bol zakázaný; odstráňte ho v časti Nastavenia → Zariadenia a služby → JUNG HOME, keď bude všetko v poriadku.",
+      "certificate_vouched_by_mesh": "Brána JUNG HOME na adrese {host} predkladá certifikát {observed}, ale uzol brány cez sieť mesh potvrdil {expected}. Na túto adresu sa nič neodoslalo: na vašej sieti pravdepodobne odpovedá ako brána iné zariadenie. Ak ste bránu alebo jej certifikát vymenili sami, prekonfigurujte znova, kým je Home Assistant pripojený k sieti mesh: uzol brány potom nahlási nový certifikát.",
+      "import_unload_failed": "{title} sa nepodarilo uvoľniť, preto sa nič neimportovalo; každý záznam, ktorý import uvoľnil, sa znova nastaví. Skontrolujte log a potom skúste import znova.",
+      "reauth_successful": "Brána JUNG HOME opäť akceptuje Home Assistant. Zmeny vykonané medzitým v Home Assistant sa k nej dostanú s ďalšou zmenou alebo hneď akciou „Synchronizovať bránu“.",
+      "areas_updated": "Oblasti miestností sú uložené; {count} zariadení sa presunulo do novej oblasti svojej miestnosti.",
+      "not_loaded": "Integrácia nebeží: najprv ju znova nastavte.",
+      "not_junghome_gateway": "Toto zariadenie sa neohlasuje ako brána JUNG HOME (chýba výrobca JUNG alebo sériové číslo).",
+      "not_ipv4_address": "Brána neohlásila žiadnu adresu IPv4. Pridajte integráciu ručne a zadajte adresu brány."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Hlásiť kliknutia až po vylúčení dvojkliku",
+          "heartbeats": "Heartbeat uzlov (označiť tiché zariadenie ako nedostupné)",
+          "allow_provisioning": "Povoliť Home Assistantu pridávať a odstraňovať zariadenia (experimentálne)",
+          "provisioner_identity": "Zapísať Home Assistant do súboru siete ako provisioner (experimentálne, s aplikáciou neoverené)",
+          "follow_app": "Sledovať zmeny vykonané v aplikácii JUNG HOME",
+          "gateway_check": "Kontrolovať export brány každých šesť hodín",
+          "sync_areas": "Presúvať zariadenia, keď sa zmení ich miestnosť JUNG"
+        },
+        "data_description": {
+          "click_delay": "Udalosť `click` sa pozdrží o pol sekundy a zahodí sa, ak nasleduje druhé kliknutie, takže dvojité stlačenie vyvolá len `double_click`. Vypnuté: každé stlačenie okamžite vyvolá `click` a druhé stlačenie dvojitého stlačenia vyvolá navyše `double_click`.",
+          "heartbeats": "Každé zariadenie napájané zo siete je požiadané, aby každých 64 sekúnd posielalo do Home Assistant heartbeat (štandardné nastavenie Bluetooth Mesh, ktoré aplikácia JUNG necháva vypnuté). Entity zariadenia, ktoré približne tri a pol minúty nič nepošle, sa označia ako nedostupné, kým ho znova nezachytí. Vypnutím sa zariadeniam oznámi, aby prestali (pri ďalšom pripojení znova, ak sa nepodarilo oznámiť to všetkým naraz); vypnite to pred odstránením integrácie, ktorá im to potom už oznámiť nemôže.",
+          "allow_provisioning": "Umožní akcii `junghome_ble.add_device` pridať nové zariadenie JUNG cez provisioning a nakonfigurovať ho ako aplikácia podľa zariadenia rovnakého produktu, ktoré už v sieti je, a akcii `junghome_ble.remove_device` resetovať zariadenie a vyradiť ho zo siete. Zatiaľ nevyskúšané na skutočných zariadeniach: najprv to skúste s náhradným zariadením. Pridanie odovzdá zariadeniu kľúče siete; odstránenie sa nedá vrátiť späť.",
+          "provisioner_identity": "Každý súbor, ktorý Home Assistant zapíše alebo odovzdá bráne, dostane záznam provisionera pre Home Assistant s vlastnými rozsahmi adries mimo rozsahov aplikácie a s adresou Home Assistant v nich, a zariadenia, ktoré pridal Home Assistant a v súbore aplikácie chýbajú, sa doň vrátia. Miestnosti, scény a zariadenia, ktoré Home Assistant vytvorí, potom berú adresy z jeho vlastných rozsahov. Žiadna aplikácia JUNG zatiaľ taký súbor neimportovala: vyskúšajte to na náhradnej inštalácii aplikácie (importujte súbor z `junghome_ble.export_network`) skôr, než ho uvidí vaša vlastná aplikácia alebo brána. Vypnuté: súbory sa zapisujú presne ako bez tejto možnosti.",
+          "follow_app": "Keď je v sieti mesh zachytený telefón s aplikáciou JUNG HOME, záznam nastavený z brány načíta export brány niekoľko minút po tom, čo telefón stíchol (najviac raz za 15 minút), a prevezme ho, ak sa zmenil: zariadenia, miestnosti, scény a prepojenia tlačidiel zmenené v aplikácii sa dostanú do Home Assistant bez „Prekonfigurovať“. Záznam nastavený zo súboru namiesto toho zobrazí upozornenie na opravu, keď sa zistí, že aplikácia zmenila konfiguráciu zariadenia. Do siete mesh sa kvôli tomu nič neodosiela. Zatiaľ neoverené na skutočných zariadeniach.",
+          "gateway_check": "Záznam nastavený z brány si každých šesť hodín vyžiada od brány jej export a prevezme ho, ak sa zmenil, čím zachytí, čo aplikácia zmenila, kým Home Assistant telefón nepočul. Jedna požiadavka na bránu; do siete mesh sa nič neodosiela. Na záznam nastavený zo súboru to nemá vplyv.",
+          "sync_areas": "Keď zariadenie zmení miestnosť v aplikácii (keď Home Assistant prevezme nový export) alebo cez akciu miestnosti, presunie sa aj do oblasti novej miestnosti — pokiaľ ste ho do oblasti neumiestnili sami. Vypnuté: zariadenie zostane v oblasti, v ktorej začalo. Zatiaľ neoverené na skutočných zariadeniach."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Pripojenie k sieti mesh"
+      },
+      "motion": {
+        "name": "Pohyb"
+      },
+      "occupancy": {
+        "name": "Prítomnosť"
+      },
+      "fault": {
+        "name": "Porucha"
+      },
+      "wind_alarm": {
+        "name": "Veterný alarm"
+      },
+      "reference_run_active": {
+        "name": "Referenčná jazda"
+      },
+      "gateway_api_available": {
+        "name": "API dostupné"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Klient čaká na schválenie"
+      },
+      "gateway_network_problem": {
+        "name": "Problém so sieťou"
+      },
+      "gateway_mesh_problem": {
+        "name": "Problém so sieťou Bluetooth mesh"
+      },
+      "gateway_cloud_problem": {
+        "name": "Problém s cloudom"
+      },
+      "gateway_cloud_connected": {
+        "name": "Pripojenie ku cloudu"
+      },
+      "window_open": {
+        "name": "Otvorené okno"
+      },
+      "input_state": {
+        "name": "Stav vstupu"
+      },
+      "input_state_key": {
+        "name": "Stav vstupu {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Automatická funkcia"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Tlačidlo {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Kliknutie",
+              "double_click": "Dvojklik",
+              "hold_start": "Začiatok podržania",
+              "hold_end": "Koniec podržania",
+              "press_on": "Stlačené zap. / hore",
+              "press_off": "Stlačené vyp. / dole",
+              "scene": "Scéna vyvolaná",
+              "dim": "Stmievanie"
+            }
+          },
+          "connection": {
+            "name": "Prepojenie",
+            "state": {
+              "device": "Zariadenie",
+              "room": "Miestnosť",
+              "scene": "Scéna",
+              "gateway": "Brána",
+              "group": "Skupina",
+              "none": "Žiadne"
+            }
+          },
+          "reason": {
+            "name": "Dôvod konca podržania",
+            "state": {
+              "timeout": "Uvoľnenie nebolo včas zachytené",
+              "link_lost": "Spojenie stratené",
+              "stopped": "Integrácia zastavená"
+            }
+          },
+          "position": {
+            "name": "Poloha",
+            "state": {
+              "top": "Hore",
+              "bottom": "Dole",
+              "rocker": "Kolíska",
+              "left_top": "Vľavo hore",
+              "left_bottom": "Vľavo dole",
+              "right_top": "Vpravo hore",
+              "right_bottom": "Vpravo dole",
+              "left_rocker": "Ľavá kolíska",
+              "right_rocker": "Pravá kolíska"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Vstup {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Kliknutie",
+              "double_click": "Dvojklik",
+              "hold_start": "Začiatok podržania",
+              "hold_end": "Koniec podržania",
+              "press_on": "Stlačené zap. / hore",
+              "press_off": "Stlačené vyp. / dole",
+              "scene": "Scéna vyvolaná",
+              "dim": "Stmievanie"
+            }
+          },
+          "connection": {
+            "name": "Prepojenie",
+            "state": {
+              "device": "Zariadenie",
+              "room": "Miestnosť",
+              "scene": "Scéna",
+              "gateway": "Brána",
+              "group": "Skupina",
+              "none": "Žiadne"
+            }
+          },
+          "reason": {
+            "name": "Dôvod konca podržania",
+            "state": {
+              "timeout": "Uvoľnenie nebolo včas zachytené",
+              "link_lost": "Spojenie stratené",
+              "stopped": "Integrácia zastavená"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Výkon"
+      },
+      "voltage": {
+        "name": "Napätie"
+      },
+      "current": {
+        "name": "Prúd"
+      },
+      "energy": {
+        "name": "Energia"
+      },
+      "energy_resettable": {
+        "name": "Energia od vynulovania"
+      },
+      "energy_since_on": {
+        "name": "Energia od zapnutia"
+      },
+      "power_on_time": {
+        "name": "Doba zapnutia"
+      },
+      "proxy_node": {
+        "name": "Proxy uzol"
+      },
+      "link_state": {
+        "name": "Stav spojenia",
+        "state": {
+          "bluetooth_off": "Bez Bluetooth",
+          "searching": "Hľadá sa proxy uzol",
+          "connecting": "Pripája sa",
+          "updating": "Pripojené, aktualizujú sa stavy zariadení",
+          "connected": "Pripojené",
+          "failed": "Pripojenie zlyhalo",
+          "disconnected": "Odpojené"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Nedostupné zariadenia",
+        "state_attributes": {
+          "devices": {
+            "name": "Zariadenia"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Prehľad siete mesh",
+        "state_attributes": {
+          "nodes": {
+            "name": "Uzly"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Osvetlenie"
+      },
+      "battery": {
+        "name": "Batéria"
+      },
+      "installed": {
+        "name": "Nainštalované"
+      },
+      "key_mode": {
+        "name": "Režim tlačidla",
+        "state": {
+          "light": "Osvetlenie",
+          "move": "Žalúzia",
+          "scene": "Scéna",
+          "property": "Vlastnosť",
+          "rtr": "Teplota",
+          "switch": "Spínanie",
+          "gateway": "Brána"
+        }
+      },
+      "key_mode_key": {
+        "name": "Režim tlačidla {key}",
+        "state": {
+          "light": "Osvetlenie",
+          "move": "Žalúzia",
+          "scene": "Scéna",
+          "property": "Vlastnosť",
+          "rtr": "Teplota",
+          "switch": "Spínanie",
+          "gateway": "Brána"
+        }
+      },
+      "schedules": {
+        "name": "Časové plány"
+      },
+      "scenes": {
+        "name": "Scény"
+      },
+      "switch_off_at": {
+        "name": "Vypne sa o"
+      },
+      "switch_on_threshold": {
+        "name": "Prahová hodnota zapnutia"
+      },
+      "switch_off_threshold": {
+        "name": "Prahová hodnota vypnutia"
+      },
+      "last_seen": {
+        "name": "Naposledy videné"
+      },
+      "rssi": {
+        "name": "Sila signálu"
+      },
+      "hops": {
+        "name": "Skoky"
+      },
+      "last_restart": {
+        "name": "Posledný reštart"
+      },
+      "clock_offset": {
+        "name": "Odchýlka hodín"
+      },
+      "iv_index": {
+        "name": "IV index"
+      },
+      "sequence_used": {
+        "name": "Použité sekvenčné čísla"
+      },
+      "mesh_sequence_used": {
+        "name": "Použité sekvenčné čísla siete mesh"
+      },
+      "switching_cycles": {
+        "name": "Spínacie cykly"
+      },
+      "power_on_cycles": {
+        "name": "Cykly zapnutia"
+      },
+      "gateway_ip": {
+        "name": "IP adresa"
+      },
+      "gateway_firmware": {
+        "name": "Verzia firmvéru"
+      },
+      "gateway_firmware_build": {
+        "name": "Zostavenie firmvéru"
+      },
+      "gateway_serial": {
+        "name": "Sériové číslo"
+      },
+      "gateway_access_requests": {
+        "name": "Žiadosti o prístup",
+        "state_attributes": {
+          "clients": {
+            "name": "Klienti"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "Klienti API",
+        "state_attributes": {
+          "clients": {
+            "name": "Klienti"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Denník chýb",
+        "state_attributes": {
+          "entries": {
+            "name": "Záznamy"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Posledné nahratie exportu"
+      },
+      "forced_off": {
+        "name": "Trvalo zap. / vyp.",
+        "state": {
+          "inactive": "Neaktívne",
+          "off": "Trvalo vyp.",
+          "on": "Trvalo zap."
+        }
+      },
+      "sleep_mode": {
+        "name": "Režim spánku",
+        "state": {
+          "awake": "Prebudené",
+          "asleep": "Spí"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referenčná jazda"
+      },
+      "identify": {
+        "name": "Identifikovať"
+      },
+      "clear_faults": {
+        "name": "Vymazať poruchy"
+      },
+      "reset_consumption": {
+        "name": "Vynulovať spotrebu"
+      },
+      "fetch_gateway_export": {
+        "name": "Načítať export z brány"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Poloha žalúzie po obnovení napájania"
+      },
+      "blind_ventilation_position": {
+        "name": "Vetracia poloha"
+      },
+      "color_temp_max": {
+        "name": "Maximálna farebná teplota"
+      },
+      "color_temp_min": {
+        "name": "Minimálna farebná teplota"
+      },
+      "comfort_temperature": {
+        "name": "Komfortná teplota"
+      },
+      "default_color_temp": {
+        "name": "Farebná teplota pri zapnutí"
+      },
+      "default_lightness": {
+        "name": "Jas pri zapnutí"
+      },
+      "eco_temperature": {
+        "name": "Teplota ECO"
+      },
+      "frost_protection_temperature": {
+        "name": "Teplota ochrany proti mrazu"
+      },
+      "lightness_max": {
+        "name": "Maximálny jas"
+      },
+      "lightness_min": {
+        "name": "Minimálny jas"
+      },
+      "lock_time_limit": {
+        "name": "Časový limit blokovania"
+      },
+      "motor_reversal_time": {
+        "name": "Minimálny čas reverzácie motora"
+      },
+      "off_delay": {
+        "name": "Oneskorenie vypnutia"
+      },
+      "on_delay": {
+        "name": "Oneskorenie zapnutia"
+      },
+      "pir_sensor_a": {
+        "name": "Aktivačná zóna A"
+      },
+      "pir_sensor_b": {
+        "name": "Aktivačná zóna B"
+      },
+      "pir_sensor_c": {
+        "name": "Aktivačná zóna C"
+      },
+      "repetition_time": {
+        "name": "Čas opakovania"
+      },
+      "running_time": {
+        "name": "Doba chodu"
+      },
+      "sensor_offset": {
+        "name": "Korekcia snímača teploty"
+      },
+      "slat_position_on_power": {
+        "name": "Poloha lamiel po obnovení napájania"
+      },
+      "slat_ventilation_position": {
+        "name": "Vetracia poloha lamiel"
+      },
+      "slats_move_time": {
+        "name": "Čas prestavenia lamiel"
+      },
+      "switch_blocking_time": {
+        "name": "Minimálny čas opakovania spínania"
+      },
+      "switch_on_brightness": {
+        "name": "Prah jasu"
+      },
+      "timed_on_duration": {
+        "name": "Doba dobehu"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Prevádzkový režim",
+        "state": {
+          "blinds": "Žalúzia (s lamelami)",
+          "shutter": "Roleta (bez lamiel)",
+          "awning": "Markíza"
+        }
+      },
+      "controller_type": {
+        "name": "Výstup regulátora",
+        "state": {
+          "pi_control": "Šírkovo-impulzová modulácia (PWM)",
+          "two_point_control": "Dvojpolohová regulácia"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Režim merania jasu",
+        "state": {
+          "guard": "Miesto montáže",
+          "presence": "Jas v miestnosti"
+        }
+      },
+      "dim_mode": {
+        "name": "Princíp stmievania",
+        "state": {
+          "leading_edge": "Nábežná hrana (RL)",
+          "trailing_edge": "Dobežná hrana (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Prevádzkový režim",
+        "state": {
+          "none": "Žiadne",
+          "comfort": "Komfort",
+          "eco": "ECO",
+          "frost": "Ochrana proti mrazu"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Klesajúca hrana",
+        "state": {
+          "no_reaction": "Bez reakcie",
+          "on": "Zapnúť",
+          "off": "Vypnúť",
+          "toggle": "Prepnúť"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Klesajúca hrana {key}",
+        "state": {
+          "no_reaction": "Bez reakcie",
+          "on": "Zapnúť",
+          "off": "Vypnúť",
+          "toggle": "Prepnúť"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Stúpajúca hrana",
+        "state": {
+          "no_reaction": "Bez reakcie",
+          "on": "Zapnúť",
+          "off": "Vypnúť",
+          "toggle": "Prepnúť"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Stúpajúca hrana {key}",
+        "state": {
+          "no_reaction": "Bez reakcie",
+          "on": "Zapnúť",
+          "off": "Vypnúť",
+          "toggle": "Prepnúť"
+        }
+      },
+      "led_colour_off": {
+        "name": "Farba LED (vypnuté)",
+        "state": {
+          "red": "Červená",
+          "green": "Zelená",
+          "white": "Biela",
+          "blue": "Modrá",
+          "violet": "Fialová",
+          "orange": "Oranžová",
+          "yellow": "Žltá",
+          "cyan": "Azúrová",
+          "no_color": "Bez farby"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "Farba LED (vypnuté) {key}",
+        "state": {
+          "red": "Červená",
+          "green": "Zelená",
+          "white": "Biela",
+          "blue": "Modrá",
+          "violet": "Fialová",
+          "orange": "Oranžová",
+          "yellow": "Žltá",
+          "cyan": "Azúrová",
+          "no_color": "Bez farby"
+        }
+      },
+      "led_colour_on": {
+        "name": "Farba LED (zapnuté)",
+        "state": {
+          "red": "Červená",
+          "green": "Zelená",
+          "white": "Biela",
+          "blue": "Modrá",
+          "violet": "Fialová",
+          "orange": "Oranžová",
+          "yellow": "Žltá",
+          "cyan": "Azúrová",
+          "no_color": "Bez farby"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "Farba LED (zapnuté) {key}",
+        "state": {
+          "red": "Červená",
+          "green": "Zelená",
+          "white": "Biela",
+          "blue": "Modrá",
+          "violet": "Fialová",
+          "orange": "Oranžová",
+          "yellow": "Žltá",
+          "cyan": "Azúrová",
+          "no_color": "Bez farby"
+        }
+      },
+      "main_page": {
+        "name": "Lokálny displej",
+        "state": {
+          "target_temperature": "Požadovaná teplota",
+          "current_temperature": "Aktuálna teplota",
+          "clock": "Čas"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Správanie po obnovení sieťového napätia",
+        "state": {
+          "no_reaction": "Bez reakcie",
+          "move_up": "Vytiahnutie na 0 %",
+          "move_down": "Spustenie na 100 %",
+          "stop": "Zastaviť",
+          "move_to_stored_position": "Uložená poloha",
+          "position_for_network_failure": "Poloha pri výpadku siete"
+        }
+      },
+      "operation_site": {
+        "name": "Miesto použitia",
+        "state": {
+          "indoor": "Interiér",
+          "outdoor": "Exteriér"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Správanie po obnovení napájania",
+        "state": {
+          "off": "Vypnuté",
+          "on": "Zapnuté",
+          "restore": "Predchádzajúci stav"
+        }
+      },
+      "sensor_selection": {
+        "name": "Snímač teploty",
+        "state": {
+          "internal": "Miestnosť",
+          "external": "Podlaha",
+          "internal_and_external": "Miestnosť a podlaha"
+        }
+      },
+      "valve_output": {
+        "name": "Nastavenie ventilu",
+        "state": {
+          "normally_closed": "NC - bez prúdu zatvorený",
+          "normally_open": "NO - bez prúdu otvorený"
+        }
+      },
+      "lock_function": {
+        "name": "Funkcia blokovania",
+        "state": {
+          "unlocked": "Odblokované",
+          "keep_state": "Zablokované (udržať polohu)",
+          "lockout_protection": "Ochrana proti zablokovaniu vonku",
+          "wind_alarm": "Veterný alarm"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Všetky zásuvky"
+      },
+      "room_sockets": {
+        "name": "Všetky zásuvky v miestnosti {room}"
+      },
+      "automatic_dst": {
+        "name": "Automatický prechod na letný čas"
+      },
+      "backlight_auto_off": {
+        "name": "Automaticky vypnúť displej"
+      },
+      "blinds_invert_output": {
+        "name": "Inverzná prevádzka"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Denná prevádzka"
+      },
+      "dim_to_warm": {
+        "name": "Teplé stmievanie"
+      },
+      "input_edge_mode": {
+        "name": "Vyhodnocovanie hrán"
+      },
+      "input_edge_mode_key": {
+        "name": "Vyhodnocovanie hrán {key}"
+      },
+      "invert_output": {
+        "name": "Invertovať spínací výstup"
+      },
+      "led_colour_sync": {
+        "name": "Synchronizovať farby LED"
+      },
+      "led_night_mode": {
+        "name": "Nočný režim LED"
+      },
+      "lock": {
+        "name": "Blokovanie",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Režim blokovania",
+            "state": {
+              "keep_state": "Udržať aktuálny stav",
+              "lockout_protection": "Ochrana proti zablokovaniu vonku",
+              "wind_alarm": "Veterný alarm",
+              "enforced_value": "Vynútený stav"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Časový limit blokovania"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Ručné vypnutie počas doby dobehu"
+      },
+      "prewarning": {
+        "name": "Varovanie pred vypnutím"
+      },
+      "scheduler_enabled": {
+        "name": "Automatická prevádzka"
+      },
+      "status_led": {
+        "name": "Stavová LED"
+      },
+      "status_led_key": {
+        "name": "Stavová LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Znížená citlivosť dotyku"
+      },
+      "use_last_lightness": {
+        "name": "Použiť predchádzajúci jas"
+      },
+      "sensor_publication": {
+        "name": "Hodnoty senzorov pre systémy IoT"
+      },
+      "local_devices_lock": {
+        "name": "Blokovať ovládanie"
+      },
+      "factory_reset_time_limit": {
+        "name": "Blokovať obnovenie výrobných nastavení"
+      },
+      "key_lock": {
+        "name": "Blokovanie tlačidiel"
+      },
+      "configuration_lock": {
+        "name": "Blokovať konfiguráciu na zariadení"
+      },
+      "walking_test": {
+        "name": "Test chôdze"
+      },
+      "time_keeper": {
+        "name": "Časový zdroj"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Prevádzkový režim",
+            "state": {
+              "blinds": "Žalúzie (s lamelami)",
+              "shutter": "Roleta",
+              "awning": "Markíza",
+              "unknown": "Neznámy"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Všetky žalúzie"
+      },
+      "room_blinds": {
+        "name": "Všetky žalúzie v miestnosti {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Ochrana proti mrazu"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Všetky termostaty"
+      },
+      "room_thermostats": {
+        "name": "Všetky termostaty v miestnosti {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Všetky svetlá"
+      },
+      "room_lights": {
+        "name": "Všetky svetlá v miestnosti {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmvér"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Tlačidlo A {subtype}",
+      "b": "Tlačidlo B {subtype}",
+      "c": "Tlačidlo C {subtype}",
+      "d": "Tlačidlo D {subtype}",
+      "e1": "Vstup E1 {subtype}",
+      "e2": "Vstup E2 {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "kliknuté",
+      "double_click": "dvojklik",
+      "hold_start": "začiatok podržania",
+      "hold_end": "koniec podržania",
+      "press_on": "stlačené zap. / hore",
+      "press_off": "stlačené vyp. / dole",
+      "scene": "vyvolalo scénu",
+      "dim": "stmieva",
+      "click_up": "kliknuté (horná polovica)",
+      "click_down": "kliknuté (dolná polovica)",
+      "double_click_up": "dvojklik (horná polovica)",
+      "double_click_down": "dvojklik (dolná polovica)",
+      "hold_start_up": "začiatok podržania (horná polovica)",
+      "hold_start_down": "začiatok podržania (dolná polovica)",
+      "hold_end_up": "koniec podržania (horná polovica)",
+      "hold_end_down": "koniec podržania (dolná polovica)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Príkaz sa nepodarilo odoslať do siete JUNG mesh; nie je pripojený žiadny proxy uzol."
+    },
+    "no_answer": {
+      "message": "Zariadenie JUNG neodpovedalo; príkaz sa možno aj tak vykonal a pri ďalšom pripojení sa znova skontroluje."
+    },
+    "device_not_reachable": {
+      "message": "{entity} neodpovedalo na príkaz (3 pokusy za 9 s); možno sa nevykonal. Ak zvyšok siete mesh stále odpovedá, zariadenie sa zobrazuje ako nedostupné, kým sa znova neozve: skontrolujte, či má napájanie."
+    },
+    "cannot_load": {
+      "message": "Export mesh {path} sa nepodarilo prečítať."
+    },
+    "no_proxy_visible": {
+      "message": "Cez Bluetooth zatiaľ nie je viditeľný žiadny uzol siete JUNG mesh."
+    },
+    "export_keys_stale": {
+      "message": "Zariadenia siete JUNG mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z exportu: kľúče boli obnovené po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME a použite ju v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant nemá žiadny pripojiteľný adaptér ani proxy Bluetooth: sieť JUNG mesh je nedosiahnuteľná."
+    },
+    "duplicate_mesh": {
+      "message": "{others} už prevádzkuje túto sieť JUNG HOME mesh; načítať sa dá len jeden záznam na sieť mesh. Odstráňte jeden z oboch záznamov."
+    },
+    "seq_store_not_written": {
+      "message": "Záznam sekvenčných čísel staršej verzie sa nepodarilo uložiť do úložiska siete mesh (`.storage/junghome_ble.seq.*`); skontrolujte, či je do konfiguračného adresára možné zapisovať."
+    },
+    "seq_floor_not_written": {
+      "message": "Záznam sekvenčných čísel bol obnovený zo zálohy a jeho dolnú hranicu (`.storage/junghome_ble.seq.*.floor`) sa pred preskočením dopredu nepodarilo zapísať; skontrolujte, či je do konfiguračného adresára možné zapisovať."
+    },
+    "service_entry_not_loaded": {
+      "message": "Integrácia JUNG HOME mesh nie je načítaná (alebo sa práve znova načítava); skúste to o chvíľu znova."
+    },
+    "service_not_connected": {
+      "message": "Sieť JUNG HOME mesh nie je pripojená; skúste to znova, keď bude proxy uzol v dosahu."
+    },
+    "service_entry_ambiguous": {
+      "message": "Je nakonfigurovaných viac sietí JUNG HOME mesh; zadajte sieť mesh (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} nie je zariadenie ani entita siete JUNG HOME mesh."
+    },
+    "service_not_a_load": {
+      "message": "{name} nie je zariadenie JUNG HOME, s ktorým táto akcia pracuje."
+    },
+    "service_not_a_key": {
+      "message": "{name} nie je tlačidlo tlačidlového ovládača JUNG HOME."
+    },
+    "service_key_required": {
+      "message": "{name} má tlačidlá {keys}; zadajte písmeno tlačidla a jedno vyberte."
+    },
+    "service_unknown_key": {
+      "message": "{name} nemá tlačidlo {letter} (má {keys})."
+    },
+    "service_no_loads": {
+      "message": "Cieľ neuvádza žiadne svetlo ani zásuvku JUNG HOME."
+    },
+    "service_target_other_network": {
+      "message": "Tlačidlo a jeho cieľ patria do rôznych sietí mesh."
+    },
+    "service_unknown_element": {
+      "message": "Prvok {address} nie je v exporte mesh."
+    },
+    "service_no_room": {
+      "message": "V exporte mesh nie je žiadna miestnosť s názvom {room}."
+    },
+    "service_room_exists": {
+      "message": "Miestnosť s názvom {room} už existuje."
+    },
+    "service_room_key_drives_load": {
+      "message": "Nevyradené z miestnosti {room}: {device} spína {button} cez prepojenie tohto tlačidla s miestnosťou a odchodom z miestnosti by sa odpojilo aj od tlačidla. Spustite akciu znova s možnosťou „Aj keď ho ovláda tlačidlo“ alebo najprv dajte tlačidlu inú funkciu."
+    },
+    "service_invalid_room_name": {
+      "message": "Miestnosť potrebuje názov."
+    },
+    "service_no_mode": {
+      "message": "Pre prvok {address} sa nehodí žiadny režim tlačidla; zadajte režim."
+    },
+    "service_invalid_mode": {
+      "message": "Režim {mode} sa nedá použiť s cieľom {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Tlačidlo {address} nemá klientsky model pre režim {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Cieľový prvok platí len pre tlačidlo prepojené so zariadením, nie s miestnosťou ani scénou."
+    },
+    "service_target_element_missing": {
+      "message": "Cieľ {target} nemá prvok {target_element}, ktorý by tlačidlo mohlo ovládať."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Čas uzamknutia platí len pre režim lock, od 0 do 65535 sekúnd."
+    },
+    "service_lock_unsupported": {
+      "message": "Tlačidlo nemôže zablokovať cieľ {target}: tlačidlom sa dá zablokovať len svetlo alebo zásuvka."
+    },
+    "service_no_element_group": {
+      "message": "Prvok {address} nemá skupinu prvku: aplikácia JUNG HOME ho nikdy neprepojila. Najprv ho raz prepojte v aplikácii."
+    },
+    "service_one_target": {
+      "message": "Zadajte presne jeden cieľ: zariadenie, entitu, miestnosť alebo scénu."
+    },
+    "service_config_refused": {
+      "message": "Uzol {node} odmietol {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Uzol {node} neodpovedal na {message}; je napájaný a v dosahu? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Neodoslané: {nodes} neodpovedali na poslednú požiadavku Home Assistant a považujú sa za nedosiahnuteľné (ich entity sú nedostupné), takže plán by sa zastavil pri ich prvej správe. Skontrolujte, či sú napájané a v dosahu, a keď odpovedia, spustite akciu znova. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Uzol {node} je napájaný z batérie a neodpovedal na {message}: spí. Prebuďte ho stlačením niektorého z jeho tlačidiel a hneď potom spustite akciu znova. Ak nereaguje ani na stlačenie tlačidla, batéria je zvyčajne vybitá: vymeňte ju. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Tlačidlo {address} neprijalo režim tlačidla {mode}; jeho prepojenia boli nakonfigurované a sú zaznamenané v exporte mesh — na nastavenie režimu spustite akciu znova s rovnakým cieľom."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Tlačidlo {address} neprijalo scénu {scene}; svoje vyvolania scén publikuje všetkým zariadeniam a to je zaznamenané v exporte mesh — na jej nastavenie spustite akciu znova s rovnakou scénou."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Tlačidlo {address} neprijalo svoju funkciu blokovania (vlastnosť {property}); jeho prepojenia boli nakonfigurované a sú zaznamenané v exporte mesh — na jej nastavenie spustite akciu znova s rovnakým cieľom."
+    },
+    "service_export_newer": {
+      "message": "Export mesh {path} bol zmenený mimo Home Assistant (aplikáciou JUNG HOME alebo ručne) po tom, čo ho Home Assistant načítal. Exportujte projekt z aplikácie znova, nahraďte súbor („Prekonfigurovať“) a skúste to znova."
+    },
+    "service_export_load_failed": {
+      "message": "Export mesh {path} sa nepodarilo prečítať: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Export mesh {path} sa nepodarilo zapísať: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} nemôže prijať túto hodnotu: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostat ešte nenahlásil svoju teplotu {preset}; skúste to o chvíľu znova."
+    },
+    "led_colour_unknown": {
+      "message": "Farby LED entity {entity} ešte nie sú známe; zariadenie neodpovedalo na čítanie."
+    },
+    "service_room_name_reserved": {
+      "message": "„{name}“ je názov, ktorý si sieť mesh rezervuje pre interné skupiny; zvoľte iný názov miestnosti."
+    },
+    "service_name_blank": {
+      "message": "Názov nemôže byť prázdny."
+    },
+    "service_name_too_long": {
+      "message": "Aplikácia JUNG HOME nemôže premenovať na „{name}“: jej premenovanie prijme najviac {max_length} znakov."
+    },
+    "service_name_not_allowed": {
+      "message": "Aplikácia JUNG HOME odmieta názov „{name}“: znak % považuje za začiatok zástupného symbolu (prejdú len %% a %n)."
+    },
+    "service_room_range_full": {
+      "message": "V rozsahu aplikácie nezostala žiadna voľná skupinová adresa; najprv v aplikácii JUNG HOME odstráňte nepoužívanú miestnosť."
+    },
+    "gateway_certificate_changed": {
+      "message": "Brána JUNG HOME na adrese {host} predkladá iný certifikát než uložený ({expected} oproti {observed}). Ak bola brána alebo jej certifikát vymenené zámerne, prekonfigurujte záznam."
+    },
+    "service_ambiguous_scene": {
+      "message": "„{scene}“ je číslo scény aj názov inej scény; premenujte tú scénu, aby sa dali rozlíšiť."
+    },
+    "service_unknown_scene": {
+      "message": "V exporte mesh neexistuje scéna „{scene}“; zadajte názov scény tak, ako ho zobrazuje aplikácia JUNG HOME, alebo jej číslo."
+    },
+    "service_scene_exists": {
+      "message": "Scéna s názvom „{scene}“ už existuje."
+    },
+    "service_scene_range_full": {
+      "message": "V rozsahu aplikácie nezostalo žiadne voľné číslo scény; najprv odstráňte nepoužívanú scénu."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant prideľuje novým miestnostiam najvyššie voľné skupinové adresy z rozsahu aplikácie, aby ďalšie miestnosti aplikácie nedostali tie isté; pod ďalšou zostáva voľných len {free} adries a aplikácia by ju čoskoro dosiahla. Odstráňte nepoužívané miestnosti alebo zapnite možnosť „Zapísať Home Assistant do súboru siete ako provisioner“, ktorá dá Home Assistant vlastný rozsah."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant prideľuje novým scénam najvyššie voľné čísla scén z rozsahu aplikácie, aby ďalšie scény aplikácie nedostali tie isté; pod ďalším zostáva voľných len {free} čísel a aplikácia by ho čoskoro dosiahla. Odstráňte nepoužívané scény alebo zapnite možnosť „Zapísať Home Assistant do súboru siete ako provisioner“, ktorá dá Home Assistant vlastný rozsah."
+    },
+    "add_device_groups_crowded": {
+      "message": "Skupiny prvkov nového zariadenia by zabrali najvyššie voľné skupinové adresy z rozsahu aplikácie, ale pod nimi zostáva voľných len {free} adries a ďalšie miestnosti aplikácie by ich čoskoro dosiahli. Odstráňte nepoužívané miestnosti alebo zapnite možnosť „Zapísať Home Assistant do súboru siete ako provisioner“, ktorá dá Home Assistant vlastný rozsah."
+    },
+    "service_not_a_scene_element": {
+      "message": "Prvok {address} nemôže ukladať scény (nemá Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Zariadenie {address} neuložilo scénu {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Zariadenie {address} nemá miesto pre scénu {scene}: už obsahuje {capacity} scén vrátane scén časovačov. Najprv ho odoberte z inej scény. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Zariadenie {address} po odstránení stále obsahuje scénu {scene} ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "Brána JUNG HOME neposkytla svoj export a táto akcia ho potrebuje: kópii, ktorú uchováva Home Assistant, môže chýbať to, čo aplikácia JUNG HOME odvtedy zmenila. Skúste to znova, keď brána odpovie (dôvod je uvedený v logu)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Táto sieť bola nastavená zo súboru, v ktorom môžu chýbať scény vytvorené v aplikácii JUNG HOME po jeho exportovaní; odstránenie čísel scén, ktoré súbor nepozná, by tieto scény odstránilo zo všetkých zariadení. Najprv spustite skúšobný beh a porovnajte vypísané čísla s aplikáciou, potom odstráňte so zapnutou možnosťou „Export mesh je aktuálny“, alebo uveďte čísla na odstránenie."
+    },
+    "service_unused_scenes_known": {
+      "message": "Čísla scén {numbers} sú scény exportu mesh; tie odstráňte akciou „Odstrániť scénu“."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Zariadenie {address} uložilo scénu {scene}, ale neprijalo popis scény (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Stav zariadenia {address} nie je známy, takže scéna {scene} by sa uložila bez popisu scény a vyradenie iného kanála zariadenia zo scény by potom vyradilo aj tento. Zadajte stav na uloženie (alebo zariadenie raz prepnite) a skúste to znova. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Táto sieť nebola nastavená z brány JUNG HOME (záznam neobsahuje adresu brány ani token); na synchronizáciu prekonfigurujte záznam z brány."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Brána na adrese {host} neprijala export: {error}."
+    },
+    "service_send_failed": {
+      "message": "Spojenie so sieťou JUNG mesh sa stratilo počas odosielania {message} uzlu {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Uzol {node} je v exporte mesh {path}, ale nie je v sieti, ktorú z neho Home Assistant predtým načítal; znova načítajte integráciu (Nastavenia → Zariadenia a služby → JUNG HOME → Znova načítať), aby sa riadila exportom, a potom to skúste znova. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "Brána JUNG HOME na adrese {host} obsahuje novší export ({gateway}) než súbor, ktorý by Home Assistant nahral ({file}); jeho nahratím by sa vymazalo, čo aplikácia JUNG HOME odvtedy zmenila. Ďalšia zmena vykonaná v Home Assistant prevezme export brány a prenesie naň vlastné zmeny Home Assistant. Ak sa táto chyba vráti (záznam bez kópie posledného nahratia z aplikácie ich nedokáže rozlíšiť), znova načítajte export brány (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať; súbor, ktorý nahrádza, sa ponechá vedľa neho ako `.pre-reconfigure`) a potom zopakujte zmenu vykonanú v Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "Brána JUNG HOME na adrese {host} odpovedala len holou databázou zariadení (bez názvov zariadení a prepojení s miestnosťami); jej prevzatím by sa vymazali zo súboru, ktorý uchováva Home Assistant. Skúste to znova, keď brána už nebude zaneprázdnená, alebo znova načítajte export aplikácie."
+    },
+    "identify_no_answer": {
+      "message": "Zariadenie JUNG neodpovedalo na požiadavku na identifikáciu; je napájané a v dosahu?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} nie je sieť JUNG HOME mesh; zadajte config_entry_id jednej z nich (alebo ho vynechajte, ak je nakonfigurovaná len jedna)."
+    },
+    "service_all_not_supported": {
+      "message": "Táto akcia neprijíma entity_id: all; uveďte svetlá, zásuvky, zariadenia, oblasti alebo štítky, na ktoré sa vzťahuje."
+    },
+    "edge_detection_unknown": {
+      "message": "Vyhodnocovanie hrán entity {entity} ešte nie je známe; vstup neodpovedal na čítanie."
+    },
+    "reset_consumption_refused": {
+      "message": "Zásuvka JUNG nevynulovala svoje počítadlo {property}; stále hlási hodnotu inú ako 0."
+    },
+    "setup_state_unknown": {
+      "message": "Aktuálne nastavenie entity {entity} ešte nie je známe; zariadenie neodpovedalo na čítanie."
+    },
+    "setting_no_answer": {
+      "message": "Zariadenie JUNG neodpovedalo ani na zmenu entity {entity}, ani na spätné čítanie; novú hodnotu možno aj tak prijalo. Je napájané a v dosahu?"
+    },
+    "setting_asleep": {
+      "message": "Batériové zariadenie entity {entity} neodpovedalo: spí. Prebuďte ho stlačením niektorého z jeho tlačidiel a hneď potom zmenu zopakujte. Ak nereaguje ani na stlačenie tlačidla, batéria je zvyčajne vybitá: vymeňte ju."
+    },
+    "setting_not_applied": {
+      "message": "Zariadenie JUNG neprijalo novú hodnotu entity {entity}; stále hlási inú."
+    },
+    "setting_not_supported": {
+      "message": "Zariadenie JUNG nemá nastavenie entity {entity}: na zmenu odpovedalo bez hodnoty."
+    },
+    "schedule_no_reply": {
+      "message": "Zariadenie JUNG {address} neodpovedalo na otázku o svojich časových plánoch."
+    },
+    "schedule_not_applied": {
+      "message": "Zariadenie JUNG {address} neprijalo zmenu slotu časového plánu {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Všetkých 16 slotov časových plánov zariadenia JUNG {address} je obsadených; najprv jeden odstráňte."
+    },
+    "schedule_empty_slot": {
+      "message": "Slot časového plánu {slot} zariadenia JUNG {address} neobsahuje žiadny časový plán."
+    },
+    "schedule_not_supported": {
+      "message": "{name} nevykonáva žiadne vlastné časové plány."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Časový plán už bol zapísaný do {created}: pred ďalším volaním ho tam odstráňte, inak ho tieto zariadenia vykonajú dvakrát."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Časový plán sa nehodí pre {name}: {fields} sa naň nevzťahuje."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Časový plán sa nehodí pre {name}: termostat potrebuje teplotu."
+    },
+    "schedule_action_needs_position": {
+      "message": "Časový plán sa nehodí pre {name}: žalúzia potrebuje polohu."
+    },
+    "schedule_action_needs_action": {
+      "message": "Časový plán sa nehodí pre {name}: potrebuje akciu (zap. alebo vyp.)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Časový plán sa nehodí pre {name}: jas patrí k akcii zap."
+    },
+    "threshold_not_supported": {
+      "message": "{name} nie je zásuvka JUNG HOME s meraním energie a prahovými hodnotami."
+    },
+    "threshold_incomplete": {
+      "message": "{name} nemá žiadnu prahovú hodnotu na zmenu (alebo neodpovedalo): zadajte výkon aj trvanie."
+    },
+    "threshold_not_applied": {
+      "message": "Zásuvka JUNG {address} neprijala svoju prahovú hodnotu {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Prahovú hodnotu {which} sa nepodarilo odoslať do zásuvky JUNG {address}; nie je pripojený žiadny proxy uzol. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Zásuvka a zariadenia, ktoré majú jej prahové hodnoty spínať, patria do rôznych sietí mesh."
+    },
+    "scene_state_not_applicable": {
+      "message": "Stav sa nehodí pre {name}: {fields} sa naň nevzťahuje."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Stav sa nehodí pre {name}: termostat potrebuje teplotu."
+    },
+    "scene_state_needs_position": {
+      "message": "Stav sa nehodí pre {name}: žalúzia potrebuje polohu."
+    },
+    "scene_state_needs_action": {
+      "message": "Stav sa nehodí pre {name}: potrebuje akciu (zap. alebo vyp.)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Stav sa nehodí pre {name}: jas patrí k akcii zap."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} nenahlásilo nový stav včas; scéna sa neuložila."
+    },
+    "service_gateway_token_rejected": {
+      "message": "Brána JUNG HOME na adrese {host} už neakceptuje prístup Home Assistant, preto sa jej export neodovzdal. Znova udeľte prístup cez opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom to spustite znova."
+    },
+    "seq_store_lost": {
+      "message": "Záznam sekvenčných čísel adresy {unicast} sa stratil; Home Assistant nepoužije znova čísla, ktoré sieť mesh už videla. Otvorte opravu a pokračujte za nimi."
+    },
+    "address_in_use": {
+      "message": "Adresu Home Assistant {unicast} obsadzuje uzol siete mesh; prekonfigurujte integráciu s voľnou adresou (voľná je {suggestion})."
+    },
+    "add_device_not_allowed": {
+      "message": "Pridávanie a odstraňovanie zariadení je pre túto sieť vypnuté: najprv v možnostiach integrácie zapnite *Povoliť Home Assistantu pridávať a odstraňovať zariadenia*."
+    },
+    "add_device_not_found": {
+      "message": "Na adrese {address} sa nevysiela žiadne nové zariadenie JUNG; spustite `find_new_devices` a použite adresu, ktorú uvedie."
+    },
+    "add_device_not_jung": {
+      "message": "Zariadenie na adrese {address} neuvádza, že je zariadením JUNG."
+    },
+    "add_device_no_template": {
+      "message": "V sieti zatiaľ nie je žiadne zariadenie produktu {product}: prvé pridajte aplikáciou JUNG HOME, Home Assistant skopíruje jeho konfiguráciu."
+    },
+    "add_device_no_address": {
+      "message": "Mimo rozsahov provisionerov nezostal pre nové zariadenie žiadny voľný rozsah adries."
+    },
+    "provisioner_identity_failed": {
+      "message": "Záznam provisionera Home Assistant sa nepodarilo zlúčiť do exportu ({error}); nič sa nezmenilo. Pozrite si log."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant nemôže mať v tejto sieti vlastné rozsahy adries: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "K novému zariadeniu sa nepodarilo pripojiť: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Provisioning nového zariadenia zlyhal: {error}. Zariadenie je stále nové; skúste to znova."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Provisioning nového zariadenia na adrese {unicast} nebol potvrdený ({error}). Zariadenie mohlo dostať kľúče siete, preto ho Home Assistant ponecháva ako čakajúce: resetujte ho akciou `junghome_ble.reset_pending_device` (unicast {unicast}; pridajte `force`, ak neodpovedá, čo zariadenie, ktoré kľúče nikdy nedostalo, ani nemôže) a potom ho pridajte znova. Jeho adresy zostanú dovtedy rezervované."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Kľúč nového zariadenia sa nepodarilo uložiť do trezora Home Assistant ({error}), preto sa provisioning zastavil skôr, než zariadenie čokoľvek dostalo: je stále nové a na adrese {unicast} sa preň nič nerezervovalo. Uvoľnite miesto alebo opravte úložisko a skúste to znova."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Zariadenie prešlo provisioningom na adrese {unicast}, ale jeho konfigurácia zlyhala v kroku {step} ({error}) a reset nepotvrdilo. Aplikácia ho nepozná: resetujte ho akciou `junghome_ble.reset_pending_device` (unicast {unicast}) a potom ho pridajte znova. Jeho adresy zostanú dovtedy rezervované."
+    },
+    "add_device_record_failed": {
+      "message": "Zariadenie bolo nakonfigurované, ale na adrese {unicast} nebolo zaznamenané ({error}). Aplikácia ho nepozná: resetujte ho akciou `junghome_ble.reset_pending_device` (unicast {unicast}) a potom ho pridajte znova. Jeho adresy zostanú dovtedy rezervované."
+    },
+    "add_device_no_beacon": {
+      "message": "IV index siete zatiaľ nie je na aktuálnom pripojení Bluetooth potvrdený (neprišiel na ňom žiadny sieťový beacon) a nové zariadenie by si ponechalo nesprávny. Počkajte na ďalšie pripojenie k zariadeniu JUNG a skúste to znova."
+    },
+    "add_device_key_refresh": {
+      "message": "Aplikácia JUNG HOME práve obnovuje sieťový kľúč (obnova kľúčov, fáza 1): zariadenie pridané teraz by dostalo kľúč, ktorý sa vyraďuje. Dokončite obnovu kľúča v aplikácii (Home Assistant ju sleduje) a skúste to znova."
+    },
+    "add_device_name_too_long": {
+      "message": "Názov „{name}“ je dlhší, než aplikácia JUNG HOME pre zariadenie prijme: najviac {max_length} znakov."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Žiadne zariadenie, ktoré Home Assistant pridal cez provisioning bez zaznamenania, nie je známe ako {device}; oprava *Zariadenie pridané cez Home Assistant nie je zaznamenané* uvádza adresy tých, ktoré existujú."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Na adrese {unicast} je teraz iné zariadenie siete, preto sa neodoslal žiadny reset a nič sa nezmenilo. Použite `force`, ak chcete zabudnúť čakajúce zariadenie na tejto adrese (ak ešte existuje, resetujte ho ručne)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Zariadenie na adrese {unicast} nepotvrdilo svoj reset; nič sa nezmenilo. Pre zariadenie, ktoré bolo resetované ručne alebo je natrvalo preč, použite `force`."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Reset sa nepodarilo odoslať zariadeniu na adrese {unicast} ({error}); nič sa nezmenilo."
+    },
+    "remove_device_gateway": {
+      "message": "Bránu takto odstrániť nemožno."
+    },
+    "remove_device_mesh": {
+      "message": "Uveďte zariadenie JUNG, nie sieť."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Zariadenie {address} nepotvrdilo svoj reset a potom nebolo zachytené, že by sa ohlasovalo ako nové zariadenie. Mohlo byť aj tak resetované (jeho potvrdenie sa môže stratiť a v jeho dosahu nemusí byť žiadny skener Bluetooth), alebo reset nedostalo; export mesh sa nezmenil. Spustite akciu znova, alebo použite `force`, ak je zariadenie natrvalo preč."
+    },
+    "remove_device_proxy": {
+      "message": "Zariadenie {address} je proxy uzol, cez ktorý je Home Assistant pripojený: jeho reset by ukončil spojenie, cez ktoré sa vracia jeho potvrdenie. Počkajte, kým sa Home Assistant pripojí cez iné zariadenie (senzor „Proxy uzol“), alebo použite `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Blokovanie zariadenia entity {entity} ešte nie je známe; zariadenie neodpovedalo na čítanie."
+    },
+    "cover_locked": {
+      "message": "{entity} je zablokovaná a ignoruje príkazy, kým sa neodblokuje (jej prepínač „Blokovanie“ alebo „Funkcia blokovania“)."
+    },
+    "cover_wind_alarm": {
+      "message": "{entity} drží veterný alarm; ignoruje príkazy, kým sa alarm neukončí (jej „Funkcia blokovania“ alebo prepínač „Blokovanie“)."
+    },
+    "load_locked": {
+      "message": "{entity} je zablokované (v aplikácii JUNG HOME, tlačidlom alebo svojím prepínačom „Blokovanie“) a ponecháva si svoj stav, kým sa neodblokuje."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} nie je stmievač JUNG HOME: týmto spôsobom sa dajú stmievať len stmievače a kanály DALI s laditeľnou bielou."
+    },
+    "locate_no_answer": {
+      "message": "Zariadenie JUNG {node} neodpovedalo na požiadavku vysielať svoju identitu; je napájané a v dosahu? Batériové zariadenie spí a odpovedá len vtedy, keď je prebudené."
+    },
+    "locate_refused": {
+      "message": "Zariadenie JUNG {node} odmietlo vysielať svoju identitu: {status}."
+    },
+    "locate_not_supported": {
+      "message": "Zariadenie JUNG {node} nedokáže vysielať svoju identitu (Node Identity nie je podporované)."
+    },
+    "approve_no_gateway": {
+      "message": "Táto sieť nebola nastavená z brány JUNG HOME (záznam neobsahuje adresu brány ani token): neexistuje brána, na ktorej by sa dali schvaľovať klienti."
+    },
+    "approve_gateway_distrusted": {
+      "message": "Brána JUNG HOME na adrese {host} nebola oslovená: {error}. Nič sa neschválilo."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "Brána JUNG HOME na adrese {host} už neakceptuje prístup Home Assistant, preto sa nič neschválilo. Znova udeľte prístup cez opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom to spustite znova."
+    },
+    "approve_client_not_waiting": {
+      "message": "Na bráne nečaká na prístup žiadny klient API s názvom „{client}“ (čakajú: {waiting}). Nič sa neschválilo."
+    },
+    "approve_gateway_busy": {
+      "message": "Brána JUNG HOME na adrese {host} spracúva inú požiadavku na konfiguráciu; skúste to znova o minútu. Nič sa neschválilo."
+    },
+    "approve_gateway_failed": {
+      "message": "Brána JUNG HOME na adrese {host} nevykonala požadované: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant neaktualizuje firmvér JUNG: zariadenie aktualizujte aplikáciou JUNG HOME."
+    },
+    "add_device_node_not_configured": {
+      "message": "Nové zariadenie na adrese {unicast} sa nepodarilo nakonfigurovať v kroku {step} ({error}). Home Assistant ho resetoval, ako to robí aplikácia JUNG HOME, a zariadenie to potvrdilo: je opäť novým zariadením a nič sa preň nerezervuje. Zariadenie, ktoré nie je produktom alebo vložkou, ktorú ohlasuje, sa takto odmietne; inak ho pridajte znova."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Provisioning nového zariadenia na adrese {unicast} nebol potvrdený ({error}). Home Assistant ho resetoval a zariadenie to potvrdilo: je opäť novým zariadením a nič sa preň nerezervuje. Skúste to znova."
+    },
+    "time_keeper_role_failed": {
+      "message": "Zariadenie na adrese {address} neprevzalo svoju časovú rolu ({error}). Publikácia jeho Time Servera už bola zmenená: keď zariadenie odpovie, prepnite časový zdroj znova."
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} spína priestorový termostat {thermostats} (prepojený v aplikácii JUNG HOME) a ručne sa nespína, rovnako ako v aplikácii."
+    },
+    "load_forced_short": {
+      "message": "Detektor entity {entity} ju drží zapnutú alebo vypnutú (trvalo zap. / vyp.): na ukončenie presuňte prepínač automatickej prevádzky detektora do strednej polohy."
+    },
+    "load_forced_on_button": {
+      "message": "Detektor entity {entity} ju drží zapnutú (trvalo ZAP.): na ukončenie stlačte tlačidlo ON na detektore."
+    },
+    "load_forced_off_button": {
+      "message": "Detektor entity {entity} ju drží vypnutú (trvalo VYP.): na ukončenie stlačte tlačidlo OFF na detektore."
+    },
+    "load_forced_on_presence": {
+      "message": "Detektor entity {entity} ju drží zapnutú (trvalo ZAP.): ukončí to programovacie tlačidlo detektora."
+    },
+    "load_forced_off_presence": {
+      "message": "Detektor entity {entity} ju drží vypnutú (trvalo VYP.): ukončí to programovacie tlačidlo detektora."
+    },
+    "cover_slats_open": {
+      "message": "{entity} je úplne otvorená: jej lamely sa nedajú natáčať, kým sa nespustí nadol, rovnako ako v aplikácii JUNG HOME."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} je v režime boost: pred nastavením teploty zvoľte inú predvoľbu, aby sa boost ukončil, rovnako ako v aplikácii JUNG HOME."
+    },
+    "service_detector_device_only": {
+      "message": "Detektor {address} môže ovládať len jedno zariadenie: zadajte cieľové svetlo, zásuvku alebo zariadenie, nie miestnosť ani scénu."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Detektor {address} nemôže ovládať cieľ v režime {mode}: detektor nemá režim tlačidla, takže len spína svetlo, zásuvku alebo žalúziu v režime, ktorý určuje cieľ, bez funkcie blokovania, priestorového termostatu, brány či cieľového prvku."
+    },
+    "gateway_fetch_refused": {
+      "message": "Export sa nenačítal z brány JUNG HOME na adrese {host}: {error}. Nič sa nezmenilo; čo robiť, uvádzajú upozornenia na opravu."
+    },
+    "service_unknown_area": {
+      "message": "Neexistuje žiadna oblasť s ID {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} nie je scéna siete JUNG HOME."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Odstránenie zariadenia sa nedá vrátiť späť: na jeho vykonanie pridajte do volania „confirm: true“ (alebo „dry_run: true“, ak chcete vidieť, čo by sa stalo)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Odstránením scény, aj keď zariadenie neodpovedá, si ju toto zariadenie ponechá: na vykonanie pridajte do volania „confirm: true“ (alebo „dry_run: true“, ak chcete vidieť, čo by sa stalo)."
+    },
+    "plan_key_device": {
+      "message": "{key} teraz ovláda {target}; správy: {messages}"
+    },
+    "plan_key_room": {
+      "message": "{key} teraz ovláda miestnosť {room}; správy: {messages}"
+    },
+    "plan_key_scene": {
+      "message": "{key} teraz vyvoláva scénu {scene}; správy: {messages}"
+    },
+    "plan_key_cleared": {
+      "message": "{key} teraz nemá žiadnu funkciu; správy: {messages}"
+    },
+    "plan_room_joined": {
+      "message": "{devices} teraz v miestnosti {room}; správy: {messages}"
+    },
+    "plan_room_left": {
+      "message": "{devices} vyradené z miestnosti {room}; správy: {messages}"
+    },
+    "plan_room_deleted": {
+      "message": "Miestnosť {room} odstránená; správy: {messages}"
+    },
+    "plan_device_removed": {
+      "message": "{device} odstránené zo siete; správy ostatným zariadeniam: {messages}"
+    },
+    "plan_scene_deleted": {
+      "message": "Scéna {scene} odstránená; správy: {messages}"
+    },
+    "plan_finished": {
+      "message": "{action} dokončené; správy: {messages}"
+    },
+    "plan_stopped": {
+      "message": "{action} zastavené po {applied} z {total} správ: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} zrušené po {applied} z {total} správ; export mesh zaznamenáva, čo sa prijalo"
+    },
+    "logbook_scene_from_key": {
+      "message": "vyvolalo scénu {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "uvoľnenie nebolo včas zachytené"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "spojenie stratené"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integrácia zastavená"
+    },
+    "logbook_scene_number": {
+      "message": "Scéna {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scéna"
+    },
+    "logbook_recalled": {
+      "message": "bola vyvolaná"
+    },
+    "logbook_recalled_by": {
+      "message": "bola vyvolaná zariadením {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Zariadenia JUNG HOME chýbajúce v exporte",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova načítať export z brány",
+            "description": "Zariadenia siete JUNG HOME mesh {title} ({count}) sa ohlasujú cez Bluetooth, ale nie sú v exporte, ktorý Home Assistant načítal: {devices}. Boli pridané do inštalácie (alebo znova prešli provisioningom) po vytvorení tohto exportu, preto pre ne Home Assistant nemá žiadne entity. Potvrďte, aby sa aktuálny export načítal z brány JUNG HOME na adrese {host} s prístupom, ktorý Home Assistant už má, skontroloval a integrácia sa z neho znova nastavila, ako to robí „Prekonfigurovať → Znova ho načítať z brány“; export, ktorý nahrádza, sa ponechá ako kópia (`.pre-reconfigure`). Oprava zmizne, keď ich nový export bude obsahovať. Zatiaľ neoverené na skutočných zariadeniach."
+          },
+          "upload": {
+            "title": "Načítať nový export",
+            "description": "Zariadenia siete JUNG HOME mesh {title} ({count}) sa ohlasujú cez Bluetooth, ale nie sú v exporte, ktorý Home Assistant načítal: {devices}. Boli pridané do inštalácie (alebo znova prešli provisioningom) po vytvorení tohto exportu, preto pre ne Home Assistant nemá žiadne entity. Exportujte sieť z aplikácie JUNG HOME (Projekt → Zdieľať cez súbor) a nahrajte súbor sem: Home Assistant ho skontroluje, uloží pod `junghome_ble/` vo svojom konfiguračnom adresári (obsahuje všetky kľúče mesh) a znova z neho nastaví integráciu; export, ktorý nahrádza, sa ponechá ako kópia. Záznam, ktorý čítal export z cesty na hostiteľovi, odteraz používa nahratú kópiu — ak chcete cestu zachovať, skopírujte namiesto toho nový súbor tam a použite „Prekonfigurovať“. Oprava zmizne, keď ich nový export bude obsahovať. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "export_file": "Exportný súbor mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+          "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+          "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+          "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+          "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+          "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+          "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+          "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0.",
+          "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+          "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+          "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+          "not_a_directory": "Cesta k metadátam nie je adresár.",
+          "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+          "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+          "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
+          "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+          "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Zariadenia JUNG HOME chýbajúce v exporte",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova načítať export z brány",
+            "description": "Zariadenia siete JUNG HOME mesh {title} ({count}) sa ohlasujú cez Bluetooth, ale nie sú v exporte, ktorý Home Assistant načítal: {devices}. Boli pridané do inštalácie (alebo znova prešli provisioningom) po vytvorení tohto exportu, preto pre ne Home Assistant zatiaľ nemá žiadne entity. Home Assistant si od brány vyžiada jej aktuálny export a sám ho prevezme, keď ich bude obsahovať. Potvrďte, aby sa aktuálny export načítal z brány JUNG HOME na adrese {host} s prístupom, ktorý Home Assistant už má, skontroloval a integrácia sa z neho znova nastavila, ako to robí „Prekonfigurovať → Znova ho načítať z brány“; export, ktorý nahrádza, sa ponechá ako kópia (`.pre-reconfigure`). Ak oprava nezmizne, nepozná ich ani export brány: raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (nahrá svoj projekt), a potom opravu spustite znova. Zatiaľ neoverené na skutočných zariadeniach."
+          },
+          "upload": {
+            "title": "Načítať nový export",
+            "description": "Zariadenia siete JUNG HOME mesh {title} ({count}) sa ohlasujú cez Bluetooth, ale nie sú v exporte, ktorý Home Assistant načítal: {devices}. Boli pridané do inštalácie (alebo znova prešli provisioningom) po vytvorení tohto exportu, preto pre ne Home Assistant zatiaľ nemá žiadne entity. Home Assistant si od brány vyžiada jej aktuálny export a sám ho prevezme, keď ich bude obsahovať. Exportujte sieť z aplikácie JUNG HOME (Projekt → Zdieľať cez súbor) a nahrajte súbor sem: Home Assistant ho skontroluje, uloží pod `junghome_ble/` vo svojom konfiguračnom adresári (obsahuje všetky kľúče mesh) a znova z neho nastaví integráciu; export, ktorý nahrádza, sa ponechá ako kópia. Záznam, ktorý čítal export z cesty na hostiteľovi, odteraz používa nahratú kópiu — ak chcete cestu zachovať, skopírujte namiesto toho nový súbor tam a použite „Prekonfigurovať“. Ak oprava nezmizne, nepozná ich ani export brány: raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (nahrá svoj projekt), a potom opravu spustite znova. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "export_file": "Exportný súbor mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+          "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+          "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+          "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+          "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+          "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+          "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+          "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0.",
+          "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+          "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+          "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+          "not_a_directory": "Cesta k metadátam nie je adresár.",
+          "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+          "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+          "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
+          "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+          "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "Aplikácia JUNG HOME zmenila inštaláciu",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova načítať export z brány",
+            "description": "Bolo zachytené, že aplikácia JUNG HOME mení konfiguráciu zariadenia siete mesh {title} (prepojenie tlačidla, miestnosť, scénu alebo nastavenie zariadenia), takže export, ktorý Home Assistant načítal, už nemusí zodpovedať inštalácii: čo sa zmenilo v aplikácii, v Home Assistant ešte nie je. Potvrďte, aby sa aktuálny export načítal z brány JUNG HOME na adrese {host} s prístupom, ktorý Home Assistant už má, skontroloval a integrácia sa z neho znova nastavila, ako to robí „Prekonfigurovať → Znova ho načítať z brány“; export, ktorý nahrádza, sa ponechá ako kópia (`.pre-reconfigure`). Zatiaľ neoverené na skutočných zariadeniach."
+          },
+          "upload": {
+            "title": "Načítať nový export",
+            "description": "Bolo zachytené, že aplikácia JUNG HOME mení konfiguráciu zariadenia siete mesh {title} (prepojenie tlačidla, miestnosť, scénu alebo nastavenie zariadenia), takže export, ktorý Home Assistant načítal, už nemusí zodpovedať inštalácii: čo sa zmenilo v aplikácii, v Home Assistant ešte nie je. Keď v aplikácii skončíte, exportujte z nej sieť (Projekt → Zdieľať cez súbor) a nahrajte súbor sem: Home Assistant ho skontroluje, uloží pod `junghome_ble/` vo svojom konfiguračnom adresári (obsahuje všetky kľúče mesh) a znova z neho nastaví integráciu; export, ktorý nahrádza, sa ponechá ako kópia. Záznam, ktorý čítal export z cesty na hostiteľovi, odteraz používa nahratú kópiu — ak chcete cestu zachovať, skopírujte namiesto toho nový súbor tam a použite „Prekonfigurovať“, čím zmizne aj toto upozornenie. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "export_file": "Exportný súbor mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+          "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+          "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+          "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+          "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+          "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+          "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+          "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0.",
+          "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+          "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+          "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+          "not_a_directory": "Cesta k metadátam nie je adresár.",
+          "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+          "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+          "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
+          "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+          "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Tlačidlové ovládače JUNG HOME s inou vložkou než v exporte",
+      "description": "{devices}: tieto tlačidlové ovládače siete JUNG HOME mesh {title} ohlasujú inú vložku než tú v exporte, ktorý Home Assistant načítal (export → zariadenie). Vložka bola vymenená po vytvorení tohto exportu, takže Home Assistant aj aplikácia pre ne môžu zobrazovať nesprávny druh záťaže. Skontrolujte zariadenia v aplikácii JUNG HOME, exportujte sieť znova a aktualizujte túto integráciu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať); oprava zmizne, keď export uvedie vložky, ktoré zariadenia ohlasujú. Zatiaľ neoverené na skutočných zariadeniach."
+    },
+    "node_clock_wrong": {
+      "title": "Zariadenia JUNG HOME s nesprávnymi hodinami",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Odoslať čas teraz",
+            "description": "{devices}: tieto zariadenia siete JUNG HOME mesh {title} môžu vykonávať časové plány (spínanie podľa času alebo východu / západu slnka) a ich hodiny sú nesprávne: nemajú čas, odchyľujú sa od Home Assistant o viac ako minútu alebo majú iný posun časového pásma, než aký im Home Assistant poslal. Ich časové plány sa spúšťajú v nesprávny čas, kým čas znova nedostanú. Home Assistant ho posiela po každom pripojení a raz denne; potvrďte, aby sa odoslal teraz a tieto zariadenia sa znova opýtali. Oprava zmizne, keď odpovedia správnym časom. Ak sa vráti, skontrolujte časové pásmo Home Assistant (Nastavenia → Systém → Všeobecné) a či sú zariadenia dosiahnuteľné. Zatiaľ neoverené na skutočných zariadeniach."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "not_connected": "Home Assistant práve nemá spojenie so sieťou mesh. Skúste to znova, keď bude pripojený."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Kľúče siete JUNG HOME mesh sa menia",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova načítať export z brány",
+            "description": "Sieť mesh {title} ohlásila obnovu kľúčov (Key Refresh), pri ktorej Home Assistant nezachytil odovzdanie nového sieťového kľúča (obnovu kľúčov, ktorú vidí od začiatku, sleduje a nič nehlási). Po jej dokončení už kľúče v exporte, ktorý Home Assistant používa, nebudú platné a ovládanie prestane fungovať. Najprv nechajte obnovu kľúčov dokončiť v aplikácii JUNG HOME. Potvrďte, aby sa aktuálny export načítal z brány JUNG HOME na adrese {host} s prístupom, ktorý Home Assistant už má, skontroloval a integrácia sa z neho znova nastavila, ako to robí „Prekonfigurovať → Znova ho načítať z brány“; export, ktorý nahrádza, sa ponechá ako kópia (`.pre-reconfigure`). Zatiaľ neoverené na skutočných zariadeniach."
+          },
+          "upload": {
+            "title": "Načítať nový export",
+            "description": "Sieť mesh {title} ohlásila obnovu kľúčov (Key Refresh), pri ktorej Home Assistant nezachytil odovzdanie nového sieťového kľúča (obnovu kľúčov, ktorú vidí od začiatku, sleduje a nič nehlási). Po jej dokončení už kľúče v exporte, ktorý Home Assistant používa, nebudú platné a ovládanie prestane fungovať. Najprv nechajte obnovu kľúčov dokončiť v aplikácii JUNG HOME. Exportujte sieť z aplikácie JUNG HOME (Projekt → Zdieľať cez súbor) a nahrajte súbor sem: Home Assistant ho skontroluje, uloží pod `junghome_ble/` vo svojom konfiguračnom adresári (obsahuje všetky kľúče mesh) a znova z neho nastaví integráciu; export, ktorý nahrádza, sa ponechá ako kópia. Záznam, ktorý čítal export z cesty na hostiteľovi, odteraz používa nahratú kópiu — ak chcete cestu zachovať, skopírujte namiesto toho nový súbor tam a použite „Prekonfigurovať“. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "export_file": "Exportný súbor mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+          "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+          "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+          "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+          "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+          "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+          "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+          "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0.",
+          "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+          "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+          "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+          "not_a_directory": "Cesta k metadátam nie je adresár.",
+          "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+          "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+          "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
+          "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+          "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "Zariadenia JUNG HOME ignorujú Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Preskočiť za čísla, ktoré zariadenia poznajú",
+            "description": "Home Assistant počuje sieť JUNG HOME mesh {title} cez svoj proxy uzol, ale ani jedno zariadenie neodpovedalo na jeho požiadavky na stav. Uzly zahadzujú správy Home Assistant ako opakované (replay). Pravdepodobné sú dve príčiny: úložisko sekvenčných čísel tejto integrácie (`.storage/junghome_ble.*`) sa stratilo alebo bolo obnovené zo staršej zálohy, takže Home Assistant teraz posiela sekvenčné čísla, ktoré uzly už videli; alebo iný klient siete mesh (napríklad nástroj `mesh_poc.py`) vysiela s rovnakou adresou unicast {unicast}. Buď dajte Home Assistant novú, nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast a uistite sa, že ju nepoužíva žiadny iný klient), alebo, ak sa úložisko stratilo či bolo obnovené (a adresu nepoužíva žiadny iný klient), potvrďte, aby Home Assistant posunul svoje sekvenčné čísla o 1 048 576 dopredu a znova sa pripojil. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy: staršia kópia len zopakuje čísla, ktoré zariadenia už videli. Oprava zmizne sama, len čo niektoré zariadenie znova odpovie Home Assistant."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Adresu JUNG HOME Home Assistant používa iný klient",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Preskočiť za sekvenčné čísla druhého klienta",
+            "description": "Home Assistant prijal správu siete JUNG HOME mesh {title} odoslanú z jeho vlastnej adresy unicast {unicast} so sekvenčným číslom, ktoré nikdy nepoužil: iný klient siete mesh vysiela s rovnakou adresou — druhá inštalácia Home Assistant, nástroj `mesh_poc.py` nakonfigurovaný s touto adresou alebo kópia tejto inštalácie spustená inde. Dvaja odosielatelia na jednej adrese si navzájom opakujú sekvenčné čísla a zariadenia zahadzujú všetko, čo je pod číslami druhého klienta, preto Home Assistant do siete mesh nič neposiela, kým sa to neopraví (príkazy zlyhávajú, stavy sa neobnovujú). Zastavte druhého klienta alebo dajte jemu či Home Assistant inú nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast). Potom potvrďte, aby Home Assistant pokračoval so sekvenčnými číslami za tými, s ktorými bol zachytený druhý klient, a znova vysielal. Ak druhý klient z tejto adresy vysiela ďalej, oprava sa vráti. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Adresu JUNG HOME Home Assistant stále používa iný klient",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Znova preskočiť za sekvenčné čísla druhého klienta",
+            "description": "Home Assistant v sieti JUNG HOME mesh {title} preskočil za sekvenčné čísla iného klienta siete mesh na svojej adrese {unicast} a druhý klient odvtedy z tejto adresy znova vysielal: stále beží. Kým beží, preskočenie dopredu nepomôže. Dajte Home Assistant novú, nepoužitú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) alebo zastavte druhého klienta či ho presuňte na inú adresu. Dovtedy Home Assistant do siete mesh nič neposiela. Potvrďte až vtedy, keď druhý klient túto adresu už nepoužíva: Home Assistant potom znova pokračuje za jeho číslami a obnoví vysielanie. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Žiadne Bluetooth pre sieť JUNG HOME mesh",
+      "description": "Sieť JUNG HOME mesh {title} je dosiahnuteľná cez Bluetooth, ale Home Assistantu nezostal žiadny pripojiteľný adaptér ani proxy Bluetooth: adaptér je vypnutý, odpojený alebo zlyhal, alebo je každý ESPHome Bluetooth proxy s aktívnymi pripojeniami offline. Všetky zariadenia siete mesh sú nedostupné, kým sa niektorý nevráti. Skontrolujte Nastavenia → Zariadenia a služby → Bluetooth. Oprava zmizne, len čo bude adaptér alebo proxy Bluetooth opäť k dispozícii."
+    },
+    "duplicate_mesh": {
+      "title": "Dva záznamy pokrývajú tú istú sieť JUNG HOME mesh",
+      "description": "{title} aj {others} sú nastavené pre tú istú sieť JUNG HOME mesh. Zdieľajú jej počítadlá sekvenčných čísel (`.storage/junghome_ble.seq.*`), takže bežať môže len jeden z nich: {others} beží a {title} sa nespustil. Odstráňte jeden z týchto záznamov (Nastavenia → Zariadenia a služby); ak odstránite {others}, potom znova načítajte {title}."
+    },
+    "gateway_import": {
+      "title": "Prevziať entity integrácie JUNG HOME Gateway",
+      "description": "Integrácia JUNG HOME Gateway je nastavená vedľa integrácie Bluetooth Mesh {title}, takže každé svetlo, zásuvka, tlačidlo a scéna existuje dvakrát. Presuňte entity brány sem — zachovajú si svoje ID entít, názvy, oblasti a históriu — v časti Nastavenia → Zariadenia a služby → JUNG HOME (Bluetooth Mesh) → Prekonfigurovať → Importovať entity integrácie JUNG HOME Gateway a potom odstráňte záznam brány. Ak chcete ponechať obe, túto opravu ignorujte."
+    },
+    "export_stale": {
+      "title": "Kľúče siete JUNG HOME mesh sa zmenili",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Znova načítať export z brány",
+            "description": "Home Assistant je pripojený k uzlu siete JUNG HOME mesh {title}, ale nič, čo počuje, sa nedá dešifrovať kľúčmi z exportu: každá sieťová správa aj beacon uzla neprejdú overením. Sieť mesh dokončila obnovu kľúčov („obnovenie kľúča“ v aplikácii JUNG HOME) po vytvorení tohto exportu, takže súbor je zastaraný. Potvrďte, aby sa aktuálny export načítal z brány JUNG HOME na adrese {host} s prístupom, ktorý Home Assistant už má, skontroloval a integrácia sa z neho znova nastavila, ako to robí „Prekonfigurovať → Znova ho načítať z brány“; export, ktorý nahrádza, sa ponechá ako kópia (`.pre-reconfigure`). Oprava zmizne, len čo sa niektorá správa znova dešifruje. Zatiaľ neoverené na skutočných zariadeniach."
+          },
+          "upload": {
+            "title": "Načítať nový export",
+            "description": "Home Assistant je pripojený k uzlu siete JUNG HOME mesh {title}, ale nič, čo počuje, sa nedá dešifrovať kľúčmi z exportu: každá sieťová správa aj beacon uzla neprejdú overením. Sieť mesh dokončila obnovu kľúčov („obnovenie kľúča“ v aplikácii JUNG HOME) po vytvorení tohto exportu, takže súbor je zastaraný. Exportujte sieť z aplikácie JUNG HOME (Projekt → Zdieľať cez súbor) a nahrajte súbor sem: Home Assistant ho skontroluje, uloží pod `junghome_ble/` vo svojom konfiguračnom adresári (obsahuje všetky kľúče mesh) a znova z neho nastaví integráciu; export, ktorý nahrádza, sa ponechá ako kópia. Záznam, ktorý čítal export z cesty na hostiteľovi, odteraz používa nahratú kópiu — ak chcete cestu zachovať, skopírujte namiesto toho nový súbor tam a použite „Prekonfigurovať“. Oprava zmizne, len čo sa niektorá správa znova dešifruje. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "export_file": "Exportný súbor mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` z aplikácie (Zdieľať cez súbor) alebo `MeshNetwork.json` zo zálohy iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
+          "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
+          "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
+          "export_keys_stale": "Zariadenia tejto siete mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z tohto exportu: kľúče siete boli obnovené (obnova kľúčov v aplikácii JUNG HOME) po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME alebo ju znova načítajte z brány a použite tento súbor.",
+          "gateway_error": "Brána odpovedala chybou. Skontrolujte jej stav v aplikácii JUNG HOME a skúste to znova.",
+          "gateway_busy": "Brána spracúva inú požiadavku na konfiguráciu. Skúste to znova o minútu.",
+          "invalid_address": "Adresa musí byť šestnástková v rozsahu 0001 až 7FFF.",
+          "invalid_export": "Súbor nie je export JUNG HOME mesh (alebo je poškodený): musí obsahovať sieť s jej kľúčmi, uzlami a jedným sieťovým kľúčom s indexom 0.",
+          "invalid_metadata": "Adresár metadát neobsahuje súbory device_metadata.json a scene_metadata.json aplikácie v očakávanej podobe.",
+          "no_project": "Brána neobsahuje žiadny export siete. Raz otvorte aplikáciu JUNG HOME, kým je pripojená k bráne (projekt nahrá automaticky), a uistite sa, že firmvér brány je vo verzii 2.1 alebo novšej.",
+          "no_proxy_visible": "Žiadny uzol tejto siete mesh momentálne nie je viditeľný cez Bluetooth. Uistite sa, že je adaptér Bluetooth alebo ESPHome Bluetooth proxy v dosahu zariadenia JUNG napájaného zo siete.",
+          "not_a_directory": "Cesta k metadátam nie je adresár.",
+          "not_approved": "Žiadosť o prístup nebola v aplikácii včas schválená. Odošlite znova a schváľte ju v časti Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti.",
+          "token_rejected": "Brána už neakceptuje uložený prístup. Odošlite znova, aby sa o prístup požiadalo nanovo.",
+          "upload_failed": "Nahratý súbor sa nepodarilo spracovať. Skúste ho nahrať znova."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
+          "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
+          "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Certifikát brány JUNG HOME sa zmenil",
+      "description": "Brána JUNG HOME na adrese {host} už nezodpovedá certifikátu TLS, ktorý si pre ňu Home Assistant pripol: hostiteľ predkladá iný certifikát alebo uzol brány cez sieť mesh hlási iný. Home Assistant prestal bránu používať (neposiela jej prístupový token ani export); zariadenia naďalej fungujú cez Bluetooth. Ak ste bránu alebo jej certifikát vymenili, otvorte Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať a znova načítajte export z brány; inak môže na vašej sieti odpovedať ako brána iné zariadenie — skontrolujte svoju sieť."
+    },
+    "gateway_sync_failed": {
+      "title": "Export JUNG HOME sa neodovzdal bráne",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Odovzdať export bráne",
+            "description": "Home Assistant zmenil inštaláciu JUNG HOME (miestnosť, prepojenie tlačidla alebo scénu) a prepísal svoj export mesh, ale brána JUNG HOME na adrese {host} nový export neprijala: {error}. Kým ho neprijme, brána a aplikácia zobrazujú starý stav — a ďalšia zmena v aplikácii by prepísala zmenu Home Assistant. Home Assistant to skúsi ešte dvakrát s odstupom 15 sekúnd, ako to robí aplikácia. Skontrolujte, či je brána dosiahnuteľná, a potom potvrďte, aby sa jej export odovzdal teraz, ako to robí akcia „Synchronizovať bránu“ (`junghome_ble.sync_gateway`): odmietne to, ak brána obsahuje zmeny, ktoré Home Assistant nevidel a ktoré by nahratie vymazalo. Oprava zmizne po úspešnom nahratí. Zatiaľ neoverené na skutočných zariadeniach."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "not_loaded": "Záznam JUNG HOME, ku ktorému táto oprava patrí, práve nebeží. Skúste to znova, keď bude nastavený.",
+          "sync_failed": "Export sa neodovzdal bráne: {error} Oprava zostáva; spustite ju znova, keď príčina pominie."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "Zmena JUNG HOME v {title} bola prerušená",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Zmena JUNG HOME bola prerušená",
+            "description": "Home Assistant sa zastavil uprostred akcie {action}: k zariadeniam sa dostalo {accepted} z jej {total} konfiguračných správ. Tie sú teraz zaznamenané v exporte mesh, takže export uvádza, čo zariadenia obsahujú. Na dokončenie spustite akciu znova s rovnakým cieľom. S bránou JUNG HOME sa jej zaznamenaný export odovzdá pri ďalšej zmene alebo akciou `junghome_ble.sync_gateway`. Potvrďte, aby sa toto upozornenie zavrelo."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Názov zariadenia sa neodovzdal aplikácii JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Premenovať zariadenie",
+            "description": "{device} bolo v Home Assistant premenované na „{name}“, čo je názov, ktorý aplikácia JUNG HOME odmieta: názov nemôže byť prázdny ani dlhší ako 30 znakov a aplikácia považuje znak % za začiatok zástupného symbolu (prejdú len %% a %n). Export mesh aj aplikácia si ponechávajú starý názov zariadenia. Zadajte názov, ktorý aplikácia prijme: Home Assistant ním zariadenie pomenuje a odovzdá ho do exportu (a s bránou do aplikácie) ako pri každom premenovaní. Oprava zmizne, keď sa názov odovzdá. Zatiaľ neoverené na skutočných zariadeniach.",
+            "data": {
+              "name": "Názov"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Názov nemôže byť prázdny.",
+          "name_not_allowed": "Aplikácia považuje znak % za začiatok zástupného symbolu: prejdú len %% a %n.",
+          "name_too_long": "Aplikácia prijíma názvy s najviac 30 znakmi."
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "not_loaded": "Záznam JUNG HOME, ku ktorému táto oprava patrí, práve nebeží. Skúste to znova, keď bude nastavený.",
+          "device_gone": "Zariadenie, ktoré táto oprava uvádza, už v Home Assistant nie je."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Zariadeniam pridaným cez Home Assistant chýba nový sieťový kľúč",
+      "description": "Aplikácia JUNG HOME obnovila sieťový kľúč siete mesh {title} a Home Assistant obnovu sledoval až do konca. Aplikácia nepozná zariadenia, ktoré pridal Home Assistant, preto im Home Assistant odovzdáva nový kľúč sám, ale zariadenia na adresách {addresses} ho nepotvrdili. Uistite sa, že sú napájané a v dosahu: Home Assistant to skúsi znova pri každom novom pripojení Bluetooth. Zariadenie, ktoré nový kľúč nikdy nedostalo, už nie je dosiahnuteľné: obnovte jeho výrobné nastavenia a pridajte ho znova (najprv ho odstráňte z Home Assistant akciou `junghome_ble.remove_device` alebo `junghome_ble.reset_pending_device` s `force`). Zatiaľ nevyskúšané na skutočnom zariadení. Oprava zmizne, keď každé takéto zariadenie potvrdí."
+    },
+    "pending_device": {
+      "title": "Zariadenie pridané cez Home Assistant nie je zaznamenané",
+      "description": "Home Assistant pridal cez provisioning zariadenie JUNG siete mesh {title} akciou `junghome_ble.add_device`, ale jeho konfigurácia alebo zaznamenanie do exportu zlyhali: zariadenie na adrese {addresses} má kľúče siete, aplikácia JUNG HOME ani export ho nepoznajú a jeho adresy a skupiny prvkov zostávajú rezervované, aby ich nedostalo iné zariadenie. Resetujte ho akciou `junghome_ble.reset_pending_device` (jeho adresa unicast) a pridajte ho znova; pre zariadenie, ktoré ste už resetovali ručne, alebo ktoré je preč, použite `force`. Zatiaľ nevyskúšané na skutočnom zariadení. Oprava zmizne, keď žiadne také zariadenie nezostane."
+    },
+    "vault_unwritable": {
+      "title": "Kľúče zariadení JUNG HOME sa nedajú uložiť",
+      "description": "Home Assistant nedokázal zapísať svoj trezor pre sieť mesh {title} ({path}; posledná chyba: {error}) pri pridávaní zariadenia na adrese {address}. Trezor obsahuje kľúče zariadení, ktoré Home Assistant pridáva a ktoré nikto iný nemá, kým ich nezaznamená export, preto zariadenie neprešlo provisioningom: nič nedostalo a je stále nové. Zvyčajne to znamená, že disk je plný alebo jeho súborový systém bol znova pripojený len na čítanie, často kvôli zlyhávajúcej SD karte. Uvoľnite miesto alebo opravte úložisko (súborový systém pripojený len na čítanie zvyčajne vyžaduje reštart hostiteľa) a potom pridajte zariadenie znova; súbory trezora neupravujte, neodstraňujte ani nenahrádzajte. Zatiaľ nevyskúšané na skutočnom zariadení. Oprava zmizne sama, len čo sa zápis trezora podarí."
+    },
+    "carry_over_conflict": {
+      "title": "Aplikácia JUNG HOME prepísala zmenu, ktorú Home Assistant vykonal v {title}",
+      "description": "Home Assistant prevzal export, ktorý aplikácia JUNG HOME naposledy odovzdala bráne, a preniesol naň svoje vlastné zmeny, ale aplikácia medzitým zmenila tie isté položky. Verzia aplikácie sa ponecháva pre: {paths}. Zariadenia môžu stále obsahovať to, čo zapísal Home Assistant: {held}. Skontrolujte tieto miestnosti, scény a prepojenia v aplikácii aj v Home Assistant a nastavte ich znova z jednej strany. Aplikácia nevidí, čo Home Assistant pridá, kým neimportuje súbor. Oprava zmizne pri ďalšom prevzatí exportu brány, pri ktorom takýto konflikt nenastane."
+    },
+    "scene_held": {
+      "title": "Zariadenia v {title} stále obsahujú odstránenú scénu JUNG HOME",
+      "description": "Scéna bola odstránená s možnosťou „Aj keď zariadenie neodpovedá“, kým niektoré z jej zariadení boli nedosiahnuteľné alebo odmietli; tie ju stále obsahujú a vyvolajú ju pri každej scéne s týmto číslom. Číslo scény: zariadenia — {members}. Home Assistant tieto čísla žiadnej novej scéne nepridelí. Keď budú zariadenia opäť dosiahnuteľné, spustite akciu „Odstrániť nepoužívané scény“ s vypnutou možnosťou „Skúšobný beh“: odstráni z nich tieto čísla a oprava zmizne."
+    },
+    "gateway_token_rejected": {
+      "title": "Brána JUNG HOME už neakceptuje Home Assistant",
+      "description": "Brána JUNG HOME na adrese {host} odmieta prístup, ktorý Home Assistant zaregistroval pre sieť mesh {title} (pravdepodobne bol odstránený v aplikácii JUNG HOME v časti Nastavenia → Brána → Prístupové oprávnenia). Home Assistant naďalej mení miestnosti, prepojenia tlačidiel a scény vo svojom vlastnom exporte, ale už ho neodovzdáva bráne, takže aplikácia tieto zmeny nevidí; zariadenia naďalej fungujú. Home Assistant znova žiada o prístup: postupujte podľa jeho výzvy na opätovné overenie JUNG HOME (Nastavenia → Zariadenia a služby; v časti Opravy je uvedené aj ako vypršané overenie) a zadajte heslo sieťového kľúča brány alebo schváľte novú žiadosť o prístup v aplikácii. Oprava zmizne, keď brána znova akceptuje Home Assistant; akcia „Synchronizovať bránu“ potom odovzdá zmeny vykonané medzitým."
+    },
+    "seq_store_lost": {
+      "title": "Sekvenčné čísla siete JUNG HOME mesh {title} sa stratili",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Pokračovať za už odoslanými číslami",
+            "description": "Úložisko sekvenčných čísel tejto integrácie (`.storage/junghome_ble.seq.*`) neobsahuje žiadny použiteľný záznam pre adresu Home Assistant {unicast}, hoci táto adresa už predtým vysielala. Opätovný štart od 0 by znova použil sekvenčné čísla, ktoré zariadenia už videli: Home Assistant by ignorovali a každé znova použité číslo oslabuje šifrovanie siete mesh. Obnovenie úložiska zo zálohy spôsobí to isté — staršia kópia zopakuje každé číslo odoslané od jej vytvorenia — preto súbory `junghome_ble.seq.*` neobnovujte. Potvrďte, aby Home Assistant pokračoval 1 048 576 čísel za poslednou hodnotou, ktorú ešte dokáže prečítať (4 194 304 za dolnou hranicou, ktorú vedie spolu s počítadlom v `junghome_ble.seq.*.floor`, alebo za 0, ak žiadna nezostala), a znova nastavil integráciu."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "floor_not_written": "Dolnú hranicu sekvenčných čísel (`.storage/junghome_ble.seq.*.floor`) sa nepodarilo zapísať: nič sa nezmenilo a integrácia zostáva zastavená. Skontrolujte disk, na ktorom je konfigurácia Home Assistant, a potom opravu spustite znova."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Sekvenčné čísla JUNG HOME sa nedajú uložiť",
+      "description": "Home Assistant už viac ako minútu nedokáže zapísať úložisko sekvenčných čísel siete mesh {title} ({path}; posledná chyba: {error}). Každá správa zariadeniam nesie nové sekvenčné číslo a Home Assistant posiela len čísla, ktoré si uložil, aby sa po reštarte žiadne nezopakovalo: kým sa zápis nepodarí, do siete mesh nič neposiela — príkazy zlyhávajú a stav sa neobnovuje. Zvyčajne to znamená, že disk je plný alebo jeho súborový systém bol znova pripojený len na čítanie, často kvôli zlyhávajúcej SD karte. Uvoľnite miesto alebo opravte úložisko (súborový systém pripojený len na čítanie zvyčajne vyžaduje reštart hostiteľa); súbory úložiska neupravujte, neodstraňujte ani nenahrádzajte. Oprava zmizne sama, len čo sa zápis podarí a odosielanie sa obnoví."
+    },
+    "address_in_use": {
+      "title": "Adresa JUNG HOME Home Assistant je obsadená",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Presunúť Home Assistant na {suggestion}",
+            "description": "V exporte siete mesh {title} obsadzuje adresu unicast {unicast}, z ktorej Home Assistant vysiela, uzol. Obaja by sa považovali za jedného odosielateľa: zariadenia jedného z nich zahodia ako opakovanie (replay) a odpovede idú nesprávnemu. Potvrďte, aby Home Assistant dostal voľnú adresu {suggestion} a integrácia sa znova nastavila, ako to robí „Prekonfigurovať → Rozšírené → Naša adresa unicast“. Uistite sa, že z {suggestion} nevysiela žiadny iný klient siete mesh (nástroje príkazového riadka tejto integrácie, iný Home Assistant). Sekvenčné čísla sa vedú pre každú adresu zvlášť: nová adresa pokračuje vo svojom vlastnom zázname, alebo začne dostatočne ďaleko, ak preň Home Assistant žiadny nemá, takže sa žiadne číslo neodošle dvakrát. Zatiaľ neoverené na skutočných zariadeniach."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "cannot_load": "Export záznamu sa nepodarilo prečítať, preto sa nedá určiť voľná adresa: nič sa nezmenilo. Načítajte nový export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať.",
+          "no_free_address": "Export nenecháva pre Home Assistant voľnú žiadnu adresu: nič sa nezmenilo. Skontrolujte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať.",
+          "address_taken": "{suggestion} už v exporte nie je voľná (export sa medzitým zmenil): nič sa nezmenilo. Spustite opravu znova, aby ste dostali nový návrh."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Adresa JUNG HOME Home Assistant môže byť pridelená",
+      "description": "Adresa unicast {unicast}, z ktorej Home Assistant vysiela v sieti mesh {title}, leží v rozsahu adries jedného z provisionerov aplikácie alebo ju používal odstránený uzol. Funguje, kým aplikácia na nej nepridá uzol cez provisioning; predtým presuňte Home Assistant na voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast; voľná je {suggestion})."
+    },
+    "sequence_space_low": {
+      "title": "Sekvenčné čísla siete JUNG HOME mesh dochádzajú",
+      "description": "V sieti mesh {title} spotreboval {source} {percent} % sekvenčných čísel IV indexu {iv_index}. Každý odosielateľ sa na konci tohto priestoru zastaví, kým sa sieť mesh neposunie na ďalší IV index (IV Update), ktorý brána JUNG HOME spúšťa sama; Home Assistant ho sleduje, ale sám ho nespúšťa. Udržujte bránu napájanú a pripojenú k sieti mesh; bez brány sa sieť mesh zastaví, len čo niektorému odosielateľovi čísla dôjdu. Oprava zmizne sama po aktualizácii."
+    },
+    "iv_index_mismatch": {
+      "title": "Sieť JUNG HOME mesh je na inom IV indexe",
+      "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours}: príliš ďaleko od seba na to, aby ju Home Assistant mohol sledovať (sleduje sieť mesh najviac o 42 dopredu, najviac raz za 192 hodín a nikdy späť). Zariadenia medzitým Home Assistant ignorujú. Stáva sa to, keď bol Home Assistant mimo počas mnohých IV Update, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Dajte Home Assistant novú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast): tam začne od IV indexu siete mesh. Úložisko neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje sekvenčné čísla, ktoré zariadenia už videli, a ručnú úpravu aj tak prepíše ďalší štart. Oprava zmizne sama, keď príde beacon v dosahu."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant je pred IV indexom siete JUNG HOME mesh",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Vrátiť sa na IV index siete mesh",
+            "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours} — pred ňou, čo sieť mesh nikdy nie je: zariadenia Home Assistant ignorujú a ten nemôže sledovať sieť mesh, ktorá je za ním. Stáva sa to, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Potvrďte, aby sa Home Assistant vrátil na IV index siete mesh a integrácia sa znova nastavila: jeho sekvenčné čísla pokračujú nad každým číslom, ktoré od tohto indexu odoslal, takže sa žiadne nepoužije dvakrát. Úložisko namiesto toho neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje čísla, ktoré zariadenia už videli. Druhou cestou späť je nová adresa unicast pre Home Assistant (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať). Zatiaľ neoverené na skutočných zariadeniach: IV index pred sieťou mesh sa na skutočnej sieti zatiaľ nevyskytol."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "iv_index_not_ahead": "Home Assistant už nie je mimo dosahu pred sieťou mesh, alebo sa jeho stav IV od vzniku opravy zmenil: nič sa nezmenilo. Ak sa oprava vráti, spustite ju znova.",
+          "seq_store_not_written": "Dolnú hranicu sekvenčných čísel (`.storage/junghome_ble.seq.*.floor`) sa nepodarilo zapísať: nič sa nezmenilo. Skontrolujte disk, na ktorom je konfigurácia Home Assistant, a potom opravu spustite znova."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "Pucky JUNG HOME nemajú časový zdroj",
+      "description": "Sieť mesh {title} má aktorové pucky JUNG staršieho druhu ({pucks}): čas berú z časového zdroja, zariadenia napájaného zo siete, ktoré im čas odovzdáva. Žiadne zariadenie siete mesh ním nie je, preto sa časovače puckov rozchádzajú. Zapnite prepínač *Časový zdroj* (konfiguračná entita, predvolene zakázaná) na jednom zariadení, ktoré je vždy napájané, napríklad na zásuvke alebo mini aktore; aplikácia JUNG HOME si ho vyberie sama, keď konfiguruje puck. Zatiaľ neoverené na skutočných zariadeniach. Oprava zmizne, keď bude niektoré zariadenie časovým zdrojom."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Nastaviť miestnosť",
+      "description": "Zaradí svetlá a zásuvky JUNG HOME do miestnosti siete mesh (v aplikácii nazývanej „oblasť“). Miestnosť, ktorá ešte neexistuje, sa vytvorí len s možnosťou „Vytvoriť miestnosť“, takže preklep v názve sa odmietne. Zariadenie opustí všetky ostatné miestnosti; tlačidlá už prepojené s miestnosťou ho začnú ovládať. Export mesh sa prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie. Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "room": {
+          "name": "Miestnosť",
+          "description": "Názov miestnosti v aplikácii JUNG HOME."
+        },
+        "create": {
+          "name": "Vytvoriť miestnosť",
+          "description": "Vytvorí miestnosť, ak v sieti mesh žiadna s týmto názvom nie je. Ak je vypnuté, neznámy názov sa odmietne."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Pridať do miestnosti",
+      "description": "Zaradí svetlá, zásuvky a žalúzie JUNG HOME dodatočne do miestnosti siete mesh: zostanú aj v miestnostiach, v ktorých už sú, pretože aplikácia umožňuje, aby bolo zariadenie vo viacerých miestnostiach. Miestnosť, ktorá ešte neexistuje, sa vytvorí len s možnosťou „Vytvoriť miestnosť“. Tlačidlá už prepojené s miestnosťou ich začnú ovládať. Export mesh sa prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie. Zatiaľ neoverené na skutočných zariadeniach. Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "room": {
+          "name": "Miestnosť",
+          "description": "Názov miestnosti v aplikácii JUNG HOME."
+        },
+        "create": {
+          "name": "Vytvoriť miestnosť",
+          "description": "Vytvorí miestnosť, ak v sieti mesh žiadna s týmto názvom nie je. Ak je vypnuté, neznámy názov sa odmietne."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Odobrať z miestnosti",
+      "description": "Vyradí svetlá, zásuvky a žalúzie JUNG HOME z miestnosti siete mesh; v ostatných miestnostiach zostanú a zariadenie nemusí nakoniec byť v žiadnej. Zariadenie, ktoré ovláda tlačidlo cez svoje prepojenie s miestnosťou, sa odmietne, pokiaľ nie je zapnutá možnosť „Aj keď ho ovláda tlačidlo“: odchodom z miestnosti sa odpojí aj od tohto tlačidla. Export mesh sa prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie. Zatiaľ neoverené na skutočných zariadeniach. Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "room": {
+          "name": "Miestnosť",
+          "description": "Názov miestnosti v aplikácii JUNG HOME."
+        },
+        "force": {
+          "name": "Aj keď ho ovláda tlačidlo",
+          "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Vytvoriť miestnosť",
+      "description": "Vytvorí prázdnu miestnosť v exporte mesh (zariadeniam sa nič neodošle). Home Assistant jej pridelí najvyššiu voľnú skupinovú adresu z rozsahu aplikácie: aplikácia ju neuvidí, kým neimportuje súbor, a svojej ďalšej miestnosti pridelí najnižšiu voľnú. Na požiadanie vráti skupinovú adresu miestnosti. Len pre správcov.",
+      "fields": {
+        "name": {
+          "name": "Názov",
+          "description": "Názov novej miestnosti."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Premenovať miestnosť",
+      "description": "Premenuje miestnosť v exporte mesh (zariadeniam sa nič neodošle). Len pre správcov.",
+      "fields": {
+        "room": {
+          "name": "Miestnosť",
+          "description": "Aktuálny názov miestnosti."
+        },
+        "new_name": {
+          "name": "Nový názov",
+          "description": "Nový názov."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Odstrániť miestnosť",
+      "description": "Odstráni miestnosť: jej zariadenia ju opustia, tlačidlá prepojené s miestnosťou stratia svoju funkciu a miestnosť sa odstráni z exportu mesh. Samotné zariadenia zostanú ovládateľné. Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "room": {
+          "name": "Miestnosť",
+          "description": "Názov miestnosti, ktorá sa má odstrániť."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Priradiť tlačidlo",
+      "description": "Prepojí tlačidlo tlačidlového ovládača alebo detektor so svetlom, zásuvkou, žalúziou, priestorovým termostatom, bránou, miestnosťou alebo scénou presne tak ako prepojenie tlačidla v aplikácii JUNG HOME: predchádzajúce prepojenie tlačidla sa odstráni, tlačidlo sa prepojí s cieľom a nastaví sa jeho režim tlačidla (detektor žiadny nemá a ovláda len jedno zariadenie). Export mesh sa prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie. Detektor ako zdroj a režim teploty sú zatiaľ neoverené na skutočných zariadeniach. Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "key_entity": {
+          "name": "Tlačidlo",
+          "description": "Entita udalosti tlačidla alebo entita detektora."
+        },
+        "key_device": {
+          "name": "Zariadenie s tlačidlom",
+          "description": "Tlačidlový ovládač, na ktorom je tlačidlo (použite spolu s „Písmeno tlačidla“, ak má viac tlačidiel), alebo detektor."
+        },
+        "key": {
+          "name": "Písmeno tlačidla",
+          "description": "Ktoré tlačidlo zariadenia: A, B, C alebo D; E1 alebo E2 pre vstup mini aktora."
+        },
+        "target_entity": {
+          "name": "Cieľová entita",
+          "description": "Svetlo, zásuvka, žalúzia alebo priestorový termostat, ktoré má tlačidlo ovládať."
+        },
+        "target_device": {
+          "name": "Cieľové zariadenie",
+          "description": "Zariadenie, ktoré má tlačidlo ovládať: svetlo, zásuvka alebo brána (tlačidlo potom hlási kliknutia, dvojkliky a podržania do Home Assistant)."
+        },
+        "room": {
+          "name": "Cieľová miestnosť",
+          "description": "Miestnosť, ktorej svetlá alebo zásuvky má tlačidlo ovládať."
+        },
+        "scene": {
+          "name": "Cieľová scéna",
+          "description": "Scéna, ktorú má tlačidlo vyvolať na každom zariadení, podľa čísla alebo názvu (režim tlačidla scene; „Režim“ nechajte prázdny). Zatiaľ nevyskúšané na skutočnom zariadení."
+        },
+        "mode": {
+          "name": "Režim",
+          "description": "Čo tlačidlo robí: light (zapnutie/vypnutie a stmievanie), switch (zapnutie/vypnutie), move (žalúzie; netestované), gateway (hlásenie udalostí), lock (strana hore / zap. uzamkne svetlo alebo zásuvku v aktuálnom stave, strana dole / vyp. ich odomkne; zatiaľ neoverené na skutočných zariadeniach), temperature (požadovaná teplota priestorového termostatu; zatiaľ neoverené na skutočných zariadeniach) alebo pre miestnosti light_and_switch (svetlá a zásuvky spolu). Ak zostane prázdne, režim sa riadi cieľom."
+        },
+        "target_element": {
+          "name": "Cieľový prvok",
+          "description": "Len pre zariadenia ako cieľ: ovládať inú časť cieľa iba stmievacím klientom tlačidla, color_temperature (farebná teplota svetla s laditeľnou bielou, režim light) alebo slat (lamely žalúzie, režim move). Zatiaľ neoverené na skutočných zariadeniach."
+        },
+        "lock_seconds": {
+          "name": "Čas uzamknutia",
+          "description": "Len režim lock: ako dlho trvá uzamknutie tlačidlom, v sekundách (0 alebo prázdne: kým ho tlačidlo neodomkne). Zatiaľ neoverené na skutočných zariadeniach."
+        },
+        "room_area": {
+          "name": "Miestnosť podľa oblasti",
+          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+        },
+        "scene_entity": {
+          "name": "Entita scény",
+          "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Zrušiť funkciu tlačidla",
+      "description": "Odoberie tlačidlu tlačidlového ovládača funkciu: jeho prepojenie so zariadením, bránou alebo miestnosťou sa odstráni (v aplikácii „Bez funkcie“). Vráti, koľko jej správ zariadenia prijali, či sa export mesh zapísal a ktoré zariadenia sa zmenili; s možnosťou „Skúšobný beh“ namiesto toho, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "key_entity": {
+          "name": "Tlačidlo",
+          "description": "Entita udalosti tlačidla."
+        },
+        "key_device": {
+          "name": "Zariadenie s tlačidlom",
+          "description": "Tlačidlový ovládač, na ktorom je tlačidlo (použite spolu s „Písmeno tlačidla“, ak má viac tlačidiel)."
+        },
+        "key": {
+          "name": "Písmeno tlačidla",
+          "description": "Ktoré tlačidlo zariadenia: A, B, C alebo D; E1 alebo E2 pre vstup mini aktora."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Vytvoriť scénu",
+      "description": "Vytvorí prázdnu scénu v exporte mesh (zariadeniam sa nič neodošle). Zariadenia do nej uložíte akciou „Uložiť scénu“. Home Assistant jej pridelí najvyššie voľné číslo scény z rozsahu aplikácie: aplikácia ju neuvidí, kým neimportuje súbor, a svojej ďalšej scéne pridelí najnižšie voľné. Na požiadanie vráti číslo scény. Len pre správcov.",
+      "fields": {
+        "name": {
+          "name": "Názov",
+          "description": "Názov novej scény."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Premenovať scénu",
+      "description": "Premenuje scénu v exporte mesh (zariadeniam sa nič neodošle). Len pre správcov.",
+      "fields": {
+        "scene": {
+          "name": "Scéna",
+          "description": "Aktuálny názov alebo číslo scény."
+        },
+        "new_name": {
+          "name": "Nový názov",
+          "description": "Nový názov."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "scene_entity": {
+          "name": "Entita scény",
+          "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Uložiť scénu",
+      "description": "Uloží aktuálny stav svetiel, zásuviek, žalúzií a termostatov JUNG HOME do scény, rovnako ako „uložiť zariadenie do scény“ v aplikácii: najprv nastavte zariadenia tak, ako ich má scéna zanechať, a potom zavolajte túto akciu. Každé zariadenie uloží svoj stav pod scénu (Scene Store) spolu s jeho popisom JUNG a export mesh zaznamená člena. Home Assistant ho prevezme bez opätovného načítania integrácie. Ak je zadaný stav (akcia, jas, farebná teplota, teplota), každé zariadenie sa naň najprv nastaví a čaká sa, kým ho dosiahne; žalúzia so zadanou polohou sa nepohne, scéna pre ňu uloží túto polohu. Len pre správcov.",
+      "fields": {
+        "scene": {
+          "name": "Scéna",
+          "description": "Názov alebo číslo scény (vytvorenej akciou „Vytvoriť scénu“ alebo v aplikácii)."
+        },
+        "action": {
+          "name": "Akcia",
+          "description": "Pred uložením zapne alebo vypne svetlá a zásuvky."
+        },
+        "brightness_pct": {
+          "name": "Jas",
+          "description": "Pred uložením stlmí svetlá na tento jas (akcia je potom zapnutie)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farebná teplota",
+          "description": "Pred uložením nastaví svetlá s laditeľnou bielou na túto farebnú teplotu."
+        },
+        "position": {
+          "name": "Poloha",
+          "description": "Poloha, do ktorej scéna presunie žalúziu: 0 zatvorené, 100 otvorené."
+        },
+        "tilt_position": {
+          "name": "Natočenie lamiel",
+          "description": "Poloha lamiel, do ktorej scéna presunie žalúziu; ak sa vynechá, poloha žalúzie."
+        },
+        "temperature": {
+          "name": "Teplota",
+          "description": "Pred uložením nastaví termostaty na túto teplotu."
+        },
+        "scene_entity": {
+          "name": "Entita scény",
+          "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Stav na uloženie",
+          "description": "Najprv nastaví zariadenia na tento stav; ak zostane prázdne, uloží sa ich aktuálny stav."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Odobrať zo scény",
+      "description": "Vyradí svetlá, zásuvky, žalúzie a termostaty JUNG HOME zo scény: každé zariadenie scénu zabudne (Scene Delete) a export mesh vypustí člena. Home Assistant ho prevezme bez opätovného načítania integrácie. Len pre správcov.",
+      "fields": {
+        "scene": {
+          "name": "Scéna",
+          "description": "Názov alebo číslo scény."
+        },
+        "scene_entity": {
+          "name": "Entita scény",
+          "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Odstrániť scénu",
+      "description": "Odstráni scénu: každé zariadenie, ktoré ju uložilo, ju zabudne, tlačidlá týchto zariadení, ktoré ju vyvolávajú, stratia svoje prepojenia a scéna sa odstráni z exportu mesh. Home Assistant ho prevezme bez opätovného načítania integrácie. Na požiadanie vráti zariadenia preskočené s možnosťou „Aj keď zariadenie neodpovedá“ (vyžaduje „Potvrdiť“) a čo prijali správy tlačidiel; s možnosťou „Skúšobný beh“ to, čo by odoslala a zmenila. Len pre správcov.",
+      "fields": {
+        "scene": {
+          "name": "Scéna",
+          "description": "Názov alebo číslo scény, ktorá sa má odstrániť."
+        },
+        "force": {
+          "name": "Aj keď zariadenie neodpovedá",
+          "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        },
+        "scene_entity": {
+          "name": "Entita scény",
+          "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        },
+        "confirm": {
+          "name": "Potvrdiť",
+          "description": "Vyžaduje sa s možnosťou „Aj keď zariadenie neodpovedá“: zariadenie, ktoré si scénu ponechá, ju odtiaľto nemožno prinútiť zabudnúť. Pri skúšobnom behu sa nevyžaduje."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Odstrániť nepoužívané scény",
+      "description": "Prečíta register scén každého zariadenia a vypíše alebo odstráni scény, ktoré export mesh nepozná (ani scénu, ani scénu časovača aplikácie), ako to robí aplikácia pri otvorení zoznamu časovačov. Ak sa neurčí inak, ide o skúšobný beh. S bránou funguje len s aktuálnym exportom brány; v sieti nastavenej zo súboru vyžaduje odstránenie možnosť „Export mesh je aktuálny“ alebo čísla na odstránenie. Vráti čísla pre každé zariadenie. Len pre správcov.",
+      "fields": {
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vypíše čísla, ktoré by sa odstránili; nič sa neodstráni. Predvolene zapnuté."
+        },
+        "numbers": {
+          "name": "Čísla scén",
+          "description": "Odstráni len tieto čísla scén (žiadne z nich nesmie byť scénou exportu mesh)."
+        },
+        "confirm_stale_export": {
+          "name": "Export mesh je aktuálny",
+          "description": "Pre sieť nastavenú zo súboru: súbor obsahuje každú scénu aplikácie vrátane tých, ktoré vznikli po jeho exportovaní. Bez tejto možnosti sa odstránia len uvedené čísla."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Synchronizovať bránu",
+      "description": "Odovzdá export mesh, ktorý používa Home Assistant, bráne JUNG HOME, ako to robí aplikácia po každej zmene. Spúšťa sa automaticky po každej akcii, ktorá prepíše export; zavolajte ju na opakovanie po oprave „Export JUNG HOME sa neodovzdal bráne“ alebo po tom, čo ste súbor upravili sami. Len pre správcov.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Načítať časové plány",
+      "description": "Prečíta časové plány, ktoré si záťaže JUNG HOME spúšťajú samy (stránka Automatizácia v aplikácii): až 16 slotov na záťaž, každý so spúšťačom čas, východ alebo západ slnka v niektorých dňoch týždňa a s tým, čo záťaž potom urobí. Vráti pre každú entitu jej obsadené sloty v poliach, ktoré prijíma akcia „Vytvoriť časový plán“."
+    },
+    "create_schedule": {
+      "name": "Vytvoriť časový plán",
+      "description": "Zapíše časový plán do prvého voľného slotu každej cieľovej záťaže JUNG HOME, ktorá ho potom vykonáva sama, bez Home Assistant. Časový plán podľa východu alebo západu slnka najprv odošle uzlu polohu domova z Home Assistant. Vráti pre každú entitu použitý slot. Na zariadení netestované. Len pre správcov.",
+      "fields": {
+        "trigger": {
+          "name": "Spúšťač",
+          "description": "Kedy sa časový plán spustí: v určený čas dňa alebo pri východe či západe slnka."
+        },
+        "time": {
+          "name": "Čas",
+          "description": "Čas dňa pre časový plán podľa času."
+        },
+        "not_before": {
+          "name": "Nie skôr ako",
+          "description": "Časový plán podľa východu alebo západu slnka sa nespustí skôr ako v tento čas (ak sa vynechá, bez obmedzenia)."
+        },
+        "not_after": {
+          "name": "Nie neskôr ako",
+          "description": "Časový plán podľa východu alebo západu slnka sa nespustí neskôr ako v tento čas (ak sa vynechá, bez obmedzenia)."
+        },
+        "offset": {
+          "name": "Posun",
+          "description": "Minúty pred (záporné) alebo po východe či západe slnka."
+        },
+        "weekdays": {
+          "name": "Dni v týždni",
+          "description": "Dni, v ktoré sa časový plán spúšťa; ak sa vynechá, každý deň."
+        },
+        "enabled": {
+          "name": "Povolené",
+          "description": "Či sa časový plán spúšťa; zakázaný čaká na akciu „Povoliť časový plán“."
+        },
+        "action": {
+          "name": "Akcia",
+          "description": "Zapne alebo vypne svetlo či zásuvku."
+        },
+        "brightness_pct": {
+          "name": "Jas",
+          "description": "Jas, na ktorý sa stmievač zapne (akcia je potom zapnutie)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farebná teplota",
+          "description": "Farebná teplota svetla s laditeľnou bielou v krokoch po 100 K."
+        },
+        "position": {
+          "name": "Poloha",
+          "description": "Poloha, do ktorej sa žalúzia presunie: 0 zatvorené, 100 otvorené."
+        },
+        "tilt_position": {
+          "name": "Natočenie lamiel",
+          "description": "Poloha lamiel žalúzie; ak sa vynechá, poloha žalúzie."
+        },
+        "temperature": {
+          "name": "Teplota",
+          "description": "Cieľová teplota priestorového termostatu."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kedy",
+          "description": "Kedy sa časový plán spustí."
+        },
+        "what": {
+          "name": "Čo",
+          "description": "Na čo sa záťaž nastaví, keď sa časový plán spustí."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Upraviť časový plán",
+      "description": "Prepíše obsadený slot časového plánu každej cieľovej záťaže JUNG HOME priamo na mieste, ako to robí úprava v aplikácii, s poľami, ktoré prijíma akcia „Vytvoriť časový plán“: zadajte ich znova všetky, nič vynechané sa zo slotu nezachová. Časový plán podľa východu alebo západu slnka najprv odošle uzlu polohu domova z Home Assistant; ak zápis zlyhá, do slotu sa zapíše späť jeho pôvodný časový plán. Zatiaľ neoverené na skutočných zariadeniach. Len pre správcov.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Číslo slotu časového plánu (0–15), ktorý sa má prepísať, ako ho uvádza akcia „Načítať časové plány“ a senzor „Časové plány“."
+        },
+        "trigger": {
+          "name": "Spúšťač",
+          "description": "Kedy sa časový plán spustí: v určený čas dňa alebo pri východe či západe slnka."
+        },
+        "time": {
+          "name": "Čas",
+          "description": "Čas dňa pre časový plán podľa času."
+        },
+        "not_before": {
+          "name": "Nie skôr ako",
+          "description": "Časový plán podľa východu alebo západu slnka sa nespustí skôr ako v tento čas (ak sa vynechá, bez obmedzenia)."
+        },
+        "not_after": {
+          "name": "Nie neskôr ako",
+          "description": "Časový plán podľa východu alebo západu slnka sa nespustí neskôr ako v tento čas (ak sa vynechá, bez obmedzenia)."
+        },
+        "offset": {
+          "name": "Posun",
+          "description": "Minúty pred (záporné) alebo po východe či západe slnka."
+        },
+        "weekdays": {
+          "name": "Dni v týždni",
+          "description": "Dni, v ktoré sa časový plán spúšťa; ak sa vynechá, každý deň."
+        },
+        "enabled": {
+          "name": "Povolené",
+          "description": "Či sa časový plán spúšťa; zakázaný čaká na akciu „Povoliť časový plán“."
+        },
+        "action": {
+          "name": "Akcia",
+          "description": "Zapne alebo vypne svetlo či zásuvku."
+        },
+        "brightness_pct": {
+          "name": "Jas",
+          "description": "Jas, na ktorý sa stmievač zapne (akcia je potom zapnutie)."
+        },
+        "color_temp_kelvin": {
+          "name": "Farebná teplota",
+          "description": "Farebná teplota svetla s laditeľnou bielou v krokoch po 100 K."
+        },
+        "position": {
+          "name": "Poloha",
+          "description": "Poloha, do ktorej sa žalúzia presunie: 0 zatvorené, 100 otvorené."
+        },
+        "tilt_position": {
+          "name": "Natočenie lamiel",
+          "description": "Poloha lamiel žalúzie; ak sa vynechá, poloha žalúzie."
+        },
+        "temperature": {
+          "name": "Teplota",
+          "description": "Cieľová teplota priestorového termostatu."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Kedy",
+          "description": "Kedy sa časový plán spustí."
+        },
+        "what": {
+          "name": "Čo",
+          "description": "Na čo sa záťaž nastaví, keď sa časový plán spustí."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Povoliť časový plán",
+      "description": "Umožní slotu časového plánu záťaží JUNG HOME znova sa spúšťať. Len pre správcov.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Číslo slotu časového plánu (0–15), ako ho uvádza akcia „Načítať časové plány“ a senzor „Časové plány“."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Zakázať časový plán",
+      "description": "Zabráni spúšťaniu slotu časového plánu záťaží JUNG HOME bez jeho odstránenia. Len pre správcov.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Číslo slotu časového plánu (0–15), ako ho uvádza akcia „Načítať časové plány“ a senzor „Časové plány“."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Odstrániť časový plán",
+      "description": "Uvoľní slot časového plánu záťaží JUNG HOME. Len pre správcov.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Číslo slotu časového plánu (0–15), ako ho uvádza akcia „Načítať časové plány“ a senzor „Časové plány“."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Nastaviť prahovú hodnotu",
+      "description": "Nastaví prahovú hodnotu zásuvky JUNG HOME s meraním energie (profil Automatika v aplikácii): keď výkon zásuvky zostane na danej úrovni počas nastavenej doby, sama zapne (prahová hodnota zapnutia) alebo vypne (prahová hodnota vypnutia) zvolené svetlá a zásuvky, bez Home Assistant. Na zariadení netestované. Na požiadanie vráti, koľko správ prepojenia zariadenia prijali. Len pre správcov.",
+      "fields": {
+        "threshold": {
+          "name": "Prahová hodnota",
+          "description": "Ktorú z dvoch prahových hodnôt zásuvky nastaviť."
+        },
+        "power": {
+          "name": "Výkon",
+          "description": "Úroveň výkonu vo W (v krokoch po 0,1 W); ak sa vynechá, aktuálna úroveň zásuvky."
+        },
+        "duration": {
+          "name": "Trvanie",
+          "description": "Počet sekúnd, počas ktorých musí výkon zostať na danej úrovni; ak sa vynechá, aktuálne trvanie zásuvky."
+        },
+        "enabled": {
+          "name": "Povolené",
+          "description": "Či prahová hodnota spína; zakázaná si ponechá úroveň a trvanie. Ak sa vynechá, prahová hodnota si ponechá svoj stav (nová je povolená). Ak sa zakáže, kým nie je aktívna ani druhá prahová hodnota, svetlá a zásuvky sa odpoja ako v aplikácii: pri povolení zadajte zariadenia znova."
+        },
+        "devices": {
+          "name": "Zariadenia",
+          "description": "Svetlá a zásuvky, ktoré spínajú obe prahové hodnoty; nahradia aktuálny zoznam. Ak sa vynechajú, zoznam zostane. Pri zmene sa export mesh prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Odstrániť prahové hodnoty",
+      "description": "Vymaže obe prahové hodnoty zásuvky JUNG HOME s meraním energie a odpojí svetlá a zásuvky, ktoré spínali, ako to robí odstránenie v aplikácii. Ak sa zariadenia odpojili, Home Assistant prevezme prepísaný export mesh bez opätovného načítania integrácie. Na požiadanie vráti, koľko správ prepojenia zariadenia prijali. Len pre správcov."
+    },
+    "audit_network": {
+      "name": "Skontrolovať sieť",
+      "description": "Bez akejkoľvek zmeny prečíta, čo obsahuje konfigurácia mesh zariadení JUNG HOME — relay, network transmit, predvolené TTL, beacon, GATT proxy a friend, sieťové a aplikačné kľúče každého zariadenia (podľa indexu, nikdy samotný kľúč) a pre každý model jeho publikáciu, odbery a naviazané aplikačné kľúče — a porovná ju s exportom mesh. Vráti pre každé zariadenie jeho nastavenia a každý zistený rozdiel a vypíše zariadenia, ktoré neodpovedali. Kontrola všetkých zariadení trvá niekoľko minút; batériové zariadenia spia a vynechajú sa, pokiaľ nie sú uvedené.",
+      "fields": {
+        "device": {
+          "name": "Zariadenie",
+          "description": "Skontroluje len uzol mesh za týmto zariadením (svetlo, tlačidlo, zásuvka alebo samotný uzol). Ak zostane prázdne, skontrolujú sa všetky uzly napájané zo siete."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Exportovať sieť",
+      "description": "Vráti export, ktorý používa Home Assistant — s miestnosťami, tlačidlami, prepojeniami a scénami, ktoré zmenil — ako súbor projektu aplikácie JUNG HOME alebo ako databázu mesh, na zálohovanie alebo na import do aplikácie. Len pre správcov: obsahuje všetky kľúče siete mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Formát",
+          "description": "Súbor projektu aplikácie (JungHome.json) alebo databáza mesh (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Sieť",
+          "description": "Sieť JUNG HOME na export; potrebné len vtedy, ak ich je viac."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Nájsť nové zariadenia",
+      "description": "Vypíše zariadenia JUNG v okolí, ktoré ešte nie sú v sieti, s adresou Bluetooth, ktorú potrebuje `add_device`."
+    },
+    "add_device": {
+      "name": "Pridať zariadenie (experimentálne)",
+      "description": "Pridá nové zariadenie JUNG do siete ako aplikácia: vykoná provisioning najsilnejšou metódou, ktorú zariadenie ponúka (Static OOB, ak ju ponúka a je zadaná jej hodnota, s algoritmom HMAC-SHA256, inak No OOB ako aplikácia — bez overenia by ktokoľvek v dosahu Bluetooth počas priebehu mohol zachytiť kľúče siete), nakonfiguruje ho podľa pravidiel aplikácie na základe toho, čo zariadenie hlási (odmietne sa, ak to nezodpovedá zariadeniu rovnakého produktu, ktoré už v sieti je), a zaznamená ho do exportu (odovzdaného bráne). Zariadenie, ktorého konfigurácia zlyhá, sa resetuje, ako to robí aplikácia. Skupiny jeho prvkov dostanú najvyššie voľné skupinové adresy z rozsahu aplikácie (aplikácia zariadenie neuvidí, kým neimportuje súbor). Odpoveď uvádza vykonané kroky. Vyžaduje možnosť záznamu *Povoliť Home Assistantu pridávať a odstraňovať zariadenia*. Len pre správcov. Overené metódy, pravidlá konfigurácie a reset sú zatiaľ neoverené na skutočných zariadeniach.",
+      "fields": {
+        "address": {
+          "name": "Adresa Bluetooth",
+          "description": "Adresa, ktorú pre zariadenie uvádza `find_new_devices`."
+        },
+        "name": {
+          "name": "Názov",
+          "description": "Názov nového zariadenia."
+        },
+        "config_entry_id": {
+          "name": "Sieť",
+          "description": "Sieť JUNG HOME, do ktorej sa má pridať; potrebné len vtedy, ak ich je viac."
+        },
+        "static_oob": {
+          "name": "Hodnota Static OOB",
+          "description": "Len pre zariadenie, ktoré ponúka overenie Static OOB: jeho 16- alebo 32-bajtová hodnota v šestnástkovej sústave, ako ju dokumentuje výrobca (o žiadnom zariadení JUNG nie je známe, že ho ponúka). Nikdy sa nezaznamenáva do logu. Zariadenie, ktoré prijíma len overený provisioning, sa bez nej odmietne, a zariadenie, ktoré ho neponúka, sa s ňou odmietne."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Odstrániť zariadenie (experimentálne)",
+      "description": "Resetuje zariadenie JUNG (zabudne sieť a stane sa opäť novým zariadením) a vyradí ho zo siete ako aplikácia: prepojenia ostatných zariadení naň sa odstránia, export ho zaznamená ako odstránené a odovzdá sa bráne. Nedá sa vrátiť späť. Vyžaduje možnosť záznamu *Povoliť Home Assistantu pridávať a odstraňovať zariadenia*. Vyžaduje „Potvrdiť“; s možnosťou „Skúšobný beh“ namiesto toho vráti, čo by odoslala a zmenila, a nevyžaduje nič. Len pre správcov.",
+      "fields": {
+        "device": {
+          "name": "Zariadenie",
+          "description": "Zariadenie JUNG, ktoré sa má odstrániť (ktorékoľvek z jeho zariadení v Home Assistant)."
+        },
+        "force": {
+          "name": "Aj keď neodpovedá",
+          "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený."
+        },
+        "confirm": {
+          "name": "Potvrdiť",
+          "description": "Potrebné na vykonanie: odstránenie zariadenia sa nedá vrátiť späť. Pri skúšobnom behu sa nevyžaduje."
+        },
+        "dry_run": {
+          "name": "Skúšobný beh",
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Resetovať čakajúce zariadenie (experimentálne)",
+      "description": "Resetuje zariadenie JUNG, ktoré `add_device` pridalo cez provisioning, ale nedokázalo ho nakonfigurovať ani zaznamenať (uvádza ich oprava *Zariadenie pridané cez Home Assistant nie je zaznamenané*): odošle mu Config Node Reset s kľúčom zariadenia, ktorý má len Home Assistant, takže sa z neho opäť stane nové zariadenie, a uvoľní jeho adresy. Zatiaľ nevyskúšané na skutočnom zariadení. Vyžaduje možnosť záznamu *Povoliť Home Assistantu pridávať a odstraňovať zariadenia*. Len pre správcov.",
+      "fields": {
+        "uuid": {
+          "name": "UUID zariadenia",
+          "description": "UUID zariadenia, ako ho uviedlo `add_device` alebo `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Adresa unicast",
+          "description": "Primárna adresa unicast zariadenia (v šestnástkovej sústave, ako ju uvádza oprava); spolu s UUID sa musia zhodovať obe."
+        },
+        "force": {
+          "name": "Aj keď neodpovedá",
+          "description": "Zabudne zariadenie, hoci nepotvrdí reset (zariadenie resetované ručne alebo natrvalo preč)."
+        },
+        "config_entry_id": {
+          "name": "Sieť",
+          "description": "Sieť JUNG HOME, do ktorej bolo zariadenie pridané; potrebné len vtedy, ak ich je viac."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Lokalizovať zariadenie",
+      "description": "Nechá zariadenie JUNG vysielať jeho Node Identity — reklamu Bluetooth, ktorú so zariadením spájajú len kľúče tejto siete mesh — až minútu a potom prestať, aby skener Bluetooth rozpoznal, ktoré rádio patrí tomuto zariadeniu. Nič iné nemení; zariadenie po minúte aj tak prestane samo. Len pre správcov. Zatiaľ neoverené na skutočných zariadeniach.",
+      "fields": {
+        "device": {
+          "name": "Zariadenie",
+          "description": "Zariadenie JUNG, ktoré sa má lokalizovať (ktorékoľvek z jeho zariadení v Home Assistant)."
+        },
+        "duration": {
+          "name": "Trvanie",
+          "description": "Sekundy vysielania, 5 až 60 (zariadenie po 60 prestane samo)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Schváliť klienta brány",
+      "description": "Vypíše klientov API, ktorí čakajú na prístup k bráne JUNG HOME (iná integrácia, skript), a schváli uvedeného, ako to robí v aplikácii Nastavenia → Brána → Prístupové oprávnenia → Otvorené žiadosti. Schválený klient získa celé API brány vrátane exportu siete so všetkými kľúčmi mesh: schváľte len klienta, ktorého ste spustili sami. Bez názvu klienta ich len vypíše (zapnite odpoveď). Odobratie prístupu zostáva na aplikácii. Len pre správcov, pre sieť nastavenú z brány. Zatiaľ neoverené na skutočných zariadeniach.",
+      "fields": {
+        "client": {
+          "name": "Klient",
+          "description": "Názov, pod ktorým klient žiada o prístup, presne ako je uvedený pod `waiting`. Ak zostane prázdne, nič sa neschváli."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Spustiť stmievanie",
+      "description": "Spustí stmievanie stmievača JUNG HOME nahor alebo nadol, ako podržanie kolísky, až do akcie „Zastaviť stmievanie“ (alebo konca rozsahu). Zatiaľ nevyskúšané na skutočnom zariadení.",
+      "fields": {
+        "direction": {
+          "name": "Smer",
+          "description": "Jasnejšie (nahor) alebo tmavšie (nadol)."
+        },
+        "speed": {
+          "name": "Rýchlosť",
+          "description": "Ako rýchlo, v percentách rozsahu jasu za sekundu (predvolene 20: z vypnutého stavu na plný jas za 5 sekúnd)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Zastaviť stmievanie",
+      "description": "Zastaví stmievač JUNG HOME, ktorý uviedla do pohybu akcia „Spustiť stmievanie“, tam, kde práve je. Zatiaľ nevyskúšané na skutočnom zariadení."
+    },
+    "step_dim": {
+      "name": "Stmievať o krok",
+      "description": "Zosvetlí alebo stmaví stmievač JUNG HOME o krok. Zatiaľ nevyskúšané na skutočnom zariadení.",
+      "fields": {
+        "step": {
+          "name": "Krok",
+          "description": "Percentá rozsahu jasu: kladné jasnejšie, záporné tmavšie."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Osvetlenie (zap./vyp., stmievanie)",
+        "switch": "Spínanie (zap./vyp.)",
+        "move": "Žalúzie (netestované)",
+        "gateway": "Brána (hlásenie udalostí)",
+        "light_and_switch": "Svetlá a zásuvky (len miestnosti)",
+        "lock": "Zablokovanie a odblokovanie (zatiaľ neoverené na skutočných zariadeniach)",
+        "temperature": "Teplota (priestorový termostat, netestované)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Farebná teplota (zatiaľ neoverené na skutočných zariadeniach)",
+        "slat": "Lamely (zatiaľ neoverené na skutočných zariadeniach)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Čas dňa",
+        "sunrise": "Východ slnka",
+        "sunset": "Západ slnka"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Zap.",
+        "off": "Vyp."
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Pondelok",
+        "tue": "Utorok",
+        "wed": "Streda",
+        "thu": "Štvrtok",
+        "fri": "Piatok",
+        "sat": "Sobota",
+        "sun": "Nedeľa"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Prahová hodnota zapnutia",
+        "switch_off": "Prahová hodnota vypnutia"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Súbor projektu aplikácie (JungHome.json)",
+        "cdb": "Databáza mesh (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Jasnejšie",
+        "down": "Tmavšie"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Spínacia vložka",
+        "two_gang_switch": "Spínacia vložka 2-násobná",
+        "dimming": "Stmievacia vložka",
+        "two_gang_dimming": "Stmievacia vložka 2-násobná",
+        "tw_dimming": "Vložka DALI",
+        "blind": "Žalúziová vložka",
+        "extension": "Vložka vedľajšej stanice",
+        "not_available": "Bez vložky"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Tlačidlo hore / dole",
+        "one_rocker": "Kolíska",
+        "two_left_two_right": "Tlačidlo | Tlačidlo",
+        "one_left_two_right": "Kolíska | Tlačidlo",
+        "two_left_one_right": "Tlačidlo | Kolíska",
+        "one_left_one_right": "Kolíska | Kolíska"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Tlačidlový ovládač 1-násobný",
+        "push_button_2": "Tlačidlový ovládač 2-násobný",
+        "socket_metering": "Zásuvka (s meraním energie)",
+        "socket": "Zásuvka",
+        "switch_actuator_mini": "Spínací aktor 1-násobný mini",
+        "blinds_actuator_mini": "Žalúziový aktor 1-násobný mini",
+        "wall_transmitter_1": "Nástenný vysielač 1-násobný",
+        "wall_transmitter_2": "Nástenný vysielač 2-násobný",
+        "motion_detector_1m": "Detektor pohybu 1 m",
+        "motion_detector_2m": "Detektor pohybu 2 m",
+        "presence_detector": "Detektor prítomnosti",
+        "room_thermostat": "Priestorový termostat",
+        "gateway": "Brána",
+        "switch_actuator_1_energy": "Spínací aktor 1-násobný, 2 vstupy, meranie energie",
+        "switch_actuator_2": "Spínací aktor 2-násobný, 2 vstupy",
+        "dimmer_actuator": "Stmievací aktor 1-násobný, 2 vstupy",
+        "blinds_actuator": "Žalúziový aktor PP2 1-násobný, 2 vstupy",
+        "dali_actuator": "Aktor DALI 1-násobný, 2 vstupy",
+        "mini_sensor_mains": "Minisenzor 2 vstupy, sieťové napájanie",
+        "mini_sensor_battery": "Minisenzor 2 vstupy, batériové napájanie"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Sieť Bluetooth Mesh",
+        "switch": "Spínané svetlo",
+        "dimmer": "Stmievateľné svetlo",
+        "ctl": "Svetlo s laditeľnou bielou (DALI)",
+        "blind": "Pohon žalúzie / rolety",
+        "push_buttons": "Tlačidlá",
+        "unknown_product": "Produkt {pid}"
+      }
+    }
+  }
+}
