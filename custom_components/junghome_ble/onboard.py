@@ -13,25 +13,33 @@ what the app does when a device is added:
    the *provisioner identity* option on, inside Home Assistant's own ranges instead (review-3 N1) — and clear of
    every node the vault holds: one provisioned earlier but never recorded is in no export, yet still sends from
    its addresses and holds its element groups (review-4 D2);
-3. provisions it over PB-GATT (`provisioning.provision`, No-OOB, the export's NetKey and the IV state a beacon
-   confirmed on the current link), refusing a device whose element count differs from the template's before it
-   learns an address; its device key and planned element groups are on disk in the vault (`identity.py`) before
+3. provisions it over PB-GATT (`provisioning.provision`, the export's NetKey and the IV state a beacon confirmed on
+   the current link; the strongest method the device offers — Static OOB with the value the call gives, the HMAC
+   algorithm, else No OOB as the app, review-4 P4-8 — within the app's 30 s), refusing a device whose element
+   count differs from the template's before it learns an address; its device key, planned element groups and
+   what it offered (`provisioning.capability_record`) are on disk in the vault (`identity.py`) before
    the device receives its Provisioning Data — the key is derived one step earlier (`provision(on_device_key=…)`),
    and a vault that cannot be written stops the provisioning there (review-4 D15) — and once it completed the
    replay list forgets the new addresses (they are Home Assistant's to give, so whatever it remembers for them is
    a reset node's). Not during the Phase 1 of a key refresh: the device would get the key being retired (review-4
    D11). In a proven Phase 2 it gets the new key with the Key Refresh flag, and the vault records it there, so
    `vault_refresh.py` takes it on to Phase 3;
-4. sends the app's post-provisioning Config sequence through the proxy link (`commission.plan`,
-   `onboarding.commission`), then reads the node's configuration back (`jhmesh.audit`);
+4. sends the app's post-provisioning sequence through the proxy link (`commission.plan`, `onboarding.commission`;
+   review-4 F4-13): planned again from the node's own Composition Data, refused when it is not the template's;
+   a push-button's InsertId read and checked against the insert the plan is for; Time Set to its Time Server;
+   element groups and device-type groups by the app's rules — within `COMMISSIONING_BUDGET`; then reads the
+   node's configuration back (`jhmesh.audit`). A failure there sends it a Config Node Reset with its key, as the
+   app does: confirmed, the device is new again and forgotten (`add_device_node_not_configured`, naming the step);
+   unconfirmed, it is pending. The response lists the steps done (`steps`);
 5. records the node in the export — entry, element groups, app device rows — through the configurator, which
    hands the export to the gateway as after any change, and reloads the entry.
 
 The name is checked as the app checks one (blank, a lone `%`, longer than the rename sheet takes) before
 anything goes on air, and numbered like the app numbers a name another device has.
 
-A node provisioned but not recorded (its provisioning not confirmed after it got its data, its commissioning or its
-recording failed) stays *pending* in the vault: its addresses and groups stay reserved and the `pending_device`
+A node provisioned but not recorded (its provisioning not confirmed after it got its data and its reset not
+confirmed either, its commissioning failed and its reset unconfirmed, or its recording failed) stays *pending* in
+the vault: its addresses and groups stay reserved and the `pending_device`
 repair issue names it, until `reset_pending_device` sends it a Config Node Reset with the vault's key (or, with
 `force`, forgets it unanswered — a device that was factory-reset by hand keeps its addresses reserved until then).
 
@@ -42,6 +50,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
@@ -86,9 +95,11 @@ from .jhmesh.onboarding import commission as run_commission
 from .jhmesh.provisioning import (
     MESH_PROVISIONING_SERVICE,
     Capabilities,
+    Provisioner,
     ProvisioningData,
     ProvisioningError,
     ProvisioningResult,
+    capability_record,
     parse_provisioning_service_data,
     provision,
 )
@@ -104,7 +115,9 @@ if TYPE_CHECKING:
     from .coordinator import JungHomeHub
     from .identity import VaultKeeper
     from .jhmesh.advert import JungAdvertisement
+    from .jhmesh.audit import NodeAudit
     from .jhmesh.cdb import CDB, Node
+    from .jhmesh.commission import Plan
     from .jhmesh.export import ProjectFile
     from .jhmesh.vault import Vault, VaultNode
     from .mesh_config import MeshConfigurator
@@ -113,6 +126,13 @@ _LOGGER = logging.getLogger(__name__)
 
 # seconds to wait for a pending node's Node Reset Status, per attempt (three attempts), as `remove_device` does
 NODE_RESET_TIMEOUT = 3.0
+# seconds the whole provisioning may take: the app's (`DeviceProvisioning`, network-logic.md §3.1)
+PROVISIONING_BUDGET = 30.0
+# seconds the commissioning may take (its read-back has its own timeouts): the app gives its element groups alone
+# 30 s and retries its whole sequence twice (§3.2); a 2-gang push-button takes some 80 answered Config messages
+COMMISSIONING_BUDGET = 180.0
+# the steps of `add_device`'s response around the app's phases (`commission.PHASES`)
+PROVISIONING, READ_BACK, RECORDING = "Provisioning", "ReadBack", "Recording"
 
 
 def _validation(key: str, **placeholders: str) -> ServiceValidationError:
@@ -329,6 +349,7 @@ async def _keep_key(
     dev_key: bytes,
     groups: list[tuple[int, str]],
     key_refresh: RefreshProgress | None = None,
+    capabilities: dict[str, Any] | None = None,
 ) -> None:
     """Keep a node's device key and planned element groups in the vault before it gets its Provisioning Data (D15).
 
@@ -337,12 +358,15 @@ async def _keep_key(
     (`VaultKeeper.async_save`). A write that did not land takes the record out of memory again (the device gets
     nothing), raises the `vault_unwritable` repair naming the address (never the key; the next save that lands
     clears it, `async_clear_vault_issue`) and stops the provisioning with a translated error. `key_refresh`: where
-    a node provisioned in Phase 2 of a key refresh starts. Unverified on air.
+    a node provisioned in Phase 2 of a key refresh starts; `capabilities`: what it offered and the method used
+    (`provisioning.capability_record`, review-4 P4-8). Unverified on air.
     """
     keeper = hub.vault
     vault = keeper.identity()
     before = vault.nodes.get(canonical_uuid(uuid))
-    vault.remember_provisioned(uuid, unicast, count, dev_key, groups, key_refresh)
+    vault.remember_provisioned(
+        uuid, unicast, count, dev_key, groups, key_refresh, capabilities
+    )
     if await keeper.async_save():
         return
     vault.forget(uuid)
@@ -376,12 +400,43 @@ async def _keep_key(
     raise _failure("add_device_vault_unwritable", unicast=address, error=error)
 
 
+async def _reset_new_node(hub: JungHomeHub, node: Node) -> bool:
+    """Send a node `add_device` could not finish a Config Node Reset with its device key; True once it confirmed.
+
+    The app's clean-up (`ResetDevice(id, false)` after a failed provisioning or configuration, network-logic.md
+    §3.1, §3.2). What Home Assistant's replay protection remembered for its addresses is forgotten first: the node
+    starts its sequence numbers from 0. Within `NODE_RESET_TIMEOUT` per attempt (three attempts). Unverified on air.
+    """
+    hub.proxy.forget_sources(range(node.unicast, node.unicast + len(node.elements)))
+    try:
+        await hub.proxy.request_config(
+            node.unicast,
+            C.node_reset(),
+            C.CONFIG_NODE_RESET_STATUS,
+            timeout=NODE_RESET_TIMEOUT,
+        )
+    except (TimeoutError, ConnectionError, OSError) as err:
+        _LOGGER.warning(
+            "The new device at %04X did not confirm its reset (%s): it stays pending",
+            node.unicast,
+            str(err) or type(err).__name__,
+        )
+        return False
+    return True
+
+
+async def _forget_reset(hub: JungHomeHub, node: Node) -> None:
+    """Forget a new node that confirmed its reset: the link's copy and the vault's (it is a new device again)."""
+    hub.proxy.remove_node(node)
+    hub.vault.identity().forget(node.uuid)
+    await hub.vault.async_save()
+
+
 async def _provision(
     hass: HomeAssistant,
     hub: JungHomeHub,
     info: BluetoothServiceInfoBleak,
-    uuid: str,
-    name: str,
+    request: _Request,
     data: ProvisioningData,
     check: Callable[[Capabilities], None],
     count: int,
@@ -389,11 +444,15 @@ async def _provision(
 ) -> ProvisioningResult:
     """Connect to the new device and provision it with `data`, its key kept in the vault before the data goes out.
 
-    `check` refuses a device before it learns an address; the key of its `count` elements goes into the vault with
-    its planned element `groups` (`_keep_key`) before the Data PDU, and a failure after that is
-    `add_device_provisioning_unconfirmed` (the device is pending). The link is closed whatever happens.
+    `check` refuses a device before it learns an address; the provisioner picks the strongest method the device
+    offers (`provisioning.choose_method`; the request's Static OOB value, when given, never leaves this call); the
+    key of its `count` elements goes into the vault with its planned element `groups` and what the device offered
+    (`_keep_key`) before the Data PDU. The whole provisioning has the app's 30 s (`PROVISIONING_BUDGET`). A failure
+    after the key was kept may have left the device with its data (a lost Complete looks the same): it is sent a
+    reset (`_reset_new_node`) — confirmed, it is new again and forgotten (`add_device_provisioning_reset`), else it
+    is pending (`add_device_provisioning_unconfirmed`). The link is closed whatever happens.
     """
-    unicast = data.unicast
+    unicast, uuid, name = data.unicast, request.uuid, request.name
 
     device = (
         bluetooth.async_ble_device_from_address(hass, info.address, connectable=True)
@@ -411,26 +470,35 @@ async def _provision(
         )
     except Exception as err:
         raise _failure("add_device_connect_failed", error=str(err)) from err
+    prov = Provisioner(data, static_oob=request.static_oob)
     kept = False
 
     async def keep(dev_key: bytes) -> None:
         nonlocal kept
-        await _keep_key(
-            hub, uuid, unicast, count, dev_key, groups, _refresh_progress(data)
-        )
+        assert prov.capabilities is not None
+        # from here on the device may hold its data, should the vault's write be cut short by the budget
         kept = True
+        await _keep_key(
+            hub,
+            uuid,
+            unicast,
+            count,
+            dev_key,
+            groups,
+            _refresh_progress(data),
+            capability_record(prov.capabilities, prov.method),
+        )
 
     try:
-        return await provision(client, data, check=check, on_device_key=keep)
-    except ProvisioningError as err:
-        # once kept, the device may hold its data (a lost Complete looks the same): it is pending now
-        if kept:
-            raise _failure(
-                "add_device_provisioning_unconfirmed",
-                unicast=f"{unicast:04X}",
-                error=str(err),
-            ) from err
-        raise _failure("add_device_provisioning_failed", error=str(err)) from err
+        async with asyncio.timeout(PROVISIONING_BUDGET):
+            return await provision(
+                client, data, check=check, provisioner=prov, on_device_key=keep
+            )
+    except (ProvisioningError, TimeoutError) as err:
+        error = str(err) or f"not completed within {PROVISIONING_BUDGET:g} s"
+        if not kept:
+            raise _failure("add_device_provisioning_failed", error=error) from err
+        failure = err
     finally:
         try:
             await client.disconnect()
@@ -438,6 +506,74 @@ async def _provision(
             Exception
         ):  # the node restarts after Complete: its link may be gone already
             _LOGGER.debug("disconnect after provisioning failed", exc_info=True)
+    # once kept, the device may hold its data: the app resets it (`DeviceProvisioning`), and so does Home Assistant
+    vault = hub.vault.identity()
+    pending = vault.nodes[canonical_uuid(uuid)].as_node()
+    hub.proxy.add_node(pending)
+    # a device that took its data restarts as a mesh node
+    await asyncio.sleep(NODE_BOOT_DELAY)
+    if await _reset_new_node(hub, pending):
+        await _forget_reset(hub, pending)
+        raise _failure(
+            "add_device_provisioning_reset", unicast=f"{unicast:04X}", error=error
+        ) from failure
+    hub.proxy.remove_node(pending)
+    raise _failure(
+        "add_device_provisioning_unconfirmed", unicast=f"{unicast:04X}", error=error
+    ) from failure
+
+
+@dataclass(frozen=True)
+class _Request:
+    """What an `add_device` call asked for: the device's UUID, the name it gets, its Static OOB value (if any)."""
+
+    uuid: str
+    name: str
+    static_oob: bytes | None = field(default=None, repr=False)
+
+
+async def _commission(
+    hub: JungHomeHub,
+    node: Node,
+    plan: Plan,
+    function: int | None,
+    steps: list[str],
+) -> tuple[Plan, NodeAudit]:
+    """Commission the new node within `COMMISSIONING_BUDGET`, then read it back; `CommissioningError` naming the phase.
+
+    The app's sequence (`onboarding.commission`, planned again from the node's Composition Data) with its two
+    phases that are no Config message: `RequestRequiredData` asks a push-button for its InsertId and refuses one
+    that carries another insert than the plan was made for (`function`: what it advertised, else the template's —
+    its element groups and device-type groups would be another class's); `SetTime` sends Time Set to its Time
+    Server (errors ignored, as the app). Each phase is appended to `steps` as it begins. Unverified on air.
+    """
+
+    async def on_phase(phase: str) -> None:
+        steps.append(phase)
+        _LOGGER.info("New device %04X: %s", node.unicast, phase)
+        if phase == "RequestRequiredData" and node.pid in PUSH_BUTTON_PIDS:
+            reported = await hub.inserts.read_insert(node)
+            if None not in (reported, function) and reported != function:
+                raise CommissioningError(
+                    f"the device carries insert {reported}, it was planned for insert {function}",
+                    phase,
+                )
+        elif phase == "SetTime" and plan.time_server is not None:
+            await hub.async_send_time(plan.time_server)
+
+    try:
+        async with asyncio.timeout(COMMISSIONING_BUDGET):
+            await hub.async_wait_connected(NODE_BOOT_DELAY)
+            done = await run_commission(hub.proxy, plan, on_phase=on_phase)
+        steps.append(READ_BACK)
+        audit = (await hub.async_audit([node]))[0]
+    except TimeoutError as err:
+        raise CommissioningError(
+            f"not finished within {COMMISSIONING_BUDGET:g} s", steps[-1]
+        ) from err
+    except ConnectionError as err:
+        raise CommissioningError(str(err), steps[-1]) from err
+    return done, audit
 
 
 async def async_add_device(
@@ -446,8 +582,13 @@ async def async_add_device(
     configurator: MeshConfigurator,
     address: str,
     name: str,
+    static_oob: bytes | None = None,
 ) -> dict[str, Any]:
-    """Add the unprovisioned JUNG device at Bluetooth `address` to the mesh as `name`; return where it went."""
+    """Add the unprovisioned JUNG device at Bluetooth `address` to the mesh as `name`; return where it went.
+
+    `static_oob`: the device's Static OOB value (16 or 32 bytes), for a device that offers Static OOB
+    authentication. The response's `steps` lists the steps done, in order.
+    """
     name = _checked_request(hub, name)
     info, uuid, advert = _new_device(hass, address)
     # the export as it is now — the gateway's, adopted, when the app added a device or a room since the last
@@ -457,6 +598,8 @@ async def async_add_device(
     name = _unique_name(pf, name)
     template = _template(cdb, advert)
     count = len(template.elements)
+    advertised = _advertised_insert(advert)
+    function = advertised if advertised is not None else insert_function(template)
     unicast, group_range = await _place(hub, configurator, cdb, count)
     # planned before the node is known: its addresses must still be free in the export. Its element groups from the
     # top of the app's range (review-4 W4-2): the app does not know them until it imports a file, and would give
@@ -470,6 +613,7 @@ async def async_add_device(
             group_range=group_range,
             reserved_groups=_reserved_groups(hub),
             policy="top" if group_range is None else "app",
+            function=function,
         )
     except AllocationCrowded as err:
         raise _failure("add_device_groups_crowded", free=str(err.below)) from err
@@ -489,12 +633,12 @@ async def async_add_device(
                 f"the device has {capabilities.elements} element(s), the template {count}"
             )
 
+    steps = [PROVISIONING]
     result = await _provision(
         hass,
         hub,
         info,
-        uuid,
-        name,
+        _Request(uuid, name, static_oob),
         data,
         check,
         count,
@@ -509,15 +653,25 @@ async def async_add_device(
     hub.proxy.add_node(node)
     await asyncio.sleep(NODE_BOOT_DELAY)  # the node restarts as a mesh node
     try:
-        await hub.async_wait_connected(NODE_BOOT_DELAY)
-        await run_commission(hub.proxy, plan)
-        audit = (await hub.async_audit([node]))[0]
-    except (CommissioningError, ConnectionError) as err:
+        plan, audit = await _commission(hub, node, plan, function, steps)
+    except CommissioningError as err:
+        step = err.phase
+        # the app resets a device whose configuration failed (`ConfigureDevice`, `ResetDevice(id, false)`)
+        if await _reset_new_node(hub, node):
+            await _forget_reset(hub, node)
+            raise _failure(
+                "add_device_node_not_configured",
+                unicast=f"{unicast:04X}",
+                step=step,
+                error=str(err),
+            ) from err
         raise _failure(
             "add_device_commissioning_failed",
             unicast=f"{unicast:04X}",
+            step=step,
             error=str(err),
         ) from err
+    steps.append(RECORDING)
     try:
         missing = await configurator.record_node(
             template,
@@ -527,7 +681,7 @@ async def async_add_device(
             audit,
             plan,
             name,
-            _advertised_insert(advert),
+            advertised,
             _advertised_layout(advert),
         )
     except HomeAssistantError as err:
@@ -540,6 +694,8 @@ async def async_add_device(
         "name": name,
         "elements": count,
         "template": f"{template.unicast:04X}",
+        "provisioning": capability_record(result.capabilities, result.method)["used"],
+        "steps": steps,
     }
     if missing is not None:
         # the app's missing-devices check: the app would build another number of devices from the recorded rows

@@ -14,7 +14,7 @@ import pytest
 from jhmesh import client as client_mod
 from jhmesh import config_messages as C
 from jhmesh import standalone as standalone_mod
-from jhmesh.cdb import CDB
+from jhmesh.cdb import CDB, Node
 from jhmesh.client import (
     MESH_PROXY_DATA_IN,
     MESH_PROXY_DATA_OUT,
@@ -652,6 +652,31 @@ def pack_key_indexes(keys: list[int]) -> bytes:
         for i in range(0, len(keys) - 1, 2)
     )
     return out + (keys[-1].to_bytes(2, "little") if len(keys) % 2 else b"")
+
+
+def composition_params(
+    node: Node, *, cid: int | None = None, pid: int | None = None
+) -> bytes:
+    """Composition Data Status page 0 (§4.2.1.1) of `node`'s elements and models, as the node itself answers it.
+
+    `cid` / `pid` override the node's (another product answering in its place).
+    """
+    out = bytes([0]) + b"".join(
+        v.to_bytes(2, "little")
+        for v in (
+            node.cid if cid is None else cid,
+            (node.pid or 0) if pid is None else pid,
+            0x0001,
+            0x0100,
+            0x0003,
+        )
+    )
+    for element in node.elements:
+        sig = [m for m in element.models if not C.is_vendor_model(m)]
+        vendor = [m for m in element.models if C.is_vendor_model(m)]
+        out += element.location.to_bytes(2, "little") + bytes([len(sig), len(vendor)])
+        out += b"".join(C.encode_model_id(m) for m in sig + vendor)
+    return out
 
 
 class FakeConfigServers:

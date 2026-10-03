@@ -37,6 +37,7 @@ from jhmesh.devices import (
     meta_list,
     meter_element,
     pick_insert,
+    time_keeper_candidates,
     with_key_lock,
 )
 from jhmesh.properties import EnforcedOutput
@@ -1369,3 +1370,22 @@ def test_room_members_are_the_loads_listening_to_the_room() -> None:
     cdb = CDB.load(CDB_PATH)
     cdb.groups[0xC020] = "Attic"
     assert 0xC020 not in build_devices(cdb).room_members
+
+
+def test_time_keeper_candidates(cdb: CDB):
+    """Review-4 F4-14: every JUNG node with a Time Server and its Setup Server may keep the PP2 pucks' time, but the
+    gateway and the battery devices (the app never chooses those), and a phone has no product."""
+    assert [n.unicast for n in time_keeper_candidates(cdb)] == [
+        0x0148,
+        0x0232,
+        0x0172,
+        0x0300,
+        0x0400,
+    ]
+    battery = cdb.node_by_addr(0x0300)
+    assert battery is not None
+    battery.pid = 0x0005  # a wall transmitter
+    gateway = cdb.node_by_addr(0x0148)
+    assert gateway is not None
+    gateway.pid = 0x000B
+    assert [n.unicast for n in time_keeper_candidates(cdb)] == [0x0232, 0x0172, 0x0400]

@@ -15,6 +15,7 @@ import pytest
 from cryptography.exceptions import InvalidTag
 
 from jhmesh import provisioning as P
+from jhmesh.crypto import hmac_sha256
 from jhmesh.pdu import PROXY_CONFIG, PROXY_PROVISIONING, ProxyReassembler, proxy_frame
 
 h = bytes.fromhex
@@ -271,7 +272,7 @@ def test_capabilities_that_cannot_work():
     prov = sample_session()
     prov.start()
     with pytest.raises(P.ProvisioningError, match="FIPS P-256"):
-        prov.feed(h("01") + h("0100020000000000000000"))
+        prov.feed(h("01") + h("0100040000000000000000"))  # bit 2: no algorithm of ours
 
 
 def test_a_wrong_device_confirmation_fails():
@@ -313,12 +314,20 @@ class FakeDevice:
         elements: int = 3,
         mtu_size: int | None = 23,
         private_key: bytes = DEV_PRIVATE,
-        random: bytes = RANDOM_DEVICE,
+        random: bytes = RANDOM_DEVICE + RANDOM_DEVICE[::-1],
+        algorithms: int = 1,
+        oob_type: int = 0,
+        static_oob: bytes = b"",
     ) -> None:
         self.elements = elements
         self.mtu_size = mtu_size
         self.private_key = private_key
         self.random = random
+        self.algorithms = algorithms
+        self.oob_type = oob_type
+        self.static_oob = static_oob  # the device's own value, as printed on it
+        self.start: bytes = b""
+        self.auth = b""
         self.notify: Callable[[Any, bytearray], None] | None = None
         self.writes: list[bytes] = []
         self.received: list[bytes] = []
@@ -386,41 +395,47 @@ class FakeDevice:
         if self.fail_on is not None and self.fail_on[0] == kind:
             return [P.pdu(P.FAILED, bytes([self.fail_on[1]]))]
         if kind == P.INVITE:
-            caps = P.Capabilities(self.elements, 1, 0, 0, 0, 0, 0, 0).pack()
+            caps = P.Capabilities(
+                self.elements, self.algorithms, 0, self.oob_type, 0, 0, 0, 0
+            ).pack()
             self.inputs = params + caps
             if self.noise_first:
                 asyncio.get_running_loop().call_soon(self.send, PROXY_CONFIG, h("0300"))
             return [P.pdu(P.CAPABILITIES, caps)]
         if kind == P.START:
-            assert params == START_VALUE
+            self.start = params
             self.inputs += params
+            # the spec's rules, written out here rather than taken from the module under test (§5.4.2.4)
+            self.auth = (
+                self.static_oob if params[2] == P.AUTH_STATIC_OOB else bytes(self.size)
+            )
             return []
         if kind == P.PUBLIC_KEY:
             own = P.public_key_bytes(self.private_key)
             self.inputs += params + own
             self.secret = P.ecdh_secret(self.private_key, params)
-            self.confirmation_salt = P.confirmation_salt(self.inputs)
-            self.confirmation_key = P.confirmation_key(
-                self.secret, self.confirmation_salt
-            )
+            if self.hmac:
+                self.confirmation_salt = hmac_sha256(bytes(32), self.inputs)  # s2
+                t = hmac_sha256(self.confirmation_salt, self.secret + self.auth)
+                self.confirmation_key = hmac_sha256(t, b"prck256")  # k5
+            else:
+                self.confirmation_salt = P.confirmation_salt(self.inputs)
+                self.confirmation_key = P.confirmation_key(
+                    self.secret, self.confirmation_salt
+                )
             return [P.pdu(P.PUBLIC_KEY, own)]
         if kind == P.CONFIRMATION:
             self.provisioner_confirmation = params
-            random = bytes(16) if self.wrong_confirmation else self.random
-            return [
-                P.pdu(P.CONFIRMATION, P.confirmation(self.confirmation_key, random))
-            ]
+            random = bytes(self.size) if self.wrong_confirmation else self.own_random
+            return [P.pdu(P.CONFIRMATION, self.confirm(random))]
         if kind == P.RANDOM:
-            if (
-                P.confirmation(self.confirmation_key, params)
-                != self.provisioner_confirmation
-            ):
+            if self.confirm(params) != self.provisioner_confirmation:
                 return [P.pdu(P.FAILED, h("04"))]
             self.provisioner_random = params
-            return [P.pdu(P.RANDOM, self.random)]
+            return [P.pdu(P.RANDOM, self.own_random)]
         assert kind == P.DATA
         salt = P.provisioning_salt(
-            self.confirmation_salt, self.provisioner_random, self.random
+            self.confirmation_salt, self.provisioner_random, self.own_random
         )
         plain = P.decrypt_provisioning_data(
             P.session_key(self.secret, salt), P.session_nonce(self.secret, salt), params
@@ -428,6 +443,23 @@ class FakeDevice:
         self.data = P.ProvisioningData.unpack(plain)
         self.device_key = P.device_key(self.secret, salt)
         return [P.pdu(P.COMPLETE)]
+
+    @property
+    def hmac(self) -> bool:
+        return self.start[:1] == bytes([P.ALGORITHM_HMAC_SHA256])
+
+    @property
+    def size(self) -> int:
+        return 32 if self.hmac else 16
+
+    @property
+    def own_random(self) -> bytes:
+        return self.random[: self.size]
+
+    def confirm(self, random: bytes) -> bytes:
+        if self.hmac:
+            return hmac_sha256(self.confirmation_key, random)
+        return P.confirmation(self.confirmation_key, random, self.auth)
 
 
 DATA = P.ProvisioningData(
@@ -548,3 +580,179 @@ async def test_provision_aborts_before_the_data_pdu_when_the_hook_raises():
     assert P.DATA not in [p[0] for p in device.received]
     assert device.data is None
     assert device.stopped == 1
+
+
+# ----------------------------------------------------------------------------- the method (review-4 P4-8)
+
+OOB16 = h("00112233445566778899aabbccddeeff")
+OOB32 = OOB16 + h("ffeeddccbbaa99887766554433221100")
+
+
+def caps(algorithms: int = 1, oob_type: int = 0, **kw: int) -> P.Capabilities:
+    fields = {
+        "elements": 1,
+        "algorithms": algorithms,
+        "public_key_type": 0,
+        "static_oob_type": oob_type,
+        "output_oob_size": 0,
+        "output_oob_action": 0,
+        "input_oob_size": 0,
+        "input_oob_action": 0,
+    }
+    return P.Capabilities(**{**fields, **kw})
+
+
+@pytest.mark.parametrize(
+    ("offered", "size", "method"),
+    [
+        (caps(), None, P.Method(0, 0)),  # what the app always does
+        (caps(algorithms=3), None, P.Method(1, 0)),  # the HMAC algorithm first
+        (caps(algorithms=2), None, P.Method(1, 0)),
+        (caps(oob_type=1), None, P.Method(0, 0)),  # Static OOB offered, no value held
+        (caps(oob_type=1), 16, P.Method(0, 1)),
+        (caps(algorithms=3, oob_type=1), 16, P.Method(0, 1)),  # authentication first
+        (caps(algorithms=3, oob_type=1), 32, P.Method(1, 1)),
+        (caps(algorithms=2, oob_type=3), 32, P.Method(1, 1)),
+    ],
+)
+def test_the_strongest_method_offered(
+    offered: P.Capabilities, size: int | None, method: P.Method
+):
+    assert P.choose_method(offered, size) == method
+
+
+@pytest.mark.parametrize(
+    ("offered", "size", "error"),
+    [
+        (caps(algorithms=4), None, "does not offer FIPS P-256"),
+        (caps(), 16, "offers no Static OOB"),
+        (caps(oob_type=1), 32, "does not take a 32-octet Static OOB value"),
+        (caps(algorithms=2, oob_type=1), 16, "does not take a 16-octet"),
+        (caps(algorithms=3, oob_type=3), 16, "does not take a 16-octet"),
+        (caps(algorithms=3, oob_type=3), None, "only OOB-authenticated"),
+    ],
+)
+def test_methods_that_cannot_be_used(
+    offered: P.Capabilities, size: int | None, error: str
+):
+    with pytest.raises(P.ProvisioningError, match=error):
+        P.choose_method(offered, size)
+
+
+def test_start_pdus_of_each_method():
+    assert P.Method().start() == P.start_no_oob() == h("020000000000")
+    assert P.Method(1, 1).start() == h("020100010000")
+    assert (P.Method().size, P.Method(1, 0).size) == (16, 32)
+
+
+def test_the_capability_record_names_what_was_offered_and_used():
+    offered = caps(
+        algorithms=0x0007,
+        oob_type=3,
+        public_key_type=1,
+        output_oob_size=4,
+        output_oob_action=0x0011,
+        input_oob_size=2,
+        input_oob_action=0x0021,
+    )
+    assert P.capability_record(offered, P.Method(1, 1)) == {
+        "algorithms": [
+            "BTM_ECDH_P256_CMAC_AES128_AES_CCM",
+            "BTM_ECDH_P256_HMAC_SHA256_AES_CCM",
+            "bit 2",
+        ],
+        "publicKeyOob": True,
+        "staticOob": True,
+        "onlyOob": True,
+        "outputOob": {"size": 4, "actions": ["blink", "output alphanumeric"]},
+        "inputOob": {"size": 2, "actions": ["push", "bit 5"]},
+        "used": {
+            "algorithm": "BTM_ECDH_P256_HMAC_SHA256_AES_CCM",
+            "authentication": "Static OOB",
+        },
+    }
+    assert P.capability_record(caps(), None)["used"] is None
+
+
+def test_session_values_of_the_wrong_size_are_refused():
+    with pytest.raises(ValueError, match="16 or 32"):
+        P.Provisioner(SAMPLE_DATA, random=bytes(15))
+    with pytest.raises(
+        ValueError, match=r"Static OOB value must be 16 or 32 bytes, got 20"
+    ):
+        P.Provisioner(SAMPLE_DATA, static_oob=bytes(20))
+    prov = sample_session()  # a 16-octet random injected: the HMAC algorithm takes 32
+    prov.start()
+    with pytest.raises(P.ProvisioningError, match="takes 32"):
+        prov.feed(h("01") + caps(algorithms=3).pack())
+
+
+async def test_provision_with_the_hmac_algorithm():
+    device = FakeDevice(algorithms=3)
+    prov = P.Provisioner(DATA)
+    result = await P.provision(device, DATA, provisioner=prov)
+    assert result.method == prov.method == P.Method(1, 0)
+    assert device.start == h("0100000000")
+    assert device.data == DATA
+    assert result.device_key == device.device_key
+    # Confirmation and Random are 32 octets each (+ the type octet)
+    sizes = [len(p) for p in device.received if p[0] in (P.CONFIRMATION, P.RANDOM)]
+    assert sizes == [33, 33]
+
+
+@pytest.mark.parametrize(
+    ("algorithms", "oob_type", "value", "start"),
+    [(1, 1, OOB16, "0000010000"), (3, 3, OOB32, "0100010000")],
+)
+async def test_provision_with_static_oob(
+    algorithms: int, oob_type: int, value: bytes, start: str
+):
+    device = FakeDevice(algorithms=algorithms, oob_type=oob_type, static_oob=value)
+    prov = P.Provisioner(DATA, static_oob=value)
+    result = await P.provision(device, DATA, provisioner=prov)
+    assert device.start == h(start)
+    assert result.method.auth == P.AUTH_STATIC_OOB
+    assert device.data == DATA
+    assert result.device_key == device.device_key
+    assert value.hex() not in repr(prov).lower()
+    assert value.hex() not in repr(result).lower()
+
+
+@pytest.mark.parametrize(
+    ("algorithms", "oob_type", "value"), [(1, 1, OOB16), (3, 3, OOB32)]
+)
+async def test_a_wrong_static_oob_value_never_reaches_the_data(
+    algorithms: int, oob_type: int, value: bytes
+):
+    """A man in the middle without the device's value: the device's check of our confirmation fails."""
+    device = FakeDevice(algorithms=algorithms, oob_type=oob_type, static_oob=value)
+    wrong = P.Provisioner(DATA, static_oob=bytes(len(value)))
+    with pytest.raises(P.ProvisioningFailed, match="Confirmation Failed"):
+        await P.provision(device, DATA, provisioner=wrong)
+    assert P.DATA not in [p[0] for p in device.received]
+
+
+async def test_a_device_that_cannot_confirm_fails_with_the_hmac_algorithm():
+    device = FakeDevice(algorithms=2)
+    device.wrong_confirmation = True
+    with pytest.raises(P.ProvisioningError, match="does not verify"):
+        await P.provision(device, DATA)
+    assert P.DATA not in [p[0] for p in device.received]
+
+
+async def test_a_refused_method_ends_the_session_before_start():
+    device = FakeDevice(
+        algorithms=3, oob_type=3
+    )  # takes only OOB-authenticated provisioning
+    with pytest.raises(P.ProvisioningError, match="only OOB-authenticated"):
+        await P.provision(device, DATA)
+    assert [p[0] for p in device.received] == [P.INVITE]
+
+
+def test_short_confirmations_are_refused_with_the_hmac_algorithm():
+    prov = P.Provisioner(SAMPLE_DATA, private_key=PROV_PRIVATE)
+    prov.start()
+    prov.feed(h("01") + caps(algorithms=2).pack())
+    prov.feed(h("03") + DEV_PUBLIC)
+    with pytest.raises(P.ProvisioningError, match="16 parameter bytes"):
+        prov.feed(h("05") + CONFIRMATION_DEVICE)

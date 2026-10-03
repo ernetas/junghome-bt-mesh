@@ -8,36 +8,49 @@ node's primary unicast under its device key, with the status opcode that answers
 | Phase (app state) | Messages | Evidence |
 |---|---|---|
 | `SetWhitelistFilter` | AppKey Add (AppKey 0 on NetKey 0) | network-logic.md §3.2 step 1 |
-| `RequestCompositionData` | Composition Data Get page 0; Model App Bind for every model the template has AppKey 0 bound to — the bind list first, then the models the app's messenger binds on first use | §3.2 step 2, §3.3 |
-| `SetConfiguration` | GATT Proxy Set 1; AppKey Add again; Default TTL Set; Relay Set; Network Transmit Set | §3.2 step 3 |
+| `RequestCompositionData` | Composition Data Get page 0; Model App Bind for every model of the bind list the node has, then the models the app's messenger binds on first use | §3.2 step 2, §3.3 |
+| `SetConfiguration` | GATT Proxy Set 1; AppKey Add again; Default TTL Set 5; Relay Set; Network Transmit Set | §3.2 step 3 |
 | `SetBlacklistFilter` | Beacon Set (on unless the node is a battery device) | §3.2 step 4 |
-| `CreateElementGroups` | per element group: Model Publication Set + Model Subscription Add of the element's supported servers | §1.2, §1.4, §1.5 |
-| `FinishConfiguration` | Model Subscription Add to the device-type groups `FEF5`..`FEF9` (and the time keeper `FEFF` of PP2 pucks) | §1.3, §3.4 steps 1 and 9 |
+| `RequestRequiredData` | none here: the caller reads the InsertId (an AppKey message) | §3.2 step 5 |
+| `SetTime` | none here: the caller sends Time Set to `Plan.time_server` (an AppKey message) | §3.2 step 6, §6.2 |
+| `CreateElementGroups` | per element with a supported server: Model Publication Set + Model Subscription Add of each to a new group | §1.2, §1.4, §1.5 |
+| `FinishConfiguration` | Model Subscription Add to the device-type group(s) of the node's class `FEF5`..`FEF9`, and a PP2 puck's Time Server to the time keeper's `FEFF` | §1.3, §3.4 steps 1 and 9 |
 | `DisableProxy` | GATT Proxy Set 0 for battery devices | §3.2 step 9 |
 
-**The template.** The new node's composition, its device class and the per-element choices come from a node of the
-same product (and the same insert) already in the export: the app decides them from the Composition Data Status
-and the InsertId it reads on air, which a plan made before any message cannot know. From the template:
+**The composition** (review-4 F4-13). The app plans from the node's Composition Data Status and its InsertId; a
+plan made before the node answered cannot know them, but the addresses and element groups must be decided before
+the device gets its Provisioning Data (the vault reserves them, `vault.Vault.remember_provisioned`). So `plan()`
+plans first from a *template* — a node of the same product (and the same insert) already in the export, whose
+composition the new one should have — and `Plan.resume` plans again from what the node answered: the same rules
+on the node's own elements and models, keeping the element groups the first plan allocated. A composition that is
+not the template's (another company or product, another element count, an element with another location or other
+models, or one without the `1012` / `0527:1012` servers the app's `t1()` asserts — its `NodeNotConfigured`) is
+refused (`CompositionMismatch`): the first plan's element groups and the device class would be wrong for it.
 
-- *which models to bind*: those the template has the AppKey bound to (the app's bind list, §3.3, plus the
-  messenger's bind-on-first-use, which is why an export shows Health and `0527:1012` bound too);
-- *node-wide settings*: `defaultTTL`, `features.relay`, `relayRetransmit`, `networkTransmit`,
-  `secureNetworkBeacon`. The CDB counts transmissions and milliseconds, the wire retransmissions and 10 ms steps
-  minus one — the conversion `audit.py` compares with, so a node commissioned from a template audits clean against
-  it. It is also what the installation shows: the iOS export records relay 3 / 90 ms and network transmit
-  3 / 100 ms, the nodes answer relay retransmit 2, steps 8 and network transmit 2, steps 9
-  (`docs/hidden-features.md` §4, §9). Where the template records nothing, those observed values are used (and TTL
-  5, beacon on unless battery, relay on — §3.2). The Android app's documented Sets (relay 3 / steps 9, network
-  transmit 3 / steps 10, `transport-provisioning.md` §3.3) are one higher in both fields: which of the two the
-  app really sends is one of the gaps below;
-- *element groups*: an element gets one when the template's element has one (a group named
-  `element group #<address>`); its supported servers (§1.4, Sensor Server excluded) publish to and/or subscribe to
-  the new group exactly as the template's do to its own. This follows the real installation where the documented
-  rule and the iOS export differ: the rule lists `0527:1011` among the supported servers, the export never wires it
-  (`docs/network-topology.md`), and the template decides;
-- *device-type groups*: the template's supported servers' subscriptions to `FEF5`..`FEF9` (the class → group map
-  of §1.3: lamps `FEF5`, blind position `FEF6`, slats `FEF7`, sockets `FEF8`, RTR `FEF9`), and the Time Server's to
-  `FEFF`. Room subscriptions and key connections are user configuration, never copied.
+**The app's rules**, applied to the composition (the template's until the node answered):
+
+- *binding*: every model of the bind list (§3.3) the node has, then what the app's messenger binds on first use —
+  every other model the template has AppKey 0 bound to (which is why an export shows Health and `0527:1012` bound
+  too); the Configuration Server and Client never;
+- *node-wide settings*, the app's values whatever the template holds (`setconfiguration`): GATT Proxy on, TTL 5,
+  relay on, beacon on unless a battery device; relay retransmit 2 x 90 ms and network transmit 2 x 100 ms on the
+  wire (retransmissions, 10 ms steps minus one: (2, 8) and (2, 9)) — what the installation's nodes answer, set by
+  the iOS app, whose export records relay 3 / 90 ms and network transmit 3 / 100 ms (`docs/hidden-features.md` §4,
+  §9). The Android app's documented Sets (relay 3 / steps 9, network transmit 3 / steps 10,
+  `transport-provisioning.md` §3.3) are one higher in both fields: which of the two the app really sends is one of
+  the gaps below;
+- *element groups* (`CreateElementConnectionGroups`, default wiring): an element with at least one supported server
+  (§1.4) gets a group, and each of those servers publishes to and subscribes to it — except the Sensor Server
+  (wired towards the gateway on its own, §6.1) and `0527:1011`: the decompile lists it among the supported servers,
+  but no node of the installation has it wired (`docs/network-topology.md`), and the installation is what the app
+  that made it did;
+- *device-type groups* (`ConnectToDeviceTypeGroup`, §1.3): the node's class decides — lamps `FEF5` and sockets
+  `FEF8` on every element, RTRs `FEF9`, blinds `FEF6` on the position element (its first Generic Level server) and
+  `FEF7` on the slat element (the last one, when it is another) — for its SIG supported servers: the
+  installation's nodes subscribe neither vendor server there. Push-buttons by their insert (`function`), mini
+  actuators and pucks by product; detectors, the gateway, wall transmitters and an extension insert have none.
+  A PP2 puck's Time Server subscribes to the time keeper's group `FEFF` (§3.4 step 9). Room subscriptions and key
+  connections are user configuration, never copied.
 
 The new groups the element groups need are allocated like the app does — the lowest address of the provisioner's
 first group range that the export does not use as a group anywhere, rooms and element groups sharing the counter
@@ -46,25 +59,40 @@ provisioner of its own, so the app's next room does not get the same group), and
 caller to add to the CDB; nothing here writes the CDB, the `meta` block or the gateway.
 
 **Not in the plan** (`NOT_COVERED`, each with the reason): what the app sends that is not a Config message, what it
-decides from values it reads on air, and what the docs do not pin down.
+decides from values it reads on air, and what the docs do not pin down. Unverified on air: no node has been
+commissioned from these rules yet (a spare device is needed).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from . import config_messages as C
-from .audit import export_settings
-from .cdb import parse_address
-from .devices import BATTERY_PIDS, ELEMENT_GROUP_PREFIX, element_group_address
+from .devices import (
+    BATTERY_PIDS,
+    BLIND_FUNCTION,
+    BLIND_ONLY_PIDS,
+    ELEMENT_GROUP_PREFIX,
+    KEY_LOCATION,
+    LAMP_FUNCTIONS,
+    LAMP_LEVEL_MODELS,
+    LOAD_LOCATIONS,
+    PP2_PIDS,
+    PUSH_BUTTON_PIDS,
+    SOCKET_PIDS,
+    THERMOSTAT_PIDS,
+    TIME_KEEPER_ADDRESS,
+    TIME_SERVER,
+    insert_function,
+)
 from .export import Allocation, group_addresses_in_use, pick_free
 from .pdu import decode_opcode
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
-    from .cdb import CDB, Element, Node
+    from .cdb import CDB, Node
 
 # "suppportedServers" (sic, the app's DI name, network-logic.md §1.4): the models an element group and the
 # device-type groups are wired to. Generic OnOff, Generic Level, Light Lightness, Light CTL Temperature, Light CTL,
@@ -80,8 +108,11 @@ SUPPORTED_SERVERS = (
     "1203",
     "05271011",
 )
-# Sensor Server: wired towards the gateway on its own (network-logic.md §6.1)
-ELEMENT_GROUP_EXCLUDED = frozenset({"1100"})
+# Sensor Server: wired towards the gateway on its own (network-logic.md §6.1); LBC Admin Property: never wired on the
+# installation's nodes (module docstring)
+ELEMENT_GROUP_EXCLUDED = frozenset({"1100", "05271011"})
+# the supported servers a device-type group reaches: the SIG ones but the Sensor Server, as on the installation
+DEVICE_TYPE_SERVERS = frozenset({"1000", "1002", "1300", "1306", "1303", "1203"})
 # the app's bind list (`P7/a.java:27`, network-logic.md §3.3); every other bound model is bound on first use
 BIND_LIST = frozenset(
     {
@@ -122,16 +153,36 @@ BIND_LIST = frozenset(
 )
 # device-key models: never bound to an AppKey
 CONFIG_MODELS = frozenset({"0000", "0001"})
+# the models the app's `t1()` asserts after the Composition Data (`NodeNotConfigured` otherwise, §3.2 step 5)
+REQUIRED_MODELS = ("1012", "05271012")
 # lamps, blind position, slats, sockets, RTR set-point (network-logic.md §1.3)
 DEVICE_TYPE_GROUPS = range(0xFEF5, 0xFEFA)
-TIME_KEEPER_GROUP = 0xFEFF  # PP2 pucks' Time Server subscription (§3.4 step 9)
-TIME_SERVER = "1200"
+LAMPS, BLINDS, SLATS, SOCKETS, RTRS = DEVICE_TYPE_GROUPS
+TIME_KEEPER_GROUP = (
+    TIME_KEEPER_ADDRESS  # PP2 pucks' Time Server subscription (§3.4 step 9)
+)
+# mini actuators and pucks with a light output (a `LampDevice` of theirs): the switch / dimmer / DALI ones
+LAMP_ACTUATOR_PIDS = frozenset({0x0004, 0x0010, 0x0011, 0x0012, 0x0014})
 
-# where the template records nothing: the app's TTL (§3.2 step 3) and, on the wire as (retransmissions, steps),
-# what the installation's nodes hold (hidden-features.md §4: relay 2 x 90 ms, network transmit 2 x 100 ms)
+# the app's values (module docstring): its TTL (§3.2 step 3) and, on the wire as (retransmissions, steps), what the
+# installation's nodes hold (hidden-features.md §4: relay 2 x 90 ms, network transmit 2 x 100 ms)
 DEFAULT_TTL = 5
 DEFAULT_RELAY_RETRANSMIT = (2, 8)
 DEFAULT_NETWORK_TRANSMIT = (2, 9)
+
+# the app's `ConfigureDevice` states in order; the two without a Config message are the caller's
+PHASES = (
+    "SetWhitelistFilter",
+    "RequestCompositionData",
+    "SetConfiguration",
+    "SetBlacklistFilter",
+    "RequestRequiredData",
+    "SetTime",
+    "CreateElementGroups",
+    "FinishConfiguration",
+    "DisableProxy",
+)
+CALLER_PHASES = ("RequestRequiredData", "SetTime")
 
 NL = "docs/android/network-logic.md"
 TP = "docs/android/transport-provisioning.md"
@@ -153,12 +204,13 @@ NOT_COVERED = (
     ),
     Gap(
         "RequestRequiredData: LBC User Property Get 0x0002 InsertId (Admin Get 0x5001 ButtonLayout)",
-        f"vendor property reads ({NL} §3.2 step 5); the InsertId decides the device class, which the"
-        " plan takes from the template",
+        f"vendor property reads ({NL} §3.2 step 5): the caller reads the InsertId in this phase and refuses"
+        " a node whose insert is not the one the plan was made for",
     ),
     Gap(
         "SetTime: Time Set (0x5C) to the node's Time Server",
-        f"an AppKey message, not a Config message ({NL} §3.2 step 6, §6.2)",
+        f"an AppKey message, not a Config message ({NL} §3.2 step 6, §6.2): the caller sends it in this phase"
+        " to `Plan.time_server`",
     ),
     Gap(
         "detectors: the factory OnOff client publication (SetDeviceConnection), Admin Sets 0x6021,"
@@ -180,18 +232,18 @@ NOT_COVERED = (
         "the relay / network transmit values the app sends",
         f"the Android decompile says 3 / 9 and 3 / 10 steps ({TP} §3.3), the installation's nodes hold"
         " 2 / 8 and 2 / 9 (docs/hidden-features.md §4), which is what its iOS export records; the plan"
-        " copies the template",
+        " sends the installation's",
     ),
     Gap(
         "whether the Scene Server keeps its device-type group subscription",
-        "network-logic.md §1.3 subscribes all supported servers (so the plan sends 1203 -> FEF5 / FEF8 when"
-        " the template lists it); the installation's nodes hold only the element group on 1203"
-        " (docs/hidden-features.md §9): sent as documented, the node may not keep it",
+        "network-logic.md §1.3 subscribes all supported servers (so the plan sends 1203 -> FEF5 / FEF8);"
+        " docs/hidden-features.md §9 saw nodes holding only the element group on 1203: sent as documented,"
+        " the node may not keep it",
     ),
     Gap(
-        "the node's real composition",
-        "the app binds from the Composition Data Status; the plan assumes the template's (same product"
-        " and insert) and refuses a different element count",
+        "the time keeper election (EnsureTimeKeeper)",
+        f"{NL} §6.2: the app elects one mains node for the PP2 pucks; Home Assistant offers a switch per node"
+        " instead and raises a repair while the project has pucks and no keeper",
     ),
     Gap(
         "CDB node entry, element-group rows in `meta`, the (UUID, MAC) record, the gateway upload",
@@ -202,6 +254,18 @@ NOT_COVERED = (
         "review-3 N1 (HA's own provisioner entry); the plan takes the export's first range unless told",
     ),
 )
+
+
+class CompositionMismatch(ValueError):
+    """The node's Composition Data is not the template's (`composition_mismatch` names each difference)."""
+
+    def __init__(self, template: int, differences: list[str]) -> None:
+        """Record what differs from template node `template`."""
+        self.differences = differences
+        super().__init__(
+            f"the device's composition is not that of template {template:04X}: "
+            + "; ".join(differences)
+        )
 
 
 @dataclass(frozen=True)
@@ -235,6 +299,83 @@ class NewGroup:
 
 
 @dataclass(frozen=True)
+class Shape:
+    """One element as the plan sees it: its location and its model ids (CDB form, upper case)."""
+
+    location: int
+    models: tuple[str, ...]
+
+
+def template_shape(template: Node) -> list[Shape]:
+    """Return the template node's elements as the new node should have them."""
+    return [
+        Shape(e.location, tuple(m.upper() for m in e.models)) for e in template.elements
+    ]
+
+
+def composition_shape(composition: C.CompositionData) -> list[Shape]:
+    """Return the elements a Composition Data Status page 0 lists."""
+    return [Shape(e.location, tuple(e.model_ids)) for e in composition.elements]
+
+
+def composition_mismatch(template: Node, composition: C.CompositionData) -> list[str]:
+    """List how `composition` differs from the template's ([] when it is the same; model order aside)."""
+    out = []
+    if template.cid is not None and composition.cid != template.cid:
+        out.append(f"company {composition.cid:04X}, not {template.cid:04X}")
+    if template.pid is not None and composition.pid != template.pid:
+        out.append(f"product {composition.pid:04X}, not {template.pid:04X}")
+    have, want = composition_shape(composition), template_shape(template)
+    if len(have) != len(want):
+        out.append(f"{len(have)} element(s), not {len(want)}")
+    else:
+        for index, (got, expected) in enumerate(zip(have, want, strict=True)):
+            if got.location != expected.location:
+                out.append(
+                    f"element {index} at location {got.location:04X}, not {expected.location:04X}"
+                )
+            extra = sorted(set(got.models) - set(expected.models))
+            missing = sorted(set(expected.models) - set(got.models))
+            if extra or missing:
+                out.append(
+                    f"element {index} models +{','.join(extra) or '-'} -{','.join(missing) or '-'}"
+                )
+    present = {m for element in have for m in element.models}
+    out += [f"no model {m}" for m in REQUIRED_MODELS if m not in present]
+    return out
+
+
+# the class of every product whose class does not depend on its insert
+CLASS_BY_PRODUCT = {
+    **dict.fromkeys(THERMOSTAT_PIDS, "rtr"),
+    **dict.fromkeys(SOCKET_PIDS, "socket"),
+    **dict.fromkeys(BLIND_ONLY_PIDS, "blind"),
+    **dict.fromkeys(LAMP_ACTUATOR_PIDS, "lamp"),
+}
+
+
+def device_class(
+    pid: int | None, function: int | None, shape: Sequence[Shape]
+) -> str | None:
+    """Return the node's class for its device-type groups (§1.3): lamp, socket, rtr, blind, or None for none.
+
+    A push-button by its insert (`function`; unknown: a load element's lamp servers make it a lamp, a Generic
+    Level server without them a blind, as `devices` tells a push-button's load without an InsertId).
+    """
+    if pid is None or pid not in PUSH_BUTTON_PIDS:
+        return CLASS_BY_PRODUCT.get(pid or -1)
+    if function is None:
+        loads = [set(e.models) for e in shape if e.location in LOAD_LOCATIONS]
+        if any("1002" in m and not LAMP_LEVEL_MODELS & m for m in loads):
+            function = BLIND_FUNCTION
+        elif any({"1000", "1300"} & m for m in loads):
+            function = min(LAMP_FUNCTIONS)
+    if function == BLIND_FUNCTION:
+        return "blind"
+    return "lamp" if function in LAMP_FUNCTIONS else None
+
+
+@dataclass(frozen=True)
 class Plan:
     """The commissioning sequence for one node: its addresses, the ordered steps and the groups they need."""
 
@@ -244,14 +385,25 @@ class Plan:
     steps: list[Step]
     groups: list[NewGroup]
     not_covered: tuple[Gap, ...] = NOT_COVERED
+    # the element whose Time Server takes the SetTime phase's Time Set; None: the node has none
+    time_server: int | None = None
+    device_class: str | None = None  # `device_class`
+    composition: C.CompositionData | None = (
+        None  # what the node answered, once `resume` planned from it
+    )
+    _resume: Callable[[C.CompositionData], Plan] | None = field(
+        default=None, repr=False, compare=False
+    )
 
     def phases(self) -> list[str]:
-        """Return the phases in the order the steps pass through them."""
-        seen: list[str] = []
-        for step in self.steps:
-            if step.phase not in seen:
-                seen.append(step.phase)
-        return seen
+        """Return the phases in the order the commissioning passes through them (the caller's two always)."""
+        have = {step.phase for step in self.steps}
+        return [p for p in PHASES if p in have or p in CALLER_PHASES]
+
+    def resume(self, composition: C.CompositionData) -> Plan:
+        """Plan again from the node's own Composition Data, the same element groups; `CompositionMismatch` if not the template's."""
+        assert self._resume is not None  # every plan comes from `plan()`
+        return self._resume(composition)
 
 
 def plan(
@@ -264,6 +416,7 @@ def plan(
     group_range: tuple[int, int] | None = None,
     reserved_groups: Iterable[int] = (),
     policy: Allocation = "app",
+    function: int | None = None,
 ) -> Plan:
     """Build the commissioning plan of a node provisioned at `unicast` with `elements` elements, after `template`.
 
@@ -273,7 +426,9 @@ def plan(
     `reserved_groups` are taken although the export does not show them: the element groups of nodes Home Assistant
     provisioned but did not record (`vault.Vault.reserved_groups`), which those nodes may hold already.
     `policy` picks the lowest free address of the range ("app") or the highest below the device-type groups
-    ("top"); `export.AllocationCrowded` when a "top" pick comes too close to the app's own groups.
+    ("top"); `export.AllocationCrowded` when a "top" pick comes too close to the app's own groups. `function`: the
+    insert the device advertised (a push-button's class), else the template's. `Plan.resume` plans again once the
+    node answered its Composition Data.
     """
     if elements != len(template.elements):
         raise ValueError(
@@ -299,15 +454,16 @@ def plan(
     if app_key is None:
         raise ValueError(f"the export has no AppKey {app_key_index}")
     builder = _Builder(
-        cdb, unicast, template, app_key_index, group_range, set(reserved_groups), policy
+        cdb,
+        unicast,
+        template,
+        app_key_index,
+        group_range,
+        set(reserved_groups),
+        policy,
+        insert_function(template) if function is None else function,
     )
-    builder.add_app_key(app_key.key)
-    builder.bind()
-    builder.set_configuration(app_key.key)
-    builder.element_groups()
-    builder.fixed_groups()
-    builder.disable_proxy()
-    return Plan(unicast, elements, template.unicast, builder.steps, builder.groups)
+    return builder.build(app_key.key, template_shape(template), None)
 
 
 class _Builder:
@@ -322,6 +478,7 @@ class _Builder:
         group_range: tuple[int, int] | None,
         reserved_groups: set[int],
         policy: Allocation,
+        function: int | None,
     ) -> None:
         self.cdb = cdb
         self.unicast = unicast
@@ -330,16 +487,61 @@ class _Builder:
         self.group_range = group_range
         self.reserved_groups = reserved_groups
         self.policy = policy
+        self.function = function
+        self.battery = template.pid in BATTERY_PIDS
         self.steps: list[Step] = []
         self.groups: list[NewGroup] = []
-        self.battery = template.pid in BATTERY_PIDS
+        self.kept: dict[
+            int, NewGroup
+        ] = {}  # an earlier plan's element groups, by element
+        self.shape: list[Shape] = []
+
+    def build(
+        self,
+        app_key: bytes,
+        shape: list[Shape],
+        composition: C.CompositionData | None,
+    ) -> Plan:
+        """Plan every phase for the elements of `shape`; the plan resumes with this builder's settings."""
+        self.steps, self.groups, self.shape = [], [], shape
+        self.add_app_key(app_key)
+        self.bind()
+        self.set_configuration(app_key)
+        self.element_groups()
+        kind = device_class(self.template.pid, self.function, shape)
+        self.fixed_groups(kind)
+        self.disable_proxy()
+        groups = list(self.groups)
+
+        def resume(received: C.CompositionData) -> Plan:
+            differences = composition_mismatch(self.template, received)
+            if differences:
+                raise CompositionMismatch(self.template.unicast, differences)
+            self.kept = {g.element: g for g in groups}
+            return self.build(app_key, composition_shape(received), received)
+
+        time_server = next(
+            (
+                self.unicast + i
+                for i, element in enumerate(shape)
+                if TIME_SERVER in element.models
+            ),
+            None,
+        )
+        return Plan(
+            self.unicast,
+            len(shape),
+            self.template.unicast,
+            list(self.steps),
+            groups,
+            time_server=time_server,
+            device_class=kind,
+            composition=composition,
+            _resume=resume,
+        )
 
     def add(self, phase: str, pdu: bytes, expect: int, evidence: str) -> None:
         self.steps.append(Step(phase, self.unicast, pdu, expect, evidence))
-
-    def new_address(self, element: Element) -> int:
-        """Return the new node's element at the template element's index."""
-        return self.unicast + (element.address - self.template.unicast)
 
     def add_app_key(self, app_key: bytes) -> None:
         self.add(
@@ -357,29 +559,31 @@ class _Builder:
             C.CONFIG_COMPOSITION_DATA_STATUS,
             f"{NL} §3.2 step 2",
         )
-        bound = [
-            (element, model["modelId"])
-            for element in self.template.elements
-            for model in element.raw_models
-            if model["modelId"] not in CONFIG_MODELS
-            and self.app_key_index in model.get("bind", [])
-        ]
-        listed = [(e, m) for e, m in bound if m.upper() in BIND_LIST]
-        for element, model_id in listed:
-            self.add(
-                phase,
-                C.model_app_bind(
-                    self.new_address(element), model_id, self.app_key_index
-                ),
-                C.CONFIG_MODEL_APP_STATUS,
-                f"{NL} §3.3 (bind list)",
-            )
-        for element, model_id in bound:
-            if (element, model_id) not in listed:
+        for index, shaped in enumerate(self.shape):
+            for model_id in shaped.models:
+                if model_id in BIND_LIST:
+                    self.add(
+                        phase,
+                        C.model_app_bind(
+                            self.unicast + index, model_id, self.app_key_index
+                        ),
+                        C.CONFIG_MODEL_APP_STATUS,
+                        f"{NL} §3.3 (bind list)",
+                    )
+        for index, element in enumerate(self.template.elements):
+            for model in element.raw_models:
+                model_id = model["modelId"].upper()
+                if (
+                    model_id in CONFIG_MODELS
+                    or model_id in BIND_LIST
+                    or model_id not in self.shape[index].models
+                    or self.app_key_index not in model.get("bind", [])
+                ):
+                    continue
                 self.add(
                     phase,
                     C.model_app_bind(
-                        self.new_address(element), model_id, self.app_key_index
+                        self.unicast + index, model_id, self.app_key_index
                     ),
                     C.CONFIG_MODEL_APP_STATUS,
                     f"{NL} §3.3 (bound by the app's messenger before the first message to the element; the"
@@ -388,8 +592,8 @@ class _Builder:
 
     def set_configuration(self, app_key: bytes) -> None:
         phase = "SetConfiguration"
-        settings = export_settings(self.template)
         evidence = f"{NL} §3.2 step 3; {TP} §3.3"
+        observed = "the installation's nodes (docs/hidden-features.md §4)"
         self.add(phase, C.gatt_proxy_set(True), C.CONFIG_GATT_PROXY_STATUS, evidence)
         self.add(
             phase,
@@ -397,46 +601,44 @@ class _Builder:
             C.CONFIG_APPKEY_STATUS,
             f"{evidence} (the app adds the AppKey a second time)",
         )
-        ttl = settings["default_ttl"]
         self.add(
             phase,
-            C.default_ttl_set(DEFAULT_TTL if ttl is None else ttl),
+            C.default_ttl_set(DEFAULT_TTL),
             C.CONFIG_DEFAULT_TTL_STATUS,
-            f"{evidence}; value from {_source(ttl, 'the app (5)')}",
+            f"{evidence}; the app's value",
         )
-        observed = "what the installation's nodes hold (docs/hidden-features.md §4)"
-        relay, retransmit = settings["relay"], settings["relay_retransmit"]
         self.add(
             phase,
-            C.relay_set(relay != 0, *_wire(retransmit, DEFAULT_RELAY_RETRANSMIT)),
+            C.relay_set(True, *DEFAULT_RELAY_RETRANSMIT),
             C.CONFIG_RELAY_STATUS,
-            f"{evidence}; state from {_source(relay, 'the app (on)')}, retransmit from"
-            f" {_source(retransmit, observed)}",
+            f"{evidence}; relay on as the app, retransmit as {observed}",
         )
-        transmit = settings["network_transmit"]
         self.add(
             phase,
-            C.network_transmit_set(*_wire(transmit, DEFAULT_NETWORK_TRANSMIT)),
+            C.network_transmit_set(*DEFAULT_NETWORK_TRANSMIT),
             C.CONFIG_NETWORK_TRANSMIT_STATUS,
-            f"{evidence}; value from {_source(transmit, observed)}",
+            f"{evidence}; as {observed}",
         )
-        beacon = settings["beacon"]
         self.add(
             "SetBlacklistFilter",
-            C.beacon_set(not self.battery if beacon is None else beacon),
+            C.beacon_set(not self.battery),
             C.CONFIG_BEACON_STATUS,
-            f"{NL} §3.2 step 4 (the app does not wait for the status); value from"
-            f" {_source(beacon, 'the app (on unless a battery device)')}",
+            f"{NL} §3.2 step 4 (the app does not wait for the status): on unless a battery device",
         )
 
     def _allocate(self, element: int) -> NewGroup:
         """Take the lowest group address of the range (`policy` "top": the highest) that nothing else uses (§1.2).
 
-        Nothing in the export, no earlier allocation. Nothing in the export: not only the CDB `groups[]` but the `meta` rooms, room links and every live
+        Nothing in the export: not only the CDB `groups[]` but the `meta` rooms, room links and every live
         publication and subscription (`export.group_addresses_in_use`, what a new room is allocated around too) —
-        the new node would otherwise share a group some node still listens to. Nor a reserved one (`plan`), nor
-        the device-type groups a range may reach into.
+        the new node would otherwise share a group some node still listens to. Nor an earlier allocation, nor a
+        reserved one (`plan`), nor the device-type groups a range may reach into. An element the first plan gave
+        a group (`Plan.resume`) keeps it.
         """
+        kept = self.kept.get(element)
+        if kept is not None:
+            self.groups.append(kept)
+            return kept
         if self.group_range is not None:
             low, high = self.group_range
         elif self.cdb.provisioner_group_ranges:
@@ -448,6 +650,7 @@ class _Builder:
         used = (
             group_addresses_in_use(self.cdb, self.cdb.export_meta)
             | {g.address for g in self.groups}
+            | {g.address for g in self.kept.values()}
             | self.reserved_groups
         )
         top = min(high, DEVICE_TYPE_GROUPS[0] - 1)
@@ -459,70 +662,78 @@ class _Builder:
         return group
 
     def element_groups(self) -> None:
-        own_groups = {
-            addr: group
-            for group, name in self.cdb.groups.items()
-            if (addr := element_group_address(name)) is not None
-        }
-        evidence = f"{NL} §1.4, §1.5 (publish TTL 0xFF, no period, no retransmission); wiring as on the template"
-        for element in self.template.elements:
-            own = own_groups.get(element.address)
-            if own is None:
-                continue
+        evidence = f"{NL} §1.4, §1.5 (publish and subscribe, TTL 0xFF, no period, no retransmission)"
+        for index, element in enumerate(self.shape):
             wired = [
-                (
-                    model["modelId"],
-                    _publishes_to(model, own),
-                    own in _subscriptions(model),
-                )
-                for model in element.raw_models
-                if model["modelId"].upper() in SUPPORTED_SERVERS
-                and model["modelId"].upper() not in ELEMENT_GROUP_EXCLUDED
+                m
+                for m in element.models
+                if m in SUPPORTED_SERVERS and m not in ELEMENT_GROUP_EXCLUDED
             ]
-            wired = [w for w in wired if w[1] or w[2]]
             if not wired:
                 continue
-            target = self.new_address(element)
+            target = self.unicast + index
             group = self._allocate(target)
-            for model_id, publish, subscribe in wired:
-                if publish:
-                    self.add(
-                        "CreateElementGroups",
-                        C.model_publication_set(
-                            target,
-                            group.address,
-                            model_id,
-                            app_key_index=self.app_key_index,
-                        ),
-                        C.CONFIG_MODEL_PUBLICATION_STATUS,
-                        evidence,
-                    )
-                if subscribe:
-                    self.add(
-                        "CreateElementGroups",
-                        C.model_subscription_add(target, group.address, model_id),
-                        C.CONFIG_MODEL_SUBSCRIPTION_STATUS,
-                        evidence,
-                    )
+            for model_id in wired:
+                self.add(
+                    "CreateElementGroups",
+                    C.model_publication_set(
+                        target,
+                        group.address,
+                        model_id,
+                        app_key_index=self.app_key_index,
+                    ),
+                    C.CONFIG_MODEL_PUBLICATION_STATUS,
+                    evidence,
+                )
+                self.add(
+                    "CreateElementGroups",
+                    C.model_subscription_add(target, group.address, model_id),
+                    C.CONFIG_MODEL_SUBSCRIPTION_STATUS,
+                    evidence,
+                )
 
-    def fixed_groups(self) -> None:
-        for element in self.template.elements:
-            target = self.new_address(element)
-            for model in element.raw_models:
-                model_id = model["modelId"].upper()
-                for address in _subscriptions(model):
-                    if model_id in SUPPORTED_SERVERS and address in DEVICE_TYPE_GROUPS:
-                        evidence = f"{NL} §1.3, §3.4 step 1 (device-type group, as on the template)"
-                    elif model_id == TIME_SERVER and address == TIME_KEEPER_GROUP:
-                        evidence = f"{NL} §3.4 step 9, §6.2 (time keeper group of a PP2 puck, as on the template)"
-                    else:
-                        continue
+    def _device_type_targets(self, kind: str | None) -> list[tuple[int, int]]:
+        """Return (element index, device-type group) for the node's class (`device_class`, §1.3)."""
+        everywhere = {"lamp": LAMPS, "socket": SOCKETS, "rtr": RTRS}
+        if kind in everywhere:
+            return [(i, everywhere[kind]) for i in range(len(self.shape))]
+        if kind != "blind":
+            return []
+        levels = [
+            i
+            for i, e in enumerate(self.shape)
+            if e.location < KEY_LOCATION and "1002" in e.models
+        ]
+        if not levels:
+            return []
+        out = [(levels[0], BLINDS)]
+        if levels[-1] != levels[0]:
+            out.append((levels[-1], SLATS))
+        return out
+
+    def fixed_groups(self, kind: str | None) -> None:
+        for index, group in self._device_type_targets(kind):
+            for model_id in self.shape[index].models:
+                if model_id in DEVICE_TYPE_SERVERS:
                     self.add(
                         "FinishConfiguration",
-                        C.model_subscription_add(target, address, model_id),
+                        C.model_subscription_add(self.unicast + index, group, model_id),
                         C.CONFIG_MODEL_SUBSCRIPTION_STATUS,
-                        evidence,
+                        f"{NL} §1.3, §3.4 step 1 (device-type group of a {kind})",
                     )
+        if self.template.pid in PP2_PIDS:
+            clock = next(
+                (i for i, e in enumerate(self.shape) if TIME_SERVER in e.models), None
+            )
+            if clock is not None:
+                self.add(
+                    "FinishConfiguration",
+                    C.model_subscription_add(
+                        self.unicast + clock, TIME_KEEPER_GROUP, TIME_SERVER
+                    ),
+                    C.CONFIG_MODEL_SUBSCRIPTION_STATUS,
+                    f"{NL} §3.4 step 9, §6.2 (time keeper group of a PP2 puck)",
+                )
 
     def disable_proxy(self) -> None:
         if self.battery:
@@ -532,31 +743,6 @@ class _Builder:
                 C.CONFIG_GATT_PROXY_STATUS,
                 f"{NL} §3.2 step 9 (low-power device)",
             )
-
-
-def _subscriptions(model: dict[str, Any]) -> list[int]:
-    return [parse_address(a) for a in model.get("subscribe", [])]
-
-
-def _publishes_to(model: dict[str, Any], group: int) -> bool:
-    pub = model.get("publish")
-    return (
-        isinstance(pub, dict)
-        and "address" in pub
-        and parse_address(pub["address"]) == group
-    )
-
-
-def _source(value: object, fallback: str) -> str:
-    """Say where a node-wide value came from: the template, or (when it records none) `fallback`."""
-    return "the template" if value is not None else fallback
-
-
-def _wire(value: dict[str, int] | None, default: tuple[int, int]) -> tuple[int, int]:
-    """Turn a CDB `{count, interval}` (transmissions, ms) into the wire's (retransmissions, 10 ms steps minus one)."""
-    if value is None:
-        return default
-    return max(value["count"] - 1, 0), max(value["interval"] // 10 - 1, 0)
 
 
 def _element_group_name(cdb: CDB, element: int) -> str:

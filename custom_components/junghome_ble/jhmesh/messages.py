@@ -129,6 +129,10 @@ TIME_ROLE_GET, TIME_ROLE_SET, TIME_ROLE_STATUS = 0x8238, 0x8239, 0x823A
 TIME_ZONE_GET, TIME_ZONE_STATUS = 0x823B, 0x823D
 TAI_UTC_DELTA_GET, TAI_UTC_DELTA_STATUS = 0x823E, 0x8240
 TIME_ROLES = {0: "none", 1: "authority", 2: "relay", 3: "client"}
+TIME_ROLE_RELAY, TIME_ROLE_CLIENT = (
+    2,
+    3,
+)  # the time keeper's role, and the one it is stood down to
 # Health model (Mesh Profile §4.2 / Model spec §4.1): faults are per company id; 0x00 = no fault, 0x80+ vendor codes
 HEALTH_CURRENT_STATUS = 0x04  # published by the Health Server: the faults present now (same layout as Fault Status)
 HEALTH_FAULT_GET, HEALTH_FAULT_STATUS = 0x8031, 0x05
@@ -1507,6 +1511,17 @@ def time_role_get() -> bytes:
     with its one-byte role, `client` on air (`823A 03`, the app settings session); a read, harmless.
     """
     return encode_opcode(TIME_ROLE_GET)
+
+
+def time_role_set(role: int) -> bytes:
+    """Time Role Set `[role u8]` (Mesh Model spec §5.2.1.11): to a node's Time Setup Server, answered by Time Role Status.
+
+    The app's time keeper (`TimeKeeperConfiguration`, network-logic.md §6.2): role 2 (relay) for the node that keeps
+    the PP2 pucks' time, role 3 (client) to stand it down. Roles 4..255 are prohibited. Unverified on air.
+    """
+    if role not in TIME_ROLES:
+        raise ValueError(f"time role must be 0..3, got {role}")
+    return encode_opcode(TIME_ROLE_SET) + bytes([role])
 
 
 def decode_time_role_status(params: bytes) -> str:

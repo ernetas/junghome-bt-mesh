@@ -388,6 +388,30 @@
   default): the software version the node reports against the version the JUNG HOME app 2.2.0 bundles for its
   product. An older one shows as an update available, with the release summary pointing to the app: Home Assistant
   only compares, it offers no install and never transfers firmware.
+- `add_device` commissions a device the way the app does (review-4 F4-13). After its Composition Data the rest is
+  planned again from what the device itself reports, by the app's rules rather than by copying a template node's
+  wiring; the template only cross-checks it, and a device that is another product, has another element layout or
+  model list, or lacks the servers the app requires is refused before anything is bound. A push-button's InsertId is
+  read and must be the insert planned for; Time Set goes to the new device's Time Server; every element with a
+  supported server gets an element group (each server publishing and subscribing to it); the device-type groups
+  follow the device's class (lamps, blinds and slats, sockets, room thermostats); relay, TTL and network transmit
+  are the app's values whatever the template holds. The provisioning has the app's 30 s, the configuration 3
+  minutes. A failure after the device received its data sends it a Config Node Reset, as the app does: once
+  confirmed it is a new device again and nothing stays reserved (*… could not be configured at step …*), otherwise
+  it is pending as before. The response lists the `steps` done, and stopping the action closes the Bluetooth
+  connection. Unverified on air: it needs a spare device.
+- Provisioning uses the strongest method a device offers (review-4 P4-8): Static OOB when it offers it and
+  `add_device` is given its value (the new optional field `static_oob`, never logged), the HMAC-SHA256 algorithm of
+  Mesh Protocol 1.1 over the original one, else No OOB as the app — which leaves the key exchange unauthenticated
+  for whoever is in Bluetooth range at that moment, as the action's description now says. A device that takes only
+  authenticated provisioning is refused without its value. What each device offered and the method used are kept in
+  the vault and shown in the diagnostics (`added_devices`). No JUNG device is known to offer more than No OOB;
+  unverified on air.
+- A *Time keeper* switch (review-4 F4-14; configuration, disabled by default) on every mains device with a Time
+  Server, in a network with the older JUNG actuator pucks (products 0x0010–0x0014): on, the device's Time Server
+  publishes to the pucks' group `FEFF` and Time Role Set makes it a relay; off undoes both. The repair *JUNG HOME
+  pucks have no time keeper* asks for one once every candidate answered that it is not. The app chooses a keeper
+  itself; Home Assistant leaves the choice to the user. Unverified on air: no puck in the installation.
 
 ### CLI tools and library
 
@@ -442,6 +466,20 @@
 - The catalogue puts the firmware's runtime statistics `0x0F01` / `0x0F02` on the Manufacturer server, where every
   node lists them (`docs/hidden-features.md` §2): `tools/mesh_poc.py prop get <node> current_runtime_stats` asks
   there without `--server`. They and the other ids waiting for the probe stay `Raw`.
+- Commissioning by the app's rules (review-4 F4-13): `jhmesh.commission.plan(…, function=…)` plans from the
+  template's composition and `Plan.resume(composition)` again from the node's own (`CompositionMismatch` naming
+  each difference, `composition_mismatch`, `REQUIRED_MODELS`), keeping the element groups; `device_class()`, the
+  rule-based element groups and device-type groups, the app's node-wide values, `Plan.time_server`, and
+  `commission.PHASES` with the two phases that are no Config message. `onboarding.commission(…, on_phase=…)` hands
+  those to the caller, plans again on the Composition Data Status and returns the plan carried out;
+  `CommissioningError.phase` names where it stopped. `devices.time_keeper_candidates()`, `devices.PP2_PIDS`,
+  `ProjectFile.ensure_time_keeper_group()` and `messages.time_role_set()` serve the time keeper (F4-14).
+- Provisioning methods (review-4 P4-8): `jhmesh.provisioning.choose_method(capabilities, static_oob_size)` returns
+  the `Method` (algorithm, authentication) a session runs with; `Provisioner(static_oob=…)` takes the device's value
+  (16 or 32 bytes), runs the HMAC-SHA256 algorithm with 32-octet randoms and confirmations
+  (`confirmation_salt_hmac`, `confirmation_key_hmac`, `confirmation_hmac`; `crypto.s2`, `k5`, `hmac_sha256`) and
+  reports the `method` in its result; `capability_record()` describes what a device offered and what was used
+  (names and flags only), which `vault.VaultNode.capabilities` keeps.
 - Internal: the integration's hub is tested over the simulated mesh of `tests/sim` as well as over the fake proxy
   link (review-4 Q4-19): `tests/test_hub_sim.py` sets the entry up through the simulated proxy node, so relays, the
   proxy filter, the nodes' replay lists and segmentation work as on air, and every test ends on the simulation's

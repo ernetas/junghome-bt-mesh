@@ -327,6 +327,9 @@ async def async_get_config_entry_diagnostics(
             # the followed key refresh, how far it is proven, and how far each device Home Assistant added came
             # through it (review-4 D11: phases and Network IDs, never a key)
             "key_refresh": hub.vault_refresh.diagnostics(),
+            # the devices Home Assistant added (`add_device`): recorded or pending, and what each offered for its
+            # provisioning and the method used (review-4 P4-8: names and flags, never a value or a key)
+            "added_devices": _added_devices(hub),
             # nodes that left a full-budget request unanswered and were not heard from since
             "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
             # each node's clock offset, zone offset and stored location (compared with home, never shown) as it
@@ -365,6 +368,16 @@ def _issues(hass: HomeAssistant) -> list[str]:
         for (domain, _), issue in ir.async_get(hass).issues.items()
         if domain == DOMAIN and issue.active
     )
+
+
+def _added_devices(hub: JungHomeHub) -> dict[str, Any]:
+    """Return each vault node by primary address: whether it is recorded and its provisioning capabilities."""
+    vault = hub.vault.vault
+    nodes = sorted(vault.nodes.values(), key=lambda n: n.unicast) if vault else []
+    return {
+        f"{n.unicast:04X}": {"recorded": n.recorded, "provisioning": n.capabilities}
+        for n in nodes
+    }
 
 
 def _link_history(hub: JungHomeHub) -> list[dict[str, Any]]:

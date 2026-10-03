@@ -307,6 +307,16 @@ class NodeInserts:
             self.changed(node)
         return complete
 
+    async def read_insert(self, node: Node) -> int | None:
+        """Ask a push-button `add_device` is commissioning for its InsertId (the app's RequestRequiredData).
+
+        Returns the insert it carries (`devices.pick_insert`), None when it stayed silent or answered none a
+        push-button can carry; an answer is kept with the node information like every other (`_ask`).
+        """
+        value = await self._ask(node, "user", INSERT_ID, LBC_USER_SERVER)
+        raw = int.from_bytes(value[:2], "little") if value and len(value) >= 2 else None
+        return pick_insert(node.pid, raw, None)
+
     async def _ask(self, node: Node, kind: str, pid: int, server: str) -> bytes | None:
         """Get LBC property `pid` from the node's `kind` server; keep a value it answers (`NODE_INFO_INSERT`).
 

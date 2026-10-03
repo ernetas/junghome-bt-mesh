@@ -855,6 +855,9 @@
       },
       "walking_test": {
         "name": "Walking test"
+      },
+      "time_keeper": {
+        "name": "Time keeper"
       }
     },
     "cover": {
@@ -1302,7 +1305,7 @@
       "message": "The new device's key could not be saved in Home Assistant's vault ({error}), so provisioning stopped before the device received anything: it is still new and nothing was reserved for it at {unicast}. Free up space or repair the storage, then try again."
     },
     "add_device_commissioning_failed": {
-      "message": "The device was provisioned at {unicast} but its configuration failed ({error}). The app does not know it: reset it with the action `junghome_ble.reset_pending_device` (unicast {unicast}), then add it again. Its addresses stay reserved until then."
+      "message": "The device was provisioned at {unicast} but its configuration failed at step {step} ({error}), and it did not confirm a reset. The app does not know it: reset it with the action `junghome_ble.reset_pending_device` (unicast {unicast}), then add it again. Its addresses stay reserved until then."
     },
     "add_device_record_failed": {
       "message": "The device was configured but not recorded at {unicast} ({error}). The app does not know it: reset it with the action `junghome_ble.reset_pending_device` (unicast {unicast}), then add it again. Its addresses stay reserved until then."
@@ -1384,6 +1387,15 @@
     },
     "firmware_update_in_app": {
       "message": "Home Assistant does not update JUNG firmware: update the device with the JUNG HOME app."
+    },
+    "add_device_node_not_configured": {
+      "message": "The new device at {unicast} could not be configured at step {step} ({error}). Home Assistant reset it, as the JUNG HOME app does, and it confirmed: it is a new device again and nothing is reserved for it. A device that is not the product or insert it advertises is refused this way; otherwise add it again."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Provisioning the new device at {unicast} was not confirmed ({error}). Home Assistant reset it, and it confirmed: it is a new device again and nothing is reserved for it. Try again."
+    },
+    "time_keeper_role_failed": {
+      "message": "The device at {address} did not take its time role ({error}). Its Time Server's publication was changed already: switch the time keeper again once the device answers."
     }
   },
   "issues": {
@@ -1573,6 +1585,10 @@
           "seq_store_not_written": "The sequence-number floor (`.storage/junghome_ble.seq.*.floor`) could not be written: nothing was changed. Check the disk Home Assistant's configuration is on, then repair the issue again."
         }
       }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME pucks have no time keeper",
+      "description": "The mesh {title} has JUNG actuator pucks of the older kind ({pucks}): they take their time from a time keeper, a mains device that relays the time to them. No device of the mesh is one, so the pucks' timers drift. Turn on the switch *Time keeper* (a configuration entity, disabled by default) of one device that is always powered, such as a socket or a mini actuator; the JUNG HOME app chooses one itself when it configures a puck. Unverified on air. The issue clears once a device is the time keeper."
     }
   },
   "services": {
@@ -2072,7 +2088,7 @@
     },
     "add_device": {
       "name": "Add device (experimental)",
-      "description": "Adds a new JUNG device to the network as the app would: provisions it, configures it after a device of the same product already in the network, and records it in the export (handed to the gateway). Its element groups take the highest free group addresses of the app's range (the app does not see the device until it imports a file). Needs the entry's *Allow Home Assistant to add devices* option. Administrators only.",
+      "description": "Adds a new JUNG device to the network as the app would: provisions it with the strongest method the device offers (Static OOB when it offers it and its value is given, the HMAC-SHA256 algorithm, else No OOB like the app — without authentication, someone in Bluetooth range while it runs could intercept the network's keys), configures it by the app's rules from what the device reports (refused when that is not what a device of the same product already in the network has), and records it in the export (handed to the gateway). A device whose configuration fails is reset, as the app does. Its element groups take the highest free group addresses of the app's range (the app does not see the device until it imports a file). The response lists the steps done. Needs the entry's *Allow Home Assistant to add devices* option. Administrators only. The authenticated methods, the configuration rules and the reset are unverified on air.",
       "fields": {
         "address": {
           "name": "Bluetooth address",
@@ -2085,6 +2101,10 @@
         "config_entry_id": {
           "name": "Network",
           "description": "The JUNG HOME network to add it to; only needed when there are several."
+        },
+        "static_oob": {
+          "name": "Static OOB value",
+          "description": "Only for a device that offers Static OOB authentication: its 16- or 32-byte value in hexadecimal, as its maker documents it (no JUNG device is known to offer it). Never logged. A device that takes only authenticated provisioning is refused without it, and a device that does not offer it is refused with it."
         }
       }
     },

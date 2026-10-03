@@ -2257,3 +2257,18 @@ def test_property_rows_follow_the_template_and_the_files_address_form() -> None:
     assert pf.clone_property_rows(template, node, function=0, layout=1) == 0
     assert "actuatorExports" not in pf.meta
     assert "buttonLayoutExports" not in pf.meta
+
+
+def test_the_time_keeper_group_is_added_once() -> None:
+    """Review-4 F4-14: the app's `#time_keeper_group#` (0xFEFF), which a time keeper's Time Server publishes to, is
+    created when the export lacks it — never as a room."""
+    pf = ProjectFile.load(SHARE_PATH)
+    assert 0xFEFF not in pf.cdb.groups
+    assert pf.ensure_time_keeper_group() is True
+    assert pf.cdb.groups[0xFEFF] == "#time_keeper_group#"
+    assert pf.ensure_time_keeper_group() is False
+    rows = [g for g in pf.net["groups"] if g["address"] == "FEFF"]
+    assert rows == [
+        {"name": "#time_keeper_group#", "address": "FEFF", "parentAddress": "0000"}
+    ]
+    assert 0xFEFF not in pf.user_groups()

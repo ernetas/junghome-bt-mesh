@@ -95,6 +95,7 @@ from .const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQ_STORE_UNWRITABLE,
     ISSUE_SEQUENCE_SPACE_LOW,
+    ISSUE_TIME_KEEPER_MISSING,
     ISSUE_UNKNOWN_NODES,
     ISSUE_UNKNOWN_NODES_GATEWAY,
     ISSUE_VAULT_KEY_REFRESH,
@@ -115,6 +116,7 @@ from .const import (
     LINK_UPDATING,
     NODE_DIAGNOSTICS_INTERVAL,
     NODE_INFO,
+    NODE_INFO_TIME_ROLE,
     OFFSET_CHANGE_DELAY,
     OFFSET_SEARCH_DAYS,
     OPTION_CLICK_DELAY,
@@ -176,6 +178,7 @@ from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
     BATTERY_PIDS,
     GATEWAY_PID,
+    PP2_PIDS,
     Button,
     Devices,
     Light,
@@ -183,6 +186,7 @@ from .jhmesh.devices import (
     MeteredLoad,
     Socket,
     build_devices,
+    time_keeper_candidates,
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
@@ -202,6 +206,9 @@ if TYPE_CHECKING:
     from .mesh_config import MeshConfigurator
 
 _LOGGER = logging.getLogger(__name__)
+
+# the time roles a node keeping the PP2 pucks' time answers (Time Role Status): authority, relay
+TIME_KEEPER_ROLES = frozenset({1, 2})
 
 # the gateway node's own LBC Manufacturer properties
 GATEWAY_IP, GATEWAY_FINGERPRINT = 0xC002, 0xC003
@@ -2512,6 +2519,7 @@ class JungHomeHub:
         # this covers a hub whose predecessor never ran)
         self._clear_issues()
         self.inserts.report_mismatch()
+        self._report_time_keeper()
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
             self._report_address_shared()
@@ -2645,6 +2653,7 @@ class JungHomeHub:
             ISSUE_VAULT_KEY_REFRESH,
             ISSUE_INSERT_MISMATCH,
             ISSUE_NODE_CLOCK_WRONG,
+            ISSUE_TIME_KEEPER_MISSING,
         ):
             ir.async_delete_issue(self.hass, DOMAIN, issue_id(self.entry, key))
 
@@ -4232,11 +4241,12 @@ class JungHomeHub:
             self.hass, self._poll_energy(), f"{DOMAIN} energy"
         )
 
-    async def _send_time(self) -> None:
+    async def _send_time(self, destination: int = ALL_NODES) -> None:
         """Broadcast Time Set (unacknowledged, to all nodes) as the app does after every connection.
 
         Devices with timers or astro schedules have no clock source but this message: the gateway never publishes
         time (its publish interval is configured to 0), so without a phone nearby their schedules drift.
+        `destination`: one element instead (a new node's Time Server, `onboard`'s SetTime phase).
         """
         now = dt_util.now()
         try:
@@ -4247,13 +4257,15 @@ class JungHomeHub:
             pdu = M.time_set(now, zone_offset=timedelta(0))
         try:
             await self._while_seq_stalls(
-                partial(self.proxy.send_access, ALL_NODES, pdu)
+                partial(self.proxy.send_access, destination, pdu)
             )
         except ConnectionError as err:
             _LOGGER.debug("Time Set not sent: %s", err)
         else:
             _LOGGER.debug(
-                "Sent Time Set %s to all nodes", now.isoformat(timespec="seconds")
+                "Sent Time Set %s to %04X",
+                now.isoformat(timespec="seconds"),
+                destination,
             )
 
     async def _send_location(self) -> None:
@@ -4276,9 +4288,12 @@ class JungHomeHub:
         else:
             _LOGGER.debug("Sent the home location to all nodes")
 
-    async def async_send_time(self) -> None:
-        """Broadcast Time Set now (the `node_clock_wrong` repair's fix); without a link nothing goes out."""
-        await self._send_time()
+    async def async_send_time(self, destination: int = ALL_NODES) -> None:
+        """Broadcast Time Set now (the `node_clock_wrong` repair's fix); without a link nothing goes out.
+
+        `destination`: one element instead of all nodes (`onboard`: the new node's Time Server).
+        """
+        await self._send_time(destination)
 
     @callback
     def _send_time_daily(self, _now: datetime) -> None:
@@ -5264,6 +5279,8 @@ class JungHomeHub:
         if info.get(name) == raw:
             return
         info[name] = raw
+        if name == NODE_INFO_TIME_ROLE:
+            self._report_time_keeper()
         node_versions_store(self.hass, self.entry.entry_id).async_delay_save(
             lambda: {
                 f"{a:04X}": {k: v.hex() for k, v in items.items()}
@@ -5273,6 +5290,39 @@ class JungHomeHub:
         )
         if (node := self.cdb.node_by_addr(unicast)) is not None:
             update_node_device(self.hass, self, node)
+
+    @callback
+    def _report_time_keeper(self) -> None:
+        """Raise the `time_keeper_missing` repair while the project has PP2 pucks and no node keeps their time (F4-14).
+
+        The app elects a time keeper itself whenever a PP2 puck is in the project (`EnsureTimeKeeper`,
+        network-logic.md §6.2); Home Assistant leaves the choice to the user (`switch.JungHomeTimeKeeper`). Raised
+        only once every node that could keep the time (`devices.time_keeper_candidates`) answered its time role (the
+        connect-time Time Role Get): a role not asked yet is no evidence. One that answered relay or authority keeps
+        it. Names the pucks' addresses. Unverified on air: no puck in the installation.
+        """
+        issue = issue_id(self.entry, ISSUE_TIME_KEEPER_MISSING)
+        pucks = sorted(n.unicast for n in self.cdb.nodes if n.pid in PP2_PIDS)
+        roles = [
+            self.node_info(n.unicast).get(NODE_INFO_TIME_ROLE)
+            for n in time_keeper_candidates(self.cdb)
+        ]
+        known = [role[0] for role in roles if role]
+        if not pucks or len(known) < len(roles) or set(known) & TIME_KEEPER_ROLES:
+            ir.async_delete_issue(self.hass, DOMAIN, issue)
+            return
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            issue,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_TIME_KEEPER_MISSING,
+            translation_placeholders={
+                "title": self.entry.title,
+                "pucks": ", ".join(f"{a:04X}" for a in pucks),
+            },
+        )
 
     def _lacks_precise_energy(self, src: int) -> None:
         """Fall back to 0x006A for the *Energy* of a load other than a socket whose meter `src` says it has no 0x0072.

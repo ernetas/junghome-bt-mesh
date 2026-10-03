@@ -16,6 +16,9 @@ A detector's walking test is a config switch of its own (`JungHomeWalkingTest`),
 
 A 2-gang node's *Synchronise LED colours* (`JungHomeLedColourSync`) copies LED 1's colours to LED 2; the flag is Home
 Assistant's own, as it is the app's.
+
+In a project with PP2 pucks, every mains node with a Time Server has a *Time keeper* switch (`JungHomeTimeKeeper`,
+off by default): the node relays the time to the pucks (review-4 F4-14).
 """
 
 from __future__ import annotations
@@ -66,6 +69,7 @@ from .const import (
     DETECTOR_WALKING_TEST_DURATION,
     DETECTOR_WALKING_TEST_POLL,
     DOMAIN,
+    NODE_INFO_TIME_ROLE,
     PROPERTY_READ_RETRIES,
     SIGNAL_UPDATE,
 )
@@ -82,7 +86,15 @@ from .jhmesh import config_messages as C
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.audit import Query
-from .jhmesh.devices import ALL_SOCKETS, GATEWAY_PID, PRESENCE_DETECTOR_PID, Socket
+from .jhmesh.devices import (
+    ALL_SOCKETS,
+    GATEWAY_PID,
+    PP2_PIDS,
+    PRESENCE_DETECTOR_PID,
+    TIME_SETUP_SERVER,
+    Socket,
+    time_keeper_candidates,
+)
 from .mesh_config import SENSOR_SERVER, sensor_elements, sensor_publication
 from .services import async_configure
 
@@ -160,6 +172,10 @@ def build_entities(hub: JungHomeHub) -> list[SwitchEntity]:
         JungHomeWalkingTest(hub, target)
         for target in property_id_targets(hub, PROPERTY_WALKING_TEST, "walking_test")
     ]
+    if any(n.pid in PP2_PIDS for n in hub.cdb.nodes):
+        entities += [
+            JungHomeTimeKeeper(hub, node) for node in time_keeper_candidates(hub.cdb)
+        ]
     return entities
 
 
@@ -707,6 +723,79 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
             self._published = self._read_link = None
             if self.platform is not None:
                 self._handle_update()
+
+
+class JungHomeTimeKeeper(JungHomeEntity, SwitchEntity):
+    """*Time keeper*: the node relays the time to the PP2 pucks (review-4 F4-14; off by default, unverified on air).
+
+    The app's `TimeKeeperConfiguration` (network-logic.md §6.2), by hand: the app elects one mains node itself
+    whenever the project has a PP2 puck (`EnsureTimeKeeper`), Home Assistant lets the user pick one, and raises
+    the `time_keeper_missing` repair while none is (`JungHomeHub._report_time_keeper`). On: the node's Time Server
+    publishes to `FEFF` (`MeshConfigurator.set_time_keeper`), then Time Role Set 2 (relay) to its Time Setup
+    Server; off: the publication removed, then Time Role Set 3 (client). Shows the time role the node last
+    answered (the connect-time Time Role Get, `config_entities.PropertyReader`, or the answer to the Set): on for
+    relay, unknown until it answered. Several keepers are not refused: each relays the same time.
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "time_keeper"
+
+    def __init__(self, hub: JungHomeHub, node: Node) -> None:
+        """Bind to the node's Time Setup Server element."""
+        element = next(e for e in node.elements if TIME_SETUP_SERVER in e.models)
+        super().__init__(
+            hub,
+            element.address,
+            f"{node.uuid.lower()}-time_keeper",
+            node_device_info(hub, node),
+        )
+        self.node = node
+        self._attr_extra_state_attributes = {"mesh_address": f"{node.unicast:04X}"}
+
+    @property
+    def is_on(self) -> bool | None:
+        """Whether the node answered the relay role; None until it answered one."""
+        raw = self.hub.node_info(self.node.unicast).get(NODE_INFO_TIME_ROLE)
+        return None if not raw else raw[0] == M.TIME_ROLE_RELAY
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Make the node the time keeper."""
+        await self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Stand the node down (a time client again)."""
+        await self._set(False)
+
+    async def _set(self, on: bool) -> None:
+        unicast = self.node.unicast
+        await async_configure(
+            self.hass,
+            self.hub.entry.entry_id,
+            lambda configurator: configurator.set_time_keeper(unicast, on),
+        )
+        role = M.TIME_ROLE_RELAY if on else M.TIME_ROLE_CLIENT
+        try:
+            reply = await self.hub.proxy.request(
+                self.address,
+                M.time_role_set(role),
+                M.TIME_ROLE_STATUS,
+                timeout=const.PROPERTY_READ_TIMEOUT,
+                retries=PROPERTY_READ_RETRIES,
+            )
+            M.decode_time_role_status(reply.params)
+        except (TimeoutError, ConnectionError, ValueError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="time_keeper_role_failed",
+                translation_placeholders={
+                    "address": f"{unicast:04X}",
+                    "error": str(err) or type(err).__name__,
+                },
+            ) from err
+        self.hub.remember_node_info(unicast, NODE_INFO_TIME_ROLE, reply.params[:1])
+        if self.platform is not None:
+            self.async_write_ha_state()
 
 
 class JungHomeAllSockets(JungHomeCentralEntity, SwitchEntity):

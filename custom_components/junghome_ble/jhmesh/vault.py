@@ -262,6 +262,9 @@ class VaultNode:
     groups_known: bool = True
     # how far it came through the last key refresh Home Assistant carried it through; None: none so far
     key_refresh: RefreshProgress | None = None
+    # what its Provisioning Capabilities offered and which method provisioned it (`provisioning.capability_record`:
+    # algorithm and OOB names, sizes and flags, never a value or a key); None in a vault from before it was kept
+    capabilities: dict[str, Any] | None = None
 
     @property
     def recorded(self) -> bool:
@@ -329,6 +332,13 @@ def _range(value: Any, what: str, bounds: Range) -> Range:
     return low, high
 
 
+def _optional_object(value: Any, what: str) -> dict[str, Any] | None:
+    if value is not None and not isinstance(value, dict):
+        msg = f"{what} is not an object"
+        raise VaultError(msg)
+    return value
+
+
 def _uuid(value: Any, what: str) -> str:
     try:
         return str(uuid_mod.UUID(str(value))).upper()
@@ -389,6 +399,11 @@ class Vault:
                         if n.key_refresh is None
                         else {"keyRefresh": n.key_refresh.to_dict()}
                     ),
+                    **(
+                        {}
+                        if n.capabilities is None
+                        else {"capabilities": copy.deepcopy(n.capabilities)}
+                    ),
                 }
                 for n in self.nodes.values()
             ],
@@ -437,12 +452,9 @@ class Vault:
             ):
                 msg = f"{what} elements is not a positive integer"
                 raise VaultError(msg)
-            entry = row.get("entry")
+            entry = _optional_object(row.get("entry"), f"{what} entry")
             groups = row.get("groups", [])
             devices = row.get("devices", [])
-            if entry is not None and not isinstance(entry, dict):
-                msg = f"{what} entry is not an object"
-                raise VaultError(msg)
             if not isinstance(groups, list) or not all(
                 isinstance(g, dict) and isinstance(g.get("name"), str) for g in groups
             ):
@@ -474,6 +486,7 @@ class Vault:
                 None
                 if progress is None
                 else RefreshProgress.from_dict(progress, f"{what} keyRefresh"),
+                _optional_object(row.get("capabilities"), f"{what} capabilities"),
             )
             vault.nodes[node.uuid] = node
         return vault
@@ -492,12 +505,14 @@ class Vault:
         dev_key: bytes,
         groups: Iterable[tuple[int, str]] = (),
         key_refresh: RefreshProgress | None = None,
+        capabilities: dict[str, Any] | None = None,
     ) -> VaultNode:
         """Keep a node's device key the moment provisioning completed: pending until `remember_recorded`.
 
         `groups`: the element groups its commissioning plan allocated, `(address, name)` — reserved with the node
         (`reserved_groups`) whether or not the commissioning got as far as wiring them. `key_refresh`: where a node
         provisioned during a key refresh starts (Phase 2 hands out the new key with the Key Refresh flag set).
+        `capabilities`: what the device offered and the method used (`provisioning.capability_record`).
         """
         node = VaultNode(
             canonical_uuid(uuid),
@@ -506,6 +521,7 @@ class Vault:
             dev_key,
             groups=list(groups),
             key_refresh=key_refresh,
+            capabilities=capabilities,
         )
         self.nodes[node.uuid] = node
         return node
@@ -550,6 +566,7 @@ class Vault:
             ],
             [copy.deepcopy(row) for row in _device_rows(pf.meta, wanted)],
             key_refresh=None if before is None else before.key_refresh,
+            capabilities=None if before is None else before.capabilities,
         )
         self.nodes[wanted] = kept
         return kept

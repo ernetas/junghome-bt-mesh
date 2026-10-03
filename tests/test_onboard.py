@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import shutil
@@ -33,9 +34,13 @@ from custom_components.junghome_ble.const import (
     OPTION_PROVISIONER_IDENTITY,
     SERVICE_LINK_WAIT,
 )
+from custom_components.junghome_ble.diagnostics import (
+    async_get_config_entry_diagnostics,
+)
 from custom_components.junghome_ble.entity import mesh_identifier, node_identifier
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi
 from custom_components.junghome_ble.jhmesh import config_messages as C
+from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.advert import JungAdvertisement
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
@@ -75,7 +80,7 @@ from .conftest import (
     wait_for_link,
 )
 from .helpers import find_issue
-from .jhmesh.conftest import FakeConfigServers
+from .jhmesh.conftest import FakeConfigServers, composition_params
 from .jhmesh.test_provisioning import FakeDevice
 from .test_services import GATEWAY_DATA
 
@@ -115,16 +120,33 @@ def refused(
 
 
 class FreshNodes:
-    """The new node's Configuration Server: Sets recorded and answered, Gets answered from what was recorded."""
+    """The new node's Configuration Server: Sets recorded and answered, Gets answered from what was recorded.
 
-    def __init__(self, link: FakeProxyLink) -> None:
+    Its Composition Data is the template's (`composition`: what another product would answer instead); a Config
+    Node Reset is confirmed only with `confirm_reset` (silent otherwise: the device stays pending), and listed in
+    `resets`.
+    """
+
+    def __init__(self, link: FakeProxyLink, template: int = TEMPLATE) -> None:
         self.servers = FakeConfigServers(link.cdb)
         self.refuse = False
+        node = link.cdb.node_by_addr(template)
+        assert node is not None
+        self.composition = composition_params(node)
+        self.confirm_reset = False
+        self.resets: list[int] = []
 
     def __call__(self, node: int, access: bytes) -> bytes | None:
         op, _cid, p = decode_opcode(access)
         if op == C.CONFIG_COMPOSITION_DATA_GET:
-            return encode_opcode(C.CONFIG_COMPOSITION_DATA_STATUS) + b"\x00" + bytes(14)
+            return encode_opcode(C.CONFIG_COMPOSITION_DATA_STATUS) + self.composition
+        if op == C.CONFIG_NODE_RESET:
+            self.resets.append(node)
+            return (
+                encode_opcode(C.CONFIG_NODE_RESET_STATUS)
+                if self.confirm_reset
+                else None
+            )
         if op not in SET_STATUS:
             return self.servers(node, access)
         status, coded = SET_STATUS[op]
@@ -156,6 +178,12 @@ def reset_and_answer(_node: int, access: bytes) -> bytes | None:
     if not status:
         return None
     return encode_opcode(status) + (b"\x00" if coded else b"") + params
+
+
+@pytest.fixture(autouse=True)
+def quick_resets(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A new device that does not confirm its reset (`onboard._reset_new_node`) is given up in milliseconds."""
+    monkeypatch.setattr(onboard, "NODE_RESET_TIMEOUT", 0.01)
 
 
 @pytest.fixture
@@ -913,6 +941,7 @@ async def test_adding_and_removing_run_on_the_hub_the_lock_hands_them(
         configurator: mesh_config.MeshConfigurator,
         _address: str,
         _name: str,
+        _static_oob: bytes | None,
     ) -> dict[str, Any]:
         is_current(hub, configurator)
         return {"unicast": "0D20"}
@@ -1128,10 +1157,14 @@ async def test_a_provisioning_not_confirmed_after_the_data_keeps_the_device_pend
     hass: HomeAssistant,
     provisioning_entry: MockConfigEntry,
     mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
     network_id: bytes,
 ) -> None:
-    """Once the Data PDU went out, a failure does not prove the device has nothing: the record kept before it
-    stays pending, so its addresses stay reserved and `reset_pending_device` can reach it."""
+    """Once the Data PDU went out, a failure does not prove the device has nothing: it is sent a reset under the
+    key kept for it (the mesh does not know that key: this device never took its data, so nothing answers), and
+    the record kept before it stays pending, so its addresses stay reserved and `reset_pending_device` can reach
+    it."""
+    fake_link.expect_undecryptable = True
     hub = provisioning_entry.runtime_data
     template = hub.cdb.node_by_addr(TEMPLATE)
     assert template is not None
@@ -1603,3 +1636,363 @@ def test_a_device_provisioned_in_phase_two_starts_there() -> None:
         net_key=new, unicast=0x7FF0, iv_index=0, iv_update=False, key_refresh=False
     )
     assert onboard._refresh_progress(plain) is None
+
+
+# ----------------------------------------------------------------------------- review-4 F4-13, P4-8: brief 40
+
+
+async def add_new_device(hass: HomeAssistant, **fields: Any) -> dict[str, Any] | None:
+    """Call `add_device` for the new device, with the boot delay skipped."""
+    with patch.object(onboard, "NODE_BOOT_DELAY", 0.0):
+        return await hass.services.async_call(
+            DOMAIN,
+            "add_device",
+            {"address": NEW_MAC, "name": "Hall light", **fields},
+            blocking=True,
+            return_response=True,
+        )
+
+
+async def test_add_device_lists_its_steps_and_sends_the_time(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """The app's sequence, planned again from the node's own composition: the InsertId read of a push-button,
+    Time Set to its Time Server, the steps in the response; the vault and the diagnostics keep what it offered."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fake_link.config_reply = FreshNodes(fake_link)
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with patch.object(onboard, "establish_connection", AsyncMock(return_value=device)):
+        result = await add_new_device(hass)
+    assert result is not None
+    unicast = int(str(result["unicast"]), 16)
+    assert result["steps"] == [
+        "Provisioning",
+        "SetWhitelistFilter",
+        "RequestCompositionData",
+        "SetConfiguration",
+        "SetBlacklistFilter",
+        "RequestRequiredData",
+        "SetTime",
+        "CreateElementGroups",
+        "FinishConfiguration",
+        "ReadBack",
+        "Recording",
+    ]
+    assert result["provisioning"] == {
+        "algorithm": "BTM_ECDH_P256_CMAC_AES128_AES_CCM",
+        "authentication": "No OOB",
+    }
+    sent = [(dst, decode_opcode(access)[0]) for _src, dst, access in fake_link.sent]
+    assert (
+        unicast,
+        M.TIME_SET,
+    ) in sent  # to its own Time Server, besides the broadcasts
+    insert_get = M.vendor_property_get("user", 0x0002)
+    assert (unicast, insert_get) in [(d, a) for _s, d, a in fake_link.sent]
+    await hass.async_block_till_done()
+    await wait_for_link(hass, provisioning_entry)
+    hub = provisioning_entry.runtime_data
+    vault = hub.vault.vault
+    assert vault is not None
+    kept = next(n for n in vault.nodes.values() if n.unicast == unicast)
+    assert kept.capabilities is not None
+    assert kept.capabilities["used"] == result["provisioning"]
+    assert kept.capabilities["algorithms"] == ["BTM_ECDH_P256_CMAC_AES128_AES_CCM"]
+    diagnostics = await async_get_config_entry_diagnostics(hass, provisioning_entry)
+    assert diagnostics["added_devices"][f"{unicast:04X}"] == {
+        "recorded": True,
+        "provisioning": kept.capabilities,
+    }
+
+
+async def test_add_device_with_the_devices_static_oob_value(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 P4-8: a device offering Static OOB and the HMAC algorithm is provisioned with both when its value is
+    given — the value appears in no log, no error and not in the vault."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fake_link.config_reply = FreshNodes(fake_link)
+    value = bytes(range(0x30, 0x50))
+    device = FakeDevice(
+        elements=len(template.elements),
+        mtu_size=69,
+        algorithms=3,
+        oob_type=1,
+        static_oob=value,
+    )
+    with patch.object(onboard, "establish_connection", AsyncMock(return_value=device)):
+        result = await add_new_device(hass, static_oob=value.hex(":"))
+    assert result is not None
+    assert result["provisioning"] == {
+        "algorithm": "BTM_ECDH_P256_HMAC_SHA256_AES_CCM",
+        "authentication": "Static OOB",
+    }
+    assert device.start == bytes.fromhex("0100010000")
+    assert value.hex() not in caplog.text.lower()
+    vault = hub.vault.vault
+    assert vault is not None
+    assert value.hex() not in json.dumps(vault.to_dict()).lower()
+    await hass.async_block_till_done()
+    await wait_for_link(hass, provisioning_entry)
+
+
+async def test_a_device_taking_only_authenticated_provisioning_needs_its_value(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+) -> None:
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    device = FakeDevice(
+        elements=len(template.elements), mtu_size=69, algorithms=3, oob_type=3
+    )
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        refused(HomeAssistantError, "add_device_provisioning_failed") as caught,
+    ):
+        await add_new_device(hass)
+    assert "only OOB-authenticated" in caught.value.translation_placeholders["error"]
+    assert [p[0] for p in device.received] == [0x00]  # the Invite, nothing after it
+    vault = hub.vault.vault
+    assert vault is None or not vault.nodes
+
+
+@pytest.mark.parametrize(
+    "value", ["00", "zz" * 16, "00" * 20, 5], ids=["short", "hex", "size", "number"]
+)
+async def test_a_static_oob_value_that_cannot_be_one_is_refused(
+    hass: HomeAssistant, provisioning_entry: MockConfigEntry, value: Any
+) -> None:
+    with pytest.raises(
+        vol.Invalid, match=r"not hexadecimal|not 16 or 32 bytes"
+    ) as caught:
+        await add_new_device(hass, static_oob=value)
+    assert "zz" not in str(caught.value)
+
+
+async def test_another_product_answering_is_reset_and_forgotten(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """Its Composition Data is not the template's: refused before any binding, reset as the app does, and once it
+    confirmed it is a new device again — nothing pending, nothing reserved (`nodenotconfigured`)."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fresh = FreshNodes(fake_link)
+    fresh.composition = composition_params(template, pid=0x0001)
+    fresh.confirm_reset = True
+    fake_link.config_reply = fresh
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        refused(HomeAssistantError, "add_device_node_not_configured") as caught,
+    ):
+        await add_new_device(hass)
+    placeholders = caught.value.translation_placeholders
+    assert placeholders["step"] == "RequestCompositionData"
+    assert "product 0001, not 0002" in placeholders["error"]
+    unicast = int(placeholders["unicast"], 16)
+    assert fresh.resets == [unicast]
+    assert not fresh.servers.app_keys  # nothing was bound
+    vault = hub.vault.vault
+    assert vault is not None
+    assert not vault.nodes
+    assert hub.proxy.cdb.node_by_addr(unicast) is None
+    assert pending_issue(hass, provisioning_entry) is None
+
+
+async def test_a_push_button_with_another_insert_is_reset(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """It advertised a switch insert, its InsertId says blinds: the plan's groups would be a lamp's. Refused in
+    `RequestRequiredData`, before any element group; this one does not confirm its reset: it stays pending."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fresh = FreshNodes(fake_link)
+    fake_link.config_reply = fresh
+    insert_get = M.vendor_property_get("user", 0x0002)
+
+    def blinds_insert(_element: int, access: bytes) -> bytes | None:
+        if access != insert_get:
+            return None
+        status = encode_opcode(M.VENDOR_PROPERTY_STATUS_OPCODES["user"], M.JUNG_CID)
+        return status + bytes.fromhex("0200010500")
+
+    fake_link.app_reply = blinds_insert
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        refused(HomeAssistantError, "add_device_commissioning_failed") as caught,
+    ):
+        await add_new_device(hass)
+    placeholders = caught.value.translation_placeholders
+    assert placeholders["step"] == "RequestRequiredData"
+    assert "carries insert 5, it was planned for insert 0" in placeholders["error"]
+    assert not fresh.servers.publish  # no element group wired
+    assert set(fresh.resets) == {int(placeholders["unicast"], 16)}  # three attempts
+    assert pending_issue(hass, provisioning_entry) is not None
+
+
+async def test_a_commissioning_over_its_budget_is_reset(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fresh = FreshNodes(fake_link)
+    fresh.confirm_reset = True
+    fake_link.config_reply = fresh
+
+    async def stuck(*_args: Any, **_kwargs: Any) -> None:
+        await asyncio.Event().wait()
+
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        patch.object(onboard, "run_commission", stuck),
+        patch.object(onboard, "COMMISSIONING_BUDGET", 0.01),
+        refused(HomeAssistantError, "add_device_node_not_configured") as caught,
+    ):
+        await add_new_device(hass)
+    assert (
+        "not finished within 0.01 s" in caught.value.translation_placeholders["error"]
+    )
+    assert caught.value.translation_placeholders["step"] == "Provisioning"
+
+
+async def test_a_lost_link_during_the_commissioning_is_reset(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fresh = FreshNodes(fake_link)
+    fresh.confirm_reset = True
+    fake_link.config_reply = fresh
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        patch.object(
+            onboard, "run_commission", AsyncMock(side_effect=ConnectionError("lost"))
+        ),
+        refused(HomeAssistantError, "add_device_node_not_configured") as caught,
+    ):
+        await add_new_device(hass)
+    assert caught.value.translation_placeholders["error"] == "lost"
+
+
+class LostComplete(FakeDevice):
+    """A device that takes its Provisioning Data, but whose Complete never arrives."""
+
+    def handle(self, pdu_: bytes) -> list[bytes]:
+        replies = super().handle(pdu_)
+        return [] if pdu_[0] == DATA else replies
+
+
+async def test_a_device_whose_complete_was_lost_is_reset(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """The app's 30 s for the whole provisioning ran out after the Data PDU: the device may hold its data, so it
+    is sent a reset with the key kept in the vault — confirmed, it is new again and nothing stays reserved."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fresh = FreshNodes(fake_link)
+    fresh.confirm_reset = True
+    fake_link.config_reply = fresh
+    device = LostComplete(elements=len(template.elements), mtu_size=69)
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        patch.object(onboard, "PROVISIONING_BUDGET", 0.05),
+        refused(HomeAssistantError, "add_device_provisioning_reset") as caught,
+    ):
+        await add_new_device(hass)
+    assert device.data is not None  # it took its data
+    unicast = int(caught.value.translation_placeholders["unicast"], 16)
+    assert (
+        caught.value.translation_placeholders["error"] == "not completed within 0.05 s"
+    )
+    assert fresh.resets == [unicast]
+    vault = hub.vault.vault
+    assert vault is not None
+    assert not vault.nodes
+    assert hub.proxy.cdb.node_by_addr(unicast) is None
+    assert pending_issue(hass, provisioning_entry) is None
+
+
+async def test_a_running_add_device_cancelled_closes_the_link(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+) -> None:
+    """`provisioningaborting`: cancelling the action's task closes the PB-GATT link (the device forgets the
+    half-finished session); nothing was kept for a device that never got as far as its key."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    device.silent_after = 0x02  # waits for the device's public key forever
+    device.disconnect = AsyncMock()  # type: ignore[method-assign]
+    with patch.object(onboard, "establish_connection", AsyncMock(return_value=device)):
+        task = hass.async_create_task(add_new_device(hass))
+        while len(device.received) < 3:  # noqa: ASYNC110 - the fake device has no event to wait on
+            await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    device.disconnect.assert_awaited()
+    vault = hub.vault.vault
+    assert vault is None or not vault.nodes

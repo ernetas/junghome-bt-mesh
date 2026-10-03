@@ -121,6 +121,13 @@ DEVICE_TYPE_GROUPS = (
 ELEMENT_GROUP_PREFIX = "element group #"
 DEVICE_TYPE_GROUP_PREFIX = "device type group"
 TIME_KEEPER_GROUP = "#time_keeper_group#"
+TIME_KEEPER_ADDRESS = (
+    0xFEFF  # the time keeper's Time Server publishes here, the PP2 pucks' subscribe
+)
+# legacy "PP2" pucks (`K1()`: company 0x0527, product 0x0010..0x0014, network-logic.md §3.4 step 9, §6.2): they take
+# their time from a time keeper's Time Status on TIME_KEEPER_ADDRESS
+PP2_PIDS = range(0x0010, 0x0015)
+TIME_SERVER, TIME_SETUP_SERVER = "1200", "1201"
 
 
 def is_room(address: int, name: str) -> bool:
@@ -703,6 +710,23 @@ def insert_mismatch(
         and second is not None
         and first != second
     )
+
+
+def time_keeper_candidates(cdb: CDB) -> list[Node]:
+    """Return the nodes that may keep the PP2 pucks' time (network-logic.md §6.2).
+
+    Every JUNG node with a Time Server and its Setup Server, but the gateway and the battery devices: the app never
+    chooses those.
+    """
+    return [
+        n
+        for n in cdb.nodes
+        if n.pid is not None
+        and n.pid not in BATTERY_PIDS
+        and n.pid != GATEWAY_PID
+        and any(TIME_SERVER in e.models for e in n.elements)
+        and any(TIME_SETUP_SERVER in e.models for e in n.elements)
+    ]
 
 
 def key_position(layout: int | None, location: int) -> str | None:

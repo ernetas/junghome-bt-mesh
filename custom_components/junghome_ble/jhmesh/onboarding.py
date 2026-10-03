@@ -9,7 +9,9 @@ installation is here:
   range, `docs/android/transport-provisioning.md` §3.3);
 - `node_for`: the new node as the proxy client needs it to talk to it (`ProxyClient.add_node`) before the export
   knows it;
-- `commission`: the plan's messages, each answered and each status checked, over the proxy link;
+- `commission`: the plan's messages, each answered and each status checked, over the proxy link — planned again
+  from the node's own Composition Data once it answered (`commission.Plan.resume`), and the two phases that are no
+  Config message (the InsertId read, Time Set) handed to the caller at their place in the sequence;
 - `node_entry` + `record`: the CDB node entry (the template's composition, the new identity and device key,
   what the node *answered* to the read-back — the audit's Gets — for publications, subscriptions and bindings),
   the element groups the plan allocated and the app's device rows, so the app, the gateway and the integration all
@@ -27,10 +29,11 @@ from typing import TYPE_CHECKING, Any
 
 from . import config_messages as C
 from .cdb import Element, Node, canonical_uuid
+from .commission import CALLER_PHASES, PHASES
 from .devices import expected_device_count
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Awaitable, Callable, Iterable
 
     from .audit import NodeAudit
     from .cdb import CDB
@@ -42,7 +45,15 @@ UNICAST_MAX = 0x7FFF
 
 
 class CommissioningError(Exception):
-    """A Config message of the plan was refused (its status names why) or left unanswered."""
+    """The commissioning stopped: a Config message refused or unanswered, a node that is not the template's.
+
+    The status names why a message was refused; `phase` names the step of the app's sequence it stopped in.
+    """
+
+    def __init__(self, message: str, phase: str = "") -> None:
+        """Record the message and the phase."""
+        super().__init__(message)
+        self.phase = phase
 
 
 def free_unicast_block(
@@ -113,14 +124,38 @@ def _blank(models: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 async def commission(
-    proxy: ProxyClient, plan: Plan, *, timeout: float = 3.0, retries: int = 3
-) -> None:
+    proxy: ProxyClient,
+    plan: Plan,
+    *,
+    timeout: float = 3.0,
+    retries: int = 3,
+    on_phase: Callable[[str], Awaitable[None]] | None = None,
+) -> Plan:
     """Send the plan's messages in order; `CommissioningError` at the first one refused or unanswered.
 
     Each step waits for its status (the plan names it) before the next one goes out, as the app does; a step the
     node refuses stops the plan — what went before stays on the node, and `Config Node Reset` is the way back.
+    The Composition Data Status plans the rest again from the node's own composition (`Plan.resume`), which must
+    be the template's: one that is not stops here, before any binding. `on_phase` is awaited as each phase of the
+    app's sequence begins, the two without a Config message (`commission.CALLER_PHASES`) included: the caller's
+    InsertId read and Time Set go there, and what it raises stops the commissioning. Returns the plan carried out
+    (the resumed one).
     """
-    for step in plan.steps:
+    announced: list[str] = []
+
+    async def enter(phase: str | None) -> None:
+        # the caller's phases that come before this one first (None: those left at the end), each once
+        upto = len(PHASES) if phase is None else PHASES.index(phase) + 1
+        for name in PHASES[:upto]:
+            if name not in announced and (name == phase or name in CALLER_PHASES):
+                announced.append(name)
+                if on_phase is not None:
+                    await on_phase(name)
+
+    current, index = plan, 0
+    while index < len(current.steps):
+        step = current.steps[index]
+        await enter(step.phase)
         try:
             reply = await proxy.request_config(
                 step.destination,
@@ -130,10 +165,21 @@ async def commission(
                 retries=retries,
             )
         except TimeoutError as err:
-            raise CommissioningError(f"no answer to {step.text}") from err
+            raise CommissioningError(f"no answer to {step.text}", step.phase) from err
+        index += 1
+        if step.expect == C.CONFIG_COMPOSITION_DATA_STATUS:
+            try:
+                current = plan.resume(C.decode_composition_data(reply.params))
+            except ValueError as err:  # undecodable, or not the template's
+                raise CommissioningError(str(err), step.phase) from err
+            continue
         decoded = C.decode_config(reply.opcode, reply.params)
         if isinstance(decoded, C.ConfigStatus) and not decoded.ok:
-            raise CommissioningError(f"{step.text} refused: {decoded.status_name}")
+            raise CommissioningError(
+                f"{step.text} refused: {decoded.status_name}", step.phase
+            )
+    await enter(None)
+    return current
 
 
 def node_entry(

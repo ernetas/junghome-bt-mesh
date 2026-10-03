@@ -117,7 +117,7 @@
     "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_element_groups_mirror_the_templates_own_group_wiring",
+    "tests/jhmesh/test_commission.py::test_element_groups_by_the_apps_rule",
     "tests/jhmesh/test_commission.py::test_android_exports_get_decimal_element_group_names",
     "tests/jhmesh/test_commission.py::test_group_range_override_and_exhaustion",
     "tests/jhmesh/test_export.py::test_free_group_address_avoids_every_group_the_export_uses",
@@ -286,7 +286,7 @@
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template",
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds",
     "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
    ],
    "class": "dup",
@@ -317,8 +317,8 @@
     "custom_components/junghome_ble/jhmesh/commission.py::DEFAULT_TTL"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_fall_back_to_what_the_installation_holds",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps",
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:cfgop:800d",
@@ -541,8 +541,8 @@
     "custom_components/junghome_ble/jhmesh/commission.py::DEFAULT_NETWORK_TRANSMIT"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_fall_back_to_what_the_installation_holds",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps",
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:cfgop:8024; same Config message; the finding recorded here (commissioning copies the template's network transmit 2/9 where the app sends count 3 / 10 steps, no Set for an existing node) is carried by that row",
@@ -572,8 +572,8 @@
     "custom_components/junghome_ble/jhmesh/commission.py::DEFAULT_RELAY_RETRANSMIT"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_fall_back_to_what_the_installation_holds",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps",
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:cfgop:8027; same Config message; the finding recorded here (commissioning copies relay retransmit 2/8 where the app sends 3/9, no Relay Set for an existing node, review-3 N10) is carried by that row",
@@ -2804,7 +2804,7 @@
     "custom_components/junghome_ble/jhmesh/commission.py::SUPPORTED_SERVERS"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_element_groups_mirror_the_templates_own_group_wiring"
+    "tests/jhmesh/test_commission.py::test_element_groups_by_the_apps_rule"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:pref:use_status_message_optimization; note from this row: the simple-mode decompile shows CreateElementConnectionGroups reading the flag (reduced per-device-type wiring when on, inventory net:uc:createelementconnectiongroups), so that row's 'no functional effect' is wrong; the default (off) wiring rule is tracked at net:uc:createelementconnectiongroups",
@@ -3335,17 +3335,19 @@
   },
   {
    "id": "net:uc:connecttodevicetypegroup",
-   "status": "partial",
+   "status": "implemented",
    "code": [
+    "custom_components/junghome_ble/jhmesh/commission.py::device_class",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder._device_type_targets",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups",
-    "custom_components/junghome_ble/jhmesh/commission.py::DEVICE_TYPE_GROUPS"
+    "custom_components/junghome_ble/jhmesh/commission.py::DEVICE_TYPE_SERVERS"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_device_type_groups_and_the_sensor_server"
+    "tests/jhmesh/test_commission.py::test_device_type_groups_and_the_sensor_server",
+    "tests/jhmesh/test_commission.py::test_a_room_thermostat_and_blinds",
+    "tests/jhmesh/test_commission.py::test_device_class"
    ],
-   "missing": "the app subscribes every supported server of the node to its device-type group(s) from device.x1() (lamps 0xFEF5, blind position 0xFEF6 + slat element 0xFEF7, sockets 0xFEF8, RTR 0xFEF9); commission.fixed_groups only copies the device-type subscriptions a same-product template node holds, so a missing template subscription (e.g. the Scene Server question in commission.NOT_COVERED) is not added and no rule maps product -> group",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device; blinds and RTRs have no hardware here). By the app's class rule (§1.3): lamps 0xFEF5 and sockets 0xFEF8 on every element, RTRs 0xFEF9, blinds 0xFEF6 on the position element and 0xFEF7 on the slat element, a push-button by its insert; the SIG supported servers only (the installation's nodes subscribe neither vendor server there); detectors, the gateway and wall transmitters none."
   },
   {
    "id": "net:uc:connecttoproxy",
@@ -3377,19 +3379,18 @@
   },
   {
    "id": "net:uc:createelementconnectiongroups",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
     "custom_components/junghome_ble/jhmesh/commission.py::SUPPORTED_SERVERS",
     "custom_components/junghome_ble/jhmesh/commission.py::ELEMENT_GROUP_EXCLUDED"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_element_groups_mirror_the_templates_own_group_wiring",
-    "tests/jhmesh/test_commission.py::test_publish_only_wiring_and_an_element_group_nothing_uses"
+    "tests/jhmesh/test_commission.py::test_element_groups_by_the_apps_rule",
+    "tests/jhmesh/test_commission.py::test_the_rule_not_the_templates_wiring",
+    "tests/jhmesh/test_commission.py::test_elements_without_a_supported_server_need_no_group"
    ],
-   "missing": "the app derives the wiring from a rule (every supported server of the element except 0x1100 PUBLISH_AND_SUBSCRIBE to its element group, or the per-device-type reduced set when use_status_message_optimization is on); commission.element_groups instead copies which supported servers publish / subscribe to the element group on a same-product template node, so the result equals the app's only when the template was wired by that rule, and a node without such a template gets no element groups (see net:pref:use_status_message_optimization, commission.NOT_COVERED)",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device). The default wiring (use_status_message_optimization off): every element with a supported server gets a group, each of them PUBLISH_AND_SUBSCRIBE but the Sensor Server and 0x0527:1011, which the decompile lists but no node of the installation has wired."
   },
   {
    "id": "net:uc:creategroup",

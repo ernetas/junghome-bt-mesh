@@ -8,17 +8,21 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from jhmesh.crypto import (
     ZERO16,
+    ZERO32,
     AppKeyMaterial,
     NetKeyMaterial,
     aes_cmac,
     aes_ecb,
     ccm_decrypt,
     ccm_encrypt,
+    hmac_sha256,
     k1,
     k2,
     k3,
     k4,
+    k5,
     s1,
+    s2,
 )
 
 h = bytes.fromhex
@@ -40,6 +44,20 @@ def test_k1_sample():
     salt = h("2ba14ffa0df84a2831938d57d276cab4")
     p = h("5a09d60797eeb4478aada59db3352a0d")
     assert k1(n, salt, p) == h("f6ed15a8934afbe7d83e8dcb57fcf5d7")
+
+
+def test_hmac_sha256_rfc4231():
+    """RFC 4231 test case 2: the primitive behind s2 and k5 (Mesh Protocol 1.1's HMAC provisioning algorithm)."""
+    assert hmac_sha256(b"Jefe", b"what do ya want for nothing?") == h(
+        "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+    )
+
+
+def test_s2_and_k5_are_k1s_construction_on_hmac():
+    assert s2(b"abc") == hmac_sha256(ZERO32, b"abc")
+    assert len(s2(b"")) == 32
+    n, salt = bytes(range(64)), s2(b"salt")
+    assert k5(n, salt, b"prck256") == hmac_sha256(hmac_sha256(salt, n), b"prck256")
 
 
 def test_k2_sample_master_credentials():

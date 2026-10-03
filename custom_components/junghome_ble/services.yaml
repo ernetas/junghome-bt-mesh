@@ -717,6 +717,10 @@ add_device:
       required: true
       selector:
         text:
+    static_oob:
+      selector:
+        text:
+          type: password
     config_entry_id:
       selector:
         config_entry:

@@ -414,10 +414,29 @@ REMOVE_DEVICE_SCHEMA = vol.Schema(
     }
 )
 FIND_NEW_DEVICES_SCHEMA = vol.Schema({})
+ATTR_STATIC_OOB = "static_oob"
+
+
+def _static_oob(value: Any) -> bytes:
+    """Return the Static OOB value hexadecimal text gives (16 or 32 bytes; spaces, `-` and `:` ignored).
+
+    The error never repeats the value: it authenticates the device's provisioning (review-4 P4-8).
+    """
+    text = "".join(c for c in cv.string(value) if c not in " -:")
+    try:
+        raw = bytes.fromhex(text)
+    except ValueError as err:
+        raise vol.Invalid("not hexadecimal") from err
+    if len(raw) not in (16, 32):
+        raise vol.Invalid("not 16 or 32 bytes (32 or 64 hexadecimal digits)")
+    return raw
+
+
 ADD_DEVICE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_ADDRESS): cv.string,
         vol.Required(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_STATIC_OOB): _static_oob,
         **_ENTRY_FIELD,
     }
 )
@@ -1464,6 +1483,7 @@ async def _add_device(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse
                 configurator,
                 call.data[ATTR_ADDRESS],
                 call.data[ATTR_NAME],
+                call.data.get(ATTR_STATIC_OOB),
             )
         )
         return True

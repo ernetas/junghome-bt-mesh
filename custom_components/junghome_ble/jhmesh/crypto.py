@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 from dataclasses import dataclass, field
 
 from cryptography.hazmat.primitives import cmac
@@ -9,6 +11,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 
 ZERO16 = bytes(16)
+ZERO32 = bytes(32)
 
 
 def aes_cmac(key: bytes, msg: bytes) -> bytes:
@@ -32,6 +35,25 @@ def s1(m: bytes) -> bytes:
 def k1(n: bytes, salt: bytes, p: bytes) -> bytes:
     """Apply derivation function k1 (behind the identity and beacon keys)."""
     return aes_cmac(aes_cmac(salt, n), p)
+
+
+def hmac_sha256(key: bytes, msg: bytes) -> bytes:
+    """HMAC-SHA-256 of `msg` under `key` (Mesh Protocol 1.1's security toolbox, for the HMAC provisioning algorithm)."""
+    return hmac.new(key, msg, hashlib.sha256).digest()
+
+
+def s2(m: bytes) -> bytes:
+    """Salt generation function s2 (Mesh Protocol 1.1): HMAC-SHA-256 of `m` under the all-zero 32-octet key."""
+    return hmac_sha256(ZERO32, m)
+
+
+def k5(n: bytes, salt: bytes, p: bytes) -> bytes:
+    """Apply derivation function k5 (Mesh Protocol 1.1): k1's construction on HMAC-SHA-256, 32 octets out.
+
+    T = HMAC-SHA-256_SALT(N), k5 = HMAC-SHA-256_T(P) — behind the ConfirmationKey of the
+    BTM_ECDH_P256_HMAC_SHA256_AES_CCM provisioning algorithm.
+    """
+    return hmac_sha256(hmac_sha256(salt, n), p)
 
 
 def k2(n: bytes, p: bytes) -> tuple[int, bytes, bytes]:

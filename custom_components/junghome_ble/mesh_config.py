@@ -121,6 +121,8 @@ from .jhmesh.devices import (
     MINI_ACTUATOR_PIDS,
     SCENE_CLIENT,
     SOCKET_PIDS,
+    TIME_KEEPER_ADDRESS,
+    TIME_SERVER,
     Metadata,
     as_int,
     ctl_temperature_element,
@@ -3715,6 +3717,47 @@ class MeshConfigurator:
                 node.unicast,
                 "published" if on else "no longer published",
                 len(steps),
+            )
+            return True
+
+    async def set_time_keeper(self, node_unicast: int, on: bool) -> bool:
+        """Point the node's Time Server at the PP2 pucks' time keeper group, or stop: the app's time keeper (F4-14).
+
+        `TimeKeeperConfiguration` (network-logic.md §6.2): on, the node's Time Server (`1200`) publishes to `FEFF`
+        — the CDB's `#time_keeper_group#`, added when the export lacks it — bound to AppKey 0 first where the export
+        shows it unbound; off, that publication is removed (`0x0000`). Sent whatever the export says (the switch
+        shows the node's time role, not the export). The Time Role Set that goes with it (2 relay, 3 client) is an
+        AppKey message, the switch's (`switch.JungHomeTimeKeeper`). The publication parameters (TTL 0xFF, no
+        period: the node publishes when it has a new time) are the app's for every publication it sets, inferred
+        for this one. Unverified on air.
+        """
+        async with self.lock:
+            pf = await self._load()
+            node = pf.cdb.node_by_addr(node_unicast)
+            element = (
+                None
+                if node is None
+                else next((e for e in node.elements if TIME_SERVER in e.models), None)
+            )
+            if node is None or element is None:
+                raise _validation(
+                    "service_unknown_element", address=hexaddr(node_unicast)
+                )
+            steps: list[ConfigStep] = []
+            if on:
+                pf.ensure_time_keeper_group()
+                if (bind := self._bind_step(element, TIME_SERVER)) is not None:
+                    steps.append(bind)
+            want = TIME_KEEPER_ADDRESS if on else None
+            steps += self._steps(
+                pf, pf.set_publication(node, element, TIME_SERVER, want)
+            )
+            await self._send(steps, action="the switch Time keeper")
+            await self._save(pf)
+            _LOGGER.info(
+                "Node %04X's Time Server %s the time keeper group",
+                node.unicast,
+                "publishes to" if on else "no longer publishes to",
             )
             return True
 

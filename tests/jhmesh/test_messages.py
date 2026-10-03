@@ -1477,6 +1477,14 @@ def test_time_role_get_and_status():
             M.decode_time_role_status(bad)
 
 
+def test_time_role_set():
+    """The app's time keeper: relay (2) to keep the PP2 pucks' time, client (3) to stand down (msg:op:8239)."""
+    assert M.time_role_set(2) == h("823902")
+    assert M.describe(M.time_role_set(3)) == "Time Role Set client"
+    with pytest.raises(ValueError, match=r"0\.\.3"):
+        M.time_role_set(4)
+
+
 def test_time_get_and_time_zone_get():
     """Both Gets carry no parameters (Mesh Model §5.2.1.1, §5.2.1.5)."""
     assert M.time_get() == h("8237")

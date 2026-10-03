@@ -14,6 +14,7 @@ from hypothesis import strategies as st
 from jhmesh.cdb import CDB, InvalidExport, Provisioner
 from jhmesh.export import ProjectFile
 from jhmesh.onboarding import free_unicast_block
+from jhmesh.provisioning import Capabilities, Method, capability_record
 from jhmesh.vault import (
     GROUP_CEILING,
     RangeError,
@@ -299,6 +300,10 @@ def edited(path: tuple[Any, ...], value: Any) -> dict[str, Any]:
         (edited(("nodes", 0, "devices"), {}), "devices is not a list"),
         (edited(("nodes", 0, "deviceKey"), "00"), r"nodes\[0\] deviceKey"),
         (edited(("nodes", 0, "keyRefresh"), []), r"nodes\[0\] keyRefresh is not an"),
+        (
+            edited(("nodes", 0, "capabilities"), []),
+            r"nodes\[0\] capabilities is not an object",
+        ),
         (
             edited(("nodes", 0, "keyRefresh"), {"networkId": "00", "phase": 1}),
             "keyRefresh networkId is not an 8-byte",
@@ -821,6 +826,32 @@ def test_key_refresh_progress_is_kept_and_survives_the_recording() -> None:
     assert vault.remember_recorded(pf, dimmer.uuid).key_refresh == progress
     fresh = Vault.create(seeded)
     assert fresh.remember_recorded(pf, dimmer.uuid).key_refresh is None
+
+
+def test_the_provisioning_capabilities_are_kept_and_survive_the_recording() -> None:
+    """Review-4 P4-8: what the device offered and which method provisioned it round-trips with the node (names and
+    flags only), is left out while there is none (an older vault keeps its shape), and stays once recorded."""
+    pf = project()
+    dimmer = pf.cdb.node_by_addr(DIMMER)
+    assert dimmer is not None
+    offered = Capabilities(2, 3, 0, 1, 0, 0, 0, 0)
+    record = capability_record(offered, Method(1, 1))
+    vault = Vault.create(seeded)
+    vault.remember_provisioned(dimmer.uuid, DIMMER, 2, dimmer.dev_key)
+    assert "capabilities" not in json.dumps(vault.to_dict())
+    vault.remember_provisioned(
+        dimmer.uuid, DIMMER, 2, dimmer.dev_key, capabilities=record
+    )
+    data = json.loads(json.dumps(vault.to_dict()))
+    assert data["nodes"][0]["capabilities"]["used"] == {
+        "algorithm": "BTM_ECDH_P256_HMAC_SHA256_AES_CCM",
+        "authentication": "Static OOB",
+    }
+    assert dimmer.dev_key.hex() not in json.dumps(data["nodes"][0]["capabilities"])
+    back = Vault.from_dict(data)
+    assert back == vault
+    assert back.remember_recorded(pf, dimmer.uuid).capabilities == record
+    assert Vault.create(seeded).remember_recorded(pf, dimmer.uuid).capabilities is None
 
 
 def test_a_vault_node_as_the_client_addresses_it() -> None:

@@ -521,6 +521,8 @@ ISSUE_UNKNOWN_NODES_GATEWAY: Final = "unknown_nodes_gateway"
 ISSUE_INSERT_MISMATCH: Final = "insert_mismatch"
 # a node that may run schedules has a wrong clock or zone offset (`node_clocks.py`): fixed by sending Time Set now
 ISSUE_NODE_CLOCK_WRONG: Final = "node_clock_wrong"
+# the project has PP2 pucks and no node keeps their time (`JungHomeHub._report_time_keeper`, `switch.py`)
+ISSUE_TIME_KEEPER_MISSING: Final = "time_keeper_missing"
 ISSUE_DUPLICATE_MESH: Final = (
     "duplicate_mesh"  # another entry already covers this mesh UUID: their sequence-number
     # records can roll each other back (the config flow refuses this for anything set up

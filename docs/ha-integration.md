@@ -140,6 +140,16 @@ group `FEF8` as *All lights* does for the lamps. Neither exists when no load lis
 &lt;room&gt;** (mesh device, one per room with sockets) switches each socket of the room with an unacknowledged
 *Generic OnOff Set* of its own, as the app's area control does.
 
+**Time keeper** (configuration, off by default; review-4 F4-14, *unverified on air*): only in a network with one of
+the older JUNG actuator pucks (products `0x0010`–`0x0014`, "PP2"), on every mains device with a Time Server — not the
+gateway, not a battery device. The pucks take their time from a *time keeper*, a device that relays the time to the
+group `FEFF` they listen to; the JUNG HOME app picks one itself whenever it configures a puck. On: the device's Time
+Server publishes to `FEFF` (the export gets the app's `#time_keeper_group#` when it lacks it; written back like any
+change), then *Time Role Set* makes it a relay; off: the publication is removed and the role set back to client. The
+switch shows the role the device last answered (unknown until it did). The repair issue
+[*JUNG HOME pucks have no time keeper*](#repair-issue-jung-home-pucks-have-no-time-keeper) asks for one while
+there is none.
+
 ### Binary sensor
 
 > **Unverified on hardware.** There is no detector in the network the integration was developed against; everything
@@ -1770,8 +1780,8 @@ Unverified on air.
 
 **`junghome_ble.find_new_devices`** lists the JUNG devices nearby that are not in a network yet (they advertise the
 Mesh Provisioning Service 0x1827): Bluetooth address, Device UUID, product id, signal. **`junghome_ble.add_device`**
-(`address`, `name`; administrators only) adds one the way the app does, and only when the entry's option *Allow Home
-Assistant to add devices* is on (it is off by default):
+(`address`, `name`, `static_oob`; administrators only) adds one the way the app does, and only when the entry's option
+*Allow Home Assistant to add devices* is on (it is off by default):
 
 1. the name is checked first, as the app checks one — not blank, at most 30 characters, no `%` sign but `%%` and `%n`
    — and numbered as the app numbers a name another device already has (`Hall light` → `Hall light 2`; the action's
@@ -1785,9 +1795,10 @@ Assistant to add devices* is on (it is off by default):
    left below them) — with the option
    [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) on, inside Home Assistant's own
    range, its element groups in Home Assistant's group range — and never the addresses or element groups of a device
-   Home Assistant added before, recorded or not (see *pending devices* below). It is provisioned over PB-GATT (No-OOB,
-   the export's NetKey and the mesh's IV state; `jhmesh.provisioning`, checked against the specification's sample
-   data) only once a network beacon on the current Bluetooth connection confirmed that IV state (otherwise the action
+   Home Assistant added before, recorded or not (see *pending devices* below). It is provisioned over PB-GATT (the
+   export's NetKey and the mesh's IV state; `jhmesh.provisioning`, checked against the specification's sample
+   data) with the strongest method the device offers — see *Provisioning methods* below — within the app's 30 s for
+   the whole provisioning, only once a network beacon on the current Bluetooth connection confirmed that IV state (otherwise the action
    asks to try again after the next connection: the device would keep a wrong one), and is refused before it learns
    an address when its element count differs from the template's, and not at all while the app's key refresh is in
    Phase 1 (the device would get the key being retired; in Phase 2 it gets the new one); its device key and planned
@@ -1797,8 +1808,19 @@ Assistant to add devices* is on (it is off by default):
    [*JUNG HOME device keys cannot be saved*](#repair-issue-jung-home-device-keys-cannot-be-saved). Once it is
    provisioned, Home Assistant forgets what its replay protection remembered for the new addresses
    (a device reset since may have sent from them; the new one starts its sequence numbers from 0);
-3. the app's post-provisioning Config sequence goes out through the proxy link (`jhmesh.commission`: AppKey, bindings,
-   the template's relay / TTL / transmit settings, element groups, device-type groups), each step's status checked;
+3. the app's post-provisioning sequence goes out through the proxy link (`jhmesh.commission`; review-4 F4-13), each
+   step's status checked: AppKey, then *Composition Data Get* — the device's own composition, which plans the rest
+   by the app's rules and must be the template's (another company, product, element layout or model list, or one
+   without the servers the app requires, is refused before anything is bound) — the bindings, the app's relay / TTL
+   / transmit settings, a push-button's InsertId (refused when it carries another insert than the one advertised,
+   or the template's: its element groups and device-type groups would be another device's), *Time Set* to its Time
+   Server, an element group for each element with a supported server (each of them publishing and subscribing to
+   it, the Sensor Server and the LBC Admin server left out as on the installation's devices), the device-type groups
+   of its class (lamps `FEF5`, blind position `FEF6`, slats `FEF7`, sockets `FEF8`, room thermostats `FEF9`) and a
+   puck's time keeper group `FEFF` — within 3 minutes. A failure here, or one of the provisioning after the device
+   received its data, sends the device a *Config Node Reset* with its key, as the app does: once it confirmed, it
+   is a new device again, nothing stays reserved, and the error names the step it stopped in
+   (*… could not be configured at step …*); unconfirmed, it is *pending* (below). *Unverified on air*;
 4. the node's configuration is read back (the audit's Gets) and recorded in the export exactly as the node answered —
    node entry, element groups, the app's device rows copied from the template (carrying the insert the device
    advertised, not the template's), and the app's per-element InsertId and button-layout rows (`actuatorExports`,
@@ -1808,6 +1830,21 @@ Assistant to add devices* is on (it is off by default):
    device. The app's check of the number of devices a node yields follows (one for a socket, room thermostat,
    gateway, wall transmitter, mini sensor or extension insert, three for a 2-gang switch or dimmer, two otherwise):
    a difference is logged and answered as `missing_devices` (`recorded`, `expected`); the device stays added.
+
+The answer also lists the `steps` done (`Provisioning`, the app's phases, `ReadBack`, `Recording`; each is logged as
+it begins) and the `provisioning` method used. Stopping the action (a script or automation cancelled) closes the
+Bluetooth connection: a device that had not received its data yet forgets the half-finished provisioning.
+
+**Provisioning methods** (review-4 P4-8, *unverified on air*). The app always provisions with *No OOB*: nothing
+authenticates the key exchange, so someone in Bluetooth range during those seconds could sit between Home Assistant
+and the device and read the network's keys. Home Assistant uses the strongest method the device's *Provisioning
+Capabilities* offer (Mesh Protocol 1.1 §5.4.1.2, §5.4.1.3, §5.4.2.4): *Static OOB* when the device offers it and
+`static_oob` gives its value (16 bytes for the original algorithm, 32 for the HMAC-SHA256 one, in hexadecimal; never
+logged), the HMAC-SHA256 algorithm over the original one when offered, else No OOB as the app. A device that takes only
+authenticated provisioning is refused without its value, a value for a device that does not offer Static OOB is
+refused too — both before the device learns anything. No JUNG device is known to offer more than No OOB, so in
+practice this is the app's method; add devices where nobody else is in range. What a device offered and the method
+used are kept in the vault and shown in the diagnostics (`added_devices`).
 
 **`junghome_ble.remove_device`** (`device`, `force`; administrators only, same option) takes a device out the app's
 way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
@@ -1832,8 +1869,9 @@ links the others keep to it are left in the export (they point at nothing) and t
 refused. Removing cannot be undone: the device has to be added again.
 
 **Pending devices.** A device whose provisioning was not confirmed once it had been sent its data (it may hold the
-network's keys: a lost *Complete* looks like any other failure), whose configuration fails after it was provisioned, or
-which was configured but could not be recorded in the export, has the network's keys while neither the app nor the
+network's keys: a lost *Complete* looks like any other failure) or whose configuration failed after it was provisioned
+— and which did not confirm the reset Home Assistant sent it then — or which was configured but could not be recorded
+in the export, has the network's keys while neither the app nor the
 export knows it: the app cannot reset it. Home Assistant keeps it *pending* in the vault — its addresses and planned
 element groups stay reserved, so no later device gets them — and raises the repair issue [*A device Home Assistant added
 is not recorded*](#repair-issue-a-device-home-assistant-added-is-not-recorded); the action's error names its address.
@@ -1847,9 +1885,9 @@ element groups recorded: the log says so when the next device is added, as its g
 on air*: `reset_pending_device` has not run against a real device yet.
 
 What the sequence leaves out is listed in `jhmesh.commission.NOT_COVERED` (the factory rocker wiring of push-buttons,
-detector key connections, the reads the app does at the end). **None of this has run against a real device yet**:
-try it with a spare device first. A device left half-configured by a failure is reset with `reset_pending_device` and
-added again.
+detector key connections, the reads the app does at the end, the app's own choice of a time keeper). **None of this
+has run against a real device yet**: try it with a spare device first. A device left half-configured by a failure
+that did not confirm the reset Home Assistant sent it is reset with `reset_pending_device` and added again.
 
 ### "No node of this mesh network is currently visible over Bluetooth"
 
@@ -2026,6 +2064,16 @@ for their time again; the issue clears once they answer right and stays while on
 check Home Assistant's time zone (**Settings → System → General**) and whether the devices are reachable. The stored
 location is shown in the diagnostics (as `home`, `elsewhere` or `not configured`), not in this issue. Unverified on
 air.
+
+### Repair issue "JUNG HOME pucks have no time keeper"
+
+The network has older JUNG actuator pucks (products `0x0010`–`0x0014`) — the issue names their addresses — which take
+their time from a *time keeper*, and every device that could be one answered that it is not (Home Assistant asks each
+device's time role once). The pucks' timers and schedules drift. Turn on the *Time keeper* switch (a configuration
+entity, disabled by default: enable it first) of one device that is always powered — a socket or a mini actuator, as
+the app prefers — see [Switch](#switch). The JUNG HOME app chooses one itself whenever it configures a puck. The issue
+clears once a device answers that it keeps the time. Unverified on air: there is no puck in the network the
+integration was developed against.
 
 ### Repair issue "A JUNG HOME change on … was interrupted"
 
@@ -2252,7 +2300,9 @@ went silent`, `sequence numbers skipped ahead`, …), how long its connect-time 
 first) and how long sends were held back for the sequence-number store during it —, the entry's options, the open
 repair issues, the derived device list, the last known state of every element, each node's last
 [network audit](#actions-network-audit) result and the followed key refresh (its phase, how far it is proven, and the
-phase each device Home Assistant added confirmed, with the new key's Network ID), and under `clocks` each node's
+phase each device Home Assistant added confirmed, with the new key's Network ID), under `added_devices` each device
+Home Assistant added (recorded or pending) with what it offered for its provisioning and the method used (algorithm and
+OOB names and sizes, never a value), and under `clocks` each node's
 clock as it last answered: when, its offset in seconds, whether it has a time, its zone offset and the one Time Set
 carried (minutes), whether its stored location is the home's (`home`, `elsewhere`, `not configured` — never the
 coordinates) and what is wrong with it, if anything. Keys are never included. A device's own menu offers **Download diagnostics** as well: the node's elements and

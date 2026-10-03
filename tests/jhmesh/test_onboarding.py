@@ -27,10 +27,10 @@ from jhmesh.onboarding import (
 )
 from jhmesh.pdu import decode_opcode, encode_opcode
 
-from .conftest import LIGHT_2G, FakeBleak, FastAsyncio
+from .conftest import LIGHT_2G, FakeBleak, FastAsyncio, composition_params
 
 if TYPE_CHECKING:
-    from jhmesh.cdb import CDB
+    from jhmesh.cdb import CDB, Node
     from jhmesh.client import ProxyClient
 
 NEW_UUID = "11111111-2222-4333-8444-555555555555"
@@ -49,8 +49,13 @@ WITH_CODE = {
 class FreshNode:
     """A factory-fresh node's Configuration Server: Success to every Set, and afterwards what it was told."""
 
-    def __init__(self, plan: commission.Plan, refuse: int | None = None) -> None:
+    def __init__(
+        self, plan: commission.Plan, template: Node, refuse: int | None = None
+    ) -> None:
         self.expect = {decode_opcode(s.pdu)[0]: s.expect for s in plan.steps}
+        self.composition = composition_params(
+            template
+        )  # the template's: the same product
         self.refuse = refuse  # the request opcode answered with status 0x02 (Invalid AppKey Index)
         self.silent: int | None = None
         self.seen: list[int] = []
@@ -66,7 +71,7 @@ class FreshNode:
             body = params[:3] if status == C.CONFIG_APPKEY_STATUS else params
             return encode_opcode(status) + code + body
         if status == C.CONFIG_COMPOSITION_DATA_STATUS:
-            return encode_opcode(status) + b"\x00" + bytes(10) + b"\x00\x00\x00\x00"
+            return encode_opcode(status) + self.composition
         return encode_opcode(status) + params
 
 
@@ -145,14 +150,22 @@ def read_back(
 
 
 async def commissioned(
-    proxy: ProxyClient, link: FakeBleak, plan: commission.Plan
-) -> None:
-    """Run the plan against a fresh node that accepts everything."""
-    fresh = FreshNode(plan)
+    proxy: ProxyClient, link: FakeBleak, plan: commission.Plan, template: Node
+) -> list[str]:
+    """Run the plan against a fresh node that accepts everything; return the phases announced."""
+    fresh = FreshNode(plan, template)
     link.auto_ack()
     link.auto_config(fresh)
-    await run_commission(proxy, plan, timeout=0.2, retries=1)
+    phases: list[str] = []
+
+    async def on_phase(phase: str) -> None:
+        phases.append(phase)
+
+    done = await run_commission(proxy, plan, timeout=0.2, retries=1, on_phase=on_phase)
     assert len(fresh.seen) == len(plan.steps)
+    assert done.composition is not None  # planned again from the node's answer
+    assert done.groups == plan.groups
+    return phases
 
 
 async def test_a_new_node_is_commissioned_read_back_and_recorded(
@@ -170,7 +183,9 @@ async def test_a_new_node_is_commissioned_read_back_and_recorded(
     proxy.add_node(node)
     proxy.add_node(node)  # twice: known once
     assert cdb.nodes.count(node) == 1
-    await commissioned(proxy, link, plan)
+    phases = await commissioned(proxy, link, plan, template)
+    assert phases == plan.phases()
+    assert phases.index("SetTime") == phases.index("SetBlacklistFilter") + 2
 
     answers = told(plan)
     audit = read_back(unicast, answers)
@@ -239,14 +254,86 @@ async def test_a_refused_or_unanswered_step_stops_the_plan(
     )
     await proxy.attach(link)
     proxy.add_node(node)
-    fresh = FreshNode(plan, refuse=C.CONFIG_MODEL_APP_BIND)
+    fresh = FreshNode(plan, template, refuse=C.CONFIG_MODEL_APP_BIND)
     link.auto_ack()
     link.auto_config(fresh)
-    with pytest.raises(CommissioningError, match="refused"):
+    with pytest.raises(CommissioningError, match="refused") as err:
         await run_commission(proxy, plan, timeout=0.2, retries=1)
+    assert err.value.phase == "RequestCompositionData"
     fresh.refuse, fresh.silent = None, C.CONFIG_APPKEY_ADD
-    with pytest.raises(CommissioningError, match="no answer"):
+    with pytest.raises(CommissioningError, match="no answer") as err:
         await run_commission(proxy, plan, timeout=0.05, retries=1)
+    assert err.value.phase == "SetWhitelistFilter"
+    # another product answering: stopped right after its Composition Data, before any binding
+    fresh.silent = None
+    fresh.composition = composition_params(template, pid=0x0001)
+    fresh.seen.clear()
+    with pytest.raises(CommissioningError, match="product 0001, not 0002") as err:
+        await run_commission(proxy, plan, timeout=0.2, retries=1)
+    assert err.value.phase == "RequestCompositionData"
+    assert C.CONFIG_MODEL_APP_BIND not in fresh.seen
+    fresh.composition = b"\x01" + bytes(10)  # page 1: not one the plan understands
+    with pytest.raises(CommissioningError, match="page 1"):
+        await run_commission(proxy, plan, timeout=0.2, retries=1)
+
+
+async def test_the_callers_phase_can_stop_the_commissioning(
+    cdb: CDB, proxy: ProxyClient, link: FakeBleak, fast: FastAsyncio
+) -> None:
+    """The InsertId read goes in `RequestRequiredData`: what the caller raises there ends the commissioning before
+    any element group is wired."""
+    template = template_of(cdb)
+    count = len(template.elements)
+    unicast = free_unicast_block(cdb, count)
+    assert unicast is not None
+    plan = commission.plan(cdb, unicast, count, template)
+    await proxy.attach(link)
+    proxy.add_node(
+        node_for(template, uuid=NEW_UUID, unicast=unicast, dev_key=NEW_KEY, name="New")
+    )
+    fresh = FreshNode(plan, template)
+    link.auto_ack()
+    link.auto_config(fresh)
+
+    async def refuse(phase: str) -> None:
+        if phase == "RequestRequiredData":
+            raise CommissioningError("another insert", phase)
+
+    with pytest.raises(CommissioningError, match="another insert"):
+        await run_commission(proxy, plan, timeout=0.2, retries=1, on_phase=refuse)
+    assert C.CONFIG_MODEL_PUBLICATION_SET not in fresh.seen
+
+
+async def test_the_callers_phases_come_last_when_no_step_follows(
+    proxy: ProxyClient, link: FakeBleak, fast: FastAsyncio
+) -> None:
+    """A node without element groups or device-type groups: the caller still gets its two phases, at the end."""
+    pf = ProjectFile.load(FIXTURES / "JungHome.json")
+    raw = next(n for n in pf.net["nodes"] if n["unicastAddress"] == "0148")
+    for element in raw["elements"]:
+        element["models"] = [
+            m
+            for m in element["models"]
+            if m["modelId"] not in commission.SUPPORTED_SERVERS
+        ]
+    pf.cdb = type(pf.cdb).from_network(pf.net, pf.meta)
+    template = pf.cdb.node_by_addr(0x0148)
+    assert template is not None
+    plan = commission.plan(pf.cdb, 0x7F00, 3, template)
+    assert plan.phases()[-2:] == ["RequestRequiredData", "SetTime"]
+    await proxy.attach(link)
+    proxy.add_node(
+        node_for(template, uuid=NEW_UUID, unicast=0x7F00, dev_key=NEW_KEY, name="New")
+    )
+    link.auto_ack()
+    link.auto_config(FreshNode(plan, template))
+    seen: list[str] = []
+
+    async def on_phase(phase: str) -> None:
+        seen.append(phase)
+
+    await run_commission(proxy, plan, timeout=0.2, retries=1, on_phase=on_phase)
+    assert seen == plan.phases()
 
 
 def test_node_entry_keeps_the_templates_uuid_style(cdb: CDB) -> None:

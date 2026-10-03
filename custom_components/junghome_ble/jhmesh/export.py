@@ -52,6 +52,8 @@ from .devices import (
     LAMP_LEVEL_MODELS,
     SOCKET_PIDS,
     THERMOSTAT_PIDS,
+    TIME_KEEPER_ADDRESS,
+    TIME_KEEPER_GROUP,
     Metadata,
     as_int,
     element_group_address,
@@ -1113,6 +1115,27 @@ class ProjectFile:
             if as_int(g.get("address")) == address:
                 g["icon"] = icon
         return address
+
+    def ensure_time_keeper_group(self) -> bool:
+        """Add the app's `#time_keeper_group#` (0xFEFF) to the CDB groups when the export lacks it; True when added.
+
+        The app creates it locally before it points a time keeper's Time Server at it (network-logic.md §1.2, §6.2).
+        """
+        if TIME_KEEPER_ADDRESS in self.cdb.groups:
+            return False
+        groups = self.net.setdefault("groups", [])
+        groups.append(
+            _ordered_like(
+                _first(groups),
+                {
+                    "address": hexaddr(TIME_KEEPER_ADDRESS),
+                    "name": TIME_KEEPER_GROUP,
+                    "parentAddress": "0000",
+                },
+            )
+        )
+        self.cdb.groups[TIME_KEEPER_ADDRESS] = TIME_KEEPER_GROUP
+        return True
 
     def rename_group(self, address: int, name: str) -> None:
         """Rename a room in the CDB and in `meta.userGroups[]` (both must change, network-features.md §1).

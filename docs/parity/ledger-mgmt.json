@@ -1316,20 +1316,23 @@
   },
   {
    "id": "mgmt:cfgop:02",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_composition_data",
+    "custom_components/junghome_ble/jhmesh/commission.py::Plan.resume",
+    "custom_components/junghome_ble/jhmesh/commission.py::composition_mismatch",
+    "custom_components/junghome_ble/jhmesh/commission.py::composition_shape",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
     "custom_components/junghome_ble/jhmesh/onboarding.py::commission"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_composition_data_page0",
-    "tests/jhmesh/test_config_messages.py::test_composition_data_rejects_other_pages_and_truncation",
-    "tests/jhmesh/test_commission.py::test_plan_follows_the_apps_step_machine"
+    "tests/jhmesh/test_commission.py::test_resume_plans_from_the_nodes_composition_with_the_same_groups",
+    "tests/jhmesh/test_commission.py::test_other_elements_or_models_are_refused",
+    "tests/jhmesh/test_onboarding.py::test_a_new_node_is_commissioned_read_back_and_recorded",
+    "tests/jhmesh/test_onboarding.py::test_a_refused_or_unanswered_step_stops_the_plan"
    ],
-   "missing": "page 0 is decoded, but the commissioning does not use the node's answer: the bind list and device class come from a template node of the same product (commission.NOT_COVERED \"the node's real composition\"), not from the received CID/PID/elements/models as the app does (E7/f.java). To build: decode_composition_data exists; plan() would take the decoded composition instead of the template; testable with simulated Config Servers.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device): the node's Composition Data Status plans the rest of the commissioning (binding, element groups, device-type groups) by the app's rules; the template node of the same product only cross-checks it, and another composition is refused before any binding (review-4 F4-13). The first plan, from the template, decides the addresses and element groups before the device gets its keys (they go into the vault first); the resumed one keeps them."
   },
   {
    "id": "mgmt:cfgop:03",
@@ -1342,7 +1345,7 @@
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
     "tests/jhmesh/test_config_messages.py::test_model_publication_set_all_fields",
-    "tests/jhmesh/test_commission.py::test_element_groups_mirror_the_templates_own_group_wiring"
+    "tests/jhmesh/test_commission.py::test_element_groups_by_the_apps_rule"
    ],
    "class": "dup",
    "reason": "Same opcode as msg:op:03, implemented there (same builder / decoder).",
@@ -1503,7 +1506,7 @@
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders_reject_bad_values",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_fall_back_to_what_the_installation_holds"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps"
    ],
    "class": "dup",
    "reason": "Same opcode as msg:op:800d, implemented there (same builder / decoder).",
@@ -1814,7 +1817,7 @@
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
     "tests/jhmesh/test_properties_codecs.py::test_node_settings_sets_and_their_statuses",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_fall_back_to_what_the_installation_holds"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps"
    ],
    "class": "dup",
    "reason": "The Network Transmit Set builder is done (msg:op:8024); the difference is the value commissioning sends (3 / 10 in the APK, template copy here). The debug editor (updateTransmitSettings) is mgmt:debug:networksettingsviewmodel.updatetransmitsettings (declined, N10).",
@@ -1860,7 +1863,7 @@
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders_reject_bad_values",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds"
    ],
    "class": "dup",
    "reason": "The Relay Set builder is done (msg:op:8027); the difference is the value commissioning sends (relay 1, 3 / 9 in the APK, template copy here). The debug toggles are mgmt:debug:networksettingsviewmodel.togglerelay / updaterelaysettings (declined, N10).",
@@ -4074,17 +4077,20 @@
   },
   {
    "id": "mgmt:err:configuredeviceerror.nodenotconfigured",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/onboard.py::_template",
-    "custom_components/junghome_ble/onboard.py::async_add_device.check"
+    "custom_components/junghome_ble/jhmesh/commission.py::REQUIRED_MODELS",
+    "custom_components/junghome_ble/jhmesh/commission.py::composition_mismatch",
+    "custom_components/junghome_ble/jhmesh/commission.py::CompositionMismatch",
+    "custom_components/junghome_ble/onboard.py::async_add_device",
+    "custom_components/junghome_ble/strings.json::exceptions.add_device_node_not_configured"
    ],
    "tests": [
-    "tests/test_onboard.py::test_add_device_refusals"
+    "tests/jhmesh/test_commission.py::test_a_node_without_the_apps_required_servers_is_refused",
+    "tests/test_onboard.py::test_another_product_answering_is_reset_and_forgotten",
+    "tests/test_onboard.py::test_a_push_button_with_another_insert_is_reset"
    ],
-   "missing": "a device without a template of its product or with a different element count is refused before provisioning; the app's check after Composition Data (models 0x1012 / 0527:1012 present) is not made. To build: check the decoded composition in commission; unit test.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device): a node whose Composition Data lacks 0x1012 / 0x0527:1012 (the app's t1()) or is not the template's, or a push-button whose InsertId is another insert than the plan is for, stops the commissioning; it is sent a Config Node Reset as the app does, and the translated error names the step (add_device_node_not_configured once the reset is confirmed, else add_device_commissioning_failed and the device is pending)."
   },
   {
    "id": "mgmt:err:configuregatewayerror",
@@ -4770,20 +4776,23 @@
   },
   {
    "id": "mgmt:flow:deviceprovisioning",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/onboard.py::async_add_device",
+    "custom_components/junghome_ble/onboard.py::_provision",
+    "custom_components/junghome_ble/onboard.py::PROVISIONING_BUDGET",
+    "custom_components/junghome_ble/onboard.py::_reset_new_node",
     "custom_components/junghome_ble/jhmesh/provisioning.py::provision",
     "custom_components/junghome_ble/jhmesh/onboarding.py::free_unicast_block"
    ],
    "tests": [
     "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it",
+    "tests/test_onboard.py::test_a_device_whose_complete_was_lost_is_reset",
+    "tests/test_onboard.py::test_a_provisioning_not_confirmed_after_the_data_keeps_the_device_pending",
     "tests/jhmesh/test_provisioning.py::test_provision_over_gatt_with_sar_framing",
     "tests/jhmesh/test_provisioning.py::test_provision_times_out_on_a_silent_device"
    ],
-   "missing": "No-OOB provisioning with a free address works (reaching the node through the existing proxy link instead of reconnecting to it is a deliberate alternative); missing from the app's flow: the failure path (DeviceProvisioning$work$1: disconnect, ProvisioningNotStarted, ResetDevice(id, false) with RemoveDevice ForDevicesWithUUID as fallback, for every failure code 0x00..0x08 and unknown codes; HA only disconnects and raises add_device_provisioning_failed, whose failure-code name is English-only inside the translated error) and the 30 s overall timeout (each PDU waits PROTOCOL_TIMEOUT 60 s instead, mgmt:timing:deviceprovisioning:30000). To build: an overall timeout around provision() and a failure clean-up, tested with the fake PB-GATT client.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device). The whole provisioning has the app's 30 s; a failure after the device key was kept (the device may hold its data: a lost Complete looks the same) sends the device a Config Node Reset under that key, as the app's ResetDevice(id, false) — confirmed, it is new again (add_device_provisioning_reset), else pending; a failure before needs none (the device forgets the session when the link closes). Reaching the node through the existing proxy link instead of reconnecting to it is a deliberate alternative; a Failed PDU's code name stays English inside the translated error."
   },
   {
    "id": "mgmt:flow:deviceprovisioningtopreventadvertisingtimer",
@@ -4795,17 +4804,18 @@
   },
   {
    "id": "mgmt:flow:devicesetupprogress",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/commission.py::Plan.phases",
-    "custom_components/junghome_ble/jhmesh/commission.py::Step"
+    "custom_components/junghome_ble/jhmesh/commission.py::PHASES",
+    "custom_components/junghome_ble/jhmesh/onboarding.py::commission",
+    "custom_components/junghome_ble/onboard.py::_commission",
+    "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_plan_follows_the_apps_step_machine"
+    "tests/test_onboard.py::test_add_device_lists_its_steps_and_sends_the_time",
+    "tests/jhmesh/test_onboarding.py::test_a_new_node_is_commissioned_read_back_and_recorded"
    ],
-   "missing": "the plan carries the app's phase names, but add_device reports no progress while it runs (no events / progress states like IdentifyingDevice ... Finished). To build: fire an event or log per phase from onboard.async_add_device; testable.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device). Home Assistant's form of the app's progress states: each step is logged as it begins and listed in the action's response (`steps`: Provisioning, the app's phases, ReadBack, Recording); a failure's translated error names the step it stopped in. An action answers once, so there are no live progress events."
   },
   {
    "id": "mgmt:flow:devicesetupserviceimpl",
@@ -4833,10 +4843,23 @@
   },
   {
    "id": "mgmt:flow:ensuretimekeeper",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no time-keeper election: HA broadcasts Time Set itself (on connect, daily, at offset changes) but never elects a keeper (a node reporting MeshTimeRelay), never sets Time Role 2 / demotes with Role 3 + publication 0x0000, never points the keeper's Time Server publication at 0xFEFF (\"#time_keeper_group#\") and reports no \"no suitable time keeper\" error. The Time Role builders are msg:op:8238 / 8239; the election matters only with legacy PP2 pucks (PID 0x0010..0x0014), none in the installation.",
+   "status": "partial",
+   "code": [
+    "custom_components/junghome_ble/switch.py::JungHomeTimeKeeper",
+    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_time_keeper",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._report_time_keeper",
+    "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.ensure_time_keeper_group",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups"
+   ],
+   "tests": [
+    "tests/test_time_keeper.py::test_set_time_keeper",
+    "tests/test_time_keeper.py::test_the_switch_sets_the_role_after_the_publication",
+    "tests/test_time_keeper.py::test_the_switch_over_the_fake_mesh",
+    "tests/test_time_keeper.py::test_the_repair_while_no_node_keeps_the_pucks_time",
+    "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
+   ],
+   "missing": "No automatic election: the app picks the keeper by its priority list (MiniActuatorHardwired, SwitchMeasureSocket, ...) whenever a PP2 puck exists; Home Assistant offers a *Time keeper* switch per candidate (off by default: Time Server publication to 0xFEFF + Time Role Set 2; off: 0x0000 + Time Role 3) and the time_keeper_missing repair while the project has pucks and no keeper. On air with a PP2 puck (PID 0x0010..0x0014), none in the installation.",
    "class": "build",
    "verify": "absent-hardware"
   },
@@ -6110,7 +6133,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::time_set",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
-    "custom_components/junghome_ble/jhmesh/commission.py::TIME_SERVER"
+    "custom_components/junghome_ble/jhmesh/devices.py::TIME_SERVER"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_time_set_vector",
@@ -6118,7 +6141,7 @@
     "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
    ],
    "class": "dup",
-   "reason": "Part of the time-keeper election (the 0xFEFF subscription copy at commissioning and the Time Set broadcast are done).",
+   "reason": "Part of the time keeper (mgmt:flow:ensuretimekeeper): a PP2 puck's 0xFEFF subscription at commissioning, the keeper's publication and the Time Set broadcast are done.",
    "dup_of": "mgmt:flow:ensuretimekeeper"
   },
   {
@@ -6531,15 +6554,18 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/provisioning.py::ALGORITHM_FIPS_P256",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::ALGORITHM_HMAC_SHA256",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::choose_method",
     "custom_components/junghome_ble/jhmesh/provisioning.py::Provisioner._on_capabilities",
     "custom_components/junghome_ble/jhmesh/provisioning.py::ecdh_secret"
    ],
    "tests": [
     "tests/jhmesh/test_provisioning.py::test_sample_public_keys_and_ecdh_secret",
     "tests/jhmesh/test_provisioning.py::test_capabilities_that_cannot_work",
-    "tests/jhmesh/test_provisioning.py::test_state_machine_replays_the_sample_exchange"
+    "tests/jhmesh/test_provisioning.py::test_state_machine_replays_the_sample_exchange",
+    "tests/jhmesh/test_provisioning.py::test_provision_with_the_hmac_algorithm"
    ],
-   "note": "FIPS P-256 only, as the app; OOB public key is never used (the app would use it if offered; no JUNG device offers it)"
+   "note": "FIPS P-256 with either algorithm of Mesh Protocol 1.1: BTM_ECDH_P256_HMAC_SHA256_AES_CCM when the device offers it (review-4 P4-8; unverified on air, no device here offers it), else BTM_ECDH_P256_CMAC_AES128_AES_CCM as the app; an OOB public key is never used (no JUNG device offers it)"
   },
   {
    "id": "mgmt:provauth:00",
@@ -6557,14 +6583,21 @@
   },
   {
    "id": "mgmt:provauth:01",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/provisioning.py::start_no_oob"
+    "custom_components/junghome_ble/jhmesh/provisioning.py::AUTH_STATIC_OOB",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::choose_method",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::Provisioner._on_capabilities",
+    "custom_components/junghome_ble/services.py::_static_oob",
+    "custom_components/junghome_ble/onboard.py::_provision"
    ],
-   "tests": [],
-   "missing": "Static OOB authentication is not implemented (Start always No OOB; AuthValue is always 16 zero bytes); the app never uses it either (startProvisioningWithStaticOOB never called) and no device here offers it. Using it when a device's Capabilities offer it is review 4 brief 40; spec sample data exist, unit-testable.",
-   "class": "build",
-   "verify": "absent-hardware"
+   "tests": [
+    "tests/jhmesh/test_provisioning.py::test_the_strongest_method_offered",
+    "tests/jhmesh/test_provisioning.py::test_provision_with_static_oob",
+    "tests/jhmesh/test_provisioning.py::test_a_wrong_static_oob_value_never_reaches_the_data",
+    "tests/test_onboard.py::test_add_device_with_the_devices_static_oob_value"
+   ],
+   "note": "Unverified on air: no device here offers Static OOB (a spare device that does is needed). Used when the device's Capabilities offer it and add_device is given its value (`static_oob`, 16 octets with algorithm 0, 32 with the HMAC algorithm; Mesh Protocol 1.1 §5.4.1.3, §5.4.2.4); the app never uses it (review-4 P4-8)."
   },
   {
    "id": "mgmt:provauth:02",
@@ -7144,7 +7177,7 @@
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder._allocate"
    ],
    "tests": [
-    "tests/jhmesh/test_commission.py::test_element_groups_mirror_the_templates_own_group_wiring",
+    "tests/jhmesh/test_commission.py::test_element_groups_by_the_apps_rule",
     "tests/jhmesh/test_commission.py::test_group_range_override_and_exhaustion"
    ]
   },
@@ -7174,13 +7207,16 @@
    "id": "mgmt:setup:finishconfiguration",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups"
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups",
+    "custom_components/junghome_ble/jhmesh/commission.py::device_class",
+    "custom_components/junghome_ble/jhmesh/commission.py::_Builder._device_type_targets"
    ],
    "tests": [
     "tests/jhmesh/test_commission.py::test_device_type_groups_and_the_sensor_server",
+    "tests/jhmesh/test_commission.py::test_a_room_thermostat_and_blinds",
     "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
    ],
-   "missing": "device-type groups FEF5..FEF9 and the PP2 0xFEFF subscription are done; not done (commission.NOT_COVERED): the gateway and socket defaults, the battery get, the detector defaults (mgmt:flow:configuredetector), the manufacturer-info reads (prop:sig:0x0010 / 0x0011) and the missing-device check (mgmt:flow:checkformissingdevices). To build: reads / writes the library already has; tests/sim.",
+   "missing": "The device-type groups by the node's class (net:uc:connecttodevicetypegroup) and a PP2 puck's 0xFEFF subscription are done, on air on a spare device; not done (commission.NOT_COVERED): the gateway and socket defaults, the battery get, the detector defaults (mgmt:flow:configuredetector) and the manufacturer-info reads (prop:sig:0x0010 / 0x0011); the missing-device check is mgmt:flow:checkformissingdevices. To build: reads / writes the library already has; tests/sim.",
    "class": "build",
    "verify": "offline"
   },
@@ -7235,12 +7271,15 @@
   },
   {
    "id": "mgmt:setup:provisioningaborting",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "a running add_device cannot be aborted by the user (no cancel; the action runs to completion or failure). To build: cancellation of the service task closes the PB-GATT link; testable.",
-   "class": "build",
-   "verify": "offline"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/onboard.py::_provision",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::provision"
+   ],
+   "tests": [
+    "tests/test_onboard.py::test_a_running_add_device_cancelled_closes_the_link"
+   ],
+   "note": "Unverified on air (on a spare device): cancelling the action's task (a script or automation stopped) closes the PB-GATT link, which is how a provisioner aborts; a device that had not yet received its Provisioning Data forgets the session."
   },
   {
    "id": "mgmt:setup:provisioningfinished",
@@ -7341,25 +7380,25 @@
    ],
    "tests": [
     "tests/jhmesh/test_commission.py::test_plan_follows_the_apps_step_machine",
-    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_copied_from_the_template"
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_are_the_apps",
+    "tests/jhmesh/test_commission.py::test_node_wide_settings_ignore_what_the_template_holds"
    ],
-   "missing": "GATT Proxy 1, AppKey Add, Default TTL, Relay and Network Transmit are sent; the relay / transmit values copy the template node (fallback 2 / 8 and 2 / 9, what the installation's iOS-configured nodes hold, commission.NOT_COVERED) where the APK sends relay 1, count 3 / 9 steps (Relay Set params 01 4B) and count 3 / 10 steps (Network Transmit Set param 0x53). Which value the app really sends needs a capture of the app commissioning a node.",
+   "missing": "On air on a spare device: GATT Proxy 1, AppKey Add, Default TTL 5, relay on and Network Transmit are sent with the app's values whatever the template holds; the relay / transmit values are what the installation's iOS-configured nodes hold (2 / 8 and 2 / 9 on the wire, commission.NOT_COVERED) where the APK sends count 3 / 9 steps (Relay Set params 01 4B) and count 3 / 10 steps (Network Transmit Set param 0x53). Which value the app really sends needs a capture of the app commissioning a node.",
    "class": "build",
    "verify": "on-air"
   },
   {
    "id": "mgmt:setup:settime",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
-    "custom_components/junghome_ble/jhmesh/commission.py::NOT_COVERED"
+    "custom_components/junghome_ble/onboard.py::_commission",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_send_time",
+    "custom_components/junghome_ble/jhmesh/commission.py::Plan"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_onboard.py::test_add_device_lists_its_steps_and_sends_the_time"
    ],
-   "missing": "no unicast Time Set to the new node's Time Server during commissioning; it gets the time only with the next broadcast (next link or daily). To build: one AppKey message after the plan; testable.",
-   "class": "build",
-   "verify": "offline"
+   "note": "Unverified on air (on a spare device): in the SetTime phase, after SetBlacklistFilter as in the app, Time Set goes to the new node's Time Server element (`Plan.time_server`); errors are ignored, as the app ignores them."
   },
   {
    "id": "mgmt:setup:setwhitelistfilter",
@@ -9170,14 +9209,15 @@
    "id": "mgmt:timing:deviceprovisioning:30000",
    "status": "na",
    "code": [
+    "custom_components/junghome_ble/onboard.py::PROVISIONING_BUDGET",
     "custom_components/junghome_ble/jhmesh/provisioning.py::PROTOCOL_TIMEOUT",
     "custom_components/junghome_ble/jhmesh/provisioning.py::provision"
    ],
    "tests": [
-    "tests/jhmesh/test_provisioning.py::test_provision_times_out_on_a_silent_device"
+    "tests/test_onboard.py::test_a_device_whose_complete_was_lost_is_reset"
    ],
    "class": "dup",
-   "reason": "Ours differs without a recorded reason (60 s per PDU, no overall budget); the 30 s overall timeout is part of the flow's missing list.",
+   "reason": "Ours is the app's: 30 s around the whole provisioning (onboard.py PROVISIONING_BUDGET), the specification's per-PDU timer inside it.",
    "dup_of": "mgmt:flow:deviceprovisioning"
   },
   {
@@ -9590,11 +9630,12 @@
    "id": "mgmt:const:provisioningcapabilities.static_oob_info_available",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/provisioning.py::Capabilities.parse"
+    "custom_components/junghome_ble/jhmesh/provisioning.py::Capabilities.parse",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::OOB_TYPE_STATIC"
    ],
    "tests": [],
    "class": "dup",
-   "reason": "Capability bit of the missing Static OOB authentication (the field is parsed).",
+   "reason": "Capability bit of Static OOB authentication (mgmt:provauth:01), read by provisioning.choose_method.",
    "dup_of": "mgmt:provauth:01"
   },
   {
@@ -10441,11 +10482,12 @@
    "id": "mgmt:provstaticoob:static_oob_available",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/provisioning.py::Capabilities.parse"
+    "custom_components/junghome_ble/jhmesh/provisioning.py::Capabilities.parse",
+    "custom_components/junghome_ble/jhmesh/provisioning.py::OOB_TYPE_STATIC"
    ],
    "tests": [],
    "class": "dup",
-   "reason": "Capability bit of the missing Static OOB authentication (the field is parsed).",
+   "reason": "Capability bit of Static OOB authentication (mgmt:provauth:01), read by provisioning.choose_method.",
    "dup_of": "mgmt:provauth:01"
   },
   {

@@ -124,8 +124,9 @@ async def test_setup_and_unload(
         # five nodes with a Time Server; Switches off at per load
         + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1 + 5 + 6)
         # socket, All sockets, the Kitchen's sockets, parameters, Lock, Lock operation and Lock factory reset per
-        # device node, night mode, LED colour synchronisation of the 2-gang, previous brightness, sensor values for IoT
-        + ["switch"] * (1 + 1 + 1 + 26 + 6 + 5 * 2 + 4 + 1 + 2 + 1)
+        # device node, night mode, LED colour synchronisation of the 2-gang, previous brightness, sensor values for IoT;
+        # Time keeper on the five nodes with a Time Server (the export has a PP2 puck)
+        + ["switch"] * (1 + 1 + 1 + 26 + 6 + 5 * 2 + 4 + 1 + 2 + 1 + 5)
         + ["update"] * 5  # Firmware per node but the gateway
     )
 

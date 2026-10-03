@@ -1600,21 +1600,21 @@
     "tests/test_node_info.py::test_a_known_time_role_is_not_asked_again",
     "tests/test_node_info.py::test_the_node_device_shows_its_manufacturer_and_hardware_revision"
    ],
-   "reason": "Sent once per node, not on every link: the role is kept with the node's information (node_versions store) like SIG 0x0010 / 0x0011, and asked again only while it is not known (silence, an empty or prohibited role). The app asks on every opening of a device page to show it; in Home Assistant only the device diagnostics show it, nothing acts on it, Home Assistant never sends Time Role Set, and every node on air answered client (3), so a per-link Get was pure link-up traffic (one per node on every connect)."
+   "reason": "Sent once per node, not on every link: the role is kept with the node's information (node_versions store) like SIG 0x0010 / 0x0011, and asked again only while it is not known (silence, an empty or prohibited role). The app asks on every opening of a device page to show it; in Home Assistant only the device diagnostics show it, nothing acts on it, Home Assistant sends Time Role Set only from the Time keeper switch (msg:op:8239), and every node on air answered client (3), so a per-link Get was pure link-up traffic (one per node on every connect)."
   },
   {
    "id": "msg:op:8239",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_role"
+    "custom_components/junghome_ble/jhmesh/messages.py::time_role_set",
+    "custom_components/junghome_ble/jhmesh/messages.py::_describe_time_role",
+    "custom_components/junghome_ble/switch.py::JungHomeTimeKeeper._set"
    ],
    "tests": [
-    "tests/jhmesh/test_messages.py::test_describe_health_and_time_model_statuses"
+    "tests/jhmesh/test_messages.py::test_time_role_set",
+    "tests/test_time_keeper.py::test_the_switch_over_the_fake_mesh"
    ],
-   "missing": "Only a describe() decoder (_describe_time_role, 1 B TimeRole) for a message the app sends: there is no Time Role Set builder (1 B TimeRole 0..3) and nothing sets the time keeper's role (app: TimeRoleMessageBuilder p234v7/N0 set path, TimeRoleStatusSet). Reclassified from gap: this ledger's rule makes 'only a describe() decoder for a message the app sends' partial, not gap. Verify: a Set changes which node is time authority; Get / Set / restore on one node.",
-   "class": "build",
-   "verify": "on-air",
-   "review": "adversarial pass: gap -> partial under this ledger's own status rules (see method, 'Verification pass')"
+   "note": "Unverified on air: Time Role Set 2 to one node's Time Setup Server with the Time keeper switch, then 3, each answered by its Time Role Status (Time Role Get reads it back)."
   },
   {
    "id": "msg:op:823a",

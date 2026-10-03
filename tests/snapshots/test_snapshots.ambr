@@ -775,6 +775,7 @@
 # ---
 # name: test_platform_enabled_by_default[switch]
   dict({
+    'switch.2_channel_actuator_0400_time_keeper': 'integration',
     'switch.jung_home_mesh_test_all_sockets': None,
     'switch.jung_home_mesh_test_all_sockets_in_kitchen': None,
     'switch.kitchen_2_channel_actuator_0400_out_2_invert_switching_output': 'integration',
@@ -809,6 +810,10 @@
     'switch.living_room_rocker_status_led_a': None,
     'switch.living_room_rocker_status_led_b': None,
     'switch.living_room_rocker_synchronise_led_colours': None,
+    'switch.push_button_1_gang_0148_time_keeper': 'integration',
+    'switch.push_button_1_gang_0300_time_keeper': 'integration',
+    'switch.push_button_2_gang_0232_time_keeper': 'integration',
+    'switch.socket_0172_time_keeper': 'integration',
     'switch.wc_ceiling_button_led_night_mode': None,
     'switch.wc_ceiling_button_status_led': None,
     'switch.wc_mirror_button_led_night_mode': None,
@@ -10890,6 +10895,57 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[switch][switch.2_channel_actuator_0400_time_keeper-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.2_channel_actuator_0400_time_keeper',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Time keeper',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Time keeper',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'time_keeper',
+    'unique_id': '00005eff-fe00-5340-0000-000000000000-time_keeper',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[switch][switch.2_channel_actuator_0400_time_keeper-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: '2-channel actuator 0400 Time keeper',
+      'mesh_address': '0400',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.2_channel_actuator_0400_time_keeper',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[switch][switch.jung_home_mesh_test_all_sockets-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -12669,6 +12725,210 @@
     'state': 'off',
   })
 # ---
+# name: test_platform_entities[switch][switch.push_button_1_gang_0148_time_keeper-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.push_button_1_gang_0148_time_keeper',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Time keeper',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Time keeper',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'time_keeper',
+    'unique_id': '00005eff-fe00-5314-0000-000000000000-time_keeper',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[switch][switch.push_button_1_gang_0148_time_keeper-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 1-gang 0148 Time keeper',
+      'mesh_address': '0148',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.push_button_1_gang_0148_time_keeper',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[switch][switch.push_button_1_gang_0300_time_keeper-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.push_button_1_gang_0300_time_keeper',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Time keeper',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Time keeper',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'time_keeper',
+    'unique_id': '00005eff-fe00-5330-0000-000000000000-time_keeper',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[switch][switch.push_button_1_gang_0300_time_keeper-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 1-gang 0300 Time keeper',
+      'mesh_address': '0300',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.push_button_1_gang_0300_time_keeper',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[switch][switch.push_button_2_gang_0232_time_keeper-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.push_button_2_gang_0232_time_keeper',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Time keeper',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Time keeper',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'time_keeper',
+    'unique_id': '00005eff-fe00-5323-0000-000000000000-time_keeper',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[switch][switch.push_button_2_gang_0232_time_keeper-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Push-button 2-gang 0232 Time keeper',
+      'mesh_address': '0232',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.push_button_2_gang_0232_time_keeper',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[switch][switch.socket_0172_time_keeper-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'switch',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'switch.socket_0172_time_keeper',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Time keeper',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Time keeper',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'time_keeper',
+    'unique_id': '00005eff-fe00-5317-0000-000000000000-time_keeper',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[switch][switch.socket_0172_time_keeper-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Socket 0172 Time keeper',
+      'mesh_address': '0172',
+    }),
+    'context': <ANY>,
+    'entity_id': 'switch.socket_0172_time_keeper',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[switch][switch.wc_ceiling_button_led_night_mode-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -14029,6 +14289,7 @@
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
+      '00005eff-fe00-5314-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-0001 switch key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-current sensor key=current category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -14067,6 +14328,7 @@
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-color_temp_max number key=color_temp_max category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -14112,6 +14374,7 @@
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
+      '00005eff-fe00-5323-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-default_lightness number key=default_lightness category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14148,6 +14411,7 @@
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
+      '00005eff-fe00-5330-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-enforced_output switch key=lock category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14189,6 +14453,7 @@
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
+      '00005eff-fe00-5340-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '1baf3ade-0000-4000-8000-000000000001-central-fef5 light key=all_lights category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef8 switch key=all_sockets category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-iv_index sensor key=iv_index category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -14282,6 +14547,7 @@
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
+      '00005eff-fe00-5314-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-0001 switch key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-current sensor key=current category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -14320,6 +14586,7 @@
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-color_temp_max number key=color_temp_max category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -14365,6 +14632,7 @@
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
+      '00005eff-fe00-5323-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-default_lightness number key=default_lightness category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14401,6 +14669,7 @@
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
+      '00005eff-fe00-5330-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-enforced_output switch key=lock category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14442,6 +14711,7 @@
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
+      '00005eff-fe00-5340-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '1baf3ade-0000-4000-8000-000000000001-central-fef5 light key=all_lights category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef8 switch key=all_sockets category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-iv_index sensor key=iv_index category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -14544,6 +14814,7 @@
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
+      '00005eff-fe00-5314-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-0001 switch key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-current sensor key=current category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -14582,6 +14853,7 @@
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-color_temp_max number key=color_temp_max category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -14627,6 +14899,7 @@
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
+      '00005eff-fe00-5323-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-default_lightness number key=default_lightness category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14663,6 +14936,7 @@
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
+      '00005eff-fe00-5330-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-enforced_output switch key=lock category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14704,6 +14978,7 @@
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
+      '00005eff-fe00-5340-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-0001 cover key=blind category=None disabled_by=None device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0001',
       '00005eff-fe00-5355-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0001',
       '00005eff-fe00-5355-0000-000000000000-0001-blind_operation_mode select key=blind_operation_mode category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5355-0000-000000000000-0001',
@@ -14744,6 +15019,7 @@
       '00005eff-fe00-5355-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5355-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
+      '00005eff-fe00-5355-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5355-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-0001 cover key=blind category=None disabled_by=None device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0001',
       '00005eff-fe00-5360-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0001',
       '00005eff-fe00-5360-0000-000000000000-0001-blind_operation_mode select key=blind_operation_mode category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5360-0000-000000000000-0001',
@@ -14784,6 +15060,7 @@
       '00005eff-fe00-5360-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5360-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
+      '00005eff-fe00-5360-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5360-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-0001 cover key=blind category=None disabled_by=None device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0001',
       '00005eff-fe00-5370-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0001',
       '00005eff-fe00-5370-0000-000000000000-0001-blind_operation_mode select key=blind_operation_mode category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5370-0000-000000000000-0001',
@@ -14824,6 +15101,7 @@
       '00005eff-fe00-5370-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '00005eff-fe00-5370-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
+      '00005eff-fe00-5370-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5370-0000-000000000000',
       '1baf3ade-0000-4000-8000-000000000001-central-fef5 light key=all_lights category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef6 cover key=all_blinds category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef8 switch key=all_sockets category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -15075,6 +15353,7 @@
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
+      '00005eff-fe00-5314-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-0001 switch key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-current sensor key=current category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -15113,6 +15392,7 @@
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-color_temp_max number key=color_temp_max category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -15158,6 +15438,7 @@
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
+      '00005eff-fe00-5323-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-default_lightness number key=default_lightness category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -15194,6 +15475,7 @@
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
+      '00005eff-fe00-5330-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-enforced_output switch key=lock category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -15235,6 +15517,7 @@
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
+      '00005eff-fe00-5340-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-energy sensor key=energy category=None disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
@@ -15279,6 +15562,7 @@
       '00005eff-fe00-5361-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '00005eff-fe00-5361-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
+      '00005eff-fe00-5361-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5361-0000-000000000000',
       '1baf3ade-0000-4000-8000-000000000001-central-fef5 light key=all_lights category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef8 switch key=all_sockets category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-iv_index sensor key=iv_index category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -15376,6 +15660,7 @@
       '00005eff-fe00-5314-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5314-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
+      '00005eff-fe00-5314-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5314-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-0001 switch key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-current sensor key=current category=diagnostic disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -15414,6 +15699,7 @@
       '00005eff-fe00-5317-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5317-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5317-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-color_temp_max number key=color_temp_max category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -15459,6 +15745,7 @@
       '00005eff-fe00-5323-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5323-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
+      '00005eff-fe00-5323-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5323-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-default_lightness number key=default_lightness category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -15495,6 +15782,7 @@
       '00005eff-fe00-5330-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5330-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
+      '00005eff-fe00-5330-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5330-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-0001 light key=None category=None disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-automatic_dst switch key=automatic_dst category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-enforced_output switch key=lock category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -15536,6 +15824,7 @@
       '00005eff-fe00-5340-0000-000000000000-last_restart sensor key=last_restart category=diagnostic disabled_by=None device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5340-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
+      '00005eff-fe00-5340-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5340-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-0001 climate key=thermostat category=None disabled_by=None device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-0001-backlight_auto_off switch key=backlight_auto_off category=config disabled_by=None device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-0001-boost_mode switch key=boost_mode category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
@@ -15564,6 +15853,7 @@
       '00005eff-fe00-5350-0000-000000000000-last_seen sensor key=last_seen category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-rssi sensor key=rssi category=diagnostic disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '00005eff-fe00-5350-0000-000000000000-sensor_publication switch key=sensor_publication category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
+      '00005eff-fe00-5350-0000-000000000000-time_keeper switch key=time_keeper category=config disabled_by=integration device=junghome_ble:node:00005eff-fe00-5350-0000-000000000000',
       '1baf3ade-0000-4000-8000-000000000001-central-fef5 light key=all_lights category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef8 switch key=all_sockets category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-central-fef9 climate key=all_thermostats category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',

@@ -1,4 +1,4 @@
-"""Provisioning a new node over PB-GATT as a provisioner: No-OOB authentication, FIPS P-256 ECDH (Mesh Profile 1.0.1 §5.4).
+"""Provisioning a new node over PB-GATT as a provisioner: FIPS P-256 ECDH, No OOB or Static OOB (Mesh Protocol §5.4).
 
 What the JUNG HOME app does (`docs/android/transport-provisioning.md` §3.3, `docs/android/network-logic.md` §3.1):
 connect to the unprovisioned device's Mesh Provisioning Service (0x1827), send *Invite* with a 5 s attention timer,
@@ -9,7 +9,7 @@ Everything else here is the specification:
     Provisioner                         Device
     Invite (attention)          →
                                 ←       Capabilities (elements, algorithms, OOB support)
-    Start (0, 0, 0, 0, 0)       →
+    Start (algorithm, 0, auth, 0, 0) →
     Public Key (X ‖ Y)          →
                                 ←       Public Key (X ‖ Y)
     Confirmation                →
@@ -25,6 +25,29 @@ each PDU from the device and returns what to send next, `result` holds the devic
 SAR framing (§6.3.1; `pdu.proxy_frame` / `ProxyReassembler`) on Mesh Provisioning Data In (0x2ADB, write without
 response) / Data Out (0x2ADC, notify).
 
+**The method** (review-4 P4-8). With No OOB the AuthValue is all zeros: whoever sits between the two ends in radio
+range during the exchange can run ECDH with each of them and nothing notices. So the Start is not the app's fixed
+one but `choose_method`'s pick from the device's Capabilities (Mesh Protocol 1.1 §5.4.1.2, §5.4.1.3):
+
+- **Static OOB** when the device offers it (OOB Type bit 0) and the caller holds the device's value (`static_oob`):
+  the AuthValue (§5.4.2.4) is that value, 16 octets with algorithm 0, 32 octets with algorithm 1 — a value of the
+  other length is not padded or cut, the device's algorithm for it must be offered or the session stops;
+- **BTM_ECDH_P256_HMAC_SHA256_AES_CCM** (algorithm 1, Algorithms bit 1, Mesh Protocol 1.1) over algorithm 0 when
+  offered: 32-octet randoms, confirmations and AuthValue; ConfirmationSalt = s2(ConfirmationInputs),
+  ConfirmationKey = k5(ECDHSecret ‖ AuthValue, ConfirmationSalt, "prck256"), Confirmation =
+  HMAC-SHA-256_ConfirmationKey(Random); the ProvisioningSalt, session key, nonce and device key are derived as with
+  algorithm 0 (§5.4.2.5);
+- a device that takes only OOB-authenticated provisioning (OOB Type bit 1) is refused without its 32-octet value:
+  it accepts neither No OOB nor algorithm 0; a value given for a device that offers no Static OOB is refused too
+  (the caller asked for authentication the device cannot give). Either way before Start: the device learns
+  nothing;
+- otherwise No OOB, as the app. Output / Input OOB and OOB public keys are never used (JUNG devices have neither
+  display nor keypad; docs/roadmap.md).
+
+`capability_record` is what the device offered and what was used, for the vault and the diagnostics (never a value
+or a key). Both ends' confirmation and reflection checks hold for every method. Nothing but No OOB with algorithm 0
+has run against a real device: the HMAC algorithm and Static OOB are unverified on air (no device here offers them).
+
 A provisioner never sends *Failed* — that PDU is the device's; the provisioner aborts by closing the link (§5.4.2).
 So every failure here is a `ProvisioningError` for the caller, who then disconnects (`provision` leaves the
 connection to its caller, like `ProxyClient.attach`). The device forgets a half-finished session when the link
@@ -36,8 +59,8 @@ first (Home Assistant's vault) and abort, by raising, before the device gets an 
 (review-4 D15; unverified on air). Once the Data PDU went out, a failure no longer proves the device has nothing: a
 lost *Complete* looks like any other timeout.
 
-Key material (the ECDH secret, the session key, the NetKey inside `ProvisioningData`, the device key) never takes
-part in a `repr()` and is never logged; only the PDU types and lengths are.
+Key material (the ECDH secret, the session key, the NetKey inside `ProvisioningData`, the device key) and the Static
+OOB value never take part in a `repr()` and are never logged; only the PDU types and lengths are.
 """
 
 from __future__ import annotations
@@ -52,7 +75,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from .crypto import aes_cmac, ccm_decrypt, ccm_encrypt, k1, s1
+from .crypto import aes_cmac, ccm_decrypt, ccm_encrypt, hmac_sha256, k1, k5, s1, s2
 from .pdu import BEACON_UNPROVISIONED, PROXY_PROVISIONING, ProxyReassembler, proxy_frame
 
 log = logging.getLogger("jhmesh.provisioning")
@@ -84,12 +107,11 @@ PDU_NAMES = {
     COMPLETE: "Complete",
     FAILED: "Failed",
 }
-# parameter length of every PDU the provisioner receives (§5.4.1); the others it only sends
+# parameter length of every PDU the provisioner receives (§5.4.1); the others it only sends. Confirmation and
+# Random take the algorithm's size instead (`Method.size`: 16 octets, 32 with the HMAC algorithm)
 _RECEIVED_LENGTHS = {
     CAPABILITIES: 11,
     PUBLIC_KEY: 64,
-    CONFIRMATION: 16,
-    RANDOM: 16,
     COMPLETE: 0,
     FAILED: 1,
 }
@@ -113,11 +135,36 @@ ALGORITHM_FIPS_P256 = (
 ALGORITHMS_FIPS_P256_BIT = (
     0x0001  # Capabilities: the same algorithm as a bit of the Algorithms field
 )
+# Start: BTM_ECDH_P256_HMAC_SHA256_AES_CCM (Mesh Protocol 1.1 §5.4.1.3), Algorithms bit 1 (§5.4.1.2)
+ALGORITHM_HMAC_SHA256 = 0x01
+ALGORITHMS_HMAC_SHA256_BIT = 0x0002
+ALGORITHM_NAMES = {
+    ALGORITHM_FIPS_P256: "BTM_ECDH_P256_CMAC_AES128_AES_CCM",
+    ALGORITHM_HMAC_SHA256: "BTM_ECDH_P256_HMAC_SHA256_AES_CCM",
+}
 PUBLIC_KEY_NO_OOB = (
     0x00  # Start: the device's public key comes in a Public Key PDU, not out of band
 )
+PUBLIC_KEY_OOB_AVAILABLE = 0x01  # Capabilities Public Key Type bit 0
 AUTH_NO_OOB = 0x00  # Start: authentication method No OOB (AuthValue = 16 zero octets)
+AUTH_STATIC_OOB = (
+    0x01  # Start: Static OOB (AuthValue = the device's static value; action and size 0)
+)
+AUTH_NAMES = {0x00: "No OOB", 0x01: "Static OOB", 0x02: "Output OOB", 0x03: "Input OOB"}
 AUTH_VALUE_NO_OOB = bytes(16)
+# Capabilities OOB Type (Mesh Protocol 1.1 §5.4.1.2; "Static OOB Type" in 1.0.x, which has bit 0 only)
+OOB_TYPE_STATIC = 0x01  # Static OOB information available
+OOB_TYPE_ONLY_OOB = 0x02  # only OOB-authenticated provisioning supported
+STATIC_OOB_SIZES = (16, 32)  # the AuthValue of algorithm 0, of algorithm 1
+# the Output / Input OOB Action bits of the Capabilities (§5.4.1.2): recorded, never used
+OUTPUT_OOB_ACTIONS = (
+    "blink",
+    "beep",
+    "vibrate",
+    "output numeric",
+    "output alphanumeric",
+)
+INPUT_OOB_ACTIONS = ("push", "twist", "input numeric", "input alphanumeric")
 
 KEY_REFRESH_FLAG = 0x01  # Provisioning Data Flags (§5.4.2.5): bit 0 Key Refresh Phase 2, bit 1 IV Update active
 IV_UPDATE_FLAG = 0x02
@@ -217,6 +264,96 @@ class Capabilities:
 
 
 @dataclass(frozen=True)
+class Method:
+    """The algorithm and authentication method a session runs with: what its Start says (§5.4.1.3)."""
+
+    algorithm: int = ALGORITHM_FIPS_P256
+    auth: int = AUTH_NO_OOB
+
+    @property
+    def size(self) -> int:
+        """Return the octets of the randoms, confirmations and AuthValue: 16, 32 with the HMAC algorithm."""
+        return 32 if self.algorithm == ALGORITHM_HMAC_SHA256 else 16
+
+    def start(self) -> bytes:
+        """Return the Start PDU: the algorithm, no OOB public key, the method, action and size 0."""
+        return pdu(START, bytes([self.algorithm, PUBLIC_KEY_NO_OOB, self.auth, 0, 0]))
+
+
+def choose_method(caps: Capabilities, static_oob_size: int | None = None) -> Method:
+    """Return the strongest method the device's Capabilities offer (module docstring); `ProvisioningError` if none fits.
+
+    `static_oob_size`: the length of the device's Static OOB value the caller holds (16 or 32), None without one.
+    Authentication first (Static OOB is what keeps a man in the middle out), then the HMAC algorithm.
+    """
+    hmac_offered = bool(caps.algorithms & ALGORITHMS_HMAC_SHA256_BIT)
+    cmac_offered = bool(caps.algorithms & ALGORITHMS_FIPS_P256_BIT)
+    if not hmac_offered and not cmac_offered:
+        raise ProvisioningError(
+            f"device does not offer FIPS P-256 (algorithms {caps.algorithms:#06x})"
+        )
+    only_oob = bool(caps.static_oob_type & OOB_TYPE_ONLY_OOB)
+    if static_oob_size is not None:
+        if not caps.static_oob_type & OOB_TYPE_STATIC:
+            raise ProvisioningError(
+                "a Static OOB value was given, but the device offers no Static OOB"
+            )
+        algorithm = (
+            ALGORITHM_HMAC_SHA256 if static_oob_size == 32 else ALGORITHM_FIPS_P256
+        )
+        offered = hmac_offered if algorithm == ALGORITHM_HMAC_SHA256 else cmac_offered
+        if not offered or (only_oob and algorithm == ALGORITHM_FIPS_P256):
+            raise ProvisioningError(
+                f"the device does not take a {static_oob_size}-octet Static OOB value"
+                f" (algorithms {caps.algorithms:#06x})"
+            )
+        return Method(algorithm, AUTH_STATIC_OOB)
+    if only_oob:
+        raise ProvisioningError(
+            "the device takes only OOB-authenticated provisioning: its Static OOB value is needed"
+        )
+    return Method(
+        ALGORITHM_HMAC_SHA256 if hmac_offered else ALGORITHM_FIPS_P256, AUTH_NO_OOB
+    )
+
+
+def _bits(value: int, names: tuple[str, ...]) -> list[str]:
+    return [
+        names[i] if i < len(names) else f"bit {i}" for i in range(16) if value >> i & 1
+    ]
+
+
+def capability_record(caps: Capabilities, method: Method | None) -> dict[str, Any]:
+    """Return what the device offered and what was used, JSON-ready for the vault and the diagnostics (no value, no key)."""
+    return {
+        "algorithms": _bits(
+            caps.algorithms,
+            (
+                ALGORITHM_NAMES[ALGORITHM_FIPS_P256],
+                ALGORITHM_NAMES[ALGORITHM_HMAC_SHA256],
+            ),
+        ),
+        "publicKeyOob": bool(caps.public_key_type & PUBLIC_KEY_OOB_AVAILABLE),
+        "staticOob": bool(caps.static_oob_type & OOB_TYPE_STATIC),
+        "onlyOob": bool(caps.static_oob_type & OOB_TYPE_ONLY_OOB),
+        "outputOob": {
+            "size": caps.output_oob_size,
+            "actions": _bits(caps.output_oob_action, OUTPUT_OOB_ACTIONS),
+        },
+        "inputOob": {
+            "size": caps.input_oob_size,
+            "actions": _bits(caps.input_oob_action, INPUT_OOB_ACTIONS),
+        },
+        "used": None
+        if method is None
+        else {
+            "algorithm": ALGORITHM_NAMES[method.algorithm],
+            "authentication": AUTH_NAMES[method.auth],
+        },
+    }
+
+
+@dataclass(frozen=True)
 class ProvisioningData:
     """What the new node receives in the Data PDU (§5.4.2.5): NetKey, its index, flags, IV index, primary unicast.
 
@@ -278,12 +415,13 @@ class ProvisioningData:
 
 @dataclass(frozen=True)
 class ProvisioningResult:
-    """A provisioned node: its primary unicast, element count, capabilities and device key (not in `repr()`)."""
+    """A provisioned node: its primary unicast, element count, capabilities, method and device key (not in `repr()`)."""
 
     unicast: int
     elements: int
     device_key: bytes = field(repr=False)
     capabilities: Capabilities
+    method: Method = Method()
 
     @property
     def addresses(self) -> range:
@@ -362,10 +500,25 @@ def confirmation(
     return aes_cmac(key, random + auth_value)
 
 
+def confirmation_salt_hmac(confirmation_inputs: bytes) -> bytes:
+    """ConfirmationSalt of the HMAC algorithm = s2(ConfirmationInputs) (Mesh Protocol 1.1 §5.4.2.4)."""
+    return s2(confirmation_inputs)
+
+
+def confirmation_key_hmac(secret: bytes, auth_value: bytes, salt: bytes) -> bytes:
+    """ConfirmationKey of the HMAC algorithm = k5(ECDHSecret ‖ AuthValue, ConfirmationSalt, "prck256")."""
+    return k5(secret + auth_value, salt, b"prck256")
+
+
+def confirmation_hmac(key: bytes, random: bytes) -> bytes:
+    """Return the HMAC algorithm's Confirmation = HMAC-SHA-256_ConfirmationKey(Random) (the AuthValue is in the key)."""
+    return hmac_sha256(key, random)
+
+
 def provisioning_salt(
     conf_salt: bytes, random_provisioner: bytes, random_device: bytes
 ) -> bytes:
-    """ProvisioningSalt = s1(ConfirmationSalt ‖ RandomProvisioner ‖ RandomDevice)."""
+    """ProvisioningSalt = s1(ConfirmationSalt ‖ RandomProvisioner ‖ RandomDevice), whichever the algorithm (§5.4.2.5)."""
     return s1(conf_salt + random_provisioner + random_device)
 
 
@@ -420,11 +573,13 @@ _EXPECTED = {
 
 
 class Provisioner:
-    """The provisioner side of one provisioning session (No OOB, FIPS P-256), independent of any transport.
+    """The provisioner side of one provisioning session (FIPS P-256), independent of any transport.
 
-    `private_key` (a P-256 scalar) and `random` (RandomProvisioner) may be injected so a run is deterministic —
-    the tests replay the specification's sample data (§8.7) that way; left out, both are fresh random values.
-    Once `feed` raised, the session is over (`state` is `FAILED`) and every further `feed` raises too.
+    `private_key` (a P-256 scalar) and `random` (RandomProvisioner, 16 octets or the HMAC algorithm's 32) may be
+    injected so a run is deterministic — the tests replay the specification's sample data (§8.7) that way; left
+    out, both are fresh random values. `static_oob`: the device's Static OOB value (16 or 32 octets), when the
+    caller has it; the method follows from the Capabilities (`choose_method`). Once `feed` raised, the session is
+    over (`state` is `FAILED`) and every further `feed` raises too.
     """
 
     def __init__(
@@ -434,6 +589,7 @@ class Provisioner:
         attention: int = DEFAULT_ATTENTION,
         private_key: bytes | None = None,
         random: bytes | None = None,
+        static_oob: bytes | None = None,
     ) -> None:
         """Prepare a session that will hand `data` to the device."""
         self.data = data
@@ -442,13 +598,22 @@ class Provisioner:
             private_key if private_key is not None else generate_private_key()
         )
         self.public_key = public_key_bytes(self._private)
-        self._random = random if random is not None else os.urandom(16)
-        if len(self._random) != 16:
+        if random is not None and len(random) not in STATIC_OOB_SIZES:
             raise ValueError(
-                f"RandomProvisioner must be 16 bytes, got {len(self._random)}"
+                f"RandomProvisioner must be 16 or 32 bytes, got {len(random)}"
             )
+        if static_oob is not None and len(static_oob) not in STATIC_OOB_SIZES:
+            # its length only: the value is a secret of the device's
+            raise ValueError(
+                f"a Static OOB value must be 16 or 32 bytes, got {len(static_oob)}"
+            )
+        self._random_given = random is not None
+        self._random = random if random is not None else os.urandom(32)
+        self._static_oob = static_oob
         self.state = State.IDLE
         self.capabilities: Capabilities | None = None
+        self.method: Method | None = None
+        self._auth = b""  # the AuthValue
         self._inputs = b""  # ConfirmationInputs, built as the PDUs go by
         self._secret = b""
         self._conf_salt = b""
@@ -516,7 +681,9 @@ class Provisioner:
             raise ProvisioningError(
                 f"unexpected {name} while waiting for {self.expecting}"
             )
-        if len(params) != _RECEIVED_LENGTHS[pdu_type]:
+        # Confirmation and Random come after the Start: the method is known by then
+        size = self.method.size if self.method is not None else 0
+        if len(params) != _RECEIVED_LENGTHS.get(pdu_type, size):
             raise ProvisioningError(f"{name} has {len(params)} parameter bytes")
         log.debug("provisioning: received %s", name)
         handler = {
@@ -534,15 +701,36 @@ class Provisioner:
             raise ProvisioningError(
                 "device reports 0 elements"
             )  # prohibited by §5.4.1.2
-        if not caps.algorithms & ALGORITHMS_FIPS_P256_BIT:
+        oob_size = None if self._static_oob is None else len(self._static_oob)
+        method = choose_method(caps, oob_size)
+        if self._random_given and len(self._random) != method.size:
             raise ProvisioningError(
-                f"device does not offer FIPS P-256 (algorithms {caps.algorithms:#06x})"
+                f"RandomProvisioner has {len(self._random)} bytes, the algorithm takes {method.size}"
             )
-        self.capabilities = caps
-        start = start_no_oob()
+        self._random = self._random[: method.size]
+        # §5.4.2.4: the static value as it is (its length picked the algorithm), else zeros of the algorithm's size
+        self._auth = (
+            self._static_oob
+            if method.auth == AUTH_STATIC_OOB and self._static_oob is not None
+            else bytes(method.size)
+        )
+        self.capabilities, self.method = caps, method
+        start = method.start()
         self._inputs += params + start[1:] + self.public_key
         self.state = State.PUBLIC_KEY_SENT
         return [start, pdu(PUBLIC_KEY, self.public_key)]
+
+    def _confirm(self, random: bytes) -> bytes:
+        """Return the confirmation of `random` under the session's ConfirmationKey and AuthValue, by algorithm."""
+        if self._hmac:
+            return confirmation_hmac(self._conf_key, random)
+        return confirmation(self._conf_key, random, self._auth)
+
+    @property
+    def _hmac(self) -> bool:
+        return (
+            self.method is not None and self.method.algorithm == ALGORITHM_HMAC_SHA256
+        )
 
     def _on_public_key(self, params: bytes) -> list[bytes]:
         if hmac.compare_digest(params, self.public_key):
@@ -555,9 +743,15 @@ class Provisioner:
                 "device public key is not a valid P-256 point"
             ) from err
         self._inputs += params
-        self._conf_salt = confirmation_salt(self._inputs)
-        self._conf_key = confirmation_key(self._secret, self._conf_salt)
-        self._our_confirmation = confirmation(self._conf_key, self._random)
+        if self._hmac:
+            self._conf_salt = confirmation_salt_hmac(self._inputs)
+            self._conf_key = confirmation_key_hmac(
+                self._secret, self._auth, self._conf_salt
+            )
+        else:
+            self._conf_salt = confirmation_salt(self._inputs)
+            self._conf_key = confirmation_key(self._secret, self._conf_salt)
+        self._our_confirmation = self._confirm(self._random)
         self.state = State.CONFIRMATION_SENT
         return [pdu(CONFIRMATION, self._our_confirmation)]
 
@@ -570,7 +764,7 @@ class Provisioner:
         return [pdu(RANDOM, self._random)]
 
     def _on_random(self, params: bytes) -> list[bytes]:
-        expected = confirmation(self._conf_key, params)
+        expected = self._confirm(params)
         if not hmac.compare_digest(expected, self._device_confirmation):
             raise ProvisioningError(
                 "device confirmation does not verify (Confirmation Failed)"
@@ -587,11 +781,13 @@ class Provisioner:
 
     def _on_complete(self, params: bytes) -> list[bytes]:
         assert self.capabilities is not None
+        assert self.method is not None
         self.result = ProvisioningResult(
             unicast=self.data.unicast,
             elements=self.capabilities.elements,
             device_key=self._device_key,
             capabilities=self.capabilities,
+            method=self.method,
         )
         self.state = State.COMPLETE
         return []
@@ -687,9 +883,11 @@ async def provision(
             log.debug("stop_notify on the provisioning service failed", exc_info=True)
     assert prov.result is not None
     log.info(
-        "provisioned unicast %04X with %d element(s)",
+        "provisioned unicast %04X with %d element(s), %s, %s",
         prov.result.unicast,
         prov.result.elements,
+        ALGORITHM_NAMES[prov.result.method.algorithm],
+        AUTH_NAMES[prov.result.method.auth],
     )
     return prov.result
 
