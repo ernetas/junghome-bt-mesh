@@ -22,6 +22,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble import coordinator, repairs
+from custom_components.junghome_ble import seq_store as seq_store_module
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_MESH_UUID,
@@ -479,10 +480,10 @@ async def test_the_restart_point_is_read_once_per_written_record(
     await hass.async_block_till_done()
     with (
         patch.object(
-            coordinator, "_usable_record", wraps=coordinator._usable_record
+            seq_store_module, "_usable_record", wraps=seq_store_module._usable_record
         ) as read,
         patch.object(
-            coordinator, "SEQ_SAVE_EVERY", 1000
+            seq_store_module, "SEQ_SAVE_EVERY", 1000
         ),  # no immediate write in between
     ):
         state.reserve_seq(1)
@@ -754,7 +755,7 @@ def test_the_skip_target_trusts_only_numbers_in_range(
     target: tuple[int, int],
 ) -> None:
     """Review-4 S4-7: `_furthest` took any number that converted, however far out of range."""
-    assert coordinator._seq_skip_target(records, floor) == target
+    assert seq_store_module._seq_skip_target(records, floor) == target
 
 
 async def test_a_record_out_of_range_in_both_copies_is_repaired_into_a_usable_one(
@@ -1559,37 +1560,40 @@ async def test_a_send_without_a_link_leaves_the_counter_and_its_clean_mark(
 def test_store_record_helpers_assume_the_worst_of_garbage() -> None:
     """A store that is not one says nothing about which address sent: it counts as history; numbers that do not
     read as numbers are passed over when looking for the furthest counter left."""
-    assert coordinator._has_history(None, "0D00") is False
-    assert coordinator._has_history({"addresses": {}}, "0D00") is False
-    assert coordinator._has_history({"addresses": {"0D00": {}}}, "0D00") is True
-    assert coordinator._has_history(["not", "a", "store"], "0D00") is True
-    assert coordinator._has_history({"no addresses": 1}, "0D00") is True
-    assert coordinator._usable_record({"addresses": {"0D00": "x"}}, "0D00") is None
-    assert coordinator._seq_skip_target(["x", None, {"seq": "y"}]) == (
+    assert seq_store_module._has_history(None, "0D00") is False
+    assert seq_store_module._has_history({"addresses": {}}, "0D00") is False
+    assert seq_store_module._has_history({"addresses": {"0D00": {}}}, "0D00") is True
+    assert seq_store_module._has_history(["not", "a", "store"], "0D00") is True
+    assert seq_store_module._has_history({"no addresses": 1}, "0D00") is True
+    assert seq_store_module._usable_record({"addresses": {"0D00": "x"}}, "0D00") is None
+    assert seq_store_module._seq_skip_target(["x", None, {"seq": "y"}]) == (
         0,
         SEQ_SKIP_UNKNOWN,
     )
-    assert coordinator._seq_skip_target([{"seq": 5, "iv_index": 3}]) == (
+    assert seq_store_module._seq_skip_target([{"seq": 5, "iv_index": 3}]) == (
         3,
         5 + SEQ_SKIP_AHEAD,
     )
-    assert coordinator._seq_skip_target([{"seq": SEQ_TX_LIMIT}]) == (0, SEQ_TX_LIMIT)
-    assert coordinator._seq_skip_target([{"seq": 9}, {"seq": 5}]) == (
+    assert seq_store_module._seq_skip_target([{"seq": SEQ_TX_LIMIT}]) == (
+        0,
+        SEQ_TX_LIMIT,
+    )
+    assert seq_store_module._seq_skip_target([{"seq": 9}, {"seq": 5}]) == (
         0,
         9 + SEQ_SKIP_AHEAD,
     )
     # an earlier repair's floor: SEQ_SKIP_UNKNOWN past it when nothing further along reads; a record past it wins
     floor = {"seq": SEQ_SKIP_UNKNOWN, "iv_index": 2}
-    assert coordinator._seq_skip_target(["x"], floor) == (2, 2 * SEQ_SKIP_UNKNOWN)
-    assert coordinator._seq_skip_target([{"seq": 9, "iv_index": 2}], floor) == (
+    assert seq_store_module._seq_skip_target(["x"], floor) == (2, 2 * SEQ_SKIP_UNKNOWN)
+    assert seq_store_module._seq_skip_target([{"seq": 9, "iv_index": 2}], floor) == (
         2,
         2 * SEQ_SKIP_UNKNOWN,
     )
-    assert coordinator._seq_skip_target([{"seq": 9, "iv_index": 3}], floor) == (
+    assert seq_store_module._seq_skip_target([{"seq": 9, "iv_index": 3}], floor) == (
         3,
         9 + SEQ_SKIP_AHEAD,
     )
-    assert coordinator._seq_skip_target([], {"seq": "y"}) == (0, SEQ_SKIP_UNKNOWN)
+    assert seq_store_module._seq_skip_target([], {"seq": "y"}) == (0, SEQ_SKIP_UNKNOWN)
 
 
 async def test_an_unreadable_store_without_our_record_anywhere_skips_the_address_ahead(

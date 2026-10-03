@@ -18,13 +18,13 @@ from custom_components.junghome_ble.coordinator import (
     SEQ_RESTART_MARGIN,
     AddressShared,
     JungHomeHub,
-    _stored_address_shared,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.client import (
     SEQ_GUARD_FIRST_BEACON,
     SEQ_MAX,
 )
+from custom_components.junghome_ble.seq_store import _stored_address_shared
 
 from .conftest import FakeProxyLink, settle, wait_for_link, wait_until
 from .helpers import OUR_ADDRESS, SEQ_STORE_KEY, find_issue

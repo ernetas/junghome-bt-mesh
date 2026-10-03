@@ -1564,7 +1564,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/entity.py::software_version",
-    "custom_components/junghome_ble/coordinator.py::NODE_VERSIONS"
+    "custom_components/junghome_ble/node_info.py::NODE_VERSIONS"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version"
@@ -1704,7 +1704,7 @@
    "id": "net:debug:provisionerdetailviewmodel.updatesequencenumber",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::HAState.skip_ahead",
+    "custom_components/junghome_ble/seq_store.py::HAState.skip_ahead",
     "custom_components/junghome_ble/repairs.py::SkipAheadFlow.async_step_confirm"
    ],
    "tests": [
@@ -4522,7 +4522,7 @@
    "id": "net:uc:requestmanufacturerinfos",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::NODE_VERSIONS",
+    "custom_components/junghome_ble/node_info.py::NODE_VERSIONS",
     "custom_components/junghome_ble/entity.py::software_version"
    ],
    "tests": [

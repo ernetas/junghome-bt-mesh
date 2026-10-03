@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Final
 from homeassistant.util.hass_dict import HassKey
 
 if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+
     from .schedules import Scheduler
 
 DOMAIN: Final = "junghome_ble"
@@ -608,6 +610,11 @@ ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
 def learn_more_url(translation_key: str) -> str:
     """Return the *Learn more* link of the repair issue raised with `translation_key` (`ISSUE_LEARN_MORE`)."""
     return f"{LEARN_MORE_PAGE}#{ISSUE_LEARN_MORE[translation_key]}"
+
+
+def issue_id(entry: ConfigEntry, key: str) -> str:
+    """Return the repair-issue id of `key` (an `ISSUE_*` translation key) for `entry`: one issue per mesh, not per domain."""
+    return f"{key}_{entry.entry_id}"
 
 
 EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beacons on one link, with nothing decodable, before the export counts as stale

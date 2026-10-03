@@ -25,7 +25,6 @@ from custom_components.junghome_ble.coordinator import (
     HAState,
     JungHomeHub,
     SeqStore,
-    _without_mark,
     seq_backup_store,
     seq_store,
 )
@@ -33,6 +32,7 @@ from custom_components.junghome_ble.jhmesh.client import (
     SEQ_GUARD_FIRST_BEACON,
     SEQ_TX_LIMIT,
 )
+from custom_components.junghome_ble.seq_store import _without_mark
 
 from .conftest import wait_for_link
 from .helpers import SEQ_STORE_KEY

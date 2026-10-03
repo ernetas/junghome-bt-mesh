@@ -620,6 +620,11 @@
   criterion, hardware and whether it can be undone, and what cannot be checked here and why. `tools/on_air.py`
   lists every such marker of the code, docs, ledger and unreleased changelog with the symbol holding it, and with
   `--uncovered` the ones the checklist does not cite.
+- Internal: the sequence-number persistence moved out of `coordinator.py` unchanged (review-4 A4-1): `HAState`, the
+  store with its `.backup` copy and floor, the skip-ahead of the `seq_store_lost` repair and of a restored backup and
+  the legacy migration into `seq_store.py`, the node-information store into `node_info.py`, `issue_id` into
+  `const.py`. Nothing depends on the hub there; `coordinator` re-exports what other modules import from it, and the
+  stores keep their keys and record shapes. Their log lines now come from the `…seq_store` and `…node_info` loggers.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick
