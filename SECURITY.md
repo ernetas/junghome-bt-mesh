@@ -14,16 +14,16 @@ device of the mesh, reconfigure it, or take it over.
   | The export: `<config>/junghome_ble/<mesh uuid>.json` (fetched or uploaded), or the file you pointed the entry at | every key: network, application, every device key | 0600 (a file of your own: never looser than 0600 once written) |
   | Its backups `<export>.bak`, `.bak.1`, `.bak.2` and `<export>.pre-adopt` | earlier versions of the export, every key | 0600 |
   | The app's last upload `<export>.app` (an entry set up from the gateway) | every key | 0600 |
-  | `.storage/junghome_ble.vault.<mesh uuid>`, and any `….unreadable.<time>` copy | Home Assistant's provisioner identity, the device keys of the devices it added | 0600 |
+  | `.storage/junghome_ble.vault.<mesh uuid>`, its `.backup` copy and any `….unreadable.<time>` copy | Home Assistant's provisioner identity, the device keys of the devices it added | 0600 |
   | `.storage/junghome_ble.seq.<mesh uuid>` and its `.backup` copy | sequence numbers; the new network key while a key refresh is followed | 0600 |
   | `.storage/junghome_ble.seq.<mesh uuid>.floor` | the `seq_store_lost` repair's sequence-number floor (no key, kept with the store) | 0600 |
   | CLI: `tools/.jhmesh_state_<ADDR>.json` and its `.bak` | the CLI's sequence numbers; the new network key while it follows a key refresh | 0600 (an older, looser one is tightened when loaded) |
   | CLI: `tools/.jhmesh_devkey_<ADDR>.json` (or `provision --key-file`) | the device key of a node `mesh_poc.py provision` added (never printed) | 0600 |
   | CLI: a file written by `mesh_poc.py export write --out` | every key | 0600 |
 
-  The sequence-number store and the vault, with any `.unreadable.<time>` copy of a vault that did not read back, are
-  kept when the entry is removed — the integration never deletes them; delete them by hand when they are no longer
-  needed. Home Assistant's own `.storage` directory keeps the mode Home Assistant gives it.
+  The sequence-number store and the vault, with their `.backup` copies and any `.unreadable.<time>` copy of a vault
+  that did not read back, are kept when the entry is removed — the integration never deletes them; delete them by
+  hand when they are no longer needed. Home Assistant's own `.storage` directory keeps the mode Home Assistant gives it.
   Home Assistant backups contain all of these: keep them as private as the export itself.
 - Keys never appear in logs, diagnostics downloads or error messages. The `junghome_ble.export_network` action
   returns the whole export, keys included, and is limited to administrators; so are `add_device` (it hands a new

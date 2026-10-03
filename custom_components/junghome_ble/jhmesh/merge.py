@@ -8,10 +8,13 @@ those changes onto the app's new upload, leaving everything the app changed in b
 
 Documents are `{"network": <CDB tree>, "meta": <app meta block>}` (`ProjectFile.snapshot()`). Arrays are matched
 by what identifies their entries — a node by its UUID, an element by its index, a model by its id, a room by its
-address, an app device by (node, locations) — so an entry the app added or removed elsewhere does not shift ours;
-an array of plain values (subscriptions, bound keys) is merged as a set; any other array of objects is treated
-as a set of whole rows. A change whose old value the app has changed since is a conflict: the app's value is
-kept (its Config messages went out later) and the change is reported, not applied.
+address, an app device by (node, locations), a key's or load's `*Exports` row by its element address, a network
+exclusion by its IV index — so an entry the app added or removed elsewhere does not shift ours, and a row both
+sides changed stays one row (review-4 S4-4: matched by content, HA's and the app's version of a key's mode both
+survived); an array of plain values (subscriptions, bound keys) is merged as a set; any other array of objects is
+treated as a set of whole rows. A change whose old value the app has changed since is a conflict: the app's value
+is kept (its Config messages went out later) and the change is reported, not applied. Unverified on air against
+the iOS app's import of a merged file.
 """
 
 from __future__ import annotations
@@ -43,6 +46,20 @@ def _upper(value: Any) -> Any:
     return value.upper().replace("-", "") if isinstance(value, str) else value
 
 
+def _address(value: Any) -> int | None:
+    """Return the element address of a `meta` row: an int, or hex text (`devices.as_int`); None for anything else."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value, 16)
+        except ValueError:
+            return None
+    return None
+
+
 def _device_identity(row: dict[str, Any]) -> Any:
     did = row.get("deviceId")
     if not isinstance(did, dict) or did.get("nodeId") is None:
@@ -68,6 +85,11 @@ IDENTITY: dict[str, Callable[[dict[str, Any]], Any]] = {
     "elementConnectionGroups": lambda r: r.get("groupAddress"),
     "devices": _device_identity,
     "sceneInfo": lambda r: r.get("scene"),
+    # one row per element in the app's tables (`docs/android/network-logic.md`: `address` + one value)
+    "keyModeSceneConfigExports": lambda r: _address(r.get("elementAddress")),
+    "buttonLayoutExports": lambda r: _address(r.get("elementAddress")),
+    "actuatorExports": lambda r: _address(r.get("elementAddress")),
+    "networkExclusions": lambda r: r.get("ivIndex"),
 }
 
 

@@ -30,6 +30,12 @@ So every failure here is a `ProvisioningError` for the caller, who then disconne
 connection to its caller, like `ProxyClient.attach`). The device forgets a half-finished session when the link
 closes; nothing reaches the device's storage before *Complete*.
 
+The device key is known one step before the device learns anything: it is derived from the device's Random, before
+the Data PDU goes out. `provision(on_device_key=…)` hands it over right there, so a caller can put it somewhere safe
+first (Home Assistant's vault) and abort, by raising, before the device gets an address and the network's keys
+(review-4 D15; unverified on air). Once the Data PDU went out, a failure no longer proves the device has nothing: a
+lost *Complete* looks like any other timeout.
+
 Key material (the ECDH secret, the session key, the NetKey inside `ProvisioningData`, the device key) never takes
 part in a `repr()` and is never logged; only the PDU types and lengths are.
 """
@@ -40,7 +46,7 @@ import asyncio
 import hmac
 import logging
 import os
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -462,6 +468,11 @@ class Provisioner:
         return self.state == State.COMPLETE
 
     @property
+    def derived_key(self) -> bytes | None:
+        """The device key once the device's Random verified (before the Data PDU is sent); None before."""
+        return self._device_key or None
+
+    @property
     def expecting(self) -> str:
         """Name the PDU the session waits for (for error messages and logs)."""
         expected = _EXPECTED.get(self.state)
@@ -597,6 +608,7 @@ async def provision(
     timeout: float = PROTOCOL_TIMEOUT,
     check: Callable[[Capabilities], None] | None = None,
     provisioner: Provisioner | None = None,
+    on_device_key: Callable[[bytes], Awaitable[None]] | None = None,
 ) -> ProvisioningResult:
     """Provision the device behind `client`, an already-connected bleak-like client of its 0x1827 service.
 
@@ -604,6 +616,9 @@ async def provision(
     `ProxyClient.attach`). `check` sees the device's capabilities before anything is sent in reply and may raise
     (a `ProvisioningError`, say, when the node's element count does not fit at the unicast address) to abort
     before the device learns any address. Each PDU from the device must arrive within `timeout` seconds.
+    `on_device_key` is awaited with the device key once it is derived, before the Data PDU is sent (module
+    docstring): whatever it raises aborts the session before the device learns its address or a key. Optional:
+    without it nothing changes (unverified on air).
 
     The caller owns the connection and closes it afterwards — on success (the node leaves the provisioning
     service for the proxy service anyway) and on any error (which is how a provisioner aborts). `provisioner`
@@ -651,6 +666,16 @@ async def provision(
                     except BaseException:
                         prov.state = State.FAILED
                         raise
+            # the Random verified: `replies` is the Data PDU and the device key is known (`_on_random`). One
+            # iteration only: the next PDU ends the session (Complete) or fails it
+            if on_device_key is not None and prov.state == State.DATA_SENT:
+                key = prov.derived_key
+                assert key is not None
+                try:
+                    await on_device_key(key)
+                except BaseException:
+                    prov.state = State.FAILED
+                    raise
             for reply in replies:
                 await _write(client, reply)
     finally:

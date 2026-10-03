@@ -652,11 +652,19 @@ class LocalState:
             stored["iv_recovered_at"] = self.iv_recovered_at
         return stored
 
+    def persist_now(self) -> None:
+        """Persist without delay: `persist` already does; a subclass that debounces it writes at once here."""
+        self.persist()
+
     def set_key_refresh(self, refresh: KeyRefreshRecord | None) -> None:
-        """Record (and persist) a key refresh in progress, or its end."""
+        """Record a key refresh in progress, or its end, and persist it at once (`persist_now`).
+
+        A debounced write lost the new key to a crash right after it was learnt (review-4 S4-9): the mesh had moved
+        on with it, and nothing else could tell it again.
+        """
         if refresh != self.key_refresh:
             self.key_refresh = refresh
-            self.persist()
+            self.persist_now()
 
     # -- replay protection list
     def admits(self, src: int) -> bool:

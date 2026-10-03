@@ -12,6 +12,7 @@ import pytest
 
 from custom_components.junghome_ble import vault_refresh
 from custom_components.junghome_ble.const import (
+    CONF_UNICAST,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
     ISSUE_VAULT_KEY_REFRESH,
@@ -35,7 +36,7 @@ from .conftest import (
     wait_for_link,
     wait_until,
 )
-from .helpers import LIGHT_CTL, LIGHT_SWITCH, MESH_UUID, find_issue
+from .helpers import LIGHT_CTL, LIGHT_SWITCH, MESH_UUID, SEQ_STORE_KEY, find_issue
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -184,6 +185,40 @@ async def test_the_apps_key_refresh_is_followed_and_survives_a_reload(
     hub = init_integration.runtime_data
     assert hub.proxy.nk.key == NEW_KEY
     assert hub.cdb.net_keys[0].key == NEW_KEY
+
+
+async def test_a_completed_key_refresh_survives_a_new_unicast_address(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+    hass_storage: dict[str, Any],
+) -> None:
+    """Review-4 S4-9: the followed key lived in the address's record, so a unicast address changed after the
+    refresh completed started with the export's revoked key — deaf and mute until the export was fetched again. It
+    is the mesh's now (`{"mesh": {"key_refresh": …}}`): the new address keeps the new key."""
+    await app_refresh(hass, fake_link)
+    hub = init_integration.runtime_data
+    assert hub.proxy.key_refresh_phase == 0  # complete, proven
+    await hass.async_block_till_done()
+    new = NetKeyMaterial.derive(NEW_KEY)
+    mock_bluetooth_env["infos"] = [make_service_info(new.network_id)]
+    hass.config_entries.async_update_entry(
+        init_integration, data={**init_integration.data, CONF_UNICAST: "0D01"}
+    )
+    await hass.async_block_till_done()  # the update listener reloads the entry
+    await wait_for_link(hass, init_integration)
+    hub = init_integration.runtime_data
+    assert hub.state.src == 0x0D01
+    assert hub.cdb.net_keys[0].key == NEW_KEY
+    assert hub.proxy.nk.key == NEW_KEY
+    assert hub.state.key_refresh is not None
+    assert hub.state.key_refresh.key == NEW_KEY
+    stored = hass_storage[SEQ_STORE_KEY]["data"]
+    assert stored["mesh"]["key_refresh"]["phase"] == 3
+    # the record's copy, for an older version
+    assert stored["addresses"]["0D01"]["key_refresh"] == stored["mesh"]["key_refresh"]
 
 
 async def test_a_forged_key_refresh_moves_nothing_across_a_reload(

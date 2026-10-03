@@ -49,6 +49,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
     ISSUE_KEY_REFRESH,
+    SEQ_SKIP_AHEAD,
     STORAGE_DIR,
 )
 from custom_components.junghome_ble.entity import mac_from_uuid
@@ -418,7 +419,7 @@ async def test_setup_from_share_export(
     [
         ("0D00", False, 100 + 512, False),
         ("0D00", True, 100, False),
-        ("0E00", False, 0, True),
+        ("0E00", False, SEQ_SKIP_AHEAD + 512, True),
     ],
     ids=["same_address", "same_address_closed_cleanly", "address_unknown"],
 )
@@ -437,8 +438,8 @@ async def test_local_state_restored_from_storage(
 ) -> None:
     """The mesh store's record of the configured address continues: with the restart margin when it was in use
     when Home Assistant last stopped, exactly when it was closed cleanly. An address the store does not know
-    starts a fresh sequence space, with a warning when the store knows other addresses (was it used elsewhere?);
-    the record of the other address stays."""
+    starts SEQ_SKIP_AHEAD on (plus the margin) when the store knows other addresses (it may have been used: review-4
+    S I5), with a warning; the record of the other address stays."""
     key = SEQ_STORE_KEY
     hass_storage[key] = {
         "version": 1,
@@ -463,7 +464,7 @@ async def test_local_state_restored_from_storage(
         fake_link.raw_writes
     )  # the filter set and the state Gets after connecting
     assert (
-        "Address 0D00 has no sequence-number record in this mesh's store (known: 0E00)"
+        "Address 0D00 has no sequence-number record, but the store knows other addresses (0E00)"
         in caplog.text
     ) is warned
     await hass.async_block_till_done()

@@ -433,6 +433,14 @@ Dependencies (hard unless marked *soft*):
   rewiring and deleting actions admin-only (13, decisions M3 and M8 taken as recommended); D11 the devices Home
   Assistant added carried through the app's key renewal as far as it is proven (14). Changelog: from here on the
   `## 1.1.0 (unreleased)` section. Unverified on air: 13's gateway path, all of 14.
+- **Wave 4 (briefs 15–18): done.** D13 / D14 one link lifecycle: the grace however a link ends, a short-link
+  penalty that passes a flapping proxy over, a command re-sent on the next link (15); S4-7 / S4-8 / S4-9 / S I5
+  sequence-store hygiene: range-checked skip targets, a floor that keeps up, the key refresh saved at once and for the
+  mesh, a used address starting 2^20 in, `mesh_poc --ha-storage` (16; the state machine also found a skip-ahead past
+  the end handing the last number out twice, fixed); D15 vault writes checked, the device key on disk before the
+  Provisioning Data (17); S4-4 / S4-6 merge identities, a both-changed export merged, the replaced export kept, sync
+  bookkeeping in its own store (18). Unverified on air: 15, 16's fresh-address skip, 17, 18's merge. Decision M6
+  taken as automatic for 16 as well.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -440,4 +448,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 15–67 are TODO.
+Every other finding, every low item and briefs 19–67 are TODO.

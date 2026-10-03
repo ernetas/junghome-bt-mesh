@@ -781,19 +781,22 @@ then come first), the log says so and the files are written without the entry (c
 [Reconfiguration](#reconfiguration)). Should the merge fail otherwise, the action stops with an error and the file
 stays as it was. With the option off (the default) none of this reaches a file.
 
-**The vault.** `.storage/junghome_ble.vault.<mesh uuid>` (readable by the owner only) keeps Home Assistant's
-provisioner identity, its ranges and, whatever the option says, the device key and planned element groups of every
-device Home Assistant adds — from the moment provisioning completes, so a device whose configuration then fails can
-still be reached, and its addresses and groups are never handed out again — and, once recorded, what the export got
-for it; and how far each such device came through the app's last key refresh, which Home Assistant carries it
-through (see *A key refresh is followed* under [Known limitations](#known-limitations); the phase and the new key's
-Network ID, never a key). It is local data only; Home Assistant backups include it. A vault that
-does not read back is kept as `…vault.<mesh uuid>.unreadable.<UTC time>` (one copy each time, never overwritten or
-deleted by the integration) and a new one begun. A vault lost or set aside while the export already names Home
-Assistant as a provisioner is recovered at setup: Home Assistant recognises its entry (a provisioner *Home
-Assistant* whose node sits at its address with a Config Client only) and takes that identity back, so its address
-is not reported as another node's. The keys of the devices it added are not recovered that way — they are in the
-export once recorded.
+**The vault.** `.storage/junghome_ble.vault.<mesh uuid>` (readable by the owner only) keeps Home Assistant's provisioner
+identity, its ranges and, whatever the option says, the device key and planned element groups of every device Home
+Assistant adds — written before the device receives its Provisioning Data, so a device whose configuration then fails
+can still be reached, and its addresses and groups are never handed out again — and, once recorded, what the export got
+for it; and how far each such device came through the app's last key refresh, which Home Assistant carries it through
+(see *A key refresh is followed* under [Known limitations](#known-limitations); the phase and the new key's Network ID,
+never a key). It is local data only; Home Assistant backups include it. Every write is checked (Home Assistant's storage
+only logs one that fails) and a failed one is retried by the next save; a `.backup` copy (`…vault.<mesh uuid>.backup`)
+follows every write that landed and is read when the vault is missing or does not read back. A vault that does not read
+back is kept as `…vault.<mesh uuid>.unreadable.<UTC time>` (one copy each time, never overwritten or deleted by the
+integration) and removed from its place only once that copy is written — until then it stays untouched and the vault is
+kept in memory — and the backup copy, or else a new vault, takes its place. A vault lost or set aside while the export
+already names Home Assistant as a provisioner is recovered at setup: Home Assistant recognises its entry (a provisioner
+*Home Assistant* whose node sits at its address with a Config Client only) and takes that identity back, so its address
+is not reported as another node's. The keys of the devices it added are not recovered that way — they are in the export
+once recorded.
 
 ## Reconfiguration
 
@@ -809,6 +812,10 @@ editing scenes, and after a key refresh (see [Known limitations](#known-limitati
    to approve a new request in the app. Otherwise upload the new `JungHome.json` or point at the new file. The address
    Home Assistant uses in the mesh can be changed in the same dialog.
 3. The new export must belong to the same mesh network; otherwise the dialog refuses it.
+
+A fetched or uploaded export replaces the file the integration keeps for the entry; the file it replaces is kept
+beside it as `<export>.pre-reconfigure` (owner-only, it holds the mesh keys) until the next reconfigure, so rooms,
+scenes and key connections Home Assistant had made — which the devices still use — can be looked up there.
 
 The integration reloads with the new export. Devices that are no longer in the export are removed automatically,
 together with their entities; devices that keep their node identity keep their entity IDs and history, because devices
@@ -914,10 +921,18 @@ message it hears. Because all mains-powered JUNG nodes relay, this covers the wh
 
 **Choosing the proxy node.** The integration watches the Bluetooth advertisements of the network's nodes through Home
 Assistant's Bluetooth stack (local adapters and ESPHome proxies alike) and connects to the node with the strongest
-signal, skipping nodes that failed within the last two minutes if there is an alternative. When the link drops, all
-entities become unavailable, and the integration reconnects to the best node currently visible (which may be the same
-one) — after one second on a lost link, and with a back-off from 2 s up to 60 s after failed attempts. If no node of the
-network is visible at all, it waits for an advertisement and retries at least every 30 s. The *Proxy node* diagnostic
+signal, skipping nodes that failed within the last two minutes if there is an alternative. When the link drops —
+however it ends: the node switched off, the link watchdog dropping a silent proxy, the *devices ignore Home Assistant*
+repair renewing it — the entities, *All lights* and the rooms' central entities included, stay available for 20 s, and
+a command sent meanwhile waits for the next link instead of failing (a load's command already out when the link went
+is sent once more on the next one); only then do they become unavailable. The integration reconnects to the best node
+currently visible (which may be the same one) — after one second on a link that lasted, and with a back-off from 2 s
+up to 60 s after failed attempts. A link lost within a minute of connecting counts as a failed attempt: the back-off
+grows, and a node that loses three links in a row that way is passed over for two minutes in favour of the next node
+in range (a node that is the only one in range is still used); only a link that lasts a minute starts the back-off
+over. A link lost while it is still being set up is a failed attempt too, never shown as connected. (The short-link
+rule, the grace after Home Assistant's own drops and the second send of an interrupted command are unverified on
+air.) If no node of the network is visible at all, it waits for an advertisement and retries at least every 30 s. The *Proxy node* diagnostic
 sensor shows which node is in use, the *Link state* sensor (off by default) where the link stands. The wait for one
 connection is the Bluetooth stack's own (Home Assistant's `bleak-retry-connector`, two attempts), not the JUNG HOME
 app's 5 s: an ESPHome proxy first waits for a free connection slot and only gives up after its own timeout of at
@@ -1078,14 +1093,26 @@ Assistant's changes, which the nodes still hold. Home Assistant keeps a copy of 
 next upload before adopting it, then hands the result back to the gateway. Where the app changed the same thing (it
 re-linked the same key Home Assistant had linked), the app's version is kept, a warning names it and the repair issue
 [*The JUNG HOME app overrode a change Home Assistant made*](#repair-issue-the-jung-home-app-overrode-a-change-home-assistant-made-on-)
-lists each such entry. The app itself keeps showing its own view until it is re-imported. Should the upload fail, the change on the mesh and in the file
+lists each such entry. Rows are matched by what identifies them — a node by its UUID, a room by its address, a key's
+mode, scene and load rows (`buttonLayoutExports`, `keyModeSceneConfigExports`, `actuatorExports`) by the element's
+address — so a key both sides set keeps one row, the app's. The same carry-over runs when Home Assistant's own file
+changed since the last sync too (a change whose upload never reached the gateway, then a change in the app): the
+merged file replaces the old one, which is kept as `<export>.pre-adopt` until the next takeover, and goes up to the
+gateway. Only an entry without the copy of the app's last upload (or with one that does not load) still refuses such
+a change with *holds a newer export*. A gateway holding exactly what the file holds counts as in sync whatever Home
+Assistant recorded (an upload whose record was lost to a restart no longer blocks every change). Unverified on air:
+the merge has not met the iOS app's import of such a file yet. The app itself keeps showing its own view until it is re-imported. Should the upload fail, the change on the mesh and in the file
 stands, a repair issue *"JUNG HOME export not handed to the gateway"* appears (one per entry), and the upload is
 tried again twice, 15 s apart, in the background — as the app retries its own (a gateway that could not be asked or
 refused the upload: unreachable, busy, an HTTP error; not a refusal of Home Assistant's own, such as a gateway holding
 changes it has not seen), also when the change reloaded the integration. The next change's upload, or
 **`junghome_ble.sync_gateway`**, replaces a pending retry; the
 action retries on demand (also useful after editing the file by hand). The time of the last upload that went through
-is the gateway device's *Last export upload* sensor (diagnostic, off by default; the app's "last change"). Nothing is uploaded to a
+is the gateway device's *Last export upload* sensor (diagnostic, off by default; the app's "last change"). It and
+the content digest of what was last synced are kept in `.storage/junghome_ble.<entry id>.gateway_sync` (a digest and
+a time, no key material), no longer in the config entry: a sync no longer rewrites the config entries file. Version
+1.0.0 kept them in the entry; the first start takes them over and leaves the entry's copy as it was, so going back to
+1.0.0 finds the values of the upgrade — its first change may then ask to fetch the export again. Nothing is uploaded to a
 gateway whose certificate the gateway node has not confirmed (see the security note under
 [Prerequisites](#prerequisites)); a gateway that rejects Home Assistant's token raises *"JUNG HOME Gateway no longer
 accepts Home Assistant"* instead — Reconfigure → fetch again requests access anew. An entry set up from a file is
@@ -1339,9 +1366,10 @@ Home Assistant is in the diagnostics (`heartbeats`).
   If neither a beacon nor the statuses are heard, Home Assistant stays a phase behind, which is safe: devices in
   Phase 2 still accept the old key, and the proxy's beacon of Phase 3 moves it on. This proof rule is *unverified on
   air* (no key refresh has been run on the installation it was built against). The new key, the phase and its proof
-  are stored with the sequence numbers, so a restart during the refresh resumes it, and after it completes every
-  setup uses the new key in place of the export's old one (a gateway export fetched later has it anyway); the entry's
-  unique id follows the new Network ID. A stored Phase 2 or 3 without its proof (written before proofs were kept)
+  are stored with the sequence numbers — written at once, and for the mesh rather than for Home Assistant's address,
+  so neither a crash right after a step nor a new unicast address loses them — so a restart during the refresh
+  resumes it, and after it completes every setup uses the new key in place of the export's old one (a gateway export
+  fetched later has it anyway); the entry's unique id follows the new Network ID. A stored Phase 2 or 3 without its proof (written before proofs were kept)
   is taken up as an accepted key only, until the proxy's next beacon proves it.
 
   **Devices Home Assistant added** (`add_device`) are not in the app's database, so the app never hands them the new
@@ -1376,7 +1404,10 @@ Home Assistant is in the diagnostics (`heartbeats`).
   (0600): while a key refresh is followed, a record holds the new network key; a copy an older version wrote
   0644 is replaced 0600 by its next write (the store and its backup are written at every start). A clean unload or
   reload stores the exact counter;
-  only a crash costs a safety margin (+512) at the next start. Removing and re-adding the integration, or changing the address away and back, continues
+  only a crash costs a safety margin (+512) at the next start. The `.floor` file keeps, per address, a point the
+  counter is known to have reached — a new one with every new IV index and every 2^20 numbers; Home Assistant sends
+  nothing under an IV index the file does not hold yet, nor 2^22 numbers past the last entry written — so the
+  *sequence numbers lost* repair continues past every number sent however often both copies of the store are lost. Removing and re-adding the integration, or changing the address away and back, continues
   the counters, so no number is ever reused. **A Home Assistant backup** is safe to restore (unverified on air): while
   a backup is taken the integration marks every record of the store and waits — at most 10 s, never failing the
   backup — until both copies on disk carry the mark, and removes it once the backup is done. A start that finds a mark
@@ -1403,9 +1434,14 @@ Home Assistant is in the diagnostics (`heartbeats`).
   mark) repeats every sequence number sent since it was taken, which the nodes drop as replays and which reuses
   AES-CCM nonces. The repair (skip ahead) or a fresh address is the way back.
 - **Changing the address restarts the sequence numbers — once.** A new address entered in *Reconfigure* is used
-  immediately with a fresh sequence-number space if the store has never seen it (the log then says *Address XXXX has
-  no sequence-number record in this mesh's store*: fine for an address the mesh has never seen, wrong for one another
-  client used — pick an unused one then). An address the store already knows continues where it left off. The
+  immediately with a fresh sequence-number space if the store has never seen it. When something says the address may
+  have sent before — the export has Home Assistant's provisioner node or any node there, the vault keeps Home
+  Assistant's identity in this mesh, or the store knows other addresses (as it does after any earlier address) — the
+  numbers start 2^20 in rather than at 0, and pending the first beacon they keep counting under its index (the log
+  says *Address XXXX has no sequence-number record, but …*): a lost record of that address no longer leaves the
+  devices ignoring Home Assistant until the *devices ignore Home Assistant* repair. It costs 2^20 of the 2^24 numbers
+  of the IV index once, also on an address that really is new; unverified on air. An address another client uses is
+  still wrong — pick an unused one then. An address the store already knows continues where it left off. The
   diagnostics download shows the address in use under `local.src`.
 - **The app and the gateway keep working in parallel**, and so do their timers, thresholds and scene edits. Home
   Assistant broadcasts the mesh time (Time Set, with its own time zone) after every connection and once a day, as the
@@ -1455,7 +1491,11 @@ Assistant to add devices* is on (it is off by default):
    asks to try again after the next connection: the device would keep a wrong one), and is refused before it learns
    an address when its element count differs from the template's, and not at all while the app's key refresh is in
    Phase 1 (the device would get the key being retired; in Phase 2 it gets the new one); its device key and planned
-   element groups are kept in the vault from then on, and Home Assistant forgets what its replay protection remembered for the new addresses
+   element groups are written to the vault before the device receives its Provisioning Data (the key is derived one
+   step earlier; *unverified on air*): when that write does not land, provisioning stops there, the device still
+   new, with the repair issue
+   [*JUNG HOME device keys cannot be saved*](#repair-issue-jung-home-device-keys-cannot-be-saved). Once it is
+   provisioned, Home Assistant forgets what its replay protection remembered for the new addresses
    (a device reset since may have sent from them; the new one starts its sequence numbers from 0);
 3. the app's post-provisioning Config sequence goes out through the proxy link (`jhmesh.commission`: AppKey, bindings,
    the template's relay / TTL / transmit settings, element groups, device-type groups), each step's status checked;
@@ -1474,20 +1514,20 @@ fails after the reset, the export still records the device as removed, with the 
 links the others keep to it are left in the export (they point at nothing) and the error says so. The gateway is
 refused. Removing cannot be undone: the device has to be added again.
 
-**Pending devices.** A device whose configuration fails after it was provisioned, or which was configured but could not
-be recorded in the export, has the network's keys while neither the app nor the export knows it: the app cannot reset
-it. Home Assistant keeps it *pending* in the vault — its addresses and planned element groups stay reserved, so no
-later device gets them — and raises the repair issue
-[*A device Home Assistant added is not recorded*](#repair-issue-a-device-home-assistant-added-is-not-recorded); the
-action's error names its address. **`junghome_ble.reset_pending_device`** (`uuid` and / or `unicast`, `force`;
-administrators only, same option) sends it a *Config Node Reset* with the device key only the vault holds — it
-becomes a new device again and can be added once more — and forgets it once it confirmed. The device is named by its
-UUID or its primary address; given both, they must name the same pending device. No reset is sent when a device of
-the export sits at one of its addresses by now. `force` forgets a device that does not confirm its reset: one already
-reset by hand (factory reset), or gone for good — such a device keeps its addresses reserved until then. A pending
-device from a vault an earlier version wrote has no planned element groups recorded: the log says so when the next
-device is added, as its groups cannot be kept free. *Unverified on air*: `reset_pending_device` has not run against a
-real device yet.
+**Pending devices.** A device whose provisioning was not confirmed once it had been sent its data (it may hold the
+network's keys: a lost *Complete* looks like any other failure), whose configuration fails after it was provisioned, or
+which was configured but could not be recorded in the export, has the network's keys while neither the app nor the
+export knows it: the app cannot reset it. Home Assistant keeps it *pending* in the vault — its addresses and planned
+element groups stay reserved, so no later device gets them — and raises the repair issue [*A device Home Assistant added
+is not recorded*](#repair-issue-a-device-home-assistant-added-is-not-recorded); the action's error names its address.
+**`junghome_ble.reset_pending_device`** (`uuid` and / or `unicast`, `force`; administrators only, same option) sends it
+a *Config Node Reset* with the device key only the vault holds — it becomes a new device again and can be added once
+more — and forgets it once it confirmed. The device is named by its UUID or its primary address; given both, they must
+name the same pending device. No reset is sent when a device of the export sits at one of its addresses by now. `force`
+forgets a device that does not confirm its reset: one already reset by hand (factory reset), or gone for good — such a
+device keeps its addresses reserved until then. A pending device from a vault an earlier version wrote has no planned
+element groups recorded: the log says so when the next device is added, as its groups cannot be kept free. *Unverified
+on air*: `reset_pending_device` has not run against a real device yet.
 
 What the sequence leaves out is listed in `jhmesh.commission.NOT_COVERED` (the factory rocker wiring of push-buttons,
 detector key connections, the reads the app does at the end). **None of this has run against a real device yet**:
@@ -1558,7 +1598,9 @@ app still update, because those are received, not sent. Two situations cause it:
   Home Assistant instance, or any other software built on `jhmesh` that sends with the same *Our unicast address*.
   Each client keeps its own counter, so the nodes accept only the one that is currently ahead and drop the other
   one until it catches up. The CLI defaults to `7FFF` for this reason and Home Assistant to `0D00`; if you changed
-  either, make sure they differ (`tools/mesh_poc.py --source`).
+  either, make sure they differ (`tools/mesh_poc.py --source`). Given Home Assistant's `.storage` directory
+  (`tools/mesh_poc.py --ha-storage <config>/.storage`), the CLI refuses every address Home Assistant's store of the
+  mesh holds a counter for.
 - **The sequence store was lost.** `.storage/junghome_ble.seq.<mesh uuid>` was deleted, or an older copy of the
   configuration directory was restored (other than a Home Assistant backup restored once: that one skips ahead by
   itself, see [Known limitations](#known-limitations)): Home Assistant restarts its counter far below what the nodes
@@ -1755,6 +1797,17 @@ add the device again; for a device already reset by hand, or gone, add `force`. 
 [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental) (*Pending devices*). The
 issue clears when no such device is left.
 
+### Repair issue "JUNG HOME device keys cannot be saved"
+
+`junghome_ble.add_device` writes the new device's key to the vault (`.storage/junghome_ble.vault.<mesh uuid>`) before
+the device receives its Provisioning Data: until the export records the device, nothing else holds that key. The
+write did not land — a full disk, a filesystem remounted read-only (often a failing SD card) — so provisioning
+stopped there: the device received nothing and is still new, and nothing is reserved for it. The issue names the
+address it was to get, the file and the last write error (never a key). Free up space or repair the storage (a
+filesystem remounted read-only usually needs the host restarted), then add the device again; do not edit, delete or
+replace the vault's files. The issue clears itself as soon as a write of the vault lands. Tested with injected write
+failures only; *unverified on air*.
+
 ### Repair issue "Devices Home Assistant added missed the new network key"
 
 The app renewed the network key and Home Assistant followed the renewal to its end, but a device Home Assistant added
@@ -1822,17 +1875,19 @@ Afterwards:
 
 1. Delete the export file and the metadata directory from the Home Assistant host if you pointed the integration at
    them by path; they contain the mesh keys. Exports the integration fetched or uploaded itself
-   (`<config>/junghome_ble/<mesh UUID>.json`), their backup copies, any orphaned `.incoming-*` file and the
-   entry's repair issues are removed with the entry; the directory itself stays. (Stale `.incoming-*` files older
+   (`<config>/junghome_ble/<mesh UUID>.json`), their backup copies (`.bak*`, `.app`, `.pre-adopt`,
+   `.pre-reconfigure`), any orphaned `.incoming-*` file, the entry's records in `.storage`
+   (`junghome_ble.<entry id>.plan_journal`, `.held_scenes`, `.gateway_sync`) and the entry's repair issues are removed
+   with the entry; the directory itself stays. (Stale `.incoming-*` files older
    than an hour — a setup dialog that died — are also swept at every start.)
 2. `.storage/junghome_ble.seq.<mesh uuid>` (the sequence-number store, shared by every entry for that mesh) is kept
    on purpose: if you set the integration up again for the same address, the counters continue and the mesh accepts
    the messages (it would otherwise reject reused sequence numbers). Delete it by hand only if you never will, or use
    a different unicast address next time.
-3. `.storage/junghome_ble.vault.<mesh uuid>` (Home Assistant's provisioner identity and the device keys of the
-   devices it added) is kept too: a device Home Assistant added may be in no export, and only this file lets it be
-   configured or reset. Delete it (and any `.unreadable.*` copy) by hand once those devices are gone or in the
-   app's hands; the integration never deletes it, not even with the entry.
+3. `.storage/junghome_ble.vault.<mesh uuid>` (Home Assistant's provisioner identity and the device keys of the devices
+   it added) and its `.backup` copy are kept too: a device Home Assistant added may be in no export, and only this file
+   lets it be configured or reset. Delete them (and any `.unreadable.*` copy) by hand once those devices are gone or in
+   the app's hands; the integration never deletes them, not even with the entry.
 
 Nothing needs to be undone in the JUNG HOME app: Home Assistant was never provisioned as a node. (With the
 provisioner option on, the files it wrote name it as a provisioner; an entry the app keeps reserves its ranges and
@@ -1850,7 +1905,7 @@ Layout of `custom_components/junghome_ble/`:
 | `__init__.py` | Loads the export (`load_network`), refuses to set up without a visible proxy (`ConfigEntryNotReady`), prunes stale devices, starts the hub, forwards the platforms; the update listener (`_async_entry_updated`) reloads the entry when its options or the data the hub was built from (`HUB_DATA_KEYS`) changed |
 | `config_flow.py` | User, Bluetooth-discovery and reconfigure steps (plus the gateway-import step and the options flow); validates by loading the CDB, checking the address and the visible Network IDs (`0x1828` service data type `0x00`); unique ID = Network ID |
 | `migration.py` | Import from the gateway integration: matches our registry entries against the gateway's identity scheme (`ImportPlan`), moves them with `er.async_update_entity_platform`, copies device area / name / labels, raises the `gateway_import` issue |
-| `coordinator.py` | `JungHomeHub`: connection loop over HA's Bluetooth stack (`bleak_retry_connector.establish_connection`), state cache per element (`ElementState`), the `STATUS_HANDLERS` message table, command helpers, button gesture logic, the repair issues (`key_refresh`, `pdus_dropped` — from the Filter Status watchdog, for a filter request actually written while the store lets sends through, or an unanswered refresh —, `export_stale`); `HAState` persists the sequence numbers through `Store` (`junghome_ble.seq.<mesh uuid>`, one record per address; 2 s debounce with an immediate write every 64 numbers, on an IV change and after a load; exact counter on a clean close, +512 margin only after a crash), holds sends back while what a restart would load lags (`SequenceStalled`, retried by `_while_seq_stalls` for `SEQ_STALL_DEADLINE`) and raises `seq_store_unwritable` after `SEQ_STALL_ISSUE_AFTER` of that |
+| `coordinator.py` | `JungHomeHub`: connection loop over HA's Bluetooth stack (`bleak_retry_connector.establish_connection`), state cache per element (`ElementState`), the `STATUS_HANDLERS` message table, command helpers, button gesture logic, the repair issues (`key_refresh`, `pdus_dropped` — from the Filter Status watchdog, for a filter request actually written while the store lets sends through, or an unanswered refresh —, `export_stale`); `HAState` persists the sequence numbers through `Store` (`junghome_ble.seq.<mesh uuid>`, one record per address and the mesh's followed key refresh next to them, written at once; 2 s debounce with an immediate write every 64 numbers, on an IV change and after a load; exact counter on a clean close, +512 margin only after a crash), keeps the `.floor` entry of its address up with the counter (every IV change and `SEQ_FLOOR_EVERY` numbers; nothing sent under an index it does not hold yet, nor `SEQ_SKIP_UNKNOWN` past it), starts an address without a record `SEQ_SKIP_AHEAD` in when it may have sent before (`_evidence_of_use`), holds sends back while what a restart would load lags (`SequenceStalled`, retried by `_while_seq_stalls` for `SEQ_STALL_DEADLINE`) and raises `seq_store_unwritable` after `SEQ_STALL_ISSUE_AFTER` of that |
 | `entity.py` | Device-registry model (mesh service device → node devices with MAC → load / button devices), `JungHomeEntity` (dispatcher-driven, available while connected) |
 | `light.py`, `switch.py`, `sensor.py`, `event.py`, `scene.py` | The platforms of the verified devices, all push-based (`PARALLEL_UPDATES = 0`): lights, sockets and the config switches, socket / detector / battery / proxy sensors, rocker events, scenes |
 | `cover.py`, `climate.py` | Blinds (Generic Level position / slat elements, `0x1104` operation mode) and the room thermostat (set-point level, `0x004F` temperature, OnOff heating output, preset properties) — spec-only, unverified on hardware |
@@ -1859,7 +1914,7 @@ Layout of `custom_components/junghome_ble/`:
 | `device_trigger.py`, `logbook.py` | Device triggers for the rocker events (one per key and event type) and the logbook descriptions of the `junghome_ble_button_action` / `junghome_ble_scene_recalled` bus events |
 | `services.py`, `mesh_config.py`, `services.yaml` | The room / key-connection actions and the mesh configurator behind them |
 | `config_entities.py` | Property → entity mapping, `PropertyReader` (initial reads — held while there is no link —, writes, status handlers) |
-| `identity.py` | `VaultKeeper` (`hub.vault`): the mesh's `jhmesh.vault.Vault` in `.storage/junghome_ble.vault.<mesh uuid>` (private, atomic; an unreadable one is set aside under a timestamped name, never overwritten; `async_recover` takes Home Assistant's entry back from the export when the vault lost it, `jhmesh.vault.recognise`); the configurator merges it into every file it writes or uploads only with `OPTION_PROVISIONER_IDENTITY` (`MeshConfigurator._with_identity`) |
+| `identity.py` | `VaultKeeper` (`hub.vault`): the mesh's `jhmesh.vault.Vault` in `.storage/junghome_ble.vault.<mesh uuid>` and its `.backup` copy (private, atomic, every write checked through `TrackedStore.written`: `async_save` says whether it landed, a failed one is retried; an unreadable one is set aside under a timestamped name, never overwritten, removed only once that copy landed; `async_recover` takes Home Assistant's entry back from the export when the vault lost it, `jhmesh.vault.recognise`); the configurator merges it into every file it writes or uploads only with `OPTION_PROVISIONER_IDENTITY` (`MeshConfigurator._with_identity`) |
 | `vault_refresh.py` | `VaultKeyRefresh` (`hub.vault_refresh`): the vault's devices taken through the app's key refresh as far as it is proven (`jhmesh.vaultrefresh`; NetKey Update, Phase Set 2, Phase Set 3), in the background on every move of the followed refresh and every new link; the `vault_key_refresh_lagging` repair; its diagnostics section. Unverified on air |
 | `keep_awake.py` | `KeepAwake` (`hub.keep_awake`): the app's keep-alive for a battery node while a Config plan or a parameter change addresses it — one task per node, reference-counted holds, an `Admin Get 0x5001` once the node was quiet for `KEEP_AWAKE_INTERVAL`, none while there is no link |
 | `gateway_api.py`, `tls.py` | The JUNG HOME Gateway REST client the config flow uses (access request / password registration, project download) and the certificate pinning it relies on (the gateway's certificate is self-signed; the pin comes over the mesh, `0xC003`, or is confirmed in the flow and then checked against `0xC003` by the hub before the gateway is used) |
@@ -1979,7 +2034,7 @@ Behaviour worth knowing:
   is a hint (a forged beacon raises it too). A refresh heard from its start is followed instead
   (`ProxyClient._follow_key_refresh`: the new key from the provisioner's device-key-sealed Config NetKey Update, old and
   new key material side by side, transmit with the new one from Phase Set 2 or a flagged new-key beacon, old one
-  dropped at Phase Set 3 or an unflagged new-key beacon; `LocalState.key_refresh` keeps it across restarts, and
+  dropped at Phase Set 3 or an unflagged new-key beacon; `LocalState.key_refresh` keeps it across restarts — `HAState` at mesh level, saved at once (`persist_now`) — and
   `async_apply_followed_key_refresh` puts a completed one in place of the export's key at setup). `ProxyClient` logs an unauthenticated flagged beacon at
   WARNING, an authenticated one at INFO. `ProxyClient.rx_undecryptable` counts the PDUs a link forwards that neither
   the NetKey nor the AppKey / device keys open (`on_undecryptable`); together with beacons that fail authentication
@@ -2017,8 +2072,13 @@ Behaviour worth knowing:
   when full (no eviction); an IV index change drops only the entries older than the previous index. A segmented
   message is checked on the sequence number of the segment that starts its reassembly, and a message already
   delivered is recognised by its SeqAuth.
-- Connection loop constants: `FAILED_PROXY_COOLDOWN` 120 s, `CONNECT_BACKOFF_MAX` 60 s, two connect attempts per
-  candidate, 30 s wait when nothing is visible (woken early by an advertisement callback).
+- Connection loop constants: `FAILED_PROXY_COOLDOWN` 120 s, `CONNECT_BACKOFF_MIN` 2 s, `CONNECT_BACKOFF_MAX` 60 s,
+  `SHORT_LINK` 60 s and `SHORT_LINK_STREAK` 3 (a link lost sooner doubles the back-off, three in a row set the node
+  aside for the cooldown), `LINK_LOSS_GRACE` 20 s, two connect attempts per candidate, 30 s wait when nothing is
+  visible (woken early by an advertisement callback). Every end of a link goes through
+  `JungHomeHub._link_ended` (the transport's disconnect, or `_drop_link` for the hub's own drops), which records a
+  `LinkEnd` (reason, verdict on the proxy, duration), starts the grace and calls the listeners registered with
+  `async_on_link_loss`.
 - Tests: `tests/` (pytest with `pytest-homeassistant-custom-component`) run against a synthetic export
   (`tests/fixtures/MeshNetwork.json`, generated by `tests/fixtures/make_fixture.py`) and a fake GATT proxy link.
   The fake (`FakeProxyLink` in `tests/conftest.py`) decrypts everything Home Assistant writes as the mesh would, and

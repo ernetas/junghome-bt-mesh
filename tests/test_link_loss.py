@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
+from homeassistant.components.bluetooth import BluetoothChange
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_UNAVAILABLE
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
@@ -198,3 +199,174 @@ async def test_no_daylight_saving_no_extra_time_set(
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
     assert mock_config_entry.runtime_data._unsub_offset_change is None
+
+
+def light_available(hass: HomeAssistant) -> bool:
+    return (
+        hass.states.get(entity_id(hass, "light", UID_LIGHT_DIMMER)).state
+        != STATE_UNAVAILABLE
+    )
+
+
+async def spin(cycles: int = 5) -> None:
+    """A few loop turns; not `settle`, which would wait out a command's grace."""
+    for _ in range(cycles):
+        await asyncio.sleep(0)
+
+
+async def reconnect(hass: HomeAssistant, hub: JungHomeHub) -> None:
+    """A proxy advertises again (the patch hiding them is gone): the loop wakes and connects."""
+    hub._link_lost.set()
+    await wait_until(hass, lambda: hub.connected, what="the next link")
+
+
+@pytest.mark.link_loss_grace
+async def test_a_watchdog_drop_keeps_the_grace_and_a_command_waits(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 R4-3: only a transport's disconnect started the grace; a link the hub dropped itself — the watchdog
+    finding the proxy silent — made every entity unavailable at once, and an action skipped them."""
+    hub = hub_of(init_integration)
+    with (
+        patch.object(JungHomeHub, "visible_proxies", return_value=[]),
+        patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=False)),
+    ):
+        hub._probe_link.set()  # a command went unanswered, and so does the probe
+        await wait_until(hass, lambda: not hub.connected, what="the drop")
+        await spin()
+        assert hub.link_available
+        assert light_available(hass)
+        fake_link.sent.clear()
+        command = hass.async_create_task(hub.set_onoff(LIGHT_DIMMER, True))
+        await spin()
+        assert not command.done()  # waiting for the next link, not failing
+    await reconnect(hass, hub)
+    await command
+    assert sent_onoff(fake_link, LIGHT_DIMMER, True)
+
+
+@pytest.mark.link_loss_grace
+async def test_the_skip_ahead_repair_keeps_the_grace_and_a_command_waits(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """The reviewer's repro: right after `async_skip_ahead` every entity was unavailable."""
+    hub = hub_of(init_integration)
+    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+        await hub.async_skip_ahead()
+        await spin()
+        assert not hub.connected
+        assert hub.link_available
+        assert light_available(hass)
+        fake_link.sent.clear()
+        command = hass.async_create_task(hub.set_onoff(LIGHT_DIMMER, True))
+        await spin()
+        assert not command.done()
+    await reconnect(hass, hub)
+    await command
+    assert sent_onoff(fake_link, LIGHT_DIMMER, True)
+    # our own reconnect says nothing about the proxy
+    assert hub._short_links == {}
+
+
+@pytest.mark.link_loss_grace
+async def test_a_link_the_transport_closed_without_telling_gets_the_grace(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """A transport that only turns `is_connected` False (no disconnected callback) still ends the link properly."""
+    hub = hub_of(init_integration)
+    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+        fake_link.is_connected = False
+        info = mock_bluetooth_env["infos"][0]
+        mock_bluetooth_env["callbacks"][0](info, BluetoothChange.ADVERTISEMENT)
+        await wait_until(hass, lambda: hub.proxy_address is None, what="the end")
+        await spin()
+        assert hub.link_available
+        assert light_available(hass)
+        assert hub.proxy.client is None  # released, not left attached
+    assert hub._link_end is not None
+    assert hub._link_end.reason == "the transport reported it closed"
+    assert hub._link_end.penalise is None
+    await reconnect(hass, hub)
+
+
+async def test_link_loss_listeners_hear_every_end_once(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    hub = hub_of(init_integration)
+    ends: list[coordinator.LinkEnd] = []
+    unsub = hub.async_on_link_loss(ends.append)
+    fake_link.drop_link()
+    hub._on_disconnect()  # a second notice of the same end changes nothing
+    await wait_for_link(hass, init_integration)
+    assert [(end.reason, end.penalise) for end in ends] == [
+        ("the proxy disconnected", None)
+    ]
+    assert ends[0].lasted >= 0
+    unsub()
+    fake_link.drop_link()
+    await wait_for_link(hass, init_integration, connected=False)
+    await wait_for_link(hass, init_integration)
+    assert len(ends) == 1  # unsubscribed
+
+
+@pytest.mark.link_loss_grace
+async def test_a_command_interrupted_by_a_link_change_goes_out_on_the_next_link(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 R I-11: a link lost while a load's Set waited for its status failed the command; it says nothing
+    about the load, and the Set goes out once more on the next link (same TID: a load that applied it only
+    answers)."""
+    hub = hub_of(init_integration)
+    fake_link.sets_silent.add(LIGHT_DIMMER)  # the first Set stays unanswered ...
+    fake_link.sent.clear()
+    # not a task Home Assistant tracks: `wait_until` would wait the unanswered attempts out
+    command = asyncio.get_running_loop().create_task(hub.set_onoff(LIGHT_DIMMER, True))
+    for _ in range(100):
+        if sent_onoff(fake_link, LIGHT_DIMMER, True):
+            break
+        await asyncio.sleep(0)
+    assert sent_onoff(fake_link, LIGHT_DIMMER, True)
+    fake_link.sets_silent.clear()  # ... until the link it went out on is lost
+    fake_link.drop_link()
+    await command
+    assert hub.connected
+    sets = [
+        pdu
+        for _src, dst, pdu in fake_link.sent
+        if dst == LIGHT_DIMMER and pdu[:2] == M.generic_onoff_set(True)[:2]
+    ]
+    assert len(sets) >= 2
+    assert len({bytes(pdu) for pdu in sets}) == 1  # the same message, TID and all
+    assert hub.states[LIGHT_DIMMER].on is True
+
+
+async def test_a_detach_that_never_returns_does_not_hold_up_the_drop(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hub = hub_of(init_integration)
+    detach = hub.proxy.detach
+
+    async def detach_then_hang(*args: Any, **kwargs: Any) -> None:
+        await detach(*args, **kwargs)
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(coordinator, "STOP_TIMEOUT", 0.01)
+    monkeypatch.setattr(hub.proxy, "detach", detach_then_hang)
+    await hub.async_skip_ahead()
+    assert "did not close within" in caplog.text
+    monkeypatch.setattr(hub.proxy, "detach", detach)
+    await wait_for_link(hass, init_integration)

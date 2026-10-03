@@ -15,11 +15,13 @@ what the app does when a device is added:
    its addresses and holds its element groups (review-4 D2);
 3. provisions it over PB-GATT (`provisioning.provision`, No-OOB, the export's NetKey and the IV state a beacon
    confirmed on the current link), refusing a device whose element count differs from the template's before it
-   learns an address; its device key and planned element groups go into the vault (`identity.py`) the moment
-   provisioning completes, before anything else can fail, and the replay list forgets the new addresses (they are
-   Home Assistant's to give, so whatever it remembers for them is a reset node's). Not during the Phase 1 of a key
-   refresh: the device would get the key being retired (review-4 D11). In a proven Phase 2 it gets the new key with
-   the Key Refresh flag, and the vault records it there, so `vault_refresh.py` takes it on to Phase 3;
+   learns an address; its device key and planned element groups are on disk in the vault (`identity.py`) before
+   the device receives its Provisioning Data — the key is derived one step earlier (`provision(on_device_key=…)`),
+   and a vault that cannot be written stops the provisioning there (review-4 D15) — and once it completed the
+   replay list forgets the new addresses (they are Home Assistant's to give, so whatever it remembers for them is
+   a reset node's). Not during the Phase 1 of a key refresh: the device would get the key being retired (review-4
+   D11). In a proven Phase 2 it gets the new key with the Key Refresh flag, and the vault records it there, so
+   `vault_refresh.py` takes it on to Phase 3;
 4. sends the app's post-provisioning Config sequence through the proxy link (`commission.plan`,
    `onboarding.commission`), then reads the node's configuration back (`jhmesh.audit`);
 5. records the node in the export — entry, element groups, app device rows — through the configurator, which
@@ -28,10 +30,10 @@ what the app does when a device is added:
 The name is checked as the app checks one (blank, a lone `%`, longer than the rename sheet takes) before
 anything goes on air, and numbered like the app numbers a name another device has.
 
-A node provisioned but not recorded (its commissioning or its recording failed) stays *pending* in the vault: its
-addresses and groups stay reserved and the `pending_device` repair issue names it, until `reset_pending_device`
-sends it a Config Node Reset with the vault's key (or, with `force`, forgets it unanswered — a device that was
-factory-reset by hand keeps its addresses reserved until then).
+A node provisioned but not recorded (its provisioning not confirmed after it got its data, its commissioning or its
+recording failed) stays *pending* in the vault: its addresses and groups stay reserved and the `pending_device`
+repair issue names it, until `reset_pending_device` sends it a Config Node Reset with the vault's key (or, with
+`force`, forgets it unanswered — a device that was factory-reset by hand keeps its addresses reserved until then).
 
 Nothing of this has run against a real device yet (unverified on air): try it on a spare device first.
 """
@@ -48,7 +50,12 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import issue_registry as ir
 
-from .const import DOMAIN, ISSUE_PENDING_DEVICE, NODE_BOOT_DELAY
+from .const import (
+    DOMAIN,
+    ISSUE_PENDING_DEVICE,
+    ISSUE_VAULT_UNWRITABLE,
+    NODE_BOOT_DELAY,
+)
 from .coordinator import issue_id
 from .jhmesh import commission
 from .jhmesh import config_messages as C
@@ -74,12 +81,15 @@ from .jhmesh.provisioning import (
     Capabilities,
     ProvisioningData,
     ProvisioningError,
+    ProvisioningResult,
     parse_provisioning_service_data,
     provision,
 )
 from .jhmesh.vault import RefreshProgress
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
@@ -274,24 +284,114 @@ async def _keep_key(
     groups: list[tuple[int, str]],
     key_refresh: RefreshProgress | None = None,
 ) -> None:
-    """Keep a just-provisioned node's device key and planned element groups in the vault until it is recorded.
+    """Keep a node's device key and planned element groups in the vault before it gets its Provisioning Data (D15).
 
-    The key: the only copy until the node is recorded. A vault that cannot be written does not stop the device
-    from being added: the key is still in memory, and the export gets it once the node is recorded. Logged (never
-    the key) and carried on. `key_refresh`: where a node provisioned in Phase 2 of a key refresh starts.
+    `provision` awaits it the moment the key is derived (`on_device_key`): until the node is recorded, the vault
+    holds the only copy, so the device learns its address and the network's keys only once that copy is on disk
+    (`VaultKeeper.async_save`). A write that did not land takes the record out of memory again (the device gets
+    nothing), raises the `vault_unwritable` repair naming the address (never the key; the next save that lands
+    clears it, `async_clear_vault_issue`) and stops the provisioning with a translated error. `key_refresh`: where
+    a node provisioned in Phase 2 of a key refresh starts. Unverified on air.
     """
-    hub.vault.identity().remember_provisioned(
-        uuid, unicast, count, dev_key, groups, key_refresh
+    keeper = hub.vault
+    vault = keeper.identity()
+    before = vault.nodes.get(canonical_uuid(uuid))
+    vault.remember_provisioned(uuid, unicast, count, dev_key, groups, key_refresh)
+    if await keeper.async_save():
+        return
+    vault.forget(uuid)
+    if before is not None:
+        vault.nodes[before.uuid] = before
+    address = f"{unicast:04X}"
+    error = keeper.write_error or "not written"
+    _LOGGER.error(
+        "The device key of the new device at %s could not be written to the vault %s (%s): provisioning stopped "
+        "before the device received anything",
+        address,
+        keeper.path,
+        error,
+    )
+    entry = hub.entry
+    ir.async_create_issue(
+        hub.hass,
+        DOMAIN,
+        issue_id(entry, ISSUE_VAULT_UNWRITABLE),
+        is_fixable=False,
+        is_persistent=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key=ISSUE_VAULT_UNWRITABLE,
+        translation_placeholders={
+            "title": entry.title,
+            "address": address,
+            "path": keeper.path,
+            "error": error,
+        },
+    )
+    raise _failure("add_device_vault_unwritable", unicast=address, error=error)
+
+
+async def _provision(
+    hass: HomeAssistant,
+    hub: JungHomeHub,
+    info: BluetoothServiceInfoBleak,
+    uuid: str,
+    name: str,
+    data: ProvisioningData,
+    check: Callable[[Capabilities], None],
+    count: int,
+    groups: list[tuple[int, str]],
+) -> ProvisioningResult:
+    """Connect to the new device and provision it with `data`, its key kept in the vault before the data goes out.
+
+    `check` refuses a device before it learns an address; the key of its `count` elements goes into the vault with
+    its planned element `groups` (`_keep_key`) before the Data PDU, and a failure after that is
+    `add_device_provisioning_unconfirmed` (the device is pending). The link is closed whatever happens.
+    """
+    unicast = data.unicast
+
+    device = (
+        bluetooth.async_ble_device_from_address(hass, info.address, connectable=True)
+        or info.device
+    )
+    _LOGGER.warning(
+        "Provisioning the JUNG device %s as %s at %04X (experimental)",
+        info.address,
+        name,
+        unicast,
     )
     try:
-        await hub.vault.async_save()
-    except Exception as err:
-        _LOGGER.warning(
-            "The device key of the node at %04X could not be kept in the vault (%s); carrying on — the export "
-            "records it once the node is configured",
-            unicast,
-            type(err).__name__,
+        client = await establish_connection(
+            BleakClientWithServiceCache, device, f"JUNG {name}", max_attempts=2
         )
+    except Exception as err:
+        raise _failure("add_device_connect_failed", error=str(err)) from err
+    kept = False
+
+    async def keep(dev_key: bytes) -> None:
+        nonlocal kept
+        await _keep_key(
+            hub, uuid, unicast, count, dev_key, groups, _refresh_progress(data)
+        )
+        kept = True
+
+    try:
+        return await provision(client, data, check=check, on_device_key=keep)
+    except ProvisioningError as err:
+        # once kept, the device may hold its data (a lost Complete looks the same): it is pending now
+        if kept:
+            raise _failure(
+                "add_device_provisioning_unconfirmed",
+                unicast=f"{unicast:04X}",
+                error=str(err),
+            ) from err
+        raise _failure("add_device_provisioning_failed", error=str(err)) from err
+    finally:
+        try:
+            await client.disconnect()
+        except (
+            Exception
+        ):  # the node restarts after Complete: its link may be gone already
+            _LOGGER.debug("disconnect after provisioning failed", exc_info=True)
 
 
 async def async_add_device(
@@ -343,41 +443,16 @@ async def async_add_device(
                 f"the device has {capabilities.elements} element(s), the template {count}"
             )
 
-    device = (
-        bluetooth.async_ble_device_from_address(hass, info.address, connectable=True)
-        or info.device
-    )
-    _LOGGER.warning(
-        "Provisioning the JUNG device %s as %s at %04X (experimental)",
-        info.address,
-        name,
-        unicast,
-    )
-    try:
-        client = await establish_connection(
-            BleakClientWithServiceCache, device, f"JUNG {name}", max_attempts=2
-        )
-    except Exception as err:
-        raise _failure("add_device_connect_failed", error=str(err)) from err
-    try:
-        result = await provision(client, data, check=check)
-    except ProvisioningError as err:
-        raise _failure("add_device_provisioning_failed", error=str(err)) from err
-    finally:
-        try:
-            await client.disconnect()
-        except (
-            Exception
-        ):  # the node restarts after Complete: its link may be gone already
-            _LOGGER.debug("disconnect after provisioning failed", exc_info=True)
-    await _keep_key(
+    result = await _provision(
+        hass,
         hub,
+        info,
         uuid,
-        unicast,
+        name,
+        data,
+        check,
         count,
-        result.device_key,
         [(g.address, g.name) for g in plan.groups],
-        _refresh_progress(data),
     )
     # Home Assistant just gave these addresses out: what the replay list holds for them is a reset node's, and
     # would drop the new node's replies (it starts at SEQ 0) until it passed those numbers
@@ -532,3 +607,12 @@ def async_update_pending_issue(
             "addresses": ", ".join(f"{a:04X}" for a in pending),
         },
     )
+
+
+@callback
+def async_clear_vault_issue(
+    hass: HomeAssistant, entry: ConfigEntry, keeper: VaultKeeper
+) -> None:
+    """Clear the `vault_unwritable` repair issue once a save of the vault landed (a `VaultKeeper` listener)."""
+    if keeper.write_error is None:
+        ir.async_delete_issue(hass, DOMAIN, issue_id(entry, ISSUE_VAULT_UNWRITABLE))

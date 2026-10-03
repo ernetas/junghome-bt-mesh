@@ -28,8 +28,8 @@ one at a time per hub:
    before that upload is adopted — review-3 W1); a failed upload raises the `gateway_sync_failed` repair issue
    and is retried like the app retries it (twice, 15 s apart, `GATEWAY_UPLOAD_RETRIES`), and `sync_gateway()`
    retries it on demand — each time after checking, by content digest against what HA last synced, that the
-   gateway does not hold a change of its own meanwhile. The time of the last successful upload is kept
-   (`CONF_GATEWAY_LAST_SYNC`, the app's `gateway_last_sync`).
+   gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
+   kept in the entry's `GatewaySync` record (the time is the app's `gateway_last_sync`).
 
 The caller (`services.py`) then reloads the config entry, which is how the hub's device model — and with it the
 entities, their `rooms` attributes and the buttons' devices — follows the new export.
@@ -68,10 +68,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
@@ -93,6 +94,7 @@ from .const import (
     ISSUE_PLAN_INTERRUPTED,
     ISSUE_SCENE_HELD,
     OPTION_PROVISIONER_IDENTITY,
+    SIGNAL_GATEWAY_SYNCED,
 )
 from .coordinator import issue_id
 from .gateway_api import (
@@ -574,6 +576,10 @@ class _GatewayUnusable(Exception):
         self.token = token
 
 
+class _NoMergeBase(Exception):
+    """`_carry_over` was asked to merge but has no base: nothing tells HA's changes from the app's."""
+
+
 TOKEN_REJECTED = "the gateway no longer accepts Home Assistant's access token"  # noqa: S105 - a log text
 
 
@@ -877,6 +883,89 @@ def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
             hass, HELD_SCENES_VERSION, f"{DOMAIN}.{entry_id}.held_scenes"
         )
     return stores[entry_id]
+
+
+GATEWAY_SYNC_VERSION = 1
+# s: a burst of syncs (an adopt and its upload) is one write; a record a restart loses is no harm (`_identical`)
+GATEWAY_SYNC_SAVE_DELAY = 1.0
+GATEWAY_SYNCS: HassKey[dict[str, GatewaySync]] = HassKey(f"{DOMAIN}_gateway_syncs")
+
+
+class GatewaySync:
+    """What Home Assistant last exchanged with an entry's gateway (`.storage/junghome_ble.<entry id>.gateway_sync`).
+
+    `synced`: the content digest (`export_digest`) the gateway and the file last both held; `last_sync`: when Home
+    Assistant last uploaded its export (ISO 8601, UTC; the app's `gateway_last_sync`, the *Last export upload*
+    sensor, told through `SIGNAL_GATEWAY_SYNCED`). Review-4 H I-10: both lived in `entry.data` up to 1.0.0, so
+    every sync rewrote the config entries file and woke every listener of the entry. The first load takes them over
+    from there (a new gateway entry's flow seeds `CONF_GATEWAY_SYNCED` the same way); the keys stay in `entry.data`,
+    so a downgrade reads the value they had then. A digest, a time, no key material.
+    """
+
+    def __init__(
+        self, hass: HomeAssistant, entry_id: str, store: Store[dict[str, Any]]
+    ) -> None:
+        """Bind to the entry's store; nothing is read until `async_load`."""
+        self.hass = hass
+        self.entry_id = entry_id
+        self.store = store
+        self.synced: str | None = None
+        self.last_sync: str | None = None
+        self.loaded = False
+
+    def _data(self) -> dict[str, Any]:
+        return {"synced": self.synced, "last_sync": self.last_sync}
+
+    async def async_load(self, entry: ConfigEntry) -> None:
+        """Read the record once per Home Assistant run (setup reads it); an entry without one takes `entry.data`'s."""
+        if self.loaded:
+            return
+        data = await self.store.async_load()
+        if data is None:
+            data = {
+                "synced": entry.data.get(CONF_GATEWAY_SYNCED),
+                "last_sync": entry.data.get(CONF_GATEWAY_LAST_SYNC),
+            }
+            if any(v is not None for v in data.values()):
+                await self.store.async_save(data)
+        self.synced, self.last_sync = data.get("synced"), data.get("last_sync")
+        self.loaded = True
+
+    async def async_seed(self, entry: ConfigEntry, digest: str | None) -> None:
+        """Record the digest of an export a reconfigure fetched from the gateway (the flow, before the reload)."""
+        await self.async_load(entry)
+        self.synced = digest
+        await self.store.async_save(self._data())
+
+    @callback
+    def record(self, digest: str, *, uploaded: bool = False) -> None:
+        """Record `digest` as synced; after an upload also its time, which the *Last export upload* sensor hears of."""
+        self.synced = digest
+        if uploaded:
+            self.last_sync = datetime.now(UTC).isoformat()
+        self.store.async_delay_save(self._data, GATEWAY_SYNC_SAVE_DELAY)
+        if uploaded:
+            async_dispatcher_send(
+                self.hass, SIGNAL_GATEWAY_SYNCED.format(self.entry_id)
+            )
+
+
+def gateway_sync(hass: HomeAssistant, entry_id: str) -> GatewaySync:
+    """Return the entry's `GatewaySync` record, one instance per entry (it outlives the entry's reloads)."""
+    records = hass.data.setdefault(GATEWAY_SYNCS, {})
+    if entry_id not in records:
+        records[entry_id] = GatewaySync(
+            hass,
+            entry_id,
+            Store(hass, GATEWAY_SYNC_VERSION, f"{DOMAIN}.{entry_id}.gateway_sync"),
+        )
+    return records[entry_id]
+
+
+async def async_remove_gateway_sync(hass: HomeAssistant, entry_id: str) -> None:
+    """Delete the entry's `GatewaySync` record, with the entry."""
+    await gateway_sync(hass, entry_id).store.async_remove()
+    hass.data[GATEWAY_SYNCS].pop(entry_id, None)
 
 
 async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
@@ -1287,7 +1376,9 @@ class MeshConfigurator:
         """
         write_private(pre_adopt_path(self.path), Path(self.path).read_bytes())
 
-    def _carry_over(self, text: str) -> tuple[str, int, list[Change]]:
+    def _carry_over(
+        self, text: str, required: bool = False
+    ) -> tuple[str, int, list[Change]]:
         """Blocking: put Home Assistant's changes onto the gateway's export `text`; (result, applied, conflicts).
 
         Review-3 W1: the app uploads its whole project after every change but never downloads one, so its upload
@@ -1295,14 +1386,17 @@ class MeshConfigurator:
         between the app's previous upload (`app_copy_path`) and the file on disk; `jhmesh.merge` applies them
         to the new upload, and a change the app overrode meanwhile (its Config messages went out later) is left
         as the app has it and reported. Without a kept copy, or with an unreadable one, the upload is taken as
-        it is (the behaviour before the merge existed).
+        it is (the behaviour before the merge existed) — unless `required` (the file changed since the last
+        sync, too): then `_NoMergeBase`, and the caller refuses rather than drop HA's changes.
         """
         base_path = app_copy_path(self.path)
         try:
             base = ProjectFile.load(base_path)
             ours = ProjectFile.load(Path(self.path))
             theirs = ProjectFile.loads(text.encode())
-        except FileNotFoundError:
+        except FileNotFoundError as err:
+            if required:
+                raise _NoMergeBase from err
             return text, 0, []
         except (
             InvalidExport,
@@ -1318,6 +1412,8 @@ class MeshConfigurator:
                 "Home Assistant's changes were not carried over onto the gateway's export: %s",
                 err,
             )
+            if required:
+                raise _NoMergeBase from err
             return text, 0, []
         changes = diff_documents(base.snapshot(), ours.snapshot())
         if not changes:
@@ -1371,7 +1467,7 @@ class MeshConfigurator:
     async def _upload(  # noqa: PLR0911  # one outcome per check
         self, pf: ProjectFile, *, raise_on_failure: bool
     ) -> Literal["synced", "failed", "refused"]:
-        """Hand the export to the gateway, after checking it still holds what HA last synced.
+        """Hand the export to the gateway, after checking it still holds what HA last synced (or what the file holds).
 
         The gateway rebuilds its whole installation from what is POSTed, so uploading over a change the app made
         since would erase it — the check that guards `_adopt_gateway_export` runs again here, right before the
@@ -1415,7 +1511,9 @@ class MeshConfigurator:
             )
             return "failed"
         _text, stamp, gateway_digest, disk_digest = state
-        if gateway_digest != self._synced_digest(disk_digest):
+        if gateway_digest is not None and gateway_digest == disk_digest:
+            self._identical(gateway_digest)
+        elif gateway_digest != self._synced_digest(disk_digest):
             disk_stamp = await self._disk_timestamp_or_none()
             self._sync_refused(
                 api,
@@ -1523,6 +1621,7 @@ class MeshConfigurator:
         unset for this call, and `_synced_digest` falls back to the disk digest, which treats the whole
         difference as the gateway's change alone — the best a legacy entry can do without history.
         """
+        await self._sync.async_load(self.hub.entry)
         fetched = await self._gateway_export()
         if fetched is None:
             return None
@@ -1534,10 +1633,7 @@ class MeshConfigurator:
             )
         except OSError:
             return None  # unreadable file: not a judgeable "changed" — `_read` explains it, next
-        if (
-            gateway_digest is not None
-            and CONF_GATEWAY_SYNCED not in self.hub.entry.data
-        ):
+        if gateway_digest is not None and self._sync.synced is None:
             try:
                 on_disk_stamp = await self.hub.hass.async_add_executor_job(
                     self._timestamp_on_disk
@@ -1551,9 +1647,14 @@ class MeshConfigurator:
                 self._mark_synced(gateway_digest)
         return text, stamp, gateway_digest, disk_digest
 
+    @property
+    def _sync(self) -> GatewaySync:
+        """The entry's record of what it last exchanged with the gateway (`_gateway_state` loads it)."""
+        return gateway_sync(self.hub.hass, self.hub.entry.entry_id)
+
     def _synced_digest(self, disk_digest: str | None) -> str | None:
         """Return what HA last synced with the gateway; a legacy entry with nothing recorded falls back to the disk digest."""
-        synced = self.hub.entry.data.get(CONF_GATEWAY_SYNCED)
+        synced = self._sync.synced
         return synced if synced is not None else disk_digest
 
     def _digest_on_disk(self) -> str | None:
@@ -1568,16 +1669,24 @@ class MeshConfigurator:
             return None
 
     def _mark_synced(self, digest: str, *, uploaded: bool = False) -> None:
-        """Record the digest HA last exchanged with the gateway; not in `HUB_DATA_KEYS`, so this never reloads.
+        """Record the digest HA last exchanged with the gateway in the entry's `GatewaySync` record, not `entry.data`.
 
-        After an upload also its time (`CONF_GATEWAY_LAST_SYNC`, what the app keeps as `gateway_last_sync` and the
-        *Last sync* sensor shows); an adopted gateway export is no upload and leaves it.
+        After an upload also its time (what the app keeps as `gateway_last_sync` and the *Last export upload* sensor
+        shows); an adopted gateway export is no upload and leaves it.
         """
-        entry = self.hub.entry
-        data = {**entry.data, CONF_GATEWAY_SYNCED: digest}
-        if uploaded:
-            data[CONF_GATEWAY_LAST_SYNC] = datetime.now(UTC).isoformat()
-        self.hub.hass.config_entries.async_update_entry(entry, data=data)
+        self._sync.record(digest, uploaded=uploaded)
+
+    def _identical(self, digest: str) -> None:
+        """Record the export both the gateway and the file hold as synced, whatever the record says (review-4 S4-6).
+
+        An upload whose record was lost (Home Assistant stopped between the POST and the record's delayed save)
+        left the record behind both copies: judged by it, every later change was refused as "both changed".
+        """
+        if self._sync.synced != digest:
+            _LOGGER.info(
+                "The gateway holds the export on disk: recorded as synced with it"
+            )
+            self._mark_synced(digest)
 
     async def _gateway_export(self) -> tuple[str, str] | None:
         """Ask the gateway for this mesh's export: (text, CDB timestamp), or None when there is nothing usable.
@@ -1663,8 +1772,9 @@ class MeshConfigurator:
         and uploading the result would make the gateway "rebuild its device database" without those changes — and
         the gateway would then serve an export without them. Adopting first keeps them; the plan is then
         made on the gateway's copy (the hub's device model follows with the reload after the change). When HA's
-        own copy changed too (an earlier upload never reached the gateway), neither side is silently dropped: the
-        change is refused until the entry is fetched again. A gateway that must not be asked is not: the plan is
+        own copy changed too (an earlier upload never reached the gateway), HA's changes are carried over onto it
+        all the same (`_adopt`); only without the app's previous upload to tell them apart is the change refused
+        until the entry is fetched again. A gateway that must not be asked is not: the plan is
         made on disk, and the upload after the change reports why it did not go out. True when the copy on disk
         now holds what the gateway's export holds: adopted, or the gateway unchanged since HA last synced; False
         without a gateway, when it was not asked or did not answer, and for a bare database left beside a bare
@@ -1691,16 +1801,23 @@ class MeshConfigurator:
         *,
         bare: bool = False,
     ) -> bool:
-        """Write the gateway's export (`_gateway_state`) over the copy on disk when only the gateway changed; True when written.
+        """Write the gateway's export (`_gateway_state`), HA's changes carried over, over the copy on disk; True when written.
 
-        A gateway export without `meta` (the bare `/project/cdb` database) never replaces a share export; over a
-        file without one either it is taken only when `bare` (the unknown-node refresh — a change plans on such
-        a file as it is). The file is written atomically with its backups — the copy it replaces kept apart as
-        well (`pre_adopt_path`) — and the digest recorded as synced.
+        Only when the gateway changed since HA last synced, and not into what the file holds already (identical
+        content is recorded as synced). When the file changed too — an upload that never reached the gateway —
+        HA's changes are carried over all the same, as when only the gateway changed (review-4 S4-6: refusing
+        left fetching again as the only way out, which dropped them): the app's previous upload (`app_copy_path`)
+        tells them apart, and a change the app overrode is reported (`_report_conflicts`); without that copy the
+        change is refused (`service_gateway_export_newer`). A gateway export without `meta` (the bare
+        `/project/cdb` database) never replaces a share export; over a file without one either it is taken only
+        when `bare` (the unknown-node refresh — a change plans on such a file as it is). The file is written
+        atomically with its backups — the copy it replaces kept apart as well (`pre_adopt_path`) — and the digest
+        recorded as synced. Unverified on air: no app has imported a file merged this way yet.
         """
         text, stamp, gateway_digest, disk_digest = state
         api = self.gateway
         assert api is not None  # `_gateway_state` is None without one
+        both_changed = False
         if gateway_digest is None:
             if disk_digest is None and not bare:
                 return False  # the disk copy has nothing worth protecting either; plan on it as today
@@ -1714,24 +1831,29 @@ class MeshConfigurator:
         elif disk_digest is not None:
             # the disk holds a real export: compare by content against what HA last synced with the gateway
             synced = self._synced_digest(disk_digest)
+            if gateway_digest == disk_digest:
+                self._identical(gateway_digest)
+                return False  # the same export on both sides: plan on disk
             if gateway_digest == synced:
                 return False  # unchanged: plan on disk
-            if disk_digest != synced:
-                disk_stamp = await self._disk_timestamp_or_none()
-                raise _failure(
-                    "service_gateway_export_newer",
-                    host=api.host,
-                    gateway=stamp,
-                    file=disk_stamp or "no timestamp",
-                )
+            both_changed = disk_digest != synced
         # disk_digest is None: the file on disk is not a real export (first run, or something else overwrote it)
         # while the gateway's is — the opposite of an unreadable file, where preferring the gateway is unsafe
         disk_stamp = (
             await self._disk_timestamp_or_none()
-        )  # for the log only; read before the write below
-        merged, carried, conflicts = await self.hub.hass.async_add_executor_job(
-            self._carry_over, text
-        )
+        )  # for the log and a refusal; read before the write below
+        try:
+            merged, carried, conflicts = await self.hub.hass.async_add_executor_job(
+                self._carry_over, text, both_changed
+            )
+        except _NoMergeBase as err:
+            # HA's own copy changed too, and nothing tells which of its differences are its own changes
+            raise _failure(
+                "service_gateway_export_newer",
+                host=api.host,
+                gateway=stamp,
+                file=disk_stamp or "no timestamp",
+            ) from err
         if self.identity_enabled:
             merged, identity_added = await self._identity_text(merged)
             carried += identity_added
@@ -1988,8 +2110,9 @@ class MeshConfigurator:
         """Upload the export the entry points at to the gateway, as it is on disk (the retry of a failed sync).
 
         Refused when the gateway holds changes Home Assistant has not seen: uploading would erase them (the
-        gateway rebuilds its installation from what is POSTed), and there is nothing to merge here — the entry
-        is to be fetched again from the gateway, then the change repeated.
+        gateway rebuilds its installation from what is POSTed), and nothing is merged here — the next change
+        takes the gateway's export over and carries HA's changes onto it (`_adopt`). The same export on both
+        sides is no refusal (`_identical`).
         """
         if self.gateway is None:
             raise _validation("service_no_gateway")

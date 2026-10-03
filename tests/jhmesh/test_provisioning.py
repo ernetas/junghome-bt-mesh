@@ -516,3 +516,35 @@ async def test_provision_turns_write_failures_into_provisioning_errors(
     monkeypatch.setattr(P, "GATT_WRITE_TIMEOUT", 0.01)
     with pytest.raises(P.ProvisioningError, match=r"not completed within 0\.01s"):
         await P.provision(device, DATA)
+
+
+async def test_provision_hands_over_the_device_key_before_the_data_pdu():
+    """`on_device_key` (review-4 D15): the device key once it is derived, before the device has its address or a
+    key; the session goes on once the hook returned."""
+    device = FakeDevice()
+    prov = P.Provisioner(DATA)
+    assert prov.derived_key is None
+    seen: list[tuple[bytes, list[int]]] = []
+
+    async def keep(key: bytes) -> None:
+        seen.append((key, [p[0] for p in device.received]))
+
+    result = await P.provision(device, DATA, provisioner=prov, on_device_key=keep)
+    assert seen == [(result.device_key, [0, 2, 3, 5, 6])]  # no Data PDU yet
+    assert result.device_key == device.device_key == prov.derived_key
+
+
+async def test_provision_aborts_before_the_data_pdu_when_the_hook_raises():
+    """A device key that cannot be kept: the session ends before the Data PDU, the device learns nothing."""
+    device = FakeDevice()
+    prov = P.Provisioner(DATA)
+
+    async def unwritable(_key: bytes) -> None:
+        raise OSError("read-only file system")
+
+    with pytest.raises(OSError, match="read-only"):
+        await P.provision(device, DATA, provisioner=prov, on_device_key=unwritable)
+    assert prov.state == P.State.FAILED
+    assert P.DATA not in [p[0] for p in device.received]
+    assert device.data is None
+    assert device.stopped == 1

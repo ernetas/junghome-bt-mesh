@@ -57,6 +57,86 @@
   raises the repair issue *Devices Home Assistant added missed the new network key*. Nothing is sent without such a
   device. `add_device` refuses while a renewal is in Phase 1 (the device would get the key being retired).
   Unverified on air.
+- The *sequence numbers lost* repair only trusts numbers a record can hold (review-4 S4-7): an IV index past 32
+  bits made it write a record no start could use and a floor no later repair got past, and a negative counter put
+  it back at 0 under its index, over the numbers sent there. When its floor cannot be written it now says so
+  (*could not be written: nothing was changed*) and the issue stays, instead of disappearing with the integration
+  still stopped.
+- The repair floor (`.storage/junghome_ble.seq.<mesh uuid>.floor`) keeps up with the counter (review-4 S4-8): Home
+  Assistant writes a new entry with every new IV index and every 2^20 numbers, and sends nothing under an index the
+  file does not hold yet, nor 2^22 numbers past its entry (the distance the repair continues past it). A floor that
+  cannot be written holds sends back like the store and names itself in *sequence numbers cannot be saved*. Written only by the repair before, it protected a second
+  loss of both copies of the store only until the address had sent 2^22 more numbers.
+- A followed key refresh is saved at once and for the mesh (review-4 S4-9): it went out with the 2 s delayed save,
+  so Home Assistant stopped right after a step came back without the new key, and it was kept with the address, so a
+  new unicast address after a completed refresh started with the revoked key. The store's minor version is 4 (the
+  mesh-level part next to the addresses; the address's record keeps a copy): 1.0.0 still reads it.
+- An address without a sequence-number record starts 2^20 numbers in, not at 0, when something says it may have sent
+  before (review-4 S I5): the export has Home Assistant's provisioner node or another node at it, the vault keeps
+  Home Assistant's identity in the mesh, or the store knows other addresses — a lost record of that address left
+  the devices ignoring Home Assistant until the *devices ignore Home Assistant* repair. Pending the first beacon the
+  counter keeps on under that beacon's index. This spends 2^20 of the 2^24 numbers of the IV index once, also on an
+  address that really is new on such an installation (any address changed to in *Reconfigure*). Unverified on air.
+- The *devices ignore Home Assistant* repair no longer moves a counter that used its last number back onto it: past
+  the end of the sequence space its skip ahead stopped at the last number and handed it out again (found by the
+  property tests' state machine).
+- A device key Home Assistant hands out is no longer lost to a vault write that failed silently (review-4 D15).
+  Home Assistant's storage only logs a failed write (a full disk, an SD card remounted read-only), and the vault took
+  it for written: the key of a device whose configuration then failed lived in memory only, and the next restart lost
+  it — such a device can only be factory-reset. Every vault write is now checked and a failed one retried by the next
+  save; `add_device` writes the device's key to the vault before the device receives its Provisioning Data (the key
+  is known one step earlier), and when that write does not land it stops right there, the device still new, with the
+  new repair issue *JUNG HOME device keys cannot be saved* (it clears itself once a write lands). A provisioning not
+  confirmed after the data went out keeps the device pending (`reset_pending_device`). The vault has a `.backup` copy,
+  read when the vault is missing or does not read back, and an unreadable vault is removed only once its copy aside
+  was written — before, a failed copy lost it. The library's `provision()` takes an optional `on_device_key` hook for
+  this. Unverified on air.
+
+### Fixed — link
+
+- A proxy node that drops the link right after every connection is no longer picked again and again (review-4 D13,
+  R4-1): a link lost within a minute counts as a failed connection, so the pause before the next attempt grows, and
+  after three in a row the node is passed over for two minutes in favour of the next one in range (a node that is the
+  only one in range is still used). Each of those links used to restart the connect-time refresh, so the time and
+  location were never sent. Only a link that lasts a minute resets the back-off. Unverified on air.
+- Entities keep the 20 s link-loss grace however the link ends (review-4 D14, R4-3): a link Home Assistant dropped
+  itself — the watchdog finding the proxy silent, the *devices ignore Home Assistant* repair, an error in the
+  connection loop — made every entity unavailable at once, and an action skipped them, dropping its command. A link
+  lost while it was still being set up is a failed connection, no longer shown as connected for a moment. Unverified
+  on air.
+- *All lights*, *All sockets* and the rooms' central entities keep the link-loss grace too, and their commands wait for
+  the next link like the loads' (review-4 R4-6, H4-5); they used to go unavailable the moment the link went.
+- A load's command whose link was lost (or replaced) while it waited for the answer is sent once more on the next link
+  instead of failing (review-4 R I-11). Unverified on air.
+
+### Fixed — gateway sync and rewiring
+
+- Taking over the app's upload no longer duplicates a key's rows (review-4 D16, S4-4). The `meta` rows of a key's
+  mode, scene and load (`buttonLayoutExports`, `keyModeSceneConfigExports`, `actuatorExports`) and the network
+  exclusions were matched by their whole content: Home Assistant setting key 328 to one mode while the app set it to
+  another left two rows for the same element, and no conflict was reported. They are matched by element address (by
+  IV index) now: one row stays, the app's, and the conflict repair names it. A property test checks the merge on
+  random edits of both sides. Unverified on air against the iOS app's import.
+- A change made while Home Assistant's own file and the app's upload had both changed is merged instead of refused
+  (review-4 D17, S4-6). It failed with *holds a newer export* until the export was fetched again, and fetching it
+  again replaced the file without a copy — losing the rooms, scenes and connections Home Assistant had made that the
+  devices still use. With the copy of the app's last upload (`<export>.app`) Home Assistant's changes are carried
+  onto the app's upload as when only the app changed (the replaced file kept as `.pre-adopt`, conflicts in the
+  repair, the result uploaded); only an entry without that copy still refuses. A gateway holding exactly what the
+  file holds now counts as synced: an upload whose record a restart lost blocked every later change. A reconfigure
+  keeps the export it replaces as `<export>.pre-reconfigure`. Unverified on air.
+- What an entry last synced with its gateway (the content digest, the *Last export upload* time) moved from the
+  config entry to `.storage/junghome_ble.<entry id>.gateway_sync` (review-4 H I-10): every sync rewrote the config
+  entries file, and the sensor listened to every entry update for it. The first start takes the values over; the
+  entry keeps its copy as of the upgrade, so after a downgrade to 1.0.0 the first change may ask to fetch the export
+  again.
+
+### CLI tools and library
+
+- `tools/mesh_poc.py --ha-storage <config>/.storage` refuses every address Home Assistant's sequence store of the
+  mesh holds a counter for (review-4 S4-11), as `--source` and as `provision --unicast`: only the integration's
+  default `0D00` was refused, not the address it is configured with. `LocalState.persist_now` writes at once; a
+  key refresh is persisted through it.
 
 ## 1.0.0
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -59,7 +59,7 @@ from custom_components.junghome_ble.gateway_api import (
     JungHomeGatewayApi,
 )
 from custom_components.junghome_ble.gateway_status import gateway_polls
-from custom_components.junghome_ble.mesh_config import export_digest
+from custom_components.junghome_ble.mesh_config import export_digest, gateway_sync
 
 from .conftest import SHARE_EXPORT_PATH, settle, setup_entry, wait_for_link
 from .helpers import NODE_GATEWAY, entity_id
@@ -380,15 +380,58 @@ async def test_an_unusable_gateway_is_not_asked(
 
 
 async def test_last_export_upload(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    """When Home Assistant last handed its export to the gateway, from the entry; an upload updates it at once."""
+    """When Home Assistant last handed its export to the gateway, from the entry's sync record; an upload updates it
+    at once, and nothing of it is written into the entry any more (review-4 H I-10)."""
     last = entity_id(hass, "sensor", uid("last_sync"))
     assert hass.states.get(last).state == STATE_UNKNOWN  # type: ignore[union-attr]
-    stamp = datetime(2026, 1, 16, 8, 0, tzinfo=UTC)
-    hass.config_entries.async_update_entry(
-        entry, data={**entry.data, CONF_GATEWAY_LAST_SYNC: stamp.isoformat()}
-    )
+    data = dict(entry.data)
+    record = gateway_sync(hass, entry.entry_id)
+    record.record("cd" * 32)  # an adopted export: no upload, no time
+    await settle(hass)
+    assert hass.states.get(last).state == STATE_UNKNOWN  # type: ignore[union-attr]
+    record.record("ef" * 32, uploaded=True)
     await settle(hass)
     shown = hass.states.get(last)
     assert shown is not None
-    assert shown.state == "2026-01-16T08:00:00+00:00"
+    assert record.last_sync is not None
+    uploaded = dt_util.parse_datetime(record.last_sync)
+    assert uploaded is not None
+    # the state is shown to the second
+    assert dt_util.parse_datetime(shown.state) == uploaded.replace(microsecond=0)
     assert shown.attributes["device_class"] == "timestamp"
+    assert entry.data == data
+
+
+async def test_the_sync_record_is_taken_over_from_the_entry_once(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    rest: FakeRest,
+    entity_registry_enabled_by_default: None,
+    hass_storage: dict[str, Any],
+) -> None:
+    """An entry of 1.0.0 kept the synced digest and the last upload's time in `entry.data`: the first setup takes
+    them into the entry's own store (left in `entry.data` for a downgrade), later syncs go there only, and a
+    reload reads the store, not the stale `entry.data`. Removing the entry removes the store."""
+    stamp = (dt_util.utcnow() - timedelta(hours=1)).replace(microsecond=0)
+    entry = await gateway_entry(
+        hass, tmp_path, **{CONF_GATEWAY_LAST_SYNC: stamp.isoformat()}
+    )
+    key = f"{DOMAIN}.{entry.entry_id}.gateway_sync"
+    assert hass_storage[key]["data"] == {
+        "synced": SYNCED,
+        "last_sync": stamp.isoformat(),
+    }
+    shown = state(hass, "sensor", "last_sync")
+    assert dt_util.parse_datetime(shown.state) == stamp
+    gateway_sync(hass, entry.entry_id).record("ab" * 32, uploaded=True)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await settle(hass)
+    assert entry.data[CONF_GATEWAY_SYNCED] == SYNCED  # left as it was
+    assert gateway_sync(hass, entry.entry_id).synced == "ab" * 32
+    assert dt_util.parse_datetime(state(hass, "sensor", "last_sync").state) != stamp
+    await hass.config_entries.async_remove(entry.entry_id)
+    await settle(hass)
+    assert key not in hass_storage

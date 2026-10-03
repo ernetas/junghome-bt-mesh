@@ -29,11 +29,12 @@ PIN_FROM_USER: Final = "user"
 CONF_GATEWAY_TOKEN: Final = "gateway_token"  # noqa: S105 - the gateway's API token: it hands out the export with every mesh key, so it is redacted like the keys
 CONF_GATEWAY_PASSWORD: Final = "gateway_password"  # noqa: S105 - form field only, never stored
 CONF_EXPORT_FILE: Final = "export_file"  # form field only: the id of the uploaded file
-CONF_GATEWAY_SYNCED: Final = (
-    "gateway_synced_digest"  # not in HUB_DATA_KEYS: recording it never reloads
-)
-# when Home Assistant last handed its export to the gateway (ISO 8601, UTC), the app's `gateway_last_sync`: not in
-# HUB_DATA_KEYS either; the *Last sync* sensor shows it
+# the digest of the export a new gateway entry was fetched with: the first `mesh_config.GatewaySync` record of the entry
+# (review-4 H I-10: every sync rewrote it in `entry.data` up to 1.0.0; the record took it over, the key is left in
+# place for a downgrade). Not in HUB_DATA_KEYS: a reconfigure writing it never reloads by itself
+CONF_GATEWAY_SYNCED: Final = "gateway_synced_digest"
+# when Home Assistant last handed its export to the gateway (ISO 8601, UTC), the app's `gateway_last_sync`: in
+# `entry.data` up to 1.0.0, taken over by the `GatewaySync` record like `CONF_GATEWAY_SYNCED`
 CONF_GATEWAY_LAST_SYNC: Final = "gateway_last_sync"
 # the mains nodes that may still publish heartbeats to us (`OPTION_HEARTBEATS` configured them, and no disable round
 # got their OK yet), unicasts as hex: not in HUB_DATA_KEYS either; the next link with the option off tells them
@@ -170,6 +171,8 @@ SIGNAL_SCENE_RECALLED: Final = (
 )
 SIGNAL_DETECTOR: Final = f"{DOMAIN}_detector_{{}}_{{}}"  # per entry id and detector sensor element: (event, value) from binary_sensor.py
 SIGNAL_BATTERY: Final = f"{DOMAIN}_battery_{{}}_{{}}"  # per entry id and primary element: the decoded Generic Battery Status (sensor.py)
+# per entry id: an upload to the gateway went through (`mesh_config.GatewaySync`); the *Last export upload* sensor
+SIGNAL_GATEWAY_SYNCED: Final = f"{DOMAIN}_gateway_synced_{{}}"
 
 # Detectors (binary_sensor.py / sensor.py; `docs/gap-analysis/control-and-state.md` §2.8, unverified on hardware).
 DETECTOR_PROPERTY_PRESENCE: Final = 0x004D  # SIG Presence Detected: 1 byte, 0 / 1
@@ -313,8 +316,19 @@ TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the f
 # a year ahead
 OFFSET_CHANGE_DELAY: Final = 5.0
 OFFSET_SEARCH_DAYS: Final = 400
+# The connection loop's pause after a failed connection doubles from CONNECT_BACKOFF_MIN up to CONNECT_BACKOFF_MAX; a
+# link that lasted SHORT_LINK counts as a working one and starts it over.
+CONNECT_BACKOFF_MIN: Final = 2.0
 CONNECT_BACKOFF_MAX: Final = 60.0
 FAILED_PROXY_COOLDOWN: Final = 120.0
+# Short-link penalty (review-4 R4-1). A proxy whose link comes up and is lost again within SHORT_LINK seconds failed
+# the connection just as much as one that never connected, only later: the pause before the next attempt doubles
+# (CONNECT_BACKOFF_MIN ..), and after SHORT_LINK_STREAK such links in a row the node is set aside for
+# FAILED_PROXY_COOLDOWN like a node that cannot be connected to — the strongest node is otherwise picked again and
+# again, each link restarting the connect-time refresh. A node that is the only one in range is still used, and one
+# short link alone sets no node aside (a node restarting right after we connected is no flapping proxy).
+SHORT_LINK: Final = 60.0
+SHORT_LINK_STREAK: Final = 3
 # a proxy advertisement older than this ranks behind every fresher one: its node may be off (JUNG nodes advertise
 # several times a second)
 PROXY_ADVERT_MAX_AGE: Final = 60.0
@@ -435,6 +449,8 @@ ISSUE_PLAN_INTERRUPTED: Final = (
 )
 ISSUE_DEVICE_NAME: Final = "device_name_rejected"  # a device renamed in HA to a name the app refuses (device_names.py)
 ISSUE_PENDING_DEVICE: Final = "pending_device"  # a device Home Assistant provisioned was never recorded (onboard.py)
+# the vault could not be written while a device was added: provisioning stopped before the device got anything
+ISSUE_VAULT_UNWRITABLE: Final = "vault_unwritable"
 # devices Home Assistant added that did not confirm the end of the app's key refresh (vault_refresh.py)
 ISSUE_VAULT_KEY_REFRESH: Final = "vault_key_refresh_lagging"
 ISSUE_CARRY_OVER_CONFLICT: Final = "carry_over_conflict"  # an adopted app export overrode what HA had changed (mesh_config.py)

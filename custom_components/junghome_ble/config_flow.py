@@ -29,7 +29,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -104,9 +103,9 @@ from .jhmesh.cdb import CDB, UUID_PATTERN, InvalidExport
 from .jhmesh.client import MESH_PROXY_SERVICE
 from .jhmesh.devices import InvalidMetadata, Metadata
 from .jhmesh.export import write_private
-from .jhmesh.fileio import backup_paths
+from .jhmesh.fileio import PRIVATE_MODE, backup_paths, copy_private, fsync_dir
 from .jhmesh.vault import recognise
-from .mesh_config import app_copy_path, export_digest, pre_adopt_path
+from .mesh_config import app_copy_path, export_digest, gateway_sync, pre_adopt_path
 from .migration import (
     ImportAborted,
     ImportPlan,
@@ -342,8 +341,27 @@ def forget_stored_export(path: Path) -> None:
         *backup_paths(path),
         app_copy_path(path),
         pre_adopt_path(path),
+        pre_reconfigure_path(path),
     ):
         stored.unlink(missing_ok=True)
+
+
+def pre_reconfigure_path(path: Path) -> Path:
+    """Where a reconfigure keeps the export it replaced (`<export>.pre-reconfigure`), until the next one."""
+    return path.with_name(path.name + ".pre-reconfigure")
+
+
+def _replace_keeping(incoming: Path, final: Path) -> None:
+    """Blocking: move `incoming` to `final`, the export there kept as `pre_reconfigure_path`, the directory fsynced.
+
+    Review-4 S4-6: fetching the gateway's export again was the way out of a gateway and a file that had both
+    changed, and it replaced the file without a copy — with the rooms, scenes and connections Home Assistant had
+    made that the devices still use. The copy is owner-only like the export (it holds every mesh key).
+    """
+    if final.exists():
+        copy_private(final, pre_reconfigure_path(final), PRIVATE_MODE)
+    incoming.replace(final)
+    fsync_dir(final.parent)
 
 
 def proxy_in_range(hass: HomeAssistant, cdb: CDB) -> bool:
@@ -1038,11 +1056,14 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             self._incoming = None
 
     async def _async_keep_incoming(self, data: dict[str, Any], cdb: CDB) -> None:
-        """Give a validated fetched/uploaded export its final name and point the entry data at it."""
+        """Give a validated fetched/uploaded export its final name and point the entry data at it.
+
+        The export it replaces, if any, is kept beside it (`pre_reconfigure_path`).
+        """
         if self._incoming is None:
             return
         final = self._export_path(cdb.mesh_uuid)
-        await self.hass.async_add_executor_job(os.replace, self._incoming, final)
+        await self.hass.async_add_executor_job(_replace_keeping, self._incoming, final)
         self._incoming = None
         data[CONF_CDB_PATH] = str(final)
 
@@ -1083,6 +1104,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 self.hass.config_entries.flow.async_abort(flow["flow_id"])
             await self._async_keep_incoming(data, cdb)
             await self._async_forget_replaced_export(entry, data)
+            if CONF_GATEWAY_SYNCED in data:
+                # fetched from the gateway: both hold this export now (`mesh_config.GatewaySync`, before the reload)
+                await gateway_sync(self.hass, entry.entry_id).async_seed(
+                    entry, data[CONF_GATEWAY_SYNCED]
+                )
             # the gateway repairs are about the entry's old pin and token; the reload checks the new ones
             for issue in (
                 certificate_issue_id(entry.entry_id),

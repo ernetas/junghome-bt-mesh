@@ -9,8 +9,10 @@ import json
 import logging
 import shutil
 import time
+from collections import defaultdict
 from collections.abc import Awaitable, Callable, Generator
 from datetime import UTC, datetime, timedelta, timezone
+from itertools import pairwise
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -20,7 +22,14 @@ import pytest
 from bleak.exc import BleakError
 from homeassistant.components.bluetooth import BluetoothChange
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import (
+    EVENT_STATE_CHANGED,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+)
+from homeassistant.core import Event, EventStateChangedData, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
@@ -102,7 +111,7 @@ from custom_components.junghome_ble.jhmesh.pdu import (
     encode_opcode,
     network_encrypt,
 )
-from custom_components.junghome_ble.mesh_config import export_digest
+from custom_components.junghome_ble.mesh_config import export_digest, gateway_sync
 
 from .conftest import (
     CDB_PATH,
@@ -541,9 +550,7 @@ async def test_stop_cancels_a_running_refresh(
     assert task.cancelled()
     assert hub._refresh_task is None
     assert hub._task is None
-    assert (
-        await hub._watch_link()
-    )  # a link that is already gone counts as lost, not as silent
+    await hub._watch_link()  # a link that is already gone: returns at once
 
 
 async def test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement(
@@ -625,6 +632,7 @@ async def test_reconnects_to_the_strongest_visible_proxy(
 
 async def test_connect_failures_back_off_and_rotate_proxies(
     hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
     mock_config_entry: MockConfigEntry,
     fake_link: FakeProxyLink,
     mock_bluetooth_env: dict[str, Any],
@@ -670,8 +678,9 @@ async def test_connect_failures_back_off_and_rotate_proxies(
         == "Push-button 1-gang 0148"
     )
 
-    # a successful connection resets the back-off
+    # a link that lasted resets the back-off (a short one would not: `test_a_flapping_proxy_is_passed_over`)
     fast_sleep.clear()
+    freezer.tick(coordinator.SHORT_LINK)
     fake_link.connect_errors = [BleakError("again")]
     fake_link.drop_link()
     await wait_for_link(hass, mock_config_entry, connected=False)
@@ -683,6 +692,118 @@ async def test_connect_failures_back_off_and_rotate_proxies(
         for record in caplog.records
         if record.getMessage().startswith("connecting to")
     ] == [logging.WARNING]  # a new down period: warned again
+
+
+async def drop_and_reconnect(
+    hass: HomeAssistant, entry: MockConfigEntry, link: FakeProxyLink
+) -> None:
+    """Lose the link right after it came up and wait for the next one."""
+    link.drop_link()
+    await wait_for_link(hass, entry, connected=False)
+    await wait_for_link(hass, entry)
+
+
+async def test_a_flapping_proxy_is_passed_over(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 R4-1, the flap repro: a link that came up and was lost seconds later left no trace, and the next pass
+    picked the same strongest proxy again — six drops, six reconnects to it, each restarting the connect-time
+    refresh. Lost within SHORT_LINK, a link is a failed connection: the pause grows, and after SHORT_LINK_STREAK of
+    them in a row the node is passed over for the next one in range."""
+    hub = hub_of(init_integration)
+    mock_bluetooth_env["infos"].append(
+        make_service_info(network_id, address=SECOND_PROXY, rssi=-70)
+    )  # weaker: not chosen while the first one works
+    fast_sleep.clear()
+    for _ in range(3):
+        assert hub.proxy_address == PROXY_ADDRESS
+        await drop_and_reconnect(hass, init_integration, fake_link)
+    assert hub.proxy_address == SECOND_PROXY
+    assert fake_link.connect_count == 4
+    pauses = [d for d in fast_sleep if d in (1.0, 2.0, 4.0, 8.0, 16.0)]
+    assert pauses == [2.0, 4.0, 8.0]  # doubling across short links, not 1 s each
+    assert (
+        f"Proxy node {PROXY_ADDRESS} lost 3 links in a row within "
+        f"{coordinator.SHORT_LINK:.0f} s of connecting" in caplog.text
+    )
+
+    # a link that lasts is a working one: the back-off starts over
+    freezer.tick(coordinator.SHORT_LINK)
+    fast_sleep.clear()
+    await drop_and_reconnect(hass, init_integration, fake_link)
+    assert (
+        hub.proxy_address == SECOND_PROXY
+    )  # the flapping node still sits out its cooldown
+    await drop_and_reconnect(hass, init_integration, fake_link)
+    pauses = [d for d in fast_sleep if d in (1.0, 2.0, 4.0, 8.0, 16.0)]
+    assert pauses == [1.0, 2.0]
+    assert hub._short_links[SECOND_PROXY] == 1
+
+    # the only node in range is used however often it flaps; its back-off keeps growing, up to the cap
+    mock_bluetooth_env["infos"] = mock_bluetooth_env["infos"][1:]
+    fast_sleep.clear()
+    for _ in range(3):
+        await drop_and_reconnect(hass, init_integration, fake_link)
+        assert hub.proxy_address == SECOND_PROXY
+    pauses = [d for d in fast_sleep if d in (1.0, 2.0, 4.0, 8.0, 16.0)]
+    assert pauses == [4.0, 8.0, 16.0]
+    assert (
+        caplog.text.count("links in a row") == 2
+    )  # once per node that reached the streak
+
+
+async def test_a_link_lost_while_it_is_set_up_is_a_failed_connection(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-4 R4-3: a link lost during `attach()`'s settle after the filter request was reported connected, then
+    lost: every entity went available and unavailable again for nothing."""
+    real_set_filter = ProxyClient.set_filter
+    filters = 0
+
+    async def set_filter_then_drop(self: ProxyClient, filter_type: int) -> None:
+        nonlocal filters
+        await real_set_filter(self, filter_type)
+        filters += 1
+        if filters == 1:
+            fake_link.drop_link()
+
+    states: dict[str, list[str]] = defaultdict(list)
+
+    @callback
+    def record(event: Event[EventStateChangedData]) -> None:
+        if (new := event.data["new_state"]) is not None:
+            states[event.data["entity_id"]].append(new.state)
+
+    hass.bus.async_listen(EVENT_STATE_CHANGED, record)
+    with patch.object(ProxyClient, "set_filter", set_filter_then_drop):
+        await setup_entry(hass, mock_config_entry)
+        await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    assert fake_link.connect_count == 2
+    assert states[entity_id(hass, "light", UID_LIGHT_DIMMER)][-1] != STATE_UNAVAILABLE
+    flapped = [  # shown available, then unavailable again
+        eid
+        for eid, seq in states.items()
+        if any(a != STATE_UNAVAILABLE == b for a, b in pairwise(seq))
+    ]
+    assert flapped == []
+    assert caplog.text.count("Connected to the JUNG mesh through proxy node") == 1
+    assert (
+        f"connecting to {PROXY_ADDRESS} failed: the link was lost while it was set up"
+        in caplog.text
+    )
 
 
 async def test_stop_is_idempotent(
@@ -4716,7 +4837,7 @@ async def test_unknown_node_fetches_the_gateways_export_and_reloads(
     assert saved == _export_with_new_node(share)
     path = Path(gateway_entry.data[CONF_CDB_PATH])
     assert path.with_name(path.name + ".bak").read_bytes() == original
-    assert gateway_entry.data[CONF_GATEWAY_SYNCED] == export_digest(
+    assert gateway_sync(hass, gateway_entry.entry_id).synced == export_digest(
         _export_with_new_node(share)
     )
 
@@ -4824,16 +4945,12 @@ async def test_gateway_export_refresh_overwrites_nothing_it_must_not(
         gw.answers.append({"meshNetwork": bare})
         await gw.advert(network_id)
         assert "was not adopted: service_gateway_export_incomplete" in caplog.text
-        hass.config_entries.async_update_entry(
-            gateway_entry, data={**gateway_entry.data, CONF_GATEWAY_SYNCED: "0" * 64}
-        )
+        # the file changed since the last sync too, and no copy of the app's last upload tells what HA changed
+        gateway_sync(hass, gateway_entry.entry_id).synced = "0" * 64
         gw.answers.append(newer)
         await gw.advert(network_id)
         assert "was not adopted: service_gateway_export_newer" in caplog.text
-        hass.config_entries.async_update_entry(
-            gateway_entry,
-            data={**gateway_entry.data, CONF_GATEWAY_SYNCED: export_digest(newer)},
-        )
+        gateway_sync(hass, gateway_entry.entry_id).synced = export_digest(newer)
         gw.answers.append(newer)
         await gw.advert(network_id)
         assert "but nothing Home Assistant has not synced already" in caplog.text

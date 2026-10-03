@@ -39,10 +39,12 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 )
 
 from custom_components import junghome_ble
+from custom_components.junghome_ble import config_flow
 from custom_components.junghome_ble.config_flow import (
     CONF_MESH_UUID,
     JungHomeConfigFlow,
     forget_stored_export,
+    pre_reconfigure_path,
     proxy_in_range,
 )
 from custom_components.junghome_ble.const import (
@@ -72,7 +74,11 @@ from custom_components.junghome_ble.coordinator import seq_store_for_uuid
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
-from custom_components.junghome_ble.mesh_config import app_copy_path, export_digest
+from custom_components.junghome_ble.mesh_config import (
+    app_copy_path,
+    export_digest,
+    gateway_sync,
+)
 from custom_components.junghome_ble.tls import CONF_GATEWAY_FINGERPRINT
 
 from .conftest import (
@@ -1434,7 +1440,14 @@ def test_forget_stored_export_takes_the_backup_along(tmp_path: Path) -> None:
     store.mkdir()
     stored = store / "X.json"
     stored.write_text("{}")
-    for suffix in (".bak", ".bak.1", ".bak.2", ".app", ".pre-adopt"):
+    for suffix in (
+        ".bak",
+        ".bak.1",
+        ".bak.2",
+        ".app",
+        ".pre-adopt",
+        ".pre-reconfigure",
+    ):
         stored.with_name("X.json" + suffix).write_text("{}")
     forget_stored_export(stored)
     assert sorted(p.name for p in store.iterdir()) == []
@@ -1965,6 +1978,46 @@ async def test_reconfigure_refetch(
     assert aioclient_mock.call_count == 1
     assert len(mock_setup_entry.mock_calls) == 1
     mock_learn.assert_not_awaited()  # the entry's pin was used, nothing learned anew
+
+
+async def test_reconfigure_keeps_the_export_it_replaces(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Review-4 S4-6: fetching the export again was the way out of a gateway and a file that both changed, and it
+    replaced the file without a copy — losing what Home Assistant had wired that the devices still use. The file it
+    replaces is kept (`.pre-reconfigure`, owner-only), the directory fsynced, and the fetched export recorded as
+    what the gateway and the file both hold (the entry's sync record, not only `entry.data`)."""
+    aioclient_mock.get(f"{API}/project/junghome", json=_share_export())
+    entry = _gateway_entry(hass)
+    entry.add_to_hass(hass)
+    before = _stored(hass).read_bytes()
+    record = gateway_sync(hass, entry.entry_id)
+    record.last_sync = "kept"
+    record.loaded = True
+    synced: list[Path] = []
+    real_fsync_dir = config_flow.fsync_dir
+
+    def spy(path: Path) -> None:
+        synced.append(path)
+        real_fsync_dir(path)
+
+    result = await _start_reconfigure(hass, entry, "gateway_refetch")
+    with patch.object(config_flow, "fsync_dir", spy):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_UNICAST: "0D00"}
+        )
+    await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+    kept = pre_reconfigure_path(_stored(hass))
+    assert kept.read_bytes() == before
+    assert stat.S_IMODE(kept.stat().st_mode) == 0o600
+    assert json.loads(_stored(hass).read_text()) == _share_export()
+    assert synced == [_stored(hass).parent]
+    assert record.synced == export_digest(_share_export())
+    assert record.last_sync == "kept"  # a fetch is no upload
 
 
 async def test_reconfigure_refetch_token_rejected(

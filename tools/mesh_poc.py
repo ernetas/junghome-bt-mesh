@@ -37,7 +37,9 @@ Our own identity (unicast address + sequence number) lives in tools/.jhmesh_stat
 source address (--source, default 7FFF). The HA integration uses 0D00 with its own store: two clients must never
 share an address, because replay protection is per (source address, sequence number) and the nodes silently drop
 whichever side's counter lags. The address must also be free in the export: no node's, not in networkExclusions and
-outside every provisioner's allocated range (the app provisions there).
+outside every provisioner's allocated range (the app provisions there). `--ha-storage <HA config>/.storage` also
+refuses every address Home Assistant's sequence store of this mesh holds a counter for (an address other than 0D00
+configured there, or one it used before).
 """
 
 from __future__ import annotations
@@ -192,13 +194,45 @@ def refuse_unconfirmed_write(args: argparse.Namespace, cdb: CDB) -> None:
         )
 
 
-def source_problem(cdb: CDB, src: int) -> str | None:
+def ha_sources(storage: Path, mesh_uuid: str) -> set[int]:
+    """The source addresses Home Assistant keeps a sequence counter for in this mesh (`--ha-storage`, review-4 S4-11).
+
+    Read from `<storage>/junghome_ble.seq.<mesh uuid>`, its `.backup` copy and its `.floor`: every address the
+    integration sent from, the one configured now included — not only its default 0D00. A missing file names no
+    address (Home Assistant never ran this mesh); a directory that is not there, or a file that does not read as
+    one of these stores, ends the command: an address it holds would go unnoticed.
+    """
+    if not storage.is_dir():
+        sys.exit(
+            f"--ha-storage {storage} is not a directory (Home Assistant's .storage)"
+        )
+    found: set[int] = set()
+    base = storage / f"junghome_ble.seq.{mesh_uuid.lower()}"
+    for path in (
+        base,
+        base.with_name(f"{base.name}.backup"),
+        base.with_name(f"{base.name}.floor"),
+    ):
+        if not path.exists():
+            continue
+        try:
+            addresses = json.loads(path.read_text())["data"]["addresses"]
+            found.update(int(key, 16) for key in addresses)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as err:
+            sys.exit(f"cannot read Home Assistant's sequence store {path}: {err!r}")
+    return found
+
+
+def source_problem(
+    cdb: CDB, src: int, reserved: frozenset[int] | set[int] = frozenset({HA_SOURCE})
+) -> str | None:
     """Why `src` cannot be our source address; None when it can.
 
     What Home Assistant refuses or warns about for its own (review-3 W3, `CDB.unicast_is_free`): a node's element
     (the nodes drop whichever of us lags as a replay, and replies go astray), an address in `networkExclusions` (a
     removed node's: the nodes' replay lists still hold its sequence numbers until the IV index moved on twice), and
     one inside a provisioner's allocated range (the app provisions its next node there, or takes it for a phone).
+    The free address it suggests instead is none of `reserved` (Home Assistant's).
     """
     used = cdb.used_unicasts()
     if src in used:
@@ -217,9 +251,16 @@ def source_problem(cdb: CDB, src: int) -> str | None:
     # from the top down, where the app allocates last (DEFAULT_SOURCE)
     free = (a for a in range(0x7FFF, 0, -1) if cdb.unicast_is_free(a, used))
     hint = next(
-        (f"pass --source {a:04X}" for a in free if a != HA_SOURCE), "no address is free"
+        (f"pass --source {a:04X}" for a in free if a not in reserved),
+        "no address is free",
     )
     return f"our address {src:04X} {why}: {hint}"
+
+
+def ha_addresses(args: argparse.Namespace, cdb: CDB) -> set[int]:
+    """Home Assistant's addresses in this mesh when `--ha-storage` names its store (`ha_sources`), else none."""
+    storage = getattr(args, "ha_storage", None)
+    return set() if storage is None else ha_sources(Path(storage), cdb.mesh_uuid)
 
 
 async def with_client(args: argparse.Namespace, fn: Handler | None) -> None:
@@ -230,8 +271,14 @@ async def with_client(args: argparse.Namespace, fn: Handler | None) -> None:
             f" storage, not here): pass --source {DEFAULT_SOURCE:04X} or another unused unicast"
         )
     cdb = ops.load_cdb(args.cdb)
+    reserved = {HA_SOURCE} | ha_addresses(args, cdb)
+    if args.source in reserved:
+        sys.exit(
+            f"{args.source:04X} is an address Home Assistant keeps a sequence counter for in this mesh"
+            f" ({args.ha_storage}): two clients must never share one — pass another --source"
+        )
     # before a state file exists for an address we cannot use
-    if problem := source_problem(cdb, args.source):
+    if problem := source_problem(cdb, args.source, reserved):
         sys.exit(problem)
     # every command resolves these inside `fn`, once connected: a typo must not cost a real BLE connection first
     for text in (getattr(args, "target", None), getattr(args, "group", None)):
@@ -1013,7 +1060,7 @@ async def cmd_provision(args: argparse.Namespace) -> None:
         sys.exit(
             f"{args.uuid} is node {known.unicast:04X} ({known.name}) in the export: remove it there first"
         )
-    reserved = {HA_SOURCE, args.source}
+    reserved = {HA_SOURCE, args.source} | ha_addresses(args, cdb)
     problem = ops.provision_address_problem(cdb, args.unicast, 1, reserved)
     if problem:
         sys.exit(problem)
@@ -1075,6 +1122,12 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat list
         help="our unicast address, hex (default 7FFF; the HA integration uses 0D00); it must be free in the export"
         " (no node's, not excluded, outside every provisioner's range). Each address has its own "
         "sequence store tools/.jhmesh_state_<ADDR>.json; never share an address with another client",
+    )
+    ap.add_argument(
+        "--ha-storage",
+        metavar="DIR",
+        help="Home Assistant's .storage directory: refuse every address its sequence store of this mesh"
+        " (junghome_ble.seq.<mesh uuid>) holds a counter for, not only 0D00",
     )
     ap.add_argument(
         "--scan", type=float, default=4.0, help="proxy scan duration before connecting"

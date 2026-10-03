@@ -93,7 +93,6 @@ from .config_entities import (
 from .const import (
     BATTERY_READ_INTERVAL,
     BATTERY_READ_TIMEOUT,
-    CONF_GATEWAY_LAST_SYNC,
     DETECTOR_BRIGHTNESS_POLL,
     DETECTOR_ILLUMINANCE_RAW_LUX_MAX_VERSION,
     DETECTOR_PROPERTY_ILLUMINANCE,
@@ -101,6 +100,7 @@ from .const import (
     LINK_STATES,
     SIGNAL_BATTERY,
     SIGNAL_CONNECTION,
+    SIGNAL_GATEWAY_SYNCED,
     SIGNAL_LINK_STATE,
     SIGNAL_NODE,
     SIGNAL_SCENES,
@@ -129,6 +129,7 @@ from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
 from .jhmesh.properties import parse_version
+from .mesh_config import gateway_sync
 from .schedules import ScheduleTarget, schedule_targets, scheduler
 from .thresholds import ThresholdTarget, switched_devices, threshold_targets
 
@@ -623,10 +624,11 @@ class JungHomeGatewayErrorLog(
 
 
 class JungHomeGatewayLastSync(SensorEntity):
-    """When Home Assistant last handed its export to the gateway (the app's `gateway_last_sync`), from the entry.
+    """When Home Assistant last handed its export to the gateway (the app's `gateway_last_sync`), from its record.
 
-    Recorded by every successful upload (`MeshConfigurator._upload`); known without a link or an answer from the
-    gateway, so always available.
+    Recorded by every successful upload (`MeshConfigurator._upload`) in the entry's `GatewaySync` record, which
+    says so through `SIGNAL_GATEWAY_SYNCED` (review-4 H I-10: no longer an `entry.data` write and an update
+    listener); known without a link or an answer from the gateway, so always available.
     """
 
     _attr_has_entity_name = True
@@ -643,16 +645,19 @@ class JungHomeGatewayLastSync(SensorEntity):
         self._attr_device_info = node_device_info(hub, node)
 
     async def async_added_to_hass(self) -> None:
-        """Follow the entry: an upload records its time there."""
-        self.async_on_remove(self.hub.entry.add_update_listener(self._entry_updated))
-
-    async def _entry_updated(self, _hass: HomeAssistant, _entry: Any) -> None:
-        self.async_write_ha_state()
+        """Follow the record: an upload records its time there and says so."""
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_GATEWAY_SYNCED.format(self.hub.entry.entry_id),
+                self.async_write_ha_state,
+            )
+        )
 
     @property
     def native_value(self) -> datetime | None:
         """The time of the last upload; None before the first one."""
-        stamp = self.hub.entry.data.get(CONF_GATEWAY_LAST_SYNC)
+        stamp = gateway_sync(self.hass, self.hub.entry.entry_id).last_sync
         return dt_util.parse_datetime(stamp) if isinstance(stamp, str) else None
 
 

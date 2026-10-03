@@ -30,6 +30,7 @@ from .const import (
 from .coordinator import async_skip_seq_store_ahead
 
 if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
 
@@ -70,14 +71,7 @@ class SkipAheadFlow(RepairsFlow):
         if entry is None:
             return self.async_abort(reason="entry_gone")
         if self.kind == ISSUE_SEQ_STORE_LOST:
-            await async_skip_seq_store_ahead(
-                self.hass,
-                str(self.issue_data["mesh_uuid"]),
-                str(self.issue_data["unicast"]),
-            )
-            ir.async_delete_issue(self.hass, DOMAIN, self.issue_id)
-            self.hass.config_entries.async_schedule_reload(entry.entry_id)
-            return self.async_create_entry(data={})
+            return await self._async_skip_lost_record(entry)
         hub = getattr(entry, "runtime_data", None)
         if hub is None:
             return self.async_abort(reason="entry_gone")
@@ -92,6 +86,25 @@ class SkipAheadFlow(RepairsFlow):
         else:
             # the issue stays until a device answers: that is the proof the skip was enough
             await hub.async_skip_ahead()
+        return self.async_create_entry(data={})
+
+    async def _async_skip_lost_record(self, entry: ConfigEntry) -> RepairsFlowResult:
+        """`seq_store_lost`: write the record past every number sent, then set the entry up again.
+
+        Aborted when the floor's write did not land (review-4 S4-7): nothing else was written, the setup stays
+        refused, and so the issue stays too — it used to be deleted all the same, leaving nothing to repair from.
+        """
+        if (
+            await async_skip_seq_store_ahead(
+                self.hass,
+                str(self.issue_data["mesh_uuid"]),
+                str(self.issue_data["unicast"]),
+            )
+            is None
+        ):
+            return self.async_abort(reason="floor_not_written")
+        ir.async_delete_issue(self.hass, DOMAIN, self.issue_id)
+        self.hass.config_entries.async_schedule_reload(entry.entry_id)
         return self.async_create_entry(data={})
 
 

@@ -488,8 +488,8 @@ class JungHomeCentralEntity(JungHomeEntity):
     go to the room address as one message (`Dim.Group`, `OpenClose.Group`) — the room address alone would reach
     every kind of load in it. The address the entity stands for (`address`) is the device-type group or the room.
     On the mesh (service) device, not in the room's area, so an area action does not reach the loads twice; the
-    state derived from the members' (`watched` are the elements it follows). Available while the link is up — the
-    messages reach whoever is there.
+    state derived from the members' (`watched` are the elements it follows). Available while the link is up, or in its
+    loss grace — the messages reach whoever is there.
     """
 
     def __init__(
@@ -524,8 +524,12 @@ class JungHomeCentralEntity(JungHomeEntity):
 
     @property
     def available(self) -> bool:
-        """Available while the hub has a proxy link."""
-        return self.hub.connected
+        """Available while the hub has a proxy link, or lost one less than LINK_LOSS_GRACE ago, as the loads' entities.
+
+        A command in the grace waits for the next link (`JungHomeHub._command`); unavailable, Home Assistant would
+        skip the entity in an action and drop the command (review-4 R4-6).
+        """
+        return self.hub.link_available
 
     async def async_added_to_hass(self) -> None:
         """Also follow every watched element's state."""
