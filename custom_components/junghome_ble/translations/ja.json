@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Bluetooth 経由の JUNG HOME",
+        "description": "Home Assistant は、JUNG HOME アプリのネットワークのエクスポート（メッシュのキーを含みます）を使用して、Bluetooth 経由で JUNG HOME のメッシュに直接参加します。エクスポートの取得元を選択してください。",
+        "menu_options": {
+          "gateway": "JUNG HOME ゲートウェイから取得",
+          "upload": "アプリのエクスポートファイルをアップロード",
+          "path": "Home Assistant ホスト上のファイルを使用"
+        },
+        "data": {
+          "cdb_path": "メッシュのエクスポートファイル",
+          "metadata_dir": "アプリのメタデータディレクトリ",
+          "unicast": "このシステムのユニキャストアドレス"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant ホスト上の絶対パス。例: `/config/junghome/JungHome.json`。",
+          "metadata_dir": "任意。iOS バックアップの `MeshNetwork.json` を使う場合のみ: `device_metadata.json` と `scene_metadata.json` を含むアプリの `Application Support` フォルダー。これにより、エンティティにアプリで付けた名前が付きます。`JungHome.json` にはすでに名前が含まれています。",
+          "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "これはお使いの JUNG HOME の設備ですか？",
+        "description": "ネットワーク {network_id} の Bluetooth Mesh プロキシが範囲内にあります。Home Assistant は、検出したすべての Bluetooth Mesh ネットワークを提示します。他社製のもの（たとえば隣家の照明）も含まれます。これがお使いの JUNG HOME の設備である場合にのみ続行してください。続行すると、アプリのメッシュのエクスポートを求められます。"
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME ゲートウェイが見つかりました",
+        "description": "JUNG HOME ゲートウェイが {host} でアナウンスしています。続行すると、そこから JUNG HOME アプリのネットワークのエクスポートを取得します。その際、ゲートウェイのネットワークキーのパスワードを入力するか、アプリでアクセスリクエストを承認します。手動で入力したアドレスと同様に、何かを送信する前に、最初の接続時にゲートウェイの証明書が固定されます。検出されたゲートウェイからのセットアップは実機では未検証です。"
+      },
+      "gateway": {
+        "title": "JUNG HOME ゲートウェイからエクスポートを取得",
+        "description": "ゲートウェイには、アプリのネットワークのエクスポートのコピーが保存されています。ゲートウェイのアドレスを入力し、すぐにアクセスするにはネットワークキーのパスワード（JUNG HOME アプリで確認できます）を入力してください。または、パスワードを空欄のままにして、続行後にアプリでアクセスリクエストを承認してください（「設定 → ゲートウェイ → アクセス許可 → 保留中のリクエスト」で 3 分以内に。「{user_name}」として表示されます）。エクスポートは Home Assistant の設定ディレクトリ内の `junghome_ble/` に保存されます。スマートフォンからのエクスポートと同様にすべてのメッシュのキーが含まれるため、このディレクトリのバックアップは非公開にしてください。",
+        "data": {
+          "gateway_host": "ゲートウェイのアドレス",
+          "gateway_password": "ネットワークキーのパスワード"
+        },
+        "data_description": {
+          "gateway_host": "JUNG HOME ゲートウェイの IP アドレスまたはホスト名。Home Assistant がネットワーク上で見つけたゲートウェイは、すでに入力されています。それ以外の場合、多くのネットワークでは既定値の `junghome.local` で動作します。または、ゲートウェイの IP アドレス（アプリの「設定 → ゲートウェイ」に表示されます）を使用してください。",
+          "gateway_password": "任意。入力すると、ゲートウェイはすぐにアクセスを許可します。入力しない場合は、アプリでリクエストを承認します。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "詳細設定",
+            "description": "2 台目の Home Assistant やリポジトリのコマンドラインツールもこの設備に参加する場合を除き、既定値のままにしてください。それぞれに専用のアドレスが必要です。",
+            "data": {
+              "unicast": "このシステムのユニキャストアドレス"
+            },
+            "data_description": {
+              "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "JUNG HOME アプリでの承認を待っています"
+      },
+      "gateway_refetch": {
+        "title": "エクスポートを再取得",
+        "description": "保存されているアクセスを使用して、{host} のゲートウェイから現在のネットワークのエクスポートを取得します。ゲートウェイがそのアクセスを受け付けなくなっている場合は、アプリで新しいアクセスリクエストを承認するよう求められます。",
+        "sections": {
+          "advanced": {
+            "name": "詳細設定",
+            "description": "2 台目の Home Assistant やリポジトリのコマンドラインツールもこの設備に参加する場合を除き、既定値のままにしてください。それぞれに専用のアドレスが必要です。",
+            "data": {
+              "unicast": "このシステムのユニキャストアドレス"
+            },
+            "data_description": {
+              "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "アプリのエクスポートファイルをアップロード",
+        "description": "JUNG HOME アプリで「プロジェクト → ファイルで共有」を開き、作成された `JungHome.json` を自分宛てに送信してから、ここにアップロードしてください。ファイルは Home Assistant の設定ディレクトリ内の `junghome_ble/` に保存されます。すべてのメッシュのキーが含まれるため、このディレクトリのバックアップは非公開にしてください。",
+        "data": {
+          "export_file": "メッシュのエクスポートファイル"
+        },
+        "data_description": {
+          "export_file": "アプリの `JungHome.json`（「ファイルで共有」）、または iOS バックアップの `MeshNetwork.json`。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "詳細設定",
+            "description": "2 台目の Home Assistant やリポジトリのコマンドラインツールもこの設備に参加する場合を除き、既定値のままにしてください。それぞれに専用のアドレスが必要です。",
+            "data": {
+              "unicast": "このシステムのユニキャストアドレス"
+            },
+            "data_description": {
+              "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Home Assistant ホスト上のファイルを使用",
+        "description": "先にアプリの `JungHome.json`（「プロジェクト → ファイルで共有」。デバイス名を含みます）または `MeshNetwork.json`（iOS バックアップ）を Home Assistant ホストにコピーし、そのパスを入力してください。",
+        "data": {
+          "cdb_path": "メッシュのエクスポートファイル",
+          "metadata_dir": "アプリのメタデータディレクトリ"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant ホスト上の絶対パス。例: `/config/junghome/JungHome.json`。",
+          "metadata_dir": "任意。iOS バックアップの `MeshNetwork.json` を使う場合のみ: `device_metadata.json` と `scene_metadata.json` を含むアプリの `Application Support` フォルダー。これにより、エンティティにアプリで付けた名前が付きます。`JungHome.json` にはすでに名前が含まれています。"
+        },
+        "sections": {
+          "advanced": {
+            "name": "詳細設定",
+            "description": "2 台目の Home Assistant やリポジトリのコマンドラインツールもこの設備に参加する場合を除き、既定値のままにしてください。それぞれに専用のアドレスが必要です。",
+            "data": {
+              "unicast": "このシステムのユニキャストアドレス"
+            },
+            "data_description": {
+              "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "JUNG HOME のメッシュのエクスポートを更新",
+        "description": "JUNG HOME アプリでデバイスを再プロビジョニングまたは再配線した後や、キーリフレッシュの後に使用します。同じネットワークの新しいエクスポートを指定してください。エクスポートから消えたデバイスは削除されます。同時に、Home Assistant 自身のメッシュアドレスを変更することもできます。",
+        "menu_options": {
+          "gateway_refetch": "{host} のゲートウェイから再取得",
+          "gateway": "JUNG HOME ゲートウェイから取得",
+          "upload": "アプリのエクスポートファイルをアップロード",
+          "path": "Home Assistant ホスト上のファイルを使用",
+          "import_gateway": "JUNG HOME ゲートウェイ統合のエンティティをインポート",
+          "areas": "各部屋のデバイスを割り当てるエリアを変更"
+        },
+        "data": {
+          "cdb_path": "メッシュのエクスポートファイル",
+          "metadata_dir": "アプリのメタデータディレクトリ",
+          "unicast": "このシステムのユニキャストアドレス"
+        },
+        "data_description": {
+          "cdb_path": "Home Assistant ホスト上の絶対パス。例: `/config/junghome/JungHome.json`。",
+          "metadata_dir": "任意。iOS バックアップの `MeshNetwork.json` を使う場合のみ: `device_metadata.json` と `scene_metadata.json` を含むアプリの `Application Support` フォルダー。これにより、エンティティにアプリで付けた名前が付きます。`JungHome.json` にはすでに名前が含まれています。",
+          "unicast": "Home Assistant がノードとして使用する 16 進数のメッシュアドレス（0001–7FFF）。他のノードが使用していないアドレスにしてください。既定値はアプリの範囲外にあります。"
+        }
+      },
+      "import_gateway": {
+        "title": "JUNG HOME ゲートウェイ統合からインポート",
+        "description": "JUNG HOME ゲートウェイ統合（`junghome`）がこの統合と並行してセットアップされています。そのエンティティをここに引き継ぐと、エンティティ ID、名前、エリア、ラベル、レコーダーの履歴を Bluetooth Mesh 統合でそのまま使い続けられます。照合はデバイス名（JUNG HOME アプリでの名前）とエンティティの種類で行われます。置き換えられるのは、この統合のエンティティのうち、まだ名前を変更したりカスタマイズしたりしていないものだけです。\n\n**{count} 個のエンティティが移動します**（ゲートウェイのエンティティ → 置き換え対象）:\n{matched}\n\n**そのまま維持**（ここですでにカスタマイズ済み。ゲートウェイ側のエンティティもそのまま残ります）:\n{customised}\n\n**ゲートウェイ側に対応するものなし**（そのまま維持）:\n{unmatched}\n\n**ここに対応するものがないゲートウェイのエンティティ**（ゲートウェイのエントリに残ります）:\n{gateway_only}\n\n送信すると、両方の統合をアンロードし、エンティティを移動し、一致した各ゲートウェイデバイスのエリア、カスタム名、ラベルをここの対応するデバイスにコピーし、ゲートウェイのエントリを無効にして、この統合を再読み込みします。その後、ゲートウェイのエントリを削除してください。"
+      },
+      "gateway_certificate": {
+        "title": "ゲートウェイの証明書が変更されました",
+        "description": "{host} の JUNG HOME ゲートウェイは現在、証明書 {observed} を提示しています。エントリに記録されているのは {expected} です。ゲートウェイまたはその証明書をご自身で交換した場合にのみ続行してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答しています。"
+      },
+      "reauth_confirm": {
+        "title": "Home Assistant にゲートウェイへのアクセスを再度許可",
+        "description": "{host} の JUNG HOME ゲートウェイは、メッシュ {title} のために Home Assistant が登録したアクセスを受け付けなくなりました（おそらく JUNG HOME アプリの「設定 → ゲートウェイ → アクセス許可」で削除されました）。デバイスは Bluetooth 経由で引き続き動作します。停止したのは、Home Assistant での変更をゲートウェイに渡す処理だけです。すぐにアクセスするにはゲートウェイのネットワークキーのパスワード（JUNG HOME アプリで確認できます）を入力するか、空欄のままにして、続行後にアプリでアクセスリクエストを承認してください（「設定 → ゲートウェイ → アクセス許可 → 保留中のリクエスト」で 3 分以内に。「{user_name}」として表示されます）。更新されるのはアクセスのみで、エクスポートは再取得されません。",
+        "data": {
+          "gateway_password": "ネットワークキーのパスワード"
+        },
+        "data_description": {
+          "gateway_password": "任意。入力すると、ゲートウェイはすぐにアクセスを許可します。入力しない場合は、アプリでリクエストを承認します。パスワードは保存されません。"
+        }
+      },
+      "areas": {
+        "title": "部屋とエリア",
+        "description": "JUNG HOME アプリの各部屋について、Home Assistant のエリアを選択してください。部屋には、同じ名前のエリア、または部屋の名前をエイリアスとして持つエリアがあらかじめ入力されています。部屋を空欄のままにすると、部屋の名前が付いたエリアが使用されます（存在しない場合は作成されます）。独自の部屋を持たないデバイスにも部屋が割り当てられます。押しボタンのボタンには隣にある負荷の部屋が、壁掛け送信機にはそのボタンが切り替える部屋が割り当てられます。「再構成」メニューから実行した場合は、前回の選択で割り当てられたエリアにまだあるデバイスが移動されます。ご自身で別のエリアに配置したデバイスが移動されることはありません。",
+        "data": {
+          "assign_areas": "JUNG HOME のデバイスをエリアに割り当てる"
+        },
+        "data_description": {
+          "assign_areas": "オフ: 新しいデバイスはエリアなしで追加され、以下の部屋の設定は無視されます。"
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "JUNG HOME アプリを開き、「設定 → ゲートウェイ → アクセス許可 → 保留中のリクエスト」でアクセスリクエスト「{user_name}」を承認してください。{host} のゲートウェイは最大 3 分間待機します。"
+    },
+    "error": {
+      "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスを指定した場合は、パスが正しいこと）を確認してください。",
+      "not_a_directory": "メタデータのパスはディレクトリではありません。",
+      "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+      "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+      "address_in_use": "そのアドレスはメッシュ内のノードが使用しています。未使用のアドレスを選択してください。",
+      "no_proxy_visible": "このメッシュネットワークのノードが、現在 Bluetooth 経由で見えていません。Bluetooth アダプターまたは ESPHome の Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+      "export_keys_stale": "このメッシュのデバイスは Bluetooth 経由で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスがありません。エクスポートの作成後に、ネットワークのキーが更新されています（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+      "network_mismatch": "このエクスポートは、検出されたものとは別のメッシュネットワークのものです。",
+      "mesh_already_configured": "このメッシュはすでに別のエントリとしてセットアップされています（Home Assistant が最後に確認した後に、ネットワークキーがリフレッシュされた可能性があります）。新しいエントリを追加する代わりに、そのエントリの「再構成」を使用してください。",
+      "invalid_host": "ゲートウェイの IP アドレスまたはホスト名を入力してください。",
+      "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+      "invalid_auth": "ゲートウェイがネットワークキーのパスワードを拒否しました。",
+      "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、改めてアクセスをリクエストしてください。",
+      "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、「設定 → ゲートウェイ → アクセス許可 → 保留中のリクエスト」で承認してください。",
+      "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+      "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+      "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+      "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。",
+      "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+      "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キーとノードを含むネットワークと、インデックス 0 のネットワークキーが 1 つ含まれている必要があります。"
+    },
+    "abort": {
+      "already_configured": "このメッシュネットワークはすでに設定されています。",
+      "already_in_progress": "このメッシュネットワークのセットアップはすでに進行中です。",
+      "not_supported": "この Bluetooth デバイスはメッシュプロキシではありません。",
+      "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+      "mesh_already_configured": "このメッシュはすでに別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。",
+      "reconfigure_successful": "メッシュのエクスポートを更新しました。",
+      "no_gateway_entry": "JUNG HOME ゲートウェイ統合がセットアップされていません。インポートするものはありません。",
+      "nothing_to_import": "引き継ぐゲートウェイのエンティティが残っていません。対応するものがないこの統合のエンティティ:\n{unmatched}\n\nここに対応するものがないゲートウェイのエンティティ:\n{gateway_only}",
+      "import_successful": "{count} 個のエンティティを JUNG HOME ゲートウェイ統合から引き継ぎました:\n{matched}\n\nそのまま維持（ここですでにカスタマイズ済み）:\n{customised}\n\nゲートウェイ側に対応するものなし:\n{unmatched}\n\nゲートウェイのエントリに残っているもの:\n{gateway_only}\n\nゲートウェイのエントリは無効にしました。すべて問題がないことを確認したら、「設定 → デバイスとサービス → JUNG HOME」で削除してください。",
+      "certificate_vouched_by_mesh": "{host} の JUNG HOME ゲートウェイは証明書 {observed} を提示していますが、ゲートウェイのノードはメッシュ経由で {expected} を保証しました。そのアドレスには何も送信していません。ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。ゲートウェイまたはその証明書をご自身で交換した場合は、Home Assistant がメッシュに接続している間にもう一度再構成してください。その際、ゲートウェイのノードが新しい証明書を報告します。",
+      "import_unload_failed": "{title} をアンロードできなかったため、何もインポートしませんでした。インポートでアンロードしたエントリは、すべて再度セットアップされます。ログを確認してから、もう一度インポートしてください。",
+      "reauth_successful": "JUNG HOME ゲートウェイは再び Home Assistant を受け付けるようになりました。その間に Home Assistant で行った変更は、次回の変更時に、またはアクション「ゲートウェイを同期」ですぐにゲートウェイに反映されます。",
+      "areas_updated": "部屋のエリアを保存しました。{count} 台のデバイスを部屋の新しいエリアに移動しました。",
+      "not_loaded": "統合が実行されていません。先にもう一度セットアップしてください。",
+      "not_junghome_gateway": "このデバイスは JUNG HOME ゲートウェイとしてアナウンスしていません（JUNG のメーカー情報またはシリアル番号がありません）。",
+      "not_ipv4_address": "ゲートウェイが IPv4 アドレスをアナウンスしませんでした。統合を手動で追加し、ゲートウェイのアドレスを入力してください。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME (Bluetooth Mesh) のオプション",
+        "data": {
+          "click_delay": "ダブルクリックでないと確定してからクリックを通知する",
+          "heartbeats": "ノードのハートビート（応答しないデバイスを利用不可にする）",
+          "allow_provisioning": "Home Assistant によるデバイスの追加と削除を許可する（実験的）",
+          "provisioner_identity": "Home Assistant をプロビジョナーとしてネットワークのファイルに書き込む（実験的、アプリでは未検証）",
+          "follow_app": "JUNG HOME アプリでの変更に追従する",
+          "gateway_check": "6 時間ごとにゲートウェイのエクスポートを確認する",
+          "sync_areas": "JUNG の部屋が変わったらデバイスも移動する"
+        },
+        "data_description": {
+          "click_delay": "`click` イベントを 0.5 秒間保留し、2 回目のクリックが続いた場合は破棄します。そのため、2 回続けて押すと `double_click` のみが発生します。オフ: 押すたびに直ちに `click` が発生し、2 回続けて押したときの 2 回目には `double_click` も発生します。",
+          "heartbeats": "商用電源で動作するすべてのデバイスに、64 秒ごとに Home Assistant へハートビートを送信するよう要求します（JUNG アプリではオフになっている Bluetooth Mesh の標準設定です）。約 3 分半にわたって何も送信しないデバイスは、再び受信されるまでエンティティが利用不可になります。これをオフにすると、デバイスに送信の停止を指示します（一度にすべてのデバイスに伝えられなかった場合は、次回の接続時に改めて指示します）。統合を削除する前にオフにしてください。削除後はデバイスに指示できません。",
+          "allow_provisioning": "`junghome_ble.add_device` アクションで新しい JUNG デバイスをプロビジョニングし、ネットワーク内にある同じ製品のデバイスに倣ってアプリと同様に設定できるようにします。また、`junghome_ble.remove_device` でデバイスをリセットしてネットワークから外せるようにします。実際のデバイスではまだ試されていません。まず予備のデバイスで試してください。追加するとデバイスにネットワークのキーが渡されます。削除は元に戻せません。",
+          "provisioner_identity": "Home Assistant が書き込む、またはゲートウェイに渡すすべてのファイルに、Home Assistant のプロビジョナーエントリが追加されます。このエントリはアプリの範囲と重ならない独自のアドレス範囲を持ち、Home Assistant のアドレスはその範囲内にあります。また、Home Assistant が追加したもののアプリのファイルにはないデバイスが戻されます。それ以降に Home Assistant が作成する部屋、シーン、デバイスは、独自の範囲からアドレスを取得します。このようなファイルをインポートした JUNG アプリはまだありません。ご自身のアプリやゲートウェイがこのファイルを読み込む前に、予備のアプリのインストールで試してください（`junghome_ble.export_network` で作成したファイルをインポートします）。オフ: ファイルはこの設定がない場合とまったく同じように書き込まれます。",
+          "follow_app": "JUNG HOME アプリを実行しているスマートフォンがメッシュ上で検出されると、ゲートウェイからセットアップしたエントリは、スマートフォンが静かになってから数分後に（最大で 15 分に 1 回）ゲートウェイのエクスポートを取得し、変更があれば引き継ぎます。これにより、アプリで変更したデバイス、部屋、シーン、ボタンのリンクが、「再構成」なしで Home Assistant に反映されます。ファイルからセットアップしたエントリでは、アプリでデバイスの設定が変更されたことを検出すると、代わりに修復の通知が表示されます。このためにメッシュ上で何かが送信されることはありません。実機では未検証です。",
+          "gateway_check": "ゲートウェイからセットアップしたエントリは、6 時間ごとにゲートウェイにエクスポートを要求し、変更があれば引き継ぎます。これにより、Home Assistant がスマートフォンを検出できなかった間にアプリで変更された内容も取り込まれます。ゲートウェイへのリクエストは 1 回で、メッシュ上では何も送信されません。ファイルからセットアップしたエントリには影響しません。",
+          "sync_areas": "アプリで（Home Assistant が新しいエクスポートに追従した時点で）、または部屋のアクションによってデバイスの部屋が変わると、デバイスは新しい部屋のエリアにも移動します。ただし、ご自身でエリアに配置したデバイスは除きます。オフ: デバイスは最初のエリアに留まります。実機では未検証です。"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "メッシュ接続"
+      },
+      "motion": {
+        "name": "動き"
+      },
+      "occupancy": {
+        "name": "在室"
+      },
+      "fault": {
+        "name": "障害"
+      },
+      "wind_alarm": {
+        "name": "風警報"
+      },
+      "reference_run_active": {
+        "name": "リファレンス走行"
+      },
+      "gateway_api_available": {
+        "name": "API 利用可能"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "承認待ちのクライアント"
+      },
+      "gateway_network_problem": {
+        "name": "ネットワークの問題"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth メッシュの問題"
+      },
+      "gateway_cloud_problem": {
+        "name": "クラウドの問題"
+      },
+      "gateway_cloud_connected": {
+        "name": "クラウド接続"
+      },
+      "window_open": {
+        "name": "窓開放"
+      },
+      "input_state": {
+        "name": "入力状態"
+      },
+      "input_state_key": {
+        "name": "入力状態 {key}"
+      },
+      "scheduler_function_status": {
+        "name": "自動機能"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "ボタン {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "クリック",
+              "double_click": "ダブルクリック",
+              "hold_start": "長押し開始",
+              "hold_end": "長押し終了",
+              "press_on": "オン／上を押下",
+              "press_off": "オフ／下を押下",
+              "scene": "シーン呼び出し",
+              "dim": "調光"
+            }
+          },
+          "connection": {
+            "name": "リンク",
+            "state": {
+              "device": "デバイス",
+              "room": "部屋",
+              "scene": "シーン",
+              "gateway": "ゲートウェイ",
+              "group": "グループ",
+              "none": "なし"
+            }
+          },
+          "reason": {
+            "name": "長押し終了の理由",
+            "state": {
+              "timeout": "時間内に離されたことを検出できなかった",
+              "link_lost": "接続が切れた",
+              "stopped": "統合が停止した"
+            }
+          },
+          "position": {
+            "name": "位置",
+            "state": {
+              "top": "上",
+              "bottom": "下",
+              "rocker": "ロッカー",
+              "left_top": "左上",
+              "left_bottom": "左下",
+              "right_top": "右上",
+              "right_bottom": "右下",
+              "left_rocker": "左ロッカー",
+              "right_rocker": "右ロッカー"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "入力 {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "クリック",
+              "double_click": "ダブルクリック",
+              "hold_start": "長押し開始",
+              "hold_end": "長押し終了",
+              "press_on": "オン／上を押下",
+              "press_off": "オフ／下を押下",
+              "scene": "シーン呼び出し",
+              "dim": "調光"
+            }
+          },
+          "connection": {
+            "name": "リンク",
+            "state": {
+              "device": "デバイス",
+              "room": "部屋",
+              "scene": "シーン",
+              "gateway": "ゲートウェイ",
+              "group": "グループ",
+              "none": "なし"
+            }
+          },
+          "reason": {
+            "name": "長押し終了の理由",
+            "state": {
+              "timeout": "時間内に離されたことを検出できなかった",
+              "link_lost": "接続が切れた",
+              "stopped": "統合が停止した"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "電力"
+      },
+      "voltage": {
+        "name": "電圧"
+      },
+      "current": {
+        "name": "電流"
+      },
+      "energy": {
+        "name": "エネルギー"
+      },
+      "energy_resettable": {
+        "name": "リセット以降のエネルギー"
+      },
+      "energy_since_on": {
+        "name": "オンにしてからのエネルギー"
+      },
+      "power_on_time": {
+        "name": "オン時間"
+      },
+      "proxy_node": {
+        "name": "プロキシノード"
+      },
+      "link_state": {
+        "name": "接続状態",
+        "state": {
+          "bluetooth_off": "Bluetooth なし",
+          "searching": "プロキシノードを検索中",
+          "connecting": "接続中",
+          "updating": "接続済み、デバイスの状態を更新中",
+          "connected": "接続済み",
+          "failed": "接続に失敗",
+          "disconnected": "切断"
+        }
+      },
+      "unreachable_devices": {
+        "name": "到達できないデバイス",
+        "state_attributes": {
+          "devices": {
+            "name": "デバイス"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "メッシュの概要",
+        "state_attributes": {
+          "nodes": {
+            "name": "ノード"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "照度"
+      },
+      "battery": {
+        "name": "バッテリー"
+      },
+      "installed": {
+        "name": "装着済み"
+      },
+      "key_mode": {
+        "name": "ボタンモード",
+        "state": {
+          "light": "照明",
+          "move": "ブラインド",
+          "scene": "シーン",
+          "property": "プロパティ",
+          "rtr": "温度",
+          "switch": "スイッチ",
+          "gateway": "ゲートウェイ"
+        }
+      },
+      "key_mode_key": {
+        "name": "ボタンモード {key}",
+        "state": {
+          "light": "照明",
+          "move": "ブラインド",
+          "scene": "シーン",
+          "property": "プロパティ",
+          "rtr": "温度",
+          "switch": "スイッチ",
+          "gateway": "ゲートウェイ"
+        }
+      },
+      "schedules": {
+        "name": "スケジュール"
+      },
+      "scenes": {
+        "name": "シーン"
+      },
+      "switch_off_at": {
+        "name": "オフになる時刻"
+      },
+      "switch_on_threshold": {
+        "name": "オンしきい値"
+      },
+      "switch_off_threshold": {
+        "name": "オフしきい値"
+      },
+      "last_seen": {
+        "name": "最終確認"
+      },
+      "rssi": {
+        "name": "信号強度"
+      },
+      "hops": {
+        "name": "ホップ数"
+      },
+      "last_restart": {
+        "name": "最終再起動"
+      },
+      "clock_offset": {
+        "name": "時刻のずれ"
+      },
+      "iv_index": {
+        "name": "IV index"
+      },
+      "sequence_used": {
+        "name": "使用済みシーケンス番号"
+      },
+      "mesh_sequence_used": {
+        "name": "メッシュの使用済みシーケンス番号"
+      },
+      "switching_cycles": {
+        "name": "スイッチング回数"
+      },
+      "power_on_cycles": {
+        "name": "オン回数"
+      },
+      "gateway_ip": {
+        "name": "IP アドレス"
+      },
+      "gateway_firmware": {
+        "name": "ファームウェアバージョン"
+      },
+      "gateway_firmware_build": {
+        "name": "ファームウェアビルド"
+      },
+      "gateway_serial": {
+        "name": "シリアル番号"
+      },
+      "gateway_access_requests": {
+        "name": "アクセスリクエスト",
+        "state_attributes": {
+          "clients": {
+            "name": "クライアント"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API クライアント",
+        "state_attributes": {
+          "clients": {
+            "name": "クライアント"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "エラーログ",
+        "state_attributes": {
+          "entries": {
+            "name": "ログ項目"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "エクスポートの最終アップロード"
+      },
+      "forced_off": {
+        "name": "常時オン／常時オフ",
+        "state": {
+          "inactive": "非アクティブ",
+          "off": "常時オフ",
+          "on": "常時オン"
+        }
+      },
+      "sleep_mode": {
+        "name": "スリープモード",
+        "state": {
+          "awake": "起動中",
+          "asleep": "スリープ中"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "リファレンス走行"
+      },
+      "identify": {
+        "name": "識別する"
+      },
+      "clear_faults": {
+        "name": "障害をクリア"
+      },
+      "reset_consumption": {
+        "name": "消費量をリセット"
+      },
+      "fetch_gateway_export": {
+        "name": "ゲートウェイからエクスポートを取得"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "復電後のブラインド位置"
+      },
+      "blind_ventilation_position": {
+        "name": "換気位置"
+      },
+      "color_temp_max": {
+        "name": "最大色温度"
+      },
+      "color_temp_min": {
+        "name": "最小色温度"
+      },
+      "comfort_temperature": {
+        "name": "快適温度"
+      },
+      "default_color_temp": {
+        "name": "オン時の色温度"
+      },
+      "default_lightness": {
+        "name": "オン時の明るさ"
+      },
+      "eco_temperature": {
+        "name": "ECO 温度"
+      },
+      "frost_protection_temperature": {
+        "name": "凍結防止温度"
+      },
+      "lightness_max": {
+        "name": "最大の明るさ"
+      },
+      "lightness_min": {
+        "name": "最小の明るさ"
+      },
+      "lock_time_limit": {
+        "name": "ロックの制限時間"
+      },
+      "motor_reversal_time": {
+        "name": "モーター反転の最小時間"
+      },
+      "off_delay": {
+        "name": "オフ遅延"
+      },
+      "on_delay": {
+        "name": "オン遅延"
+      },
+      "pir_sensor_a": {
+        "name": "検知範囲 A"
+      },
+      "pir_sensor_b": {
+        "name": "検知範囲 B"
+      },
+      "pir_sensor_c": {
+        "name": "検知範囲 C"
+      },
+      "repetition_time": {
+        "name": "繰り返し時間"
+      },
+      "running_time": {
+        "name": "走行時間"
+      },
+      "sensor_offset": {
+        "name": "温度センサーのオフセット"
+      },
+      "slat_position_on_power": {
+        "name": "復電後のスラット位置"
+      },
+      "slat_ventilation_position": {
+        "name": "スラットの換気位置"
+      },
+      "slats_move_time": {
+        "name": "スラットの切り替え時間"
+      },
+      "switch_blocking_time": {
+        "name": "最小スイッチング間隔"
+      },
+      "switch_on_brightness": {
+        "name": "明るさのしきい値"
+      },
+      "timed_on_duration": {
+        "name": "延長時間"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "動作モード",
+        "state": {
+          "blinds": "ブラインド（スラット付き）",
+          "shutter": "シャッター（スラットなし）",
+          "awning": "オーニング"
+        }
+      },
+      "controller_type": {
+        "name": "コントローラー出力",
+        "state": {
+          "pi_control": "パルス幅変調（PWM）",
+          "two_point_control": "2 点制御"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "明るさの測定方式",
+        "state": {
+          "guard": "設置場所",
+          "presence": "室内の明るさ"
+        }
+      },
+      "dim_mode": {
+        "name": "調光方式",
+        "state": {
+          "leading_edge": "正位相制御（RL）",
+          "trailing_edge": "逆位相制御（RC）"
+        }
+      },
+      "hvac_mode": {
+        "name": "動作モード",
+        "state": {
+          "none": "なし",
+          "comfort": "快適",
+          "eco": "ECO",
+          "frost": "凍結防止"
+        }
+      },
+      "input_edge_falling": {
+        "name": "立ち下がりエッジ",
+        "state": {
+          "no_reaction": "反応なし",
+          "on": "オンにする",
+          "off": "オフにする",
+          "toggle": "切り替え"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "立ち下がりエッジ {key}",
+        "state": {
+          "no_reaction": "反応なし",
+          "on": "オンにする",
+          "off": "オフにする",
+          "toggle": "切り替え"
+        }
+      },
+      "input_edge_rising": {
+        "name": "立ち上がりエッジ",
+        "state": {
+          "no_reaction": "反応なし",
+          "on": "オンにする",
+          "off": "オフにする",
+          "toggle": "切り替え"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "立ち上がりエッジ {key}",
+        "state": {
+          "no_reaction": "反応なし",
+          "on": "オンにする",
+          "off": "オフにする",
+          "toggle": "切り替え"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED の色（オフ時）",
+        "state": {
+          "red": "赤",
+          "green": "緑",
+          "white": "白",
+          "blue": "青",
+          "violet": "紫",
+          "orange": "オレンジ",
+          "yellow": "黄",
+          "cyan": "シアン",
+          "no_color": "色なし"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED の色（オフ時） {key}",
+        "state": {
+          "red": "赤",
+          "green": "緑",
+          "white": "白",
+          "blue": "青",
+          "violet": "紫",
+          "orange": "オレンジ",
+          "yellow": "黄",
+          "cyan": "シアン",
+          "no_color": "色なし"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED の色（オン時）",
+        "state": {
+          "red": "赤",
+          "green": "緑",
+          "white": "白",
+          "blue": "青",
+          "violet": "紫",
+          "orange": "オレンジ",
+          "yellow": "黄",
+          "cyan": "シアン",
+          "no_color": "色なし"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED の色（オン時） {key}",
+        "state": {
+          "red": "赤",
+          "green": "緑",
+          "white": "白",
+          "blue": "青",
+          "violet": "紫",
+          "orange": "オレンジ",
+          "yellow": "黄",
+          "cyan": "シアン",
+          "no_color": "色なし"
+        }
+      },
+      "main_page": {
+        "name": "ローカル表示",
+        "state": {
+          "target_temperature": "設定温度",
+          "current_temperature": "現在の温度",
+          "clock": "時刻"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "電源電圧復帰後の動作",
+        "state": {
+          "no_reaction": "反応なし",
+          "move_up": "0 % まで上昇",
+          "move_down": "100 % まで下降",
+          "stop": "停止",
+          "move_to_stored_position": "保存された位置",
+          "position_for_network_failure": "停電時の位置"
+        }
+      },
+      "operation_site": {
+        "name": "使用場所",
+        "state": {
+          "indoor": "屋内",
+          "outdoor": "屋外"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "復電後の動作",
+        "state": {
+          "off": "オフ",
+          "on": "オン",
+          "restore": "以前の状態"
+        }
+      },
+      "sensor_selection": {
+        "name": "温度センサー",
+        "state": {
+          "internal": "室内",
+          "external": "床",
+          "internal_and_external": "室内と床"
+        }
+      },
+      "valve_output": {
+        "name": "バルブ調整",
+        "state": {
+          "normally_closed": "NC - ノーマルクローズ",
+          "normally_open": "NO - ノーマルオープン"
+        }
+      },
+      "lock_function": {
+        "name": "ロック機能",
+        "state": {
+          "unlocked": "ロック解除",
+          "keep_state": "ロック（位置を保持）",
+          "lockout_protection": "締め出し防止",
+          "wind_alarm": "風警報"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "すべてのコンセント"
+      },
+      "room_sockets": {
+        "name": "{room} のすべてのコンセント"
+      },
+      "automatic_dst": {
+        "name": "夏時間の自動切り替え"
+      },
+      "backlight_auto_off": {
+        "name": "ディスプレイを自動的にオフ"
+      },
+      "blinds_invert_output": {
+        "name": "反転動作"
+      },
+      "boost_mode": {
+        "name": "ブースト"
+      },
+      "day_mode": {
+        "name": "日中動作"
+      },
+      "dim_to_warm": {
+        "name": "ウォーム調光"
+      },
+      "input_edge_mode": {
+        "name": "エッジ評価"
+      },
+      "input_edge_mode_key": {
+        "name": "エッジ評価 {key}"
+      },
+      "invert_output": {
+        "name": "スイッチ出力を反転"
+      },
+      "led_colour_sync": {
+        "name": "LED の色を同期"
+      },
+      "led_night_mode": {
+        "name": "LED ナイトモード"
+      },
+      "lock": {
+        "name": "ロック",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "ロックモード",
+            "state": {
+              "keep_state": "現在の状態を保持",
+              "lockout_protection": "締め出し防止",
+              "wind_alarm": "風警報",
+              "enforced_value": "強制状態"
+            }
+          },
+          "lock_time_limit": {
+            "name": "ロックの制限時間"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "延長時間中の手動オフ"
+      },
+      "prewarning": {
+        "name": "オフ前の警告"
+      },
+      "scheduler_enabled": {
+        "name": "自動運転"
+      },
+      "status_led": {
+        "name": "ステータス LED"
+      },
+      "status_led_key": {
+        "name": "ステータス LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "タッチ感度を下げる"
+      },
+      "use_last_lightness": {
+        "name": "前回の明るさを使用"
+      },
+      "sensor_publication": {
+        "name": "IoT システム向けのセンサー値"
+      },
+      "local_devices_lock": {
+        "name": "操作をロック"
+      },
+      "factory_reset_time_limit": {
+        "name": "工場出荷時リセットをロック"
+      },
+      "key_lock": {
+        "name": "ボタンロック"
+      },
+      "configuration_lock": {
+        "name": "デバイス上の設定をロック"
+      },
+      "walking_test": {
+        "name": "歩行テスト"
+      },
+      "time_keeper": {
+        "name": "タイムキーパー"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "動作モード",
+            "state": {
+              "blinds": "ブラインド（スラット付き）",
+              "shutter": "ロールシャッター",
+              "awning": "オーニング",
+              "unknown": "不明"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "すべてのブラインド"
+      },
+      "room_blinds": {
+        "name": "{room} のすべてのブラインド"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "凍結防止"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "すべてのサーモスタット"
+      },
+      "room_thermostats": {
+        "name": "{room} のすべてのサーモスタット"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "すべての照明"
+      },
+      "room_lights": {
+        "name": "{room} のすべての照明"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "ファームウェア"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "ボタン A が{subtype}",
+      "b": "ボタン B が{subtype}",
+      "c": "ボタン C が{subtype}",
+      "d": "ボタン D が{subtype}",
+      "e1": "入力 E1 が{subtype}",
+      "e2": "入力 E2 が{subtype}"
+    },
+    "trigger_subtype": {
+      "click": "クリックされました",
+      "double_click": "ダブルクリックされました",
+      "hold_start": "長押しされました",
+      "hold_end": "長押しから離されました",
+      "press_on": "オン／上側が押されました",
+      "press_off": "オフ／下側が押されました",
+      "scene": "シーンを呼び出しました",
+      "dim": "調光操作されました",
+      "click_up": "クリックされました（上半分）",
+      "click_down": "クリックされました（下半分）",
+      "double_click_up": "ダブルクリックされました（上半分）",
+      "double_click_down": "ダブルクリックされました（下半分）",
+      "hold_start_up": "長押しされました（上半分）",
+      "hold_start_down": "長押しされました（下半分）",
+      "hold_end_up": "長押しから離されました（上半分）",
+      "hold_end_down": "長押しから離されました（下半分）"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "コマンドを JUNG のメッシュに送信できませんでした。プロキシノードが接続されていません。"
+    },
+    "no_answer": {
+      "message": "JUNG デバイスが応答しませんでした。コマンドは実行された可能性があり、次回の接続時に改めて確認されます。"
+    },
+    "device_not_reachable": {
+      "message": "{entity} がコマンドに応答しませんでした（9 秒間に 3 回試行）。コマンドは実行されていない可能性があります。メッシュの他のデバイスが引き続き応答している場合、このデバイスは再び受信されるまで利用不可と表示されます。電源が入っていることを確認してください。"
+    },
+    "cannot_load": {
+      "message": "メッシュのエクスポート {path} を読み込めませんでした。"
+    },
+    "no_proxy_visible": {
+      "message": "JUNG のメッシュのノードがまだ Bluetooth 経由で見つかりません。"
+    },
+    "export_keys_stale": {
+      "message": "JUNG のメッシュのデバイスは Bluetooth 経由で見えていますが、エクスポートのネットワークキーをアドバタイズしているデバイスがありません。エクスポートの作成後にキーが更新されています。JUNG HOME アプリからネットワークを再度エクスポートし、「設定 → デバイスとサービス → JUNG HOME → 再構成」で使用してください。"
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant に接続可能な Bluetooth アダプターまたはプロキシがありません。JUNG のメッシュに到達できません。"
+    },
+    "duplicate_mesh": {
+      "message": "{others} がすでにこの JUNG HOME のメッシュを実行しています。読み込めるエントリはメッシュごとに 1 つだけです。2 つのエントリのどちらかを削除してください。"
+    },
+    "seq_store_not_written": {
+      "message": "旧バージョンのシーケンス番号の記録を、メッシュのストア（`.storage/junghome_ble.seq.*`）に保存できませんでした。設定ディレクトリが書き込み可能であることを確認してください。"
+    },
+    "seq_floor_not_written": {
+      "message": "シーケンス番号の記録はバックアップから復元されましたが、番号を先に進める前にその下限値（`.storage/junghome_ble.seq.*.floor`）を書き込めませんでした。設定ディレクトリが書き込み可能であることを確認してください。"
+    },
+    "service_entry_not_loaded": {
+      "message": "JUNG HOME のメッシュの統合が読み込まれていません（または再読み込み中です）。しばらくしてからもう一度お試しください。"
+    },
+    "service_not_connected": {
+      "message": "JUNG HOME のメッシュに接続されていません。プロキシノードが範囲内にあるときにもう一度お試しください。"
+    },
+    "service_entry_ambiguous": {
+      "message": "複数の JUNG HOME のメッシュネットワークが設定されています。メッシュネットワーク（config_entry_id）を指定してください。"
+    },
+    "service_unknown_device": {
+      "message": "{id} は JUNG HOME のメッシュのデバイスでもエンティティでもありません。"
+    },
+    "service_not_a_load": {
+      "message": "{name} はこのアクションの対象となる JUNG HOME デバイスではありません。"
+    },
+    "service_not_a_key": {
+      "message": "{name} は JUNG HOME の押しボタンのボタンではありません。"
+    },
+    "service_key_required": {
+      "message": "{name} にはボタン {keys} があります。どれか 1 つを選ぶにはボタンの文字を指定してください。"
+    },
+    "service_unknown_key": {
+      "message": "{name} にはボタン {letter} がありません（あるのは {keys}）。"
+    },
+    "service_no_loads": {
+      "message": "対象に JUNG HOME の照明もコンセントも含まれていません。"
+    },
+    "service_target_other_network": {
+      "message": "ボタンとその対象は別々のメッシュネットワークに属しています。"
+    },
+    "service_unknown_element": {
+      "message": "エレメント {address} はメッシュのエクスポートにありません。"
+    },
+    "service_no_room": {
+      "message": "メッシュのエクスポートに {room} という名前の部屋はありません。"
+    },
+    "service_room_exists": {
+      "message": "{room} という名前の部屋はすでに存在します。"
+    },
+    "service_room_key_drives_load": {
+      "message": "部屋 {room} から外しませんでした。{device} は、そのボタンの部屋へのリンクを通じて {button} によって切り替えられており、部屋から外すとボタンとの結び付きも解除されます。「ボタンが操作している場合でも」を指定してアクションを再実行するか、先にボタンに別の機能を割り当ててください。"
+    },
+    "service_invalid_room_name": {
+      "message": "部屋には名前が必要です。"
+    },
+    "service_no_mode": {
+      "message": "エレメント {address} に合うボタンモードがありません。モードを指定してください。"
+    },
+    "service_invalid_mode": {
+      "message": "モード {mode} は対象 {target} には使用できません。"
+    },
+    "service_key_mode_unsupported": {
+      "message": "ボタン {address} にはモード {mode} 用のクライアントモデルがありません。"
+    },
+    "service_target_element_needs_device": {
+      "message": "対象エレメントは、デバイスにリンクされたボタンにのみ適用されます。部屋やシーンには適用されません。"
+    },
+    "service_target_element_missing": {
+      "message": "対象 {target} には、ボタンが操作できる {target_element} エレメントがありません。"
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "ロック時間はモード「ロックとロック解除」にのみ適用され、0〜65535 秒で指定します。"
+    },
+    "service_lock_unsupported": {
+      "message": "ボタンは対象 {target} をロックできません。ボタンからロックできるのは照明かコンセントだけです。"
+    },
+    "service_no_element_group": {
+      "message": "エレメント {address} にはエレメントグループがありません。JUNG HOME アプリで一度もリンクされていません。先にアプリで一度リンクしてください。"
+    },
+    "service_one_target": {
+      "message": "対象を 1 つだけ指定してください: デバイス、エンティティ、部屋、シーンのいずれかです。"
+    },
+    "service_config_refused": {
+      "message": "ノード {node} が {message} を拒否しました: {status}。{applied}"
+    },
+    "service_no_reply": {
+      "message": "ノード {node} が {message} に応答しませんでした。電源が入っていて、範囲内にありますか？{applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "送信していません: {nodes} は Home Assistant の直前のリクエストに応答せず、到達不能と見なされています（エンティティは利用不可です）。そのため、計画はそれらへの最初のメッセージで停止してしまいます。電源が入っていて範囲内にあることを確認し、応答するようになったらアクションを再実行してください。{applied}"
+    },
+    "service_node_asleep": {
+      "message": "ノード {node} はバッテリーで動作しており、{message} に応答しませんでした。スリープ中です。いずれかのボタンを押して起動し、すぐにアクションを再実行してください。ボタンを押しても反応しない場合は、通常バッテリーが切れています。交換してください。{applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "ボタン {address} はボタンモード {mode} を受け付けませんでした。リンクは設定済みで、メッシュのエクスポートに記録されています。モードを設定するには、同じ対象でアクションを再実行してください。"
+    },
+    "service_key_scene_not_applied": {
+      "message": "ボタン {address} はシーン {scene} を受け付けませんでした。シーンの呼び出しをすべてのデバイスに発行するよう設定され、そのことはメッシュのエクスポートに記録されています。シーンを設定するには、同じシーンでアクションを再実行してください。"
+    },
+    "service_key_lock_not_applied": {
+      "message": "ボタン {address} はロック機能（プロパティ {property}）を受け付けませんでした。リンクは設定済みで、メッシュのエクスポートに記録されています。ロック機能を設定するには、同じ対象でアクションを再実行してください。"
+    },
+    "service_export_newer": {
+      "message": "メッシュのエクスポート {path} は、Home Assistant が読み込んだ後に Home Assistant の外部で（JUNG HOME アプリまたは手動で）変更されました。アプリからプロジェクトを再度エクスポートし、ファイルを置き換えてから（再構成）、もう一度お試しください。"
+    },
+    "service_export_load_failed": {
+      "message": "メッシュのエクスポート {path} を読み込めませんでした: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "メッシュのエクスポート {path} を書き込めませんでした: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} はその値を受け付けません: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "サーモスタットがまだ {preset} の温度を報告していません。しばらくしてからもう一度お試しください。"
+    },
+    "led_colour_unknown": {
+      "message": "{entity} の LED の色はまだ不明です。デバイスが読み取りに応答しませんでした。"
+    },
+    "service_room_name_reserved": {
+      "message": "「{name}」は、メッシュが内部グループ用に予約している名前です。別の部屋の名前を選択してください。"
+    },
+    "service_name_blank": {
+      "message": "名前を空にすることはできません。"
+    },
+    "service_name_too_long": {
+      "message": "JUNG HOME アプリでは「{name}」に名前を変更できません。名前の変更は最大 {max_length} 文字までです。"
+    },
+    "service_name_not_allowed": {
+      "message": "JUNG HOME アプリは名前「{name}」を受け付けません。% 記号をプレースホルダーの開始と見なします（使用できるのは %% と %n のみです）。"
+    },
+    "service_room_range_full": {
+      "message": "アプリの範囲に空いているグループアドレスが残っていません。先に JUNG HOME アプリで未使用の部屋を削除してください。"
+    },
+    "gateway_certificate_changed": {
+      "message": "{host} の JUNG HOME ゲートウェイは、記録されているものとは異なる証明書を提示しています（記録: {expected}、提示: {observed}）。ゲートウェイまたはその証明書を意図的に交換した場合は、エントリを再構成してください。"
+    },
+    "service_ambiguous_scene": {
+      "message": "「{scene}」はシーン番号であると同時に、別のシーンの名前でもあります。区別できるよう、そのシーンの名前を変更してください。"
+    },
+    "service_unknown_scene": {
+      "message": "メッシュのエクスポートにシーン「{scene}」はありません。JUNG HOME アプリに表示されるとおりのシーン名、またはシーン番号を指定してください。"
+    },
+    "service_scene_exists": {
+      "message": "「{scene}」という名前のシーンはすでに存在します。"
+    },
+    "service_scene_range_full": {
+      "message": "アプリの範囲に空いているシーン番号が残っていません。先に未使用のシーンを削除してください。"
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant は、アプリ自身が次に作成する部屋と重ならないよう、新しい部屋にアプリの範囲内で空いている最も大きいグループアドレスを割り当てます。次に割り当てるアドレスより下に空いているアドレスは {free} 個しか残っておらず、アプリはまもなくそこに達します。未使用の部屋を削除するか、オプション「Home Assistant をプロビジョナーとしてネットワークのファイルに書き込む」をオンにしてください。これにより、Home Assistant に独自の範囲が割り当てられます。"
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant は、アプリ自身が次に作成するシーンと重ならないよう、新しいシーンにアプリの範囲内で空いている最も大きいシーン番号を割り当てます。次に割り当てる番号より下に空いている番号は {free} 個しか残っておらず、アプリはまもなくそこに達します。未使用のシーンを削除するか、オプション「Home Assistant をプロビジョナーとしてネットワークのファイルに書き込む」をオンにしてください。これにより、Home Assistant に独自の範囲が割り当てられます。"
+    },
+    "add_device_groups_crowded": {
+      "message": "新しいデバイスのエレメントグループには、アプリの範囲内で空いている最も大きいグループアドレスが割り当てられますが、その下に空いているアドレスは {free} 個しか残っておらず、アプリ自身が次に作成する部屋がまもなくそこに達します。未使用の部屋を削除するか、オプション「Home Assistant をプロビジョナーとしてネットワークのファイルに書き込む」をオンにしてください。これにより、Home Assistant に独自の範囲が割り当てられます。"
+    },
+    "service_not_a_scene_element": {
+      "message": "エレメント {address} はシーンを保存できません（Scene Setup Server がありません）。"
+    },
+    "service_scene_not_stored": {
+      "message": "デバイス {address} はシーン {scene} を保存しませんでした（{status}）。{applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "デバイス {address} にはシーン {scene} を保存する空きがありません。タイマーシーンを含め、すでに {capacity} 個のシーンを保持しています。先にこのデバイスを別のシーンから削除してください。{applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "デバイス {address} は、削除後もシーン {scene} を保持しています（{status}）。{applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "JUNG HOME ゲートウェイがエクスポートを渡しませんでしたが、このアクションにはそれが必要です。Home Assistant が保持しているコピーには、その後 JUNG HOME アプリで変更された内容が含まれていない可能性があります。ゲートウェイが応答するようになったら、もう一度お試しください（応答しなかった理由はログに記録されています）。"
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "このネットワークはファイルからセットアップされているため、エクスポート後に JUNG HOME アプリで作成されたシーンが含まれていない可能性があります。ファイルが認識していないシーン番号を削除すると、それらのシーンがすべてのデバイスから削除されてしまいます。まず「ドライラン」で実行し、表示された番号をアプリと照合してから、「メッシュのエクスポートは最新です」をオンにして削除するか、削除する番号を指定してください。"
+    },
+    "service_unused_scenes_known": {
+      "message": "シーン番号 {numbers} はメッシュのエクスポートにあるシーンです。これらは「シーンを削除」で削除してください。"
+    },
+    "service_scene_action_not_applied": {
+      "message": "デバイス {address} はシーン {scene} を保存しましたが、シーンの内容（Scene Action Setup）を受け付けませんでした。{applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "{address} の状態が不明なため、シーン {scene} はシーンの内容なしで保存されることになり、その後このデバイスの別のチャンネルをシーンから外すと、このチャンネルも一緒に外れてしまいます。保存する状態を指定して（またはデバイスを一度切り替えて）、もう一度お試しください。{applied}"
+    },
+    "service_no_gateway": {
+      "message": "このネットワークは JUNG HOME ゲートウェイからセットアップされていません（エントリにゲートウェイのアドレスとトークンがありません）。同期するには、ゲートウェイからエントリを再構成してください。"
+    },
+    "service_gateway_sync_failed": {
+      "message": "{host} のゲートウェイがエクスポートを受け付けませんでした: {error}。"
+    },
+    "service_send_failed": {
+      "message": "ノード {node} に {message} を送信中に、JUNG のメッシュへの接続が切断されました。{applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "ノード {node} はメッシュのエクスポート {path} にありますが、Home Assistant が以前にそこから読み込んだネットワークにはありません。エクスポートに追従するよう統合を再読み込みしてから（「設定 → デバイスとサービス → JUNG HOME → 再読み込み」）、もう一度お試しください。{applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "{host} の JUNG HOME ゲートウェイには、Home Assistant がアップロードしようとしているファイル（{file}）より新しいエクスポート（{gateway}）があります。アップロードすると、その後 JUNG HOME アプリで変更された内容が消去されてしまいます。次に Home Assistant で変更を行うと、ゲートウェイのエクスポートを引き継ぎ、Home Assistant 自身の変更をそこに反映します。このエラーが再び発生する場合は（アプリの最後のアップロードのコピーを持たないエントリでは、両者を区別できません）、ゲートウェイのエクスポートを再取得してから（「設定 → デバイスとサービス → JUNG HOME → 再構成」。置き換えられるファイルは `.pre-reconfigure` として同じ場所に保存されます）、Home Assistant で行った変更をもう一度行ってください。"
+    },
+    "service_gateway_export_incomplete": {
+      "message": "{host} の JUNG HOME ゲートウェイは、デバイスデータベースのみ（デバイス名や部屋へのリンクなし）で応答しました。これを採用すると、Home Assistant が保持するファイルからそれらが消去されてしまいます。ゲートウェイがビジー状態でなくなってからもう一度お試しいただくか、アプリのエクスポートを再取得してください。"
+    },
+    "identify_no_answer": {
+      "message": "JUNG デバイスが識別リクエストに応答しませんでした。電源が入っていて、範囲内にありますか？"
+    },
+    "service_unknown_entry": {
+      "message": "{id} は JUNG HOME のメッシュネットワークではありません。メッシュネットワークの config_entry_id を指定してください（設定されているのが 1 つだけの場合は省略できます）。"
+    },
+    "service_all_not_supported": {
+      "message": "このアクションは entity_id: all を受け付けません。対象となる照明、コンセント、デバイス、エリア、ラベルを指定してください。"
+    },
+    "edge_detection_unknown": {
+      "message": "{entity} のエッジ評価はまだ不明です。入力が読み取りに応答しませんでした。"
+    },
+    "reset_consumption_refused": {
+      "message": "JUNG のコンセントはカウンター {property} をリセットしませんでした。0 以外の値を報告し続けています。"
+    },
+    "setup_state_unknown": {
+      "message": "{entity} の現在の設定はまだ不明です。デバイスが読み取りに応答しませんでした。"
+    },
+    "setting_no_answer": {
+      "message": "JUNG デバイスは {entity} の変更にも、その後の読み取りにも応答しませんでした。新しい値は反映されている可能性があります。電源が入っていて、範囲内にありますか？"
+    },
+    "setting_asleep": {
+      "message": "{entity} のバッテリー駆動デバイスが応答しませんでした。スリープ中です。いずれかのボタンを押して起動し、すぐにもう一度変更してください。ボタンを押しても反応しない場合は、通常バッテリーが切れています。交換してください。"
+    },
+    "setting_not_applied": {
+      "message": "JUNG デバイスは {entity} の新しい値を受け付けませんでした。別の値を報告し続けています。"
+    },
+    "setting_not_supported": {
+      "message": "JUNG デバイスには {entity} の設定がありません。変更に対して値なしで応答しました。"
+    },
+    "schedule_no_reply": {
+      "message": "JUNG デバイス {address} がスケジュールについて応答しませんでした。"
+    },
+    "schedule_not_applied": {
+      "message": "JUNG デバイス {address} は、スケジュールのスロット {slot} の変更を受け付けませんでした。"
+    },
+    "schedule_slots_full": {
+      "message": "JUNG デバイス {address} の 16 個のスケジュールのスロットはすべて使用中です。先に 1 つ削除してください。"
+    },
+    "schedule_empty_slot": {
+      "message": "JUNG デバイス {address} のスケジュールのスロット {slot} にはスケジュールがありません。"
+    },
+    "schedule_not_supported": {
+      "message": "{name} は独自のスケジュールを実行しません。"
+    },
+    "schedule_partly_created": {
+      "message": "{error}。スケジュールはすでに {created} に書き込まれています。再度呼び出す前にそちらで削除してください。削除しないと、それらのデバイスでスケジュールが 2 回実行されます。"
+    },
+    "schedule_action_not_applicable": {
+      "message": "スケジュールが {name} に適合しません: {fields} は適用できません。"
+    },
+    "schedule_action_needs_temperature": {
+      "message": "スケジュールが {name} に適合しません: サーモスタットには温度が必要です。"
+    },
+    "schedule_action_needs_position": {
+      "message": "このスケジュールは {name} に合いません。ブラインドには位置が必要です。"
+    },
+    "schedule_action_needs_action": {
+      "message": "スケジュールが {name} に適合しません: 動作（オンまたはオフ）が必要です。"
+    },
+    "schedule_action_brightness_off": {
+      "message": "スケジュールが {name} に適合しません: 明るさは動作「オン」と組み合わせて指定します。"
+    },
+    "threshold_not_supported": {
+      "message": "{name} はしきい値を持つ JUNG HOME の電力計測付きコンセントではありません。"
+    },
+    "threshold_incomplete": {
+      "message": "{name} には変更するしきい値がありません（または応答しませんでした）。電力と継続時間の両方を指定してください。"
+    },
+    "threshold_not_applied": {
+      "message": "JUNG のコンセント {address} は {which} のしきい値を受け付けませんでした。{applied}"
+    },
+    "threshold_send_failed": {
+      "message": "{which} のしきい値を JUNG のコンセント {address} に送信できませんでした。プロキシノードが接続されていません。{applied}"
+    },
+    "threshold_other_network": {
+      "message": "コンセントと、そのしきい値で切り替えるデバイスが、異なるメッシュネットワークに属しています。"
+    },
+    "scene_state_not_applicable": {
+      "message": "状態が {name} に適合しません: {fields} は適用できません。"
+    },
+    "scene_state_needs_temperature": {
+      "message": "状態が {name} に適合しません: サーモスタットには温度が必要です。"
+    },
+    "scene_state_needs_position": {
+      "message": "この状態は {name} に合いません。ブラインドには位置が必要です。"
+    },
+    "scene_state_needs_action": {
+      "message": "状態が {name} に適合しません: 動作（オンまたはオフ）が必要です。"
+    },
+    "scene_state_brightness_off": {
+      "message": "状態が {name} に適合しません: 明るさは動作「オン」と組み合わせて指定します。"
+    },
+    "scene_state_not_reached": {
+      "message": "{name} が新しい状態を時間内に報告しなかったため、シーンは保存されませんでした。"
+    },
+    "service_gateway_token_rejected": {
+      "message": "{host} の JUNG HOME ゲートウェイは Home Assistant のアクセスを受け付けなくなったため、エクスポートはゲートウェイに渡されませんでした。Home Assistant が求める再認証（「設定 → デバイスとサービス」）で再度アクセスを許可してから、もう一度実行してください。"
+    },
+    "seq_store_lost": {
+      "message": "アドレス {unicast} のシーケンス番号の記録が失われました。Home Assistant は、メッシュが受信済みの番号を再利用しません。それらの番号の先から続行するには、修復の項目を開いてください。"
+    },
+    "address_in_use": {
+      "message": "メッシュのノードが Home Assistant のアドレス {unicast} を使用しています。空いているアドレスで統合を再構成してください（{suggestion} は空いています）。"
+    },
+    "add_device_not_allowed": {
+      "message": "このネットワークでは、デバイスの追加と削除がオフになっています。先に統合のオプションで *Home Assistant によるデバイスの追加と削除を許可する* をオンにしてください。"
+    },
+    "add_device_not_found": {
+      "message": "{address} でアドバタイズしている新しい JUNG デバイスはありません。`find_new_devices` を実行し、表示されたアドレスを使用してください。"
+    },
+    "add_device_not_jung": {
+      "message": "{address} のデバイスは JUNG デバイスであることを示していません。"
+    },
+    "add_device_no_template": {
+      "message": "製品 {product} のデバイスはまだネットワークにありません。最初の 1 台は JUNG HOME アプリで追加してください。Home Assistant はその設定をコピーします。"
+    },
+    "add_device_no_address": {
+      "message": "プロビジョナーの範囲外に、新しいデバイス用の空いているアドレス範囲が残っていません。"
+    },
+    "provisioner_identity_failed": {
+      "message": "Home Assistant のプロビジョナーエントリをエクスポートに統合できませんでした（{error}）。何も変更していません。ログを確認してください。"
+    },
+    "provisioner_identity_no_range": {
+      "message": "このネットワークでは、Home Assistant が独自のアドレス範囲を持つことはできません: {error}。"
+    },
+    "add_device_connect_failed": {
+      "message": "新しいデバイスに接続できませんでした: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "新しいデバイスのプロビジョニングに失敗しました: {error}。デバイスはまだ新しい状態です。もう一度お試しください。"
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "{unicast} での新しいデバイスのプロビジョニングが確認されませんでした（{error}）。デバイスがネットワークのキーを受け取った可能性があるため、Home Assistant は保留中として保持します。アクション `junghome_ble.reset_pending_device` でリセットしてから（ユニキャスト {unicast}。応答しない場合は `force` を追加します。キーを受け取っていないデバイスは応答できません）、もう一度追加してください。それまでデバイスのアドレスは予約されたままです。"
+    },
+    "add_device_vault_unwritable": {
+      "message": "新しいデバイスのキーを Home Assistant の保管庫に保存できなかったため（{error}）、デバイスが何かを受け取る前にプロビジョニングを停止しました。デバイスはまだ新しい状態で、{unicast} には何も予約されていません。空き容量を確保するかストレージを修復してから、もう一度お試しください。"
+    },
+    "add_device_commissioning_failed": {
+      "message": "デバイスは {unicast} にプロビジョニングされましたが、ステップ {step} で設定に失敗し（{error}）、リセットも確認されませんでした。アプリはこのデバイスを認識していません。アクション `junghome_ble.reset_pending_device` でリセットしてから（ユニキャスト {unicast}）、もう一度追加してください。それまでデバイスのアドレスは予約されたままです。"
+    },
+    "add_device_record_failed": {
+      "message": "デバイスは設定されましたが、{unicast} に記録されませんでした（{error}）。アプリはこのデバイスを認識していません。アクション `junghome_ble.reset_pending_device` でリセットしてから（ユニキャスト {unicast}）、もう一度追加してください。それまでデバイスのアドレスは予約されたままです。"
+    },
+    "add_device_no_beacon": {
+      "message": "ネットワークの IV index が、現在の Bluetooth 接続ではまだ確認されていません（この接続でネットワークビーコンを受信していません）。このままでは、新しいデバイスが誤った IV index を保持してしまいます。次に JUNG デバイスに接続されるまで待ってから、もう一度お試しください。"
+    },
+    "add_device_key_refresh": {
+      "message": "JUNG HOME アプリがネットワークキーを更新中です（キーリフレッシュのフェーズ 1）。今追加したデバイスは、廃止予定のキーを受け取ってしまいます。アプリでキーの更新を完了してから（Home Assistant はそれに追従します）、もう一度お試しください。"
+    },
+    "add_device_name_too_long": {
+      "message": "名前「{name}」は、JUNG HOME アプリがデバイスに使用できる長さを超えています。最大 {max_length} 文字です。"
+    },
+    "reset_pending_device_unknown": {
+      "message": "Home Assistant がプロビジョニングしたものの記録していないデバイスのうち、{device} として認識されているものはありません。該当するデバイスのアドレスは、修復の項目 *Home Assistant が追加したデバイスが記録されていません* に表示されています。"
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "現在 {unicast} にはネットワークの別のデバイスがあるため、リセットは送信せず、何も変更していません。そのアドレスの保留中のデバイスを破棄するには `force` を使用してください（デバイスがまだ存在する場合は、手動でリセットしてください）。"
+    },
+    "reset_pending_device_no_answer": {
+      "message": "{unicast} のデバイスがリセットを確認しませんでした。何も変更していません。手動でリセットしたデバイスや、完全になくなったデバイスには `force` を使用してください。"
+    },
+    "reset_pending_device_send_failed": {
+      "message": "{unicast} のデバイスにリセットを送信できませんでした（{error}）。何も変更していません。"
+    },
+    "remove_device_gateway": {
+      "message": "ゲートウェイはこの方法では削除できません。"
+    },
+    "remove_device_mesh": {
+      "message": "ネットワークではなく JUNG デバイスを指定してください。"
+    },
+    "remove_device_unconfirmed": {
+      "message": "デバイス {address} はリセットを確認せず、その後、新しいデバイスとしてアドバタイズしているのも確認されませんでした。それでもリセットされている可能性があります（確認が失われることがあり、通信範囲内に Bluetooth スキャナーがない場合もあります）。あるいは、リセットを受け取っていません。メッシュのエクスポートは変更されていません。アクションを再実行するか、デバイスが完全になくなった場合は `force` を使用してください。"
+    },
+    "remove_device_proxy": {
+      "message": "デバイス {address} は、Home Assistant が接続に使用しているプロキシノードです。リセットすると、その確認が返ってくる接続が切断されてしまいます。Home Assistant が別のデバイス経由で接続するまで待つか（センサー「プロキシノード」）、`force` を使用してください。"
+    },
+    "device_lock_unknown": {
+      "message": "{entity} のデバイスロックはまだ不明です。デバイスが読み取りに応答しませんでした。"
+    },
+    "cover_locked": {
+      "message": "{entity} はロックされており、ロックが解除されるまでコマンドを無視します（スイッチ「ロック」または「ロック機能」）。"
+    },
+    "cover_wind_alarm": {
+      "message": "{entity} は風警報で保持されており、警報が終了するまでコマンドを無視します（「ロック機能」またはスイッチ「ロック」）。"
+    },
+    "load_locked": {
+      "message": "{entity} は（JUNG HOME アプリ、ボタン、またはスイッチ「ロック」によって）ロックされており、ロックが解除されるまで状態を維持します。"
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} は JUNG HOME の調光器ではありません。この方法で調光できるのは、調光器と DALI の調色対応チャンネルだけです。"
+    },
+    "locate_no_answer": {
+      "message": "JUNG デバイス {node} が、識別情報をアドバタイズするリクエストに応答しませんでした。電源が入っていて、範囲内にありますか？バッテリー駆動のデバイスはスリープ中で、起動している間しか応答しません。"
+    },
+    "locate_refused": {
+      "message": "JUNG デバイス {node} は、識別情報のアドバタイズを拒否しました: {status}。"
+    },
+    "locate_not_supported": {
+      "message": "JUNG デバイス {node} は識別情報をアドバタイズできません（Node Identity に対応していません）。"
+    },
+    "approve_no_gateway": {
+      "message": "このネットワークは JUNG HOME ゲートウェイからセットアップされていません（エントリにゲートウェイのアドレスとトークンがありません）。クライアントを承認するゲートウェイがありません。"
+    },
+    "approve_gateway_distrusted": {
+      "message": "{host} の JUNG HOME ゲートウェイには問い合わせていません: {error}。何も承認していません。"
+    },
+    "approve_gateway_token_rejected": {
+      "message": "{host} の JUNG HOME ゲートウェイは Home Assistant のアクセスを受け付けなくなったため、何も承認していません。Home Assistant が求める再認証（「設定 → デバイスとサービス」）で再度アクセスを許可してから、もう一度実行してください。"
+    },
+    "approve_client_not_waiting": {
+      "message": "「{client}」という名前の API クライアントは、ゲートウェイでアクセスを待っていません（待機中: {waiting}）。何も承認していません。"
+    },
+    "approve_gateway_busy": {
+      "message": "{host} の JUNG HOME ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。何も承認していません。"
+    },
+    "approve_gateway_failed": {
+      "message": "{host} の JUNG HOME ゲートウェイは、要求された処理を実行しませんでした: {error}。"
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant は JUNG のファームウェアを更新しません。JUNG HOME アプリでデバイスを更新してください。"
+    },
+    "add_device_node_not_configured": {
+      "message": "{unicast} の新しいデバイスを、ステップ {step} で設定できませんでした（{error}）。Home Assistant は JUNG HOME アプリと同様にデバイスをリセットし、デバイスはそれを確認しました。デバイスは再び新しいデバイスとなり、何も予約されていません。アドバタイズしている製品やインサートと異なるデバイスは、このように拒否されます。そうでない場合は、もう一度追加してください。"
+    },
+    "add_device_provisioning_reset": {
+      "message": "{unicast} での新しいデバイスのプロビジョニングが確認されませんでした（{error}）。Home Assistant はデバイスをリセットし、デバイスはそれを確認しました。デバイスは再び新しいデバイスとなり、何も予約されていません。もう一度お試しください。"
+    },
+    "time_keeper_role_failed": {
+      "message": "{address} のデバイスは、時刻の役割を受け付けませんでした（{error}）。Time Server のパブリケーションはすでに変更されています。デバイスが応答するようになったら、タイムキーパーを再度切り替えてください。"
+    },
+    "load_thermostat_controlled": {
+      "message": "{entity} は、ルームサーモスタット {thermostats}（JUNG HOME アプリでリンク済み）によって切り替えられるため、アプリと同様に手動では切り替えられません。"
+    },
+    "load_forced_short": {
+      "message": "{entity} はセンサーによってオンまたはオフに保持されています（常時オン／常時オフ）。解除するには、センサーの自動運転用スイッチを中央の位置に動かしてください。"
+    },
+    "load_forced_on_button": {
+      "message": "{entity} はセンサーによってオンに保持されています（常時オン）。解除するには、センサーの ON ボタンを押してください。"
+    },
+    "load_forced_off_button": {
+      "message": "{entity} はセンサーによってオフに保持されています（常時オフ）。解除するには、センサーの OFF ボタンを押してください。"
+    },
+    "load_forced_on_presence": {
+      "message": "{entity} はセンサーによってオンに保持されています（常時オン）。センサーのプログラミングボタンで解除できます。"
+    },
+    "load_forced_off_presence": {
+      "message": "{entity} はセンサーによってオフに保持されています（常時オフ）。センサーのプログラミングボタンで解除できます。"
+    },
+    "cover_slats_open": {
+      "message": "{entity} は全開です。JUNG HOME アプリと同様に、下げるまでスラットは動かせません。"
+    },
+    "thermostat_boosting": {
+      "message": "{entity} はブースト中です。温度を設定する前に、別のプリセットを選択してブーストを終了してください（JUNG HOME アプリと同様です）。"
+    },
+    "service_detector_device_only": {
+      "message": "センサー {address} が制御できるのは 1 台のデバイスのみです。部屋やシーンではなく、対象の照明、コンセント、またはデバイスを指定してください。"
+    },
+    "service_detector_mode_unsupported": {
+      "message": "センサー {address} はモード {mode} で対象を制御できません。センサーにはボタンモードがないため、照明、コンセント、またはブラインドを対象が示すモードで切り替えるだけで、ロック機能、ルームサーモスタット、ゲートウェイ、対象エレメントは使用できません。"
+    },
+    "gateway_fetch_refused": {
+      "message": "{host} の JUNG HOME ゲートウェイからエクスポートを取得しませんでした: {error}。何も変更されていません。対処方法は修復の通知に表示されます。"
+    },
+    "service_unknown_area": {
+      "message": "ID {id} のエリアはありません。"
+    },
+    "service_not_a_scene": {
+      "message": "{name} は JUNG HOME ネットワークのシーンではありません。"
+    },
+    "remove_device_needs_confirm": {
+      "message": "デバイスの削除は元に戻せません。実行するには呼び出しに \"confirm: true\" を追加してください（実行内容を確認するだけなら \"dry_run: true\"）。"
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "デバイスが応答しない場合でもシーンを削除すると、そのデバイスにはシーンが残ったままになります。実行するには呼び出しに \"confirm: true\" を追加してください（実行内容を確認するだけなら \"dry_run: true\"）。"
+    },
+    "plan_key_device": {
+      "message": "{key} は {target} を操作するようになりました。メッセージ {messages} 件"
+    },
+    "plan_key_room": {
+      "message": "{key} は部屋 {room} を操作するようになりました。メッセージ {messages} 件"
+    },
+    "plan_key_scene": {
+      "message": "{key} はシーン {scene} を呼び出すようになりました。メッセージ {messages} 件"
+    },
+    "plan_key_cleared": {
+      "message": "{key} の機能は解除されました。メッセージ {messages} 件"
+    },
+    "plan_room_joined": {
+      "message": "{devices} は部屋 {room} に入りました。メッセージ {messages} 件"
+    },
+    "plan_room_left": {
+      "message": "{devices} を部屋 {room} から外しました。メッセージ {messages} 件"
+    },
+    "plan_room_deleted": {
+      "message": "部屋 {room} を削除しました。メッセージ {messages} 件"
+    },
+    "plan_device_removed": {
+      "message": "{device} をネットワークから削除しました。他のデバイスへのメッセージ {messages} 件"
+    },
+    "plan_scene_deleted": {
+      "message": "シーン {scene} を削除しました。メッセージ {messages} 件"
+    },
+    "plan_finished": {
+      "message": "{action} が完了しました。メッセージ {messages} 件"
+    },
+    "plan_stopped": {
+      "message": "{action} はメッセージ {total} 件中 {applied} 件の後に停止しました: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} はメッセージ {total} 件中 {applied} 件の後にキャンセルされました。適用された内容はメッシュのエクスポートに記録されています"
+    },
+    "logbook_scene_from_key": {
+      "message": "シーン {scene} を呼び出しました"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "時間内に離されたことを検出できませんでした"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "接続が切れました"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "統合が停止しました"
+    },
+    "logbook_scene_number": {
+      "message": "シーン {scene}"
+    },
+    "logbook_scene": {
+      "message": "シーン"
+    },
+    "logbook_recalled": {
+      "message": "呼び出されました"
+    },
+    "logbook_recalled_by": {
+      "message": "{device} によって呼び出されました"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "エクスポートにない JUNG HOME デバイス",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "ゲートウェイからエクスポートを再取得",
+            "description": "JUNG HOME のメッシュ {title} のデバイス {count} 台が Bluetooth でアドバタイズしていますが、Home Assistant が読み込んだエクスポートには含まれていません: {devices}。これらはそのエクスポートの作成後に設備に追加された（または再プロビジョニングされた）ため、Home Assistant にはそのエンティティがありません。確認すると、Home Assistant が既に持っているアクセスを使って {host} の JUNG HOME ゲートウェイから現在のエクスポートを取得し、それを確認したうえで、そこから統合を再セットアップします。再構成 → 「{host} のゲートウェイから再取得」と同じ処理です。置き換えられるエクスポートはコピー（`.pre-reconfigure`）として保持されます。新しいエクスポートにこれらのデバイスが含まれると、この修復は解消されます。実機では未検証です。"
+          },
+          "upload": {
+            "title": "新しいエクスポートを読み込む",
+            "description": "JUNG HOME のメッシュ {title} のデバイス {count} 台が Bluetooth でアドバタイズしていますが、Home Assistant が読み込んだエクスポートには含まれていません: {devices}。これらはそのエクスポートの作成後に設備に追加された（または再プロビジョニングされた）ため、Home Assistant にはそのエンティティがありません。JUNG HOME アプリからネットワークをエクスポートし（「プロジェクト → ファイルで共有」）、そのファイルをここにアップロードしてください。Home Assistant はファイルを確認し、設定ディレクトリの `junghome_ble/` に保存して（このファイルには JUNG HOME のメッシュのキーがすべて含まれています）、そこから統合を再セットアップします。置き換えられるエクスポートはコピーとして保持されます。ホスト上のパスからエクスポートを読み込んでいたエントリは、以降アップロードされたコピーを使用します。パスを維持したい場合は、代わりに新しいファイルをそのパスにコピーし、再構成を使用してください。新しいエクスポートにこれらのデバイスが含まれると、この修復は解消されます。実機では未検証です。",
+            "data": {
+              "export_file": "メッシュのエクスポートファイル"
+            },
+            "data_description": {
+              "export_file": "アプリの `JungHome.json`（ファイルで共有）、または iOS バックアップの `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新しいエクスポートでは、あるノードが Home Assistant のアドレスを使用しているため、このエントリはそのエクスポートを使用できません。まず Home Assistant に空いているアドレスを割り当ててから（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、そこでエクスポートを読み込んでください。",
+          "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+          "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスの場合は、パスが正しいこと）を確認してください。",
+          "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+          "export_keys_stale": "このメッシュのデバイスは Bluetooth で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスはありません。エクスポートの作成後に、ネットワークのキーが更新されました（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+          "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+          "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+          "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+          "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キー、ノード、およびインデックス 0 のネットワークキー 1 つを含むネットワークが必要です。",
+          "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+          "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+          "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "not_a_directory": "メタデータのパスはディレクトリではありません。",
+          "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
+          "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
+          "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "no_gateway_pin": "Home Assistant にはゲートウェイ {host} のアクセスまたは証明書の記録がないため、ゲートウェイには何も送信しません。何も変更されていません。代わりに、ゲートウェイの証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。",
+          "certificate_changed": "{host} のゲートウェイは、Home Assistant が固定した証明書とは別の証明書を提示しています。ゲートウェイには何も送信されておらず、何も変更されていません。ゲートウェイまたはその証明書を交換した場合は、新しい証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。",
+          "token_rejected": "{host} のゲートウェイは Home Assistant のアクセスを受け付けなくなりました。何も変更されていません。Home Assistant が求める再認証（設定 → デバイスとサービス）を行ってから、もう一度この修復を実行してください。",
+          "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+          "mesh_already_configured": "このメッシュは既に別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。"
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "エクスポートにない JUNG HOME デバイス",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "ゲートウェイからエクスポートを再取得",
+            "description": "JUNG HOME のメッシュ {title} のデバイス {count} 台が Bluetooth でアドバタイズしていますが、Home Assistant が読み込んだエクスポートには含まれていません: {devices}。これらはそのエクスポートの作成後に設備に追加された（または再プロビジョニングされた）ため、Home Assistant にはまだそのエンティティがありません。Home Assistant はゲートウェイに現在のエクスポートを問い合わせ、それにこれらのデバイスが含まれていれば自動的に引き継ぎます。確認すると、Home Assistant が既に持っているアクセスを使って {host} の JUNG HOME ゲートウェイから現在のエクスポートを取得し、それを確認したうえで、そこから統合を再セットアップします。再構成 → 「{host} のゲートウェイから再取得」と同じ処理です。置き換えられるエクスポートはコピー（`.pre-reconfigure`）として保持されます。この修復が消えない場合は、ゲートウェイのエクスポートもこれらのデバイスを把握していません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（アプリがプロジェクトをアップロードします）、もう一度修復してください。実機では未検証です。"
+          },
+          "upload": {
+            "title": "新しいエクスポートを読み込む",
+            "description": "JUNG HOME のメッシュ {title} のデバイス {count} 台が Bluetooth でアドバタイズしていますが、Home Assistant が読み込んだエクスポートには含まれていません: {devices}。これらはそのエクスポートの作成後に設備に追加された（または再プロビジョニングされた）ため、Home Assistant にはまだそのエンティティがありません。Home Assistant はゲートウェイに現在のエクスポートを問い合わせ、それにこれらのデバイスが含まれていれば自動的に引き継ぎます。JUNG HOME アプリからネットワークをエクスポートし（「プロジェクト → ファイルで共有」）、そのファイルをここにアップロードしてください。Home Assistant はファイルを確認し、設定ディレクトリの `junghome_ble/` に保存して（このファイルには JUNG HOME のメッシュのキーがすべて含まれています）、そこから統合を再セットアップします。置き換えられるエクスポートはコピーとして保持されます。ホスト上のパスからエクスポートを読み込んでいたエントリは、以降アップロードされたコピーを使用します。パスを維持したい場合は、代わりに新しいファイルをそのパスにコピーし、再構成を使用してください。この修復が消えない場合は、ゲートウェイのエクスポートもこれらのデバイスを把握していません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（アプリがプロジェクトをアップロードします）、もう一度修復してください。実機では未検証です。",
+            "data": {
+              "export_file": "メッシュのエクスポートファイル"
+            },
+            "data_description": {
+              "export_file": "アプリの `JungHome.json`（ファイルで共有）、または iOS バックアップの `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新しいエクスポートでは、あるノードが Home Assistant のアドレスを使用しているため、このエントリはそのエクスポートを使用できません。まず Home Assistant に空いているアドレスを割り当ててから（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、そこでエクスポートを読み込んでください。",
+          "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+          "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスの場合は、パスが正しいこと）を確認してください。",
+          "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+          "export_keys_stale": "このメッシュのデバイスは Bluetooth で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスはありません。エクスポートの作成後に、ネットワークのキーが更新されました（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+          "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+          "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+          "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+          "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キー、ノード、およびインデックス 0 のネットワークキー 1 つを含むネットワークが必要です。",
+          "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+          "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+          "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "not_a_directory": "メタデータのパスはディレクトリではありません。",
+          "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
+          "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
+          "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "no_gateway_pin": "Home Assistant にはゲートウェイ {host} のアクセスまたは証明書の記録がないため、ゲートウェイには何も送信しません。何も変更されていません。代わりに、ゲートウェイの証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。",
+          "certificate_changed": "{host} のゲートウェイは、Home Assistant が固定した証明書とは別の証明書を提示しています。ゲートウェイには何も送信されておらず、何も変更されていません。ゲートウェイまたはその証明書を交換した場合は、新しい証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。",
+          "token_rejected": "{host} のゲートウェイは Home Assistant のアクセスを受け付けなくなりました。何も変更されていません。Home Assistant が求める再認証（設定 → デバイスとサービス）を行ってから、もう一度この修復を実行してください。",
+          "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+          "mesh_already_configured": "このメッシュは既に別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。"
+        }
+      }
+    },
+    "app_changed": {
+      "title": "JUNG HOME アプリが設備を変更しました",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "ゲートウェイからエクスポートを再取得",
+            "description": "JUNG HOME アプリがメッシュ {title} のデバイスの設定（リンク、部屋、シーン、またはデバイスの設定）を変更したことが確認されたため、Home Assistant が読み込んだエクスポートが設備と一致しなくなっている可能性があります。アプリで変更した内容は、まだ Home Assistant に反映されていません。確認すると、Home Assistant が既に持っているアクセスを使って {host} の JUNG HOME ゲートウェイから現在のエクスポートを取得し、それを確認したうえで、そこから統合を再セットアップします。再構成 → 「{host} のゲートウェイから再取得」と同じ処理です。置き換えられるエクスポートはコピー（`.pre-reconfigure`）として保持されます。実機では未検証です。"
+          },
+          "upload": {
+            "title": "新しいエクスポートを読み込む",
+            "description": "JUNG HOME アプリがメッシュ {title} のデバイスの設定（リンク、部屋、シーン、またはデバイスの設定）を変更したことが確認されたため、Home Assistant が読み込んだエクスポートが設備と一致しなくなっている可能性があります。アプリで変更した内容は、まだ Home Assistant に反映されていません。アプリでの作業が終わったら、アプリからネットワークをエクスポートし（「プロジェクト → ファイルで共有」）、そのファイルをここにアップロードしてください。Home Assistant はファイルを確認し、設定ディレクトリの `junghome_ble/` に保存して（このファイルには JUNG HOME のメッシュのキーがすべて含まれています）、そこから統合を再セットアップします。置き換えられるエクスポートはコピーとして保持されます。ホスト上のパスからエクスポートを読み込んでいたエントリは、以降アップロードされたコピーを使用します。パスを維持したい場合は、代わりに新しいファイルをそのパスにコピーし、再構成を使用してください。再構成を使用すると、この通知も解消されます。実機では未検証です。",
+            "data": {
+              "export_file": "メッシュのエクスポートファイル"
+            },
+            "data_description": {
+              "export_file": "アプリの `JungHome.json`（ファイルで共有）、または iOS バックアップの `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新しいエクスポートでは、あるノードが Home Assistant のアドレスを使用しているため、このエントリはそのエクスポートを使用できません。まず Home Assistant に空いているアドレスを割り当ててから（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、そこでエクスポートを読み込んでください。",
+          "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+          "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスの場合は、パスが正しいこと）を確認してください。",
+          "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+          "export_keys_stale": "このメッシュのデバイスは Bluetooth で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスはありません。エクスポートの作成後に、ネットワークのキーが更新されました（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+          "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+          "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+          "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+          "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キー、ノード、およびインデックス 0 のネットワークキー 1 つを含むネットワークが必要です。",
+          "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+          "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+          "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "not_a_directory": "メタデータのパスはディレクトリではありません。",
+          "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
+          "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
+          "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "no_gateway_pin": "Home Assistant にはゲートウェイ {host} のアクセスまたは証明書の記録がないため、ゲートウェイには何も送信しません。何も変更されていません。代わりに、ゲートウェイの証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。",
+          "certificate_changed": "{host} のゲートウェイは、Home Assistant が固定した証明書とは別の証明書を提示しています。ゲートウェイには何も送信されておらず、何も変更されていません。ゲートウェイまたはその証明書を交換した場合は、新しい証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。",
+          "token_rejected": "{host} のゲートウェイは Home Assistant のアクセスを受け付けなくなりました。何も変更されていません。Home Assistant が求める再認証（設定 → デバイスとサービス）を行ってから、もう一度この修復を実行してください。",
+          "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+          "mesh_already_configured": "このメッシュは既に別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。"
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "エクスポートとは別のインサートを持つ JUNG HOME 押しボタン",
+      "description": "{devices}: JUNG HOME のメッシュ {title} のこれらの押しボタンは、Home Assistant が読み込んだエクスポートに記載されているものとは別のインサートをアドバタイズしています（エクスポート → デバイス）。エクスポートの作成後にインサートが交換されたため、Home Assistant とアプリでは、これらの負荷の種類が誤って表示される可能性があります。JUNG HOME アプリでデバイスを確認し、ネットワークを再度エクスポートして、この統合を更新してください（設定 → デバイスとサービス → JUNG HOME → 再構成）。デバイスがアドバタイズしているインサートがエクスポートに記載されると、この修復は解消されます。実機では未検証です。"
+    },
+    "node_clock_wrong": {
+      "title": "時計がずれている JUNG HOME デバイス",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "今すぐ時刻を送信",
+            "description": "{devices}: JUNG HOME のメッシュ {title} のこれらのデバイスはスケジュール（時刻指定または日の出／日の入りによる切り替え）を実行する可能性がありますが、時計がずれています。時刻が未設定であるか、Home Assistant の時刻と 1 分以上ずれているか、Home Assistant が送信したものとは別のタイムゾーンオフセットになっています。これらのデバイスのスケジュールは、時刻が再び設定されるまで誤った時刻に実行されます。Home Assistant は接続のたびと 1 日 1 回、時刻を送信します。確認すると、今すぐ時刻を送信し、これらのデバイスに再度問い合わせます。デバイスが正しい時刻で応答すると、この修復は解消されます。再発する場合は、Home Assistant のタイムゾーン（設定 → システム → 一般）と、デバイスに到達できるかどうかを確認してください。実機では未検証です。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "not_connected": "Home Assistant は現在メッシュに接続していません。接続されてからもう一度お試しください。"
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "JUNG HOME のメッシュのキーが変更中です",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "ゲートウェイからエクスポートを再取得",
+            "description": "メッシュ {title} がキーリフレッシュを通知しましたが、Home Assistant はその新しいネットワークキーが配布されるのを受信していません（最初から確認できたキーリフレッシュは追従され、何も報告されません）。キーリフレッシュが完了すると、Home Assistant が使用しているエクスポートのキーは無効になり、制御できなくなります。まず JUNG HOME アプリでキーの更新を完了させてください。確認すると、Home Assistant が既に持っているアクセスを使って {host} の JUNG HOME ゲートウェイから現在のエクスポートを取得し、それを確認したうえで、そこから統合を再セットアップします。再構成 → 「{host} のゲートウェイから再取得」と同じ処理です。置き換えられるエクスポートはコピー（`.pre-reconfigure`）として保持されます。実機では未検証です。"
+          },
+          "upload": {
+            "title": "新しいエクスポートを読み込む",
+            "description": "メッシュ {title} がキーリフレッシュを通知しましたが、Home Assistant はその新しいネットワークキーが配布されるのを受信していません（最初から確認できたキーリフレッシュは追従され、何も報告されません）。キーリフレッシュが完了すると、Home Assistant が使用しているエクスポートのキーは無効になり、制御できなくなります。まず JUNG HOME アプリでキーの更新を完了させてください。JUNG HOME アプリからネットワークをエクスポートし（「プロジェクト → ファイルで共有」）、そのファイルをここにアップロードしてください。Home Assistant はファイルを確認し、設定ディレクトリの `junghome_ble/` に保存して（このファイルには JUNG HOME のメッシュのキーがすべて含まれています）、そこから統合を再セットアップします。置き換えられるエクスポートはコピーとして保持されます。ホスト上のパスからエクスポートを読み込んでいたエントリは、以降アップロードされたコピーを使用します。パスを維持したい場合は、代わりに新しいファイルをそのパスにコピーし、再構成を使用してください。実機では未検証です。",
+            "data": {
+              "export_file": "メッシュのエクスポートファイル"
+            },
+            "data_description": {
+              "export_file": "アプリの `JungHome.json`（ファイルで共有）、または iOS バックアップの `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新しいエクスポートでは、あるノードが Home Assistant のアドレスを使用しているため、このエントリはそのエクスポートを使用できません。まず Home Assistant に空いているアドレスを割り当ててから（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、そこでエクスポートを読み込んでください。",
+          "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+          "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスの場合は、パスが正しいこと）を確認してください。",
+          "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+          "export_keys_stale": "このメッシュのデバイスは Bluetooth で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスはありません。エクスポートの作成後に、ネットワークのキーが更新されました（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+          "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+          "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+          "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+          "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キー、ノード、およびインデックス 0 のネットワークキー 1 つを含むネットワークが必要です。",
+          "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+          "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+          "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "not_a_directory": "メタデータのパスはディレクトリではありません。",
+          "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
+          "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
+          "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "no_gateway_pin": "Home Assistant にはゲートウェイ {host} のアクセスまたは証明書の記録がないため、ゲートウェイには何も送信しません。何も変更されていません。代わりに、ゲートウェイの証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。",
+          "certificate_changed": "{host} のゲートウェイは、Home Assistant が固定した証明書とは別の証明書を提示しています。ゲートウェイには何も送信されておらず、何も変更されていません。ゲートウェイまたはその証明書を交換した場合は、新しい証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。",
+          "token_rejected": "{host} のゲートウェイは Home Assistant のアクセスを受け付けなくなりました。何も変更されていません。Home Assistant が求める再認証（設定 → デバイスとサービス）を行ってから、もう一度この修復を実行してください。",
+          "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+          "mesh_already_configured": "このメッシュは既に別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。"
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "JUNG HOME デバイスが Home Assistant を無視しています",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "デバイスが知っている番号の先までスキップ",
+            "description": "Home Assistant はプロキシノードを介して JUNG HOME のメッシュ {title} を受信していますが、状態の問い合わせに応答したデバイスは 1 台もありません。ノードは Home Assistant のメッセージをリプレイとして破棄しています。考えられる原因は 2 つです。この統合のシーケンス番号ストア（`.storage/junghome_ble.*`）が失われたか古いバックアップから復元されたため、Home Assistant がノードに既知のシーケンス番号を送信している。または、別のメッシュクライアント（例: `mesh_poc.py` ツール）が同じユニキャストアドレス {unicast} で送信している。Home Assistant に未使用の新しいアドレスを割り当てるか（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス。他のクライアントがそのアドレスを使用していないことも確認してください）、ストアが失われたか復元された場合は（かつ他のクライアントがそのアドレスを使用していない場合は）、確認して Home Assistant のシーケンス番号を 1 048 576 先に進め、再接続させてください。この問題を解決するためにシーケンス番号ストアをバックアップから復元しないでください。古いコピーは、デバイスが既に受信した番号を繰り返すだけです。デバイスが再び Home Assistant に応答すると、この修復は自動的に解消されます。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。"
+        }
+      }
+    },
+    "address_shared": {
+      "title": "別のクライアントが Home Assistant の JUNG HOME アドレスを使用しています",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "別のクライアントのシーケンス番号の先までスキップ",
+            "description": "Home Assistant は、JUNG HOME のメッシュ {title} のメッセージのうち、自身のユニキャストアドレス {unicast} から送信され、自身が使用したことのないシーケンス番号を持つものを受信しました。別のメッシュクライアントが同じアドレスで送信しています。2 つ目の Home Assistant 環境、このアドレスが設定された `mesh_poc.py` ツール、または別の場所で起動されたこの Home Assistant 環境のコピーです。1 つのアドレスに 2 つの送信元があると互いのシーケンス番号を再利用することになり、デバイスはもう一方のクライアントの番号を下回るものをすべて破棄します。そのため、この修復が完了するまで Home Assistant はメッシュに何も送信しません（コマンドは失敗し、状態は更新されません）。もう一方のクライアントを停止するか、そのクライアントまたは Home Assistant に未使用の別のアドレスを割り当ててください（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）。その後確認すると、Home Assistant はもう一方のクライアントで確認されたシーケンス番号の先から番号を続け、送信を再開します。もう一方のクライアントがこのアドレスから送信し続けると、この修復は再発します。この問題を解決するためにシーケンス番号ストアをバックアップから復元しないでください。実機では未検証です。Home Assistant のアドレスを使う 2 つ目のクライアントは、シミュレーションでのみ確認されています。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。"
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "別のクライアントが引き続き Home Assistant の JUNG HOME アドレスを使用しています",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "別のクライアントのシーケンス番号の先まで再度スキップ",
+            "description": "Home Assistant は、JUNG HOME のメッシュ {title} で自身のアドレス {unicast} を使う別のメッシュクライアントのシーケンス番号の先までスキップしましたが、その後もう一方のクライアントがこのアドレスから再び送信しました。そのクライアントはまだ動作しています。動作している間は、先にスキップしても効果がありません。Home Assistant に未使用の新しいユニキャストアドレスを割り当てるか（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、もう一方のクライアントを停止するか別のアドレスに移してください。それまで Home Assistant はメッシュに何も送信しません。もう一方のクライアントがこのアドレスを使わなくなってから確認してください。Home Assistant はそのクライアントの番号の先から再び番号を続け、送信を再開します。実機では未検証です。Home Assistant のアドレスを使う 2 つ目のクライアントは、シミュレーションでのみ確認されています。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。"
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "JUNG HOME のメッシュに使える Bluetooth がありません",
+      "description": "JUNG HOME のメッシュ {title} には Bluetooth 経由で接続していますが、Home Assistant には接続可能な Bluetooth アダプターまたはプロキシが残っていません。アダプターがオフになっているか、取り外されたか、故障しているか、アクティブな接続を持つ ESPHome Bluetooth プロキシがすべてオフラインです。いずれかが復帰するまで、メッシュのすべてのデバイスが利用できません。設定 → デバイスとサービス → Bluetooth を確認してください。Bluetooth アダプターまたはプロキシが再び利用可能になると、この修復は解消されます。"
+    },
+    "duplicate_mesh": {
+      "title": "2 つのエントリが同じ JUNG HOME のメッシュを対象にしています",
+      "description": "{title} と {others} は、どちらも同じ JUNG HOME のメッシュ用にセットアップされています。両者はメッシュのシーケンス番号カウンター（`.storage/junghome_ble.seq.*`）を共有するため、動作できるのは一方だけです。{others} が動作中のため、{title} は起動されませんでした。これらのエントリのいずれかを削除してください（設定 → デバイスとサービス）。{others} を削除した場合は、その後 {title} を再読み込みしてください。"
+    },
+    "gateway_import": {
+      "title": "JUNG HOME ゲートウェイ統合のエンティティを引き継ぐ",
+      "description": "JUNG HOME ゲートウェイ統合が Bluetooth Mesh 統合 {title} と並行してセットアップされているため、すべての照明、コンセント、ボタン、シーンが二重に存在します。設定 → デバイスとサービス → JUNG HOME (Bluetooth Mesh) → 再構成 → 「JUNG HOME ゲートウェイ統合のエンティティをインポート」で、ゲートウェイのエンティティをこちらに移行してから（エンティティ ID、名前、エリア、履歴は維持されます）、ゲートウェイのエントリを削除してください。両方を維持したい場合は、この修復を無視してください。"
+    },
+    "export_stale": {
+      "title": "JUNG HOME のメッシュのキーが変更されました",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "ゲートウェイからエクスポートを再取得",
+            "description": "Home Assistant は JUNG HOME のメッシュ {title} のノードに接続していますが、受信した内容をエクスポートのキーで復号できません。すべてのネットワークメッセージとノードのビーコンが認証に失敗しています。エクスポートの作成後にメッシュがキーリフレッシュ（JUNG HOME アプリでの「キーの更新」）を完了したため、このファイルは古くなっています。確認すると、Home Assistant が既に持っているアクセスを使って {host} の JUNG HOME ゲートウェイから現在のエクスポートを取得し、それを確認したうえで、そこから統合を再セットアップします。再構成 → 「{host} のゲートウェイから再取得」と同じ処理です。置き換えられるエクスポートはコピー（`.pre-reconfigure`）として保持されます。メッセージを再び復号できるようになると、この修復は解消されます。実機では未検証です。"
+          },
+          "upload": {
+            "title": "新しいエクスポートを読み込む",
+            "description": "Home Assistant は JUNG HOME のメッシュ {title} のノードに接続していますが、受信した内容をエクスポートのキーで復号できません。すべてのネットワークメッセージとノードのビーコンが認証に失敗しています。エクスポートの作成後にメッシュがキーリフレッシュ（JUNG HOME アプリでの「キーの更新」）を完了したため、このファイルは古くなっています。JUNG HOME アプリからネットワークをエクスポートし（「プロジェクト → ファイルで共有」）、そのファイルをここにアップロードしてください。Home Assistant はファイルを確認し、設定ディレクトリの `junghome_ble/` に保存して（このファイルには JUNG HOME のメッシュのキーがすべて含まれています）、そこから統合を再セットアップします。置き換えられるエクスポートはコピーとして保持されます。ホスト上のパスからエクスポートを読み込んでいたエントリは、以降アップロードされたコピーを使用します。パスを維持したい場合は、代わりに新しいファイルをそのパスにコピーし、再構成を使用してください。メッセージを再び復号できるようになると、この修復は解消されます。実機では未検証です。",
+            "data": {
+              "export_file": "メッシュのエクスポートファイル"
+            },
+            "data_description": {
+              "export_file": "アプリの `JungHome.json`（ファイルで共有）、または iOS バックアップの `MeshNetwork.json`。"
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "新しいエクスポートでは、あるノードが Home Assistant のアドレスを使用しているため、このエントリはそのエクスポートを使用できません。まず Home Assistant に空いているアドレスを割り当ててから（設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス）、そこでエクスポートを読み込んでください。",
+          "cannot_connect": "そのアドレスでゲートウェイに到達できませんでした。",
+          "cannot_load": "メッシュのエクスポートを読み込めませんでした。ファイルがアプリの JSON エクスポートであること（パスの場合は、パスが正しいこと）を確認してください。",
+          "cannot_store": "エクスポートを Home Assistant の設定ディレクトリに書き込めませんでした。",
+          "export_keys_stale": "このメッシュのデバイスは Bluetooth で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスはありません。エクスポートの作成後に、ネットワークのキーが更新されました（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
+          "gateway_error": "ゲートウェイがエラーを返しました。JUNG HOME アプリでゲートウェイの状態を確認して、もう一度お試しください。",
+          "gateway_busy": "ゲートウェイは別の設定リクエストを処理中です。1 分後にもう一度お試しください。",
+          "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
+          "invalid_export": "このファイルは JUNG HOME のメッシュのエクスポートではありません（または破損しています）。キー、ノード、およびインデックス 0 のネットワークキー 1 つを含むネットワークが必要です。",
+          "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
+          "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
+          "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "not_a_directory": "メタデータのパスはディレクトリではありません。",
+          "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
+          "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
+          "upload_failed": "アップロードされたファイルを処理できませんでした。もう一度アップロードしてください。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "no_gateway_pin": "Home Assistant にはゲートウェイ {host} のアクセスまたは証明書の記録がないため、ゲートウェイには何も送信しません。何も変更されていません。代わりに、ゲートウェイの証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。",
+          "certificate_changed": "{host} のゲートウェイは、Home Assistant が固定した証明書とは別の証明書を提示しています。ゲートウェイには何も送信されておらず、何も変更されていません。ゲートウェイまたはその証明書を交換した場合は、新しい証明書を確認できる 設定 → デバイスとサービス → JUNG HOME → 再構成 でエクスポートを取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。",
+          "token_rejected": "{host} のゲートウェイは Home Assistant のアクセスを受け付けなくなりました。何も変更されていません。Home Assistant が求める再認証（設定 → デバイスとサービス）を行ってから、もう一度この修復を実行してください。",
+          "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
+          "mesh_already_configured": "このメッシュは既に別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。"
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "JUNG HOME ゲートウェイの証明書が変更されました",
+      "description": "{host} の JUNG HOME ゲートウェイが、Home Assistant が固定した TLS 証明書と一致しなくなりました。ホストが別の証明書を提示しているか、ゲートウェイのノードがメッシュ経由で別の証明書を報告しています。Home Assistant はゲートウェイの使用を停止しました（アクセストークンもエクスポートも送信しません）。デバイスは引き続き Bluetooth 経由で動作します。ゲートウェイまたはその証明書を交換した場合は、設定 → デバイスとサービス → JUNG HOME → 再構成 を開き、ゲートウェイからエクスポートを再取得してください。そうでない場合は、ネットワーク上の別のデバイスがゲートウェイとして応答している可能性があります。ネットワークを確認してください。"
+    },
+    "gateway_sync_failed": {
+      "title": "JUNG HOME のエクスポートがゲートウェイに渡されていません",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "エクスポートをゲートウェイに渡す",
+            "description": "Home Assistant は JUNG HOME の設備（部屋、リンク、またはシーン）を変更してメッシュのエクスポートを書き換えましたが、{host} の JUNG HOME ゲートウェイは新しいエクスポートを受け取りませんでした: {error}。受け取るまで、ゲートウェイとアプリには古い状態が表示され、アプリで次に変更すると Home Assistant の変更が上書きされます。Home Assistant は、アプリと同様に 15 秒間隔でさらに 2 回再試行します。ゲートウェイに到達できることを確認してから確認すると、アクション「ゲートウェイを同期」（`junghome_ble.sync_gateway`）と同様に、今すぐエクスポートをゲートウェイに渡します。ゲートウェイに Home Assistant が把握していない変更がある場合は、アップロードするとそれが消去されるため、この処理は拒否されます。アップロードが成功すると、この修復は解消されます。実機では未検証です。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "not_loaded": "この修復が属する JUNG HOME のエントリは、現在実行されていません。セットアップが完了してから、もう一度お試しください。",
+          "sync_failed": "エクスポートはゲートウェイに渡されませんでした: {error} この修復は残ります。原因が解消したら、もう一度修復してください。"
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "{title} での JUNG HOME の変更が中断されました",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "JUNG HOME の変更が中断されました",
+            "description": "Home Assistant は {action} の途中で停止しました。{total} 件の設定メッセージのうち {accepted} 件がデバイスに届いていました。これらはメッシュのエクスポートに記録済みのため、エクスポートはデバイスが保持している内容を示しています。完了させるには、同じ対象でアクションをもう一度実行してください。JUNG HOME ゲートウェイがある場合、記録されたエクスポートは、次の変更時またはアクション `junghome_ble.sync_gateway` によってゲートウェイに渡されます。確認すると、この通知を閉じます。"
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "デバイス名が JUNG HOME アプリに渡されていません",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "デバイスの名前を変更",
+            "description": "{device} は Home Assistant で「{name}」に名前が変更されましたが、これは JUNG HOME アプリが受け付けない名前です。名前は空欄にできず、30 文字を超えることもできません。また、アプリは % 記号をプレースホルダーの開始とみなします（使用できるのは %% と %n のみです）。メッシュのエクスポートとアプリには、デバイスの以前の名前が残っています。アプリが受け付ける名前を入力してください。Home Assistant はその名前をデバイスに付け、他の名前変更と同様に、エクスポートに（ゲートウェイがある場合はアプリにも）渡します。名前が渡されると、この修復は解消されます。実機では未検証です。",
+            "data": {
+              "name": "名前"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "名前を空にすることはできません。",
+          "name_not_allowed": "アプリは % 記号をプレースホルダーの開始とみなします。使用できるのは %% と %n のみです。",
+          "name_too_long": "アプリが受け付ける名前は 30 文字までです。"
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "not_loaded": "この修復が属する JUNG HOME のエントリは、現在実行されていません。セットアップが完了してから、もう一度お試しください。",
+          "device_gone": "この修復で指定されたデバイスは、もう Home Assistant にありません。"
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Home Assistant が追加したデバイスが新しいネットワークキーを受け取っていません",
+      "description": "JUNG HOME アプリがメッシュ {title} のネットワークキーを更新し、Home Assistant はその更新に最後まで追従しました。アプリは Home Assistant が追加したデバイスを知らないため、Home Assistant が自ら新しいキーをそれらのデバイスに渡しますが、{addresses} のデバイスは受信を確認しませんでした。それらのデバイスに電源が入っていて、範囲内にあることを確認してください。Home Assistant は新しい Bluetooth 接続のたびに再試行します。新しいキーを受け取らなかったデバイスには、もう到達できません。そのデバイスを工場出荷時の状態にリセットしてから、もう一度追加してください（先に `junghome_ble.remove_device` または `junghome_ble.reset_pending_device` を `force` 付きで使用して、Home Assistant から削除してください）。実機ではまだ試されていません。該当するすべてのデバイスが受信を確認すると、この修復は解消されます。"
+    },
+    "pending_device": {
+      "title": "Home Assistant が追加したデバイスが記録されていません",
+      "description": "Home Assistant は `junghome_ble.add_device` でメッシュ {title} の JUNG デバイスをプロビジョニングしましたが、その設定またはエクスポートへの記録に失敗しました。{addresses} のデバイスはネットワークのキーを持っていますが、JUNG HOME アプリとエクスポートはこのデバイスを知りません。また、他のデバイスに割り当てられないよう、そのアドレスとエレメントグループは予約されたままです。アクション `junghome_ble.reset_pending_device`（そのユニキャストアドレスを指定）でリセットしてから、もう一度追加してください。すでに手動でリセットしたデバイスや、もう存在しないデバイスには `force` を使用してください。実機ではまだ試されていません。該当するデバイスがなくなると、この修復は解消されます。"
+    },
+    "vault_unwritable": {
+      "title": "JUNG HOME のデバイスキーを保存できません",
+      "description": "Home Assistant は、{address} のデバイスを追加する際に、メッシュ {title} の保管庫に書き込めませんでした（{path}、最後のエラー: {error}）。保管庫には Home Assistant が追加するデバイスのデバイスキーが保存されており、エクスポートに記録されるまでは他のどこにも存在しません。そのため、このデバイスはプロビジョニングされませんでした。デバイスは何も受け取っておらず、まだ新しいデバイスのままです。これは通常、ディスクがいっぱいになっているか、ファイルシステムが読み取り専用で再マウントされたことを意味し、多くの場合 SD カードの故障が原因です。空き容量を確保するかストレージを修復してから（読み取り専用で再マウントされたファイルシステムは、通常ホストの再起動が必要です）、もう一度デバイスを追加してください。保管庫のファイルを編集、削除、置き換えしないでください。実機ではまだ試されていません。保管庫への書き込みが成功すると、この修復は自動的に解消されます。"
+    },
+    "carry_over_conflict": {
+      "title": "JUNG HOME アプリが、{title} で Home Assistant が行った変更を上書きしました",
+      "description": "Home Assistant は、JUNG HOME アプリが最後にゲートウェイに渡したエクスポートを引き継ぎ、自身の変更をそこに反映しましたが、その間にアプリも同じ項目を変更していました。次の項目ではアプリのバージョンが維持されます: {paths}。デバイスには、Home Assistant が書き込んだ内容がまだ残っている可能性があります: {held}。アプリと Home Assistant でこれらの部屋、シーン、リンクを確認し、どちらか一方から設定し直してください。アプリは、ファイルをインポートするまで Home Assistant が追加したものを認識しません。このような競合のないゲートウェイのエクスポートを次に引き継いだときに、この修復は解消されます。"
+    },
+    "scene_held": {
+      "title": "{title} のデバイスに、削除された JUNG HOME のシーンがまだ残っています",
+      "description": "一部のデバイスに到達できないか、デバイスが拒否した状態で、シーンが「デバイスが応答しない場合でも」で削除されました。それらのデバイスはまだそのシーンを保持しており、その番号のシーンが呼び出されると、それを呼び出します。シーン番号: デバイス — {members}。Home Assistant は新しいシーンにこれらの番号を割り当てません。デバイスに再び到達できるようになったら、「ドライラン」をオフにしてアクション「未使用のシーンを削除」を実行してください。これらの番号がデバイスから削除され、この修復は解消されます。"
+    },
+    "gateway_token_rejected": {
+      "title": "JUNG HOME ゲートウェイが Home Assistant を受け付けなくなりました",
+      "description": "{host} の JUNG HOME ゲートウェイが、Home Assistant がメッシュ {title} 用に登録したアクセスを拒否しています（おそらく JUNG HOME アプリの「設定 → ゲートウェイ → アクセス許可」で削除されました）。Home Assistant は引き続き自身のエクスポートで部屋、ボタンのリンク、シーンを変更しますが、それをゲートウェイに渡さなくなるため、アプリにはそれらの変更が表示されません。デバイスは引き続き動作します。Home Assistant はアクセスを再度要求します。JUNG HOME を再認証するリクエストに従い（設定 → デバイスとサービス。修復にも認証期限切れとして表示されます）、ゲートウェイのネットワークキーのパスワードを入力するか、アプリで新しいアクセスリクエストを承認してください。ゲートウェイが再び Home Assistant を受け付けると、この修復は解消されます。その後、アクション「ゲートウェイを同期」が、それまでに行われた変更を渡します。"
+    },
+    "seq_store_lost": {
+      "title": "JUNG HOME のメッシュ {title} のシーケンス番号が失われました",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "送信済みの番号の先から続行",
+            "description": "この統合のシーケンス番号ストア（`.storage/junghome_ble.seq.*`）には、Home Assistant のアドレス {unicast} の使用可能な記録がありません。このアドレスは以前に送信したことがあります。0 から再開すると、デバイスがすでに受信したシーケンス番号を再利用することになります。デバイスは Home Assistant を無視するようになり、再利用された番号はどれもメッシュの暗号化を弱めます。バックアップからストアを復元しても同じことが起こります（古いコピーは、それが作成されて以降に送信されたすべての番号を繰り返します）。そのため、`junghome_ble.seq.*` ファイルは復元しないでください。確認すると、Home Assistant はまだ読み取れる最後の値から 1 048 576 先の番号から続行し（読み取れる値が残っていない場合は、`junghome_ble.seq.*.floor` にカウンターと合わせて保持している下限、または 0 から 4 194 304 先）、統合を再度セットアップします。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "floor_not_written": "シーケンス番号の下限（`.storage/junghome_ble.seq.*.floor`）を書き込めませんでした。何も変更されておらず、統合は停止したままです。Home Assistant の設定があるディスクを確認してから、もう一度問題を修復してください。"
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "JUNG HOME のシーケンス番号を保存できません",
+      "description": "Home Assistant は 1 分以上、メッシュ {title} のシーケンス番号ストアに書き込めていません（{path}、最後のエラー: {error}）。デバイスへのメッセージにはそれぞれ新しいシーケンス番号が付きます。Home Assistant は、再起動しても番号が繰り返されないよう、保存済みの番号しか送信しません。そのため、書き込みが成功するまでメッシュには何も送信されず、コマンドは失敗し、状態も更新されません。これは通常、ディスクがいっぱいになっているか、ファイルシステムが読み取り専用で再マウントされたことを意味し、多くの場合 SD カードの故障が原因です。空き容量を確保するかストレージを修復してください（読み取り専用で再マウントされたファイルシステムは、通常ホストの再起動が必要です）。ストアのファイルを編集、削除、置き換えしないでください。書き込みが成功して送信が再開されると、この修復は自動的に解消されます。"
+    },
+    "address_in_use": {
+      "title": "Home Assistant の JUNG HOME アドレスが使用されています",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Home Assistant を {suggestion} に移動",
+            "description": "メッシュ {title} のエクスポートで、Home Assistant が送信に使用するユニキャストアドレス {unicast} をノードが使用しています。両者は 1 つの送信元とみなされます。デバイスは一方をリプレイとして破棄し、応答は誤った方に届きます。確認すると、「再構成 → 詳細設定 → このシステムのユニキャストアドレス」と同様に、Home Assistant に空いているアドレス {suggestion} を割り当て、統合を再度セットアップします。他のメッシュクライアント（この統合のコマンドラインツール、別の Home Assistant）が {suggestion} から送信していないことを確認してください。シーケンス番号はアドレスごとに管理されます。新しいアドレスは自身の記録を引き継ぐか、Home Assistant に記録がない場合は十分先から開始するため、同じ番号が 2 回送信されることはありません。実機では未検証です。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "cannot_load": "エントリのエクスポートを読み込めなかったため、空いているアドレスを求めることができません。何も変更されていません。「設定 → デバイスとサービス → JUNG HOME → 再構成」で新しいエクスポートを読み込んでください。",
+          "no_free_address": "エクスポートには Home Assistant 用の空いているアドレスが残っていません。何も変更されていません。「設定 → デバイスとサービス → JUNG HOME → 再構成」でエクスポートを確認してください。",
+          "address_taken": "{suggestion} はエクスポートで空いていません（その間に変更されました）。何も変更されていません。新しい候補を得るには、もう一度問題を修復してください。"
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Home Assistant の JUNG HOME アドレスが割り当てられる可能性があります",
+      "description": "メッシュ {title} で Home Assistant が送信に使用するユニキャストアドレス {unicast} は、アプリのプロビジョナーのいずれかのアドレス範囲内にあるか、削除されたノードが使用していたアドレスです。アプリがそこにノードをプロビジョニングするまでは引き続き動作します。それまでに Home Assistant を空いているアドレスに移動してください（「設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス」。{suggestion} は空いています）。"
+    },
+    "sequence_space_low": {
+      "title": "JUNG HOME のメッシュのシーケンス番号が残り少なくなっています",
+      "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、すべての送信元はその範囲の終わりで停止します。IV Update は JUNG HOME ゲートウェイが自動的に開始します。Home Assistant はそれに追従しますが、自ら開始することはありません。ゲートウェイの電源を入れたままにし、メッシュに接続した状態を保ってください。ゲートウェイがない場合、いずれかの送信元が番号を使い切った時点でメッシュは停止します。更新後、この修復は自動的に解消されます。"
+    },
+    "iv_index_mismatch": {
+      "title": "JUNG HOME のメッシュが別の IV index になっています",
+      "description": "メッシュ {title} は IV index {mesh} ですが、Home Assistant のシーケンス番号ストアは {ours} です。差が大きすぎて Home Assistant は追従できません（メッシュへの追従は 42 先まで、最大で 192 時間に 1 回のみで、後戻りはしません）。その間、デバイスは Home Assistant を無視します。これは、Home Assistant が多数の IV Update の間停止していた場合、そのストア（`.storage/junghome_ble.seq.*`）が別のメッシュのものである場合、またはネットワークキーで偽造されたビーコンによってストアが先に進められた場合に起こります。Home Assistant に新しいユニキャストアドレスを割り当ててください（「設定 → デバイスとサービス → JUNG HOME → 再構成 → 詳細設定 → このシステムのユニキャストアドレス」）。新しいアドレスでは、メッシュの IV index から開始します。ストアをバックアップから復元したり編集したりしないでください。古い記録や編集した記録は、デバイスがすでに受信したシーケンス番号を繰り返します。また、手動での編集はいずれにしても次回の起動時に上書きされます。到達範囲内のビーコンを受信すると、この修復は自動的に解消されます。"
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant が JUNG HOME のメッシュの IV index より先に進んでいます",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "メッシュの IV index に戻る",
+            "description": "メッシュ {title} は IV index {mesh} ですが、Home Assistant のシーケンス番号ストアは {ours} で、メッシュより先に進んでいます。メッシュがこの値にあることはありません。デバイスは Home Assistant を無視し、Home Assistant は自分より遅れているメッシュには追従できません。これは、そのストア（`.storage/junghome_ble.seq.*`）が別のメッシュのものである場合、またはネットワークキーで偽造されたビーコンによってストアが先に進められた場合に起こります。確認すると、Home Assistant をメッシュの IV index に戻し、統合を再度セットアップします。シーケンス番号は、そのインデックスで送信したすべての番号より上から続くため、同じ番号が 2 回使われることはありません。代わりにストアをバックアップから復元したり編集したりしないでください。古い記録や編集した記録は、デバイスがすでに受信した番号を繰り返します。もう 1 つの戻し方は、Home Assistant に新しいユニキャストアドレスを割り当てることです（「設定 → デバイスとサービス → JUNG HOME → 再構成」）。実機では未検証です: メッシュより先に進んだ IV index は、実際のメッシュではまだ確認されていません。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "iv_index_not_ahead": "Home Assistant はもう到達できないほどメッシュより先に進んでいないか、問題が報告されてから IV の状態が変わりました。何も変更されていません。問題が再発した場合は、もう一度修復してください。",
+          "seq_store_not_written": "シーケンス番号の下限（`.storage/junghome_ble.seq.*.floor`）を書き込めませんでした。何も変更されていません。Home Assistant の設定があるディスクを確認してから、もう一度問題を修復してください。"
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "JUNG HOME のパックにタイムキーパーがありません",
+      "description": "メッシュ {title} には、旧タイプの JUNG アクチュエーターのパック（{pucks}）があります。これらは、時刻を中継する商用電源駆動のデバイスであるタイムキーパーから時刻を取得します。メッシュ内にタイムキーパーになっているデバイスがないため、パックのタイマーがずれていきます。常に電源が入っているデバイス（コンセントやミニアクチュエーターなど）1 台で、スイッチ *タイムキーパー*（設定エンティティ、既定では無効）をオンにしてください。JUNG HOME アプリは、パックを設定するときに自動的に 1 台を選択します。実機では未検証です。いずれかのデバイスがタイムキーパーになると、この修復は解消されます。"
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "部屋を設定",
+      "description": "JUNG HOME の照明とコンセントをメッシュの部屋（アプリでの「エリア」）に入れます。まだ存在しない部屋は「部屋を作成する」を有効にした場合にのみ作成されるため、入力ミスのある名前は拒否されます。デバイスは他のすべての部屋から外れます。その部屋にすでにリンクされているボタンは、そのデバイスを操作するようになります。メッシュのエクスポートが書き換えられ、Home Assistant は統合を再読み込みせずにそれに追従します。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "room": {
+          "name": "部屋",
+          "description": "JUNG HOME アプリでの部屋の名前。"
+        },
+        "create": {
+          "name": "部屋を作成する",
+          "description": "メッシュにその名前の部屋がない場合に、部屋を作成します。オフの場合、不明な名前は拒否されます。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "部屋に追加",
+      "description": "JUNG HOME の照明、コンセント、ブラインドを、メッシュの部屋にも追加します。アプリではデバイスが複数の部屋に属することができるため、デバイスは現在の部屋にも残ります。まだ存在しない部屋は「部屋を作成する」を有効にした場合にのみ作成されます。その部屋にすでにリンクされているボタンは、それらのデバイスを操作するようになります。メッシュのエクスポートが書き換えられ、Home Assistant は統合を再読み込みせずにそれに追従します。実機では未検証です。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "room": {
+          "name": "部屋",
+          "description": "JUNG HOME アプリでの部屋の名前。"
+        },
+        "create": {
+          "name": "部屋を作成する",
+          "description": "メッシュにその名前の部屋がない場合に、部屋を作成します。オフの場合、不明な名前は拒否されます。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "部屋から削除",
+      "description": "JUNG HOME の照明、コンセント、ブラインドをメッシュの部屋から外します。デバイスは他の部屋には残り、どの部屋にも属さなくなることもあります。部屋へのリンクを通じてボタンが操作しているデバイスは、「ボタンが操作している場合でも」がオンでない限り拒否されます。部屋から外れると、そのボタンとの結線も解除されるためです。メッシュのエクスポートが書き換えられ、Home Assistant は統合を再読み込みせずにそれに追従します。実機では未検証です。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "room": {
+          "name": "部屋",
+          "description": "JUNG HOME アプリでの部屋の名前。"
+        },
+        "force": {
+          "name": "ボタンが操作している場合でも",
+          "description": "部屋にリンクされたボタンがデバイスを操作していても、デバイスを部屋から外します。そのボタンはデバイスを操作しなくなります。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "create_room": {
+      "name": "部屋を作成",
+      "description": "メッシュのエクスポートに空の部屋を作成します（デバイスには何も送信されません）。Home Assistant は、アプリの範囲で空いている最も大きいグループアドレスをその部屋に割り当てます。アプリはファイルをインポートするまでこの部屋を認識せず、アプリ自身が次に作成する部屋には空いている最も小さいアドレスを割り当てます。要求された場合、レスポンスとして部屋のグループアドレスを返します。管理者のみ。",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "新しい部屋の名前。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "rename_room": {
+      "name": "部屋の名前を変更",
+      "description": "メッシュのエクスポートで部屋の名前を変更します（デバイスには何も送信されません）。管理者のみ。",
+      "fields": {
+        "room": {
+          "name": "部屋",
+          "description": "部屋の現在の名前。"
+        },
+        "new_name": {
+          "name": "新しい名前",
+          "description": "新しい名前。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        }
+      }
+    },
+    "delete_room": {
+      "name": "部屋を削除",
+      "description": "部屋を削除します。デバイスはその部屋から外れ、その部屋にリンクされたボタンは機能を失い、部屋はメッシュのエクスポートから削除されます。デバイス自体は引き続き操作できます。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "room": {
+          "name": "部屋",
+          "description": "削除する部屋の名前。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "assign_key": {
+      "name": "ボタンを割り当て",
+      "description": "JUNG HOME アプリのボタンのリンクとまったく同じように、押しボタンのボタンまたはセンサーを、照明、コンセント、ブラインド、ルームサーモスタット、ゲートウェイ、部屋、またはシーンにリンクします。ボタンの以前のリンクは削除され、ボタンが対象に結線され、ボタンモードが設定されます（センサーにはボタンモードがなく、操作できるのは 1 台のデバイスだけです）。メッシュのエクスポートが書き換えられ、Home Assistant は統合を再読み込みせずにそれに追従します。センサーをソースとする場合と温度モードは実機では未検証です。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "key_entity": {
+          "name": "ボタン",
+          "description": "ボタンのイベントエンティティ、またはセンサーのエンティティ。"
+        },
+        "key_device": {
+          "name": "ボタンのデバイス",
+          "description": "ボタンを持つ押しボタンデバイス（複数のボタンがある場合は「ボタンの文字」と併用）、またはセンサー。"
+        },
+        "key": {
+          "name": "ボタンの文字",
+          "description": "デバイスのどのボタンか: A、B、C、D、またはミニアクチュエーターの入力の場合は E1、E2。"
+        },
+        "target_entity": {
+          "name": "対象エンティティ",
+          "description": "ボタンで操作する照明、コンセント、ブラインド、またはルームサーモスタット。"
+        },
+        "target_device": {
+          "name": "対象デバイス",
+          "description": "ボタンで操作するデバイス: 照明、コンセント、またはゲートウェイ（この場合、ボタンはクリック、ダブルクリック、長押しを Home Assistant に通知します）。"
+        },
+        "room": {
+          "name": "対象の部屋",
+          "description": "ボタンで照明またはコンセントを操作する部屋。"
+        },
+        "scene": {
+          "name": "対象シーン",
+          "description": "ボタンですべてのデバイスに対して呼び出すシーン。番号または名前で指定します（ボタンモードはシーン。「モード」は空欄のままにしてください）。実機ではまだ試されていません。"
+        },
+        "mode": {
+          "name": "モード",
+          "description": "ボタンの動作: light（オン／オフと調光）、switch（オン／オフ）、move（ブラインド。未テスト）、gateway（イベントの通知）、lock（上側／オン側で照明またはコンセントを現在の状態にロックし、下側／オフ側でロックを解除。実機では未検証）、temperature（ルームサーモスタットの設定温度。実機では未検証）、または部屋の場合は light_and_switch（照明とコンセントをまとめて）。空欄の場合、モードは対象に従います。"
+        },
+        "target_element": {
+          "name": "対象エレメント",
+          "description": "デバイスが対象の場合のみ: ボタンの調光クライアントだけで、対象の別の部分を操作します。color_temperature（調色対応照明の色温度、モード light）または slat（ブラインドのスラット、モード move）。実機では未検証です。"
+        },
+        "lock_seconds": {
+          "name": "ロック時間",
+          "description": "モード lock のみ: ボタンによるロックが続く時間（秒）（0 または空欄: ボタンでロックが解除されるまで）。実機では未検証です。"
+        },
+        "room_area": {
+          "name": "エリアで部屋を指定",
+          "description": "部屋の名前を入力する代わりに: 部屋と同じ名前のエリア。"
+        },
+        "scene_entity": {
+          "name": "シーンエンティティ",
+          "description": "シーンの名前または番号を入力する代わりに: そのシーンエンティティ。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "clear_key": {
+      "name": "ボタンの機能を解除",
+      "description": "押しボタンのボタンの機能を解除します。デバイス、ゲートウェイ、または部屋へのリンクが削除されます（アプリの「機能なし」）。レスポンスとして、デバイスが適用したメッセージの数、メッシュのエクスポートが書き込まれたかどうか、変更されたデバイスを返します。「ドライラン」を有効にすると、代わりに送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "key_entity": {
+          "name": "ボタン",
+          "description": "ボタンのイベントエンティティ。"
+        },
+        "key_device": {
+          "name": "ボタンのデバイス",
+          "description": "ボタンを持つ押しボタンデバイス（複数のボタンがある場合は「ボタンの文字」と併用）。"
+        },
+        "key": {
+          "name": "ボタンの文字",
+          "description": "デバイスのどのボタンか: A、B、C、D、またはミニアクチュエーターの入力の場合は E1、E2。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "create_scene": {
+      "name": "シーンを作成",
+      "description": "メッシュのエクスポートに空のシーンを作成します（デバイスには何も送信されません）。「シーンを保存」でデバイスをシーンに保存してください。Home Assistant は、アプリの範囲で空いている最も大きいシーン番号をそのシーンに割り当てます。アプリはファイルをインポートするまでこのシーンを認識せず、アプリ自身が次に作成するシーンには空いている最も小さい番号を割り当てます。要求された場合、レスポンスとしてシーン番号を返します。管理者のみ。",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "新しいシーンの名前。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "シーンの名前を変更",
+      "description": "メッシュのエクスポートでシーンの名前を変更します（デバイスには何も送信されません）。管理者のみ。",
+      "fields": {
+        "scene": {
+          "name": "シーン",
+          "description": "シーンの現在の名前または番号。"
+        },
+        "new_name": {
+          "name": "新しい名前",
+          "description": "新しい名前。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "scene_entity": {
+          "name": "シーンエンティティ",
+          "description": "シーンの名前または番号を入力する代わりに: そのシーンエンティティ。"
+        }
+      }
+    },
+    "store_scene": {
+      "name": "シーンを保存",
+      "description": "アプリの「デバイスをシーンに保存」と同様に、JUNG HOME の照明、コンセント、ブラインド、サーモスタットの現在の状態をシーンに保存します。先にデバイスをシーンで設定したい状態にしてから、このアクションを呼び出してください。各デバイスは自身の状態をシーンに保存し（Scene Store）、その状態の JUNG 形式の記述も一緒に保存されます。メッシュのエクスポートにはメンバーが記録されます。Home Assistant は統合を再読み込みせずにそれに追従します。状態（動作、明るさ、色温度、温度）を指定した場合、各デバイスはまずその状態に設定され、その状態になるまで待機します。位置を指定したブラインドは動かされず、シーンにその位置が保存されます。管理者のみ。",
+      "fields": {
+        "scene": {
+          "name": "シーン",
+          "description": "シーンの名前または番号（「シーンを作成」またはアプリで作成したもの）。"
+        },
+        "action": {
+          "name": "動作",
+          "description": "保存する前に照明とコンセントをオンまたはオフにします。"
+        },
+        "brightness_pct": {
+          "name": "明るさ",
+          "description": "保存する前に、照明をこの明るさに調光します（このとき動作はオン）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温度",
+          "description": "保存する前に、調色対応照明をこの色温度に設定します。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "シーンでブラインドを動かす位置: 0 で閉、100 で開。"
+        },
+        "tilt_position": {
+          "name": "チルト位置",
+          "description": "シーンでブラインドを動かすスラット位置。省略するとブラインドの位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "保存する前にサーモスタットをこの温度に設定します。"
+        },
+        "scene_entity": {
+          "name": "シーンエンティティ",
+          "description": "シーンの名前または番号を入力する代わりに: そのシーンエンティティ。"
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "保存する状態",
+          "description": "先にデバイスをこの状態に設定します。空欄の場合、現在の状態が保存されます。"
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "シーンから削除",
+      "description": "JUNG HOME の照明、コンセント、ブラインド、サーモスタットをシーンから外します。各デバイスはシーンを消去し（Scene Delete）、メッシュのエクスポートからメンバーが削除されます。Home Assistant は統合を再読み込みせずにそれに追従します。管理者のみ。",
+      "fields": {
+        "scene": {
+          "name": "シーン",
+          "description": "シーンの名前または番号。"
+        },
+        "scene_entity": {
+          "name": "シーンエンティティ",
+          "description": "シーンの名前または番号を入力する代わりに: そのシーンエンティティ。"
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "シーンを削除",
+      "description": "シーンを削除します。シーンを保存したすべてのデバイスがそのシーンを消去し、それらのデバイスのうちそのシーンを呼び出すボタンはリンクを失い、シーンはメッシュのエクスポートから削除されます。Home Assistant は統合を再読み込みせずにそれに追従します。要求された場合、レスポンスとして、「デバイスが応答しない場合でも」（「確認」が必要）でスキップされたデバイスと、ボタンのメッセージの適用結果を返します。「ドライラン」を有効にすると、送信・変更される内容を返します。管理者のみ。",
+      "fields": {
+        "scene": {
+          "name": "シーン",
+          "description": "削除するシーンの名前または番号。"
+        },
+        "force": {
+          "name": "デバイスが応答しない場合でも",
+          "description": "シーンを保存したデバイスに到達できない場合や、デバイスが拒否した場合でも、メッシュのエクスポートからシーンを削除します（アプリの「それでも削除」）。そのデバイスは、「未使用のシーンを削除」で削除されるまでシーンを保持します。修復の問題にそのデバイスが表示され、その間、新しいシーンにその番号は割り当てられません。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        },
+        "scene_entity": {
+          "name": "シーンエンティティ",
+          "description": "シーンの名前または番号を入力する代わりに: そのシーンエンティティ。"
+        },
+        "confirm": {
+          "name": "確認",
+          "description": "「デバイスが応答しない場合でも」と併用する場合に必要です: シーンを保持し続けるデバイスに、ここからシーンを消去させることはできません。ドライランには不要です。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "未使用のシーンを削除",
+      "description": "すべてのデバイスのシーンレジスターを読み取り、メッシュのエクスポートが知らないシーン（アプリのシーンでもタイマーのシーンでもないもの）を一覧表示または削除します。アプリがタイマー一覧を開いたときと同じ動作です。特に指定しない限りドライランです。ゲートウェイがある場合は、ゲートウェイの現在のエクスポートに対してのみ動作します。ファイルからセットアップしたネットワークでは、削除するには「メッシュのエクスポートは最新です」または削除する番号の指定が必要です。レスポンスとして、デバイスごとの番号を返します。管理者のみ。",
+      "fields": {
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "削除される番号を一覧表示するだけで、何も削除されません。既定でオンです。"
+        },
+        "numbers": {
+          "name": "シーン番号",
+          "description": "これらのシーン番号のみを削除します（いずれもメッシュのエクスポートのシーンでないもの）。"
+        },
+        "confirm_stale_export": {
+          "name": "メッシュのエクスポートは最新です",
+          "description": "ファイルからセットアップしたネットワーク用: そのファイルには、エクスポート後に作成されたものも含め、アプリのすべてのシーンが含まれています。これがない場合、指定した番号のみが削除されます。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "ゲートウェイを同期",
+      "description": "アプリが変更のたびに行うように、Home Assistant が使用するメッシュのエクスポートを JUNG HOME ゲートウェイに渡します。エクスポートを書き換えるアクションの後には毎回自動的に実行されます。修復「JUNG HOME のエクスポートがゲートウェイに渡されていません」の後に再試行する場合や、ファイルを自分で編集した後に呼び出してください。管理者のみ。",
+      "fields": {
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "スケジュールを取得",
+      "description": "JUNG HOME の負荷が自ら実行するスケジュール（アプリの「オートメーション」ページ）を読み取ります。負荷ごとに最大 16 スロットあり、それぞれ特定の曜日の時刻、日の出、または日の入りのトリガーと、そのときの負荷の動作で構成されます。レスポンスとして、エンティティごとに使用中のスロットを、「スケジュールを作成」が受け付けるフィールドの形式で返します。"
+    },
+    "create_schedule": {
+      "name": "スケジュールを作成",
+      "description": "対象の各 JUNG HOME 負荷の最初の空きスロットにスケジュールを書き込みます。負荷はそれを Home Assistant なしで自ら実行します。日の出または日の入りのスケジュールでは、まずノードに Home Assistant の自宅の場所を送信します。レスポンスとして、エンティティごとに使用したスロットを返します。デバイスでは未テストです。管理者のみ。",
+      "fields": {
+        "trigger": {
+          "name": "トリガー",
+          "description": "スケジュールを実行するタイミング: 時刻、または日の出か日の入り。"
+        },
+        "time": {
+          "name": "時刻",
+          "description": "時刻指定のスケジュールの時刻。"
+        },
+        "not_before": {
+          "name": "これより前には実行しない",
+          "description": "日の出または日の入りのスケジュールは、この時刻より前には実行されません（省略すると制限なし）。"
+        },
+        "not_after": {
+          "name": "これより後には実行しない",
+          "description": "日の出または日の入りのスケジュールは、この時刻より後には実行されません（省略すると制限なし）。"
+        },
+        "offset": {
+          "name": "オフセット",
+          "description": "日の出または日の入りの前（負の値）または後の分数。"
+        },
+        "weekdays": {
+          "name": "曜日",
+          "description": "スケジュールを実行する曜日。省略すると毎日。"
+        },
+        "enabled": {
+          "name": "有効",
+          "description": "スケジュールを実行するかどうか。無効なスケジュールは「スケジュールを有効化」を待ちます。"
+        },
+        "action": {
+          "name": "動作",
+          "description": "照明またはコンセントをオンまたはオフにします。"
+        },
+        "brightness_pct": {
+          "name": "明るさ",
+          "description": "調光器がオンにするときの明るさ（このとき動作はオン）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温度",
+          "description": "調色対応照明の色温度（100 K 単位）。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "ブラインドを動かす位置: 0 で閉、100 で開。"
+        },
+        "tilt_position": {
+          "name": "チルト位置",
+          "description": "ブラインドのスラット位置。省略するとブラインドの位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "ルームサーモスタットの目標温度。"
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "いつ",
+          "description": "スケジュールを実行するタイミング。"
+        },
+        "what": {
+          "name": "何を",
+          "description": "実行時に負荷をどう設定するか。"
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "スケジュールを更新",
+      "description": "アプリの編集と同様に、対象の各 JUNG HOME 負荷の使用中のスケジュールスロットを、「スケジュールを作成」が受け付けるフィールドでその場で書き換えます。すべてのフィールドを改めて指定してください。省略したものはスロットから引き継がれません。日の出または日の入りのスケジュールでは、まずノードに Home Assistant の自宅の場所を送信します。書き込みに失敗した場合は、スロットの以前のスケジュールが書き戻されます。実機では未検証です。管理者のみ。",
+      "fields": {
+        "slot": {
+          "name": "スロット",
+          "description": "書き換えるスケジュールスロットの番号（0–15）。「スケジュールを取得」と「スケジュール」センサーに表示される番号です。"
+        },
+        "trigger": {
+          "name": "トリガー",
+          "description": "スケジュールを実行するタイミング: 時刻、または日の出か日の入り。"
+        },
+        "time": {
+          "name": "時刻",
+          "description": "時刻指定のスケジュールの時刻。"
+        },
+        "not_before": {
+          "name": "これより前には実行しない",
+          "description": "日の出または日の入りのスケジュールは、この時刻より前には実行されません（省略すると制限なし）。"
+        },
+        "not_after": {
+          "name": "これより後には実行しない",
+          "description": "日の出または日の入りのスケジュールは、この時刻より後には実行されません（省略すると制限なし）。"
+        },
+        "offset": {
+          "name": "オフセット",
+          "description": "日の出または日の入りの前（負の値）または後の分数。"
+        },
+        "weekdays": {
+          "name": "曜日",
+          "description": "スケジュールを実行する曜日。省略すると毎日。"
+        },
+        "enabled": {
+          "name": "有効",
+          "description": "スケジュールを実行するかどうか。無効なスケジュールは「スケジュールを有効化」を待ちます。"
+        },
+        "action": {
+          "name": "動作",
+          "description": "照明またはコンセントをオンまたはオフにします。"
+        },
+        "brightness_pct": {
+          "name": "明るさ",
+          "description": "調光器がオンにするときの明るさ（このとき動作はオン）。"
+        },
+        "color_temp_kelvin": {
+          "name": "色温度",
+          "description": "調色対応照明の色温度（100 K 単位）。"
+        },
+        "position": {
+          "name": "位置",
+          "description": "ブラインドを動かす位置: 0 で閉、100 で開。"
+        },
+        "tilt_position": {
+          "name": "チルト位置",
+          "description": "ブラインドのスラット位置。省略するとブラインドの位置。"
+        },
+        "temperature": {
+          "name": "温度",
+          "description": "ルームサーモスタットの目標温度。"
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "いつ",
+          "description": "スケジュールを実行するタイミング。"
+        },
+        "what": {
+          "name": "何を",
+          "description": "実行時に負荷をどう設定するか。"
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "スケジュールを有効化",
+      "description": "JUNG HOME 負荷のスケジュールスロットを、再び実行できるようにします。管理者のみ。",
+      "fields": {
+        "slot": {
+          "name": "スロット",
+          "description": "スケジュールスロットの番号（0–15）。「スケジュールを取得」と「スケジュール」センサーに表示される番号です。"
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "スケジュールを無効化",
+      "description": "JUNG HOME 負荷のスケジュールスロットを、削除せずに実行されないようにします。管理者のみ。",
+      "fields": {
+        "slot": {
+          "name": "スロット",
+          "description": "スケジュールスロットの番号（0–15）。「スケジュールを取得」と「スケジュール」センサーに表示される番号です。"
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "スケジュールを削除",
+      "description": "JUNG HOME 負荷のスケジュールスロットを解放します。管理者のみ。",
+      "fields": {
+        "slot": {
+          "name": "スロット",
+          "description": "スケジュールスロットの番号（0–15）。「スケジュールを取得」と「スケジュール」センサーに表示される番号です。"
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "しきい値を設定",
+      "description": "JUNG HOME の電力計測付きコンセントのしきい値（アプリの「自動」プロファイル）を設定します。コンセントの電力がその継続時間の間そのレベルにとどまると、コンセントは選択した照明とコンセントを、Home Assistant なしで自らオン（オンしきい値）またはオフ（オフしきい値）にします。デバイスでは未テストです。要求された場合、レスポンスとして、デバイスが適用した結線メッセージの数を返します。管理者のみ。",
+      "fields": {
+        "threshold": {
+          "name": "しきい値",
+          "description": "コンセントの 2 つのしきい値のうち、設定するもの。"
+        },
+        "power": {
+          "name": "電力",
+          "description": "電力レベル（W、0.1 W 単位）。省略するとコンセントの現在のレベル。"
+        },
+        "duration": {
+          "name": "継続時間",
+          "description": "電力がそのレベルにとどまる必要がある秒数。省略するとコンセントの現在の継続時間。"
+        },
+        "enabled": {
+          "name": "有効",
+          "description": "しきい値でオン／オフするかどうか。無効なしきい値も、レベルと継続時間は保持します。省略すると、しきい値は現在の状態を維持します（新しいしきい値は有効）。もう一方のしきい値も有効でない状態で無効にすると、アプリと同様に照明とコンセントの結線が解除されます。有効にするときは、デバイスを再度指定してください。"
+        },
+        "devices": {
+          "name": "デバイス",
+          "description": "両方のしきい値でオン／オフする照明とコンセント。現在のリストを置き換えます。省略するとリストは維持されます。リストが変わるとメッシュのエクスポートが書き換えられ、Home Assistant は統合を再読み込みせずにそれに追従します。"
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "しきい値を削除",
+      "description": "アプリの削除と同様に、JUNG HOME の電力計測付きコンセントの両方のしきい値をクリアし、それらがオン／オフしていた照明とコンセントの結線を解除します。デバイスの結線が解除された場合、Home Assistant は統合を再読み込みせずに、書き換えられたメッシュのエクスポートに追従します。要求された場合、レスポンスとして、デバイスが適用した結線メッセージの数を返します。管理者のみ。"
+    },
+    "audit_network": {
+      "name": "ネットワークを監査",
+      "description": "何も変更せずに、JUNG HOME デバイスのメッシュ設定が保持している内容 — リレー、ネットワーク送信、デフォルト TTL、ビーコン、GATT プロキシ、フレンド、各デバイスが保持するネットワークキーとアプリケーションキー（インデックスのみ。キー自体は含みません）、すべてのモデルのパブリケーション、サブスクリプション、バインドされたアプリケーションキー — を読み取り、メッシュのエクスポートと比較します。レスポンスとして、デバイスごとに設定と見つかったすべての差異を返し、応答しなかったデバイスを一覧表示します。すべてのデバイスの監査には数分かかります。バッテリー駆動のデバイスはスリープしているため、指定しない限り対象外になります。",
+      "fields": {
+        "device": {
+          "name": "デバイス",
+          "description": "このデバイスの背後にあるメッシュノード（照明、ボタン、コンセント、またはノード自体）のみを監査します。空欄の場合、商用電源で動作するすべてのノードが監査されます。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "export_network": {
+      "name": "ネットワークをエクスポート",
+      "description": "Home Assistant が使用するエクスポートを、変更された部屋、ボタン、リンク、シーンを含めて、JUNG HOME アプリの共有ファイルまたはメッシュのデータベースとして返します。バックアップ用、またはアプリへのインポート用です。管理者のみ: メッシュのすべてのキーが含まれます。",
+      "fields": {
+        "flavour": {
+          "name": "形式",
+          "description": "アプリの共有ファイル（JungHome.json）またはメッシュのデータベース（MeshNetwork.json）。"
+        },
+        "config_entry_id": {
+          "name": "ネットワーク",
+          "description": "エクスポートする JUNG HOME ネットワーク。複数ある場合にのみ必要です。"
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "新しいデバイスを検索",
+      "description": "まだネットワークに参加していない近くの JUNG デバイスを、`add_device` に必要な Bluetooth アドレスとともに一覧表示します。"
+    },
+    "add_device": {
+      "name": "デバイスを追加（実験的）",
+      "description": "アプリと同様に、新しい JUNG デバイスをネットワークに追加します。デバイスが提供する最も強力な方式でプロビジョニングし（デバイスが Static OOB を提供し、その値が指定されている場合は HMAC-SHA256 アルゴリズムによる Static OOB、それ以外はアプリと同じ No OOB。認証なしの場合、実行中に Bluetooth の範囲内にいる誰かがネットワークのキーを傍受できる可能性があります）、デバイスが報告する内容からアプリのルールに従って設定し（ネットワーク内にすでにある同じ製品のデバイスと異なる場合は拒否されます）、エクスポートに記録します（エクスポートはゲートウェイに渡されます）。設定に失敗したデバイスは、アプリと同様にリセットされます。そのエレメントグループには、アプリの範囲で空いている最も大きいグループアドレスが割り当てられます（アプリはファイルをインポートするまでこのデバイスを認識しません）。レスポンスには、実行された手順が一覧表示されます。エントリのオプション *Home Assistant によるデバイスの追加を許可する* が必要です。管理者のみ。認証付きの方式、設定ルール、リセットは実機では未検証です。",
+      "fields": {
+        "address": {
+          "name": "Bluetooth アドレス",
+          "description": "`find_new_devices` がそのデバイスについて表示するアドレス。"
+        },
+        "name": {
+          "name": "名前",
+          "description": "新しいデバイスの名前。"
+        },
+        "config_entry_id": {
+          "name": "ネットワーク",
+          "description": "追加先の JUNG HOME ネットワーク。複数ある場合にのみ必要です。"
+        },
+        "static_oob": {
+          "name": "Static OOB 値",
+          "description": "Static OOB 認証を提供するデバイスのみ: メーカーの資料に記載されている 16 バイトまたは 32 バイトの値（16 進数）（Static OOB を提供する JUNG デバイスは知られていません）。ログには記録されません。認証付きのプロビジョニングしか受け付けないデバイスはこの値がないと拒否され、Static OOB を提供しないデバイスはこの値があると拒否されます。"
+        }
+      }
+    },
+    "remove_device": {
+      "name": "デバイスを削除（実験的）",
+      "description": "アプリと同様に、JUNG デバイスをリセットし（デバイスはネットワークを消去し、再び新しいデバイスになります）、ネットワークから削除します。他のデバイスからこのデバイスへのリンクは削除され、エクスポートには削除済みとして記録され、エクスポートはゲートウェイに渡されます。元に戻すことはできません。エントリのオプション *Home Assistant によるデバイスの追加と削除を許可する* が必要です。「確認」が必要です。「ドライラン」を有効にすると、代わりに送信・変更される内容を返し、「確認」は不要です。管理者のみ。",
+      "fields": {
+        "device": {
+          "name": "デバイス",
+          "description": "削除する JUNG デバイス（Home Assistant 内のそのデバイスのいずれか）。"
+        },
+        "force": {
+          "name": "応答しない場合でも",
+          "description": "デバイスがリセットを確認しない場合（完全に失われたデバイス）や、Home Assistant がそのデバイス経由で接続している場合でも、ネットワークの記録から削除します。"
+        },
+        "confirm": {
+          "name": "確認",
+          "description": "実行に必要です: デバイスの削除は元に戻せません。ドライランには不要です。"
+        },
+        "dry_run": {
+          "name": "ドライラン",
+          "description": "送信される内容とメッシュのエクスポートの変更内容を返すだけです（レスポンスを要求してください）。何も送信も書き込みもされず、ゲートウェイからの引き継ぎも行われません。"
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "保留中のデバイスをリセット（実験的）",
+      "description": "`add_device` がプロビジョニングしたものの、設定または記録できなかった JUNG デバイスをリセットします（修復の問題 *Home Assistant が追加したデバイスが記録されていません* に一覧表示されます）。Home Assistant だけが保持するデバイスキーで Config Node Reset を送信して再び新しいデバイスにし、そのアドレスを解放します。実機ではまだ試されていません。エントリのオプション *Home Assistant によるデバイスの追加を許可する* が必要です。管理者のみ。",
+      "fields": {
+        "uuid": {
+          "name": "デバイスの UUID",
+          "description": "`add_device` または `find_new_devices` が返したデバイスの UUID。"
+        },
+        "unicast": {
+          "name": "ユニキャストアドレス",
+          "description": "デバイスのプライマリユニキャストアドレス（修復の問題に表示される 16 進数）。UUID も指定する場合は、両方が一致する必要があります。"
+        },
+        "force": {
+          "name": "応答しない場合でも",
+          "description": "デバイスがリセットを確認しない場合でも（手動でリセットしたデバイス、または完全に失われたデバイス）、デバイスの記録を消去します。"
+        },
+        "config_entry_id": {
+          "name": "ネットワーク",
+          "description": "デバイスが追加された JUNG HOME ネットワーク。複数ある場合にのみ必要です。"
+        }
+      }
+    },
+    "locate_node": {
+      "name": "デバイスの位置を特定",
+      "description": "JUNG デバイスに Node Identity（このメッシュのキーでのみデバイスと結び付けられる Bluetooth アドバタイズ）を最大 1 分間アドバタイズさせてから停止させ、Bluetooth スキャナーでどの無線がそのデバイスかを識別できるようにします。他には何も変更しません。いずれにしても、デバイスは 1 分後に自動的に停止します。管理者のみ。実機では未検証です。",
+      "fields": {
+        "device": {
+          "name": "デバイス",
+          "description": "位置を特定する JUNG デバイス（Home Assistant 内のそのデバイスのいずれか）。"
+        },
+        "duration": {
+          "name": "継続時間",
+          "description": "アドバタイズする秒数、5〜60（デバイスは 60 秒後に自動的に停止します）。"
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "ゲートウェイのクライアントを承認",
+      "description": "JUNG HOME ゲートウェイでアクセスを待っている API クライアント（別の統合、スクリプト）を一覧表示し、アプリの「設定 → ゲートウェイ → アクセス許可 → 保留中のリクエスト」と同様に、指定したクライアントを承認します。承認されたクライアントは、ゲートウェイの API 全体と、すべてのメッシュのキーを含むネットワークのエクスポートを取得できます。自分で起動したクライアントのみを承認してください。クライアント名を指定しない場合は一覧表示のみを行います（レスポンスを有効にしてください）。アクセスの取り消しはアプリで行います。管理者のみ。ゲートウェイからセットアップしたネットワーク用です。実機では未検証です。",
+      "fields": {
+        "client": {
+          "name": "クライアント",
+          "description": "クライアントがアクセスを要求している名前。`waiting` に表示されているとおりに指定します。空欄の場合、何も承認されません。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "start_dim": {
+      "name": "調光を開始",
+      "description": "ロッカーを長押しした場合と同様に、JUNG HOME の調光器の調光を上方向または下方向に開始し、「調光を停止」まで（または範囲の端まで）続けます。実機ではまだ試されていません。",
+      "fields": {
+        "direction": {
+          "name": "方向",
+          "description": "明るく（上）または暗く（下）。"
+        },
+        "speed": {
+          "name": "速度",
+          "description": "速度。1 秒あたりの、明るさの範囲に対する割合（%）（既定値 20: オフから最大まで 5 秒）。"
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "調光を停止",
+      "description": "「調光を開始」で動き始めた JUNG HOME の調光器を、現在の位置で停止します。実機ではまだ試されていません。"
+    },
+    "step_dim": {
+      "name": "1 段階調光",
+      "description": "JUNG HOME の調光器を 1 段階明るく、または暗くします。実機ではまだ試されていません。",
+      "fields": {
+        "step": {
+          "name": "ステップ",
+          "description": "明るさの範囲に対する割合（%）: 正の値で明るく、負の値で暗く。"
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "照明（オン／オフ、調光）",
+        "switch": "スイッチ（オン／オフ）",
+        "move": "ブラインド（未テスト）",
+        "gateway": "ゲートウェイ（イベントを通知）",
+        "light_and_switch": "照明とコンセント（部屋のみ）",
+        "lock": "ロックとロック解除（実機では未検証）",
+        "temperature": "温度（ルームサーモスタット、未テスト）"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "色温度（実機では未検証）",
+        "slat": "スラット（実機では未検証）"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "時刻",
+        "sunrise": "日の出",
+        "sunset": "日の入り"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "オン",
+        "off": "オフ"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "月曜日",
+        "tue": "火曜日",
+        "wed": "水曜日",
+        "thu": "木曜日",
+        "fri": "金曜日",
+        "sat": "土曜日",
+        "sun": "日曜日"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "オンしきい値",
+        "switch_off": "オフしきい値"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "アプリの共有ファイル（JungHome.json）",
+        "cdb": "メッシュのデータベース（MeshNetwork.json）"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "明るく",
+        "down": "暗く"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "スイッチインサート",
+        "two_gang_switch": "2 連スイッチインサート",
+        "dimming": "調光インサート",
+        "two_gang_dimming": "2 連調光インサート",
+        "tw_dimming": "DALI インサート",
+        "blind": "ブラインドインサート",
+        "extension": "子機インサート",
+        "not_available": "インサートなし"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "ボタン 上／下",
+        "one_rocker": "ロッカー",
+        "two_left_two_right": "ボタン | ボタン",
+        "one_left_two_right": "ロッカー | ボタン",
+        "two_left_one_right": "ボタン | ロッカー",
+        "one_left_one_right": "ロッカー | ロッカー"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "押しボタン 1 連",
+        "push_button_2": "押しボタン 2 連",
+        "socket_metering": "コンセント（電力計測付き）",
+        "socket": "コンセント",
+        "switch_actuator_mini": "スイッチアクチュエーター 1 連 ミニ",
+        "blinds_actuator_mini": "ブラインドアクチュエーター 1 連 ミニ",
+        "wall_transmitter_1": "壁掛け送信機 1 連",
+        "wall_transmitter_2": "壁掛け送信機 2 連",
+        "motion_detector_1m": "人感センサー 1 m",
+        "motion_detector_2m": "人感センサー 2 m",
+        "presence_detector": "在室センサー",
+        "room_thermostat": "ルームサーモスタット",
+        "gateway": "ゲートウェイ",
+        "switch_actuator_1_energy": "スイッチアクチュエーター 1 連 2 入力 電力計測付き",
+        "switch_actuator_2": "スイッチアクチュエーター 2 連 2 入力",
+        "dimmer_actuator": "調光アクチュエーター 1 連 2 入力",
+        "blinds_actuator": "ブラインドアクチュエーター PP2 1 連 2 入力",
+        "dali_actuator": "DALI アクチュエーター 1 連 2 入力",
+        "mini_sensor_mains": "ミニセンサー 2 入力 電源式",
+        "mini_sensor_battery": "ミニセンサー 2 入力 電池式"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh ネットワーク",
+        "switch": "オン／オフ照明",
+        "dimmer": "調光可能な照明",
+        "ctl": "調色対応照明（DALI）",
+        "blind": "ブラインド／シャッター駆動装置",
+        "push_buttons": "押しボタン",
+        "unknown_product": "製品 {pid}"
+      }
+    }
+  }
+}
