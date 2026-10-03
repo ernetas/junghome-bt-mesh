@@ -1480,6 +1480,54 @@
     },
     "gateway_fetch_refused": {
       "message": "The export was not fetched from the JUNG HOME Gateway at {host}: {error}. Nothing changed; the repair notices say what to do."
+    },
+    "service_unknown_area": {
+      "message": "There is no area with the id {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} is not a scene of a JUNG HOME network."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Removing a device cannot be undone: add \"confirm: true\" to the call to carry it out (or \"dry_run: true\" to see what it would do)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Deleting a scene even if a device does not answer leaves that device holding it: add \"confirm: true\" to the call to carry it out (or \"dry_run: true\" to see what it would do)."
+    },
+    "plan_key_device": {
+      "message": "{key} now drives {target}; {messages} messages"
+    },
+    "plan_key_room": {
+      "message": "{key} now drives room {room}; {messages} messages"
+    },
+    "plan_key_scene": {
+      "message": "{key} now recalls scene {scene}; {messages} messages"
+    },
+    "plan_key_cleared": {
+      "message": "{key} has no function now; {messages} messages"
+    },
+    "plan_room_joined": {
+      "message": "{devices} now in room {room}; {messages} messages"
+    },
+    "plan_room_left": {
+      "message": "{devices} taken out of room {room}; {messages} messages"
+    },
+    "plan_room_deleted": {
+      "message": "Room {room} deleted; {messages} messages"
+    },
+    "plan_device_removed": {
+      "message": "{device} removed from the network; {messages} messages to the other devices"
+    },
+    "plan_scene_deleted": {
+      "message": "Scene {scene} deleted; {messages} messages"
+    },
+    "plan_finished": {
+      "message": "{action} finished; {messages} messages"
+    },
+    "plan_stopped": {
+      "message": "{action} stopped after {applied} of {total} messages: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} was cancelled after {applied} of {total} messages; the mesh export records what was applied"
     }
   },
   "issues": {
@@ -1937,7 +1985,7 @@
   "services": {
     "set_room": {
       "name": "Set room",
-      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"). A room that does not exist yet is created only with Create the room, so a mistyped name is refused. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Administrators only.",
+      "description": "Puts JUNG HOME lights and sockets into a room of the mesh (the app's \"area\"). A room that does not exist yet is created only with Create the room, so a mistyped name is refused. The device leaves every other room; keys already linked to the room start driving it. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1946,12 +1994,20 @@
         "create": {
           "name": "Create the room",
           "description": "Create the room when the mesh has none of that name. Off, an unknown name is refused."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
     "add_to_room": {
       "name": "Add to room",
-      "description": "Puts JUNG HOME lights, sockets and blinds into a room of the mesh as well: they stay in the rooms they are in, as the app lets a device be in several rooms. A room that does not exist yet is created only with Create the room. Keys already linked to the room start driving them. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Administrators only.",
+      "description": "Puts JUNG HOME lights, sockets and blinds into a room of the mesh as well: they stay in the rooms they are in, as the app lets a device be in several rooms. A room that does not exist yet is created only with Create the room. Keys already linked to the room start driving them. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1960,12 +2016,20 @@
         "create": {
           "name": "Create the room",
           "description": "Create the room when the mesh has none of that name. Off, an unknown name is refused."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
     "remove_from_room": {
       "name": "Remove from room",
-      "description": "Takes JUNG HOME lights, sockets and blinds out of a room of the mesh; they stay in their other rooms, and a device may end up in none. A device a key drives through its link to the room is refused unless Even if a key drives it is on: leaving the room unwires it from that key too. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Administrators only.",
+      "description": "Takes JUNG HOME lights, sockets and blinds out of a room of the mesh; they stay in their other rooms, and a device may end up in none. A device a key drives through its link to the room is refused unless Even if a key drives it is on: leaving the room unwires it from that key too. The mesh export is rewritten and Home Assistant follows it without reloading the integration. Unverified on air. Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -1974,12 +2038,20 @@
         "force": {
           "name": "Even if a key drives it",
           "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
     "create_room": {
       "name": "Create room",
-      "description": "Creates an empty room in the mesh export (nothing is sent to the devices). Home Assistant gives it the highest free group address of the app's range: the app does not see it until it imports a file, and gives its own next room the lowest free one. Administrators only.",
+      "description": "Creates an empty room in the mesh export (nothing is sent to the devices). Home Assistant gives it the highest free group address of the app's range: the app does not see it until it imports a file, and gives its own next room the lowest free one. Answers the room's group address when asked to. Administrators only.",
       "fields": {
         "name": {
           "name": "Name",
@@ -1988,6 +2060,10 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
@@ -2006,12 +2082,16 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
         }
       }
     },
     "delete_room": {
       "name": "Delete room",
-      "description": "Deletes a room: its devices leave it, keys linked to the room lose their function, and the room is removed from the mesh export. The devices themselves stay operable. Administrators only.",
+      "description": "Deletes a room: its devices leave it, keys linked to the room lose their function, and the room is removed from the mesh export. The devices themselves stay operable. Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "room": {
           "name": "Room",
@@ -2020,12 +2100,20 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
     "assign_key": {
       "name": "Assign key",
-      "description": "Connects a push-button key or a detector to a light, a socket, a blind, a room thermostat, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set (a detector has none and drives one device only). The mesh export is rewritten and Home Assistant follows it without reloading the integration. A detector source and the temperature mode are unverified on air. Administrators only.",
+      "description": "Connects a push-button key or a detector to a light, a socket, a blind, a room thermostat, the gateway, a room or a scene, exactly as the JUNG HOME app's key connection does: the key's previous connection is removed, the key is wired to the target and its key mode is set (a detector has none and drives one device only). The mesh export is rewritten and Home Assistant follows it without reloading the integration. A detector source and the temperature mode are unverified on air. Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
@@ -2066,12 +2154,24 @@
         "lock_seconds": {
           "name": "Lock time",
           "description": "Mode lock only: how long a lock from the key holds, in seconds (0 or empty: until the key unlocks it). Unverified on air."
+        },
+        "room_area": {
+          "name": "Room by area",
+          "description": "Instead of typing the room's name: the area named like the room."
+        },
+        "scene_entity": {
+          "name": "Scene entity",
+          "description": "Instead of typing the scene's name or number: its scene entity."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
     "clear_key": {
       "name": "Clear key",
-      "description": "Gives a push-button key no function: its connection to a device, the gateway or a room is removed (the app's \"No function\"). Administrators only.",
+      "description": "Gives a push-button key no function: its connection to a device, the gateway or a room is removed (the app's \"No function\"). Answers how many of its messages the devices applied, whether the mesh export was written and which devices changed; with Dry run, what it would send and change instead. Administrators only.",
       "fields": {
         "key_entity": {
           "name": "Key",
@@ -2084,6 +2184,10 @@
         "key": {
           "name": "Key letter",
           "description": "Which key of the device: A, B, C or D; E1 or E2 for an input of a mini actuator."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
@@ -2098,6 +2202,10 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
@@ -2116,6 +2224,10 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "scene_entity": {
+          "name": "Scene entity",
+          "description": "Instead of typing the scene's name or number: its scene entity."
         }
       }
     },
@@ -2150,6 +2262,16 @@
         "temperature": {
           "name": "Temperature",
           "description": "Set the thermostats to this temperature before storing."
+        },
+        "scene_entity": {
+          "name": "Scene entity",
+          "description": "Instead of typing the scene's name or number: its scene entity."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "State to store",
+          "description": "Set the devices to this state first; left empty, their present state is stored."
         }
       }
     },
@@ -2160,12 +2282,16 @@
         "scene": {
           "name": "Scene",
           "description": "Name or number of the scene."
+        },
+        "scene_entity": {
+          "name": "Scene entity",
+          "description": "Instead of typing the scene's name or number: its scene entity."
         }
       }
     },
     "delete_scene": {
       "name": "Delete scene",
-      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. Home Assistant follows it without reloading the integration. Answers the devices skipped with \"Even if a device does not answer\" when asked to. Administrators only.",
+      "description": "Deletes a scene: every device that stored it forgets it, the keys of those devices that recall it lose their connections, and the scene is removed from the mesh export. Home Assistant follows it without reloading the integration. Answers the devices skipped with \"Even if a device does not answer\" (which needs Confirm) and what the keys' messages applied when asked to; with Dry run, what it would send and change. Administrators only.",
       "fields": {
         "scene": {
           "name": "Scene",
@@ -2178,6 +2304,18 @@
         "config_entry_id": {
           "name": "Mesh network",
           "description": "Which JUNG HOME network, when more than one is configured."
+        },
+        "scene_entity": {
+          "name": "Scene entity",
+          "description": "Instead of typing the scene's name or number: its scene entity."
+        },
+        "confirm": {
+          "name": "Confirm",
+          "description": "Needed with \"Even if a device does not answer\": a device that keeps the scene cannot be made to forget it from here. Not needed for a dry run."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },
@@ -2273,6 +2411,16 @@
           "name": "Temperature",
           "description": "Target temperature of a room thermostat."
         }
+      },
+      "sections": {
+        "when": {
+          "name": "When",
+          "description": "When the schedule fires."
+        },
+        "what": {
+          "name": "What",
+          "description": "What the load is set to when it fires."
+        }
       }
     },
     "update_schedule": {
@@ -2335,6 +2483,16 @@
           "name": "Temperature",
           "description": "Target temperature of a room thermostat."
         }
+      },
+      "sections": {
+        "when": {
+          "name": "When",
+          "description": "When the schedule fires."
+        },
+        "what": {
+          "name": "What",
+          "description": "What the load is set to when it fires."
+        }
       }
     },
     "enable_schedule": {
@@ -2369,7 +2527,7 @@
     },
     "set_threshold": {
       "name": "Set threshold",
-      "description": "Sets a threshold of a JUNG HOME metering socket, the app's Automatic profile: when the socket's power stays at the level for the duration, it switches the chosen lights and sockets on (switch-on threshold) or off (switch-off threshold) by itself, without Home Assistant. Untested on a device. Administrators only.",
+      "description": "Sets a threshold of a JUNG HOME metering socket, the app's Automatic profile: when the socket's power stays at the level for the duration, it switches the chosen lights and sockets on (switch-on threshold) or off (switch-off threshold) by itself, without Home Assistant. Untested on a device. Answers how many of the wiring messages the devices applied when asked to. Administrators only.",
       "fields": {
         "threshold": {
           "name": "Threshold",
@@ -2395,7 +2553,7 @@
     },
     "delete_threshold": {
       "name": "Delete threshold",
-      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. Home Assistant follows the rewritten mesh export without reloading the integration when devices were unwired. Administrators only."
+      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. Home Assistant follows the rewritten mesh export without reloading the integration when devices were unwired. Answers how many of the wiring messages the devices applied when asked to. Administrators only."
     },
     "audit_network": {
       "name": "Audit network",
@@ -2453,7 +2611,7 @@
     },
     "remove_device": {
       "name": "Remove device (experimental)",
-      "description": "Resets a JUNG device (it forgets the network and becomes a new device again) and takes it out of the network as the app does: other devices' links to it are removed, the export records it as removed and is handed to the gateway. Cannot be undone. Needs the entry's *Allow Home Assistant to add and remove devices* option. Administrators only.",
+      "description": "Resets a JUNG device (it forgets the network and becomes a new device again) and takes it out of the network as the app does: other devices' links to it are removed, the export records it as removed and is handed to the gateway. Cannot be undone. Needs the entry's *Allow Home Assistant to add and remove devices* option. Needs Confirm; with Dry run it answers what it would send and change instead, and needs none. Administrators only.",
       "fields": {
         "device": {
           "name": "Device",
@@ -2462,6 +2620,14 @@
         "force": {
           "name": "Even if it does not answer",
           "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it."
+        },
+        "confirm": {
+          "name": "Confirm",
+          "description": "Needed to carry it out: removing a device cannot be undone. Not needed for a dry run."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
         }
       }
     },

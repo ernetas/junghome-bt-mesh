@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import re
 import shutil
 from collections.abc import AsyncGenerator, Callable, Generator
 from dataclasses import dataclass, field
@@ -35,7 +36,10 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers import label_registry as lr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_capture_events,
+)
 
 from custom_components.junghome_ble import mesh_config, repairs
 from custom_components.junghome_ble import services as svc
@@ -49,6 +53,7 @@ from custom_components.junghome_ble.const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
+    EVENT_PLAN,
     ISSUE_DEVICE_NAME,
     ISSUE_GATEWAY_SYNC,
     PIN_FROM_MESH,
@@ -106,6 +111,7 @@ from .helpers import (
     UID_SOCKET,
     entity_id,
 )
+from .test_logbook import describers
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -379,6 +385,10 @@ async def refreshed(hass: HomeAssistant, env: Env) -> None:
 def runs_the_export(env: Env) -> bool:
     """Whether the running hub's device model is the export on disk: it followed the last change (review-4 D23)."""
     return bool(env.hub.cdb.raw == CDB.load(env.path).raw)
+
+
+# the response of a rewiring call that sent nothing and wrote nothing (`MeshConfigurator.plan_response`)
+NO_PLAN = {"applied": 0, "total": 0, "recorded": False, "nodes": []}
 
 
 def device_id(hass: HomeAssistant, identifier: str) -> str:
@@ -2023,7 +2033,13 @@ async def test_create_rename_and_delete_scene(hass: HomeAssistant, env: Env) -> 
         return_response=True,
     )
     await hass.async_block_till_done()
-    assert response == {"scene": 0x1999, "name": "Movie night"}  # the top of the range
+    # the top of the range; no plan, the export written
+    assert response == {
+        "scene": 0x1999,
+        "name": "Movie night",
+        **NO_PLAN,
+        "recorded": True,
+    }
     await settled(hass, env)
     assert env.reload().scene_names()[0x1999] == "Movie night"
     assert (
@@ -2045,6 +2061,10 @@ async def test_create_rename_and_delete_scene(hass: HomeAssistant, env: Env) -> 
     with pytest.raises(ServiceValidationError) as exc:
         await call(hass, "delete_scene", {"scene": "WC off"})
     assert exc.value.translation_key == "service_unknown_scene"
+    # `force` needs `confirm` (decision as M3 / M8): it cannot be undone
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "delete_scene", {"scene": "Cinema", "force": True})
+    assert exc.value.translation_key == "delete_scene_force_needs_confirm"
     # `force` reaches the configurator, and the members it skipped come back
     with patch.object(
         mesh_config.MeshConfigurator,
@@ -2055,11 +2075,11 @@ async def test_create_rename_and_delete_scene(hass: HomeAssistant, env: Env) -> 
         response = await hass.services.async_call(
             DOMAIN,
             "delete_scene",
-            {"scene": "Cinema", "force": True},
+            {"scene": "Cinema", "force": True, "confirm": True},
             blocking=True,
             return_response=True,
         )
-    assert response == {"skipped": ["0232"]}
+    assert response == {"skipped": ["0232"], **NO_PLAN}
     assert delete.call_args.args[1:] == ("Cinema",)
     assert delete.call_args.kwargs == {"force": True}
     await settled(hass, env)
@@ -3007,9 +3027,13 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
     reloading = asyncio.Event()
     reload_may_end = asyncio.Event()
     reloads: list[str] = []
+    plans = async_capture_events(hass, EVENT_PLAN)
 
     async def recorded_then_waits(configurator: Any) -> bool:
         configurator.recorded = True
+        # one of the plan's four messages accepted (`_send` counts them)
+        configurator.outcome.action = "junghome_ble.set_room"
+        configurator.outcome.applied, configurator.outcome.total = 1, 4
         reached.set()
         await asyncio.Event().wait()
         return True  # pragma: no cover - cancelled before
@@ -3034,6 +3058,11 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
             await task
     assert reloads == [env.entry.entry_id]
     assert not svc._lock(hass, env.entry.entry_id).locked()
+    # the logbook says how far it got (review-4 W I7)
+    assert plans[-1].data["outcome"] == "cancelled"
+    assert describers(hass)[EVENT_PLAN](plans[-1])["message"] == (
+        "junghome_ble.set_room was cancelled after 1 of 4 messages; the mesh export records what was applied"
+    )
 
 
 async def test_a_cancelled_call_that_recorded_nothing_does_not_reload(
@@ -3123,3 +3152,278 @@ async def test_setup_records_a_plan_a_crash_interrupted_and_sets_up_again(
     }
     flow = await repairs.async_create_fix_flow(hass, issue.issue_id, issue.data)
     assert isinstance(flow, ConfirmRepairFlow)
+
+
+# ----------------------------------------------------------------------------- dry runs, responses, the logbook (review-4 W I3, W I6, W I7, W I9, U4-13)
+
+
+async def respond(
+    hass: HomeAssistant, service: str, data: dict[str, Any]
+) -> dict[str, Any]:
+    """Call an action asking for its response."""
+    response = await hass.services.async_call(
+        DOMAIN, service, data, blocking=True, return_response=True
+    )
+    await hass.async_block_till_done()
+    assert isinstance(response, dict)
+    return response
+
+
+async def test_a_dry_run_through_the_action_sends_writes_and_places_nothing(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """`dry_run`: the plan answered, nothing on the mesh, the export, the device's area or the logbook; the hub
+    keeps the export it runs."""
+    registry = dr.async_get(hass)
+    switch = device_id(hass, UID_LIGHT_SWITCH)
+    registry.async_update_device(switch, area_id=None)
+    plans = async_capture_events(hass, EVENT_PLAN)
+    before = env.path.read_bytes()
+    target = {
+        "entity_id": entity_id(hass, "light", UID_LIGHT_DIMMER),
+        "room": "Kitchen",
+    }
+    for service, data in (
+        ("set_room", target),
+        ("add_to_room", target),
+        (
+            "set_room",
+            {
+                "entity_id": entity_id(hass, "light", UID_LIGHT_SWITCH),
+                "room": "Attic",
+                "create": True,
+            },
+        ),
+        ("remove_from_room", {**target, "room": "WC", "force": True}),
+        ("delete_room", {"room": "WC"}),
+        ("create_room", {"name": "Attic"}),
+        ("create_scene", {"name": "Movie night"}),
+        ("delete_scene", {"scene": "WC off"}),
+        ("delete_scene", {"scene": "WC off", "force": True}),  # no `confirm` needed
+        ("clear_key", {"key_entity": entity_id(hass, "event", UID_ROCKER_A)}),
+        (
+            "assign_key",
+            {
+                "key_entity": entity_id(hass, "event", UID_ROCKER_A),
+                "target_entity": entity_id(hass, "light", UID_LIGHT_DIMMER),
+            },
+        ),
+    ):
+        response = await respond(hass, service, {**data, "dry_run": True})
+        assert response["dry_run"] is True, service
+        assert response["diff"], service
+    assert response["steps"][0].startswith("0232 (")  # named by the device
+    # without a response asked for, a dry run answers nothing and does nothing either
+    await call(hass, "set_room", {**target, "dry_run": True})
+    assert env.config_calls == []
+    # nothing written to a load: only the hub's own reads go on (and its Time Set to all nodes, `node_clocks.py`)
+    written = [
+        text
+        for dst, pdu in env.app_calls
+        if dst != 0xFFFF
+        and re.search(r"\b(?:Set|Store|Delete)\b", text := M.describe(pdu))
+    ]
+    assert written == []
+    assert env.path.read_bytes() == before
+    assert registry.async_get(switch).area_id is None  # type: ignore[union-attr]
+    assert ar.async_get(hass).async_get_area_by_name("Attic") is None
+    assert plans == []
+    assert runs_the_export(env)
+
+
+async def test_a_rewiring_action_answers_what_it_applied_and_logs_it(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The response (`applied`, `total`, `recorded`, `nodes`), a logbook line in the integration's words, and the
+    plan in the diagnostics' history (step texts, no key)."""
+    plans = async_capture_events(hass, EVENT_PLAN)
+    key = entity_id(hass, "event", UID_ROCKER_A)
+    response = await respond(
+        hass,
+        "assign_key",
+        {
+            "key_entity": key,
+            "target_entity": entity_id(hass, "light", UID_LIGHT_DIMMER),
+        },
+    )
+    await settled(hass, env)
+    assert response == {
+        "applied": 8,
+        "total": 8,
+        "recorded": True,
+        "nodes": ["0232 (Living room DALI)"],
+    }
+    assert plans[-1].data["outcome"] == "finished"
+    assert plans[-1].data["message"] == "plan_key_device"
+    line = describers(hass)[EVENT_PLAN](plans[-1])
+    assert line == {
+        "name": "JUNG HOME mesh test",
+        "message": "0234 (Push-button 2-gang 0232 buttons A) now drives 0300 (WC ceiling); 8 messages",
+    }
+    history = list(mesh_config.plan_history(hass, env.entry.entry_id))
+    assert history[-1]["outcome"] == "finished"
+    assert history[-1]["steps"][0].startswith("0232: Config Model Publication Set")
+    # the other summaries
+    response = await respond(hass, "assign_key", {"key_entity": key, "room": "WC"})
+    assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
+        "0234 (Push-button 2-gang 0232 buttons A) now drives room WC; "
+    )
+    await respond(hass, "assign_key", {"key_entity": key, "scene": "All off"})
+    assert "now recalls scene 2" in describers(hass)[EVENT_PLAN](plans[-1])["message"]
+    response = await respond(hass, "clear_key", {"key_entity": key})
+    assert response["applied"] == response["total"] > 0
+    assert "has no function now" in describers(hass)[EVENT_PLAN](plans[-1])["message"]
+    light = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    await respond(hass, "add_to_room", {"entity_id": light, "room": "Kitchen"})
+    assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
+        "0300 (WC ceiling) now in room Kitchen; "
+    )
+    await respond(hass, "remove_from_room", {"entity_id": light, "room": "Kitchen"})
+    assert (
+        "taken out of room Kitchen"
+        in describers(hass)[EVENT_PLAN](plans[-1])["message"]
+    )
+    response = await respond(hass, "delete_room", {"room": "Kitchen"})
+    assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
+        "Room Kitchen deleted; "
+    )
+    await respond(hass, "delete_scene", {"scene": "All off"})
+    assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
+        "Scene 2 deleted; "
+    )
+    assert response["recorded"] is True
+    assert (
+        len(mesh_config.plan_history(hass, env.entry.entry_id)) == 5
+    )  # the last few only
+    await settled(hass, env)
+
+
+async def test_a_stopped_plan_says_how_far_it_got(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """A refused step: the error carries what the response would have (`outcome_*`), the logbook says how far it
+    got, the diagnostics keep it with its error."""
+    plans = async_capture_events(hass, EVENT_PLAN)
+    env.refuse[C.model_subscription_add(ROCKER_A, DIMMER_GROUP, "1003")] = 0x08
+    with pytest.raises(HomeAssistantError) as exc:
+        await respond(
+            hass,
+            "assign_key",
+            {
+                "key_entity": entity_id(hass, "event", UID_ROCKER_A),
+                "target_entity": entity_id(hass, "light", UID_LIGHT_DIMMER),
+            },
+        )
+    placeholders = exc.value.translation_placeholders or {}
+    assert (
+        placeholders["node"] == "0232 (Living room DALI)"
+    )  # a name, not an address alone
+    assert {k: v for k, v in placeholders.items() if k.startswith("outcome_")} == {
+        "outcome_applied": "3",
+        "outcome_total": "8",
+        "outcome_recorded": "true",
+        "outcome_nodes": "0232 (Living room DALI)",
+    }
+    assert plans[-1].data["outcome"] == "stopped"
+    message = describers(hass)[EVENT_PLAN](plans[-1])["message"]
+    assert message.startswith("junghome_ble.assign_key stopped after 3 of 8 messages: ")
+    history = mesh_config.plan_history(hass, env.entry.entry_id)[-1]
+    assert history["error"] == "service_config_refused"
+    assert (history["applied"], history["total"]) == (3, 8)
+    await settled(hass, env)
+
+
+async def test_alternative_selectors_resolve_to_the_same_plan(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 U4-13: the area named like a room stands for the room, a scene entity for its scene."""
+    area = ar.async_get(hass).async_get_or_create("WC")
+    light = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    key = entity_id(hass, "event", UID_ROCKER_A)
+    scene = entity_id(hass, "scene", f"{env.hub.cdb.mesh_uuid.lower()}-scene-2")
+    for service, by_name, by_selector in (
+        (
+            "set_room",
+            {"entity_id": light, "room": "WC"},
+            {"entity_id": light, "room_area": area.id},
+        ),
+        ("delete_room", {"room": "WC"}, {"room_area": area.id}),
+        (
+            "assign_key",
+            {"key_entity": key, "room": "WC"},
+            {"key_entity": key, "room_area": area.id},
+        ),
+        (
+            "assign_key",
+            {"key_entity": key, "scene": "All off"},
+            {"key_entity": key, "scene_entity": scene},
+        ),
+        ("delete_scene", {"scene": "All off"}, {"scene_entity": scene}),
+    ):
+        named = await respond(hass, service, {**by_name, "dry_run": True})
+        selected = await respond(hass, service, {**by_selector, "dry_run": True})
+        assert named == selected, service
+    assert env.config_calls == []
+    # the real calls by selector
+    await call(
+        hass, "rename_scene", {"scene_entity": scene, "new_name": "Everything off"}
+    )
+    await settled(hass, env)
+    assert env.reload().scene_names()[2] == "Everything off"
+    await call(hass, "rename_room", {"room_area": area.id, "new_name": "Toilet"})
+    await settled(hass, env)
+    assert "Toilet" in env.reload().user_groups().values()
+    await call(hass, "remove_from_scene", {"entity_id": light, "scene_entity": scene})
+    await settled(hass, env)
+    # what the selectors cannot stand for
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "set_room", {"entity_id": light, "room_area": "nowhere"})
+    assert exc.value.translation_key == "service_unknown_area"
+    for not_a_scene in (light, "scene.not_ours"):
+        with pytest.raises(ServiceValidationError) as exc:
+            await call(
+                hass, "store_scene", {"entity_id": light, "scene_entity": not_a_scene}
+            )
+        assert exc.value.translation_key == "service_not_a_scene"
+    with pytest.raises(vol.Invalid):
+        await call(
+            hass, "set_room", {"entity_id": light, "room": "WC", "room_area": area.id}
+        )
+    with pytest.raises(vol.Invalid):
+        await call(
+            hass,
+            "delete_scene",
+            {"scene_entity": scene, "config_entry_id": env.entry.entry_id},
+        )
+
+
+async def test_a_scene_entity_of_another_network_is_refused(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """A scene entity names its network's scene: a key or loads of another network are refused."""
+    other_entry = MockConfigEntry(domain=DOMAIN, unique_id="other mesh")
+    other_entry.add_to_hass(hass)
+    other = er.async_get(hass).async_get_or_create(
+        "scene", DOMAIN, "other-mesh-scene-2", config_entry=other_entry
+    )
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(
+            hass,
+            "assign_key",
+            {
+                "key_entity": entity_id(hass, "event", UID_ROCKER_A),
+                "scene_entity": other.entity_id,
+            },
+        )
+    assert exc.value.translation_key == "service_target_other_network"
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(
+            hass,
+            "remove_from_scene",
+            {
+                "entity_id": entity_id(hass, "light", UID_LIGHT_DIMMER),
+                "scene_entity": other.entity_id,
+            },
+        )
+    assert exc.value.translation_key == "service_target_other_network"
+    assert env.config_calls == []

@@ -78,6 +78,8 @@ LITERAL_KEY = re.compile(r'translation_key\s*=\s*"(?P<key>[a-z0-9_]+)"')
 # `translation_key=ISSUE_X` / `translation_key=ex.SOME_KEY`: a name, not a string (f-strings excluded by the
 # lookahead — `f"..."` starts with a letter too). Lower-case names are runtime values and cannot be checked here.
 CONSTANT_KEY = re.compile(r"translation_key\s*=\s*(?P<ref>[A-Za-z_][\w.]*)(?![\w\"'])")
+# the logbook lines of a plan (`services._report_plan`): translation keys of the `exceptions` section
+PLAN_KEY = re.compile(r'"(?P<key>plan_[a-z_]+)"')
 SERVICE_ERROR = re.compile(r'\b_(?:validation|failure)\(\s*"(?P<key>[a-z0-9_]+)"')
 # config flow: `errors["base"] = "x"` / `errors[CONF_X] = "x"` / `{"base": "x"}`, `reason="x"`, `step_id="x"` or
 # `step_id=CONSTANT`, `menu_options=[...]` literal lists, `vol.Required(CONF_X` / `vol.Optional(CONF_X`
@@ -350,6 +352,45 @@ def _schema_keys(schema: vol.Schema | vol.All | dict[Any, Any]) -> set[str]:
     return {str(marker) for marker in inner.schema}
 
 
+def _yaml_fields(service: dict[str, Any]) -> tuple[set[str], set[str]]:
+    """(fields, sections) of a services.yaml action: a section's fields are the action's own (review-4 U4-13).
+
+    A section is a key of `fields` with `fields` of its own; the call's data is flat, so are the translations
+    (`services.<action>.fields`), and a section has its name under `services.<action>.sections`.
+    """
+    fields: set[str] = set()
+    sections: set[str] = set()
+    for name, field in service.get("fields", {}).items():
+        if isinstance(field, dict) and "fields" in field:
+            sections.add(name)
+            fields |= set(field["fields"])
+        else:
+            fields.add(name)
+    return fields, sections
+
+
+def test_services_yaml_has_the_sections(services_yaml: dict[str, Any]) -> None:
+    """The state to store is a collapsed section, a schedule's trigger and its state are sections of their own."""
+    assert services_yaml["store_scene"]["fields"]["state"]["collapsed"] is True
+    for name in ("create_schedule", "update_schedule"):
+        fields = services_yaml[name]["fields"]
+        assert {"when", "what"} <= set(fields)
+        assert "trigger" in fields["when"]["fields"]
+        assert set(fields["what"]["fields"]) == set(services.STATE_FIELDS)
+
+
+def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
+    """Every `plan_*` logbook line the configurator and the actions word (review-4 W I7) has its text."""
+    found = {
+        match.group("key")
+        for path in (COMPONENT / "services.py", COMPONENT / "mesh_config.py")
+        for match in PLAN_KEY.finditer(path.read_text(encoding="utf-8"))
+    }
+    assert {"plan_finished", "plan_stopped", "plan_cancelled", "plan_key_room"} <= found
+    unknown = sorted(found - set(strings["exceptions"]))
+    assert not unknown, f"plan lines without an exception string: {unknown}"
+
+
 def test_services_yaml_matches_strings_and_code(
     services_yaml: dict[str, Any], strings: dict[str, Any]
 ) -> None:
@@ -368,9 +409,12 @@ def test_services_yaml_matches_strings_and_code(
         "services.yaml vs strings.services"
     )
     for name, service in services_yaml.items():
-        fields = set(service.get("fields", {}))
+        fields, sections = _yaml_fields(service)
         translated = set(strings["services"][name].get("fields", {}))
         assert fields == translated, f"{name}: fields in services.yaml vs strings.json"
+        assert sections == set(strings["services"][name].get("sections", {})), (
+            f"{name}: sections in services.yaml vs strings.json"
+        )
         schema_keys = _schema_keys(getattr(services, f"{name.upper()}_SCHEMA"))
         assert fields <= schema_keys, f"{name}: YAML fields the schema does not accept"
         assert schema_keys - set(cv.ENTITY_SERVICE_FIELDS) <= fields, (

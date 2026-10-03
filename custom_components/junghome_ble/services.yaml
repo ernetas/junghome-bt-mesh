@@ -8,11 +8,17 @@ set_room:
         - cover
   fields:
     room:
-      required: true
       example: "Kitchen"
       selector:
         text:
+    room_area:
+      selector:
+        area:
     create:
+      default: false
+      selector:
+        boolean:
+    dry_run:
       default: false
       selector:
         boolean:
@@ -27,11 +33,17 @@ add_to_room:
         - cover
   fields:
     room:
-      required: true
       example: "Kitchen"
       selector:
         text:
+    room_area:
+      selector:
+        area:
     create:
+      default: false
+      selector:
+        boolean:
+    dry_run:
       default: false
       selector:
         boolean:
@@ -46,11 +58,17 @@ remove_from_room:
         - cover
   fields:
     room:
-      required: true
       example: "Kitchen"
       selector:
         text:
+    room_area:
+      selector:
+        area:
     force:
+      default: false
+      selector:
+        boolean:
+    dry_run:
       default: false
       selector:
         boolean:
@@ -62,6 +80,10 @@ create_room:
       example: "Kitchen"
       selector:
         text:
+    dry_run:
+      default: false
+      selector:
+        boolean:
     config_entry_id:
       selector:
         config_entry:
@@ -70,10 +92,12 @@ create_room:
 rename_room:
   fields:
     room:
-      required: true
       example: "Kitchen"
       selector:
         text:
+    room_area:
+      selector:
+        area:
     new_name:
       required: true
       example: "Dining room"
@@ -87,10 +111,16 @@ rename_room:
 delete_room:
   fields:
     room:
-      required: true
       example: "Kitchen"
       selector:
         text:
+    room_area:
+      selector:
+        area:
+    dry_run:
+      default: false
+      selector:
+        boolean:
     config_entry_id:
       selector:
         config_entry:
@@ -140,10 +170,18 @@ assign_key:
       example: "Living room"
       selector:
         text:
+    room_area:
+      selector:
+        area:
     scene:
       example: "Evening"
       selector:
         text:
+    scene_entity:
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: scene
     mode:
       example: "light"
       selector:
@@ -173,6 +211,10 @@ assign_key:
           max: 65535
           mode: box
           unit_of_measurement: s
+    dry_run:
+      default: false
+      selector:
+        boolean:
 
 clear_key:
   fields:
@@ -198,6 +240,10 @@ clear_key:
             - "D"
             - "E1"
             - "E2"
+    dry_run:
+      default: false
+      selector:
+        boolean:
 
 create_scene:
   fields:
@@ -206,6 +252,10 @@ create_scene:
       example: "Movie night"
       selector:
         text:
+    dry_run:
+      default: false
+      selector:
+        boolean:
     config_entry_id:
       selector:
         config_entry:
@@ -214,10 +264,14 @@ create_scene:
 rename_scene:
   fields:
     scene:
-      required: true
       example: "Movie night"
       selector:
         text:
+    scene_entity:
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: scene
     new_name:
       required: true
       example: "Cinema"
@@ -239,54 +293,61 @@ store_scene:
         - climate
   fields:
     scene:
-      required: true
       example: "Movie night"
       selector:
         text:
-    action:
-      example: "on"
+    scene_entity:
       selector:
-        select:
-          translation_key: schedule_action
-          options:
-            - "on"
-            - "off"
-    brightness_pct:
-      example: 40
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    color_temp_kelvin:
-      example: 2700
-      selector:
-        color_temp:
-          unit: kelvin
-          min: 2000
-          max: 10000
-    position:
-      example: 100
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    tilt_position:
-      example: 50
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    temperature:
-      example: 21
-      selector:
-        number:
-          min: 5
-          max: 30
-          step: 0.5
-          unit_of_measurement: "°C"
+        entity:
+          integration: junghome_ble
+          domain: scene
+    state:
+      collapsed: true
+      fields:
+        action:
+          example: "on"
+          selector:
+            select:
+              translation_key: schedule_action
+              options:
+                - "on"
+                - "off"
+        brightness_pct:
+          example: 40
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        color_temp_kelvin:
+          example: 2700
+          selector:
+            color_temp:
+              unit: kelvin
+              min: 2000
+              max: 10000
+        position:
+          example: 100
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        tilt_position:
+          example: 50
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        temperature:
+          example: 21
+          selector:
+            number:
+              min: 5
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
 
 remove_from_scene:
   target:
@@ -299,19 +360,35 @@ remove_from_scene:
         - climate
   fields:
     scene:
-      required: true
       example: "Movie night"
       selector:
         text:
+    scene_entity:
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: scene
 
 delete_scene:
   fields:
     scene:
-      required: true
       example: "Movie night"
       selector:
         text:
+    scene_entity:
+      selector:
+        entity:
+          integration: junghome_ble
+          domain: scene
     force:
+      default: false
+      selector:
+        boolean:
+    confirm:
+      default: false
+      selector:
+        boolean:
+    dry_run:
       default: false
       selector:
         boolean:
@@ -368,98 +445,102 @@ create_schedule:
         - cover
         - climate
   fields:
-    trigger:
-      required: true
-      example: "time"
-      selector:
-        select:
-          translation_key: schedule_trigger
-          options:
-            - time
-            - sunrise
-            - sunset
-    time:
-      example: "07:30:00"
-      selector:
+    when:
+      fields:
+        trigger:
+          required: true
+          example: "time"
+          selector:
+            select:
+              translation_key: schedule_trigger
+              options:
+                - time
+                - sunrise
+                - sunset
         time:
-    not_before:
-      example: "06:00:00"
-      selector:
-        time:
-    not_after:
-      example: "08:00:00"
-      selector:
-        time:
-    offset:
-      example: -15
-      selector:
-        number:
-          min: -128
-          max: 127
-          unit_of_measurement: min
-          mode: box
-    weekdays:
-      example: '["mon", "tue", "wed", "thu", "fri"]'
-      selector:
-        select:
-          multiple: true
-          translation_key: weekday
-          options:
-            - mon
-            - tue
-            - wed
-            - thu
-            - fri
-            - sat
-            - sun
-    enabled:
-      default: true
-      selector:
-        boolean:
-    action:
-      example: "on"
-      selector:
-        select:
-          translation_key: schedule_action
-          options:
-            - "on"
-            - "off"
-    brightness_pct:
-      example: 60
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    color_temp_kelvin:
-      example: 3000
-      selector:
-        color_temp:
-          unit: kelvin
-          min: 2000
-          max: 10000
-    position:
-      example: 100
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    tilt_position:
-      example: 50
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    temperature:
-      example: 21
-      selector:
-        number:
-          min: 5
-          max: 30
-          step: 0.5
-          unit_of_measurement: "°C"
+          example: "07:30:00"
+          selector:
+            time:
+        not_before:
+          example: "06:00:00"
+          selector:
+            time:
+        not_after:
+          example: "08:00:00"
+          selector:
+            time:
+        offset:
+          example: -15
+          selector:
+            number:
+              min: -128
+              max: 127
+              unit_of_measurement: min
+              mode: box
+        weekdays:
+          example: '["mon", "tue", "wed", "thu", "fri"]'
+          selector:
+            select:
+              multiple: true
+              translation_key: weekday
+              options:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+                - sat
+                - sun
+        enabled:
+          default: true
+          selector:
+            boolean:
+    what:
+      fields:
+        action:
+          example: "on"
+          selector:
+            select:
+              translation_key: schedule_action
+              options:
+                - "on"
+                - "off"
+        brightness_pct:
+          example: 60
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        color_temp_kelvin:
+          example: 3000
+          selector:
+            color_temp:
+              unit: kelvin
+              min: 2000
+              max: 10000
+        position:
+          example: 100
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        tilt_position:
+          example: 50
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        temperature:
+          example: 21
+          selector:
+            number:
+              min: 5
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
 
 update_schedule:
   target:
@@ -479,98 +560,102 @@ update_schedule:
           min: 0
           max: 15
           mode: box
-    trigger:
-      required: true
-      example: "time"
-      selector:
-        select:
-          translation_key: schedule_trigger
-          options:
-            - time
-            - sunrise
-            - sunset
-    time:
-      example: "07:30:00"
-      selector:
+    when:
+      fields:
+        trigger:
+          required: true
+          example: "time"
+          selector:
+            select:
+              translation_key: schedule_trigger
+              options:
+                - time
+                - sunrise
+                - sunset
         time:
-    not_before:
-      example: "06:00:00"
-      selector:
-        time:
-    not_after:
-      example: "08:00:00"
-      selector:
-        time:
-    offset:
-      example: -15
-      selector:
-        number:
-          min: -128
-          max: 127
-          unit_of_measurement: min
-          mode: box
-    weekdays:
-      example: '["mon", "tue", "wed", "thu", "fri"]'
-      selector:
-        select:
-          multiple: true
-          translation_key: weekday
-          options:
-            - mon
-            - tue
-            - wed
-            - thu
-            - fri
-            - sat
-            - sun
-    enabled:
-      default: true
-      selector:
-        boolean:
-    action:
-      example: "on"
-      selector:
-        select:
-          translation_key: schedule_action
-          options:
-            - "on"
-            - "off"
-    brightness_pct:
-      example: 60
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    color_temp_kelvin:
-      example: 3000
-      selector:
-        color_temp:
-          unit: kelvin
-          min: 2000
-          max: 10000
-    position:
-      example: 100
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    tilt_position:
-      example: 50
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    temperature:
-      example: 21
-      selector:
-        number:
-          min: 5
-          max: 30
-          step: 0.5
-          unit_of_measurement: "°C"
+          example: "07:30:00"
+          selector:
+            time:
+        not_before:
+          example: "06:00:00"
+          selector:
+            time:
+        not_after:
+          example: "08:00:00"
+          selector:
+            time:
+        offset:
+          example: -15
+          selector:
+            number:
+              min: -128
+              max: 127
+              unit_of_measurement: min
+              mode: box
+        weekdays:
+          example: '["mon", "tue", "wed", "thu", "fri"]'
+          selector:
+            select:
+              multiple: true
+              translation_key: weekday
+              options:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+                - sat
+                - sun
+        enabled:
+          default: true
+          selector:
+            boolean:
+    what:
+      fields:
+        action:
+          example: "on"
+          selector:
+            select:
+              translation_key: schedule_action
+              options:
+                - "on"
+                - "off"
+        brightness_pct:
+          example: 60
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        color_temp_kelvin:
+          example: 3000
+          selector:
+            color_temp:
+              unit: kelvin
+              min: 2000
+              max: 10000
+        position:
+          example: 100
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        tilt_position:
+          example: 50
+          selector:
+            number:
+              min: 0
+              max: 100
+              unit_of_measurement: "%"
+        temperature:
+          example: 21
+          selector:
+            number:
+              min: 5
+              max: 30
+              step: 0.5
+              unit_of_measurement: "°C"
 
 enable_schedule:
   target:
@@ -738,6 +823,14 @@ remove_device:
         device:
           integration: junghome_ble
     force:
+      default: false
+      selector:
+        boolean:
+    confirm:
+      default: false
+      selector:
+        boolean:
+    dry_run:
       default: false
       selector:
         boolean:

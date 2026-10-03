@@ -360,7 +360,7 @@ async def test_add_device_provisions_commissions_and_records_it(
     await hass.services.async_call(
         DOMAIN,
         "remove_device",
-        {"device": node_device_id(hass, hub, unicast)},
+        {"device": node_device_id(hass, hub, unicast), "confirm": True},
         blocking=True,
     )
     assert node.uuid not in vault.nodes
@@ -526,7 +526,7 @@ async def test_remove_device_resets_it_and_takes_it_out(
     fake_link.config_reply = answer
     device = node_device_id(hass, hub, 0x0300)
     await hass.services.async_call(
-        DOMAIN, "remove_device", {"device": device}, blocking=True
+        DOMAIN, "remove_device", {"device": device, "confirm": True}, blocking=True
     )
     assert resets == [0x0300]
     await hass.async_block_till_done()
@@ -534,6 +534,41 @@ async def test_remove_device_resets_it_and_takes_it_out(
     hub = provisioning_entry.runtime_data
     assert hub.cdb.node_by_addr(0x0300) is None
     assert {0x0300, 0x0301} <= hub.cdb.excluded_addresses
+
+
+async def test_remove_device_needs_confirm_and_a_dry_run_sends_nothing(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-4 W I9: a removal cannot be undone, so it needs `confirm: true`; a dry run needs none and answers
+    the reset and the others' unwiring without sending either, the export and the vault untouched."""
+    hub = provisioning_entry.runtime_data
+    sent: list[bytes] = []
+    fake_link.config_reply = lambda _node, access: sent.append(access)  # type: ignore[func-returns-value]
+    device = node_device_id(hass, hub, 0x0300)
+    path = Path(provisioning_entry.data[CONF_CDB_PATH])
+    before = await hass.async_add_executor_job(path.read_bytes)
+    with refused(ServiceValidationError, "remove_device_needs_confirm"):
+        await hass.services.async_call(
+            DOMAIN, "remove_device", {"device": device}, blocking=True
+        )
+    response = await hass.services.async_call(
+        DOMAIN,
+        "remove_device",
+        {"device": device, "dry_run": True},
+        blocking=True,
+        return_response=True,
+    )
+    assert isinstance(response, dict)
+    assert response["dry_run"] is True
+    assert response["steps"][0].endswith(": Config Node Reset")
+    assert any(d["path"].startswith("network.nodes[") for d in response["diff"])
+    assert sent == []
+    assert await hass.async_add_executor_job(path.read_bytes) == before
+    assert provisioning_entry.state is ConfigEntryState.LOADED
+    assert provisioning_entry.runtime_data is hub  # no reload
+    assert hub.cdb.node_by_addr(0x0300) is not None
 
 
 async def test_remove_device_refusals(
@@ -550,7 +585,7 @@ async def test_remove_device_refusals(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": node_device_id(hass, hub, 0x0300)},
+            {"device": node_device_id(hass, hub, 0x0300), "confirm": True},
             blocking=True,
         )
     assert hub.cdb.node_by_addr(0x0300) is not None  # nothing changed
@@ -563,21 +598,21 @@ async def test_remove_device_refusals(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": node_device_id(hass, hub, 0x00DC)},
+            {"device": node_device_id(hass, hub, 0x00DC), "confirm": True},
             blocking=True,
         )
     with refused(ServiceValidationError, "remove_device_mesh"):
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": hub.device_ids[mesh_identifier(hub)]},
+            {"device": hub.device_ids[mesh_identifier(hub)], "confirm": True},
             blocking=True,
         )
     # gone for good: `force` records the removal all the same
     await hass.services.async_call(
         DOMAIN,
         "remove_device",
-        {"device": node_device_id(hass, hub, 0x0300), "force": True},
+        {"device": node_device_id(hass, hub, 0x0300), "confirm": True, "force": True},
         blocking=True,
     )
     await hass.async_block_till_done()
@@ -594,7 +629,7 @@ async def test_remove_device_refusals(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": node_device_id(hass, hub, 0x0400)},
+            {"device": node_device_id(hass, hub, 0x0400), "confirm": True},
             blocking=True,
         )
 
@@ -643,14 +678,17 @@ async def test_an_unconfirmed_reset_is_looked_for_among_new_devices(
     if stale:
         with refused(HomeAssistantError, "remove_device_unconfirmed") as caught:
             await hass.services.async_call(
-                DOMAIN, "remove_device", {"device": device}, blocking=True
+                DOMAIN,
+                "remove_device",
+                {"device": device, "confirm": True},
+                blocking=True,
             )
         assert caught.value.translation_placeholders == {"address": "0300"}
         assert "may have been reset" in str(caught.value)
         assert ProjectFile.load(path).cdb.node_by_addr(0x0300) is not None
         return
     await hass.services.async_call(
-        DOMAIN, "remove_device", {"device": device}, blocking=True
+        DOMAIN, "remove_device", {"device": device, "confirm": True}, blocking=True
     )
     await hass.async_block_till_done()
     await wait_for_link(hass, provisioning_entry)
@@ -691,7 +729,7 @@ async def test_the_node_carrying_the_link_is_removed_only_with_force(
     fake_link.config_reply = answer
     with refused(ServiceValidationError, "remove_device_proxy") as caught:
         await hass.services.async_call(
-            DOMAIN, "remove_device", {"device": device}, blocking=True
+            DOMAIN, "remove_device", {"device": device, "confirm": True}, blocking=True
         )
     assert caught.value.translation_placeholders == {"address": f"{proxy:04X}"}
     assert sent == []
@@ -716,7 +754,10 @@ async def test_the_node_carrying_the_link_is_removed_only_with_force(
         patch.object(hub, "async_wait_connected", wait_for_the_next_link),
     ):
         await hass.services.async_call(
-            DOMAIN, "remove_device", {"device": device, "force": True}, blocking=True
+            DOMAIN,
+            "remove_device",
+            {"device": device, "confirm": True, "force": True},
+            blocking=True,
         )
     assert SERVICE_LINK_WAIT in waits  # before the unwiring
     assert sent == [0x0300]  # the key's publication to it, taken away
@@ -798,7 +839,7 @@ async def test_add_device_with_the_provisioner_identity_uses_home_assistants_ran
     await hass.services.async_call(
         DOMAIN,
         "remove_device",
-        {"device": node_device_id(hass, hub, unicast)},
+        {"device": node_device_id(hass, hub, unicast), "confirm": True},
         blocking=True,
     )
     assert node.uuid not in vault.nodes
@@ -860,7 +901,7 @@ async def test_a_removal_whose_unwiring_stops_still_records_the_reset_node(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": node_device_id(hass, hub, ACTUATOR)},
+            {"device": node_device_id(hass, hub, ACTUATOR), "confirm": True},
             blocking=True,
         )
     assert unwired == [0x0148, 0x0300][: accepted + 1]
@@ -893,7 +934,7 @@ async def test_a_lost_link_during_the_reset_is_a_translated_error(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": node_device_id(hass, hub, 0x0300)},
+            {"device": node_device_id(hass, hub, 0x0300), "confirm": True},
             blocking=True,
         )
     assert caught.value.translation_placeholders == {
@@ -969,7 +1010,7 @@ async def test_adding_and_removing_run_on_the_hub_the_lock_hands_them(
             return_response=True,
         )
         await hass.services.async_call(
-            DOMAIN, "remove_device", {"device": device}, blocking=True
+            DOMAIN, "remove_device", {"device": device, "confirm": True}, blocking=True
         )
     assert result == {"unicast": "0D20"}
     assert current == [True, True]

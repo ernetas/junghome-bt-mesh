@@ -617,6 +617,9 @@ EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beaco
 # is enabled — and a Scene Recall heard on the mesh as EVENT_SCENE_RECALLED. `logbook.py` describes both.
 EVENT_BUTTON_ACTION: Final = f"{DOMAIN}_button_action"
 EVENT_SCENE_RECALLED: Final = f"{DOMAIN}_scene_recalled"
+# an action's plan finished, stopped or was cancelled (review-4 W I7): `entry_id`, `name` (the entry's title),
+# `action`, `outcome`, and the logbook line as a translation key of the `exceptions` section with its placeholders
+EVENT_PLAN: Final = f"{DOMAIN}_plan"
 # Keys of the bus events' data, next to HA's own ATTR_DEVICE_ID / ATTR_ENTITY_ID / ATTR_NAME and CONF_TYPE:
 # the key letter A-D of the buttons device (EVENT_BUTTON_ACTION), the scene number (both events), the element
 # address of the node that recalled the scene as 4 hex digits (absent when only a member's Scene Status told of the

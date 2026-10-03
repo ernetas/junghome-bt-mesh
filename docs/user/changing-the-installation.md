@@ -37,6 +37,24 @@ They are **for administrators**: a user who is not an administrator cannot run t
 A change is followed at once, without reloading: no entity goes unavailable. When a device does not answer, nothing
 is recorded and the action tells you which device it was; run it again once the device is back.
 
+### Try it first, and see what it did
+
+The actions that rewire devices — *Set room*, *Add to room*, *Remove from room*, *Create room*, *Delete room*,
+*Assign key*, *Clear key*, *Create scene*, *Delete scene* and *Remove device* — have a **Dry run** switch: the action
+answers what it would send to which device and how the export would change, and sends, writes and takes over
+nothing. Turn on *Return response* in *Developer tools → Actions* to see the answer.
+
+Run for real, the same actions answer how many of their messages the devices took (`applied` of `total`), whether
+the export was written (`recorded`) and which devices changed (`nodes`), and the logbook gets a line such as
+*Key 0234 (…) now drives room Kitchen; 8 messages* — or how far it got when a device stopped it. The last few are in
+the integration's diagnostics too.
+
+Instead of typing a room's name you can pick the **area** named like it (*Room by area*), and instead of a scene's
+name its **scene entity** (*Scene entity*).
+
+*Remove device*, and *Delete scene* with *Even if a device does not answer*, cannot be undone: they need
+**Confirm** turned on (`confirm: true` in a script). A dry run needs none.
+
 ### Rooms
 
 | What | Action |

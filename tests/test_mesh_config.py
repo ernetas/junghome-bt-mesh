@@ -1992,7 +1992,7 @@ async def test_a_refused_config_status_stops_the_plan_and_records_what_was_appli
         await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
     assert exc.value.translation_key == "service_config_refused"
     assert exc.value.translation_placeholders == {
-        "node": "0232",
+        "node": "0232 (Push-button 2-gang)",
         "message": "Config Model Subscription Add elem=0234 address=C070 model=1003",
         "status": "Not a Subscribe Model",
         "applied": mc.applied_text(3, 8),
@@ -2037,7 +2037,7 @@ async def test_a_silent_node_stops_the_plan_and_records_what_was_applied(
         await bench.configurator.assign_key(ROCKER_A, room="WC")
     assert exc.value.translation_key == "service_no_reply"
     assert exc.value.translation_placeholders == {
-        "node": "0300",
+        "node": "0300 (Push-button 1-gang)",
         "message": "Config Model Subscription Add elem=0300 address=C04F model=1000",
         "applied": mc.applied_text(1, 11),
     }
@@ -2339,7 +2339,7 @@ async def test_a_lost_link_surfaces_as_send_failed(bench: Bench) -> None:
             await op
         assert exc.value.translation_key == "service_send_failed"
         assert exc.value.translation_placeholders == {
-            "node": "0232",
+            "node": "0232 (Push-button 2-gang)",
             "message": message,
             "applied": mc.APPLIED_NOTHING,
         }
@@ -4700,7 +4700,7 @@ async def test_a_sleeping_battery_key_stops_the_plan_at_its_first_message(
         await battery_bench.configurator.assign_key(TRANSMITTER_KEY, room="WC")
     assert exc.value.translation_key == "service_node_asleep"
     assert exc.value.translation_placeholders == {
-        "node": "0520",
+        "node": "0520 (Wall transmitter 1-gang)",
         "message": M.describe(first),
         "applied": mc.APPLIED_NOTHING,
     }
@@ -5437,7 +5437,7 @@ async def test_a_plan_to_an_unreachable_node_is_refused_before_it_is_sent(
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_key == "service_nodes_unreachable"
     assert exc.value.translation_placeholders == {
-        "nodes": f"{DALI_NODE:04X}",
+        "nodes": f"{DALI_NODE:04X} (Push-button 2-gang)",
         "applied": mc.APPLIED_NOTHING,
     }
     assert bench.config_pdus() == []
@@ -5729,3 +5729,258 @@ def test_a_journalled_step_reads_back_as_it_was() -> None:
     ]
     rows = json.loads(json.dumps([mc._step_json(s) for s in steps]))
     assert [mc._step_from_json(row) for row in rows] == steps
+
+
+# ----------------------------------------------------------------------------- dry runs (review-4 W I3)
+
+
+@dataclass
+class Before:
+    """What the bench holds before a dry run: messages sent so far, the file, the journal and held-scene saves."""
+
+    config: int
+    app: int
+    file: bytes
+    journal: int
+    held: int
+
+    @classmethod
+    def of(cls, bench: Bench) -> Before:
+        return cls(
+            len(bench.config_pdus()),
+            len(bench.app_pdus()),
+            bench.path.read_bytes(),
+            len(bench.journal.saves),
+            len(bench.held.saves),
+        )
+
+    def unchanged(self, bench: Bench) -> None:
+        """Nothing sent, written, journaled or held since: a dry run's whole footprint is its answer."""
+        assert len(bench.config_pdus()) == self.config
+        assert len(bench.app_pdus()) == self.app
+        assert bench.path.read_bytes() == self.file
+        assert len(bench.journal.saves) == self.journal
+        assert len(bench.held.saves) == self.held
+        assert not bench.configurator.recorded
+        assert not bench.configurator.adopted
+
+
+Operation = Callable[[MeshConfigurator], Coroutine[Any, Any, Any]]
+DRY_RUNS: list[tuple[str, Operation | None, Operation]] = [
+    ("set_room", None, lambda c: c.set_room(DALI_LOAD, "WC")),
+    ("add_to_room", None, lambda c: c.add_to_room(DALI_LOAD, "Kitchen")),
+    (
+        "remove_from_room",
+        None,
+        lambda c: c.remove_from_room(SWITCH_LOAD, "WC", force=True),
+    ),
+    ("set_room_create", None, lambda c: c.set_room(DALI_LOAD, "Attic", create=True)),
+    ("assign_key_device", None, lambda c: c.assign_key(ROCKER_A, element=DIMMER_LOAD)),
+    ("assign_key_room", None, lambda c: c.assign_key(ROCKER_A, room="WC")),
+    ("assign_key_scene", None, lambda c: c.assign_key(ROCKER_A, scene="All off")),
+    (
+        "assign_key_lock",
+        None,
+        lambda c: c.assign_key(
+            ROCKER_A, element=SWITCH_LOAD, mode="lock", lock_seconds=600
+        ),
+    ),
+    ("clear_key", None, lambda c: c.clear_key(ROCKER_A)),
+    ("delete_room", None, lambda c: c.delete_room("WC")),
+    (
+        "delete_scene",
+        lambda c: c.assign_key(SWITCH_KEY, scene=1),
+        lambda c: c.delete_scene(1),
+    ),
+    ("remove_node", None, lambda c: c.remove_node(DIMMER_NODE)),
+    ("create_room", None, lambda c: c.create_room("Attic")),
+    ("create_scene", None, lambda c: c.create_scene("Movie night")),
+    ("rename_room", None, lambda c: c.rename_room("WC", "Bathroom")),
+]
+
+
+def described(pdus: list[tuple[int, bytes]]) -> list[str]:
+    return [M.describe(pdu) for _dst, pdu in pdus]
+
+
+@pytest.mark.parametrize(
+    ("prepare", "operation"),
+    [(prepare, operation) for _name, prepare, operation in DRY_RUNS],
+    ids=[name for name, _prepare, _operation in DRY_RUNS],
+)
+async def test_a_dry_run_sends_writes_and_journals_nothing_and_answers_the_real_plan(
+    bench: Bench,
+    scenes: SceneServer,
+    prepare: Operation | None,
+    operation: Operation,
+) -> None:
+    """Review-4 W I3: the plan built, nothing sent, written, journaled or held; the steps are the messages the real
+    run then sends — the Config plan exactly, in order, the vendor and scene writes among the rest — and the diff
+    is how the real run changes the export."""
+    if prepare is not None:
+        await prepare(bench.configurator)
+        bench.configurator.recorded = False  # per call, as `services._run` does
+    before = Before.of(bench)
+    snapshot = bench.reload().snapshot()
+    dry = await bench.configurator.dry_run(operation)
+    before.unchanged(bench)
+    assert dry["dry_run"] is True
+    assert dry["diff"], "every operation here changes the export"
+    await operation(bench.configurator)
+    messages = [step.split(": ", 1)[1] for step in dry["steps"]]
+    sent_config = described(bench.config_pdus()[before.config :])
+    assert [m for m in messages if m.startswith("Config ")] == sent_config
+    sent_app = iter(described(bench.app_pdus()[before.app :]))
+    assert all(m in sent_app for m in messages if not m.startswith("Config "))
+    real = mc.diff_documents(snapshot, bench.reload().snapshot())
+    assert [d["path"] for d in dry["diff"]] == [c.where() for c in real]
+
+
+async def test_a_dry_run_names_the_devices_and_never_shows_a_key(bench: Bench) -> None:
+    """Every step names the device it goes to; the diff names entries by what identifies them, never a key."""
+    dry = await bench.configurator.dry_run(lambda c: c.remove_node(DIMMER_NODE))
+    assert dry["steps"][0] == "0300 (Push-button 1-gang): Config Node Reset"
+    network = bench.reload().net
+    keys = {str(n.get("deviceKey")) for n in network["nodes"]} | {
+        str(k.get("key")) for k in network["netKeys"] + network["appKeys"]
+    }
+    text = json.dumps(dry)
+    assert not any(key in text for key in keys if key and key != "None")
+
+
+async def test_a_dry_run_with_nothing_to_do_or_refused_answers_so(
+    bench: Bench,
+) -> None:
+    """Nothing to do: no steps, no change; a call the real run refuses is refused by the dry run as well."""
+    assert await bench.configurator.dry_run(
+        lambda c: c.set_room(SWITCH_LOAD, "WC")
+    ) == {
+        "dry_run": True,
+        "steps": [],
+        "diff": [],
+    }
+    with pytest.raises(ServiceValidationError) as exc:
+        await bench.configurator.dry_run(lambda c: c.set_room(DALI_LOAD, "Attic"))
+    assert exc.value.translation_key == "service_no_room"
+    assert not bench.configurator.dry  # the dry run ended with the call
+    assert bench.file_unchanged()
+
+
+async def test_create_dry_runs_answer_the_number_they_would_take(bench: Bench) -> None:
+    """`create_room` / `create_scene`: the address and number the real run then takes."""
+    room = await bench.configurator.dry_run(lambda c: c.create_room("Attic"))
+    scene = await bench.configurator.dry_run(lambda c: c.create_scene("Movie night"))
+    assert (room["room"], room["address"]) == ("Attic", f"{NEW_ROOM:04X}")
+    assert (scene["scene"], scene["name"]) == (NEW_SCENE, "Movie night")
+    assert bench.file_unchanged()
+    assert await bench.configurator.create_room("Attic") == NEW_ROOM
+    assert await bench.configurator.create_scene("Movie night") == NEW_SCENE
+
+
+async def test_a_detectors_dry_run_lists_no_key_mode(
+    tmp_path: Path, fast: FastAsyncio
+) -> None:
+    """A detector source has no vendor write after its wiring: the dry run lists the Config plan alone."""
+    bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-detectors.json")
+    dry = await bench.configurator.dry_run(
+        lambda c: c.assign_key(DETECTOR_MOTION_ELEMENT, element=PRESENCE_RELAY)
+    )
+    assert dry["steps"]
+    assert all(": Config " in step for step in dry["steps"])
+    assert bench.config_pdus() == []
+    assert bench.file_unchanged()
+
+
+async def test_a_dry_run_asks_no_gateway_and_adopts_nothing(
+    bench: Bench, with_gateway: FakeGateway
+) -> None:
+    """The real run would take the app's newer export over first; the dry run plans on the disk and asks nobody."""
+    with_gateway.doc = gateway_doc(bench.path, room="Attic")
+    synced = bench.sync.synced
+    dry = await bench.configurator.dry_run(lambda c: c.create_room("Loft"))
+    assert dry["room"] == "Loft"
+    assert bench.file_unchanged()
+    assert bench.sync.synced == synced
+    assert with_gateway.uploads == []
+    assert not mc.app_copy_path(bench.path).exists()
+    assert not mc.pre_adopt_path(bench.path).exists()
+    assert "_digest_on_disk" not in bench.hub.hass.jobs
+
+
+async def test_a_dry_run_merges_the_identity_from_a_copy_and_saves_no_vault(
+    bench: Bench,
+) -> None:
+    """With the provisioner identity on, the plan is made on the export as the real run would make it (Home
+    Assistant's ranges), from a copy of the vault: the vault in memory and on disk stay as they were. A merge that
+    fails leaves the dry run planning without it."""
+    bench.hub.entry.options = {mc.OPTION_PROVISIONER_IDENTITY: True}
+    vault = bench.hub.vault.identity()
+    store: MemoryStore = bench.hub.vault._store  # type: ignore[assignment]
+    dry = await bench.configurator.dry_run(lambda c: c.create_room("Attic"))
+    assert (
+        dry["address"] == "FDF5"
+    )  # Home Assistant's group range, as the real run allocates
+    assert vault.ranges is None
+    assert store.saves == []
+    with patch.object(type(vault), "merge_into", side_effect=ValueError("broken")):
+        dry = await bench.configurator.dry_run(lambda c: c.create_room("Attic"))
+    assert dry["address"] == f"{NEW_ROOM:04X}"  # the app's range: planned without it
+    assert store.saves == []
+    assert bench.file_unchanged()
+
+
+async def test_another_tasks_call_is_no_dry_run(bench: Bench) -> None:
+    """The dry run is the running task's: a call of another task meanwhile (the unknown-node refresh, another
+    action on the configurator) sends and writes as ever."""
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def slow(c: MeshConfigurator) -> None:
+        started.set()
+        await release.wait()
+        await c.set_room(DALI_LOAD, "WC")
+
+    dry = asyncio.ensure_future(bench.configurator.dry_run(slow))
+    await started.wait()
+    assert await bench.configurator.create_room("Attic") == NEW_ROOM  # written
+    written = bench.path.read_bytes()
+    assert written != bench.original
+    release.set()
+    assert (await dry)["steps"]
+    assert bench.path.read_bytes() == written
+
+
+async def test_the_outcome_counts_what_the_plans_applied(bench: Bench) -> None:
+    """`plan_response`: what the call's plans applied; a stopped plan counts what was accepted before it."""
+    assert await bench.configurator.set_room(DALI_LOAD, "WC")
+    response = bench.configurator.plan_response()
+    assert response["applied"] == response["total"] > 0
+    assert response["recorded"] is True
+    assert response["nodes"] == ["0232 (Push-button 2-gang)"]
+    assert bench.configurator.outcome.summary == (
+        "plan_room_joined",
+        {"devices": "0232", "room": "WC"},
+    )
+    bench.configurator.outcome = mc.PlanOutcome()
+    refused = sub_add(ROCKER_A, DIMMER_GROUP, "1003")
+    bench.config.refuse[refused] = 0x08
+    with pytest.raises(HomeAssistantError):
+        await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
+    outcome = bench.configurator.outcome
+    assert (outcome.applied, outcome.total) == (3, 8)
+    assert outcome.action == "junghome_ble.assign_key"
+    assert outcome.summary is None
+    assert len(outcome.steps) == 8
+
+
+def test_shown_never_renders_a_key() -> None:
+    """A dry run's diff: an entry by its identifying fields, a list's plain values, a key never, nothing as such."""
+    assert mc.shown(MISSING, ("groups",)) == "nothing"
+    assert mc.shown("00" * 16, ("nodes", "deviceKey")) == "a key (not shown)"
+    assert (
+        mc.shown({"address": "C00F", "name": "WC"}, ("groups",))
+        == "address C00F, name WC"
+    )
+    assert mc.shown({"deviceKey": "00"}, ()) == "an entry"
+    assert mc.shown([1, "C00F", {"x": 1}], ("subscribe",)) == "1, C00F"
+    assert mc.shown([], ("subscribe",)) == "none"
+    assert mc.shown(5, ("number",)) == "5"

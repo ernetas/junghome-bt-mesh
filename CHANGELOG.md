@@ -34,6 +34,10 @@
   Assistant then puts the area in front of its new entity ids (*event.wc_wc_mirror_button*), as it already did for
   the lights; devices registered before keep their area (none for keys and nodes) and their entity ids, until you
   use *Reconfigure → Change which area each room's devices go to*.
+- **`remove_device`, and `delete_scene` with `force`, need `confirm: true`** (review-4 W I9, decision as for M3 /
+  M8): both cannot be undone, and a call without it is now refused (*Removing a device cannot be undone: add
+  "confirm: true"* …). An automation or script calling them must add `confirm: true` to the data
+  (`delete_scene` without `force` is unchanged). A call with `dry_run: true` needs none.
 
 ### Fixed — mesh safety
 
@@ -497,6 +501,18 @@
   you placed yourself, and says how many moved. The new option *Move devices along when their JUNG room changes*
   (off by default) does the same after `set_room` and the other room actions, and after Home Assistant took over a
   new export. Unverified on air.
+- Dry runs, answers and a logbook for the actions that rewire (review-4 W I3, W I6, W I7, W I9, U4-13). `set_room`,
+  `add_to_room`, `remove_from_room`, `create_room`, `delete_room`, `assign_key`, `clear_key`, `create_scene`,
+  `delete_scene` and `remove_device` take `dry_run: true`: they answer the messages they would send, each with the
+  device it goes to, and how the export would change (keys never shown), and send, write and take over nothing —
+  not even from the gateway, whose newer export a real run takes over first. Run for real, they and the threshold
+  actions answer `applied` / `total` messages, `recorded` and the `nodes` that changed when asked (calls that do not
+  ask work as before); a plan that stops carries the same in its error, whose device is named, not only addressed.
+  Every call that ran a plan leaves a logbook line (*0234 (…) now drives room Kitchen; 8 messages*, or how far it
+  got), in the server's language, from the `junghome_ble_plan` event; the diagnostics keep the last five (`plans`).
+  A room can be given as the area named like it (`room_area`), a scene as its entity (`scene_entity`); *Store
+  scene*'s state fields sit in a collapsed *State to store* section, the schedule actions' in *When* and *What*.
+  The response counts are unverified on air.
 
 ### CLI tools and library
 

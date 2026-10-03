@@ -451,6 +451,7 @@ async def test_diagnostics_include_the_options_and_the_open_repairs(
     """
     result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
     assert (result["options"], result["issues"]) == ({}, [])
+    assert result["plans"] == []  # no action ran a plan yet (review-4 W I7)
     hass.config_entries.async_update_entry(
         init_integration, options={OPTION_CLICK_DELAY: True}
     )

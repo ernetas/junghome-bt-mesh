@@ -31,6 +31,10 @@ one at a time per hub:
    gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
    kept in the entry's `GatewaySync` record (the time is the app's `gateway_last_sync`).
 
+A dry run (`MeshConfigurator.dry_run`, review-4 W I3) goes through step 2 on the export on disk only and ends where
+step 3 or 5 would begin, answering the plan's messages and how the export would change; nothing is sent, written or
+adopted. What a call's plans did is counted per call (`PlanOutcome`) for its answer, its error and the logbook.
+
 The caller (`services.py`) then has the running hub take the new export over in place (`model_update`, review-4
 D23), which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
 devices — follows it; a change it cannot follow in place reloads the config entry, as every change did before.
@@ -60,14 +64,17 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import copy
 import hashlib
 import json
 import logging
+from collections import deque
 from collections.abc import Callable, Collection, Coroutine, Iterable, Sequence
-from dataclasses import dataclass, replace
+from contextvars import ContextVar
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
@@ -825,22 +832,9 @@ def held(change: Change) -> str:
     node) is named by its identifying fields only, never written out whole (a node entry carries its device key);
     a list of plain values (subscriptions) is listed; a key field is never rendered.
     """
-    value = change.new
-    last = change.path[-1] if change.path else None
-    if value is MISSING:
+    if change.new is MISSING:
         return "nothing (Home Assistant removed it)"
-    if isinstance(last, str) and last in _SECRET_FIELDS:
-        return "a key (not shown)"
-    if isinstance(value, dict):
-        named = [
-            f"{field} {value[field]}"
-            for field in _IDENTITY_FIELDS
-            if isinstance(value.get(field), (str, int))
-        ]
-        return ", ".join(named) or "an entry"
-    if isinstance(value, list):
-        return ", ".join(str(v) for v in value if isinstance(v, (str, int))) or "none"
-    return str(value)
+    return shown(change.new, change.path)
 
 
 def app_copy_path(cdb_path: str | Path) -> Path:
@@ -1072,6 +1066,85 @@ async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
     raise cancelled
 
 
+# ------------------------------------------------------------------ outcomes and dry runs (review-4 W I3, W I6, W I7)
+
+
+@dataclass
+class PlanOutcome:
+    """What the running call's plans did on the mesh (`MeshConfigurator._send`): its response, its error, the logbook.
+
+    `services._run` starts a new one per call; a call can run several plans (`set_threshold` socket by socket, a
+    scene's keys before its members), which add up. `steps` are the messages of every plan (node, description: no
+    key material), `nodes` the nodes that accepted one, `summary` the logbook line of a call that finished (a
+    translation key of the `exceptions` section, `plan_*`, and its placeholders).
+    """
+
+    action: str | None = None
+    applied: int = 0
+    total: int = 0
+    nodes: list[int] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)
+    summary: tuple[str, dict[str, str]] | None = None
+
+
+PLAN_HISTORY_SIZE = 5  # finished or stopped calls the diagnostics show per entry
+PLAN_HISTORIES: HassKey[dict[str, deque[dict[str, Any]]]] = HassKey(
+    f"{DOMAIN}_plan_histories"
+)
+
+
+def plan_history(hass: HomeAssistant, entry_id: str) -> deque[dict[str, Any]]:
+    """Return the entry's last calls that ran a plan, oldest first (`services._report_plan`; memory only).
+
+    `{"action", "outcome", "applied", "total", "steps", "error"}`: step texts and an error key, no key material.
+    """
+    histories = hass.data.setdefault(PLAN_HISTORIES, {})
+    return histories.setdefault(entry_id, deque(maxlen=PLAN_HISTORY_SIZE))
+
+
+@dataclass
+class DryRun:
+    """A dry run's plan (`MeshConfigurator.dry_run`): the export it planned on, as read and as the plan leaves it."""
+
+    pf: ProjectFile | None = None
+    before: dict[str, Any] | None = None
+    steps: list[str] = field(default_factory=list)
+    diff: list[dict[str, str]] = field(default_factory=list)
+    extra: dict[str, Any] = field(default_factory=dict)
+
+
+class _Planned(Exception):
+    """Raised where a dry run's operation would send or write: it unwinds the operation, holding nothing."""
+
+
+# the dry run of the running task, if any: a context variable, so a call of another task on the same configurator
+# (the unknown-node refresh, another entry's action) is never taken for one
+_DRY_RUN: ContextVar[DryRun | None] = ContextVar(f"{DOMAIN}_dry_run", default=None)
+
+
+def shown(value: Any, path: tuple[Any, ...]) -> str:
+    """Say what an export holds at `path` without any key: an entry by its identifying fields, a list's plain values.
+
+    A key field is never rendered (`_SECRET_FIELDS`), nor an entry written out whole (a node entry carries its
+    device key); a value that is not there is "nothing".
+    """
+    last = path[-1] if path else None
+    if value is MISSING:
+        return "nothing"
+    if isinstance(last, str) and last in _SECRET_FIELDS:
+        return "a key (not shown)"
+    if isinstance(value, dict):
+        named = [
+            f"{name} {value[name]}"
+            for name in _IDENTITY_FIELDS
+            if isinstance(value.get(name), (str, int))
+        ]
+        return ", ".join(named) or "an entry"
+    if isinstance(value, list):
+        return ", ".join(str(v) for v in value if isinstance(v, (str, int))) or "none"
+    return str(value)
+
+
 class MeshConfigurator:
     """Rooms, key connections and scenes of one hub; operations are serialised by `lock`.
 
@@ -1092,7 +1165,113 @@ class MeshConfigurator:
         self.adopted = False
         # whether the plan journal holds a plan whose outcome the export does not record yet
         self.journaled = False
+        # what the running call's plans did (`services._run` starts a new one per call)
+        self.outcome = PlanOutcome()
         hub.configurator = self  # the hub's unknown-node refresh adopts the gateway's export through us
+
+    # ------------------------------------------------------------------ dry runs and outcomes (review-4 W I3, W I6)
+    @property
+    def dry(self) -> bool:
+        """Whether the running task's operation is a dry run (`dry_run`): it must send, write and adopt nothing."""
+        return _DRY_RUN.get() is not None
+
+    async def dry_run(
+        self, operation: Callable[[MeshConfigurator], Coroutine[Any, Any, Any]]
+    ) -> dict[str, Any]:
+        """Run `operation` as far as its plan; answer `{"dry_run", "steps", "diff"}` and send, write, adopt nothing.
+
+        The export is read from disk (`_load`): the gateway is not asked, so nothing of it is adopted, and Home
+        Assistant's provisioner entry is merged into the read copy from a copy of the vault, which is not saved
+        either. Where the real run would send its plan or write the export (`_send`, `_save`; a removal's reset and
+        a key link's vendor writes before that), the plan is noted — its messages in the order they would go out,
+        each with the device it goes to — with how the export would change (`diff_documents`, keys never shown),
+        and the operation is unwound. Its checks run as they would: a call the real run refuses is refused. An
+        operation with nothing to do answers no steps and no change. With a gateway, the real run plans on the
+        gateway's export when the app changed the installation since, which this one does not look at.
+        """
+        dry = DryRun()
+        token = _DRY_RUN.set(dry)
+        try:
+            await operation(self)
+        except _Planned:
+            pass
+        finally:
+            _DRY_RUN.reset(token)
+        return {"dry_run": True, "steps": dry.steps, "diff": dry.diff, **dry.extra}
+
+    def _planned(
+        self,
+        plan: Iterable[ConfigStep] = (),
+        *,
+        first: Iterable[str] = (),
+        then: Iterable[str] = (),
+        **extra: Any,
+    ) -> NoReturn:
+        """End a dry run where the real run would send or write: note the messages and how the export would change.
+
+        `plan` is the Config plan in the order it would go out; `first` / `then` describe what goes out before /
+        after it (a node's reset, a key's vendor writes), `extra` joins the answer (a new room's address).
+        """
+        dry = _DRY_RUN.get()
+        assert dry is not None
+        assert dry.pf is not None
+        assert dry.before is not None
+        dry.steps = [
+            *first,
+            *(f"{self._node_name(step.node)}: {step.what}" for step in plan),
+            *then,
+        ]
+        dry.diff = [
+            {
+                "path": change.where(),
+                "before": shown(change.old, change.path),
+                "after": shown(change.new, change.path),
+            }
+            for change in diff_documents(dry.before, dry.pf.snapshot())
+        ]
+        dry.extra = extra
+        raise _Planned
+
+    async def _load_read_only(self, dry: DryRun) -> ProjectFile:
+        """`_load` for a dry run: the export on disk, with the provisioner identity merged from a copy of the vault."""
+        pf = await self._read()
+        vault = self.hub.vault.vault
+        if self.identity_enabled and vault is not None:
+            try:
+                await self.hub.hass.async_add_executor_job(
+                    copy.deepcopy(vault).merge_into, pf, self.hub.proxy.state.src
+                )
+            # the real run says why (`_with_identity`); the dry run plans without the entry
+            except Exception as err:
+                _LOGGER.debug(
+                    "Dry run without the provisioner entry: %s", type(err).__name__
+                )
+        dry.pf, dry.before = pf, pf.snapshot()
+        return pf
+
+    def _node_name(self, unicast: int) -> str:
+        """`0232 (Kitchen)`: a node by its address, with the name of the load at that address or the node's own."""
+        device = self.hub.devices.by_address.get(unicast)
+        node = self.hub.cdb.node_by_addr(unicast)
+        name = (
+            device.name
+            if device is not None
+            else (node.name if node is not None else None)
+        )
+        return f"{hexaddr(unicast)} ({name})" if name else hexaddr(unicast)
+
+    def plan_response(self) -> dict[str, Any]:
+        """Answer what the call's plans did: `{"applied", "total", "recorded", "nodes"}` (review-4 W I6).
+
+        `applied` of the `total` Config messages were accepted, `recorded` whether the export was written,
+        `nodes` the devices that took a message. Unverified on air: the counts of a real plan.
+        """
+        return {
+            "applied": self.outcome.applied,
+            "total": self.outcome.total,
+            "recorded": self.recorded,
+            "nodes": [self._node_name(n) for n in self.outcome.nodes],
+        }
 
     # ------------------------------------------------------------------ project file
     @property
@@ -1107,8 +1286,11 @@ class MeshConfigurator:
         (`services._run`): one call can run several mutations (`set_threshold` wires socket by socket), and a
         later one that fails must not hide the export an earlier one wrote. `fresh`: a gateway entry whose gateway
         did not answer is refused instead of planning on the copy on disk, which may lack what the app made since
-        (review-4 W4-3: what judges by what the export *lacks* must not fall back silently).
+        (review-4 W4-3: what judges by what the export *lacks* must not fall back silently). A dry run reads the
+        disk alone and writes nothing (`_load_read_only`).
         """
+        if (dry := _DRY_RUN.get()) is not None:
+            return await self._load_read_only(dry)
         answered = await self._adopt_gateway_export()
         if fresh and not answered and self.gateway is not None:
             raise _failure("service_gateway_export_unavailable")
@@ -1149,8 +1331,10 @@ class MeshConfigurator:
         ahead of it; once written, the plan journal is done with. The upload is not held to its end: cancelled,
         skipped while Home Assistant stops (it would hold the shutdown up for a gateway that may not answer) or
         not asked for (`upload=False`), it is left to `sync_gateway` or the next change, which uploads the export
-        as it is on disk then.
+        as it is on disk then. A dry run ends here, before anything is written (`_planned`).
         """
+        if self.dry:
+            self._planned()
         try:
             await run_to_end(self._save_file(pf))
         except asyncio.CancelledError:
@@ -2214,6 +2398,12 @@ class MeshConfigurator:
             carries_link = unicast == self.hub.proxy_node
             if carries_link and not force:
                 raise _validation("remove_device_proxy", address=hexaddr(unicast))
+            if self.dry:
+                changes = pf.remove_node(node, self.hub.proxy.state.iv_index)
+                self._planned(
+                    self._in_order(self._steps(pf, changes))[0],
+                    first=[f"{self._node_name(unicast)}: {M.describe(C.node_reset())}"],
+                )
             # scanners keep a device's advert data merged: one from before it was provisioned proves nothing later
             advertised = advertises_unprovisioned(self.hub.hass, node.uuid)
             relink = False
@@ -2265,6 +2455,10 @@ class MeshConfigurator:
                 vault = self.hub.vault.vault
                 if vault is not None and vault.forget(node.uuid):
                     await run_to_end(self.hub.vault.async_save())
+            self.outcome.summary = (
+                "plan_device_removed",
+                {"device": self._node_name(unicast)},
+            )
             _LOGGER.info(
                 "Removed %s (%04X) from the network, %d Config messages to the others",
                 node.name,
@@ -2896,14 +3090,17 @@ class MeshConfigurator:
         it would only stop at that node after CONFIG_TIMEOUT times (1 + CONFIG_RETRIES), with the steps before it
         applied. `happened` is still recorded. Battery nodes are never marked so; they go the keep-awake way.
         Unverified on air.
+
+        The call's `outcome` counts the plan and what was accepted of it (its response, error and logbook line); a
+        dry run ends here with the plan noted, before anything is journaled or sent (`_planned`).
         """
-        steps = list(steps)
-        sleepy = {
-            unicast
-            for s in steps
-            if (unicast := sleepy_node(self.hub.cdb, s.node)) is not None
-        }
-        plan = steps if as_planned else ordered(steps, sleepy)
+        plan, sleepy = self._in_order(steps, as_planned=as_planned)
+        if self.dry:
+            self._planned(plan)
+        outcome = self.outcome
+        outcome.action = action
+        outcome.total += len(plan)
+        outcome.steps += [f"{hexaddr(s.node)}: {s.what}" for s in plan]
         accepted: list[ConfigStep] = []
         problem = self._unreachable(plan, sleepy)
         journal: dict[str, Any] = {
@@ -2923,6 +3120,9 @@ class MeshConfigurator:
                         if problem is not None:
                             break
                         accepted.append(step)
+                        outcome.applied += 1
+                        if step.node not in outcome.nodes:
+                            outcome.nodes.append(step.node)
                         journal["accepted"] = len(accepted)
                         await self._journal_save(journal)
         except asyncio.CancelledError:
@@ -2937,6 +3137,18 @@ class MeshConfigurator:
         ) is not None:
             raise err from record_err
         raise err
+
+    def _in_order(
+        self, steps: Iterable[ConfigStep], *, as_planned: bool = False
+    ) -> tuple[list[ConfigStep], set[int]]:
+        """Put the plan in the order `_send` sends it (`ordered`, battery nodes first); return it and those nodes."""
+        steps = list(steps)
+        sleepy = {
+            unicast
+            for s in steps
+            if (unicast := sleepy_node(self.hub.cdb, s.node)) is not None
+        }
+        return (steps if as_planned else ordered(steps, sleepy)), sleepy
 
     async def _record_stopped(
         self,
@@ -2975,7 +3187,7 @@ class MeshConfigurator:
         if not nodes:
             return None
         return "service_nodes_unreachable", {
-            "nodes": ", ".join(hexaddr(n) for n in nodes)
+            "nodes": ", ".join(self._node_name(n) for n in nodes)
         }
 
     def _silence(self, node: int) -> str:
@@ -2991,9 +3203,11 @@ class MeshConfigurator:
         this one's. A node the running hub does not know (the export on disk was replaced by a newer one naming
         a re-provisioned node, without a reload) has no device key here: `ProxyClient._dev_key` raises
         `ValueError`, reported as the export being newer than what is loaded. A battery node that stays silent is
-        reported as asleep (`_silence`), asking for a key press and a new run instead of the no-reply error.
+        reported as asleep (`_silence`), asking for a key press and a new run instead of the no-reply error. The
+        errors name the node with its device's name (`_node_name`), not by its address alone.
         """
         what = step.what
+        node = self._node_name(step.node)
         try:
             reply = await self.hub.proxy.request_config(
                 step.node,
@@ -3005,16 +3219,16 @@ class MeshConfigurator:
             )
         except TimeoutError:
             return self._silence(step.node), {
-                "node": hexaddr(step.node),
+                "node": node,
                 "message": what,
             }
         except ValueError:
             return "service_export_unknown_node", {
-                "node": hexaddr(step.node),
+                "node": node,
                 "path": self.path,
             }
         except (ConnectionError, OSError):
-            return "service_send_failed", {"node": hexaddr(step.node), "message": what}
+            return "service_send_failed", {"node": node, "message": what}
         try:
             status = C.decode_config(reply.opcode, reply.params)
         except ValueError:
@@ -3026,7 +3240,7 @@ class MeshConfigurator:
                 else "malformed status"
             )
             return "service_config_refused", {
-                "node": hexaddr(step.node),
+                "node": node,
                 "message": what,
                 "status": name,
             }
@@ -3272,6 +3486,8 @@ class MeshConfigurator:
         async with self.lock:
             pf = await self._load()
             address = self._add_room(pf, name)
+            if self.dry:
+                self._planned(room=name, address=hexaddr(address))
             await self._save(pf)
             _LOGGER.info("Created room %r at %04X", name, address)
             return address
@@ -3309,6 +3525,7 @@ class MeshConfigurator:
             steps += self._steps(pf, pf.remove_group(address))
             await self._send(steps, action="junghome_ble.delete_room")
             await self._save(pf)
+            self.outcome.summary = ("plan_room_deleted", {"room": room})
             _LOGGER.info(
                 "Deleted room %r (%04X), %d Config messages", room, address, len(steps)
             )
@@ -3431,6 +3648,15 @@ class MeshConfigurator:
                 return self.adopted  # already so: nothing to send, write or upload
             await self._send(steps, action=action, prepare=prepare)
             await self._save(pf)
+            self.outcome.summary = (
+                "plan_room_joined" if join else "plan_room_left",
+                {
+                    "devices": ", ".join(
+                        self._member_name(e.address) for e in elements
+                    ),
+                    "room": pf.cdb.groups[group],
+                },
+            )
             _LOGGER.info(
                 "Element(s) %s %s room %r (%04X), %d Config messages",
                 ", ".join(f"{e.address:04X}" for e in elements),
@@ -3564,6 +3790,16 @@ class MeshConfigurator:
                     plan.scene is None
                 ):  # a scene key only publishes (`ConnectToAddress … PUBLISH_ONLY`)
                     steps += self._steps(pf, pf.subscribe(key, model, plan.publish))
+            if self.dry:
+                if plan.record_scene is not None:
+                    plan.record_scene(pf)
+                self._planned(
+                    self._in_order(steps)[0],
+                    then=[
+                        f"{self._member_name(key.address)}: {M.describe(pdu)}"
+                        for pdu in _key_link_writes(plan, detector=detector)
+                    ],
+                )
             # a battery key stays held from its first Config step to its KeyMode write (review-3 W4 / F24)
             async with self.hub.keep_awake.hold([key.address]):
                 await self._send(
@@ -3576,6 +3812,12 @@ class MeshConfigurator:
                     await self._save(pf)
                     raise
             await self._save(pf)
+            self.outcome.summary = _key_summary(
+                self._member_name(key.address),
+                room=room,
+                scene=plan.scene,
+                target=None if element is None else self._member_name(element),
+            )
             if plan.lock_target is not None:
                 await self._request_lock(plan.lock_target)
             _LOGGER.info(
@@ -3619,6 +3861,10 @@ class MeshConfigurator:
                 return self.adopted  # nothing left to clear
             await self._send(steps, action="junghome_ble.clear_key")
             await self._save(pf)
+            self.outcome.summary = (
+                "plan_key_cleared",
+                {"key": self._member_name(key.address)},
+            )
             _LOGGER.info(
                 "Key %04X cleared, %d Config messages", key.address, len(steps)
             )
@@ -4101,6 +4347,8 @@ class MeshConfigurator:
                 ) from err
             except ExportError as err:
                 raise _validation("service_scene_range_full") from err
+            if self.dry:
+                self._planned(scene=number, name=name)
             await self._save(pf)
             _LOGGER.info("Created scene %r as number %d", name, number)
             return number
@@ -4374,6 +4622,23 @@ class MeshConfigurator:
                 if (e := pf.cdb.element(a)) is not None
             ]
             keys = self._scene_key_steps(pf, [e.node for e in members], number)
+            if self.dry:
+                pf.remove_scene(number)
+                self._planned(
+                    self._in_order(keys)[0],
+                    then=[
+                        f"{self._member_name(element.address)}: {M.describe(pdu)}"
+                        for stored_on in members
+                        for element, pdu in (
+                            *(
+                                (channel, V.scene_action_set(number, V.NO_ACTION))
+                                for channel in stored_on.node.elements
+                                if has_model(channel, SCENE_ACTION_SETUP)
+                            ),
+                            (stored_on, M.scene_delete(number)),
+                        )
+                    ],
+                )
             try:
                 await self._send(keys, action="junghome_ble.delete_scene")
             except HomeAssistantError as err:
@@ -4419,6 +4684,7 @@ class MeshConfigurator:
                 )
             pf.remove_scene(number)
             await self._save(pf)
+            self.outcome.summary = ("plan_scene_deleted", {"scene": str(number)})
             _LOGGER.info(
                 "Deleted scene %d%s",
                 number,
@@ -4601,6 +4867,53 @@ class MeshConfigurator:
         pf.set_scene_addresses(
             number, [a for a in pf.cdb.scenes.get(number, []) if a != store.address]
         )
+
+
+def _key_link_writes(plan: KeyPlan, *, detector: bool) -> list[bytes]:
+    """List the LBC Admin writes `_write_key_link` sends after a key link's Config steps (the PDUs, unconfirmed)."""
+    if plan.scene is not None:
+        writes = [
+            (
+                PROPERTY_KEY_SCENE_CONFIG,
+                P.encode(PROPERTY_KEY_SCENE_CONFIG, P.SceneConfig(plan.scene)),
+                True,
+            )
+        ]
+    elif plan.lock is not None:
+        props = (
+            PROPERTY_KEY_PROPERTY_MODE,
+            PROPERTY_KEY_VALUE_UP,
+            PROPERTY_KEY_VALUE_DOWN,
+        )
+        writes = [(p, v, True) for p, v in zip(props, plan.lock, strict=True)]
+    elif not detector:  # `_reset_property_mode`: unacknowledged
+        writes = [
+            (
+                PROPERTY_KEY_PROPERTY_MODE,
+                P.encode(PROPERTY_KEY_PROPERTY_MODE, P.PropertyMode(0, stateful=False)),
+                False,
+            ),
+            (PROPERTY_KEY_VALUE_UP, b"", False),
+            (PROPERTY_KEY_VALUE_DOWN, b"", False),
+        ]
+    else:
+        writes = []
+    if not detector:
+        writes.append(
+            (PROPERTY_KEY_MODE, P.encode(PROPERTY_KEY_MODE, plan.key_mode), True)
+        )
+    return [M.vendor_property_set("admin", p, v, ack=ack) for p, v, ack in writes]
+
+
+def _key_summary(
+    key: str, *, room: str | None, scene: int | None, target: str | None
+) -> tuple[str, dict[str, str]]:
+    """Word the logbook line of a finished `assign_key`: the key and what it drives (a device, a room, a scene)."""
+    if room is not None:
+        return "plan_key_room", {"key": key, "room": room}
+    if scene is not None:
+        return "plan_key_scene", {"key": key, "scene": str(scene)}
+    return "plan_key_device", {"key": key, "target": str(target)}
 
 
 def _sibling_channels(element: Element) -> list[Element]:

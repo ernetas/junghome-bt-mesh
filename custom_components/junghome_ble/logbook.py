@@ -1,9 +1,14 @@
 """Describe the JUNG HOME bus events in the logbook.
 
-English on purpose, unlike everything else in this integration: the logbook API has no translation hook — a
-describer is a sync callback returning literal strings, runs in the server's language rather than the viewing
-user's, and `strings.json` has no category hassfest would accept for it. Core's own describers (automation,
-deconz, shelly, zha, …) hard-code English the same way.
+The button and scene lines are English on purpose, unlike everything else in this integration: the logbook API has
+no translation hook — a describer is a sync callback returning literal strings, runs in the server's language rather
+than the viewing user's, and `strings.json` has no category hassfest would accept for it. Core's own describers
+(automation, deconz, shelly, zha, …) hard-code English the same way.
+
+A plan's line (`EVENT_PLAN`, review-4 W I7: "Key 0151 (…) now drives room Kitchen; 6 messages") is worded by the
+action and translated all the same: its text is an `exceptions` message of `strings.json` (the category hassfest
+accepts for a sentence with placeholders), rendered from the translations Home Assistant cached for the server's
+language, English when that has none.
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from homeassistant.components.logbook.const import (
 from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_TYPE
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.translation import async_get_cached_translations
 
 from .const import (
     ATTR_KEY,
@@ -25,6 +31,7 @@ from .const import (
     ATTR_SCENE,
     DOMAIN,
     EVENT_BUTTON_ACTION,
+    EVENT_PLAN,
     EVENT_SCENE_RECALLED,
     HOLD_END_LINK_LOST,
     HOLD_END_STOPPED,
@@ -53,11 +60,22 @@ HOLD_END_MESSAGES = {
 
 
 @callback
+def plan_message(hass: HomeAssistant, key: str, placeholders: dict[str, str]) -> str:
+    """Return a plan's logbook line in the server's language (English without it); the key when it has no text."""
+    path = f"component.{DOMAIN}.exceptions.{key}.message"
+    for language in (hass.config.language, "en"):
+        text = async_get_cached_translations(hass, language, "exceptions", DOMAIN)
+        if path in text:
+            return text[path].format_map(placeholders)
+    return key
+
+
+@callback
 def async_describe_events(
     hass: HomeAssistant,
     async_describe_event: Callable[[str, str, Callable[[Event], dict[str, str]]], None],
 ) -> None:
-    """Register the describers of the button-action and scene-recalled events."""
+    """Register the describers of the button-action, scene-recalled and plan events."""
     registry = dr.async_get(hass)
 
     def _device_name(device_id: str | None) -> str | None:
@@ -104,5 +122,17 @@ def async_describe_events(
             entry[LOGBOOK_ENTRY_ENTITY_ID] = str(entity_id)
         return entry
 
+    @callback
+    def describe_plan(event: Event) -> dict[str, str]:
+        """'JUNG HOME Key 0151 (…) now drives room Kitchen; 6 messages': the network's name, the action's line."""
+        data = event.data
+        return {
+            LOGBOOK_ENTRY_NAME: str(data.get(ATTR_NAME) or DOMAIN),
+            LOGBOOK_ENTRY_MESSAGE: plan_message(
+                hass, str(data.get("message")), dict(data.get("placeholders") or {})
+            ),
+        }
+
+    async_describe_event(DOMAIN, EVENT_PLAN, describe_plan)
     async_describe_event(DOMAIN, EVENT_BUTTON_ACTION, describe_button_action)
     async_describe_event(DOMAIN, EVENT_SCENE_RECALLED, describe_scene_recalled)

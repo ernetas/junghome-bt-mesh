@@ -12,6 +12,7 @@ from pytest_homeassistant_custom_component.common import async_capture_events
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_BUTTON_ACTION,
+    EVENT_PLAN,
     EVENT_SCENE_RECALLED,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -51,8 +52,12 @@ def describers(hass: HomeAssistant) -> dict[str, Describer]:
     return registered
 
 
-def test_describes_both_events(hass: HomeAssistant) -> None:
-    assert set(describers(hass)) == {EVENT_BUTTON_ACTION, EVENT_SCENE_RECALLED}
+def test_describes_every_event(hass: HomeAssistant) -> None:
+    assert set(describers(hass)) == {
+        EVENT_BUTTON_ACTION,
+        EVENT_SCENE_RECALLED,
+        EVENT_PLAN,
+    }
 
 
 async def test_button_actions_are_named_after_the_entity(
@@ -206,3 +211,37 @@ def test_scene_recall_fallbacks(hass: HomeAssistant) -> None:
             },
         )
     ) == {"name": "WC off", "message": "was recalled", "entity_id": "scene.wc_off"}
+
+
+async def test_plan_lines_are_translated(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-4 W I7: a plan's line is an `exceptions` text of the integration, in the server's language (English
+    when it has none); a line nobody wrote a text for shows its key."""
+    describe = describers(hass)[EVENT_PLAN]
+    placeholders = {
+        "action": "junghome_ble.set_threshold",
+        "applied": "2",
+        "total": "2",
+        "messages": "2",
+    }
+    event = Event(
+        EVENT_PLAN,
+        {
+            "name": "JUNG HOME mesh test",
+            "message": "plan_finished",
+            "placeholders": placeholders,
+        },
+    )
+    assert describe(event) == {
+        "name": "JUNG HOME mesh test",
+        "message": "junghome_ble.set_threshold finished; 2 messages",
+    }
+    hass.config.language = "de"  # no German text yet: English
+    assert describe(event)["message"] == (
+        "junghome_ble.set_threshold finished; 2 messages"
+    )
+    assert describe(Event(EVENT_PLAN, {"message": "plan_unknown"})) == {
+        "name": "junghome_ble",
+        "message": "plan_unknown",
+    }

@@ -54,6 +54,7 @@ from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
 from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
+from .mesh_config import plan_history
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -321,6 +322,9 @@ async def async_get_config_entry_diagnostics(
                 f"{unicast:04X}": result.as_dict()
                 for unicast, result in sorted(hub.audits.items())
             },
+            # the last calls that ran a plan, oldest first: action, outcome, messages accepted, step texts and the
+            # error key (review-4 W I7; addresses and message names, no key material)
+            "plans": list(plan_history(hass, entry.entry_id)),
             # where the last adopted app export kept its own version over Home Assistant's (the open
             # `carry_over_conflict` repair), UUIDs redacted
             "carry_over_conflicts": _carry_over_conflicts(hass, entry),

@@ -14,7 +14,10 @@ its Node Identity for a minute at most; `approve_gateway_client` lists the acces
 approves the one named (review-4 F4-15, F4-17). The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
-for administrators only (review-4 W4-9).
+for administrators only (review-4 W4-9). The rewiring actions answer what their plans applied, or with `dry_run` only
+what they would send and change (`_execute`, `MeshConfigurator.dry_run`); every call that ran a plan is logged in
+the logbook and the diagnostics (`_report_plan`); what cannot be undone needs `confirm` (review-4 W I3, W I6, W I7,
+W I9).
 
 Calls for one entry are serialised (`coordinator.ENTRY_LOCKS`, kept across reloads, taken by the unknown-node
 refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options
@@ -26,14 +29,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Coroutine, Mapping
+from collections.abc import Awaitable, Callable, Coroutine, Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 import voluptuous as vol
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import ENTITY_MATCH_ALL
+from homeassistant.const import ENTITY_MATCH_ALL, Platform
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,
@@ -61,12 +64,14 @@ from . import onboard
 from .areas import area_name_for
 from .climate import temperature_to_level
 from .const import (
+    ATTR_ENTRY_ID,
     ATTR_KEY,
     ATTR_SCENE,
     DEFAULT_ALLOW_PROVISIONING,
     DEFAULT_UNUSED_SCENES_DRY_RUN,
     DIM_DEFAULT_SPEED,
     DOMAIN,
+    EVENT_PLAN,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
     LOCATE_MIN_SECONDS,
@@ -117,6 +122,8 @@ from .mesh_config import (
     MODES,
     TARGET_ELEMENTS,
     MeshConfigurator,
+    PlanOutcome,
+    plan_history,
     run_to_end,
     scene_action_for,
     token_rejected_open,
@@ -191,8 +198,19 @@ SERVICE_APPROVE_GATEWAY_CLIENT = "approve_gateway_client"
 SERVICE_START_DIM = "start_dim"
 SERVICE_STOP_DIM = "stop_dim"
 SERVICE_STEP_DIM = "step_dim"
-# the services that answer, and whether they must be asked to
+# the services that answer, and whether they must be asked to; every rewiring action answers what its plans applied
+# (`MeshConfigurator.plan_response`) or, as a dry run, what they would send (review-4 W I3, W I6)
 RESPONSES: dict[str, SupportsResponse] = {
+    SERVICE_SET_ROOM: SupportsResponse.OPTIONAL,
+    SERVICE_ADD_TO_ROOM: SupportsResponse.OPTIONAL,
+    SERVICE_REMOVE_FROM_ROOM: SupportsResponse.OPTIONAL,
+    SERVICE_CREATE_ROOM: SupportsResponse.OPTIONAL,
+    SERVICE_DELETE_ROOM: SupportsResponse.OPTIONAL,
+    SERVICE_ASSIGN_KEY: SupportsResponse.OPTIONAL,
+    SERVICE_CLEAR_KEY: SupportsResponse.OPTIONAL,
+    SERVICE_SET_THRESHOLD: SupportsResponse.OPTIONAL,
+    SERVICE_DELETE_THRESHOLD: SupportsResponse.OPTIONAL,
+    SERVICE_REMOVE_DEVICE: SupportsResponse.OPTIONAL,
     SERVICE_CREATE_SCENE: SupportsResponse.OPTIONAL,
     SERVICE_DELETE_SCENE: SupportsResponse.OPTIONAL,
     SERVICE_DELETE_UNUSED_SCENES: SupportsResponse.OPTIONAL,
@@ -213,8 +231,17 @@ USER_SERVICES = frozenset(
 )
 
 ATTR_ROOM = "room"
+ATTR_ROOM_AREA = (
+    "room_area"  # the room named like this area, instead of `room` (review-4 U4-13)
+)
+ATTR_SCENE_ENTITY = (
+    "scene_entity"  # the scene behind this scene entity, instead of `scene`
+)
 ATTR_CREATE = "create"
 ATTR_FORCE = "force"
+ATTR_DRY_RUN = "dry_run"
+# what cannot be undone asks for it explicitly (decision as M3 / M8): `remove_device`, `delete_scene` with `force`
+ATTR_CONFIRM = "confirm"
 ATTR_NAME = "name"
 ATTR_NEW_NAME = "new_name"
 ATTR_CONFIG_ENTRY = "config_entry_id"
@@ -259,12 +286,32 @@ SCHEDULE_LOAD_TYPES: tuple[type[Device], ...] = (Light, Socket, Blind, Thermosta
 
 CONFIGURATORS: HassKey[dict[str, MeshConfigurator]] = HassKey(f"{DOMAIN}_mesh_config")
 
-_KEY_FIELDS: dict[vol.Marker, Any] = {
+_KEY_FIELDS: dict[str | vol.Marker, Any] = {
     vol.Optional(ATTR_KEY_ENTITY): cv.entity_id,
     vol.Optional(ATTR_KEY_DEVICE): cv.string,
     vol.Optional(ATTR_KEY): vol.All(cv.string, vol.Upper, vol.In(KEY_LETTERS)),
 }
-_ENTRY_FIELD: dict[vol.Marker, Any] = {vol.Optional(ATTR_CONFIG_ENTRY): cv.string}
+_ENTRY_FIELD: dict[str | vol.Marker, Any] = {vol.Optional(ATTR_CONFIG_ENTRY): cv.string}
+_DRY_RUN_FIELD: dict[str | vol.Marker, Any] = {
+    vol.Optional(ATTR_DRY_RUN, default=False): cv.boolean
+}
+# a room by name or by the area named like it; a scene by name / number or by its scene entity
+_ROOM_FIELDS: dict[str | vol.Marker, Any] = {
+    vol.Optional(ATTR_ROOM): cv.string,
+    vol.Optional(ATTR_ROOM_AREA): cv.string,
+}
+_SCENE_FIELDS: dict[str | vol.Marker, Any] = {
+    vol.Optional(ATTR_SCENE): cv.string,
+    vol.Optional(ATTR_SCENE_ENTITY): cv.entity_id,
+}
+_ONE_ROOM = (
+    cv.has_at_least_one_key(ATTR_ROOM, ATTR_ROOM_AREA),
+    cv.has_at_most_one_key(ATTR_ROOM, ATTR_ROOM_AREA),
+)
+_ONE_SCENE = (
+    cv.has_at_least_one_key(ATTR_SCENE, ATTR_SCENE_ENTITY),
+    cv.has_at_most_one_key(ATTR_SCENE, ATTR_SCENE_ENTITY),
+)
 
 
 def _key_only_with_device(data: dict[str, Any]) -> dict[str, Any]:
@@ -277,71 +324,94 @@ def _key_only_with_device(data: dict[str, Any]) -> dict[str, Any]:
 SET_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {
-            vol.Required(ATTR_ROOM): cv.string,
+            **_ROOM_FIELDS,
             vol.Optional(ATTR_CREATE, default=False): cv.boolean,
+            **_DRY_RUN_FIELD,
             **cv.ENTITY_SERVICE_FIELDS,
         }
     ),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    *_ONE_ROOM,
 )
 ADD_TO_ROOM_SCHEMA = SET_ROOM_SCHEMA
 REMOVE_FROM_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {
-            vol.Required(ATTR_ROOM): cv.string,
+            **_ROOM_FIELDS,
             vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+            **_DRY_RUN_FIELD,
             **cv.ENTITY_SERVICE_FIELDS,
         }
     ),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    *_ONE_ROOM,
 )
-CREATE_ROOM_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, **_ENTRY_FIELD})
-RENAME_ROOM_SCHEMA = vol.Schema(
-    {
-        vol.Required(ATTR_ROOM): cv.string,
-        vol.Required(ATTR_NEW_NAME): cv.string,
-        **_ENTRY_FIELD,
-    }
+CREATE_ROOM_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_NAME): cv.string, **_DRY_RUN_FIELD, **_ENTRY_FIELD}
 )
-DELETE_ROOM_SCHEMA = vol.Schema({vol.Required(ATTR_ROOM): cv.string, **_ENTRY_FIELD})
+RENAME_ROOM_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            **_ROOM_FIELDS,
+            vol.Required(ATTR_NEW_NAME): cv.string,
+            **_ENTRY_FIELD,
+        }
+    ),
+    *_ONE_ROOM,
+)
+DELETE_ROOM_SCHEMA = vol.All(
+    vol.Schema({**_ROOM_FIELDS, **_DRY_RUN_FIELD, **_ENTRY_FIELD}), *_ONE_ROOM
+)
+# what a key can be wired to: one load, a room, a scene
+ASSIGN_KEY_TARGETS = (
+    ATTR_TARGET_ENTITY,
+    ATTR_TARGET_DEVICE,
+    ATTR_ROOM,
+    ATTR_ROOM_AREA,
+    ATTR_SCENE,
+    ATTR_SCENE_ENTITY,
+)
 ASSIGN_KEY_SCHEMA = vol.All(
     vol.Schema(
         {
             **_KEY_FIELDS,
             vol.Optional(ATTR_TARGET_ENTITY): cv.entity_id,
             vol.Optional(ATTR_TARGET_DEVICE): cv.string,
-            vol.Optional(ATTR_ROOM): cv.string,
-            vol.Optional(ATTR_SCENE): cv.string,
+            **_ROOM_FIELDS,
+            **_SCENE_FIELDS,
             vol.Optional(ATTR_MODE): vol.In(MODES),
             vol.Optional(ATTR_TARGET_ELEMENT): vol.In(tuple(TARGET_ELEMENTS)),
             vol.Optional(ATTR_LOCK_SECONDS): vol.All(
                 vol.Coerce(int), vol.Range(min=0, max=LOCK_SECONDS_MAX)
             ),
+            **_DRY_RUN_FIELD,
         }
     ),
     cv.has_at_least_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
     cv.has_at_most_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
-    cv.has_at_least_one_key(
-        ATTR_TARGET_ENTITY, ATTR_TARGET_DEVICE, ATTR_ROOM, ATTR_SCENE
-    ),
-    cv.has_at_most_one_key(
-        ATTR_TARGET_ENTITY, ATTR_TARGET_DEVICE, ATTR_ROOM, ATTR_SCENE
-    ),
+    cv.has_at_least_one_key(*ASSIGN_KEY_TARGETS),
+    cv.has_at_most_one_key(*ASSIGN_KEY_TARGETS),
     _key_only_with_device,
 )
 CLEAR_KEY_SCHEMA = vol.All(
-    vol.Schema(_KEY_FIELDS),
+    vol.Schema({**_KEY_FIELDS, **_DRY_RUN_FIELD}),
     cv.has_at_least_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
     cv.has_at_most_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
     _key_only_with_device,
 )
-CREATE_SCENE_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, **_ENTRY_FIELD})
-RENAME_SCENE_SCHEMA = vol.Schema(
-    {
-        vol.Required(ATTR_SCENE): cv.string,
-        vol.Required(ATTR_NEW_NAME): cv.string,
-        **_ENTRY_FIELD,
-    }
+CREATE_SCENE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_NAME): cv.string, **_DRY_RUN_FIELD, **_ENTRY_FIELD}
+)
+RENAME_SCENE_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            **_SCENE_FIELDS,
+            vol.Required(ATTR_NEW_NAME): cv.string,
+            **_ENTRY_FIELD,
+        }
+    ),
+    *_ONE_SCENE,
+    cv.has_at_most_one_key(ATTR_SCENE_ENTITY, ATTR_CONFIG_ENTRY),
 )
 _PERCENT = vol.All(vol.Coerce(int), vol.Range(min=0, max=100))
 # what a load is set to: the lamps' and sockets' state, a blind's position and slats, a thermostat's set-point
@@ -368,25 +438,32 @@ SCENE_STATE_ERRORS = {
 STORE_SCENE_SCHEMA = vol.All(
     vol.Schema(
         {
-            vol.Required(ATTR_SCENE): cv.string,
+            **_SCENE_FIELDS,
             **_STATE_FIELDS,
             **cv.ENTITY_SERVICE_FIELDS,
         }
     ),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    *_ONE_SCENE,
 )
 REMOVE_FROM_SCENE_SCHEMA = vol.All(
-    vol.Schema({vol.Required(ATTR_SCENE): cv.string, **cv.ENTITY_SERVICE_FIELDS}),
+    vol.Schema({**_SCENE_FIELDS, **cv.ENTITY_SERVICE_FIELDS}),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    *_ONE_SCENE,
 )
-DELETE_SCENE_SCHEMA = vol.Schema(
-    {
-        vol.Required(ATTR_SCENE): cv.string,
-        vol.Optional(ATTR_FORCE, default=False): cv.boolean,
-        **_ENTRY_FIELD,
-    }
+DELETE_SCENE_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            **_SCENE_FIELDS,
+            vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+            vol.Optional(ATTR_CONFIRM, default=False): cv.boolean,
+            **_DRY_RUN_FIELD,
+            **_ENTRY_FIELD,
+        }
+    ),
+    *_ONE_SCENE,
+    cv.has_at_most_one_key(ATTR_SCENE_ENTITY, ATTR_CONFIG_ENTRY),
 )
-ATTR_DRY_RUN = "dry_run"
 ATTR_NUMBERS = "numbers"
 ATTR_CONFIRM_STALE_EXPORT = "confirm_stale_export"
 DELETE_UNUSED_SCENES_SCHEMA = vol.Schema(
@@ -415,6 +492,8 @@ REMOVE_DEVICE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_DEVICE): cv.string,
         vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+        vol.Optional(ATTR_CONFIRM, default=False): cv.boolean,
+        **_DRY_RUN_FIELD,
     }
 )
 FIND_NEW_DEVICES_SCHEMA = vol.Schema({})
@@ -740,7 +819,7 @@ def _configurator(hass: HomeAssistant, entry_id: str) -> MeshConfigurator:
     return configurator
 
 
-def _entry_for_hub_services(hass: HomeAssistant, data: dict[str, Any]) -> str:
+def _entry_for_hub_services(hass: HomeAssistant, data: Mapping[str, Any]) -> str:
     """Pick the config entry a room-only service applies to: the given one, or the only loaded one."""
     if (entry_id := data.get(ATTR_CONFIG_ENTRY)) is not None:
         _hub(hass, entry_id)
@@ -997,7 +1076,7 @@ async def _run(
     needs_link: bool = True,
     reload: bool = False,
     scenes: bool = False,
-) -> None:
+) -> dict[str, Any]:
     """Run `operation` on the entry's configurator, then have the hub follow the export when the device model changed.
 
     The hub takes the new export over in place (`model_update`, review-4 D23): no entity goes `unavailable`, the
@@ -1006,6 +1085,9 @@ async def _run(
     devices, so their actions are read again (the export does not hold them). An operation that goes on air (`needs_link`) first waits for
     the entry's proxy link: a reload, or an ordinary reconnect, leaves the hub without one for as long as a real
     BLE connect takes.
+
+    Answers what the call's plans did (`MeshConfigurator.plan_response`); a call that ran one is reported
+    (`_report_plan`: the logbook, the diagnostics, and the error's placeholders when it stopped).
     """
     async with _lock(hass, entry_id):
         configurator = _configurator(hass, entry_id)
@@ -1013,17 +1095,131 @@ async def _run(
             configurator = await _wait_for_link(hass, entry_id, configurator)
         # the flags of this call only: a call that fails before planning must not follow an earlier one's write
         configurator.recorded = configurator.adopted = False
+        configurator.outcome = PlanOutcome()
         try:
             changed = await operation(configurator)
-        except BaseException:
+        except BaseException as err:
+            _report_plan(hass, entry_id, configurator, err)
             # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one (D12): the
             # device model must follow the export all the same (CFG-15), still under the lock — the cancellation
             # (or the error) goes on once the model followed
             if configurator.recorded:
                 await _follow(hass, entry_id, reload=reload, scenes=scenes)
             raise
+        _report_plan(hass, entry_id, configurator, None)
         if changed:
             await _follow(hass, entry_id, reload=reload, scenes=scenes)
+        return configurator.plan_response()
+
+
+async def _execute(
+    hass: HomeAssistant,
+    call: ServiceCall,
+    entry_id: str,
+    operation: Callable[[MeshConfigurator], Coroutine[Any, Any, bool]],
+    *,
+    needs_link: bool = True,
+    reload: bool = False,
+    scenes: bool = False,
+) -> dict[str, Any]:
+    """`_run` the operation, or with `dry_run` only plan it (`MeshConfigurator.dry_run`), under the entry's lock.
+
+    A dry run sends, writes and adopts nothing, so it neither waits for the link nor has anything to follow.
+    """
+    if not call.data.get(ATTR_DRY_RUN):
+        return await _run(
+            hass,
+            entry_id,
+            operation,
+            needs_link=needs_link,
+            reload=reload,
+            scenes=scenes,
+        )
+    async with _lock(hass, entry_id):
+        return await _configurator(hass, entry_id).dry_run(operation)
+
+
+def _answer(call: ServiceCall, results: list[dict[str, Any]]) -> ServiceResponse:
+    """Answer for a call that ran per entry: its entries' answers added up (lists joined), when asked for."""
+    if not call.return_response:
+        return None
+    out: dict[str, Any] = {}
+    for result in results:
+        for key, value in result.items():
+            before = out.get(key)
+            out[key] = (
+                value
+                if before is None
+                else (before or value)
+                if isinstance(value, bool)
+                else before + value
+            )
+    return out
+
+
+@callback
+def _report_plan(
+    hass: HomeAssistant,
+    entry_id: str,
+    configurator: MeshConfigurator,
+    err: BaseException | None,
+) -> None:
+    """Report a call that ran a plan: a logbook line (`EVENT_PLAN`), the diagnostics' history, the error's placeholders.
+
+    A finished call is worded by its summary (`PlanOutcome.summary`, "Key 0151 (…) now drives room Kitchen; 6
+    messages"), a stopped one by how far it got and its error, a cancelled one by how far it got. A stopped call's
+    error gets `outcome_applied`, `outcome_total`, `outcome_recorded` and `outcome_nodes` (the response's fields, which it never
+    gets to) in its placeholders. A call that sent nothing and has no summary (a rename, a dry run) is not reported.
+    """
+    outcome = configurator.outcome
+    if outcome.total == 0 and (err is not None or outcome.summary is None):
+        return
+    placeholders = {
+        "action": outcome.action or "",
+        "applied": str(outcome.applied),
+        "total": str(outcome.total),
+        "messages": str(outcome.applied),
+    }
+    if err is None:
+        key, extra = outcome.summary or ("plan_finished", {})
+        placeholders |= extra
+        result = "finished"
+    elif isinstance(err, asyncio.CancelledError):
+        key, result = "plan_cancelled", "cancelled"
+    else:
+        if isinstance(err, HomeAssistantError):
+            response = configurator.plan_response()
+            err.translation_placeholders = {
+                **(err.translation_placeholders or {}),
+                "outcome_applied": str(response["applied"]),
+                "outcome_total": str(response["total"]),
+                "outcome_recorded": str(response["recorded"]).lower(),
+                "outcome_nodes": ", ".join(response["nodes"]) or "-",
+            }
+        key, result = "plan_stopped", "stopped"
+        placeholders["error"] = str(err) or type(err).__name__
+    plan_history(hass, entry_id).append(
+        {
+            "action": outcome.action,
+            "outcome": result,
+            "applied": outcome.applied,
+            "total": outcome.total,
+            "steps": list(outcome.steps),
+            "error": getattr(err, "translation_key", None),
+        }
+    )
+    entry = hass.config_entries.async_get_entry(entry_id)
+    hass.bus.async_fire(
+        EVENT_PLAN,
+        {
+            ATTR_ENTRY_ID: entry_id,
+            ATTR_NAME: entry.title if entry is not None else DOMAIN,
+            "action": outcome.action,
+            "outcome": result,
+            "message": key,
+            "placeholders": placeholders,
+        },
+    )
 
 
 async def _follow(
@@ -1056,6 +1252,46 @@ async def async_configure(
     `needs_link=False` for an operation that sends nothing (a rename): it runs without waiting for the link.
     """
     await _run(hass, entry_id, operation, needs_link=needs_link)
+
+
+def _room_of(hass: HomeAssistant, data: Mapping[str, Any]) -> str:
+    """Return the room a call names: `room`, or the area `room_area` — the room called like it (review-4 U4-13)."""
+    if (area_id := data.get(ATTR_ROOM_AREA)) is None:
+        return str(data[ATTR_ROOM])
+    area = ar.async_get(hass).async_get_area(area_id)
+    if area is None:
+        raise _validation("service_unknown_area", id=area_id)
+    return area.name
+
+
+def _scene_of(hass: HomeAssistant, data: Mapping[str, Any]) -> tuple[str | None, str]:
+    """Return the scene a call names, with its entry when a scene entity named it: `scene`, or that entity's number."""
+    if (entity_id := data.get(ATTR_SCENE_ENTITY)) is None:
+        return None, str(data[ATTR_SCENE])
+    entry = er.async_get(hass).async_get(entity_id)
+    if (
+        entry is None
+        or entry.platform != DOMAIN
+        or entry.domain != Platform.SCENE
+        or entry.config_entry_id is None
+    ):
+        raise _validation("service_not_a_scene", name=entity_id)
+    return entry.config_entry_id, entry.unique_id.rsplit("-", 1)[-1]
+
+
+def _scene_entry(hass: HomeAssistant, data: Mapping[str, Any]) -> tuple[str, str]:
+    """Return the entry and scene of a scene-only action: the scene entity's, or the entry `config_entry_id` picks."""
+    owner, scene = _scene_of(hass, data)
+    if owner is None:
+        return _entry_for_hub_services(hass, data), scene
+    _hub(hass, owner)  # loaded
+    return owner, scene
+
+
+def _same_network(owner: str | None, entry_ids: Iterable[str]) -> None:
+    """Refuse a scene entity of one network for loads or a key of another."""
+    if owner is not None and any(entry_id != owner for entry_id in entry_ids):
+        raise _validation("service_target_other_network")
 
 
 async def _wait_for_link(
@@ -1115,9 +1351,23 @@ def _suggest_area(
 
 
 async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    room: str = call.data[ATTR_ROOM]
+    """Put the loads into a room, out of every other one; answers what was applied (or would be, `dry_run`)."""
+    return await _join_room(hass, call, only=True)
+
+
+async def _add_to_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Put the loads into a room as well, keeping their other rooms (several rooms per load, as in the app)."""
+    return await _join_room(hass, call, only=False)
+
+
+async def _join_room(
+    hass: HomeAssistant, call: ServiceCall, *, only: bool
+) -> ServiceResponse:
+    """`set_room` (`only`) or `add_to_room`: one plan per entry, the device areas suggested after a real run."""
+    room = _room_of(hass, call.data)
     create: bool = call.data[ATTR_CREATE]
     loads = await _resolve_loads(hass, call, LOAD_TYPES)
+    results: list[dict[str, Any]] = []
     for entry_id in sorted({load.entry_id for load in loads}):
         mine = [load for load in loads if load.entry_id == entry_id]
 
@@ -1127,46 +1377,23 @@ async def _set_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
             entry_id: str = entry_id,
         ) -> bool:
             # one plan, one export rewrite (and `.bak`), one gateway upload for every load of the call
-            changed = await configurator.set_rooms(
-                [load.address for load in mine], room, create=create
-            )
-            for load in mine:
-                _suggest_area(hass, entry_id, load.device_id, room)
+            change = configurator.set_rooms if only else configurator.add_to_rooms
+            changed = await change([load.address for load in mine], room, create=create)
+            if not configurator.dry:
+                for load in mine:
+                    _suggest_area(hass, entry_id, load.device_id, room)
             return changed
 
-        await _run(hass, entry_id, operation)
-    return None
-
-
-async def _add_to_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Put the loads into a room as well, keeping their other rooms (several rooms per load, as in the app)."""
-    room: str = call.data[ATTR_ROOM]
-    create: bool = call.data[ATTR_CREATE]
-    loads = await _resolve_loads(hass, call, LOAD_TYPES)
-    for entry_id in sorted({load.entry_id for load in loads}):
-        mine = [load for load in loads if load.entry_id == entry_id]
-
-        async def operation(
-            configurator: MeshConfigurator,
-            mine: list[Load] = mine,
-            entry_id: str = entry_id,
-        ) -> bool:
-            changed = await configurator.add_to_rooms(
-                [load.address for load in mine], room, create=create
-            )
-            for load in mine:
-                _suggest_area(hass, entry_id, load.device_id, room)
-            return changed
-
-        await _run(hass, entry_id, operation)
-    return None
+        results.append(await _execute(hass, call, entry_id, operation))
+    return _answer(call, results)
 
 
 async def _remove_from_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     """Take the loads out of a room, keeping their other rooms; the device areas stay as they are."""
-    room: str = call.data[ATTR_ROOM]
+    room = _room_of(hass, call.data)
     force: bool = call.data[ATTR_FORCE]
     loads = await _resolve_loads(hass, call, LOAD_TYPES)
+    results: list[dict[str, Any]] = []
     for entry_id in sorted({load.entry_id for load in loads}):
         mine = [load for load in loads if load.entry_id == entry_id]
 
@@ -1177,29 +1404,33 @@ async def _remove_from_room(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
                 [load.address for load in mine], room, force=force
             )
 
-        await _run(hass, entry_id, operation)
-    return None
+        results.append(await _execute(hass, call, entry_id, operation))
+    return _answer(call, results)
 
 
 async def _create_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Create an empty room; answers `{"room", "address"}` when a response is asked for."""
     entry_id = _entry_for_hub_services(hass, call.data)
+    name: str = call.data[ATTR_NAME]
+    created: dict[str, Any] = {}
 
     async def operation(configurator: MeshConfigurator) -> bool:
-        await configurator.create_room(call.data[ATTR_NAME])
-        return (
-            configurator.adopted
-        )  # an empty room changes no device; the app's export adopted first may
+        address = await configurator.create_room(name)
+        created.update(room=name, address=f"{address:04X}")
+        # an empty room changes no device; the app's export adopted first may
+        return configurator.adopted
 
-    await _run(hass, entry_id, operation, needs_link=False)
-    return None
+    result = await _execute(hass, call, entry_id, operation, needs_link=False)
+    return _answer(call, [result, created])
 
 
 async def _rename_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     entry_id = _entry_for_hub_services(hass, call.data)
+    room = _room_of(hass, call.data)
     await _run(
         hass,
         entry_id,
-        lambda c: c.rename_room(call.data[ATTR_ROOM], call.data[ATTR_NEW_NAME]),
+        lambda c: c.rename_room(room, call.data[ATTR_NEW_NAME]),
         needs_link=False,
     )
     return None
@@ -1207,71 +1438,62 @@ async def _rename_room(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
 
 async def _delete_room(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     entry_id = _entry_for_hub_services(hass, call.data)
-    await _run(hass, entry_id, lambda c: c.delete_room(call.data[ATTR_ROOM]))
-    return None
+    room = _room_of(hass, call.data)
+    result = await _execute(hass, call, entry_id, lambda c: c.delete_room(room))
+    return _answer(call, [result])
 
 
 async def _assign_key(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Wire a key to a load, a room (or the area named like it) or a scene (or its scene entity)."""
     entry_id, key = _resolve_key(hass, call.data, detector=True)
     options: dict[str, Any] = {
         "mode": call.data.get(ATTR_MODE),
         "target_element": call.data.get(ATTR_TARGET_ELEMENT),
         "lock_seconds": call.data.get(ATTR_LOCK_SECONDS),
     }
-    if (room := call.data.get(ATTR_ROOM)) is not None:
-        await _run(
-            hass,
-            entry_id,
-            lambda c: c.assign_key(key.address, room=room, **options),
-        )
-        return None
-    if (scene := call.data.get(ATTR_SCENE)) is not None:
-        await _run(
-            hass,
-            entry_id,
-            lambda c: c.assign_key(key.address, scene=scene, **options),
-        )
-        return None
-    target_entry, element = _resolve_target(hass, call.data)
-    if target_entry != entry_id:
-        raise _validation("service_target_other_network")
-    await _run(
-        hass,
-        entry_id,
-        lambda c: c.assign_key(key.address, element=element, **options),
+    if ATTR_ROOM in call.data or ATTR_ROOM_AREA in call.data:
+        options["room"] = _room_of(hass, call.data)
+    elif ATTR_SCENE in call.data or ATTR_SCENE_ENTITY in call.data:
+        owner, options["scene"] = _scene_of(hass, call.data)
+        _same_network(owner, [entry_id])
+    else:
+        target_entry, options["element"] = _resolve_target(hass, call.data)
+        _same_network(target_entry, [entry_id])
+    result = await _execute(
+        hass, call, entry_id, lambda c: c.assign_key(key.address, **options)
     )
-    return None
+    return _answer(call, [result])
 
 
 async def _clear_key(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     entry_id, key = _resolve_key(hass, call.data)
-    await _run(hass, entry_id, lambda c: c.clear_key(key.address))
-    return None
+    result = await _execute(hass, call, entry_id, lambda c: c.clear_key(key.address))
+    return _answer(call, [result])
 
 
 # ------------------------------------------------------------------ scenes
 
 
 async def _create_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Create an empty scene in the export; answers `{"scene": number}` when a response is asked for."""
+    """Create an empty scene in the export; answers `{"scene": number, "name"}` when a response is asked for."""
     entry_id = _entry_for_hub_services(hass, call.data)
     name: str = call.data[ATTR_NAME]
-    created: dict[str, int] = {}
+    created: dict[str, Any] = {}
 
     async def operation(configurator: MeshConfigurator) -> bool:
-        created["scene"] = await configurator.create_scene(name)
+        created.update(scene=await configurator.create_scene(name), name=name)
         return True  # a new scene entity
 
-    await _run(hass, entry_id, operation, needs_link=False)
-    return {"scene": created["scene"], "name": name} if call.return_response else None
+    result = await _execute(hass, call, entry_id, operation, needs_link=False)
+    return _answer(call, [result, created])
 
 
 async def _rename_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    entry_id = _entry_for_hub_services(hass, call.data)
+    entry_id, scene = _scene_entry(hass, call.data)
     await _run(
         hass,
         entry_id,
-        lambda c: c.rename_scene(call.data[ATTR_SCENE], call.data[ATTR_NEW_NAME]),
+        lambda c: c.rename_scene(scene, call.data[ATTR_NEW_NAME]),
         needs_link=False,
     )
     return None
@@ -1287,8 +1509,9 @@ async def _store_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     and sets only legacy devices first, network-features.md §3). A field that does not fit a load is refused
     by the schedule's rules (`schedule_action`), in the scene's words (review-3 W8).
     """
-    scene: str = call.data[ATTR_SCENE]
+    owner, scene = _scene_of(hass, call.data)
     loads = await _resolve_loads(hass, call)
+    _same_network(owner, (load.entry_id for load in loads))
     wanted: dict[tuple[str, int], V.Action] = {}
     if any(name in call.data for name in STATE_FIELDS):
         for load in loads:  # every load checked before anything is sent
@@ -1412,8 +1635,9 @@ async def _present_action(hub: JungHomeHub, device: Device) -> V.Action | None:
 
 
 async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    scene: str = call.data[ATTR_SCENE]
+    owner, scene = _scene_of(hass, call.data)
     loads = await _resolve_loads(hass, call)
+    _same_network(owner, (load.entry_id for load in loads))
     for entry_id in sorted({load.entry_id for load in loads}):
         mine = [load for load in loads if load.entry_id == entry_id]
 
@@ -1430,24 +1654,25 @@ async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceR
 
 
 async def _delete_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Delete a scene from its members and the export; answers `{"skipped": ["0232"]}` when a response is asked for.
+    """Delete a scene from its members and the export; answers `{"skipped": ["0232"], …}` when a response is asked for.
 
-    `skipped`: the members `force` passed over, which still hold the scene (the `scene_held` repair names them).
+    `skipped`: the members `force` passed over, which still hold the scene (the `scene_held` repair names them),
+    beside what the keys' plan applied. `force` deletes a scene some members cannot forget, which cannot be
+    undone: it needs `confirm` (a dry run does not).
     """
-    entry_id = _entry_for_hub_services(hass, call.data)
+    force: bool = call.data[ATTR_FORCE]
+    if force and not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:
+        raise _validation("delete_scene_force_needs_confirm")
+    entry_id, scene = _scene_entry(hass, call.data)
     skipped: list[str] = []
 
     async def operation(configurator: MeshConfigurator) -> bool:
-        skipped.extend(
-            await configurator.delete_scene(
-                call.data[ATTR_SCENE], force=call.data[ATTR_FORCE]
-            )
-        )
+        skipped.extend(await configurator.delete_scene(scene, force=force))
         return True
 
-    await _run(hass, entry_id, operation, scenes=True)
-    return (
-        cast("ServiceResponse", {"skipped": skipped}) if call.return_response else None
+    result = await _execute(hass, call, entry_id, operation, scenes=True)
+    return _answer(
+        call, [result, {} if call.data[ATTR_DRY_RUN] else {"skipped": skipped}]
     )
 
 
@@ -1589,9 +1814,12 @@ async def _reset_pending_device(
 async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     """Reset a node and take it out of the network, then reload (review-3 N4, experimental; irreversible).
 
-    Refused unless the entry's *Allow Home Assistant to add devices* option is on; `force` records the removal of
-    a node that does not confirm its reset (one that is gone for good).
+    Refused unless the entry's *Allow Home Assistant to add devices* option is on, and without `confirm` (it
+    cannot be undone; a dry run needs none); `force` records the removal of a node that does not confirm its
+    reset (one that is gone for good).
     """
+    if not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:
+        raise _validation("remove_device_needs_confirm")
     entry_id, unicast = _resolve_node(hass, call.data[ATTR_DEVICE])
     if unicast is None:
         raise _validation("remove_device_mesh")
@@ -1601,10 +1829,14 @@ async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         raise _validation("add_device_not_allowed")
     force = call.data[ATTR_FORCE]
     # locked, on a live link, and reloaded after a stop too: the reset is recorded even when the unwiring stops
-    await _run(
-        hass, entry_id, lambda c: c.remove_node(unicast, force=force), reload=True
+    result = await _execute(
+        hass,
+        call,
+        entry_id,
+        lambda c: c.remove_node(unicast, force=force),
+        reload=True,
     )
-    return None
+    return _answer(call, [result])
 
 
 async def _audit_network(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
@@ -1982,6 +2214,7 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
     """
     which: Which = call.data[ATTR_THRESHOLD]
     needs_current = not {"power", "duration", "enabled"} <= set(call.data)
+    results: list[dict[str, Any]] = []
     for entry_id, sockets in (await _threshold_sockets(hass, call)).items():
         devices = (
             _threshold_devices(hass, call.data[ATTR_DEVICES], entry_id)
@@ -2035,12 +2268,13 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
                 progress.finish(address)
             return changed
 
-        await _run(hass, entry_id, operation)
-    return None
+        results.append(await _run(hass, entry_id, operation))
+    return _answer(call, results)
 
 
 async def _delete_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     """Clear both thresholds of the sockets, then unwire the loads they switched and reset the client's publication (the app's delete)."""
+    results: list[dict[str, Any]] = []
     for entry_id, sockets in (await _threshold_sockets(hass, call)).items():
 
         async def operation(
@@ -2065,5 +2299,5 @@ async def _delete_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
                 progress.finish(address)
             return changed
 
-        await _run(hass, entry_id, operation)
-    return None
+        results.append(await _run(hass, entry_id, operation))
+    return _answer(call, results)

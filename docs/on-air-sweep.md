@@ -146,6 +146,7 @@ pass removed the markers of the checks that passed.
 | [D9](#d9--key-connections-colour-temperature-lock-function-property-users-brief-38) | Key → colour temperature, lock function, property users: the app captured first | spare key, DALI TW light, a light, socket, mini actuator, the app | key wiring and locks, restored | **yes** |
 | [D10](#d10--a-key-that-only-talks-to-home-assistant-with-a-blueprint) | A key that only talks to Home Assistant, with a blueprint | a key, a light | a room and a key, undone | **yes** |
 | [D11](#d11--areas-follow-a-room-change-u4-2) | *Move devices along when their JUNG room changes* after `set_room` | a light, two rooms | a room and areas, set back | — |
+| [D12](#d12--dry-runs-and-the-answer-of-a-real-assign_key-w-i3-w-i6) | Dry runs; the answer of a real `assign_key` | a key, a light | a key connection, restored | — |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -1076,6 +1077,26 @@ starting state restored; the app shows Home Assistant's changes only once it tak
 - **Markers:** `custom_components/junghome_ble/model_update.py::async_sync_areas`,
   `custom_components/junghome_ble/strings.json::options.step.init.data_description.sync_areas`.
 
+### D12 · Dry runs, and the answer of a real `assign_key` (W I3, W I6)
+
+- **Checks:** a dry run sends nothing and lists what the real run then sends (review-4 brief 49); a real
+  `assign_key` answers `applied` / `total` / `recorded` / `nodes` as counted on air, and leaves a logbook line.
+- **Needs:** a key `<key>` whose connection you noted (see *Note what you will restore*), a `<light>`.
+  **Safety:** the dry runs change nothing; the real run rewires the key, set back at the end.
+- **Do:**
+  1. Start a capture. *Developer tools → Actions*, *Return response* on: `assign_key` with `key_entity: <key>`,
+     `target_entity: <light>`, `dry_run: true`; then `set_room` with `<light>`, a room it is not in and
+     `dry_run: true`; `remove_device` with `<light>`'s device and `dry_run: true` (no `confirm`).
+  2. The same `assign_key` without `dry_run`. Note the response; open the logbook.
+  3. Connect the key back to what it did before (`assign_key`, or `clear_key` if it had no function).
+- **Capture:** `--src <ha>` over the sitting.
+- **Pass:** during step 1 the capture shows nothing from `<ha>` to any device but the usual reads, and the export's
+  timestamp and the gateway's *Last export upload* do not move; in step 2 the Config messages from `<ha>` are those
+  the dry run listed, in that order, followed by the KeyMode write; the response's `applied` equals `total`, equals
+  the Config messages seen, `recorded` is true and `nodes` names the key's device; the logbook shows *… now drives
+  …; N messages* with the same N.
+- **Markers:** `custom_components/junghome_ble/mesh_config.py::MeshConfigurator.plan_response`.
+
 ## E · Credentials, sequence numbers and keys
 
 **Not fully reversible.** Each item says what stays changed. Leave them for last, and skip any you would rather not
@@ -1231,6 +1252,7 @@ citing the session and sequence number, open a regression test for each failure,
 | D6 | | | |
 | D10 | | | |
 | D11 | | | |
+| D12 | | | |
 | E1 | | | |
 | E2 | | | |
 | E3 | | | |

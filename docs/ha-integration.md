@@ -1544,6 +1544,48 @@ taken by a device of the export, an entity whose element changed, and any error 
 DEBUG (`custom_components.junghome_ble.model_update`). Saving the options, a reconfiguration and a change of the
 data the entry was built from reload as before. Unverified on air.
 
+### Dry runs, responses and the logbook
+
+Review-4 W I3, W I6, W I7, W I9, U4-13.
+
+**Dry run.** `set_room`, `add_to_room`, `remove_from_room`, `create_room`, `delete_room`, `assign_key`, `clear_key`,
+`create_scene`, `delete_scene` and `remove_device` take `dry_run: true`: the action builds its plan as it would and
+answers it — `steps`, the messages in the order they would go out, each with the device it goes to
+(`"0232 (Living room DALI): Config Model Subscription Add elem=0232 address=C00F model=1000"`, a key's KeyMode and a
+scene's member writes after them, a removal's *Config Node Reset* first), and `diff`, how the export would change
+(`path`, `before`, `after`; an entry is named by its address, number or name, a key is never shown) — plus what a
+real run would answer of its own (`create_room`'s address, `create_scene`'s number). Nothing is sent, nothing is
+written (the export, its backups, the plan journal, the held scene numbers, the vault), nothing is taken over from
+the gateway, and no device is moved into an area. The plan is made on the export on disk: with a gateway, the real
+run plans on the gateway's export when the app changed the installation since (taken over first), so its plan can
+differ by what the app changed. Its checks run as they would: what the real run refuses, the dry run refuses too.
+Ask for the response (*Return response* in the developer tools, `response_variable` in a script); without it a dry
+run does nothing visible.
+
+**Responses.** Every rewiring action — the ones above but the scene creation, plus `set_threshold` and
+`delete_threshold` — answers, when asked, `applied` (the Config messages the devices accepted), `total` (those
+planned), `recorded` (whether the export was written) and `nodes` (the devices that took a message, with their
+names); `create_room` adds `room` and `address`, `create_scene` `scene` and `name`, `delete_scene` `skipped`. Calls
+that did not ask for a response work as before. Unverified on air: the counts of a real plan. An error of a plan
+that stopped carries the same in its placeholders (`outcome_applied`, `outcome_total`, `outcome_recorded`,
+`outcome_nodes`), and names the device that refused or stayed silent by its name as well as its address.
+
+**Logbook.** Every call that ran a plan leaves a logbook line under the network's name, in the language of the
+server (English for now): *0234 (…) now drives room Kitchen; 8 messages*, *… now in room …*, *Room … deleted*,
+*… removed from the network*, *Scene … deleted*, or *junghome_ble.assign_key stopped after 3 of 8 messages: …* /
+*… was cancelled after …*. The bus event is `junghome_ble_plan` (`entry_id`, `name`, `action`, `outcome`:
+`finished`, `stopped` or `cancelled`, `message`, `placeholders`). The diagnostics keep the last five such calls
+(`plans`: action, outcome, messages accepted and planned, the step texts, the error key; no key material).
+
+**Areas and scene entities.** Where an action takes a room's name (`room`), `room_area` picks the area named like the
+room instead (the rooms are matched by name, as the areas Home Assistant gives the devices); where it takes a
+scene's name or number (`scene`), `scene_entity` picks the scene's entity. The two forms are equivalent: the same
+call by either gives the same plan. *Store scene* keeps its state fields in a collapsed section *State to store*;
+the schedule actions group theirs into *When* and *What*.
+
+**Confirm.** `remove_device`, and `delete_scene` with `force`, cannot be undone: they need `confirm: true`, a dry
+run needs none (decision as for M3 / M8). See *Upgrading* in the changelog.
+
 ### Actions: scenes
 
 Scenes are edited the way the app edits them (`docs/android/network-logic.md` §4.3): a device stores its *present*
@@ -1580,7 +1622,8 @@ data: { scene: "Dinner" }
 - **`delete_scene`** — `scene`: the members' keys wired to recall it are cleared, every member forgets it, then it is
   removed from the export. `force` (the app's *Delete anyway*): a member that cannot be reached or refuses is
   skipped — it keeps the scene in its register — and the scene is removed from the export all the same. With
-  *Response* on, answers the skipped members (`{"skipped": ["0232"]}`). A skipped member would join every recall of
+  *Response* on, answers the skipped members (`{"skipped": ["0232"], …}`). `force` needs `confirm: true` (it cannot be
+  undone; a dry run needs none). A skipped member would join every recall of
   a new scene with the same number, so Home Assistant holds that number (kept in
   `.storage/junghome_ble.<entry id>.held_scenes`, numbers and addresses only): `create_scene` gives it to no new
   scene, and the repair issue [*Devices still hold a deleted JUNG HOME scene*](#repair-issue-devices-still-hold-a-deleted-jung-home-scene-on-)
@@ -1883,7 +1926,8 @@ refused too — both before the device learns anything. No JUNG device is known 
 practice this is the app's method; add devices where nobody else is in range. What a device offered and the method
 used are kept in the vault and shown in the diagnostics (`added_devices`).
 
-**`junghome_ble.remove_device`** (`device`, `force`; administrators only, same option) takes a device out the app's
+**`junghome_ble.remove_device`** (`device`, `force`, `confirm`, `dry_run`; administrators only, same option; without
+`confirm: true` it is refused, as it cannot be undone — a dry run needs none) takes a device out the app's
 way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
 only once it confirmed, every other device's wiring to it is removed — its element groups with whoever subscribed or
 published to them, publications to its elements — its elements leave the scenes, its app device rows and room-link
