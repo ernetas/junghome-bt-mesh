@@ -99,6 +99,10 @@ unicast address only.
   entity, its name or the registry snapshot, run `.venv/bin/python tools/gen_entity_reference.py` and commit the
   page.
 - `tests/test_on_air.py`: `tools/on_air.py` finds every on-air marker (behaviour not seen working on an
-  installation yet) of the code, the reference, the user guide, the developer docs, the German quick start, the
-  ledger and the unreleased changelog; `tools/on_air.py --uncovered
+  installation yet) of the code, the blueprints, the reference, the user guide, the developer docs, the German quick
+  start, the ledger and the unreleased changelog; `tools/on_air.py --uncovered
   docs/on-air-sweep.md` lists the code markers the on-air checklist does not cite yet.
+- `tests/test_blueprints.py`: every file of `blueprints/automation/junghome_ble/` loads with Home Assistant's YAML
+  loader and validates as an automation blueprint of the pinned release; each is installed as the manual install
+  does, set up as an automation with `use_blueprint` and driven with the `junghome_ble_button_action` event (or
+  sensor states) on the frozen clock, its actions mocked. The user guide's import links must name every file.

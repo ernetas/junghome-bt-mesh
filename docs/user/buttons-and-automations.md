@@ -141,8 +141,40 @@ room* (`junghome_ble.delete_room`).
 
 ## Blueprints
 
-Ready-made blueprints for common button automations are planned; until then, the examples above are a starting
-point.
+Blueprints are ready-made automations: you import one once, then make an automation from it by filling in a form —
+which key, which lights — without writing YAML. The project offers five. **Unverified on air:** none of them has been
+run with a real key yet.
+
+| Blueprint | What it does | |
+|---|---|---|
+| [Key switches and dims lights](../../blueprints/automation/junghome_ble/rocker_light_control.yaml) | Any lights, JUNG or not: upper half on, lower half off, a single key toggles; holding a half dims up or down in steps until released; an optional double-click action | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Frocker_light_control.yaml) |
+| [Key dims a JUNG light](../../blueprints/automation/junghome_ble/rocker_dim_jung_light.yaml) | A JUNG dimmer or tunable-white light dims smoothly while a key is held (*Start dimming* / *Stop dimming*), the way a rocker wired to it does | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Frocker_dim_jung_light.yaml) |
+| [Key runs up to six actions](../../blueprints/automation/junghome_ble/rocker_scene_selector.yaml) | A scene, script or anything else for each of click, double click and hold, on the upper and the lower half | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Frocker_scene_selector.yaml) |
+| [Lights on with presence](../../blueprints/automation/junghome_ble/presence_lighting.yaml) | Lights on when a motion, occupancy or presence sensor detects someone (optionally only below an illuminance), off a set time after it clears | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Fpresence_lighting.yaml) |
+| [Appliance finished](../../blueprints/automation/junghome_ble/appliance_finished.yaml) | A notification when a washing machine, dryer or dishwasher on a metering socket has finished (see [Energy](energy.md#washing-machine-finished)) | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Fappliance_finished.yaml) |
+
+**Before you use the key blueprints:**
+
+- Clicks, double clicks and holds of each half need a key **connected to the gateway** (see
+  [What your keys report](#what-your-keys-report)), or a key connected to an empty room as in
+  [A key that only talks to Home Assistant](#a-key-that-only-talks-to-home-assistant) (unverified on air) — that
+  key reports presses and holds, no clicks.
+- A key **connected to a light or socket** keeps switching it; the blueprints add to what it does. Its upper and
+  lower half (`press_on` / `press_off`) count as the clicks of the upper and lower half.
+- Keep the key's **event entity enabled**: the blueprints pick the key by it.
+- The presence blueprint takes any motion, occupancy or presence sensor, from any integration. A JUNG detector's
+  should work as well; there was none to try it with.
+
+**Import:** the *Import* links above open the import dialog of your own Home Assistant (through
+my.home-assistant.io); confirm the address it shows and choose *Preview* → *Import blueprint*. Then *Settings →
+Automations & scenes → Blueprints*, pick the blueprint and *Create automation*. A blueprint imported this way can
+be updated later with *Re-import blueprint* in its menu.
+
+**Manual install:** copy the YAML files from
+[`blueprints/automation/junghome_ble/`](../../blueprints/automation/junghome_ble/) into
+`<config>/blueprints/automation/junghome_ble/` of your Home Assistant (create the folder; `<config>` is the folder
+that holds `configuration.yaml`). They show up under *Settings → Automations & scenes → Blueprints*; a file replaced
+later takes effect after *Reload automations* (*Developer tools → YAML*) or a restart.
 
 ## More examples
 

@@ -446,7 +446,6 @@
   the Bluetooth adapter or proxy hearing it best, hops and proxy role; at most one update a minute). The lists stay
   out of the recorder. The user guide's *Mesh health dashboard* has a Markdown card that renders the overview as a
   table, and an alert. Unverified on air.
-
 - Repairs that fix, and a *Learn more* link on every repair (review-4 U4-5, report 5 brief F, U4 F6). Each of the
   integration's repair issues now links to its entry on the user guide's maintenance page, and the reference has a
   troubleshooting section for every one of them. Six more repairs fix their cause in place once confirmed: *JUNG HOME
@@ -457,6 +456,15 @@
   the access and certificate pin the entry holds, or, for an entry set up from a file, uploaded in the repair (an
   entry that read a path on the host uses the uploaded copy from then on); *Device name not passed on to the JUNG HOME
   app* asks for a name the app accepts. Unverified on air.
+- Blueprints (review-4 U4-3): `blueprints/automation/junghome_ble/` in the repository (not in the integration's
+  download) holds five automation blueprints, importable with one click from the user guide's *Blueprints* section
+  or copied into `<config>/blueprints/automation/junghome_ble/`: a key switches and dims any lights (clicks by half,
+  a single key toggles, a held half dims in steps until released, an optional double-click action), a key dims a
+  JUNG light while held (*Start dimming* / *Stop dimming*), a key runs up to six actions (click, double click and
+  hold on each half), lights on with presence (any motion, occupancy or presence sensor, an optional illuminance
+  threshold, an off delay) and *Appliance finished* from a power sensor. The key blueprints listen to the
+  `junghome_ble_button_action` event and are unverified on air. `tests/test_blueprints.py` loads and validates each
+  against the pinned Home Assistant and runs it.
 
 ### CLI tools and library
 

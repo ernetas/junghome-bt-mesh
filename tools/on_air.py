@@ -38,11 +38,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tools import parity
 
 ROOT = Path(__file__).resolve().parent.parent
-# where markers live: the code, the reference, the user guide, the developer notes, the German quick start, the ledger
-# and the unreleased changelog section; the review plans, briefs, gap analyses and the research index are records of
-# their time, and the sweep's own checklist quotes the phrases
+# where markers live: the code, the blueprints, the reference, the user guide, the developer notes, the German quick
+# start, the ledger and the unreleased changelog section; the review plans, briefs, gap analyses and the research index
+# are records of their time, and the sweep's own checklist quotes the phrases
 SCAN = (
     "custom_components/junghome_ble",
+    "blueprints",
     "tools",
     "docs/ha-integration.md",
     "docs/user",

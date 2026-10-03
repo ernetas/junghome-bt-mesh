@@ -1,0 +1,94 @@
+blueprint:
+  name: Lights on with presence
+  description: >-
+    Switch lights on when a motion, occupancy or presence sensor detects someone, and off again a while after it
+    clears. Optionally only when it is dark: with an illuminance sensor, the lights are switched on only below the
+    threshold. Lights that are already on stay on; a new detection restarts the wait.
+
+
+    Any such binary sensor works, from any integration. A JUNG HOME detector's *Motion* or *Occupancy* sensor and
+    its *Illuminance* sensor should work as well, unverified on a real detector (none was at hand). A detector
+    wired to its own load keeps switching it.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/presence_lighting.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    sensor:
+      name: Presence sensor
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+              device_class:
+                - motion
+                - occupancy
+                - presence
+    lights:
+      name: Lights
+      selector:
+        target:
+          entity:
+            - domain: light
+    illuminance_sensor:
+      name: Illuminance sensor
+      description: Optional. Without one, the lights are switched on at any brightness.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: illuminance
+    illuminance_threshold:
+      name: Darker than
+      description: The lights are switched on only while the illuminance sensor shows less than this.
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 2000
+          step: 1
+          unit_of_measurement: lx
+    off_delay:
+      name: Off after
+      description: How long after the sensor clears the lights are switched off.
+      default: 120
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 1
+          unit_of_measurement: s
+
+mode: restart
+
+triggers:
+  - trigger: state
+    entity_id: !input sensor
+    to: "on"
+    id: detected
+  - trigger: state
+    entity_id: !input sensor
+    from: "on"
+    to: "off"
+    id: cleared
+
+variables:
+  illuminance_sensor: !input illuminance_sensor
+  threshold: !input illuminance_threshold
+
+actions:
+  - choose:
+      - conditions:
+          - "{{ trigger.id == 'detected' }}"
+          # without an illuminance sensor, or one that has no number now, it counts as dark
+          - "{{ not illuminance_sensor or states(illuminance_sensor) | float(0) < threshold }}"
+        sequence:
+          - action: light.turn_on
+            target: !input lights
+      - conditions: "{{ trigger.id == 'cleared' }}"
+        sequence:
+          - delay:
+              seconds: !input off_delay
+          - action: light.turn_off
+            target: !input lights

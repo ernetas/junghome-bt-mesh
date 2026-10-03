@@ -11,6 +11,7 @@ custom_components/junghome_ble/jhmesh/   Bluetooth Mesh stack: crypto, PDUs (seg
 jhmesh                                   symlink to the above, so the CLI tools import it as top-level `jhmesh`
 pyproject.toml, MANIFEST.in              the `jhmesh` sdist + wheel (README-pypi.md is its PyPI page); ruff, mypy, pytest, coverage settings
 scripts/package_ha.sh                    builds dist/junghome_ble.zip for unzipping into HA's custom_components/
+blueprints/automation/junghome_ble/      automation blueprints for keys, presence and appliances (not in the zip; tests/test_blueprints.py)
 tools/mesh_poc.py                        CLI: scan / listen (sniffer) / get / set / blink / lightness / ctl / scene / scene-actions / sched / health / prop / config / devices
 tools/mesh_sniff.py                      passive capture with a Nordic nRF Sniffer dongle (key-free) + offline/live decoding
 tools/mesh_report.py                     renders docs/network-topology.md from the iOS dump

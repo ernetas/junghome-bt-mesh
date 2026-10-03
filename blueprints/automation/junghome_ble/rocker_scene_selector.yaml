@@ -1,0 +1,125 @@
+blueprint:
+  name: JUNG HOME key runs up to six actions
+  description: >-
+    Give each gesture of a JUNG HOME rocker its own action — a scene, a script, a media player, anything — with up
+    to six of them: click, double click and hold, each on the upper and the lower half (integration *JUNG HOME
+    (Bluetooth Mesh)*). Leave a gesture empty to ignore it.
+
+
+    A single key has no halves: it runs the upper half's actions. By default a double press reports a click first,
+    so both the click's and the double click's actions run; turn on *Report clicks only once a double click is
+    ruled out* in the integration's options to run only the double click's. A key wired to a JUNG load runs the
+    upper or lower click action with its `press_on` / `press_off`, and the hold actions when it starts dimming.
+
+
+    Clicks, double clicks and holds by half need a key linked to the JUNG HOME Gateway (in the app, or with the
+    *Assign key* action), or a key connected to an empty room as in
+    [a key that only talks to Home Assistant](https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/buttons-and-automations.md#a-key-that-only-talks-to-home-assistant)
+    (no gateway needed, presses and holds only; unverified on air). A key wired to a JUNG light or socket still
+    switches that load as well. Keep the key's event entity enabled: the automation listens for the
+    `junghome_ble_button_action` events that name it.
+
+
+    Unverified on air: this blueprint has not been run with a real key yet.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/rocker_scene_selector.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    key:
+      name: Key
+      description: The key's event entity (*Button A*, *Input E1*, …).
+      selector:
+        entity:
+          filter:
+            - integration: junghome_ble
+              domain: event
+    click_up:
+      name: Click, upper half
+      default: []
+      selector:
+        action: {}
+    click_down:
+      name: Click, lower half
+      default: []
+      selector:
+        action: {}
+    double_click_up:
+      name: Double click, upper half
+      default: []
+      selector:
+        action: {}
+    double_click_down:
+      name: Double click, lower half
+      default: []
+      selector:
+        action: {}
+    hold_up:
+      name: Hold, upper half
+      description: Runs when the key is held down, not again while it stays held.
+      default: []
+      selector:
+        action: {}
+    hold_down:
+      name: Hold, lower half
+      description: Runs when the key is held down, not again while it stays held.
+      default: []
+      selector:
+        action: {}
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: click
+    id: click
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: double_click
+    id: double_click
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: hold_start
+    id: hold
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: press_on
+    id: click
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: press_off
+    id: click
+
+variables:
+  # a rocker's gestures carry `side`, the holds of a key wired to a dimmer `direction`; a single key's neither, and
+  # it counts as the upper half; `press_off` is the lower half's press
+  half: >-
+    {{ trigger.event.data.side | default(trigger.event.data.direction | default(
+       'down' if trigger.event.data.type == 'press_off' else 'up')) }}
+
+actions:
+  - choose:
+      - conditions: "{{ trigger.id == 'click' and half == 'up' }}"
+        sequence: !input click_up
+      - conditions: "{{ trigger.id == 'click' and half == 'down' }}"
+        sequence: !input click_down
+      - conditions: "{{ trigger.id == 'double_click' and half == 'up' }}"
+        sequence: !input double_click_up
+      - conditions: "{{ trigger.id == 'double_click' and half == 'down' }}"
+        sequence: !input double_click_down
+      - conditions: "{{ trigger.id == 'hold' and half == 'up' }}"
+        sequence: !input hold_up
+      - conditions: "{{ trigger.id == 'hold' and half == 'down' }}"
+        sequence: !input hold_down

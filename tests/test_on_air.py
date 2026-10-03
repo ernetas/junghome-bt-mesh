@@ -315,6 +315,8 @@ def test_committed_tree_skips_released_history_and_the_checklist(
         "docs/ha-integration.md",
         "docs/user/buttons-and-automations.md",  # the free-rocker recipe
         "docs/dev/architecture.md",  # the developer notes moved out of the reference
+        # a blueprint's description
+        "blueprints/automation/junghome_ble/rocker_light_control.yaml",
     }
     assert "docs/on-air-sweep.md" not in paths
     assert (

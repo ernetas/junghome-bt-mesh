@@ -1,0 +1,94 @@
+blueprint:
+  name: JUNG HOME key dims a JUNG light
+  description: >-
+    Dim a JUNG HOME dimmer or tunable-white light the way a rocker wired to it does, with a key that is not wired
+    to it (integration *JUNG HOME (Bluetooth Mesh)*).
+
+
+    Holding the upper half of a rocker starts dimming the light up, holding the lower half down (the action
+    *Start dimming*); releasing the key stops it (*Stop dimming*). The light dims smoothly on its own between the
+    two, at the speed set below. A single key has no halves: its hold dims up while the light is off or below half
+    brightness, otherwise down. A hold that never hears its release still ends after 30 s at the latest, and the
+    light stops then.
+
+
+    Holds by half need a key linked to the JUNG HOME Gateway (in the app, or with the *Assign key* action), or a
+    key connected to an empty room as in
+    [a key that only talks to Home Assistant](https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/buttons-and-automations.md#a-key-that-only-talks-to-home-assistant)
+    (no gateway needed; its holds are derived from the dimming it sends, unverified on air). A key wired to a JUNG
+    load still drives that load as well: do not pick the light the key is already wired to. Keep the key's event
+    entity enabled: the automation listens for the `junghome_ble_button_action` events that name it.
+
+
+    Unverified on air: this blueprint has not been run with a real key yet.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/rocker_dim_jung_light.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    key:
+      name: Key
+      description: The key's event entity (*Button A*, *Input E1*, …).
+      selector:
+        entity:
+          filter:
+            - integration: junghome_ble
+              domain: event
+    light:
+      name: JUNG light
+      description: A dimmer or tunable-white channel of this integration (not *All lights*, not a switched light).
+      selector:
+        entity:
+          filter:
+            - integration: junghome_ble
+              domain: light
+    speed:
+      name: Speed
+      description: How fast the light dims, in % of its range per second.
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%/s"
+
+# queued, not restart: a stop must never cancel the start it follows half-way
+mode: queued
+max: 10
+
+triggers:
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: hold_start
+    id: hold_start
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: hold_end
+    id: hold_end
+
+variables:
+  light: !input light
+  # a rocker's holds carry `side`, the holds of a key wired to a dimmer `direction`, a single key's neither
+  direction: >-
+    {{ trigger.event.data.side | default(trigger.event.data.direction | default(
+       'up' if (state_attr(light, 'brightness') or 0) < 128 else 'down')) }}
+
+actions:
+  - choose:
+      - conditions: "{{ trigger.id == 'hold_start' }}"
+        sequence:
+          - action: junghome_ble.start_dim
+            target:
+              entity_id: !input light
+            data:
+              direction: "{{ direction }}"
+              speed: !input speed
+    default:
+      - action: junghome_ble.stop_dim
+        target:
+          entity_id: !input light

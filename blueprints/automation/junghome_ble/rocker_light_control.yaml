@@ -1,0 +1,134 @@
+blueprint:
+  name: JUNG HOME key switches and dims lights
+  description: >-
+    Switch and dim any lights with a key of a JUNG HOME push-button, wall transmitter or mini actuator input
+    (integration *JUNG HOME (Bluetooth Mesh)*).
+
+
+    A click on the upper half of a rocker switches the lights on, a click on the lower half switches them off, and
+    the click of a single key (no halves) toggles them. Holding a half dims the lights up or down in steps every
+    0.35 s until the key is released, at most 30 steps; dimming down to the bottom switches them off. A key wired
+    to a JUNG load switches the lights on and off with its upper and lower half (`press_on` / `press_off`), and its
+    holds dim them too. An optional action runs on a double click; the variable `half` says which half
+    (`up` / `down`, empty for a single key). Any new event of the key ends what is running.
+
+
+    Clicks, double clicks and holds by half need a key linked to the JUNG HOME Gateway (in the app, or with the
+    *Assign key* action), or a key connected to an empty room as in
+    [a key that only talks to Home Assistant](https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/buttons-and-automations.md#a-key-that-only-talks-to-home-assistant)
+    (no gateway needed; unverified on air). A key wired to a JUNG light or socket still switches that load as well.
+    Keep the key's event entity enabled: the automation listens for the `junghome_ble_button_action` events that
+    name it.
+
+
+    Unverified on air: this blueprint has not been run with a real key yet.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/rocker_light_control.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    key:
+      name: Key
+      description: The key's event entity (*Button A*, *Input E1*, …).
+      selector:
+        entity:
+          filter:
+            - integration: junghome_ble
+              domain: event
+    lights:
+      name: Lights
+      description: The lights the key switches and dims; any lights, JUNG or not.
+      selector:
+        target:
+          entity:
+            - domain: light
+    brightness_step:
+      name: Dimming step
+      description: How much brighter or darker each step of a hold makes the lights.
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 50
+          step: 1
+          unit_of_measurement: "%"
+    double_click_action:
+      name: Double click
+      description: What a double click does (optional). By default a double press also reports a click first.
+      default: []
+      selector:
+        action: {}
+
+mode: restart
+
+triggers:
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: click
+    id: click
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: double_click
+    id: double_click
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: hold_start
+    id: hold_start
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: hold_end
+    id: hold_end
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: press_on
+    id: press_on
+  - trigger: event
+    event_type: junghome_ble_button_action
+    event_data:
+      entity_id: !input key
+      type: press_off
+    id: press_off
+
+variables:
+  step: !input brightness_step
+  # a rocker's gestures carry `side`, the holds of a key wired to a dimmer `direction`, a single key's neither
+  half: "{{ trigger.event.data.side | default(trigger.event.data.direction | default('')) }}"
+
+actions:
+  - choose:
+      - conditions: "{{ trigger.id == 'press_on' or (trigger.id == 'click' and half == 'up') }}"
+        sequence:
+          - action: light.turn_on
+            target: !input lights
+      - conditions: "{{ trigger.id == 'press_off' or (trigger.id == 'click' and half == 'down') }}"
+        sequence:
+          - action: light.turn_off
+            target: !input lights
+      - conditions: "{{ trigger.id == 'click' }}"
+        sequence:
+          - action: light.toggle
+            target: !input lights
+      - conditions: "{{ trigger.id == 'hold_start' and half in ['up', 'down'] }}"
+        sequence:
+          # `hold_end` (or any other event of the key) restarts the automation, which ends this loop
+          - repeat:
+              count: 30
+              sequence:
+                - action: light.turn_on
+                  target: !input lights
+                  data:
+                    brightness_step_pct: "{{ step if half == 'up' else -step }}"
+                - delay:
+                    milliseconds: 350
+      - conditions: "{{ trigger.id == 'double_click' }}"
+        sequence: !input double_click_action

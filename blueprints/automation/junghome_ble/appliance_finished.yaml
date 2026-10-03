@@ -1,0 +1,81 @@
+blueprint:
+  name: Appliance finished
+  description: >-
+    Notify when a washing machine, dryer or dishwasher has finished, from the power its socket measures — a JUNG
+    HOME metering socket's *Power* sensor, or any other power sensor.
+
+
+    The appliance counts as running once its power rises above the running threshold, and as finished once it has
+    stayed below the idle threshold for the set time; then the notification action runs, once per run. Pick the
+    idle threshold above the appliance's standby power and the time longer than its quiet phases (soaking, drying
+    pauses). A run that is under way while Home Assistant restarts is not reported.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/appliance_finished.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    power_sensor:
+      name: Power sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: power
+    running_threshold:
+      name: Running above
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 3000
+          step: 0.1
+          unit_of_measurement: W
+    idle_threshold:
+      name: Finished below
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 3000
+          step: 0.1
+          unit_of_measurement: W
+    finished_after:
+      name: For at least
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: min
+    notify_action:
+      name: Notification
+      description: What to do when the appliance has finished, for example a notify action to your phone.
+      default:
+        - action: persistent_notification.create
+          data:
+            title: Appliance finished
+            message: "{{ state_attr(power_sensor, 'friendly_name') or power_sensor }}: the appliance has finished."
+      selector:
+        action: {}
+
+# one run at a time: the power rising again while a run is being watched is the same run
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input power_sensor
+    above: !input running_threshold
+
+variables:
+  power_sensor: !input power_sensor
+
+actions:
+  - wait_for_trigger:
+      - trigger: numeric_state
+        entity_id: !input power_sensor
+        below: !input idle_threshold
+        for:
+          minutes: !input finished_after
+  - sequence: !input notify_action
