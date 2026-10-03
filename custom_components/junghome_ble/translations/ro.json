@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME prin Bluetooth",
+        "description": "Home Assistant se alătură direct rețelei tale mesh JUNG HOME prin Bluetooth, folosind exportul rețelei din aplicația JUNG HOME, care conține cheile rețelei mesh. Alege de unde provine exportul.",
+        "menu_options": {
+          "gateway": "Preia-l de la gateway-ul JUNG HOME",
+          "upload": "Încarcă fișierul de export al aplicației",
+          "path": "Folosește un fișier de pe gazda Home Assistant"
+        },
+        "data": {
+          "cdb_path": "Fișierul de export al rețelei mesh",
+          "metadata_dir": "Directorul de metadate al aplicației",
+          "unicast": "Adresa noastră unicast"
+        },
+        "data_description": {
+          "cdb_path": "Calea absolută pe gazda Home Assistant, de ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opțional, doar pentru `MeshNetwork.json` dintr-un backup iOS: folderul `Application Support` al aplicației, cu `device_metadata.json` și `scene_metadata.json`, pentru ca entitățile să primească numele pe care le-ai dat în aplicație. `JungHome.json` conține deja numele.",
+          "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Aceasta este instalația ta JUNG HOME?",
+        "description": "Un proxy Bluetooth Mesh al rețelei {network_id} se află în raza de acțiune. Home Assistant îți propune orice rețea Bluetooth Mesh pe care o detectează, inclusiv pe cele ale altor mărci — de exemplu, luminile unui vecin. Continuă doar dacă aceasta este instalația ta JUNG HOME; apoi ți se va cere exportul rețelei mesh din aplicație."
+      },
+      "zeroconf_confirm": {
+        "title": "Gateway JUNG HOME găsit",
+        "description": "Un gateway JUNG HOME se anunță la {host}. Continuă pentru a prelua de la el exportul rețelei din aplicația JUNG HOME: apoi introduci parola cheii sale de rețea sau aprobi o cerere de acces în aplicație. La fel ca în cazul unei adrese introduse manual, certificatul său este fixat la primul contact, înainte de a se trimite ceva. Configurarea pornind de la gateway-ul descoperit este neverificată încă pe dispozitive reale."
+      },
+      "gateway": {
+        "title": "Preia exportul de la gateway-ul JUNG HOME",
+        "description": "Gateway-ul păstrează o copie a exportului rețelei din aplicație. Introdu adresa lui și fie parola cheii sale de rețea (din aplicația JUNG HOME) pentru acces imediat, fie lasă parola goală și aprobă cererea de acces în aplicație după ce continui (Setări → Gateway → Permisiuni de acces → Cereri deschise, în cel mult trei minute; apare ca „{user_name}”). Exportul este stocat în `junghome_ble/` din directorul de configurare Home Assistant. Conține toate cheile rețelei mesh, la fel ca exportul de pe telefon — păstrează private backupurile acestui director.",
+        "data": {
+          "gateway_host": "Adresa gateway-ului",
+          "gateway_password": "Parola cheii de rețea"
+        },
+        "data_description": {
+          "gateway_host": "Adresa IP sau numele de gazdă al gateway-ului JUNG HOME. Un gateway găsit de Home Assistant în rețea este deja completat. Altfel, valoarea implicită `junghome.local` funcționează în multe rețele; poți folosi și adresa IP a gateway-ului (afișată în aplicație la Setări → Gateway).",
+          "gateway_password": "Opțional. Cu ea, gateway-ul acordă accesul imediat; fără ea, aprobi cererea în aplicație."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avansat",
+            "description": "Păstrează valoarea implicită, cu excepția cazului în care se alătură acestei instalații și un al doilea Home Assistant sau instrumentele de linie de comandă din repository: fiecare are nevoie de o adresă proprie.",
+            "data": {
+              "unicast": "Adresa noastră unicast"
+            },
+            "data_description": {
+              "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Se așteaptă aprobarea în aplicația JUNG HOME"
+      },
+      "gateway_refetch": {
+        "title": "Preia din nou exportul",
+        "description": "Preia exportul actual al rețelei de la gateway-ul {host} folosind accesul stocat. Dacă gateway-ul nu îl mai acceptă, ți se cere să aprobi o nouă cerere de acces în aplicație.",
+        "sections": {
+          "advanced": {
+            "name": "Avansat",
+            "description": "Păstrează valoarea implicită, cu excepția cazului în care se alătură acestei instalații și un al doilea Home Assistant sau instrumentele de linie de comandă din repository: fiecare are nevoie de o adresă proprie.",
+            "data": {
+              "unicast": "Adresa noastră unicast"
+            },
+            "data_description": {
+              "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Încarcă fișierul de export al aplicației",
+        "description": "În aplicația JUNG HOME deschide Proiect → Partajare prin fișier, trimite-ți fișierul `JungHome.json` creat, apoi încarcă-l aici. Este stocat în `junghome_ble/` din directorul de configurare Home Assistant. Conține toate cheile rețelei mesh — păstrează private backupurile acestui director.",
+        "data": {
+          "export_file": "Fișierul de export al rețelei mesh"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avansat",
+            "description": "Păstrează valoarea implicită, cu excepția cazului în care se alătură acestei instalații și un al doilea Home Assistant sau instrumentele de linie de comandă din repository: fiecare are nevoie de o adresă proprie.",
+            "data": {
+              "unicast": "Adresa noastră unicast"
+            },
+            "data_description": {
+              "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Folosește un fișier de pe gazda Home Assistant",
+        "description": "Copiază mai întâi pe gazda Home Assistant fișierul `JungHome.json` al aplicației (Proiect → Partajare prin fișier; include numele dispozitivelor tale) sau `MeshNetwork.json` (backup iOS), apoi introdu calea acestuia.",
+        "data": {
+          "cdb_path": "Fișierul de export al rețelei mesh",
+          "metadata_dir": "Directorul de metadate al aplicației"
+        },
+        "data_description": {
+          "cdb_path": "Calea absolută pe gazda Home Assistant, de ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opțional, doar pentru `MeshNetwork.json` dintr-un backup iOS: folderul `Application Support` al aplicației, cu `device_metadata.json` și `scene_metadata.json`, pentru ca entitățile să primească numele pe care le-ai dat în aplicație. `JungHome.json` conține deja numele."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Avansat",
+            "description": "Păstrează valoarea implicită, cu excepția cazului în care se alătură acestei instalații și un al doilea Home Assistant sau instrumentele de linie de comandă din repository: fiecare are nevoie de o adresă proprie.",
+            "data": {
+              "unicast": "Adresa noastră unicast"
+            },
+            "data_description": {
+              "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Actualizează exportul rețelei mesh JUNG HOME",
+        "description": "Folosește această opțiune după ce ai reprovizionat sau recablat dispozitive în aplicația JUNG HOME ori după o reîmprospătare a cheilor: furnizează un export nou al aceleiași rețele. Dispozitivele care au dispărut din export sunt eliminate. Totodată poți schimba și adresa mesh proprie a lui Home Assistant.",
+        "menu_options": {
+          "gateway_refetch": "Preia din nou de la gateway-ul {host}",
+          "gateway": "Preia-l de la gateway-ul JUNG HOME",
+          "upload": "Încarcă fișierul de export al aplicației",
+          "path": "Folosește un fișier de pe gazda Home Assistant",
+          "import_gateway": "Importă entitățile integrării JUNG HOME Gateway",
+          "areas": "Schimbă zona în care ajung dispozitivele fiecărei camere"
+        },
+        "data": {
+          "cdb_path": "Fișierul de export al rețelei mesh",
+          "metadata_dir": "Directorul de metadate al aplicației",
+          "unicast": "Adresa noastră unicast"
+        },
+        "data_description": {
+          "cdb_path": "Calea absolută pe gazda Home Assistant, de ex. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opțional, doar pentru `MeshNetwork.json` dintr-un backup iOS: folderul `Application Support` al aplicației, cu `device_metadata.json` și `scene_metadata.json`, pentru ca entitățile să primească numele pe care le-ai dat în aplicație. `JungHome.json` conține deja numele.",
+          "unicast": "Adresa mesh hexazecimală pe care Home Assistant o va folosi ca nod (0001–7FFF). Nu trebuie să fie folosită de alt nod; valoarea implicită se află în afara intervalului folosit de aplicație."
+        }
+      },
+      "import_gateway": {
+        "title": "Import din integrarea JUNG HOME Gateway",
+        "description": "Integrarea JUNG HOME Gateway (`junghome`) este configurată alături de aceasta. Entitățile ei pot fi preluate aici, astfel încât ID-urile de entitate, numele, zonele, etichetele și istoricul lor să continue în integrarea Bluetooth Mesh. Potrivirea se face după numele dispozitivului (numele din aplicația JUNG HOME) și tipul entității; sunt înlocuite doar entitățile acestei integrări pe care nu le-ai redenumit sau personalizat încă.\n\n**Entități care vor fi mutate ({count})** (entitatea gateway-ului → o înlocuiește pe):\n{matched}\n\n**Păstrate așa cum sunt** (deja personalizate aici; cea a gateway-ului rămâne unde este):\n{customised}\n\n**Fără corespondent la gateway** (rămân așa cum sunt):\n{unmatched}\n\n**Entități ale gateway-ului fără corespondent aici** (rămân la intrarea gateway-ului):\n{gateway_only}\n\nLa trimitere, ambele integrări sunt descărcate, entitățile sunt mutate, zona, numele personalizat și etichetele fiecărui dispozitiv al gateway-ului găsit ca pereche sunt copiate pe dispozitivul corespunzător de aici, intrarea gateway-ului este dezactivată, iar această intrare este reîncărcată. Apoi șterge intrarea gateway-ului."
+      },
+      "gateway_certificate": {
+        "title": "Certificatul gateway-ului s-a schimbat",
+        "description": "Gateway-ul JUNG HOME de la {host} prezintă acum certificatul {observed}; intrarea a înregistrat {expected}. Continuă doar dacă ai înlocuit tu însuți gateway-ul sau certificatul acestuia — altfel, un alt dispozitiv din rețeaua ta răspunde în locul gateway-ului."
+      },
+      "reauth_confirm": {
+        "title": "Acordă din nou lui Home Assistant acces la gateway",
+        "description": "Gateway-ul JUNG HOME de la {host} nu mai acceptă accesul înregistrat de Home Assistant pentru rețeaua mesh {title} (probabil a fost eliminat în aplicația JUNG HOME la Setări → Gateway → Permisiuni de acces). Dispozitivele continuă să funcționeze prin Bluetooth; s-a oprit doar transmiterea modificărilor din Home Assistant către gateway. Introdu parola cheii de rețea a gateway-ului (din aplicația JUNG HOME) pentru acces imediat sau las-o goală și aprobă cererea de acces în aplicație după ce continui (Setări → Gateway → Permisiuni de acces → Cereri deschise, în cel mult trei minute; apare ca „{user_name}”). Se reînnoiește doar accesul: exportul nu este preluat din nou.",
+        "data": {
+          "gateway_password": "Parola cheii de rețea"
+        },
+        "data_description": {
+          "gateway_password": "Opțional. Cu ea, gateway-ul acordă accesul imediat; fără ea, aprobi cererea în aplicație. Nu este stocată."
+        }
+      },
+      "areas": {
+        "title": "Camere și zone",
+        "description": "Alege zona Home Assistant pentru fiecare cameră din aplicația JUNG HOME. O cameră este precompletată cu zona care are același nume sau cu zona care are numele camerei ca alias. Lasă o cameră necompletată pentru a primi o zonă cu numele camerei (creată dacă nu există). Și dispozitivele fără o cameră proprie primesc una: tastele unui buton primesc camera consumatorului de lângă ele, iar un emițător de perete primește camera pe care o comută tastele sale. Din meniul „Reconfigurează”, se mută dispozitivele care se află încă în zona atribuită de alegerea anterioară; un dispozitiv pe care l-ai pus tu în altă zonă nu este mutat niciodată.",
+        "data": {
+          "assign_areas": "Atribuie zone dispozitivelor JUNG HOME"
+        },
+        "data_description": {
+          "assign_areas": "Dezactivat: dispozitivele noi nu primesc nicio zonă, iar camerele de mai jos sunt ignorate."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Deschide aplicația JUNG HOME și aprobă cererea de acces „{user_name}” la Setări → Gateway → Permisiuni de acces → Cereri deschise. Gateway-ul {host} așteaptă cel mult trei minute."
+    },
+    "error": {
+      "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, în cazul unei căi, dacă aceasta este corectă).",
+      "not_a_directory": "Calea metadatelor nu este un director.",
+      "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+      "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+      "address_in_use": "Această adresă aparține unui nod din rețeaua mesh; alege una nefolosită.",
+      "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+      "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+      "network_mismatch": "Exportul aparține altei rețele mesh decât cea descoperită.",
+      "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare (probabil cheia ei de rețea a fost reîmprospătată de când Home Assistant a văzut-o ultima dată). Folosește „Reconfigurează” la acea intrare în loc să adaugi una nouă.",
+      "invalid_host": "Introdu adresa IP sau numele de gazdă al gateway-ului.",
+      "cannot_connect": "Gateway-ul nu a putut fi contactat la această adresă.",
+      "invalid_auth": "Gateway-ul a respins parola cheii de rețea.",
+      "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere un acces nou.",
+      "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o la Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+      "no_project": "Gateway-ul nu conține niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (aceasta încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+      "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+      "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+      "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să-l încarci din nou.",
+      "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+      "invalid_export": "Fișierul nu este un export al unei rețele mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile și nodurile ei, precum și o cheie de rețea la indexul 0."
+    },
+    "abort": {
+      "already_configured": "Această rețea mesh este deja configurată.",
+      "already_in_progress": "O configurare a acestei rețele mesh este deja în curs.",
+      "not_supported": "Acest dispozitiv Bluetooth nu este un proxy mesh.",
+      "network_mismatch": "Exportul aparține altei rețele mesh decât cea a acestei intrări.",
+      "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează acea intrare sau elimin-o mai întâi.",
+      "reconfigure_successful": "Exportul rețelei mesh a fost actualizat.",
+      "no_gateway_entry": "Integrarea JUNG HOME Gateway nu este configurată; nu există nimic de importat.",
+      "nothing_to_import": "Nu a mai rămas nicio entitate a gateway-ului de preluat. Entitățile acestei integrări fără corespondent:\n{unmatched}\n\nEntitățile gateway-ului fără corespondent aici:\n{gateway_only}",
+      "import_successful": "Entități preluate din integrarea JUNG HOME Gateway ({count}):\n{matched}\n\nPăstrate așa cum erau (deja personalizate aici):\n{customised}\n\nFără corespondent la gateway:\n{unmatched}\n\nRămase la intrarea gateway-ului:\n{gateway_only}\n\nIntrarea gateway-ului a fost dezactivată; șterge-o la Setări → Dispozitive și servicii → JUNG HOME după ce verifici că totul este în regulă.",
+      "certificate_vouched_by_mesh": "Gateway-ul JUNG HOME de la {host} prezintă certificatul {observed}, dar nodul gateway-ului a confirmat prin rețeaua mesh certificatul {expected}. Nu s-a trimis nimic la această adresă: probabil un alt dispozitiv din rețeaua ta răspunde în locul gateway-ului. Dacă ai înlocuit tu însuți gateway-ul sau certificatul acestuia, reconfigurează din nou cât timp Home Assistant este conectat la rețeaua mesh: nodul gateway-ului raportează atunci noul certificat.",
+      "import_unload_failed": "Intrarea {title} nu a putut fi descărcată, așa că nu s-a importat nimic; toate intrările descărcate de import sunt configurate din nou. Verifică jurnalul, apoi încearcă din nou importul.",
+      "reauth_successful": "Gateway-ul JUNG HOME acceptă din nou Home Assistant. Modificările făcute între timp în Home Assistant ajung la el odată cu următoarea modificare sau imediat prin acțiunea „Sincronizează gateway-ul”.",
+      "areas_updated": "Zonele camerelor au fost salvate; dispozitive mutate în noua zonă a camerei lor: {count}.",
+      "not_loaded": "Integrarea nu rulează: configureaz-o mai întâi din nou.",
+      "not_junghome_gateway": "Acest dispozitiv nu se anunță ca gateway JUNG HOME (lipsește producătorul JUNG sau numărul de serie).",
+      "not_ipv4_address": "Gateway-ul nu a anunțat nicio adresă IPv4. Adaugă integrarea manual și introdu adresa gateway-ului."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opțiuni JUNG HOME (Bluetooth Mesh)",
+        "data": {
+          "click_delay": "Raportează clicurile doar după ce un dublu clic este exclus",
+          "heartbeats": "Semnale heartbeat ale nodurilor (marchează ca indisponibil un dispozitiv care tace)",
+          "allow_provisioning": "Permite Home Assistant să adauge și să elimine dispozitive (experimental)",
+          "provisioner_identity": "Înscrie Home Assistant ca provizioner în fișierul rețelei (experimental, neverificat cu aplicația)",
+          "follow_app": "Urmărește modificările făcute în aplicația JUNG HOME",
+          "gateway_check": "Verifică exportul gateway-ului la fiecare șase ore",
+          "sync_areas": "Mută dispozitivele odată cu schimbarea camerei JUNG"
+        },
+        "data_description": {
+          "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`.",
+          "heartbeats": "Fiecărui dispozitiv alimentat de la rețeaua electrică i se cere să trimită un semnal heartbeat către Home Assistant la fiecare 64 de secunde (o setare standard Bluetooth Mesh pe care aplicația JUNG o lasă dezactivată). Entitățile unui dispozitiv care nu trimite nimic timp de aproximativ trei minute și jumătate sunt marcate ca indisponibile până când acesta este auzit din nou. Dezactivarea opțiunii le cere dispozitivelor să se oprească (din nou la următoarea conexiune, dacă nu au putut fi anunțate toate deodată); dezactiveaz-o înainte de a elimina integrarea, care ulterior nu le mai poate anunța.",
+          "allow_provisioning": "Permite acțiunii `junghome_ble.add_device` să provizioneze un dispozitiv JUNG nou și să-l configureze așa cum ar face aplicația, după modelul unui dispozitiv de același tip aflat deja în rețea, iar acțiunii `junghome_ble.remove_device` să reseteze un dispozitiv și să-l scoată din rețea. Încă neîncercat pe dispozitive reale: încearcă mai întâi cu un dispozitiv de rezervă. Adăugarea îi transmite dispozitivului cheile rețelei; eliminarea nu poate fi anulată.",
+          "provisioner_identity": "Fiecare fișier pe care Home Assistant îl scrie sau îl transmite gateway-ului primește o intrare de provizioner pentru Home Assistant, cu intervale de adrese proprii, separate de cele ale aplicației și care cuprind adresa lui Home Assistant, iar dispozitivele adăugate de Home Assistant care lipsesc din fișierul aplicației sunt incluse din nou. Camerele, scenele și dispozitivele create de Home Assistant își iau apoi adresele din intervalele lui proprii. Nicio aplicație JUNG nu a importat încă un astfel de fișier: încearcă-l pe o instalare de rezervă a aplicației (importă fișierul obținut cu `junghome_ble.export_network`) înainte ca aplicația ta sau gateway-ul tău să-l vadă. Dezactivat: fișierele sunt scrise exact ca fără această opțiune.",
+          "follow_app": "Când telefonul pe care rulează aplicația JUNG HOME este auzit în rețeaua mesh, o intrare configurată de la gateway preia exportul gateway-ului la câteva minute după ce telefonul a tăcut (cel mult o dată la 15 minute) și îl adoptă dacă s-a schimbat: dispozitivele, camerele, scenele și legăturile tastelor modificate în aplicație ajung în Home Assistant fără „Reconfigurează”. O intrare configurată dintr-un fișier afișează în schimb o notificare în Reparații, după ce aplicația a fost observată modificând configurația unui dispozitiv. Pentru aceasta nu se trimite nimic în rețeaua mesh. Neverificat încă pe dispozitive reale.",
+          "gateway_check": "O intrare configurată de la gateway îi cere gateway-ului exportul la fiecare șase ore și îl adoptă dacă s-a schimbat, surprinzând astfel ce s-a modificat în aplicație cât timp Home Assistant nu a auzit telefonul. O singură cerere către gateway; nu se trimite nimic în rețeaua mesh. Nu are efect asupra unei intrări configurate dintr-un fișier.",
+          "sync_areas": "Când un dispozitiv își schimbă camera în aplicație (după ce Home Assistant preia noul export) sau printr-o acțiune pentru camere, este mutat și în zona noii camere — cu excepția cazului în care l-ai pus tu într-o zonă. Dezactivat: un dispozitiv rămâne în zona în care a fost inițial. Neverificat încă pe dispozitive reale."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Conexiune mesh"
+      },
+      "motion": {
+        "name": "Mișcare"
+      },
+      "occupancy": {
+        "name": "Prezență"
+      },
+      "fault": {
+        "name": "Defecțiune"
+      },
+      "wind_alarm": {
+        "name": "Alarmă de vânt"
+      },
+      "reference_run_active": {
+        "name": "Cursă de referință"
+      },
+      "gateway_api_available": {
+        "name": "API disponibil"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Client în așteptarea aprobării"
+      },
+      "gateway_network_problem": {
+        "name": "Problemă de rețea"
+      },
+      "gateway_mesh_problem": {
+        "name": "Problemă Bluetooth Mesh"
+      },
+      "gateway_cloud_problem": {
+        "name": "Problemă cloud"
+      },
+      "gateway_cloud_connected": {
+        "name": "Conexiune cloud"
+      },
+      "window_open": {
+        "name": "Fereastră deschisă"
+      },
+      "input_state": {
+        "name": "Starea intrării"
+      },
+      "input_state_key": {
+        "name": "Starea intrării {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Funcție automată"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Tasta {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Dublu clic",
+              "hold_start": "Apăsare lungă începută",
+              "hold_end": "Apăsare lungă eliberată",
+              "press_on": "Apăsare pornire / sus",
+              "press_off": "Apăsare oprire / jos",
+              "scene": "Scenă apelată",
+              "dim": "Reglarea intensității"
+            }
+          },
+          "connection": {
+            "name": "Legătură",
+            "state": {
+              "device": "Dispozitiv",
+              "room": "Cameră",
+              "scene": "Scenă",
+              "gateway": "Gateway",
+              "group": "Grup",
+              "none": "Niciuna"
+            }
+          },
+          "reason": {
+            "name": "Motivul încheierii apăsării lungi",
+            "state": {
+              "timeout": "Eliberarea nu a fost recepționată la timp",
+              "link_lost": "Conexiune pierdută",
+              "stopped": "Integrare oprită"
+            }
+          },
+          "position": {
+            "name": "Poziție",
+            "state": {
+              "top": "Sus",
+              "bottom": "Jos",
+              "rocker": "Clapetă",
+              "left_top": "Stânga, sus",
+              "left_bottom": "Stânga, jos",
+              "right_top": "Dreapta, sus",
+              "right_bottom": "Dreapta, jos",
+              "left_rocker": "Clapeta stângă",
+              "right_rocker": "Clapeta dreaptă"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Intrarea {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Clic",
+              "double_click": "Dublu clic",
+              "hold_start": "Apăsare lungă începută",
+              "hold_end": "Apăsare lungă eliberată",
+              "press_on": "Apăsare pornire / sus",
+              "press_off": "Apăsare oprire / jos",
+              "scene": "Scenă apelată",
+              "dim": "Reglarea intensității"
+            }
+          },
+          "connection": {
+            "name": "Legătură",
+            "state": {
+              "device": "Dispozitiv",
+              "room": "Cameră",
+              "scene": "Scenă",
+              "gateway": "Gateway",
+              "group": "Grup",
+              "none": "Niciuna"
+            }
+          },
+          "reason": {
+            "name": "Motivul încheierii apăsării lungi",
+            "state": {
+              "timeout": "Eliberarea nu a fost recepționată la timp",
+              "link_lost": "Conexiune pierdută",
+              "stopped": "Integrare oprită"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Putere"
+      },
+      "voltage": {
+        "name": "Tensiune"
+      },
+      "current": {
+        "name": "Curent"
+      },
+      "energy": {
+        "name": "Energie"
+      },
+      "energy_resettable": {
+        "name": "Energie de la resetare"
+      },
+      "energy_since_on": {
+        "name": "Energie de la pornire"
+      },
+      "power_on_time": {
+        "name": "Timp de funcționare"
+      },
+      "proxy_node": {
+        "name": "Nod proxy"
+      },
+      "link_state": {
+        "name": "Starea conexiunii",
+        "state": {
+          "bluetooth_off": "Fără Bluetooth",
+          "searching": "Se caută un nod proxy",
+          "connecting": "Se conectează",
+          "updating": "Conectat, se actualizează stările dispozitivelor",
+          "connected": "Conectat",
+          "failed": "Conectare eșuată",
+          "disconnected": "Deconectat"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Dispozitive inaccesibile",
+        "state_attributes": {
+          "devices": {
+            "name": "Dispozitive"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Prezentare generală mesh",
+        "state_attributes": {
+          "nodes": {
+            "name": "Noduri"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Iluminare"
+      },
+      "battery": {
+        "name": "Baterie"
+      },
+      "installed": {
+        "name": "Instalat"
+      },
+      "key_mode": {
+        "name": "Modul tastei",
+        "state": {
+          "light": "Iluminat",
+          "move": "Jaluzele",
+          "scene": "Scenă",
+          "property": "Proprietate",
+          "rtr": "Temperatură",
+          "switch": "Comutare",
+          "gateway": "Gateway"
+        }
+      },
+      "key_mode_key": {
+        "name": "Modul tastei {key}",
+        "state": {
+          "light": "Iluminat",
+          "move": "Jaluzele",
+          "scene": "Scenă",
+          "property": "Proprietate",
+          "rtr": "Temperatură",
+          "switch": "Comutare",
+          "gateway": "Gateway"
+        }
+      },
+      "schedules": {
+        "name": "Programări"
+      },
+      "scenes": {
+        "name": "Scene"
+      },
+      "switch_off_at": {
+        "name": "Se oprește la"
+      },
+      "switch_on_threshold": {
+        "name": "Prag de pornire"
+      },
+      "switch_off_threshold": {
+        "name": "Prag de oprire"
+      },
+      "last_seen": {
+        "name": "Văzut ultima dată"
+      },
+      "rssi": {
+        "name": "Puterea semnalului"
+      },
+      "hops": {
+        "name": "Salturi"
+      },
+      "last_restart": {
+        "name": "Ultima repornire"
+      },
+      "clock_offset": {
+        "name": "Abaterea ceasului"
+      },
+      "iv_index": {
+        "name": "Index IV"
+      },
+      "sequence_used": {
+        "name": "Numere de secvență folosite"
+      },
+      "mesh_sequence_used": {
+        "name": "Numere de secvență folosite în mesh"
+      },
+      "switching_cycles": {
+        "name": "Cicluri de comutare"
+      },
+      "power_on_cycles": {
+        "name": "Cicluri de pornire"
+      },
+      "gateway_ip": {
+        "name": "Adresă IP"
+      },
+      "gateway_firmware": {
+        "name": "Versiune firmware"
+      },
+      "gateway_firmware_build": {
+        "name": "Build firmware"
+      },
+      "gateway_serial": {
+        "name": "Număr de serie"
+      },
+      "gateway_access_requests": {
+        "name": "Cereri de acces",
+        "state_attributes": {
+          "clients": {
+            "name": "Clienți"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "Clienți API",
+        "state_attributes": {
+          "clients": {
+            "name": "Clienți"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Jurnal de erori",
+        "state_attributes": {
+          "entries": {
+            "name": "Intrări"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Ultima încărcare a exportului"
+      },
+      "forced_off": {
+        "name": "Pornit / oprit permanent",
+        "state": {
+          "inactive": "Inactiv",
+          "off": "Oprit permanent",
+          "on": "Pornit permanent"
+        }
+      },
+      "sleep_mode": {
+        "name": "Mod de repaus",
+        "state": {
+          "awake": "Activ",
+          "asleep": "În repaus"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Cursă de referință"
+      },
+      "identify": {
+        "name": "Identifică"
+      },
+      "clear_faults": {
+        "name": "Șterge defecțiunile"
+      },
+      "reset_consumption": {
+        "name": "Resetează consumul"
+      },
+      "fetch_gateway_export": {
+        "name": "Preia exportul de la gateway"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Poziția jaluzelei după revenirea tensiunii"
+      },
+      "blind_ventilation_position": {
+        "name": "Poziție de ventilare"
+      },
+      "color_temp_max": {
+        "name": "Temperatură de culoare maximă"
+      },
+      "color_temp_min": {
+        "name": "Temperatură de culoare minimă"
+      },
+      "comfort_temperature": {
+        "name": "Temperatură de confort"
+      },
+      "default_color_temp": {
+        "name": "Temperatură de culoare la pornire"
+      },
+      "default_lightness": {
+        "name": "Luminozitate la pornire"
+      },
+      "eco_temperature": {
+        "name": "Temperatură ECO"
+      },
+      "frost_protection_temperature": {
+        "name": "Temperatură de protecție împotriva înghețului"
+      },
+      "lightness_max": {
+        "name": "Luminozitate maximă"
+      },
+      "lightness_min": {
+        "name": "Luminozitate minimă"
+      },
+      "lock_time_limit": {
+        "name": "Limita de timp a blocării"
+      },
+      "motor_reversal_time": {
+        "name": "Timp minim de inversare a motorului"
+      },
+      "off_delay": {
+        "name": "Întârziere la oprire"
+      },
+      "on_delay": {
+        "name": "Întârziere la pornire"
+      },
+      "pir_sensor_a": {
+        "name": "Sector de activare A"
+      },
+      "pir_sensor_b": {
+        "name": "Sector de activare B"
+      },
+      "pir_sensor_c": {
+        "name": "Sector de activare C"
+      },
+      "repetition_time": {
+        "name": "Timp de repetare"
+      },
+      "running_time": {
+        "name": "Durata de deplasare"
+      },
+      "sensor_offset": {
+        "name": "Corecția senzorului de temperatură"
+      },
+      "slat_position_on_power": {
+        "name": "Poziția lamelelor după revenirea tensiunii"
+      },
+      "slat_ventilation_position": {
+        "name": "Poziția de ventilare a lamelelor"
+      },
+      "slats_move_time": {
+        "name": "Timp de reglare a lamelelor"
+      },
+      "switch_blocking_time": {
+        "name": "Timp minim între comutări"
+      },
+      "switch_on_brightness": {
+        "name": "Prag de luminozitate"
+      },
+      "timed_on_duration": {
+        "name": "Timp de menținere"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Mod de funcționare",
+        "state": {
+          "blinds": "Jaluzea (cu lamele)",
+          "shutter": "Rulou (fără lamele)",
+          "awning": "Copertină"
+        }
+      },
+      "controller_type": {
+        "name": "Ieșirea regulatorului",
+        "state": {
+          "pi_control": "Modulație în lățime a impulsurilor (PWM)",
+          "two_point_control": "Reglare bipozițională"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Mod de funcționare",
+        "state": {
+          "guard": "Locul de montaj",
+          "presence": "Luminozitatea camerei"
+        }
+      },
+      "dim_mode": {
+        "name": "Mod de reglare a intensității",
+        "state": {
+          "leading_edge": "Tăiere la începutul fazei (RL)",
+          "trailing_edge": "Tăiere la sfârșitul fazei (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Mod de funcționare",
+        "state": {
+          "none": "Niciuna",
+          "comfort": "Confort",
+          "eco": "ECO",
+          "frost": "Protecție împotriva înghețului"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Front descendent",
+        "state": {
+          "no_reaction": "Nicio reacție",
+          "on": "Pornește",
+          "off": "Oprește",
+          "toggle": "Comută"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Front descendent {key}",
+        "state": {
+          "no_reaction": "Nicio reacție",
+          "on": "Pornește",
+          "off": "Oprește",
+          "toggle": "Comută"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Front ascendent",
+        "state": {
+          "no_reaction": "Nicio reacție",
+          "on": "Pornește",
+          "off": "Oprește",
+          "toggle": "Comută"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Front ascendent {key}",
+        "state": {
+          "no_reaction": "Nicio reacție",
+          "on": "Pornește",
+          "off": "Oprește",
+          "toggle": "Comută"
+        }
+      },
+      "led_colour_off": {
+        "name": "Culoare LED (oprit)",
+        "state": {
+          "red": "Roșu",
+          "green": "Verde",
+          "white": "Alb",
+          "blue": "Albastru",
+          "violet": "Violet",
+          "orange": "Portocaliu",
+          "yellow": "Galben",
+          "cyan": "Turcoaz",
+          "no_color": "Fără culoare"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "Culoare LED (oprit) {key}",
+        "state": {
+          "red": "Roșu",
+          "green": "Verde",
+          "white": "Alb",
+          "blue": "Albastru",
+          "violet": "Violet",
+          "orange": "Portocaliu",
+          "yellow": "Galben",
+          "cyan": "Turcoaz",
+          "no_color": "Fără culoare"
+        }
+      },
+      "led_colour_on": {
+        "name": "Culoare LED (pornit)",
+        "state": {
+          "red": "Roșu",
+          "green": "Verde",
+          "white": "Alb",
+          "blue": "Albastru",
+          "violet": "Violet",
+          "orange": "Portocaliu",
+          "yellow": "Galben",
+          "cyan": "Turcoaz",
+          "no_color": "Fără culoare"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "Culoare LED (pornit) {key}",
+        "state": {
+          "red": "Roșu",
+          "green": "Verde",
+          "white": "Alb",
+          "blue": "Albastru",
+          "violet": "Violet",
+          "orange": "Portocaliu",
+          "yellow": "Galben",
+          "cyan": "Turcoaz",
+          "no_color": "Fără culoare"
+        }
+      },
+      "main_page": {
+        "name": "Afișaj local",
+        "state": {
+          "target_temperature": "Temperatură setată",
+          "current_temperature": "Temperatură actuală",
+          "clock": "Ora"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Comportament după revenirea tensiunii de rețea",
+        "state": {
+          "no_reaction": "Nicio reacție",
+          "move_up": "Urcare la 0 %",
+          "move_down": "Coborâre la 100 %",
+          "stop": "Oprire",
+          "move_to_stored_position": "Poziție memorată",
+          "position_for_network_failure": "Poziție la căderea tensiunii"
+        }
+      },
+      "operation_site": {
+        "name": "Loc de utilizare",
+        "state": {
+          "indoor": "Interior",
+          "outdoor": "Exterior"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Comportament după revenirea tensiunii",
+        "state": {
+          "off": "Oprit",
+          "on": "Pornit",
+          "restore": "Starea anterioară"
+        }
+      },
+      "sensor_selection": {
+        "name": "Senzor de temperatură",
+        "state": {
+          "internal": "Cameră",
+          "external": "Pardoseală",
+          "internal_and_external": "Cameră și pardoseală"
+        }
+      },
+      "valve_output": {
+        "name": "Tipul vanei",
+        "state": {
+          "normally_closed": "NC - normal închisă",
+          "normally_open": "NO - normal deschisă"
+        }
+      },
+      "lock_function": {
+        "name": "Funcție de blocare",
+        "state": {
+          "unlocked": "Deblocat",
+          "keep_state": "Blocat (păstrează poziția)",
+          "lockout_protection": "Protecție împotriva blocării afară",
+          "wind_alarm": "Alarmă de vânt"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Toate prizele"
+      },
+      "room_sockets": {
+        "name": "Toate prizele din {room}"
+      },
+      "automatic_dst": {
+        "name": "Schimbare automată a orei"
+      },
+      "backlight_auto_off": {
+        "name": "Oprește automat afișajul"
+      },
+      "blinds_invert_output": {
+        "name": "Funcționare inversată"
+      },
+      "boost_mode": {
+        "name": "Boost"
+      },
+      "day_mode": {
+        "name": "Funcționare de zi"
+      },
+      "dim_to_warm": {
+        "name": "Reglare spre alb cald"
+      },
+      "input_edge_mode": {
+        "name": "Evaluarea fronturilor"
+      },
+      "input_edge_mode_key": {
+        "name": "Evaluarea fronturilor {key}"
+      },
+      "invert_output": {
+        "name": "Inversează ieșirea de comutare"
+      },
+      "led_colour_sync": {
+        "name": "Sincronizează culorile LED"
+      },
+      "led_night_mode": {
+        "name": "Mod de noapte LED"
+      },
+      "lock": {
+        "name": "Blocare",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Mod de blocare",
+            "state": {
+              "keep_state": "Păstrează starea curentă",
+              "lockout_protection": "Protecție împotriva blocării afară",
+              "wind_alarm": "Alarmă de vânt",
+              "enforced_value": "Stare impusă"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Limita de timp a blocării"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Oprire manuală în timpul de menținere"
+      },
+      "prewarning": {
+        "name": "Avertizare înainte de oprire"
+      },
+      "scheduler_enabled": {
+        "name": "Funcționare automată"
+      },
+      "status_led": {
+        "name": "LED de stare"
+      },
+      "status_led_key": {
+        "name": "LED de stare {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Sensibilitate redusă la atingere"
+      },
+      "use_last_lightness": {
+        "name": "Folosește luminozitatea anterioară"
+      },
+      "sensor_publication": {
+        "name": "Valorile senzorilor pentru sisteme IoT"
+      },
+      "local_devices_lock": {
+        "name": "Blocarea operării"
+      },
+      "factory_reset_time_limit": {
+        "name": "Blocarea resetării din fabrică"
+      },
+      "key_lock": {
+        "name": "Blocarea tastelor"
+      },
+      "configuration_lock": {
+        "name": "Blocarea configurării pe dispozitiv"
+      },
+      "walking_test": {
+        "name": "Test de mers"
+      },
+      "time_keeper": {
+        "name": "Sursă de timp"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Mod de funcționare",
+            "state": {
+              "blinds": "Jaluzele (cu lamele)",
+              "shutter": "Rulou",
+              "awning": "Copertină",
+              "unknown": "Necunoscut"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Toate jaluzelele"
+      },
+      "room_blinds": {
+        "name": "Toate jaluzelele din {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Protecție împotriva înghețului"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Toate termostatele"
+      },
+      "room_thermostats": {
+        "name": "Toate termostatele din {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Toate luminile"
+      },
+      "room_lights": {
+        "name": "Toate luminile din {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "Tasta A: {subtype}",
+      "b": "Tasta B: {subtype}",
+      "c": "Tasta C: {subtype}",
+      "d": "Tasta D: {subtype}",
+      "e1": "Intrarea E1: {subtype}",
+      "e2": "Intrarea E2: {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "clic",
+      "double_click": "dublu clic",
+      "hold_start": "apăsare lungă începută",
+      "hold_end": "apăsare lungă eliberată",
+      "press_on": "apăsare pornire / sus",
+      "press_off": "apăsare oprire / jos",
+      "scene": "scenă apelată",
+      "dim": "reglarea intensității",
+      "click_up": "clic (jumătatea de sus)",
+      "click_down": "clic (jumătatea de jos)",
+      "double_click_up": "dublu clic (jumătatea de sus)",
+      "double_click_down": "dublu clic (jumătatea de jos)",
+      "hold_start_up": "apăsare lungă începută (jumătatea de sus)",
+      "hold_start_down": "apăsare lungă începută (jumătatea de jos)",
+      "hold_end_up": "apăsare lungă eliberată (jumătatea de sus)",
+      "hold_end_down": "apăsare lungă eliberată (jumătatea de jos)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "Comanda nu a putut fi trimisă către rețeaua mesh JUNG; niciun nod proxy nu este conectat."
+    },
+    "no_answer": {
+      "message": "Dispozitivul JUNG nu a răspuns; este posibil ca comanda să fi fost totuși executată și va fi verificată din nou la următoarea conexiune."
+    },
+    "device_not_reachable": {
+      "message": "{entity} nu a răspuns la comandă (3 încercări în 9 s); este posibil ca aceasta să nu fi fost executată. Dacă restul rețelei mesh încă răspunde, dispozitivul este afișat ca indisponibil până când este auzit din nou: verifică dacă are alimentare."
+    },
+    "cannot_load": {
+      "message": "Exportul rețelei mesh {path} nu a putut fi citit."
+    },
+    "no_proxy_visible": {
+      "message": "Niciun nod al rețelei mesh JUNG nu este încă vizibil prin Bluetooth."
+    },
+    "export_keys_stale": {
+      "message": "Dispozitivele rețelei mesh JUNG sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din export: cheile au fost reînnoite după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME și folosește exportul la Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează."
+    },
+    "bluetooth_unavailable": {
+      "message": "Home Assistant nu are niciun adaptor sau proxy Bluetooth la care să se poată conecta: rețeaua mesh JUNG nu poate fi accesată."
+    },
+    "duplicate_mesh": {
+      "message": "{others} rulează deja această rețea mesh JUNG HOME; se poate încărca o singură intrare pentru fiecare rețea mesh. Elimină una dintre cele două intrări."
+    },
+    "seq_store_not_written": {
+      "message": "Înregistrarea numerelor de secvență dintr-o versiune mai veche nu a putut fi salvată în depozitul rețelei mesh (`.storage/junghome_ble.seq.*`); verifică dacă se poate scrie în directorul de configurare."
+    },
+    "seq_floor_not_written": {
+      "message": "Înregistrarea numerelor de secvență a fost restaurată dintr-un backup, iar limita ei minimă (`.storage/junghome_ble.seq.*.floor`) nu a putut fi scrisă înainte de saltul înainte; verifică dacă se poate scrie în directorul de configurare."
+    },
+    "service_entry_not_loaded": {
+      "message": "Integrarea rețelei mesh JUNG HOME nu este încărcată (sau se reîncarcă); încearcă din nou peste câteva momente."
+    },
+    "service_not_connected": {
+      "message": "Rețeaua mesh JUNG HOME nu este conectată; încearcă din nou când un nod proxy se află în rază."
+    },
+    "service_entry_ambiguous": {
+      "message": "Sunt configurate mai multe rețele mesh JUNG HOME; specifică rețeaua mesh (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "{id} nu este un dispozitiv sau o entitate a rețelei mesh JUNG HOME."
+    },
+    "service_not_a_load": {
+      "message": "{name} nu este un dispozitiv JUNG HOME pentru care funcționează această acțiune."
+    },
+    "service_not_a_key": {
+      "message": "{name} nu este o tastă a unui buton JUNG HOME."
+    },
+    "service_key_required": {
+      "message": "{name} are tastele {keys}; specifică litera tastei pentru a alege una."
+    },
+    "service_unknown_key": {
+      "message": "{name} nu are tasta {letter} (are {keys})."
+    },
+    "service_no_loads": {
+      "message": "Ținta nu indică nicio lumină sau priză JUNG HOME."
+    },
+    "service_target_other_network": {
+      "message": "Tasta și ținta ei aparțin unor rețele mesh diferite."
+    },
+    "service_unknown_element": {
+      "message": "Elementul {address} nu se află în exportul rețelei mesh."
+    },
+    "service_no_room": {
+      "message": "Nu există nicio cameră numită {room} în exportul rețelei mesh."
+    },
+    "service_room_exists": {
+      "message": "Există deja o cameră numită {room}."
+    },
+    "service_room_key_drives_load": {
+      "message": "{device} nu a fost scos din camera {room}: este comutat de {button} prin legătura acelei taste cu camera, iar ieșirea din cameră îl deconectează și de la tastă. Rulează din nou acțiunea cu „Chiar dacă o tastă îl comandă” sau atribuie mai întâi tastei o altă funcție."
+    },
+    "service_invalid_room_name": {
+      "message": "O cameră trebuie să aibă un nume."
+    },
+    "service_no_mode": {
+      "message": "Niciun mod al tastei nu se potrivește elementului {address}; specifică modul."
+    },
+    "service_invalid_mode": {
+      "message": "Modul {mode} nu poate fi folosit cu ținta {target}."
+    },
+    "service_key_mode_unsupported": {
+      "message": "Tasta {address} nu are niciun model client pentru modul {mode}."
+    },
+    "service_target_element_needs_device": {
+      "message": "Un element țintă se aplică doar unei taste legate de un dispozitiv, nu de o cameră sau de o scenă."
+    },
+    "service_target_element_missing": {
+      "message": "Ținta {target} nu are niciun element {target_element} pe care o tastă l-ar putea comanda."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Durata blocării se aplică doar modului lock, între 0 și 65535 de secunde."
+    },
+    "service_lock_unsupported": {
+      "message": "O tastă nu poate bloca ținta {target}: doar o lumină sau o priză poate fi blocată de la o tastă."
+    },
+    "service_no_element_group": {
+      "message": "Elementul {address} nu are niciun grup de elemente: aplicația JUNG HOME nu l-a legat niciodată. Leagă-l mai întâi o dată în aplicație."
+    },
+    "service_one_target": {
+      "message": "Specifică exact o țintă: un dispozitiv, o entitate, o cameră sau o scenă."
+    },
+    "service_config_refused": {
+      "message": "Nodul {node} a refuzat {message}: {status}. {applied}"
+    },
+    "service_no_reply": {
+      "message": "Nodul {node} nu a răspuns la {message}; este alimentat și în rază? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "Nu s-a trimis nimic: {nodes} nu au răspuns la ultima cerere a lui Home Assistant și sunt considerate inaccesibile (entitățile lor sunt indisponibile), așa că planul s-ar opri la primul lor mesaj. Verifică dacă sunt alimentate și în rază, apoi rulează din nou acțiunea după ce răspund. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "Nodul {node} funcționează cu baterie și nu a răspuns la {message}: este în repaus. Apasă una dintre tastele lui pentru a-l trezi, apoi rulează imediat din nou acțiunea. Dacă nu reacționează nici la apăsarea unei taste, de obicei bateria este descărcată: înlocuiește-o. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "Tasta {address} nu a preluat modul tastei {mode}; legăturile ei au fost configurate și sunt înregistrate în exportul rețelei mesh — rulează din nou acțiunea cu aceeași țintă pentru a seta modul."
+    },
+    "service_key_scene_not_applied": {
+      "message": "Tasta {address} nu a preluat scena {scene}; ea transmite apelările de scenă către toate dispozitivele, iar acest lucru este înregistrat în exportul rețelei mesh — rulează din nou acțiunea cu aceeași scenă pentru a o seta."
+    },
+    "service_key_lock_not_applied": {
+      "message": "Tasta {address} nu a preluat funcția de blocare (proprietatea {property}); legăturile ei au fost configurate și sunt înregistrate în exportul rețelei mesh — rulează din nou acțiunea cu aceeași țintă pentru a o seta."
+    },
+    "service_export_newer": {
+      "message": "Exportul rețelei mesh {path} a fost modificat în afara Home Assistant (de aplicația JUNG HOME sau manual) după ce Home Assistant l-a încărcat. Exportă din nou proiectul din aplicație, înlocuiește fișierul („Reconfigurează”) și încearcă din nou."
+    },
+    "service_export_load_failed": {
+      "message": "Exportul rețelei mesh {path} nu a putut fi citit: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "Exportul rețelei mesh {path} nu a putut fi scris: {error}"
+    },
+    "value_rejected": {
+      "message": "{entity} nu poate primi această valoare: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "Termostatul nu și-a raportat încă temperatura {preset}; încearcă din nou peste câteva momente."
+    },
+    "led_colour_unknown": {
+      "message": "Culorile LED pentru {entity} nu sunt încă cunoscute; dispozitivul nu a răspuns la citire."
+    },
+    "service_room_name_reserved": {
+      "message": "„{name}” este un nume rezervat de rețeaua mesh pentru grupuri interne; alege alt nume pentru cameră."
+    },
+    "service_name_blank": {
+      "message": "Un nume nu poate fi gol."
+    },
+    "service_name_too_long": {
+      "message": "Aplicația JUNG HOME nu poate redenumi în „{name}”: redenumirea acceptă cel mult {max_length} caractere."
+    },
+    "service_name_not_allowed": {
+      "message": "Aplicația JUNG HOME refuză numele „{name}”: consideră semnul % drept început al unui substituent (sunt acceptate doar %% și %n)."
+    },
+    "service_room_range_full": {
+      "message": "Nu a mai rămas nicio adresă de grup liberă în intervalul aplicației; șterge mai întâi o cameră nefolosită în aplicația JUNG HOME."
+    },
+    "gateway_certificate_changed": {
+      "message": "Gateway-ul JUNG HOME de la {host} prezintă un alt certificat decât cel înregistrat ({expected} față de {observed}). Dacă gateway-ul sau certificatul acestuia a fost înlocuit intenționat, reconfigurează intrarea."
+    },
+    "service_ambiguous_scene": {
+      "message": "„{scene}” este atât un număr de scenă, cât și numele altei scene; redenumește acea scenă pentru a le deosebi."
+    },
+    "service_unknown_scene": {
+      "message": "Nu există nicio scenă „{scene}” în exportul rețelei mesh; indică numele scenei așa cum îl afișează aplicația JUNG HOME sau numărul ei."
+    },
+    "service_scene_exists": {
+      "message": "Există deja o scenă numită „{scene}”."
+    },
+    "service_scene_range_full": {
+      "message": "Nu a mai rămas niciun număr de scenă liber în intervalul aplicației; șterge mai întâi o scenă nefolosită."
+    },
+    "service_room_range_crowded": {
+      "message": "Home Assistant atribuie camerelor noi cele mai mari adrese de grup libere din intervalul aplicației, pentru ca următoarele camere create de aplicație să nu primească aceleași adrese; sub următoarea adresă a aplicației au mai rămas libere doar {free}, iar aplicația ar ajunge curând la ea. Șterge camerele nefolosite sau activează opțiunea „Înscrie Home Assistant ca provizioner în fișierul rețelei”, care îi oferă lui Home Assistant un interval propriu."
+    },
+    "service_scene_range_crowded": {
+      "message": "Home Assistant atribuie scenelor noi cele mai mari numere de scenă libere din intervalul aplicației, pentru ca următoarele scene create de aplicație să nu primească aceleași numere; sub următorul număr al aplicației au mai rămas libere doar {free}, iar aplicația ar ajunge curând la el. Șterge scenele nefolosite sau activează opțiunea „Înscrie Home Assistant ca provizioner în fișierul rețelei”, care îi oferă lui Home Assistant un interval propriu."
+    },
+    "add_device_groups_crowded": {
+      "message": "Grupurile de elemente ale noului dispozitiv ar ocupa cele mai mari adrese de grup libere din intervalul aplicației, dar sub ele au mai rămas libere doar {free} adrese, iar următoarele camere create de aplicație ar ajunge curând la ele. Șterge camerele nefolosite sau activează opțiunea „Înscrie Home Assistant ca provizioner în fișierul rețelei”, care îi oferă lui Home Assistant un interval propriu."
+    },
+    "service_not_a_scene_element": {
+      "message": "Elementul {address} nu poate salva scene (nu are Scene Setup Server)."
+    },
+    "service_scene_not_stored": {
+      "message": "Dispozitivul {address} nu a salvat scena {scene} ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "Dispozitivul {address} nu mai are loc pentru scena {scene}: a atins deja numărul maxim de scene ({capacity}), inclusiv scenele temporizate. Elimină-l mai întâi dintr-o altă scenă. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "Dispozitivul {address} conține încă scena {scene} după ștergere ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "Gateway-ul JUNG HOME nu și-a furnizat exportul, iar această acțiune are nevoie de el: copia păstrată de Home Assistant poate să nu conțină modificările făcute între timp în aplicația JUNG HOME. Încearcă din nou când gateway-ul răspunde (motivul apare în jurnal)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Această rețea a fost configurată dintr-un fișier, care poate să nu conțină scenele create în aplicația JUNG HOME după exportul lui; ștergerea numerelor de scenă pe care fișierul nu le cunoaște ar șterge acele scene de pe toate dispozitivele. Rulează mai întâi o simulare și compară numerele afișate cu cele din aplicație, apoi șterge cu „Exportul rețelei mesh este actual” activat sau indică numerele de șters."
+    },
+    "service_unused_scenes_known": {
+      "message": "Numerele de scenă {numbers} sunt scene din exportul rețelei mesh; șterge-le cu „Șterge scena”."
+    },
+    "service_scene_action_not_applied": {
+      "message": "Dispozitivul {address} a salvat scena {scene}, dar nu a preluat descrierea scenei (Scene Action Setup). {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "Starea dispozitivului {address} nu este cunoscută, așa că scena {scene} ar fi salvată fără descrierea ei, iar scoaterea din scenă a altui canal al dispozitivului l-ar elimina apoi și pe acesta. Indică starea de salvat (sau comută o dată dispozitivul) și încearcă din nou. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Această rețea nu a fost configurată de la un gateway JUNG HOME (intrarea nu conține adresa și tokenul gateway-ului); reconfigurează intrarea de la gateway pentru a o sincroniza."
+    },
+    "service_gateway_sync_failed": {
+      "message": "Gateway-ul {host} nu a preluat exportul: {error}."
+    },
+    "service_send_failed": {
+      "message": "Conexiunea cu rețeaua mesh JUNG s-a pierdut în timpul trimiterii {message} către nodul {node}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "Nodul {node} se află în exportul rețelei mesh {path}, dar nu și în rețeaua pe care Home Assistant a încărcat-o anterior din acesta; reîncarcă integrarea (Setări → Dispozitive și servicii → JUNG HOME → Reîncarcă) pentru ca ea să urmeze exportul, apoi încearcă din nou. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "Gateway-ul JUNG HOME de la {host} conține un export mai nou ({gateway}) decât fișierul pe care Home Assistant l-ar încărca ({file}); încărcarea lui ar șterge modificările făcute între timp în aplicația JUNG HOME. Următoarea modificare făcută în Home Assistant preia exportul gateway-ului și aplică peste el modificările proprii ale lui Home Assistant. Dacă eroarea reapare (o intrare fără o copie a ultimei încărcări a aplicației nu le poate deosebi), preia din nou exportul gateway-ului (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează; fișierul înlocuit este păstrat alături ca `.pre-reconfigure`), apoi repetă modificarea făcută în Home Assistant."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "Gateway-ul JUNG HOME de la {host} a răspuns doar cu baza de date simplă a dispozitivelor (fără numele dispozitivelor sau legăturile cu camerele); adoptarea ei le-ar șterge din fișierul păstrat de Home Assistant. Încearcă din nou când gateway-ul nu mai este ocupat sau preia din nou exportul aplicației."
+    },
+    "identify_no_answer": {
+      "message": "Dispozitivul JUNG nu a răspuns la cererea de identificare; este alimentat și în rază?"
+    },
+    "service_unknown_entry": {
+      "message": "{id} nu este o rețea mesh JUNG HOME; specifică config_entry_id al uneia dintre ele (sau omite-l când este configurată una singură)."
+    },
+    "service_all_not_supported": {
+      "message": "Această acțiune nu acceptă entity_id: all; indică luminile, prizele, dispozitivele, zonele sau etichetele cărora li se aplică."
+    },
+    "edge_detection_unknown": {
+      "message": "Evaluarea fronturilor pentru {entity} nu este încă cunoscută; intrarea nu a răspuns la citire."
+    },
+    "reset_consumption_refused": {
+      "message": "Priza JUNG nu și-a resetat contorul {property}; raportează în continuare o valoare diferită de 0."
+    },
+    "setup_state_unknown": {
+      "message": "Setarea actuală pentru {entity} nu este încă cunoscută; dispozitivul nu a răspuns la citire."
+    },
+    "setting_no_answer": {
+      "message": "Dispozitivul JUNG nu a răspuns nici la modificarea pentru {entity}, nici la citirea de verificare; este posibil să fi preluat totuși noua valoare. Este alimentat și în rază?"
+    },
+    "setting_asleep": {
+      "message": "Dispozitivul cu baterie pentru {entity} nu a răspuns: este în repaus. Apasă una dintre tastele lui pentru a-l trezi, apoi fă imediat din nou modificarea. Dacă nu reacționează nici la apăsarea unei taste, de obicei bateria este descărcată: înlocuiește-o."
+    },
+    "setting_not_applied": {
+      "message": "Dispozitivul JUNG nu a preluat noua valoare pentru {entity}; raportează în continuare o altă valoare."
+    },
+    "setting_not_supported": {
+      "message": "Dispozitivul JUNG nu are setarea pentru {entity}: a răspuns la modificare fără nicio valoare."
+    },
+    "schedule_no_reply": {
+      "message": "Dispozitivul JUNG {address} nu a răspuns la cererea privind programările sale."
+    },
+    "schedule_not_applied": {
+      "message": "Dispozitivul JUNG {address} nu a preluat modificarea slotului de programare {slot}."
+    },
+    "schedule_slots_full": {
+      "message": "Toate cele 16 sloturi de programare ale dispozitivului JUNG {address} sunt ocupate; șterge mai întâi unul."
+    },
+    "schedule_empty_slot": {
+      "message": "Slotul de programare {slot} al dispozitivului JUNG {address} nu conține nicio programare."
+    },
+    "schedule_not_supported": {
+      "message": "{name} nu rulează programări proprii."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Programarea a fost deja scrisă pe {created}: șterge-o de acolo înainte de a apela din nou, altfel acele dispozitive o vor rula de două ori."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Programarea nu se potrivește pentru {name}: {fields} nu i se aplică."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Programarea nu se potrivește pentru {name}: un termostat are nevoie de o temperatură."
+    },
+    "schedule_action_needs_position": {
+      "message": "Programarea nu se potrivește pentru {name}: o jaluzea are nevoie de o poziție."
+    },
+    "schedule_action_needs_action": {
+      "message": "Programarea nu se potrivește pentru {name}: are nevoie de o acțiune („Pornit” sau „Oprit”)."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Programarea nu se potrivește pentru {name}: luminozitatea se folosește doar cu acțiunea „Pornit”."
+    },
+    "threshold_not_supported": {
+      "message": "{name} nu este o priză JUNG HOME cu măsurare și praguri."
+    },
+    "threshold_incomplete": {
+      "message": "{name} nu are niciun prag de modificat (sau nu a răspuns): indică atât puterea, cât și durata."
+    },
+    "threshold_not_applied": {
+      "message": "Priza JUNG {address} nu a preluat pragul {which}. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "Pragul {which} nu a putut fi trimis către priza JUNG {address}; niciun nod proxy nu este conectat. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Priza și dispozitivele pe care ar trebui să le comute pragurile ei aparțin unor rețele mesh diferite."
+    },
+    "scene_state_not_applicable": {
+      "message": "Starea nu se potrivește pentru {name}: {fields} nu i se aplică."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Starea nu se potrivește pentru {name}: un termostat are nevoie de o temperatură."
+    },
+    "scene_state_needs_position": {
+      "message": "Starea nu se potrivește pentru {name}: o jaluzea are nevoie de o poziție."
+    },
+    "scene_state_needs_action": {
+      "message": "Starea nu se potrivește pentru {name}: are nevoie de o acțiune („Pornit” sau „Oprit”)."
+    },
+    "scene_state_brightness_off": {
+      "message": "Starea nu se potrivește pentru {name}: luminozitatea se folosește doar cu acțiunea „Pornit”."
+    },
+    "scene_state_not_reached": {
+      "message": "{name} nu a raportat noua stare la timp; scena nu a fost salvată."
+    },
+    "service_gateway_token_rejected": {
+      "message": "Gateway-ul JUNG HOME de la {host} nu mai acceptă accesul lui Home Assistant, așa că exportul nu i-a fost transmis. Acordă din nou accesul prin reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi rulează din nou."
+    },
+    "seq_store_lost": {
+      "message": "Înregistrarea numerelor de secvență pentru adresa {unicast} s-a pierdut; Home Assistant nu va refolosi numere pe care rețeaua mesh le-a văzut deja. Deschide problema din Reparații pentru a trece peste ele."
+    },
+    "address_in_use": {
+      "message": "Un nod al rețelei mesh ocupă adresa lui Home Assistant {unicast}; reconfigurează integrarea cu o adresă liberă (de exemplu {suggestion})."
+    },
+    "add_device_not_allowed": {
+      "message": "Adăugarea și eliminarea dispozitivelor sunt dezactivate pentru această rețea: activează mai întâi *Permite Home Assistant să adauge și să elimine dispozitive* în opțiunile integrării."
+    },
+    "add_device_not_found": {
+      "message": "Niciun dispozitiv JUNG nou nu se anunță la {address}; rulează `find_new_devices` și folosește o adresă din lista returnată."
+    },
+    "add_device_not_jung": {
+      "message": "Dispozitivul de la {address} nu se declară dispozitiv JUNG."
+    },
+    "add_device_no_template": {
+      "message": "Nu există încă în rețea niciun dispozitiv al produsului {product}: adaugă-l pe primul cu aplicația JUNG HOME, iar Home Assistant îi copiază configurația."
+    },
+    "add_device_no_address": {
+      "message": "Nu a mai rămas niciun interval de adrese liber pentru noul dispozitiv în afara intervalelor provizionerilor."
+    },
+    "provisioner_identity_failed": {
+      "message": "Intrarea de provizioner a lui Home Assistant nu a putut fi integrată în export ({error}); nu s-a modificat nimic. Consultă jurnalul."
+    },
+    "provisioner_identity_no_range": {
+      "message": "Home Assistant nu poate avea intervale de adrese proprii în această rețea: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Nu s-a putut realiza conexiunea cu noul dispozitiv: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Provizionarea noului dispozitiv a eșuat: {error}. Dispozitivul este încă nou; încearcă din nou."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Provizionarea noului dispozitiv la {unicast} nu a fost confirmată ({error}). Este posibil ca acesta să fi primit cheile rețelei, așa că Home Assistant îl păstrează ca dispozitiv în așteptare: resetează-l cu acțiunea `junghome_ble.reset_pending_device` (unicast {unicast}; adaugă `force` dacă nu răspunde, cum este cazul unui dispozitiv care nu și-a primit niciodată cheile), apoi adaugă-l din nou. Până atunci adresele lui rămân rezervate."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Cheia noului dispozitiv nu a putut fi salvată în seiful de chei al lui Home Assistant ({error}), așa că provizionarea s-a oprit înainte ca dispozitivul să primească ceva: este încă nou și nu s-a rezervat nimic pentru el la {unicast}. Eliberează spațiu sau repară stocarea, apoi încearcă din nou."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Dispozitivul a fost provizionat la {unicast}, dar configurarea lui a eșuat la pasul {step} ({error}) și nu a confirmat o resetare. Aplicația nu îl cunoaște: resetează-l cu acțiunea `junghome_ble.reset_pending_device` (unicast {unicast}), apoi adaugă-l din nou. Până atunci adresele lui rămân rezervate."
+    },
+    "add_device_record_failed": {
+      "message": "Dispozitivul a fost configurat, dar nu a fost înregistrat la {unicast} ({error}). Aplicația nu îl cunoaște: resetează-l cu acțiunea `junghome_ble.reset_pending_device` (unicast {unicast}), apoi adaugă-l din nou. Până atunci adresele lui rămân rezervate."
+    },
+    "add_device_no_beacon": {
+      "message": "Indexul IV al rețelei nu este încă confirmat pe conexiunea Bluetooth curentă (nu a sosit pe ea niciun beacon de rețea), iar noul dispozitiv ar păstra unul greșit. Așteaptă următoarea conexiune la un dispozitiv JUNG și încearcă din nou."
+    },
+    "add_device_key_refresh": {
+      "message": "Aplicația JUNG HOME reînnoiește cheia de rețea (reîmprospătarea cheilor, faza 1): un dispozitiv adăugat acum ar primi cheia care urmează să fie retrasă. Finalizează reînnoirea cheii în aplicație (Home Assistant o urmează), apoi încearcă din nou."
+    },
+    "add_device_name_too_long": {
+      "message": "Numele „{name}” este mai lung decât acceptă aplicația JUNG HOME pentru un dispozitiv: cel mult {max_length} caractere."
+    },
+    "reset_pending_device_unknown": {
+      "message": "Niciun dispozitiv provizionat de Home Assistant fără a fi înregistrat nu este cunoscut ca {device}; problema din Reparații *Un dispozitiv adăugat de Home Assistant nu este înregistrat* listează adresele celor existente."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "Un alt dispozitiv al rețelei se află acum la {unicast}, așa că nu s-a trimis nicio resetare și nu s-a modificat nimic. Folosește `force` pentru a uita dispozitivul în așteptare de la această adresă (resetează-l manual dacă mai există)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "Dispozitivul de la {unicast} nu și-a confirmat resetarea; nu s-a modificat nimic. Folosește `force` pentru un dispozitiv resetat manual sau care a dispărut definitiv."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "Resetarea nu a putut fi trimisă către dispozitivul de la {unicast} ({error}); nu s-a modificat nimic."
+    },
+    "remove_device_gateway": {
+      "message": "Gateway-ul nu poate fi eliminat în acest mod."
+    },
+    "remove_device_mesh": {
+      "message": "Indică un dispozitiv JUNG, nu rețeaua."
+    },
+    "remove_device_unconfirmed": {
+      "message": "Dispozitivul {address} nu și-a confirmat resetarea și nici nu a fost văzut ulterior anunțându-se ca dispozitiv nou. Este posibil să fi fost totuși resetat (confirmarea se poate pierde și se poate ca niciun scanner Bluetooth să nu fie în raza lui) sau să nu fi primit resetarea; exportul rețelei mesh este neschimbat. Rulează din nou acțiunea sau folosește `force` dacă dispozitivul a dispărut definitiv."
+    },
+    "remove_device_proxy": {
+      "message": "Dispozitivul {address} este nodul proxy prin care este conectat Home Assistant: resetarea lui ar întrerupe conexiunea pe care trebuie să sosească confirmarea. Așteaptă până când Home Assistant se conectează prin alt dispozitiv (senzorul „Nod proxy”) sau folosește `force`."
+    },
+    "device_lock_unknown": {
+      "message": "Blocarea dispozitivului pentru {entity} nu este încă cunoscută; dispozitivul nu a răspuns la citire."
+    },
+    "cover_locked": {
+      "message": "{entity} este în stare blocată și ignoră comenzile până la deblocare (prin comutatorul „Blocare” sau prin „Funcție de blocare”)."
+    },
+    "cover_wind_alarm": {
+      "message": "O alarmă de vânt blochează {entity}; comenzile sunt ignorate până la încheierea alarmei (prin „Funcție de blocare” sau prin comutatorul „Blocare”)."
+    },
+    "load_locked": {
+      "message": "{entity} este în stare blocată (în aplicația JUNG HOME, de o tastă sau prin comutatorul „Blocare”) și își păstrează starea până la deblocare."
+    },
+    "dim_not_dimmable": {
+      "message": "{entity} nu este un variator JUNG HOME: în acest mod se poate regla intensitatea doar pentru variatoare și canalele DALI cu alb reglabil."
+    },
+    "locate_no_answer": {
+      "message": "Dispozitivul JUNG {node} nu a răspuns la cererea de a-și anunța identitatea; este alimentat și în rază? Un dispozitiv cu baterie este în repaus și răspunde doar cât timp este activ."
+    },
+    "locate_refused": {
+      "message": "Dispozitivul JUNG {node} a refuzat să-și anunțe identitatea: {status}."
+    },
+    "locate_not_supported": {
+      "message": "Dispozitivul JUNG {node} nu își poate anunța identitatea (Node Identity nu este acceptat)."
+    },
+    "approve_no_gateway": {
+      "message": "Această rețea nu a fost configurată de la un gateway JUNG HOME (intrarea nu conține adresa și tokenul gateway-ului): nu există niciun gateway la care să fie aprobați clienți."
+    },
+    "approve_gateway_distrusted": {
+      "message": "Gateway-ul JUNG HOME de la {host} nu a fost interogat: {error}. Nu s-a aprobat nimic."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "Gateway-ul JUNG HOME de la {host} nu mai acceptă accesul lui Home Assistant, așa că nu s-a aprobat nimic. Acordă din nou accesul prin reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi rulează din nou."
+    },
+    "approve_client_not_waiting": {
+      "message": "Niciun client API numit „{client}” nu așteaptă acces la gateway (în așteptare: {waiting}). Nu s-a aprobat nimic."
+    },
+    "approve_gateway_busy": {
+      "message": "Gateway-ul JUNG HOME de la {host} este ocupat cu o altă cerere de configurare; încearcă din nou peste un minut. Nu s-a aprobat nimic."
+    },
+    "approve_gateway_failed": {
+      "message": "Gateway-ul JUNG HOME de la {host} nu a executat cererea: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant nu actualizează firmware-ul JUNG: actualizează dispozitivul cu aplicația JUNG HOME."
+    },
+    "add_device_node_not_configured": {
+      "message": "Noul dispozitiv de la {unicast} nu a putut fi configurat la pasul {step} ({error}). Home Assistant l-a resetat, așa cum face aplicația JUNG HOME, iar dispozitivul a confirmat: este din nou un dispozitiv nou și nu se rezervă nimic pentru el. Un dispozitiv care nu este produsul sau mecanismul pe care îl anunță este refuzat astfel; altfel, adaugă-l din nou."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Provizionarea noului dispozitiv la {unicast} nu a fost confirmată ({error}). Home Assistant l-a resetat, iar dispozitivul a confirmat: este din nou un dispozitiv nou și nu se rezervă nimic pentru el. Încearcă din nou."
+    },
+    "time_keeper_role_failed": {
+      "message": "Dispozitivul de la {address} nu și-a preluat rolul de timp ({error}). Publicarea Time Server a acestuia a fost deja modificată: setează din nou sursa de timp după ce dispozitivul răspunde."
+    },
+    "load_thermostat_controlled": {
+      "message": "Termostatul de cameră {thermostats} (legat în aplicația JUNG HOME) comută {entity}, care nu se comută manual, la fel ca în aplicație."
+    },
+    "load_forced_short": {
+      "message": "Detectorul pentru {entity} impune starea pornit sau oprit (pornit permanent / oprit permanent): pentru a încheia, mută comutatorul pentru funcționare automată al detectorului în poziția din mijloc."
+    },
+    "load_forced_on_button": {
+      "message": "Detectorul pentru {entity} impune starea pornit (pornit permanent): apasă butonul ON al detectorului pentru a încheia."
+    },
+    "load_forced_off_button": {
+      "message": "Detectorul pentru {entity} impune starea oprit (oprit permanent): apasă butonul OFF al detectorului pentru a încheia."
+    },
+    "load_forced_on_presence": {
+      "message": "Detectorul pentru {entity} impune starea pornit (pornit permanent): se încheie cu butonul de programare al detectorului."
+    },
+    "load_forced_off_presence": {
+      "message": "Detectorul pentru {entity} impune starea oprit (oprit permanent): se încheie cu butonul de programare al detectorului."
+    },
+    "cover_slats_open": {
+      "message": "{entity} este în poziția complet deschisă: lamelele nu pot fi mișcate până la coborâre, la fel ca în aplicația JUNG HOME."
+    },
+    "thermostat_boosting": {
+      "message": "{entity} este în modul boost: alege alt mod presetat pentru a încheia boost-ul înainte de a seta o temperatură, la fel ca în aplicația JUNG HOME."
+    },
+    "service_detector_device_only": {
+      "message": "Detectorul {address} poate comanda un singur dispozitiv: indică o lumină, o priză sau un dispozitiv țintă, nu o cameră sau o scenă."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "Detectorul {address} nu poate comanda o țintă în modul {mode}: un detector nu are mod al tastei, așa că doar comută o lumină, o priză sau o jaluzea în modul dat de țintă, fără funcție de blocare, termostat de cameră, gateway sau element țintă."
+    },
+    "gateway_fetch_refused": {
+      "message": "Exportul nu a fost preluat de la gateway-ul JUNG HOME de la {host}: {error}. Nu s-a modificat nimic; notificările din Reparații arată ce trebuie făcut."
+    },
+    "service_unknown_area": {
+      "message": "Nu există nicio zonă cu ID-ul {id}."
+    },
+    "service_not_a_scene": {
+      "message": "{name} nu este o scenă a unei rețele JUNG HOME."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Eliminarea unui dispozitiv nu poate fi anulată: adaugă \"confirm: true\" la apel pentru a o executa (sau \"dry_run: true\" pentru a vedea ce ar face)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Ștergerea unei scene chiar dacă un dispozitiv nu răspunde lasă scena salvată pe acel dispozitiv: adaugă \"confirm: true\" la apel pentru a o executa (sau \"dry_run: true\" pentru a vedea ce ar face)."
+    },
+    "plan_key_device": {
+      "message": "{key} comandă acum {target}; mesaje: {messages}"
+    },
+    "plan_key_room": {
+      "message": "{key} comandă acum camera {room}; mesaje: {messages}"
+    },
+    "plan_key_scene": {
+      "message": "{key} apelează acum scena {scene}; mesaje: {messages}"
+    },
+    "plan_key_cleared": {
+      "message": "{key} nu mai are nicio funcție; mesaje: {messages}"
+    },
+    "plan_room_joined": {
+      "message": "Acum în camera {room}: {devices}; mesaje: {messages}"
+    },
+    "plan_room_left": {
+      "message": "Scoase din camera {room}: {devices}; mesaje: {messages}"
+    },
+    "plan_room_deleted": {
+      "message": "Camera {room} a fost ștearsă; mesaje: {messages}"
+    },
+    "plan_device_removed": {
+      "message": "{device} a fost eliminat din rețea; mesaje către celelalte dispozitive: {messages}"
+    },
+    "plan_scene_deleted": {
+      "message": "Scena {scene} a fost ștearsă; mesaje: {messages}"
+    },
+    "plan_finished": {
+      "message": "Acțiunea {action} s-a încheiat; mesaje: {messages}"
+    },
+    "plan_stopped": {
+      "message": "Acțiunea {action} s-a oprit după {applied} din {total} mesaje: {error}"
+    },
+    "plan_cancelled": {
+      "message": "Acțiunea {action} a fost anulată după {applied} din {total} mesaje; exportul rețelei mesh înregistrează ce s-a aplicat"
+    },
+    "logbook_scene_from_key": {
+      "message": "a apelat scena {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "eliberarea nu a fost recepționată la timp"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "conexiune pierdută"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "integrare oprită"
+    },
+    "logbook_scene_number": {
+      "message": "Scena {scene}"
+    },
+    "logbook_scene": {
+      "message": "Scenă"
+    },
+    "logbook_recalled": {
+      "message": "a fost apelată"
+    },
+    "logbook_recalled_by": {
+      "message": "a fost apelată de {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "Dispozitive JUNG HOME care lipsesc din export",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Preia din nou exportul de la gateway",
+            "description": "{count} dispozitiv(e) din rețeaua mesh JUNG HOME {title} se anunță prin Bluetooth, dar nu se află în exportul încărcat de Home Assistant: {devices}. Au fost adăugate în instalație (sau provizionate din nou) după realizarea acelui export, așa că Home Assistant nu are entități pentru ele. Confirmă pentru a prelua exportul actual de la gateway-ul JUNG HOME de la {host} cu accesul pe care Home Assistant îl are deja, a-l verifica și a configura din nou integrarea pe baza lui, așa cum face Reconfigurează → Preia din nou de la gateway; exportul înlocuit este păstrat ca o copie (`.pre-reconfigure`). Problema dispare după ce noul export le include. Neverificat încă pe dispozitive reale."
+          },
+          "upload": {
+            "title": "Încarcă un export nou",
+            "description": "{count} dispozitiv(e) din rețeaua mesh JUNG HOME {title} se anunță prin Bluetooth, dar nu se află în exportul încărcat de Home Assistant: {devices}. Au fost adăugate în instalație (sau provizionate din nou) după realizarea acelui export, așa că Home Assistant nu are entități pentru ele. Exportă rețeaua din aplicația JUNG HOME (Proiect → Partajare prin fișier) și încarcă fișierul aici: Home Assistant îl verifică, îl păstrează în `junghome_ble/` din directorul său de configurare (conține toate cheile rețelei mesh) și configurează din nou integrarea pe baza lui; exportul înlocuit este păstrat ca o copie. O intrare care își citea exportul dintr-o cale de pe gazdă folosește de acum înainte copia încărcată — pentru a păstra calea, copiază mai degrabă noul fișier acolo și folosește „Reconfigurează”. Problema dispare după ce noul export le include. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "export_file": "Fișierul de export al rețelei mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
+          "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
+          "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+          "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+          "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+          "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+          "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+          "invalid_export": "Fișierul nu este un export al rețelei mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile ei, nodurile și o cheie de rețea la indexul 0.",
+          "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+          "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+          "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "not_a_directory": "Calea metadatelor nu este un director.",
+          "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+          "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
+          "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să îl încarci din nou."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
+          "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
+          "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "Dispozitive JUNG HOME care lipsesc din export",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Preia din nou exportul de la gateway",
+            "description": "{count} dispozitiv(e) din rețeaua mesh JUNG HOME {title} se anunță prin Bluetooth, dar nu se află în exportul încărcat de Home Assistant: {devices}. Au fost adăugate în instalație (sau provizionate din nou) după realizarea acelui export, așa că Home Assistant nu are încă entități pentru ele. Home Assistant cere gateway-ului exportul actual și îl preia singur când acesta le include. Confirmă pentru a prelua exportul actual de la gateway-ul JUNG HOME de la {host} cu accesul pe care Home Assistant îl are deja, a-l verifica și a configura din nou integrarea pe baza lui, așa cum face Reconfigurează → Preia din nou de la gateway; exportul înlocuit este păstrat ca o copie (`.pre-reconfigure`). Dacă problema persistă, nici exportul gateway-ului nu le cunoaște: deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (își încarcă proiectul), apoi repară din nou. Neverificat încă pe dispozitive reale."
+          },
+          "upload": {
+            "title": "Încarcă un export nou",
+            "description": "{count} dispozitiv(e) din rețeaua mesh JUNG HOME {title} se anunță prin Bluetooth, dar nu se află în exportul încărcat de Home Assistant: {devices}. Au fost adăugate în instalație (sau provizionate din nou) după realizarea acelui export, așa că Home Assistant nu are încă entități pentru ele. Home Assistant cere gateway-ului exportul actual și îl preia singur când acesta le include. Exportă rețeaua din aplicația JUNG HOME (Proiect → Partajare prin fișier) și încarcă fișierul aici: Home Assistant îl verifică, îl păstrează în `junghome_ble/` din directorul său de configurare (conține toate cheile rețelei mesh) și configurează din nou integrarea pe baza lui; exportul înlocuit este păstrat ca o copie. O intrare care își citea exportul dintr-o cale de pe gazdă folosește de acum înainte copia încărcată — pentru a păstra calea, copiază mai degrabă noul fișier acolo și folosește „Reconfigurează”. Dacă problema persistă, nici exportul gateway-ului nu le cunoaște: deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (își încarcă proiectul), apoi repară din nou. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "export_file": "Fișierul de export al rețelei mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
+          "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
+          "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+          "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+          "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+          "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+          "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+          "invalid_export": "Fișierul nu este un export al rețelei mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile ei, nodurile și o cheie de rețea la indexul 0.",
+          "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+          "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+          "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "not_a_directory": "Calea metadatelor nu este un director.",
+          "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+          "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
+          "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să îl încarci din nou."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
+          "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
+          "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "Aplicația JUNG HOME a modificat instalația",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Preia din nou exportul de la gateway",
+            "description": "Aplicația JUNG HOME a fost văzută modificând configurația unui dispozitiv din rețeaua mesh {title} (legătura unei taste, o cameră, o scenă sau o setare a unui dispozitiv), așa că exportul încărcat de Home Assistant s-ar putea să nu mai corespundă instalației: ce s-a modificat în aplicație nu este încă în Home Assistant. Confirmă pentru a prelua exportul actual de la gateway-ul JUNG HOME de la {host} cu accesul pe care Home Assistant îl are deja, a-l verifica și a configura din nou integrarea pe baza lui, așa cum face Reconfigurează → Preia din nou de la gateway; exportul înlocuit este păstrat ca o copie (`.pre-reconfigure`). Neverificat încă pe dispozitive reale."
+          },
+          "upload": {
+            "title": "Încarcă un export nou",
+            "description": "Aplicația JUNG HOME a fost văzută modificând configurația unui dispozitiv din rețeaua mesh {title} (legătura unei taste, o cameră, o scenă sau o setare a unui dispozitiv), așa că exportul încărcat de Home Assistant s-ar putea să nu mai corespundă instalației: ce s-a modificat în aplicație nu este încă în Home Assistant. După ce ai terminat în aplicație, exportă rețeaua din ea (Proiect → Partajare prin fișier) și încarcă fișierul aici: Home Assistant îl verifică, îl păstrează în `junghome_ble/` din directorul său de configurare (conține toate cheile rețelei mesh) și configurează din nou integrarea pe baza lui; exportul înlocuit este păstrat ca o copie. O intrare care își citea exportul dintr-o cale de pe gazdă folosește de acum înainte copia încărcată — pentru a păstra calea, copiază mai degrabă noul fișier acolo și folosește „Reconfigurează”, ceea ce închide și această notificare. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "export_file": "Fișierul de export al rețelei mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
+          "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
+          "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+          "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+          "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+          "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+          "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+          "invalid_export": "Fișierul nu este un export al rețelei mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile ei, nodurile și o cheie de rețea la indexul 0.",
+          "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+          "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+          "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "not_a_directory": "Calea metadatelor nu este un director.",
+          "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+          "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
+          "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să îl încarci din nou."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
+          "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
+          "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "Butoane JUNG HOME cu alt mecanism decât în export",
+      "description": "{devices}: aceste butoane din rețeaua mesh JUNG HOME {title} anunță alt mecanism decât cel din exportul încărcat de Home Assistant (export → dispozitiv). Mecanismul a fost înlocuit după realizarea acelui export, așa că Home Assistant și aplicația pot afișa un tip greșit de consumator pentru ele. Verifică dispozitivele în aplicația JUNG HOME, exportă din nou rețeaua și actualizează această integrare (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează); problema dispare după ce exportul indică mecanismele pe care le anunță dispozitivele. Neverificat încă pe dispozitive reale."
+    },
+    "node_clock_wrong": {
+      "title": "Dispozitive JUNG HOME cu ceasul greșit",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Trimite ora acum",
+            "description": "{devices}: aceste dispozitive din rețeaua mesh JUNG HOME {title} pot executa programări (comutare la oră fixă sau la răsărit / apus), iar ceasul lor este greșit: nu au oră, diferă cu mai mult de un minut de ora lui Home Assistant sau au alt decalaj de fus orar decât cel trimis de Home Assistant. Programările lor rulează la ora greșită până când primesc din nou ora. Home Assistant o trimite după fiecare conectare și o dată pe zi; confirmă pentru a o trimite acum și a interoga din nou aceste dispozitive. Problema dispare după ce răspund cu ora corectă. Dacă reapare, verifică fusul orar al lui Home Assistant (Setări → Sistem → General) și dacă dispozitivele pot fi contactate. Neverificat încă pe dispozitive reale."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "not_connected": "Home Assistant nu are în acest moment conexiune la rețeaua mesh. Încearcă din nou după ce se conectează."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "Cheile rețelei mesh JUNG HOME se schimbă",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Preia din nou exportul de la gateway",
+            "description": "Rețeaua mesh {title} a anunțat o reîmprospătare a cheilor fără ca Home Assistant să audă distribuirea noii chei de rețea (o reîmprospătare a cheilor pe care o vede de la început este urmărită și nu generează nicio problemă). După ce se finalizează, cheile din exportul folosit de Home Assistant nu mai sunt valide, iar controlul se va opri. Lasă mai întâi reînnoirea cheilor să se termine în aplicația JUNG HOME. Confirmă pentru a prelua exportul actual de la gateway-ul JUNG HOME de la {host} cu accesul pe care Home Assistant îl are deja, a-l verifica și a configura din nou integrarea pe baza lui, așa cum face Reconfigurează → Preia din nou de la gateway; exportul înlocuit este păstrat ca o copie (`.pre-reconfigure`). Neverificat încă pe dispozitive reale."
+          },
+          "upload": {
+            "title": "Încarcă un export nou",
+            "description": "Rețeaua mesh {title} a anunțat o reîmprospătare a cheilor fără ca Home Assistant să audă distribuirea noii chei de rețea (o reîmprospătare a cheilor pe care o vede de la început este urmărită și nu generează nicio problemă). După ce se finalizează, cheile din exportul folosit de Home Assistant nu mai sunt valide, iar controlul se va opri. Lasă mai întâi reînnoirea cheilor să se termine în aplicația JUNG HOME. Exportă rețeaua din aplicația JUNG HOME (Proiect → Partajare prin fișier) și încarcă fișierul aici: Home Assistant îl verifică, îl păstrează în `junghome_ble/` din directorul său de configurare (conține toate cheile rețelei mesh) și configurează din nou integrarea pe baza lui; exportul înlocuit este păstrat ca o copie. O intrare care își citea exportul dintr-o cale de pe gazdă folosește de acum înainte copia încărcată — pentru a păstra calea, copiază mai degrabă noul fișier acolo și folosește „Reconfigurează”. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "export_file": "Fișierul de export al rețelei mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
+          "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
+          "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+          "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+          "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+          "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+          "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+          "invalid_export": "Fișierul nu este un export al rețelei mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile ei, nodurile și o cheie de rețea la indexul 0.",
+          "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+          "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+          "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "not_a_directory": "Calea metadatelor nu este un director.",
+          "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+          "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
+          "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să îl încarci din nou."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
+          "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
+          "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "Dispozitivele JUNG HOME ignoră Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sari peste numerele pe care dispozitivele le cunosc",
+            "description": "Home Assistant aude rețeaua mesh JUNG HOME {title} prin nodul său proxy, dar niciun dispozitiv nu i-a răspuns la cererile de stare. Nodurile resping mesajele lui Home Assistant ca reluări (replay). Două cauze sunt probabile: depozitul numerelor de secvență al acestei integrări (`.storage/junghome_ble.*`) s-a pierdut sau a fost restaurat dintr-un backup mai vechi, așa că Home Assistant trimite acum numere de secvență pe care nodurile le-au văzut deja; sau un alt client mesh (de exemplu instrumentul `mesh_poc.py`) transmite cu aceeași adresă unicast {unicast}. Fie dă-i lui Home Assistant o adresă nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast, și asigură-te că niciun alt client nu o folosește), fie, dacă depozitul s-a pierdut sau a fost restaurat (și niciun alt client nu folosește adresa), confirmă pentru a-l lăsa pe Home Assistant să își avanseze numerele de secvență cu 1 048 576 și să se reconecteze. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta: o copie mai veche doar repetă numere pe care dispozitivele le-au văzut deja. Problema dispare de la sine imediat ce un dispozitiv îi răspunde din nou lui Home Assistant."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Un alt client folosește adresa JUNG HOME a lui Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sari peste numerele de secvență ale celuilalt client",
+            "description": "Home Assistant a primit un mesaj al rețelei mesh JUNG HOME {title} trimis de la propria sa adresă unicast {unicast} cu un număr de secvență pe care nu l-a folosit niciodată: un alt client mesh transmite cu aceeași adresă — o a doua instalare Home Assistant, instrumentul `mesh_poc.py` configurat cu această adresă sau o copie a acestei instalări pornită în altă parte. Doi expeditori pe aceeași adresă își refolosesc unul altuia numerele de secvență, iar dispozitivele resping tot ce se află sub numerele celuilalt client, așa că Home Assistant nu trimite nimic în rețeaua mesh până când problema nu este reparată (comenzile eșuează, stările nu sunt actualizate). Oprește celălalt client sau dă-i lui ori lui Home Assistant o altă adresă nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast). Apoi confirmă pentru a-l lăsa pe Home Assistant să își continue numerele de secvență după cele cu care a fost văzut celălalt client și să trimită din nou. Dacă celălalt client continuă să trimită de pe această adresă, problema reapare. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Un alt client încă folosește adresa JUNG HOME a lui Home Assistant",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sari din nou peste numerele de secvență ale celuilalt client",
+            "description": "Home Assistant a sărit peste numerele de secvență ale unui alt client mesh de pe adresa sa {unicast} din rețeaua mesh JUNG HOME {title}, iar celălalt client a trimis de atunci din nou de pe acea adresă: încă rulează. Saltul înainte nu ajută cât timp rulează. Dă-i lui Home Assistant o adresă unicast nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast) sau oprește celălalt client ori mută-l pe altă adresă. Până atunci, Home Assistant nu trimite nimic în rețeaua mesh. Confirmă doar după ce celălalt client nu mai folosește această adresă: Home Assistant sare atunci din nou peste numerele lui și reia trimiterea. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Bluetooth indisponibil pentru rețeaua mesh JUNG HOME",
+      "description": "Rețeaua mesh JUNG HOME {title} este accesată prin Bluetooth, dar Home Assistant nu mai are niciun adaptor sau proxy Bluetooth conectabil: adaptorul este oprit, deconectat sau defect ori fiecare proxy Bluetooth ESPHome cu conexiuni active este offline. Toate dispozitivele rețelei mesh sunt indisponibile până când unul dintre acestea revine. Verifică Setări → Dispozitive și servicii → Bluetooth. Problema dispare de la sine imediat ce un adaptor sau proxy Bluetooth este din nou disponibil."
+    },
+    "duplicate_mesh": {
+      "title": "Două intrări pentru aceeași rețea mesh JUNG HOME",
+      "description": "{title} și {others} sunt ambele configurate pentru aceeași rețea mesh JUNG HOME. Își împart contoarele numerelor de secvență (`.storage/junghome_ble.seq.*`), așa că doar una dintre ele poate rula: {others} rulează, iar {title} nu a fost pornită. Elimină una dintre aceste intrări (Setări → Dispozitive și servicii); dacă elimini {others}, reîncarcă apoi {title}."
+    },
+    "gateway_import": {
+      "title": "Preia entitățile integrării JUNG HOME Gateway",
+      "description": "Integrarea JUNG HOME Gateway este configurată alături de integrarea Bluetooth Mesh {title}, așa că fiecare lumină, priză, tastă și scenă există de două ori. Mută aici entitățile gateway-ului — își păstrează ID-urile de entitate, numele, zonele și istoricul — din Setări → Dispozitive și servicii → JUNG HOME (Bluetooth Mesh) → Reconfigurează → Importă entitățile integrării JUNG HOME Gateway, apoi șterge intrarea gateway-ului. Ignoră această problemă dacă vrei să le păstrezi pe amândouă."
+    },
+    "export_stale": {
+      "title": "Cheile rețelei mesh JUNG HOME s-au schimbat",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Preia din nou exportul de la gateway",
+            "description": "Home Assistant este conectat la un nod al rețelei mesh JUNG HOME {title}, dar nimic din ce aude nu poate fi decriptat cu cheile din export: fiecare mesaj de rețea și beaconul nodului eșuează la autentificare. Rețeaua mesh a finalizat o reîmprospătare a cheilor (o „reînnoire a cheii” în aplicația JUNG HOME) după realizarea acelui export, așa că fișierul este învechit. Confirmă pentru a prelua exportul actual de la gateway-ul JUNG HOME de la {host} cu accesul pe care Home Assistant îl are deja, a-l verifica și a configura din nou integrarea pe baza lui, așa cum face Reconfigurează → Preia din nou de la gateway; exportul înlocuit este păstrat ca o copie (`.pre-reconfigure`). Problema dispare imediat ce un mesaj poate fi decriptat din nou. Neverificat încă pe dispozitive reale."
+          },
+          "upload": {
+            "title": "Încarcă un export nou",
+            "description": "Home Assistant este conectat la un nod al rețelei mesh JUNG HOME {title}, dar nimic din ce aude nu poate fi decriptat cu cheile din export: fiecare mesaj de rețea și beaconul nodului eșuează la autentificare. Rețeaua mesh a finalizat o reîmprospătare a cheilor (o „reînnoire a cheii” în aplicația JUNG HOME) după realizarea acelui export, așa că fișierul este învechit. Exportă rețeaua din aplicația JUNG HOME (Proiect → Partajare prin fișier) și încarcă fișierul aici: Home Assistant îl verifică, îl păstrează în `junghome_ble/` din directorul său de configurare (conține toate cheile rețelei mesh) și configurează din nou integrarea pe baza lui; exportul înlocuit este păstrat ca o copie. O intrare care își citea exportul dintr-o cale de pe gazdă folosește de acum înainte copia încărcată — pentru a păstra calea, copiază mai degrabă noul fișier acolo și folosește „Reconfigurează”. Problema dispare imediat ce un mesaj poate fi decriptat din nou. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "export_file": "Fișierul de export al rețelei mesh"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` din aplicație (Partajare prin fișier) sau `MeshNetwork.json` dintr-un backup iOS."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
+          "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
+          "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
+          "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
+          "gateway_error": "Gateway-ul a răspuns cu o eroare. Verifică starea lui în aplicația JUNG HOME și încearcă din nou.",
+          "gateway_busy": "Gateway-ul este ocupat cu o altă cerere de configurare. Încearcă din nou peste un minut.",
+          "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
+          "invalid_export": "Fișierul nu este un export al rețelei mesh JUNG HOME (sau este deteriorat): trebuie să conțină rețeaua cu cheile ei, nodurile și o cheie de rețea la indexul 0.",
+          "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
+          "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
+          "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "not_a_directory": "Calea metadatelor nu este un director.",
+          "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
+          "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
+          "upload_failed": "Fișierul încărcat nu a putut fi procesat. Încearcă să îl încarci din nou."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
+          "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
+          "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Certificatul gateway-ului JUNG HOME s-a schimbat",
+      "description": "Gateway-ul JUNG HOME de la {host} nu mai corespunde certificatului TLS fixat pentru el de Home Assistant: gazda prezintă alt certificat sau nodul gateway raportează altul prin rețeaua mesh. Home Assistant a încetat să folosească gateway-ul (nu i se mai trimite niciun token de acces și niciun export); dispozitivele continuă să funcționeze prin Bluetooth. Dacă ai înlocuit gateway-ul sau certificatul lui, deschide Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează și preia din nou exportul de la gateway; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului — verifică-ți rețeaua."
+    },
+    "gateway_sync_failed": {
+      "title": "Exportul JUNG HOME nu a fost transmis gateway-ului",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Transmite exportul gateway-ului",
+            "description": "Home Assistant a modificat instalația JUNG HOME (o cameră, legătura unei taste sau o scenă) și și-a rescris exportul rețelei mesh, dar gateway-ul JUNG HOME de la {host} nu a preluat noul export: {error}. Până când îl preia, gateway-ul și aplicația afișează starea veche — iar următoarea modificare din aplicație ar suprascrie-o pe cea a lui Home Assistant. Home Assistant mai încearcă de două ori, la 15 secunde distanță, așa cum face aplicația. Verifică dacă gateway-ul poate fi contactat, apoi confirmă pentru a-i transmite exportul acum, așa cum face acțiunea „Sincronizează gateway-ul” (`junghome_ble.sync_gateway`): aceasta refuză când gateway-ul conține modificări pe care Home Assistant nu le-a văzut și pe care încărcarea le-ar șterge. Problema dispare când o încărcare reușește. Neverificat încă pe dispozitive reale."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "not_loaded": "Intrarea JUNG HOME căreia îi aparține această problemă nu rulează în acest moment. Încearcă din nou după ce este configurată.",
+          "sync_failed": "Exportul nu a fost transmis gateway-ului: {error} Problema rămâne; repar-o din nou după ce cauza a dispărut."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "O modificare JUNG HOME în {title} a fost întreruptă",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "O modificare JUNG HOME a fost întreruptă",
+            "description": "Home Assistant s-a oprit în mijlocul acțiunii {action}: {accepted} din cele {total} mesaje de configurare ale ei ajunseseră la dispozitive. Acestea sunt acum înregistrate în exportul rețelei mesh, astfel încât exportul reflectă ce conțin dispozitivele. Rulează din nou acțiunea cu aceeași țintă pentru a o finaliza. Cu un gateway JUNG HOME, exportul înregistrat îi este transmis la următoarea modificare sau prin acțiunea `junghome_ble.sync_gateway`. Confirmă pentru a închide această notificare."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Numele dispozitivului nu a fost transmis aplicației JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Redenumește dispozitivul",
+            "description": "{device} a fost redenumit în Home Assistant în „{name}”, un nume pe care aplicația JUNG HOME îl refuză: un nume nu poate fi gol sau mai lung de 30 de caractere, iar aplicația consideră semnul % începutul unui substituent (sunt acceptate doar %% și %n). Exportul rețelei mesh și aplicația păstrează vechiul nume al dispozitivului. Introdu un nume pe care aplicația îl acceptă: Home Assistant denumește dispozitivul cu el și îl transmite exportului (și, cu un gateway, aplicației), ca la orice redenumire. Problema dispare când numele este transmis. Neverificat încă pe dispozitive reale.",
+            "data": {
+              "name": "Nume"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "Un nume nu poate fi gol.",
+          "name_not_allowed": "Aplicația consideră semnul % începutul unui substituent: sunt acceptate doar %% și %n.",
+          "name_too_long": "Aplicația acceptă nume de cel mult 30 de caractere."
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "not_loaded": "Intrarea JUNG HOME căreia îi aparține această problemă nu rulează în acest moment. Încearcă din nou după ce este configurată.",
+          "device_gone": "Dispozitivul indicat de această problemă nu mai există în Home Assistant."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "Dispozitivele adăugate de Home Assistant nu au primit noua cheie de rețea",
+      "description": "Aplicația JUNG HOME a reînnoit cheia de rețea a rețelei mesh {title}, iar Home Assistant a urmărit reînnoirea până la capăt. Aplicația nu cunoaște dispozitivele adăugate de Home Assistant, așa că Home Assistant le transmite el însuși noua cheie, dar dispozitivele de la următoarele adrese nu au confirmat-o: {addresses}. Asigură-te că sunt alimentate și în rază: Home Assistant reîncearcă la fiecare nouă conexiune Bluetooth. Un dispozitiv care nu a primit niciodată noua cheie nu mai poate fi contactat: resetează-l la setările din fabrică, apoi adaugă-l din nou (elimină-l mai întâi din Home Assistant cu `junghome_ble.remove_device` sau `junghome_ble.reset_pending_device`, cu `force`). Încă neîncercat pe un dispozitiv real. Problema dispare când fiecare astfel de dispozitiv a confirmat."
+    },
+    "pending_device": {
+      "title": "Un dispozitiv adăugat de Home Assistant nu este înregistrat",
+      "description": "Home Assistant a provizionat un dispozitiv JUNG din rețeaua mesh {title} cu `junghome_ble.add_device`, dar configurarea sau înregistrarea lui în export a eșuat: dispozitivul de la {addresses} are cheile rețelei, aplicația JUNG HOME și exportul nu îl cunosc, iar adresele și grupurile elementelor sale rămân rezervate, astfel încât niciun alt dispozitiv nu le primește. Resetează-l cu acțiunea `junghome_ble.reset_pending_device` (adresa sa unicast) și adaugă-l din nou; pentru un dispozitiv pe care l-ai resetat deja manual sau care a dispărut, folosește `force`. Încă neîncercat pe un dispozitiv real. Problema dispare când nu mai rămâne niciun astfel de dispozitiv."
+    },
+    "vault_unwritable": {
+      "title": "Cheile dispozitivelor JUNG HOME nu pot fi salvate",
+      "description": "Home Assistant nu a putut scrie seiful de chei pentru rețeaua mesh {title} ({path}; ultima eroare: {error}) în timp ce adăuga dispozitivul de la {address}. Seiful de chei conține cheile dispozitivelor pe care le adaugă Home Assistant, pe care nimic altceva nu le are până când exportul nu le înregistrează, așa că dispozitivul nu a fost provizionat: nu a primit nimic și este încă nou. De obicei, asta înseamnă că discul este plin sau că sistemul lui de fișiere a fost remontat doar în citire, adesea din cauza unui card SD pe cale să cedeze. Eliberează spațiu sau repară stocarea (un sistem de fișiere remontat doar în citire necesită de obicei repornirea gazdei), apoi adaugă din nou dispozitivul; nu edita, nu șterge și nu înlocui fișierele seifului. Încă neîncercat pe un dispozitiv real. Problema dispare de la sine imediat ce o scriere în seif reușește."
+    },
+    "carry_over_conflict": {
+      "title": "Aplicația JUNG HOME a suprascris o modificare făcută de Home Assistant în {title}",
+      "description": "Home Assistant a preluat exportul transmis ultima dată gateway-ului de aplicația JUNG HOME și și-a aplicat peste el propriile modificări, dar între timp aplicația modificase aceleași elemente. Se păstrează versiunea aplicației pentru: {paths}. Dispozitivele pot conține încă ce scrisese Home Assistant: {held}. Verifică acele camere, scene și legături în aplicație și în Home Assistant și setează-le din nou dintr-o singură parte. Aplicația nu vede ce adaugă Home Assistant până nu importă un fișier. Problema dispare la următoarea preluare a exportului gateway-ului fără un astfel de conflict."
+    },
+    "scene_held": {
+      "title": "Dispozitivele încă păstrează o scenă JUNG HOME ștearsă în {title}",
+      "description": "O scenă a fost ștearsă cu „Chiar dacă un dispozitiv nu răspunde” în timp ce unele dintre dispozitivele ei nu puteau fi contactate sau au refuzat; acestea încă o păstrează și o apelează la orice scenă cu acel număr. Număr de scenă: dispozitive — {members}. Home Assistant nu dă aceste numere niciunei scene noi. Când dispozitivele pot fi contactate din nou, rulează acțiunea „Șterge scenele nefolosite” cu „Simulare” dezactivat: aceasta șterge acele numere din ele, iar problema dispare."
+    },
+    "gateway_token_rejected": {
+      "title": "Gateway-ul JUNG HOME nu mai acceptă Home Assistant",
+      "description": "Gateway-ul JUNG HOME de la {host} respinge accesul înregistrat de Home Assistant pentru rețeaua mesh {title} (probabil a fost eliminat în aplicația JUNG HOME în Setări → Gateway → Permisiuni de acces). Home Assistant continuă să modifice camere, legături de taste și scene în propriul export, dar nu îl mai transmite gateway-ului, așa că aplicația nu vede aceste modificări; dispozitivele continuă să funcționeze. Home Assistant cere din nou acces: urmează solicitarea sa de reautentificare JUNG HOME (Setări → Dispozitive și servicii; Reparații o listează și ca autentificare expirată) și introdu parola cheii de rețea a gateway-ului sau aprobă noua cerere de acces în aplicație. Problema dispare după ce gateway-ul acceptă din nou Home Assistant; acțiunea „Sincronizează gateway-ul” transmite apoi modificările făcute între timp."
+    },
+    "seq_store_lost": {
+      "title": "Numerele de secvență ale rețelei mesh JUNG HOME {title} s-au pierdut",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Continuă după numerele deja trimise",
+            "description": "Depozitul numerelor de secvență al acestei integrări (`.storage/junghome_ble.seq.*`) nu conține nicio înregistrare utilizabilă pentru adresa {unicast} a lui Home Assistant, deși de pe acea adresă s-a mai trimis. Repornirea de la 0 ar refolosi numere de secvență pe care dispozitivele le-au văzut deja: ar ignora Home Assistant, iar fiecare număr refolosit slăbește criptarea rețelei mesh. Restaurarea depozitului dintr-un backup face același lucru — o copie mai veche repetă fiecare număr trimis de la realizarea ei —, așa că nu restaura fișierele `junghome_ble.seq.*`. Confirmă pentru a-l lăsa pe Home Assistant să continue cu 1 048 576 de numere după ultima valoare pe care o mai poate citi (cu 4 194 304 după limita inferioară pe care o ține la zi împreună cu contorul în `junghome_ble.seq.*.floor` sau după 0, când nu mai rămâne niciuna) și să configureze din nou integrarea."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "floor_not_written": "Limita inferioară a numerelor de secvență (`.storage/junghome_ble.seq.*.floor`) nu a putut fi scrisă: nu s-a schimbat nimic, iar integrarea rămâne oprită. Verifică discul pe care se află configurația Home Assistant, apoi repară din nou problema."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "Numerele de secvență JUNG HOME nu pot fi salvate",
+      "description": "Home Assistant nu a mai putut scrie de peste un minut depozitul numerelor de secvență al rețelei mesh {title} ({path}; ultima eroare: {error}). Fiecare mesaj către dispozitive poartă un număr de secvență nou, iar Home Assistant trimite doar numere pe care le-a salvat, ca o repornire să nu repete niciodată unul: până când o scriere reușește, nu trimite nimic în rețeaua mesh — comenzile eșuează, iar starea nu este actualizată. De obicei, asta înseamnă că discul este plin sau că sistemul lui de fișiere a fost remontat doar în citire, adesea din cauza unui card SD pe cale să cedeze. Eliberează spațiu sau repară stocarea (un sistem de fișiere remontat doar în citire necesită de obicei repornirea gazdei); nu edita, nu șterge și nu înlocui fișierele depozitului. Problema dispare de la sine imediat ce o scriere reușește și trimiterea se reia."
+    },
+    "address_in_use": {
+      "title": "Adresa JUNG HOME a lui Home Assistant este ocupată",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Mută Home Assistant pe {suggestion}",
+            "description": "În exportul rețelei mesh {title}, un nod ocupă adresa unicast {unicast} de pe care trimite Home Assistant. Ambii ar fi considerați un singur expeditor: dispozitivele resping unul dintre ei ca reluare (replay), iar răspunsurile ajung la cel greșit. Confirmă pentru a-i da lui Home Assistant adresa liberă {suggestion} și a configura din nou integrarea, așa cum face Reconfigurează → Avansat → Adresa noastră unicast. Asigură-te că niciun alt client mesh (instrumentele de linie de comandă ale acestei integrări, un alt Home Assistant) nu trimite de pe {suggestion}. Numerele de secvență sunt păstrate pentru fiecare adresă: noua adresă își continuă propria evidență sau pornește suficient de departe când Home Assistant nu are niciuna pentru ea, astfel încât niciun număr nu este trimis de două ori. Neverificat încă pe dispozitive reale."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "cannot_load": "Exportul intrării nu a putut fi citit, așa că nu se poate determina o adresă liberă: nu s-a schimbat nimic. Încarcă un export nou din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează.",
+          "no_free_address": "Exportul nu lasă nicio adresă liberă pentru Home Assistant: nu s-a schimbat nimic. Verifică exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează.",
+          "address_taken": "{suggestion} nu mai este liberă în export (acesta s-a schimbat între timp): nu s-a schimbat nimic. Repară din nou problema pentru o nouă sugestie."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "Adresa JUNG HOME a lui Home Assistant ar putea fi atribuită altui dispozitiv",
+      "description": "Adresa unicast {unicast} de pe care trimite Home Assistant în rețeaua mesh {title} se află în intervalul de adrese al unuia dintre provizionerii aplicației sau a fost folosită de un nod eliminat. Funcționează în continuare până când aplicația provizionează un nod acolo; mută Home Assistant pe o adresă liberă înainte de asta (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast; {suggestion} este liberă)."
+    },
+    "sequence_space_low": {
+      "title": "Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate",
+      "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Fiecare expeditor se oprește la capătul acestui spațiu până când rețeaua mesh trece la următorul index IV (un IV Update), pe care gateway-ul JUNG HOME îl pornește singur; Home Assistant îl urmează, dar nu pornește unul. Ține gateway-ul alimentat și conectat la rețeaua mesh; fără gateway, rețeaua mesh se oprește imediat ce unui expeditor i se termină numerele. Problema dispare de la sine după actualizare."
+    },
+    "iv_index_mismatch": {
+      "title": "Rețeaua mesh JUNG HOME are alt index IV",
+      "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours}: prea departe unul de altul pentru ca Home Assistant să îl poată urma (urmează rețeaua mesh cu cel mult 42 înainte, cel mult o dată la 192 de ore și niciodată înapoi). Între timp, dispozitivele ignoră Home Assistant. Acest lucru se întâmplă când Home Assistant a lipsit pe parcursul multor actualizări IV, când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Dă-i lui Home Assistant o adresă unicast nouă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast): acolo pornește de la indexul IV al rețelei mesh. Nu restaura depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere de secvență pe care dispozitivele le-au văzut deja, iar următoarea pornire suprascrie oricum o editare manuală. Problema dispare de la sine când sosește un beacon cu un index IV pe care îl poate urma."
+    },
+    "iv_index_ahead": {
+      "title": "Home Assistant este înaintea indexului IV al rețelei mesh JUNG HOME",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Revino la indexul IV al rețelei mesh",
+            "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours} — înaintea ei, o stare în care rețeaua mesh nu ajunge niciodată: dispozitivele ignoră Home Assistant, iar acesta nu poate urma o rețea mesh aflată în urma lui. Acest lucru se întâmplă când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Confirmă pentru a readuce Home Assistant la indexul IV al rețelei mesh și a configura din nou integrarea: numerele sale de secvență continuă peste orice număr trimis de la acel index încolo, astfel încât niciunul nu este folosit de două ori. Nu restaura în schimb depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere pe care dispozitivele le-au văzut deja. Cealaltă cale de revenire este o adresă unicast nouă pentru Home Assistant (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează). Neverificat încă pe dispozitive reale: un index IV înaintea celui al rețelei mesh nu a fost observat într-o rețea reală."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "iv_index_not_ahead": "Home Assistant nu mai este înaintea rețelei mesh peste limita pe care o poate urma sau starea IV s-a schimbat de când a fost semnalată problema: nu s-a schimbat nimic. Dacă problema reapare, repar-o din nou.",
+          "seq_store_not_written": "Limita inferioară a numerelor de secvență (`.storage/junghome_ble.seq.*.floor`) nu a putut fi scrisă: nu s-a schimbat nimic. Verifică discul pe care se află configurația Home Assistant, apoi repară din nou problema."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "Actuatoarele puck JUNG HOME nu au sursă de timp",
+      "description": "Rețeaua mesh {title} are actuatoare puck JUNG de tipul mai vechi ({pucks}): ele își iau ora de la o sursă de timp, un dispozitiv alimentat de la rețeaua electrică ce le retransmite ora. Niciun dispozitiv din rețeaua mesh nu are acest rol, așa că temporizatoarele actuatoarelor puck se decalează. Activează comutatorul *Sursă de timp* (o entitate de configurare, dezactivată implicit) al unui dispozitiv mereu alimentat, cum ar fi o priză sau un mini actuator; aplicația JUNG HOME alege singură unul când configurează un actuator puck. Neverificat încă pe dispozitive reale. Problema dispare după ce un dispozitiv devine sursă de timp."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Setează camera",
+      "description": "Mută luminile și prizele JUNG HOME într-o cameră a rețelei mesh (în aplicație, „Area”). O cameră care nu există încă este creată doar cu „Creează camera dacă lipsește”, astfel încât un nume scris greșit este refuzat. Dispozitivul iese din toate celelalte camere; tastele deja legate de cameră încep să îl comande. Exportul rețelei mesh este rescris, iar Home Assistant îl preia fără să reîncarce integrarea. Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "room": {
+          "name": "Cameră",
+          "description": "Numele camerei în aplicația JUNG HOME."
+        },
+        "create": {
+          "name": "Creează camera dacă lipsește",
+          "description": "Creează camera dacă rețeaua mesh nu are niciuna cu acest nume. Când este dezactivat, un nume necunoscut este refuzat."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Adaugă în cameră",
+      "description": "Pune luminile, prizele și jaluzelele JUNG HOME și într-o cameră a rețelei mesh: ele rămân în camerele în care se află, deoarece aplicația permite ca un dispozitiv să fie în mai multe camere. O cameră care nu există încă este creată doar cu „Creează camera dacă lipsește”. Tastele deja legate de cameră încep să le comande. Exportul rețelei mesh este rescris, iar Home Assistant îl preia fără să reîncarce integrarea. Neverificat încă pe dispozitive reale. Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "room": {
+          "name": "Cameră",
+          "description": "Numele camerei în aplicația JUNG HOME."
+        },
+        "create": {
+          "name": "Creează camera dacă lipsește",
+          "description": "Creează camera dacă rețeaua mesh nu are niciuna cu acest nume. Când este dezactivat, un nume necunoscut este refuzat."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Elimină din cameră",
+      "description": "Scoate luminile, prizele și jaluzelele JUNG HOME dintr-o cameră a rețelei mesh; ele rămân în celelalte camere, iar un dispozitiv poate ajunge să nu mai fie în nicio cameră. Un dispozitiv pe care o tastă îl comandă prin legătura ei cu camera este refuzat, cu excepția cazului în care „Chiar dacă o tastă îl comandă” este activat: ieșirea din cameră îl deconectează și de la acea tastă. Exportul rețelei mesh este rescris, iar Home Assistant îl preia fără să reîncarce integrarea. Neverificat încă pe dispozitive reale. Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "room": {
+          "name": "Cameră",
+          "description": "Numele camerei în aplicația JUNG HOME."
+        },
+        "force": {
+          "name": "Chiar dacă o tastă îl comandă",
+          "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Creează camera",
+      "description": "Creează o cameră goală în exportul rețelei mesh (nimic nu este trimis dispozitivelor). Home Assistant îi atribuie cea mai mare adresă de grup liberă din intervalul aplicației: aplicația nu o vede până nu importă un fișier, iar următoarei sale camere îi dă cea mai mică adresă liberă. Returnează, la cerere, adresa de grup a camerei. Doar pentru administratori.",
+      "fields": {
+        "name": {
+          "name": "Nume",
+          "description": "Numele camerei noi."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Redenumește camera",
+      "description": "Redenumește o cameră în exportul rețelei mesh (nimic nu este trimis dispozitivelor). Doar pentru administratori.",
+      "fields": {
+        "room": {
+          "name": "Cameră",
+          "description": "Numele actual al camerei."
+        },
+        "new_name": {
+          "name": "Nume nou",
+          "description": "Noul nume."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Șterge camera",
+      "description": "Șterge o cameră: dispozitivele ei o părăsesc, tastele legate de cameră își pierd funcția, iar camera este eliminată din exportul rețelei mesh. Dispozitivele în sine rămân funcționale. Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "room": {
+          "name": "Cameră",
+          "description": "Numele camerei de șters."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Atribuie tasta",
+      "description": "Leagă o tastă a unui buton sau un detector de o lumină, o priză, o jaluzea, un termostat de cameră, gateway-ul, o cameră sau o scenă, exact ca legătura tastei din aplicația JUNG HOME: legătura anterioară a tastei este eliminată, tasta este conectată la țintă și i se setează modul tastei (un detector nu are mod și comandă un singur dispozitiv). Exportul rețelei mesh este rescris, iar Home Assistant îl preia fără să reîncarce integrarea. Un detector ca sursă și modul temperatură sunt neverificate încă pe dispozitive reale. Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "key_entity": {
+          "name": "Tastă",
+          "description": "Entitatea de eveniment de buton a tastei sau o entitate a unui detector."
+        },
+        "key_device": {
+          "name": "Dispozitivul tastei",
+          "description": "Butonul care conține tasta (folosește-l împreună cu „Litera tastei” când are mai multe taste) sau un detector."
+        },
+        "key": {
+          "name": "Litera tastei",
+          "description": "Ce tastă a dispozitivului: A, B, C sau D; E1 sau E2 pentru o intrare a unui mini actuator."
+        },
+        "target_entity": {
+          "name": "Entitate țintă",
+          "description": "Ce trebuie să comande tasta: o lumină, o priză, o jaluzea sau un termostat de cameră."
+        },
+        "target_device": {
+          "name": "Dispozitiv țintă",
+          "description": "Dispozitivul pe care trebuie să îl comande tasta: o lumină, o priză sau gateway-ul (tasta raportează atunci lui Home Assistant clicurile, dublu clicurile și apăsările lungi)."
+        },
+        "room": {
+          "name": "Cameră țintă",
+          "description": "Camera ale cărei lumini sau prize trebuie să le comande tasta."
+        },
+        "scene": {
+          "name": "Scenă țintă",
+          "description": "Scena pe care tasta trebuie să o apeleze pe toate dispozitivele, după număr sau după nume (modul tastei Scenă; lasă „Mod” gol). Încă neîncercat pe un dispozitiv real."
+        },
+        "mode": {
+          "name": "Mod",
+          "description": "Ce face tasta: light (pornit/oprit și reglarea intensității), switch (pornit/oprit), move (jaluzele; netestat), gateway (raportarea evenimentelor), lock (partea de sus / pornit blochează o lumină sau o priză în starea actuală, partea de jos / oprit o deblochează; neverificat încă pe dispozitive reale), temperature (temperatura dorită a unui termostat de cameră; neverificat încă pe dispozitive reale) sau, pentru camere, light_and_switch (lumini și prize împreună). Lăsat gol, modul se potrivește cu ținta."
+        },
+        "target_element": {
+          "name": "Element țintă",
+          "description": "Doar pentru dispozitive țintă: tasta comandă, numai cu clientul ei de reglare a intensității, o altă parte a țintei: color_temperature (temperatura de culoare a unei lumini cu alb reglabil, modul light) sau slat (lamelele unei jaluzele, modul move). Neverificat încă pe dispozitive reale."
+        },
+        "lock_seconds": {
+          "name": "Durata blocării",
+          "description": "Doar în modul lock: cât timp ține o blocare făcută de tastă, în secunde (0 sau gol: până când tasta o deblochează). Neverificat încă pe dispozitive reale."
+        },
+        "room_area": {
+          "name": "Cameră după zonă",
+          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+        },
+        "scene_entity": {
+          "name": "Entitate scenă",
+          "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Șterge funcția tastei",
+      "description": "Lasă o tastă a unui buton fără funcție: legătura ei cu un dispozitiv, cu gateway-ul sau cu o cameră este eliminată („Nicio funcție” în aplicație). Returnează câte dintre mesajele sale au aplicat dispozitivele, dacă exportul rețelei mesh a fost scris și ce dispozitive s-au schimbat; cu „Simulare”, returnează în schimb ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "key_entity": {
+          "name": "Tastă",
+          "description": "Entitatea de eveniment de buton a tastei."
+        },
+        "key_device": {
+          "name": "Dispozitivul tastei",
+          "description": "Butonul care conține tasta (folosește-l împreună cu „Litera tastei” când are mai multe taste)."
+        },
+        "key": {
+          "name": "Litera tastei",
+          "description": "Ce tastă a dispozitivului: A, B, C sau D; E1 sau E2 pentru o intrare a unui mini actuator."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Creează scena",
+      "description": "Creează o scenă goală în exportul rețelei mesh (nimic nu este trimis dispozitivelor). Salvează dispozitive în ea cu „Salvează în scenă”. Home Assistant îi atribuie cel mai mare număr de scenă liber din intervalul aplicației: aplicația nu o vede până nu importă un fișier, iar următoarei sale scene îi dă cel mai mic număr liber. Returnează, la cerere, numărul scenei. Doar pentru administratori.",
+      "fields": {
+        "name": {
+          "name": "Nume",
+          "description": "Numele scenei noi."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Redenumește scena",
+      "description": "Redenumește o scenă în exportul rețelei mesh (nimic nu este trimis dispozitivelor). Doar pentru administratori.",
+      "fields": {
+        "scene": {
+          "name": "Scenă",
+          "description": "Numele sau numărul actual al scenei."
+        },
+        "new_name": {
+          "name": "Nume nou",
+          "description": "Noul nume."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "scene_entity": {
+          "name": "Entitate scenă",
+          "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Salvează în scenă",
+      "description": "Salvează starea actuală a luminilor, prizelor, jaluzelelor și termostatelor JUNG HOME într-o scenă, ca „salvează dispozitivul în scenă” din aplicație: setează mai întâi dispozitivele așa cum ar trebui să le lase scena, apoi apelează această acțiune. Fiecare dispozitiv își salvează starea sub scenă (Scene Store) împreună cu descrierea JUNG a acesteia, iar exportul rețelei mesh înregistrează membrul. Home Assistant preia modificarea fără să reîncarce integrarea. Dacă este dată o stare (acțiune, luminozitate, temperatură de culoare, temperatură), fiecare dispozitiv este setat mai întâi la ea și se așteaptă până când o atinge; o jaluzea căreia i se dă o poziție nu este mișcată, scena salvează acea poziție pentru ea. Doar pentru administratori.",
+      "fields": {
+        "scene": {
+          "name": "Scenă",
+          "description": "Numele sau numărul scenei (creată cu „Creează scena” sau în aplicație)."
+        },
+        "action": {
+          "name": "Acțiune",
+          "description": "Pornește sau oprește luminile și prizele înainte de salvare."
+        },
+        "brightness_pct": {
+          "name": "Luminozitate",
+          "description": "Reglează luminile la această luminozitate înainte de salvare (acțiunea este atunci „Pornit”)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatură de culoare",
+          "description": "Setează luminile cu alb reglabil la această temperatură de culoare înainte de salvare."
+        },
+        "position": {
+          "name": "Poziție",
+          "description": "Poziția în care scena mută o jaluzea: 0 închisă, 100 deschisă."
+        },
+        "tilt_position": {
+          "name": "Poziția lamelelor",
+          "description": "Poziția lamelelor în care scena mută o jaluzea; dacă lipsește, poziția jaluzelei."
+        },
+        "temperature": {
+          "name": "Temperatură",
+          "description": "Setează termostatele la această temperatură înainte de salvare."
+        },
+        "scene_entity": {
+          "name": "Entitate scenă",
+          "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Starea de salvat",
+          "description": "Setează mai întâi dispozitivele la această stare; dacă rămâne gol, se salvează starea lor actuală."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Elimină din scenă",
+      "description": "Scoate luminile, prizele, jaluzelele și termostatele JUNG HOME dintr-o scenă: fiecare dispozitiv uită scena (Scene Delete), iar exportul rețelei mesh elimină membrul. Home Assistant preia modificarea fără să reîncarce integrarea. Doar pentru administratori.",
+      "fields": {
+        "scene": {
+          "name": "Scenă",
+          "description": "Numele sau numărul scenei."
+        },
+        "scene_entity": {
+          "name": "Entitate scenă",
+          "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Șterge scena",
+      "description": "Șterge o scenă: fiecare dispozitiv care a salvat-o o uită, tastele acelor dispozitive care o apelează își pierd legăturile, iar scena este eliminată din exportul rețelei mesh. Home Assistant preia modificarea fără să reîncarce integrarea. Returnează, la cerere, dispozitivele omise cu „Chiar dacă un dispozitiv nu răspunde” (care necesită „Confirmare”) și ce au aplicat mesajele către taste; cu „Simulare”, ce ar trimite și ce ar schimba. Doar pentru administratori.",
+      "fields": {
+        "scene": {
+          "name": "Scenă",
+          "description": "Numele sau numărul scenei de șters."
+        },
+        "force": {
+          "name": "Chiar dacă un dispozitiv nu răspunde",
+          "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        },
+        "scene_entity": {
+          "name": "Entitate scenă",
+          "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        },
+        "confirm": {
+          "name": "Confirmare",
+          "description": "Necesar cu „Chiar dacă un dispozitiv nu răspunde”: un dispozitiv care păstrează scena nu poate fi făcut de aici să o uite. Nu este necesar pentru o simulare."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Șterge scenele nefolosite",
+      "description": "Citește registrul de scene al fiecărui dispozitiv și listează sau șterge scenele pe care exportul rețelei mesh nu le cunoaște (nici scene, nici scene ale unui temporizator din aplicație), așa cum face aplicația când se deschide lista ei de temporizatoare. Dacă nu se cere altfel, este doar o simulare. Cu un gateway, funcționează doar pe exportul curent al gateway-ului; într-o rețea configurată dintr-un fișier, ștergerea necesită „Exportul rețelei mesh este actual” sau numerele de șters. Returnează numerele pentru fiecare dispozitiv. Doar pentru administratori.",
+      "fields": {
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Listează doar numerele care ar fi șterse; nu se șterge nimic. Activat implicit."
+        },
+        "numbers": {
+          "name": "Numerele scenelor",
+          "description": "Șterge doar aceste numere de scenă (niciunul nu poate fi o scenă din exportul rețelei mesh)."
+        },
+        "confirm_stale_export": {
+          "name": "Exportul rețelei mesh este actual",
+          "description": "Pentru o rețea configurată dintr-un fișier: fișierul conține fiecare scenă a aplicației, inclusiv cele create după export. Fără această opțiune, se șterg doar numerele indicate."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Sincronizează gateway-ul",
+      "description": "Transmite gateway-ului JUNG HOME exportul rețelei mesh folosit de Home Assistant, așa cum face aplicația după fiecare modificare. Rulează automat după fiecare acțiune care rescrie exportul; apeleaz-o pentru a reîncerca după problema „Exportul JUNG HOME nu a fost transmis gateway-ului” sau după ce ai editat tu fișierul. Doar pentru administratori.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Obține programările",
+      "description": "Citește programările pe care consumatorii JUNG HOME le execută singuri (pagina Automatizare din aplicație): până la 16 sloturi per consumator, fiecare cu un declanșator la o oră, la răsărit sau la apus, în anumite zile ale săptămânii, și ce face atunci consumatorul. Returnează pentru fiecare entitate sloturile folosite, în câmpurile pe care le acceptă „Creează programarea”."
+    },
+    "create_schedule": {
+      "name": "Creează programarea",
+      "description": "Scrie o programare în primul slot liber al fiecărui consumator JUNG HOME vizat, care o execută apoi singur, fără Home Assistant. O programare la răsărit sau la apus trimite mai întâi nodului locația casei din Home Assistant. Returnează pentru fiecare entitate slotul folosit. Netestat pe un dispozitiv. Doar pentru administratori.",
+      "fields": {
+        "trigger": {
+          "name": "Declanșator",
+          "description": "Când se declanșează programarea: la o anumită oră din zi, la răsărit sau la apus."
+        },
+        "time": {
+          "name": "Oră",
+          "description": "Ora din zi pentru o programare la oră fixă."
+        },
+        "not_before": {
+          "name": "Nu mai devreme de",
+          "description": "O programare la răsărit sau la apus nu se declanșează mai devreme de această oră (fără limită dacă lipsește)."
+        },
+        "not_after": {
+          "name": "Nu mai târziu de",
+          "description": "O programare la răsărit sau la apus nu se declanșează mai târziu de această oră (fără limită dacă lipsește)."
+        },
+        "offset": {
+          "name": "Decalaj",
+          "description": "Minute înainte (negativ) sau după răsărit ori apus."
+        },
+        "weekdays": {
+          "name": "Zile ale săptămânii",
+          "description": "Zilele în care se declanșează programarea; dacă lipsește, în fiecare zi."
+        },
+        "enabled": {
+          "name": "Activat",
+          "description": "Dacă programarea se declanșează; una dezactivată așteaptă „Activează programarea”."
+        },
+        "action": {
+          "name": "Acțiune",
+          "description": "Pornește sau oprește o lumină sau o priză."
+        },
+        "brightness_pct": {
+          "name": "Luminozitate",
+          "description": "Luminozitatea la care pornește un variator (acțiunea este atunci „Pornit”)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatură de culoare",
+          "description": "Temperatura de culoare a unei lumini cu alb reglabil, în pași de 100 K."
+        },
+        "position": {
+          "name": "Poziție",
+          "description": "Poziția în care se mută o jaluzea: 0 închisă, 100 deschisă."
+        },
+        "tilt_position": {
+          "name": "Poziția lamelelor",
+          "description": "Poziția lamelelor unei jaluzele; dacă lipsește, poziția jaluzelei."
+        },
+        "temperature": {
+          "name": "Temperatură",
+          "description": "Temperatura dorită a unui termostat de cameră."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Când",
+          "description": "Când se declanșează programarea."
+        },
+        "what": {
+          "name": "Ce face",
+          "description": "La ce este setat consumatorul când se declanșează programarea."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Actualizează programarea",
+      "description": "Rescrie pe loc un slot de programare folosit al fiecărui consumator JUNG HOME vizat, ca editarea din aplicație, cu câmpurile pe care le acceptă „Creează programarea”: indică-le din nou pe toate, nimic din ce lipsește nu se păstrează din slot. O programare la răsărit sau la apus trimite mai întâi nodului locația casei din Home Assistant; când o scriere eșuează, vechea programare a slotului este scrisă înapoi. Neverificat încă pe dispozitive reale. Doar pentru administratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numărul slotului de programare (0–15) de rescris, așa cum îl listează „Obține programările” și senzorul „Programări”."
+        },
+        "trigger": {
+          "name": "Declanșator",
+          "description": "Când se declanșează programarea: la o anumită oră din zi, la răsărit sau la apus."
+        },
+        "time": {
+          "name": "Oră",
+          "description": "Ora din zi pentru o programare la oră fixă."
+        },
+        "not_before": {
+          "name": "Nu mai devreme de",
+          "description": "O programare la răsărit sau la apus nu se declanșează mai devreme de această oră (fără limită dacă lipsește)."
+        },
+        "not_after": {
+          "name": "Nu mai târziu de",
+          "description": "O programare la răsărit sau la apus nu se declanșează mai târziu de această oră (fără limită dacă lipsește)."
+        },
+        "offset": {
+          "name": "Decalaj",
+          "description": "Minute înainte (negativ) sau după răsărit ori apus."
+        },
+        "weekdays": {
+          "name": "Zile ale săptămânii",
+          "description": "Zilele în care se declanșează programarea; dacă lipsește, în fiecare zi."
+        },
+        "enabled": {
+          "name": "Activat",
+          "description": "Dacă programarea se declanșează; una dezactivată așteaptă „Activează programarea”."
+        },
+        "action": {
+          "name": "Acțiune",
+          "description": "Pornește sau oprește o lumină sau o priză."
+        },
+        "brightness_pct": {
+          "name": "Luminozitate",
+          "description": "Luminozitatea la care pornește un variator (acțiunea este atunci „Pornit”)."
+        },
+        "color_temp_kelvin": {
+          "name": "Temperatură de culoare",
+          "description": "Temperatura de culoare a unei lumini cu alb reglabil, în pași de 100 K."
+        },
+        "position": {
+          "name": "Poziție",
+          "description": "Poziția în care se mută o jaluzea: 0 închisă, 100 deschisă."
+        },
+        "tilt_position": {
+          "name": "Poziția lamelelor",
+          "description": "Poziția lamelelor unei jaluzele; dacă lipsește, poziția jaluzelei."
+        },
+        "temperature": {
+          "name": "Temperatură",
+          "description": "Temperatura dorită a unui termostat de cameră."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Când",
+          "description": "Când se declanșează programarea."
+        },
+        "what": {
+          "name": "Ce face",
+          "description": "La ce este setat consumatorul când se declanșează programarea."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Activează programarea",
+      "description": "Permite unui slot de programare al consumatorilor JUNG HOME să se declanșeze din nou. Doar pentru administratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numărul slotului de programare (0–15), așa cum îl listează „Obține programările” și senzorul „Programări”."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Dezactivează programarea",
+      "description": "Împiedică declanșarea unui slot de programare al consumatorilor JUNG HOME, fără să îl șteargă. Doar pentru administratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numărul slotului de programare (0–15), așa cum îl listează „Obține programările” și senzorul „Programări”."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Șterge programarea",
+      "description": "Eliberează un slot de programare al consumatorilor JUNG HOME. Doar pentru administratori.",
+      "fields": {
+        "slot": {
+          "name": "Slot",
+          "description": "Numărul slotului de programare (0–15), așa cum îl listează „Obține programările” și senzorul „Programări”."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Setează pragul",
+      "description": "Setează un prag al unei prize JUNG HOME cu contorizare, profilul „Automat” din aplicație: când puterea prizei rămâne la nivelul respectiv pe durata stabilită, priza pornește singură luminile și prizele alese (pragul de pornire) sau le oprește (pragul de oprire), fără Home Assistant. Netestat pe un dispozitiv. Returnează, la cerere, câte dintre mesajele de legare au aplicat dispozitivele. Doar pentru administratori.",
+      "fields": {
+        "threshold": {
+          "name": "Prag",
+          "description": "Care dintre cele două praguri ale prizei se setează."
+        },
+        "power": {
+          "name": "Putere",
+          "description": "Nivelul de putere în W (pași de 0,1 W); dacă lipsește, nivelul actual al prizei."
+        },
+        "duration": {
+          "name": "Durată",
+          "description": "Numărul de secunde în care puterea trebuie să rămână la nivelul respectiv; dacă lipsește, durata actuală a prizei."
+        },
+        "enabled": {
+          "name": "Activat",
+          "description": "Dacă pragul comută; unul dezactivat își păstrează nivelul și durata. Dacă lipsește, pragul își păstrează starea (unul nou este activat). Dacă este dezactivat cât timp nici celălalt prag nu este activ, luminile și prizele sunt deconectate, ca în aplicație: indică din nou dispozitivele când îl activezi."
+        },
+        "devices": {
+          "name": "Dispozitive",
+          "description": "Luminile și prizele pe care le comută ambele praguri, înlocuind lista actuală; dacă lipsește, lista rămâne. Exportul rețelei mesh este rescris când lista se schimbă, iar Home Assistant îl preia fără să reîncarce integrarea."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Șterge pragurile",
+      "description": "Șterge ambele praguri ale unei prize JUNG HOME cu contorizare și deconectează luminile și prizele pe care le comutau, ca ștergerea din aplicație. Când au fost deconectate dispozitive, Home Assistant preia exportul rescris al rețelei mesh fără să reîncarce integrarea. Returnează, la cerere, câte dintre mesajele de legare au aplicat dispozitivele. Doar pentru administratori."
+    },
+    "audit_network": {
+      "name": "Auditează rețeaua",
+      "description": "Citește, fără să schimbe nimic, ce conține configurația mesh a dispozitivelor JUNG HOME — relay, network transmit, TTL implicit, beacon, GATT proxy și friend, cheile de rețea și de aplicație pe care le deține fiecare dispozitiv (după index, niciodată cheia în sine), iar pentru fiecare model publicarea, abonamentele și cheile de aplicație asociate — și o compară cu exportul rețelei mesh. Returnează pentru fiecare dispozitiv setările sale și fiecare diferență găsită și listează dispozitivele care nu au răspuns. Auditarea tuturor dispozitivelor durează câteva minute; dispozitivele pe baterie dorm și sunt omise, dacă nu sunt indicate explicit.",
+      "fields": {
+        "device": {
+          "name": "Dispozitiv",
+          "description": "Auditează doar nodul mesh din spatele acestui dispozitiv (o lumină, o tastă, o priză sau nodul însuși). Lăsat gol, se auditează fiecare nod alimentat de la rețeaua electrică."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Exportă rețeaua",
+      "description": "Returnează exportul folosit de Home Assistant — cu camerele, tastele, legăturile și scenele pe care le-a modificat — ca fișier de partajare al aplicației JUNG HOME sau ca bază de date mesh, pentru un backup sau pentru import în aplicație. Doar pentru administratori: conține toate cheile rețelei mesh.",
+      "fields": {
+        "flavour": {
+          "name": "Format",
+          "description": "Fișierul de partajare al aplicației (JungHome.json) sau baza de date mesh (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Rețea",
+          "description": "Rețeaua JUNG HOME de exportat; necesar doar când sunt mai multe."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Caută dispozitive noi",
+      "description": "Listează dispozitivele JUNG din apropiere care nu sunt încă într-o rețea, cu adresa Bluetooth de care are nevoie `add_device`."
+    },
+    "add_device": {
+      "name": "Adaugă dispozitiv (experimental)",
+      "description": "Adaugă un dispozitiv JUNG nou în rețea, așa cum ar face aplicația: îl provizionează cu cea mai sigură metodă oferită de dispozitiv (Static OOB când o oferă și valoarea ei este dată, cu algoritmul HMAC-SHA256, altfel No OOB, ca aplicația — fără autentificare, cineva aflat în raza Bluetooth cât timp rulează ar putea intercepta cheile rețelei), îl configurează după regulile aplicației pe baza a ceea ce raportează dispozitivul (este refuzat când acestea nu corespund cu ce are un dispozitiv al aceluiași produs deja existent în rețea) și îl înregistrează în export (transmis gateway-ului). Un dispozitiv a cărui configurare eșuează este resetat, ca în aplicație. Grupurile elementelor sale primesc cele mai mari adrese de grup libere din intervalul aplicației (aplicația nu vede dispozitivul până nu importă un fișier). Răspunsul listează pașii efectuați. Necesită opțiunea intrării *Permite Home Assistant să adauge dispozitive*. Doar pentru administratori. Metodele autentificate, regulile de configurare și resetarea sunt neverificate încă pe dispozitive reale.",
+      "fields": {
+        "address": {
+          "name": "Adresă Bluetooth",
+          "description": "Adresa pe care `find_new_devices` o listează pentru dispozitiv."
+        },
+        "name": {
+          "name": "Nume",
+          "description": "Numele dispozitivului nou."
+        },
+        "config_entry_id": {
+          "name": "Rețea",
+          "description": "Rețeaua JUNG HOME în care se adaugă; necesar doar când sunt mai multe."
+        },
+        "static_oob": {
+          "name": "Valoare Static OOB",
+          "description": "Doar pentru un dispozitiv care oferă autentificare Static OOB: valoarea sa de 16 sau 32 de octeți în hexazecimal, așa cum o documentează producătorul (nu se cunoaște niciun dispozitiv JUNG care să o ofere). Nu apare niciodată în jurnale. Un dispozitiv care acceptă doar provizionare autentificată este refuzat fără ea, iar un dispozitiv care nu o oferă este refuzat cu ea."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Elimină dispozitivul (experimental)",
+      "description": "Resetează un dispozitiv JUNG (uită rețeaua și redevine un dispozitiv nou) și îl scoate din rețea, așa cum face aplicația: legăturile altor dispozitive către el sunt eliminate, exportul îl înregistrează ca eliminat și este transmis gateway-ului. Nu poate fi anulat. Necesită opțiunea intrării *Permite Home Assistant să adauge și să elimine dispozitive*. Necesită „Confirmare”; cu „Simulare” returnează în schimb ce ar trimite și ce ar schimba și nu are nevoie de ea. Doar pentru administratori.",
+      "fields": {
+        "device": {
+          "name": "Dispozitiv",
+          "description": "Dispozitivul JUNG de eliminat (oricare dintre dispozitivele sale din Home Assistant)."
+        },
+        "force": {
+          "name": "Chiar dacă nu răspunde",
+          "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el."
+        },
+        "confirm": {
+          "name": "Confirmare",
+          "description": "Necesar pentru a efectua eliminarea: eliminarea unui dispozitiv nu poate fi anulată. Nu este necesar pentru o simulare."
+        },
+        "dry_run": {
+          "name": "Simulare",
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Resetează dispozitivul în așteptare (experimental)",
+      "description": "Resetează un dispozitiv JUNG pe care `add_device` l-a provizionat, dar nu l-a putut configura sau înregistra (problema *Un dispozitiv adăugat de Home Assistant nu este înregistrat* le listează): îi trimite un Config Node Reset cu cheia dispozitivului pe care o deține doar Home Assistant, astfel încât redevine un dispozitiv nou, și îi eliberează adresele. Încă neîncercat pe un dispozitiv real. Necesită opțiunea intrării *Permite Home Assistant să adauge dispozitive*. Doar pentru administratori.",
+      "fields": {
+        "uuid": {
+          "name": "UUID-ul dispozitivului",
+          "description": "UUID-ul dispozitivului, așa cum l-a dat `add_device` sau `find_new_devices`."
+        },
+        "unicast": {
+          "name": "Adresă unicast",
+          "description": "Adresa unicast principală a dispozitivului (în hexazecimal, așa cum o indică problema din Reparații); dacă e dat și UUID-ul, ambele trebuie să corespundă."
+        },
+        "force": {
+          "name": "Chiar dacă nu răspunde",
+          "description": "Uită dispozitivul deși nu confirmă resetarea (unul resetat manual sau dispărut definitiv)."
+        },
+        "config_entry_id": {
+          "name": "Rețea",
+          "description": "Rețeaua JUNG HOME în care a fost adăugat dispozitivul; necesar doar când sunt mai multe."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Localizează dispozitivul",
+      "description": "Face ca un dispozitiv JUNG să își anunțe Node Identity — un anunț Bluetooth pe care doar cheile acestei rețele mesh îl leagă de dispozitiv — timp de cel mult un minut, apoi să se oprească, astfel încât un scanner Bluetooth să poată deosebi care emițător radio este acel dispozitiv. Nu schimbă nimic altceva; oricum, dispozitivul se oprește singur după un minut. Doar pentru administratori. Neverificat încă pe dispozitive reale.",
+      "fields": {
+        "device": {
+          "name": "Dispozitiv",
+          "description": "Dispozitivul JUNG de localizat (oricare dintre dispozitivele sale din Home Assistant)."
+        },
+        "duration": {
+          "name": "Durată",
+          "description": "Durata anunțării în secunde, între 5 și 60 (un dispozitiv se oprește singur după 60)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Aprobă clientul gateway-ului",
+      "description": "Listează clienții API care așteaptă acces la gateway-ul JUNG HOME (altă integrare, un script) și îl aprobă pe cel numit, ca Setări → Gateway → Permisiuni de acces → Cereri deschise din aplicație. Un client aprobat primește întregul API al gateway-ului, inclusiv exportul rețelei cu toate cheile mesh: aprobă doar un client pe care l-ai pornit tu. Fără numele unui client, doar îi listează (activează răspunsul). Revocarea accesului rămâne în seama aplicației. Doar pentru administratori, pentru o rețea configurată de la gateway. Neverificat încă pe dispozitive reale.",
+      "fields": {
+        "client": {
+          "name": "Client",
+          "description": "Numele sub care clientul cere acces, exact cum este listat sub `waiting`. Lăsat gol, nu se aprobă nimic."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Pornește reglarea intensității",
+      "description": "Începe reglarea în sus sau în jos a intensității unui variator JUNG HOME, ca la ținerea apăsată a unei clapete, până la „Oprește reglarea intensității” (sau până la capătul intervalului). Încă neîncercat pe un dispozitiv real.",
+      "fields": {
+        "direction": {
+          "name": "Direcție",
+          "description": "Mai luminos (sus) sau mai întunecat (jos)."
+        },
+        "speed": {
+          "name": "Viteză",
+          "description": "Cât de repede, în procente din intervalul de luminozitate pe secundă (implicit 20: de la stins la maximum în 5 secunde)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Oprește reglarea intensității",
+      "description": "Oprește, acolo unde a ajuns, un variator JUNG HOME pus în mișcare de „Pornește reglarea intensității”. Încă neîncercat pe un dispozitiv real."
+    },
+    "step_dim": {
+      "name": "Reglează intensitatea cu un pas",
+      "description": "Mărește sau micșorează cu un pas luminozitatea unui variator JUNG HOME. Încă neîncercat pe un dispozitiv real.",
+      "fields": {
+        "step": {
+          "name": "Pas",
+          "description": "Procent din intervalul de luminozitate: pozitiv mai luminos, negativ mai întunecat."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Iluminat (pornit/oprit, reglarea intensității)",
+        "switch": "Comutare (pornit/oprit)",
+        "move": "Jaluzele (netestat)",
+        "gateway": "Gateway (raportează evenimente)",
+        "light_and_switch": "Lumini și prize (doar camere)",
+        "lock": "Blocare și deblocare (neverificat încă pe dispozitive reale)",
+        "temperature": "Temperatură (termostat de cameră, netestat)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Temperatură de culoare (neverificată încă pe dispozitive reale)",
+        "slat": "Lamele (neverificate încă pe dispozitive reale)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Ora din zi",
+        "sunrise": "Răsărit",
+        "sunset": "Apus"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Pornit",
+        "off": "Oprit"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Luni",
+        "tue": "Marți",
+        "wed": "Miercuri",
+        "thu": "Joi",
+        "fri": "Vineri",
+        "sat": "Sâmbătă",
+        "sun": "Duminică"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Prag de pornire",
+        "switch_off": "Prag de oprire"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Fișier de partajare al aplicației (JungHome.json)",
+        "cdb": "Baza de date mesh (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Mai luminos",
+        "down": "Mai întunecat"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Mecanism de comutare",
+        "two_gang_switch": "Mecanism de comutare dublu",
+        "dimming": "Mecanism variator",
+        "two_gang_dimming": "Mecanism variator dublu",
+        "tw_dimming": "Mecanism DALI",
+        "blind": "Mecanism pentru jaluzele",
+        "extension": "Mecanism de extensie",
+        "not_available": "Fără mecanism"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Tastă sus / jos",
+        "one_rocker": "Clapetă",
+        "two_left_two_right": "Tastă | Tastă",
+        "one_left_two_right": "Clapetă | Tastă",
+        "two_left_one_right": "Tastă | Clapetă",
+        "one_left_one_right": "Clapetă | Clapetă"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Buton simplu",
+        "push_button_2": "Buton dublu",
+        "socket_metering": "Priză (cu măsurare)",
+        "socket": "Priză",
+        "switch_actuator_mini": "Actuator de comutare, 1 canal, mini",
+        "blinds_actuator_mini": "Actuator pentru jaluzele, 1 canal, mini",
+        "wall_transmitter_1": "Emițător de perete simplu",
+        "wall_transmitter_2": "Emițător de perete dublu",
+        "motion_detector_1m": "Detector de mișcare 1 m",
+        "motion_detector_2m": "Detector de mișcare 2 m",
+        "presence_detector": "Detector de prezență",
+        "room_thermostat": "Termostat de cameră",
+        "gateway": "Gateway",
+        "switch_actuator_1_energy": "Actuator de comutare, 1 canal, 2 intrări, cu măsurarea energiei",
+        "switch_actuator_2": "Actuator de comutare, 2 canale, 2 intrări",
+        "dimmer_actuator": "Actuator variator, 1 canal, 2 intrări",
+        "blinds_actuator": "Actuator pentru jaluzele PP2, 1 canal, 2 intrări",
+        "dali_actuator": "Actuator DALI, 1 canal, 2 intrări",
+        "mini_sensor_mains": "Mini senzor, 2 intrări, alimentare de la rețeaua electrică",
+        "mini_sensor_battery": "Mini senzor, 2 intrări, cu baterie"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Rețea Bluetooth Mesh",
+        "switch": "Lumină comutată",
+        "dimmer": "Lumină cu intensitate reglabilă",
+        "ctl": "Lumină cu alb reglabil (DALI)",
+        "blind": "Acționare jaluzea / rulou",
+        "push_buttons": "Butoane",
+        "unknown_product": "Produs {pid}"
+      }
+    }
+  }
+}
