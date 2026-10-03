@@ -1,0 +1,2902 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "JUNG HOME Bluetooth-on keresztül",
+        "description": "A Home Assistant közvetlenül, Bluetooth-on keresztül csatlakozik az Ön JUNG HOME mesh hálózatához. Ehhez a JUNG HOME alkalmazás hálózati exportját használja, amely a mesh hálózat kulcsait tartalmazza. Válassza ki, honnan származik az export.",
+        "menu_options": {
+          "gateway": "Lekérés a JUNG HOME átjáróról",
+          "upload": "Az alkalmazás exportfájljának feltöltése",
+          "path": "Fájl használata a Home Assistant kiszolgálóján"
+        },
+        "data": {
+          "cdb_path": "Mesh-exportfájl",
+          "metadata_dir": "Az alkalmazás metaadat-könyvtára",
+          "unicast": "Saját unicast címünk"
+        },
+        "data_description": {
+          "cdb_path": "Abszolút elérési út a Home Assistant kiszolgálóján, pl. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcionális, csak iOS-biztonsági mentésből származó `MeshNetwork.json` esetén: az alkalmazás `Application Support` mappája a `device_metadata.json` és a `scene_metadata.json` fájllal, hogy az entitások az alkalmazásban megadott neveket kapják. A `JungHome.json` már tartalmazza a neveket.",
+          "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Ez az Ön JUNG HOME rendszere?",
+        "description": "A(z) {network_id} hálózat egyik Bluetooth Mesh proxyja hatótávolságon belül van. A Home Assistant minden általa észlelt Bluetooth Mesh hálózatot felajánl, a más gyártókét is – például egy szomszéd lámpáit. Csak akkor folytassa, ha ez az Ön JUNG HOME rendszere; ezután meg kell adnia az alkalmazás mesh-exportját."
+      },
+      "zeroconf_confirm": {
+        "title": "JUNG HOME átjáró található",
+        "description": "Egy JUNG HOME átjáró jelentkezett a(z) {host} címen. A folytatással lekérheti róla a JUNG HOME alkalmazás hálózati exportját: ezután megadja az átjáró hálózatikulcs-jelszavát, vagy jóváhagy egy hozzáférési kérelmet az alkalmazásban. A kézzel beírt címekhez hasonlóan a rendszer az első kapcsolatfelvételkor rögzíti a tanúsítványát, mielőtt bármit elküldene. A felderített átjáróról történő beállítás valós eszközökön még nem ellenőrzött."
+      },
+      "gateway": {
+        "title": "Az export lekérése a JUNG HOME átjáróról",
+        "description": "Az átjáró az alkalmazás hálózati exportjának egy másolatát tárolja. Adja meg a címét, és vagy a hálózatikulcs-jelszavát (a JUNG HOME alkalmazásból) az azonnali hozzáféréshez, vagy hagyja üresen a jelszót, és a folytatás után hagyja jóvá a hozzáférési kérelmet az alkalmazásban (Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek, három percen belül; „{user_name}” néven jelenik meg). Az export a Home Assistant konfigurációs könyvtárában, a `junghome_ble/` mappában tárolódik. A telefonról készült exporthoz hasonlóan minden mesh-kulcsot tartalmaz – az erről a könyvtárról készült biztonsági mentéseket kezelje bizalmasan.",
+        "data": {
+          "gateway_host": "Átjáró címe",
+          "gateway_password": "Hálózatikulcs-jelszó"
+        },
+        "data_description": {
+          "gateway_host": "A JUNG HOME átjáró IP-címe vagy gazdagépneve. A Home Assistant által a hálózaton megtalált átjáró már ki van töltve. Egyébként az alapértelmezett `junghome.local` sok hálózaton működik, vagy használja az átjáró IP-címét (az alkalmazásban: Beállítások → Átjáró).",
+          "gateway_password": "Opcionális. Ha megadja, az átjáró azonnal hozzáférést ad; nélküle az alkalmazásban kell jóváhagynia a kérelmet."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Haladó",
+            "description": "Hagyja meg az alapértelmezett értéket, kivéve, ha egy második Home Assistant vagy az integráció tárolójának parancssori eszközei is csatlakoznak ehhez a rendszerhez: mindegyiknek saját címre van szüksége.",
+            "data": {
+              "unicast": "Saját unicast címünk"
+            },
+            "data_description": {
+              "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+            }
+          }
+        }
+      },
+      "gateway_register": {
+        "title": "Jóváhagyásra vár a JUNG HOME alkalmazásban"
+      },
+      "gateway_refetch": {
+        "title": "Az export újbóli lekérése",
+        "description": "Lekéri az aktuális hálózati exportot a(z) {host} átjáróról a tárolt hozzáféréssel. Ha az átjáró már nem fogadja el ezt a hozzáférést, a rendszer arra kéri, hogy hagyjon jóvá egy új hozzáférési kérelmet az alkalmazásban.",
+        "sections": {
+          "advanced": {
+            "name": "Haladó",
+            "description": "Hagyja meg az alapértelmezett értéket, kivéve, ha egy második Home Assistant vagy az integráció tárolójának parancssori eszközei is csatlakoznak ehhez a rendszerhez: mindegyiknek saját címre van szüksége.",
+            "data": {
+              "unicast": "Saját unicast címünk"
+            },
+            "data_description": {
+              "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+            }
+          }
+        }
+      },
+      "upload": {
+        "title": "Az alkalmazás exportfájljának feltöltése",
+        "description": "A JUNG HOME alkalmazásban nyissa meg a Projekt → Megosztás fájlként menüpontot, küldje el magának a létrehozott `JungHome.json` fájlt, majd töltse fel ide. A fájl a Home Assistant konfigurációs könyvtárában, a `junghome_ble/` mappában tárolódik. Minden mesh-kulcsot tartalmaz – az erről a könyvtárról készült biztonsági mentéseket kezelje bizalmasan.",
+        "data": {
+          "export_file": "Mesh-exportfájl"
+        },
+        "data_description": {
+          "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS-biztonsági mentésből."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Haladó",
+            "description": "Hagyja meg az alapértelmezett értéket, kivéve, ha egy második Home Assistant vagy az integráció tárolójának parancssori eszközei is csatlakoznak ehhez a rendszerhez: mindegyiknek saját címre van szüksége.",
+            "data": {
+              "unicast": "Saját unicast címünk"
+            },
+            "data_description": {
+              "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+            }
+          }
+        }
+      },
+      "path": {
+        "title": "Fájl használata a Home Assistant kiszolgálóján",
+        "description": "Először másolja az alkalmazás `JungHome.json` fájlját (Projekt → Megosztás fájlként; az eszközneveket is tartalmazza) vagy a `MeshNetwork.json` fájlt (iOS-biztonsági mentés) a Home Assistant kiszolgálójára, majd adja meg az elérési útját.",
+        "data": {
+          "cdb_path": "Mesh-exportfájl",
+          "metadata_dir": "Az alkalmazás metaadat-könyvtára"
+        },
+        "data_description": {
+          "cdb_path": "Abszolút elérési út a Home Assistant kiszolgálóján, pl. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcionális, csak iOS-biztonsági mentésből származó `MeshNetwork.json` esetén: az alkalmazás `Application Support` mappája a `device_metadata.json` és a `scene_metadata.json` fájllal, hogy az entitások az alkalmazásban megadott neveket kapják. A `JungHome.json` már tartalmazza a neveket."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Haladó",
+            "description": "Hagyja meg az alapértelmezett értéket, kivéve, ha egy második Home Assistant vagy az integráció tárolójának parancssori eszközei is csatlakoznak ehhez a rendszerhez: mindegyiknek saját címre van szüksége.",
+            "data": {
+              "unicast": "Saját unicast címünk"
+            },
+            "data_description": {
+              "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "A JUNG HOME mesh-export frissítése",
+        "description": "Használja ezt, miután eszközöket léptetett újra hálózatba vagy kötött át a JUNG HOME alkalmazásban, illetve kulcsfrissítés után: adjon meg egy új exportot ugyanarról a hálózatról. Az exportból eltűnt eszközök törlődnek. A Home Assistant saját mesh-címe egyúttal módosítható.",
+        "menu_options": {
+          "gateway_refetch": "Újbóli lekérés a(z) {host} átjáróról",
+          "gateway": "Lekérés a JUNG HOME átjáróról",
+          "upload": "Az alkalmazás exportfájljának feltöltése",
+          "path": "Fájl használata a Home Assistant kiszolgálóján",
+          "import_gateway": "A JUNG HOME Gateway integráció entitásainak importálása",
+          "areas": "Annak módosítása, hogy az egyes helyiségek eszközei melyik területre kerüljenek"
+        },
+        "data": {
+          "cdb_path": "Mesh-exportfájl",
+          "metadata_dir": "Az alkalmazás metaadat-könyvtára",
+          "unicast": "Saját unicast címünk"
+        },
+        "data_description": {
+          "cdb_path": "Abszolút elérési út a Home Assistant kiszolgálóján, pl. `/config/junghome/JungHome.json`.",
+          "metadata_dir": "Opcionális, csak iOS-biztonsági mentésből származó `MeshNetwork.json` esetén: az alkalmazás `Application Support` mappája a `device_metadata.json` és a `scene_metadata.json` fájllal, hogy az entitások az alkalmazásban megadott neveket kapják. A `JungHome.json` már tartalmazza a neveket.",
+          "unicast": "Hexadecimális mesh-cím, amelyet a Home Assistant csomópontként használ (0001–7FFF). Más csomópont nem használhatja; az alapértelmezett érték az alkalmazás címtartományán kívül esik."
+        }
+      },
+      "import_gateway": {
+        "title": "Importálás a JUNG HOME Gateway integrációból",
+        "description": "A JUNG HOME Gateway integráció (`junghome`) is be van állítva emellett. Entitásai itt átvehetők, így entitásazonosítóik, neveik, területeik, címkéik és rögzített előzményeik a Bluetooth Mesh integrációval folytatódnak. Az egyeztetés az eszköznév (a JUNG HOME alkalmazásban megadott név) és az entitástípus alapján történik; ennek az integrációnak csak azokat az entitásait cseréli le, amelyeket még nem nevezett át vagy szabott testre.\n\n**{count} entitás kerül át** (átjáró-entitás → ezt váltja fel):\n{matched}\n\n**Változatlanul maradnak** (itt már testre szabva; az átjáróé a helyén marad):\n{customised}\n\n**Nincs megfelelőjük az átjárónál** (változatlanul maradnak):\n{unmatched}\n\n**Átjáró-entitások, amelyeknek itt nincs megfelelőjük** (az átjáró bejegyzésénél maradnak):\n{gateway_only}\n\nA beküldéskor a rendszer mindkét integrációt leállítja, áthelyezi az entitásokat, minden egyeztetett átjáróeszköz területét, egyéni nevét és címkéit átmásolja az itteni megfelelő eszközre, letiltja az átjáró bejegyzését, és újratölti ezt a bejegyzést. Ezután törölje az átjáró bejegyzését."
+      },
+      "gateway_certificate": {
+        "title": "Az átjáró tanúsítványa megváltozott",
+        "description": "A(z) {host} címen lévő JUNG HOME átjáró most a(z) {observed} tanúsítványt mutatja be; a bejegyzés a(z) {expected} tanúsítványt rögzítette. Csak akkor folytassa, ha Ön cserélte ki az átjárót vagy annak tanúsítványát – különben egy másik eszköz válaszol átjáróként az Ön hálózatán."
+      },
+      "reauth_confirm": {
+        "title": "Hozzáférés újbóli megadása a Home Assistant számára az átjáróhoz",
+        "description": "A(z) {host} címen lévő JUNG HOME átjáró már nem fogadja el azt a hozzáférést, amelyet a Home Assistant a(z) {title} mesh hálózathoz regisztrált (valószínűleg eltávolították a JUNG HOME alkalmazásban: Beállítások → Átjáró → Hozzáférési jogosultságok). Az eszközök Bluetooth-on keresztül továbbra is működnek; csak a Home Assistantban végzett módosítások átadása az átjárónak állt le. Adja meg az átjáró hálózatikulcs-jelszavát (a JUNG HOME alkalmazásból) az azonnali hozzáféréshez, vagy hagyja üresen, és a folytatás után hagyja jóvá a hozzáférési kérelmet az alkalmazásban (Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek, három percen belül; „{user_name}” néven jelenik meg). Csak a hozzáférés újul meg: az exportot a rendszer nem kéri le újra.",
+        "data": {
+          "gateway_password": "Hálózatikulcs-jelszó"
+        },
+        "data_description": {
+          "gateway_password": "Opcionális. Ha megadja, az átjáró azonnal hozzáférést ad; nélküle az alkalmazásban kell jóváhagynia a kérelmet. A rendszer nem tárolja a jelszót."
+        }
+      },
+      "areas": {
+        "title": "Helyiségek és területek",
+        "description": "Válassza ki a Home Assistant-területet a JUNG HOME alkalmazás minden helyiségéhez. Egy helyiséghez előre ki van választva az azonos nevű terület, vagy az a terület, amelynek egyik álneve a helyiség neve. Ha egy helyiséget üresen hagy, az eszközei a helyiségről elnevezett területre kerülnek (ha nincs ilyen, létrejön). A saját helyiséggel nem rendelkező eszközök is kapnak egyet: a nyomógomb gombjai a mellettük lévő fogyasztó helyiségét, a fali adó gombjai azt a helyiséget, amelyet kapcsolnak. Az Újrakonfigurálás menüből indítva ez azokat az eszközöket helyezi át, amelyek még azon a területen vannak, ahová az előző választás tette őket; az Ön által másik területre helyezett eszközt soha nem helyezi át.",
+        "data": {
+          "assign_areas": "A JUNG HOME eszközök területekhez rendelése"
+        },
+        "data_description": {
+          "assign_areas": "Kikapcsolva: az új eszközök terület nélkül jönnek létre, és a rendszer figyelmen kívül hagyja az alábbi helyiségeket."
+        }
+      }
+    },
+    "progress": {
+      "waiting_for_approval": "Nyissa meg a JUNG HOME alkalmazást, és hagyja jóvá a(z) „{user_name}” hozzáférési kérelmet itt: Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek. A(z) {host} címen lévő átjáró legfeljebb három percig vár."
+    },
+    "error": {
+      "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt is, hogy helyes-e az elérési út).",
+      "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+      "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+      "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+      "address_in_use": "Ez a cím a mesh hálózat egyik csomópontjáé; válasszon egy szabad címet.",
+      "no_proxy_visible": "Ennek a mesh hálózatnak jelenleg egyetlen csomópontja sem látható Bluetooth-on. Győződjön meg arról, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+      "export_keys_stale": "Ennek a mesh hálózatnak az eszközei láthatók Bluetooth-on, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsai az export elkészítése után megújultak (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+      "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint a felderített.",
+      "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként (a hálózati kulcsa valószínűleg megújult, mióta a Home Assistant utoljára látta). Új bejegyzés hozzáadása helyett használja annak a bejegyzésnek az Újrakonfigurálás funkcióját.",
+      "invalid_host": "Adja meg az átjáró IP-címét vagy gazdagépnevét.",
+      "cannot_connect": "Az átjáró nem érhető el ezen a címen.",
+      "invalid_auth": "Az átjáró elutasította a hálózatikulcs-jelszót.",
+      "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje be újra az űrlapot új hozzáférés kéréséhez.",
+      "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje be újra az űrlapot, és hagyja jóvá a kérelmet itt: Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek.",
+      "no_project": "Az átjárón nincs hálózati export. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg arról, hogy az átjáró firmware-e 2.1-es vagy újabb.",
+      "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, majd próbálja újra.",
+      "gateway_busy": "Az átjáró egy másik konfigurációs kéréssel van elfoglalva. Próbálja újra egy perc múlva.",
+      "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni.",
+      "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+      "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0-s indexű hálózati kulccsal."
+    },
+    "abort": {
+      "already_configured": "Ez a mesh hálózat már be van állítva.",
+      "already_in_progress": "Ennek a mesh hálózatnak a beállítása már folyamatban van.",
+      "not_supported": "Ez a Bluetooth-eszköz nem Mesh proxy.",
+      "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+      "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése közösen használná a sorszámait. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el.",
+      "reconfigure_successful": "A mesh-export frissült.",
+      "no_gateway_entry": "A JUNG HOME Gateway integráció nincs beállítva; nincs mit importálni.",
+      "nothing_to_import": "Nem maradt átvehető átjáró-entitás. Ennek az integrációnak azok az entitásai, amelyeknek nincs megfelelőjük:\n{unmatched}\n\nÁtjáró-entitások, amelyeknek itt nincs megfelelőjük:\n{gateway_only}",
+      "import_successful": "{count} entitás átkerült a JUNG HOME Gateway integrációból:\n{matched}\n\nVáltozatlanul maradtak (itt már testre szabva):\n{customised}\n\nNincs megfelelőjük az átjárónál:\n{unmatched}\n\nTovábbra is az átjáró bejegyzésénél:\n{gateway_only}\n\nAz átjáró bejegyzése letiltva; ha minden rendben van, törölje itt: Beállítások → Eszközök és szolgáltatások → JUNG HOME.",
+      "certificate_vouched_by_mesh": "A(z) {host} címen lévő JUNG HOME átjáró a(z) {observed} tanúsítványt mutatja be, de az átjáró csomópontja a mesh hálózaton keresztül a(z) {expected} tanúsítványt igazolta. A rendszer semmit sem küldött erre a címre: valószínűleg egy másik eszköz válaszol átjáróként az Ön hálózatán. Ha Ön cserélte ki az átjárót vagy annak tanúsítványát, konfigurálja újra, miközben a Home Assistant csatlakozik a mesh hálózathoz: az átjáró csomópontja ekkor jelenti az új tanúsítványt.",
+      "import_unload_failed": "A(z) {title} bejegyzést nem sikerült leállítani, ezért nem történt importálás; az importálás által leállított összes bejegyzés újra elindul. Ellenőrizze a naplót, majd próbálja újra az importálást.",
+      "reauth_successful": "A JUNG HOME átjáró ismét elfogadja a Home Assistantot. A Home Assistantban időközben végzett módosítások a következő módosítással jutnak el hozzá, vagy azonnal az Átjáró szinkronizálása művelettel.",
+      "areas_updated": "A helyiségek területei mentve; {count} eszköz átkerült a helyisége új területére.",
+      "not_loaded": "Az integráció nem fut: először állítsa be újra.",
+      "not_junghome_gateway": "Ez az eszköz nem JUNG HOME átjáróként jelentkezik (a gyártó nem JUNG, vagy nincs sorozatszáma).",
+      "not_ipv4_address": "Az átjáró nem közölt IPv4-címet. Adja hozzá kézzel az integrációt, és adja meg az átjáró címét."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JUNG HOME (Bluetooth Mesh) beállításai",
+        "data": {
+          "click_delay": "Kattintások jelentése csak akkor, ha a dupla kattintás kizárható",
+          "heartbeats": "Csomópontok életjele (a néma eszköz megjelölése nem elérhetőként)",
+          "allow_provisioning": "Eszközök hozzáadásának és eltávolításának engedélyezése a Home Assistant számára (kísérleti)",
+          "provisioner_identity": "A Home Assistant beírása a hálózat fájljába provisionerként (kísérleti, az alkalmazással nem ellenőrzött)",
+          "follow_app": "A JUNG HOME alkalmazásban végzett módosítások követése",
+          "gateway_check": "Az átjáró exportjának ellenőrzése hatóránként",
+          "sync_areas": "Az eszközök áthelyezése, ha megváltozik a JUNG helyiségük"
+        },
+        "data_description": {
+          "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is.",
+          "heartbeats": "A rendszer minden hálózati tápellátású eszközt arra kér, hogy 64 másodpercenként küldjön életjelet (heartbeat) a Home Assistantnak (ez egy szabványos Bluetooth Mesh beállítás, amelyet a JUNG alkalmazás kikapcsolva hagy). Annak az eszköznek az entitásai, amely körülbelül három és fél percig semmit sem küld, nem elérhetőként lesznek megjelölve, amíg újra nem hallható. A kikapcsolás leállítja az eszközök életjelküldését (a következő kapcsolódáskor ismét megpróbálja, ha nem sikerült egyszerre mindegyiket elérni); kapcsolja ki az integráció eltávolítása előtt, mert utána az integráció már nem tudja értesíteni őket.",
+          "allow_provisioning": "Lehetővé teszi, hogy a `junghome_ble.add_device` művelet hálózatba léptessen egy új JUNG eszközt, és az alkalmazáshoz hasonlóan konfigurálja a hálózatban már meglévő, azonos termékű eszköz mintájára, a `junghome_ble.remove_device` pedig visszaállítson egy eszközt, és eltávolítsa a hálózatból. Valós eszközön még nem próbálták ki: először egy tartalék eszközzel próbálja ki. Hozzáadáskor az eszköz megkapja a hálózat kulcsait; az eltávolítás nem vonható vissza.",
+          "provisioner_identity": "Minden fájl, amelyet a Home Assistant ír vagy átad az átjárónak, provisioner-bejegyzést kap a Home Assistant számára, saját, az alkalmazásétól elkülönülő címtartományokkal, amelyekben a Home Assistant címe is benne van, és a Home Assistant által hozzáadott, az alkalmazás fájljából hiányzó eszközök visszakerülnek. A Home Assistant által létrehozott helyiségek, jelenetek és eszközök ezután a saját címtartományaiból kapják a címüket. Ilyen fájlt még egyetlen JUNG alkalmazás sem importált: próbálja ki egy tartalék alkalmazástelepítésen (importálja a `junghome_ble.export_network` által készített fájlt), mielőtt a saját alkalmazása vagy átjárója megkapná. Kikapcsolva: a fájlok pontosan úgy készülnek, mint e beállítás nélkül.",
+          "follow_app": "Amikor a JUNG HOME alkalmazást futtató telefon hallható a mesh hálózaton, az átjáróról beállított bejegyzés néhány perccel azután, hogy a telefon elhallgatott, lekéri az átjáró exportját (legfeljebb 15 percenként), és átveszi, ha megváltozott: az alkalmazásban módosított eszközök, helyiségek, jelenetek és gombhozzárendelések Újrakonfigurálás nélkül eljutnak a Home Assistantba. A fájlból beállított bejegyzés ehelyett javítási értesítést jelenít meg, amint észleli, hogy az alkalmazás módosította egy eszköz konfigurációját. Ehhez a rendszer semmit sem küld a mesh hálózaton. Valós eszközökön még nem ellenőrzött.",
+          "gateway_check": "Az átjáróról beállított bejegyzés hatóránként lekéri az átjáró exportját, és átveszi, ha megváltozott; így azt is észleli, amit az alkalmazás akkor módosított, amikor a Home Assistant nem hallotta a telefont. Ez egyetlen kérés az átjáró felé; a mesh hálózaton semmit sem küld. A fájlból beállított bejegyzésre nincs hatása.",
+          "sync_areas": "Ha egy eszköz az alkalmazásban (amint a Home Assistant átveszi az új exportot) vagy egy helyiségművelettel másik helyiségbe kerül, akkor az új helyiség területére is átkerül – kivéve, ha Ön maga helyezte egy területre. Kikapcsolva: az eszköz azon a területen marad, ahol kezdetben volt. Valós eszközökön még nem ellenőrzött."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mesh_connection": {
+        "name": "Mesh-kapcsolat"
+      },
+      "motion": {
+        "name": "Mozgás"
+      },
+      "occupancy": {
+        "name": "Jelenlét"
+      },
+      "fault": {
+        "name": "Hiba"
+      },
+      "wind_alarm": {
+        "name": "Szélriasztás"
+      },
+      "reference_run_active": {
+        "name": "Referenciamenet"
+      },
+      "gateway_api_available": {
+        "name": "API elérhető"
+      },
+      "gateway_client_waiting_for_approval": {
+        "name": "Jóváhagyásra váró kliens"
+      },
+      "gateway_network_problem": {
+        "name": "Hálózati probléma"
+      },
+      "gateway_mesh_problem": {
+        "name": "Bluetooth Mesh-probléma"
+      },
+      "gateway_cloud_problem": {
+        "name": "Felhőprobléma"
+      },
+      "gateway_cloud_connected": {
+        "name": "Felhőkapcsolat"
+      },
+      "window_open": {
+        "name": "Nyitott ablak"
+      },
+      "input_state": {
+        "name": "Bemenet állapota"
+      },
+      "input_state_key": {
+        "name": "Bemenet állapota {key}"
+      },
+      "scheduler_function_status": {
+        "name": "Ütemező funkció"
+      }
+    },
+    "event": {
+      "button": {
+        "name": "Gomb {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Kattintás",
+              "double_click": "Dupla kattintás",
+              "hold_start": "Nyomva tartás kezdete",
+              "hold_end": "Nyomva tartás vége",
+              "press_on": "Be / fel megnyomva",
+              "press_off": "Ki / le megnyomva",
+              "scene": "Jelenet előhívva",
+              "dim": "Fényerő-szabályozás"
+            }
+          },
+          "connection": {
+            "name": "Kapcsolat",
+            "state": {
+              "device": "Eszköz",
+              "room": "Helyiség",
+              "scene": "Jelenet",
+              "gateway": "Átjáró",
+              "group": "Csoport",
+              "none": "Nincs"
+            }
+          },
+          "reason": {
+            "name": "A nyomva tartás végének oka",
+            "state": {
+              "timeout": "Az elengedés nem érkezett meg időben",
+              "link_lost": "Megszakadt a kapcsolat",
+              "stopped": "Az integráció leállt"
+            }
+          },
+          "position": {
+            "name": "Pozíció",
+            "state": {
+              "top": "Felső",
+              "bottom": "Alsó",
+              "rocker": "Billenő",
+              "left_top": "Bal, felső",
+              "left_bottom": "Bal, alsó",
+              "right_top": "Jobb, felső",
+              "right_bottom": "Jobb, alsó",
+              "left_rocker": "Bal billenő",
+              "right_rocker": "Jobb billenő"
+            }
+          }
+        }
+      },
+      "input": {
+        "name": "Bemenet {key}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "click": "Kattintás",
+              "double_click": "Dupla kattintás",
+              "hold_start": "Nyomva tartás kezdete",
+              "hold_end": "Nyomva tartás vége",
+              "press_on": "Be / fel megnyomva",
+              "press_off": "Ki / le megnyomva",
+              "scene": "Jelenet előhívva",
+              "dim": "Fényerő-szabályozás"
+            }
+          },
+          "connection": {
+            "name": "Kapcsolat",
+            "state": {
+              "device": "Eszköz",
+              "room": "Helyiség",
+              "scene": "Jelenet",
+              "gateway": "Átjáró",
+              "group": "Csoport",
+              "none": "Nincs"
+            }
+          },
+          "reason": {
+            "name": "A nyomva tartás végének oka",
+            "state": {
+              "timeout": "Az elengedés nem érkezett meg időben",
+              "link_lost": "Megszakadt a kapcsolat",
+              "stopped": "Az integráció leállt"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Teljesítmény"
+      },
+      "voltage": {
+        "name": "Feszültség"
+      },
+      "current": {
+        "name": "Áramerősség"
+      },
+      "energy": {
+        "name": "Energia"
+      },
+      "energy_resettable": {
+        "name": "Energia a nullázás óta"
+      },
+      "energy_since_on": {
+        "name": "Energia a bekapcsolás óta"
+      },
+      "power_on_time": {
+        "name": "Üzemidő"
+      },
+      "proxy_node": {
+        "name": "Proxy csomópont"
+      },
+      "link_state": {
+        "name": "Kapcsolat állapota",
+        "state": {
+          "bluetooth_off": "Nincs Bluetooth",
+          "searching": "Proxy csomópont keresése",
+          "connecting": "Csatlakozás",
+          "updating": "Csatlakozva, eszközállapotok frissítése",
+          "connected": "Csatlakozva",
+          "failed": "Sikertelen csatlakozás",
+          "disconnected": "Leválasztva"
+        }
+      },
+      "unreachable_devices": {
+        "name": "Elérhetetlen eszközök",
+        "state_attributes": {
+          "devices": {
+            "name": "Eszközök"
+          }
+        }
+      },
+      "mesh_overview": {
+        "name": "Mesh-áttekintés",
+        "state_attributes": {
+          "nodes": {
+            "name": "Csomópontok"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Megvilágítás"
+      },
+      "battery": {
+        "name": "Elem"
+      },
+      "installed": {
+        "name": "Üzembe helyezve"
+      },
+      "key_mode": {
+        "name": "Gombmód",
+        "state": {
+          "light": "Világítás",
+          "move": "Árnyékoló",
+          "scene": "Jelenet",
+          "property": "Tulajdonság",
+          "rtr": "Hőmérséklet",
+          "switch": "Kapcsolás",
+          "gateway": "Átjáró"
+        }
+      },
+      "key_mode_key": {
+        "name": "Gombmód {key}",
+        "state": {
+          "light": "Világítás",
+          "move": "Árnyékoló",
+          "scene": "Jelenet",
+          "property": "Tulajdonság",
+          "rtr": "Hőmérséklet",
+          "switch": "Kapcsolás",
+          "gateway": "Átjáró"
+        }
+      },
+      "schedules": {
+        "name": "Ütemezések"
+      },
+      "scenes": {
+        "name": "Jelenetek"
+      },
+      "switch_off_at": {
+        "name": "Kikapcsolás ideje"
+      },
+      "switch_on_threshold": {
+        "name": "Bekapcsolási küszöb"
+      },
+      "switch_off_threshold": {
+        "name": "Kikapcsolási küszöb"
+      },
+      "last_seen": {
+        "name": "Utoljára látva"
+      },
+      "rssi": {
+        "name": "Jelerősség"
+      },
+      "hops": {
+        "name": "Ugrások"
+      },
+      "last_restart": {
+        "name": "Utolsó újraindítás"
+      },
+      "clock_offset": {
+        "name": "Óraeltérés"
+      },
+      "iv_index": {
+        "name": "IV-index"
+      },
+      "sequence_used": {
+        "name": "Felhasznált sorszámok"
+      },
+      "mesh_sequence_used": {
+        "name": "Felhasznált mesh-sorszámok"
+      },
+      "switching_cycles": {
+        "name": "Kapcsolási ciklusok"
+      },
+      "power_on_cycles": {
+        "name": "Bekapcsolási ciklusok"
+      },
+      "gateway_ip": {
+        "name": "IP-cím"
+      },
+      "gateway_firmware": {
+        "name": "Firmware-verzió"
+      },
+      "gateway_firmware_build": {
+        "name": "Firmware-build"
+      },
+      "gateway_serial": {
+        "name": "Sorozatszám"
+      },
+      "gateway_access_requests": {
+        "name": "Hozzáférési kérelmek",
+        "state_attributes": {
+          "clients": {
+            "name": "Kliensek"
+          }
+        }
+      },
+      "gateway_api_clients": {
+        "name": "API-kliensek",
+        "state_attributes": {
+          "clients": {
+            "name": "Kliensek"
+          }
+        }
+      },
+      "gateway_error_log": {
+        "name": "Hibanapló",
+        "state_attributes": {
+          "entries": {
+            "name": "Bejegyzések"
+          }
+        }
+      },
+      "gateway_last_sync": {
+        "name": "Utolsó exportfeltöltés"
+      },
+      "forced_off": {
+        "name": "Tartósan be / ki",
+        "state": {
+          "inactive": "Inaktív",
+          "off": "Tartósan ki",
+          "on": "Tartósan be"
+        }
+      },
+      "sleep_mode": {
+        "name": "Alvó mód",
+        "state": {
+          "awake": "Ébren",
+          "asleep": "Alszik"
+        }
+      }
+    },
+    "button": {
+      "reference_run": {
+        "name": "Referenciamenet"
+      },
+      "identify": {
+        "name": "Azonosítás"
+      },
+      "clear_faults": {
+        "name": "Hibák törlése"
+      },
+      "reset_consumption": {
+        "name": "Fogyasztás nullázása"
+      },
+      "fetch_gateway_export": {
+        "name": "Export lekérése az átjáróról"
+      }
+    },
+    "number": {
+      "blind_position_on_power": {
+        "name": "Árnyékolópozíció a hálózati feszültség visszatérése után"
+      },
+      "blind_ventilation_position": {
+        "name": "Szellőztetési pozíció"
+      },
+      "color_temp_max": {
+        "name": "Maximális színhőmérséklet"
+      },
+      "color_temp_min": {
+        "name": "Minimális színhőmérséklet"
+      },
+      "comfort_temperature": {
+        "name": "Komforthőmérséklet"
+      },
+      "default_color_temp": {
+        "name": "Bekapcsolási színhőmérséklet"
+      },
+      "default_lightness": {
+        "name": "Bekapcsolási fényerő"
+      },
+      "eco_temperature": {
+        "name": "ECO-hőmérséklet"
+      },
+      "frost_protection_temperature": {
+        "name": "Fagyvédelmi hőmérséklet"
+      },
+      "lightness_max": {
+        "name": "Maximális fényerő"
+      },
+      "lightness_min": {
+        "name": "Minimális fényerő"
+      },
+      "lock_time_limit": {
+        "name": "Tiltás időkorlátja"
+      },
+      "motor_reversal_time": {
+        "name": "Minimális motorirányváltási idő"
+      },
+      "off_delay": {
+        "name": "Kikapcsolási késleltetés"
+      },
+      "on_delay": {
+        "name": "Bekapcsolási késleltetés"
+      },
+      "pir_sensor_a": {
+        "name": "Aktiválási zóna A"
+      },
+      "pir_sensor_b": {
+        "name": "Aktiválási zóna B"
+      },
+      "pir_sensor_c": {
+        "name": "Aktiválási zóna C"
+      },
+      "repetition_time": {
+        "name": "Ismétlési idő"
+      },
+      "running_time": {
+        "name": "Menetidő"
+      },
+      "sensor_offset": {
+        "name": "Hőmérséklet-érzékelő eltolása"
+      },
+      "slat_position_on_power": {
+        "name": "Lamellapozíció a hálózati feszültség visszatérése után"
+      },
+      "slat_ventilation_position": {
+        "name": "Lamellák szellőztetési pozíciója"
+      },
+      "slats_move_time": {
+        "name": "Lamellaátállási idő"
+      },
+      "switch_blocking_time": {
+        "name": "Minimális kapcsolási ismétlési idő"
+      },
+      "switch_on_brightness": {
+        "name": "Fényerőküszöb"
+      },
+      "timed_on_duration": {
+        "name": "Utánfutási idő"
+      }
+    },
+    "select": {
+      "blind_operation_mode": {
+        "name": "Üzemmód",
+        "state": {
+          "blinds": "Zsalúzia (lamellákkal)",
+          "shutter": "Redőny (lamellák nélkül)",
+          "awning": "Napellenző"
+        }
+      },
+      "controller_type": {
+        "name": "Szabályozókimenet",
+        "state": {
+          "pi_control": "Impulzusszélesség-modulált (PWM)",
+          "two_point_control": "Kétpontos szabályozás"
+        }
+      },
+      "detector_operation_mode": {
+        "name": "Üzemmód",
+        "state": {
+          "guard": "Felszerelési hely",
+          "presence": "Helyiség megvilágítása"
+        }
+      },
+      "dim_mode": {
+        "name": "Fényerő-szabályozási mód",
+        "state": {
+          "leading_edge": "Fázishasítás (RL)",
+          "trailing_edge": "Fázislevágás (RC)"
+        }
+      },
+      "hvac_mode": {
+        "name": "Üzemmód",
+        "state": {
+          "none": "Nincs",
+          "comfort": "Komfort",
+          "eco": "ECO",
+          "frost": "Fagyvédelem"
+        }
+      },
+      "input_edge_falling": {
+        "name": "Lefutó él",
+        "state": {
+          "no_reaction": "Nincs reakció",
+          "on": "Bekapcsolás",
+          "off": "Kikapcsolás",
+          "toggle": "Váltás"
+        }
+      },
+      "input_edge_falling_key": {
+        "name": "Lefutó él {key}",
+        "state": {
+          "no_reaction": "Nincs reakció",
+          "on": "Bekapcsolás",
+          "off": "Kikapcsolás",
+          "toggle": "Váltás"
+        }
+      },
+      "input_edge_rising": {
+        "name": "Felfutó él",
+        "state": {
+          "no_reaction": "Nincs reakció",
+          "on": "Bekapcsolás",
+          "off": "Kikapcsolás",
+          "toggle": "Váltás"
+        }
+      },
+      "input_edge_rising_key": {
+        "name": "Felfutó él {key}",
+        "state": {
+          "no_reaction": "Nincs reakció",
+          "on": "Bekapcsolás",
+          "off": "Kikapcsolás",
+          "toggle": "Váltás"
+        }
+      },
+      "led_colour_off": {
+        "name": "LED-szín (kikapcsolva)",
+        "state": {
+          "red": "Piros",
+          "green": "Zöld",
+          "white": "Fehér",
+          "blue": "Kék",
+          "violet": "Lila",
+          "orange": "Narancssárga",
+          "yellow": "Sárga",
+          "cyan": "Cián",
+          "no_color": "Nincs szín"
+        }
+      },
+      "led_colour_off_key": {
+        "name": "LED-szín (kikapcsolva) {key}",
+        "state": {
+          "red": "Piros",
+          "green": "Zöld",
+          "white": "Fehér",
+          "blue": "Kék",
+          "violet": "Lila",
+          "orange": "Narancssárga",
+          "yellow": "Sárga",
+          "cyan": "Cián",
+          "no_color": "Nincs szín"
+        }
+      },
+      "led_colour_on": {
+        "name": "LED-szín (bekapcsolva)",
+        "state": {
+          "red": "Piros",
+          "green": "Zöld",
+          "white": "Fehér",
+          "blue": "Kék",
+          "violet": "Lila",
+          "orange": "Narancssárga",
+          "yellow": "Sárga",
+          "cyan": "Cián",
+          "no_color": "Nincs szín"
+        }
+      },
+      "led_colour_on_key": {
+        "name": "LED-szín (bekapcsolva) {key}",
+        "state": {
+          "red": "Piros",
+          "green": "Zöld",
+          "white": "Fehér",
+          "blue": "Kék",
+          "violet": "Lila",
+          "orange": "Narancssárga",
+          "yellow": "Sárga",
+          "cyan": "Cián",
+          "no_color": "Nincs szín"
+        }
+      },
+      "main_page": {
+        "name": "Helyi kijelző",
+        "state": {
+          "target_temperature": "Célhőmérséklet",
+          "current_temperature": "Aktuális hőmérséklet",
+          "clock": "Pontos idő"
+        }
+      },
+      "move_on_power_mode": {
+        "name": "Viselkedés a hálózati feszültség visszatérésekor",
+        "state": {
+          "no_reaction": "Nincs reakció",
+          "move_up": "Felhúzás 0 %-ra",
+          "move_down": "Leengedés 100 %-ra",
+          "stop": "Megállás",
+          "move_to_stored_position": "Tárolt pozíció",
+          "position_for_network_failure": "Pozíció hálózatkimaradás esetén"
+        }
+      },
+      "operation_site": {
+        "name": "Felhasználási hely",
+        "state": {
+          "indoor": "Beltér",
+          "outdoor": "Kültér"
+        }
+      },
+      "power_on_behaviour": {
+        "name": "Viselkedés a hálózati feszültség visszatérése után",
+        "state": {
+          "off": "Kikapcsolva",
+          "on": "Bekapcsolva",
+          "restore": "Előző állapot"
+        }
+      },
+      "sensor_selection": {
+        "name": "Hőmérséklet-érzékelő",
+        "state": {
+          "internal": "Helyiség",
+          "external": "Padló",
+          "internal_and_external": "Helyiség és padló"
+        }
+      },
+      "valve_output": {
+        "name": "Szelepbeállítás",
+        "state": {
+          "normally_closed": "NC - árammentesen zárt",
+          "normally_open": "NO - árammentesen nyitott"
+        }
+      },
+      "lock_function": {
+        "name": "Tiltási funkció",
+        "state": {
+          "unlocked": "Feloldva",
+          "keep_state": "Tiltva (pozíció megtartása)",
+          "lockout_protection": "Kizárás elleni védelem",
+          "wind_alarm": "Szélriasztás"
+        }
+      }
+    },
+    "switch": {
+      "all_sockets": {
+        "name": "Összes aljzat"
+      },
+      "room_sockets": {
+        "name": "Összes aljzat – {room}"
+      },
+      "automatic_dst": {
+        "name": "Automatikus óraátállítás"
+      },
+      "backlight_auto_off": {
+        "name": "Kijelző automatikus kikapcsolása"
+      },
+      "blinds_invert_output": {
+        "name": "Fordított működés"
+      },
+      "boost_mode": {
+        "name": "Turbó"
+      },
+      "day_mode": {
+        "name": "Nappali üzem"
+      },
+      "dim_to_warm": {
+        "name": "Melegfényű fényerő-szabályozás"
+      },
+      "input_edge_mode": {
+        "name": "Élkiértékelés"
+      },
+      "input_edge_mode_key": {
+        "name": "Élkiértékelés {key}"
+      },
+      "invert_output": {
+        "name": "Kapcsolókimenet invertálása"
+      },
+      "led_colour_sync": {
+        "name": "LED-színek szinkronizálása"
+      },
+      "led_night_mode": {
+        "name": "LED éjszakai mód"
+      },
+      "lock": {
+        "name": "Tiltás",
+        "state_attributes": {
+          "lock_mode": {
+            "name": "Tiltási mód",
+            "state": {
+              "keep_state": "Aktuális állapot megtartása",
+              "lockout_protection": "Kizárás elleni védelem",
+              "wind_alarm": "Szélriasztás",
+              "enforced_value": "Kényszerített állapot"
+            }
+          },
+          "lock_time_limit": {
+            "name": "Tiltás időkorlátja"
+          }
+        }
+      },
+      "manual_off_enable": {
+        "name": "Kézi kikapcsolás az utánfutási idő alatt"
+      },
+      "prewarning": {
+        "name": "Kikapcsolási figyelmeztetés"
+      },
+      "scheduler_enabled": {
+        "name": "Automatikus üzem"
+      },
+      "status_led": {
+        "name": "Állapotjelző LED"
+      },
+      "status_led_key": {
+        "name": "Állapotjelző LED {key}"
+      },
+      "touch_sensitivity": {
+        "name": "Csökkentett érintésérzékenység"
+      },
+      "use_last_lightness": {
+        "name": "Előző fényerő használata"
+      },
+      "sensor_publication": {
+        "name": "Érzékelőértékek IoT-rendszerek számára"
+      },
+      "local_devices_lock": {
+        "name": "Kezelés tiltása"
+      },
+      "factory_reset_time_limit": {
+        "name": "Gyári visszaállítás tiltása"
+      },
+      "key_lock": {
+        "name": "Gombzár"
+      },
+      "configuration_lock": {
+        "name": "Konfiguráció tiltása az eszközön"
+      },
+      "walking_test": {
+        "name": "Sétateszt"
+      },
+      "time_keeper": {
+        "name": "Időforrás"
+      }
+    },
+    "cover": {
+      "blind": {
+        "state_attributes": {
+          "operation_mode": {
+            "name": "Üzemmód",
+            "state": {
+              "blinds": "Zsalúzia (lamellákkal)",
+              "shutter": "Redőny",
+              "awning": "Napellenző",
+              "unknown": "Ismeretlen"
+            }
+          }
+        }
+      },
+      "all_blinds": {
+        "name": "Összes árnyékoló"
+      },
+      "room_blinds": {
+        "name": "Összes árnyékoló – {room}"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "frost": "Fagyvédelem"
+            }
+          }
+        }
+      },
+      "all_thermostats": {
+        "name": "Összes termosztát"
+      },
+      "room_thermostats": {
+        "name": "Összes termosztát – {room}"
+      }
+    },
+    "light": {
+      "all_lights": {
+        "name": "Összes lámpa"
+      },
+      "room_lights": {
+        "name": "Összes lámpa – {room}"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "a": "A gomb: {subtype}",
+      "b": "B gomb: {subtype}",
+      "c": "C gomb: {subtype}",
+      "d": "D gomb: {subtype}",
+      "e1": "E1 bemenet: {subtype}",
+      "e2": "E2 bemenet: {subtype}"
+    },
+    "trigger_subtype": {
+      "click": "kattintás",
+      "double_click": "dupla kattintás",
+      "hold_start": "nyomva tartás kezdete",
+      "hold_end": "nyomva tartás vége",
+      "press_on": "be / fel megnyomva",
+      "press_off": "ki / le megnyomva",
+      "scene": "jelenet előhívva",
+      "dim": "fényerő-szabályozás",
+      "click_up": "kattintás (felső rész)",
+      "click_down": "kattintás (alsó rész)",
+      "double_click_up": "dupla kattintás (felső rész)",
+      "double_click_down": "dupla kattintás (alsó rész)",
+      "hold_start_up": "nyomva tartás kezdete (felső rész)",
+      "hold_start_down": "nyomva tartás kezdete (alsó rész)",
+      "hold_end_up": "nyomva tartás vége (felső rész)",
+      "hold_end_down": "nyomva tartás vége (alsó rész)"
+    }
+  },
+  "exceptions": {
+    "send_failed": {
+      "message": "A parancsot nem sikerült elküldeni a JUNG mesh hálózatra; egyetlen proxy csomópont sem csatlakozik."
+    },
+    "no_answer": {
+      "message": "A JUNG eszköz nem válaszolt; a parancs ennek ellenére végrehajtódhatott, ezt a rendszer a következő kapcsolódáskor újra ellenőrzi."
+    },
+    "device_not_reachable": {
+      "message": "A(z) {entity} nem válaszolt a parancsra (3 próbálkozás 9 s alatt); lehet, hogy nem hajtotta végre. Ha a mesh hálózat többi része továbbra is válaszol, az eszköz nem elérhetőként jelenik meg, amíg újra nem hallható: ellenőrizze, hogy van-e tápellátása."
+    },
+    "cannot_load": {
+      "message": "A(z) {path} mesh-export nem olvasható."
+    },
+    "no_proxy_visible": {
+      "message": "A JUNG mesh hálózat egyetlen csomópontja sem látható még Bluetooth-on."
+    },
+    "export_keys_stale": {
+      "message": "A JUNG mesh hálózat eszközei láthatók Bluetooth-on, de egyik sem az exportban szereplő hálózati kulccsal hirdeti magát: a kulcsok az export elkészítése után megújultak. Exportálja újra a hálózatot a JUNG HOME alkalmazásból, és használja itt: Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás."
+    },
+    "bluetooth_unavailable": {
+      "message": "A Home Assistantnak nincs csatlakoztatható Bluetooth-adaptere vagy -proxyja: a JUNG mesh hálózat nem érhető el."
+    },
+    "duplicate_mesh": {
+      "message": "Ezt a JUNG HOME mesh hálózatot már a(z) {others} futtatja; mesh hálózatonként csak egy bejegyzés tölthető be. Távolítsa el a két bejegyzés egyikét."
+    },
+    "seq_store_not_written": {
+      "message": "Egy korábbi verzió sorszám-nyilvántartását nem sikerült menteni a mesh hálózat tárába (`.storage/junghome_ble.seq.*`); ellenőrizze, hogy a konfigurációs könyvtár írható-e."
+    },
+    "seq_floor_not_written": {
+      "message": "A sorszám-nyilvántartás biztonsági mentésből lett visszaállítva, és az alsó határát (`.storage/junghome_ble.seq.*.floor`) nem sikerült kiírni az előreugrás előtt; ellenőrizze, hogy a konfigurációs könyvtár írható-e."
+    },
+    "service_entry_not_loaded": {
+      "message": "A JUNG HOME mesh integráció nincs betöltve (vagy éppen újratöltődik); próbálja újra egy pillanat múlva."
+    },
+    "service_not_connected": {
+      "message": "A JUNG HOME mesh hálózat nincs csatlakoztatva; próbálja újra, amikor egy proxy csomópont hatótávolságon belül van."
+    },
+    "service_entry_ambiguous": {
+      "message": "Több JUNG HOME mesh hálózat van beállítva; adja meg a mesh hálózatot (config_entry_id)."
+    },
+    "service_unknown_device": {
+      "message": "A(z) {id} nem JUNG HOME mesh eszköz vagy entitás."
+    },
+    "service_not_a_load": {
+      "message": "A(z) {name} nem olyan JUNG HOME eszköz, amelyen ez a művelet működik."
+    },
+    "service_not_a_key": {
+      "message": "A(z) {name} nem egy JUNG HOME nyomógomb gombja."
+    },
+    "service_key_required": {
+      "message": "A(z) {name} gombjai: {keys}; a választáshoz adja meg a gomb betűjelét."
+    },
+    "service_unknown_key": {
+      "message": "A(z) {name} eszköznek nincs {letter} gombja (a gombjai: {keys})."
+    },
+    "service_no_loads": {
+      "message": "A cél egyetlen JUNG HOME lámpát vagy aljzatot sem jelöl meg."
+    },
+    "service_target_other_network": {
+      "message": "A gomb és a célja különböző mesh hálózatokhoz tartozik."
+    },
+    "service_unknown_element": {
+      "message": "A(z) {address} elem nem szerepel a mesh-exportban."
+    },
+    "service_no_room": {
+      "message": "A mesh-exportban nincs {room} nevű helyiség."
+    },
+    "service_room_exists": {
+      "message": "Már létezik {room} nevű helyiség."
+    },
+    "service_room_key_drives_load": {
+      "message": "Nem került ki a(z) {room} helyiségből: a(z) {device} eszközt a(z) {button} kapcsolja a gomb helyiséghez kötésén keresztül, és a helyiség elhagyása a gombról is leválasztaná. Futtassa újra a műveletet az Akkor is, ha egy gomb vezérli beállítással, vagy előbb adjon a gombnak más funkciót."
+    },
+    "service_invalid_room_name": {
+      "message": "A helyiségnek nevet kell adni."
+    },
+    "service_no_mode": {
+      "message": "Egyik gombmód sem illik a(z) {address} elemhez; adja meg a módot."
+    },
+    "service_invalid_mode": {
+      "message": "A(z) {mode} mód nem használható a(z) {target} céllal."
+    },
+    "service_key_mode_unsupported": {
+      "message": "A(z) {address} gombnak nincs kliensmodellje a(z) {mode} módhoz."
+    },
+    "service_target_element_needs_device": {
+      "message": "Célelem csak eszközhöz kötött gombnál adható meg, helyiséghez vagy jelenethez kötöttnél nem."
+    },
+    "service_target_element_missing": {
+      "message": "A(z) {target} célnak nincs olyan {target_element} eleme, amelyet egy gomb vezérelhetne."
+    },
+    "service_lock_seconds_needs_lock": {
+      "message": "Tiltási idő csak lock módban adható meg, 0 és 65535 másodperc között."
+    },
+    "service_lock_unsupported": {
+      "message": "Gomb nem tilthatja a(z) {target} célt: gombbal csak lámpa vagy aljzat tiltható."
+    },
+    "service_no_element_group": {
+      "message": "A(z) {address} elemnek nincs elemcsoportja: a JUNG HOME alkalmazás soha nem kötötte be. Előbb kösse össze egyszer az alkalmazásban."
+    },
+    "service_one_target": {
+      "message": "Pontosan egy célt adjon meg: egy eszközt, entitást, helyiséget vagy jelenetet."
+    },
+    "service_config_refused": {
+      "message": "A(z) {node} csomópont elutasította a következőt: {message} ({status}). {applied}"
+    },
+    "service_no_reply": {
+      "message": "A(z) {node} csomópont nem válaszolt erre: {message}. Van tápellátása, és hatótávolságon belül van? {applied}"
+    },
+    "service_nodes_unreachable": {
+      "message": "A rendszer nem küldött semmit: a(z) {nodes} nem válaszolt a Home Assistant legutóbbi kérésére, ezért elérhetetlennek számít (az entitásai nem elérhetők), így a terv az első nekik szóló üzenetnél elakadna. Ellenőrizze, hogy van-e tápellátásuk, és hatótávolságon belül vannak-e, majd futtassa újra a műveletet, amint válaszolnak. {applied}"
+    },
+    "service_node_asleep": {
+      "message": "A(z) {node} csomópont elemről működik, és nem válaszolt erre: {message}. Alvó állapotban van. Ébressze fel valamelyik gombjának megnyomásával, majd azonnal futtassa újra a műveletet. Ha gombnyomásra sem reagál, általában lemerült az eleme: cserélje ki. {applied}"
+    },
+    "service_key_mode_not_applied": {
+      "message": "A(z) {address} gomb nem vette át a(z) {mode} gombmódot; a kapcsolatai be lettek állítva, és szerepelnek a mesh-exportban – a mód beállításához futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "service_key_scene_not_applied": {
+      "message": "A(z) {address} gomb nem vette át a(z) {scene} jelenetet; a jelenet-előhívásait minden eszköznek küldi, és ez szerepel a mesh-exportban – a beállításához futtassa újra a műveletet ugyanazzal a jelenettel."
+    },
+    "service_key_lock_not_applied": {
+      "message": "A(z) {address} gomb nem vette át a tiltási funkcióját ({property} tulajdonság); a kapcsolatai be lettek állítva, és szerepelnek a mesh-exportban – a beállításához futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "service_export_newer": {
+      "message": "A(z) {path} mesh-exportot a Home Assistanton kívül (a JUNG HOME alkalmazás vagy kézi szerkesztés) módosította, miután a Home Assistant betöltötte. Exportálja újra a projektet az alkalmazásból, cserélje le a fájlt (Újrakonfigurálás), majd próbálja újra."
+    },
+    "service_export_load_failed": {
+      "message": "A(z) {path} mesh-export nem olvasható: {error}"
+    },
+    "service_export_write_failed": {
+      "message": "A(z) {path} mesh-export nem írható: {error}"
+    },
+    "value_rejected": {
+      "message": "A(z) {entity} nem fogadja el ezt az értéket: {error}"
+    },
+    "preset_temperature_unknown": {
+      "message": "A termosztát még nem jelentette a(z) {preset} hőmérsékletét; próbálja újra egy pillanat múlva."
+    },
+    "led_colour_unknown": {
+      "message": "A(z) {entity} LED-színei még nem ismertek; az eszköz nem válaszolt a lekérdezésre."
+    },
+    "service_room_name_reserved": {
+      "message": "A(z) „{name}” nevet a mesh hálózat belső csoportok számára tartja fenn; válasszon másik helyiségnevet."
+    },
+    "service_name_blank": {
+      "message": "A név nem lehet üres."
+    },
+    "service_name_too_long": {
+      "message": "A JUNG HOME alkalmazás nem tud átnevezni erre: „{name}”; átnevezéskor legfeljebb {max_length} karaktert fogad el."
+    },
+    "service_name_not_allowed": {
+      "message": "A JUNG HOME alkalmazás elutasítja a(z) „{name}” nevet: a % jelet helyőrző kezdetének tekinti (csak a %% és a %n megengedett)."
+    },
+    "service_room_range_full": {
+      "message": "Az alkalmazás tartományában nem maradt szabad csoportcím; előbb töröljön egy nem használt helyiséget a JUNG HOME alkalmazásban."
+    },
+    "gateway_certificate_changed": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró más tanúsítványt mutat be ({observed}), mint a rögzített ({expected}). Ha az átjárót vagy a tanúsítványát szándékosan cserélték ki, konfigurálja újra a bejegyzést."
+    },
+    "service_ambiguous_scene": {
+      "message": "A(z) „{scene}” egyszerre jelenetszám és egy másik jelenet neve; a megkülönböztetésükhöz nevezze át azt a jelenetet."
+    },
+    "service_unknown_scene": {
+      "message": "A mesh-exportban nincs „{scene}” jelenet; adja meg a jelenet nevét úgy, ahogy a JUNG HOME alkalmazás mutatja, vagy a számát."
+    },
+    "service_scene_exists": {
+      "message": "Már létezik „{scene}” nevű jelenet."
+    },
+    "service_scene_range_full": {
+      "message": "Az alkalmazás tartományában nem maradt szabad jelenetszám; előbb töröljön egy nem használt jelenetet."
+    },
+    "service_room_range_crowded": {
+      "message": "A Home Assistant az új helyiségeknek az alkalmazás tartományának legmagasabb szabad csoportcímeit adja, hogy az alkalmazás következő saját helyiségei ne ugyanazokat kapják; a következő alatt már csak {free} szabad cím maradt, és az alkalmazás hamarosan elérné. Töröljön nem használt helyiségeket, vagy kapcsolja be a provisionerként való beírás beállítását, amely saját tartományt ad a Home Assistantnak."
+    },
+    "service_scene_range_crowded": {
+      "message": "A Home Assistant az új jeleneteknek az alkalmazás tartományának legmagasabb szabad jelenetszámait adja, hogy az alkalmazás következő saját jelenetei ne ugyanazokat kapják; a következő alatt már csak {free} szabad szám maradt, és az alkalmazás hamarosan elérné. Töröljön nem használt jeleneteket, vagy kapcsolja be a provisionerként való beírás beállítását, amely saját tartományt ad a Home Assistantnak."
+    },
+    "add_device_groups_crowded": {
+      "message": "Az új eszköz elemcsoportjai az alkalmazás tartományának legmagasabb szabad csoportcímeit foglalnák el, de alattuk már csak {free} szabad cím maradt, és az alkalmazás következő saját helyiségei hamarosan elérnék őket. Töröljön nem használt helyiségeket, vagy kapcsolja be a provisionerként való beírás beállítását, amely saját tartományt ad a Home Assistantnak."
+    },
+    "service_not_a_scene_element": {
+      "message": "A(z) {address} elem nem tud jeleneteket tárolni (nincs Scene Setup Server modellje)."
+    },
+    "service_scene_not_stored": {
+      "message": "A(z) {address} eszköz nem tárolta a(z) {scene} jelenetet ({status}). {applied}"
+    },
+    "service_scene_no_capacity": {
+      "message": "A(z) {address} eszközön nincs hely a(z) {scene} jelenet számára: már {capacity} jelenetet tárol, az időzítő-jeleneteket is beleértve. Előbb vegye ki egy másik jelenetből. {applied}"
+    },
+    "service_scene_not_deleted": {
+      "message": "A(z) {address} eszköz a törlés után is tárolja a(z) {scene} jelenetet ({status}). {applied}"
+    },
+    "service_gateway_export_unavailable": {
+      "message": "A JUNG HOME átjáró nem adta ki az exportját, pedig ennek a műveletnek szüksége van rá: a Home Assistant által tárolt másolatból hiányozhat, amit a JUNG HOME alkalmazásban azóta módosítottak. Próbálja újra, amikor az átjáró válaszol (az okát a napló tartalmazza)."
+    },
+    "service_unused_scenes_stale_export": {
+      "message": "Ezt a hálózatot fájlból állították be, amelyből hiányozhatnak a JUNG HOME alkalmazásban az exportálás óta létrehozott jelenetek; a fájl által nem ismert jelenetszámok törlése ezeket a jeleneteket minden eszközről törölné. Először végezzen próbafuttatást, és vesse össze az általa listázott számokat az alkalmazással, majd töröljön bekapcsolt „A mesh-export naprakész” beállítással, vagy adja meg a törlendő számokat."
+    },
+    "service_unused_scenes_known": {
+      "message": "A(z) {numbers} jelenetszámok a mesh-export jelenetei; ezeket a Jelenet törlése művelettel törölje."
+    },
+    "service_scene_action_not_applied": {
+      "message": "A(z) {address} eszköz tárolta a(z) {scene} jelenetet, de a jelenetleírást (Scene Action Setup) nem vette át. {applied}"
+    },
+    "service_scene_state_unknown": {
+      "message": "A(z) {address} állapota nem ismert, ezért a(z) {scene} jelenet jelenetleírás nélkül tárolódna, és ha az eszköz egy másik csatornáját később kivenné a jelenetből, ez is kikerülne belőle. Adja meg a tárolandó állapotot (vagy kapcsolja egyszer az eszközt), majd próbálja újra. {applied}"
+    },
+    "service_no_gateway": {
+      "message": "Ezt a hálózatot nem JUNG HOME átjáróról állították be (a bejegyzésben nincs átjárócím és token); a szinkronizáláshoz konfigurálja újra a bejegyzést az átjáróról."
+    },
+    "service_gateway_sync_failed": {
+      "message": "A(z) {host} átjáró nem vette át az exportot: {error}."
+    },
+    "service_send_failed": {
+      "message": "Megszakadt a kapcsolat a JUNG mesh hálózattal, miközben a rendszer a(z) {node} csomópontnak ezt küldte: {message}. {applied}"
+    },
+    "service_export_unknown_node": {
+      "message": "A(z) {node} csomópont szerepel a(z) {path} mesh-exportban, de abban a hálózatban nem, amelyet a Home Assistant korábban betöltött belőle; töltse újra az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újratöltés), hogy kövesse az exportot, majd próbálja újra. {applied}"
+    },
+    "service_gateway_export_newer": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró újabb exportot tárol ({gateway}), mint a fájl, amelyet a Home Assistant feltöltene ({file}); a feltöltés törölné azt, amit a JUNG HOME alkalmazásban azóta módosítottak. A Home Assistantban végzett következő módosítás átveszi az átjáró exportját, és arra viszi át a Home Assistant saját módosításait. Ha ez a hiba újra jelentkezik (egy bejegyzés, amely nem rendelkezik az alkalmazás utolsó feltöltésének másolatával, nem tudja megkülönböztetni őket), kérje le újra az átjáró exportját (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás; a lecserélt fájl `.pre-reconfigure` kiterjesztéssel mellette megmarad), majd ismételje meg a Home Assistantban végzett módosítást."
+    },
+    "service_gateway_export_incomplete": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró csak a puszta eszközadatbázissal válaszolt (eszköznevek és helyiség-hozzárendelések nélkül); átvétele ezeket törölné a Home Assistant által tárolt fájlból. Próbálja újra, amikor az átjáró már nem foglalt, vagy kérje le újra az alkalmazás exportját."
+    },
+    "identify_no_answer": {
+      "message": "A JUNG eszköz nem válaszolt az azonosítási kérésre; van tápellátása, és hatótávolságon belül van?"
+    },
+    "service_unknown_entry": {
+      "message": "A(z) {id} nem JUNG HOME mesh hálózat; adja meg egy ilyen hálózat config_entry_id azonosítóját (vagy hagyja el, ha csak egy van beállítva)."
+    },
+    "service_all_not_supported": {
+      "message": "Ez a művelet nem fogadja el az entity_id: all értéket; nevezze meg azokat a lámpákat, aljzatokat, eszközöket, területeket vagy címkéket, amelyekre vonatkozik."
+    },
+    "edge_detection_unknown": {
+      "message": "A(z) {entity} élkiértékelése még nem ismert; a bemenet nem válaszolt a lekérdezésre."
+    },
+    "reset_consumption_refused": {
+      "message": "A JUNG aljzat nem nullázta a(z) {property} számlálóját; továbbra is 0-tól eltérő értéket jelent."
+    },
+    "setup_state_unknown": {
+      "message": "A(z) {entity} aktuális beállítása még nem ismert; az eszköz nem válaszolt a lekérdezésre."
+    },
+    "setting_no_answer": {
+      "message": "A JUNG eszköz sem a(z) {entity} módosítására, sem a visszaolvasásra nem válaszolt; lehet, hogy ennek ellenére átvette az új értéket. Van tápellátása, és hatótávolságon belül van?"
+    },
+    "setting_asleep": {
+      "message": "A(z) {entity} elemes eszköze nem válaszolt: alvó állapotban van. Ébressze fel valamelyik gombjának megnyomásával, majd azonnal végezze el újra a módosítást. Ha gombnyomásra sem reagál, általában lemerült az eleme: cserélje ki."
+    },
+    "setting_not_applied": {
+      "message": "A JUNG eszköz nem vette át a(z) {entity} új értékét; továbbra is más értéket jelent."
+    },
+    "setting_not_supported": {
+      "message": "A JUNG eszköz nem rendelkezik a(z) {entity} beállítással: érték nélkül válaszolt a módosításra."
+    },
+    "schedule_no_reply": {
+      "message": "A(z) {address} JUNG eszköz nem válaszolt az ütemezéseire vonatkozó kérésre."
+    },
+    "schedule_not_applied": {
+      "message": "A(z) {address} JUNG eszköz nem vette át a(z) {slot}. ütemezési hely módosítását."
+    },
+    "schedule_slots_full": {
+      "message": "A(z) {address} JUNG eszköz mind a 16 ütemezési helye foglalt; előbb töröljön egyet."
+    },
+    "schedule_empty_slot": {
+      "message": "A(z) {address} JUNG eszköz {slot}. ütemezési helyén nincs ütemezés."
+    },
+    "schedule_not_supported": {
+      "message": "A(z) {name} nem futtat saját ütemezéseket."
+    },
+    "schedule_partly_created": {
+      "message": "{error}. Az ütemezés már ki lett írva ide: {created}. Az újabb hívás előtt törölje onnan, különben ezek az eszközök kétszer futtatják."
+    },
+    "schedule_action_not_applicable": {
+      "message": "Az ütemezés nem illik ehhez: {name}. A(z) {fields} nem vonatkozik rá."
+    },
+    "schedule_action_needs_temperature": {
+      "message": "Az ütemezés nem illik ehhez: {name}. A termosztáthoz hőmérséklet szükséges."
+    },
+    "schedule_action_needs_position": {
+      "message": "Az ütemezés nem illik ehhez: {name}. Az árnyékolóhoz pozíció szükséges."
+    },
+    "schedule_action_needs_action": {
+      "message": "Az ütemezés nem illik ehhez: {name}. Művelet (be vagy ki) szükséges hozzá."
+    },
+    "schedule_action_brightness_off": {
+      "message": "Az ütemezés nem illik ehhez: {name}. Fényerő csak a be művelettel adható meg."
+    },
+    "threshold_not_supported": {
+      "message": "A(z) {name} nem küszöbértékekkel rendelkező, fogyasztásmérős JUNG HOME aljzat."
+    },
+    "threshold_incomplete": {
+      "message": "A(z) {name} nem tárol módosítható küszöböt (vagy nem válaszolt): adja meg a teljesítményt és az időtartamot is."
+    },
+    "threshold_not_applied": {
+      "message": "A(z) {address} JUNG aljzat nem vette át a(z) {which} küszöbét. {applied}"
+    },
+    "threshold_send_failed": {
+      "message": "A(z) {which} küszöböt nem sikerült elküldeni a(z) {address} JUNG aljzatnak; egyetlen proxy csomópont sem csatlakozik. {applied}"
+    },
+    "threshold_other_network": {
+      "message": "Az aljzat és azok az eszközök, amelyeket a küszöbeinek kapcsolniuk kellene, különböző mesh hálózatokhoz tartoznak."
+    },
+    "scene_state_not_applicable": {
+      "message": "Az állapot nem illik ehhez: {name}. A(z) {fields} nem vonatkozik rá."
+    },
+    "scene_state_needs_temperature": {
+      "message": "Az állapot nem illik ehhez: {name}. A termosztáthoz hőmérséklet szükséges."
+    },
+    "scene_state_needs_position": {
+      "message": "Az állapot nem illik ehhez: {name}. Az árnyékolóhoz pozíció szükséges."
+    },
+    "scene_state_needs_action": {
+      "message": "Az állapot nem illik ehhez: {name}. Művelet (be vagy ki) szükséges hozzá."
+    },
+    "scene_state_brightness_off": {
+      "message": "Az állapot nem illik ehhez: {name}. Fényerő csak a be művelettel adható meg."
+    },
+    "scene_state_not_reached": {
+      "message": "A(z) {name} nem jelentette időben az új állapotot; a jelenet nem tárolódott."
+    },
+    "service_gateway_token_rejected": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró már nem fogadja el a Home Assistant hozzáférését, ezért nem kapta meg az exportot. Adjon újra hozzáférést a Home Assistant által kért újrahitelesítéssel (Beállítások → Eszközök és szolgáltatások), majd futtassa ezt újra."
+    },
+    "seq_store_lost": {
+      "message": "A(z) {unicast} cím sorszám-nyilvántartása elveszett; a Home Assistant nem használja újra a mesh hálózatban már látott számokat. A továbblépéshez nyissa meg a javítási problémát."
+    },
+    "address_in_use": {
+      "message": "A mesh hálózat egyik csomópontja foglalja a Home Assistant {unicast} címét; konfigurálja újra az integrációt egy szabad címmel (például {suggestion} szabad)."
+    },
+    "add_device_not_allowed": {
+      "message": "Ennél a hálózatnál ki van kapcsolva az eszközök hozzáadása és eltávolítása: előbb kapcsolja be az integráció beállításaiban az *Eszközök hozzáadásának és eltávolításának engedélyezése a Home Assistant számára* lehetőséget."
+    },
+    "add_device_not_found": {
+      "message": "A(z) {address} címen egyetlen új JUNG eszköz sem hirdeti magát; futtassa a `find_new_devices` műveletet, és az általa listázott címek egyikét használja."
+    },
+    "add_device_not_jung": {
+      "message": "A(z) {address} címen lévő eszköz nem jelzi magáról, hogy JUNG eszköz."
+    },
+    "add_device_no_template": {
+      "message": "A(z) {product} termékből még nincs eszköz a hálózatban: az elsőt a JUNG HOME alkalmazással adja hozzá, a Home Assistant az ő konfigurációját másolja."
+    },
+    "add_device_no_address": {
+      "message": "A provisionerek tartományain kívül nem maradt szabad címtartomány az új eszköz számára."
+    },
+    "provisioner_identity_failed": {
+      "message": "A Home Assistant provisioner-bejegyzését nem sikerült beolvasztani az exportba ({error}); semmi sem változott. Lásd a naplót."
+    },
+    "provisioner_identity_no_range": {
+      "message": "A Home Assistant nem kaphat saját címtartományokat ebben a hálózatban: {error}."
+    },
+    "add_device_connect_failed": {
+      "message": "Nem sikerült csatlakozni az új eszközhöz: {error}"
+    },
+    "add_device_provisioning_failed": {
+      "message": "Az új eszköz hálózatba léptetése sikertelen: {error}. Az eszköz továbbra is új; próbálja újra."
+    },
+    "add_device_provisioning_unconfirmed": {
+      "message": "Az új eszköz hálózatba léptetése a(z) {unicast} címen nem lett megerősítve ({error}). Lehet, hogy megkapta a hálózat kulcsait, ezért a Home Assistant függőben lévőként tartja nyilván: állítsa vissza a `junghome_ble.reset_pending_device` művelettel (unicast {unicast}; adja hozzá a `force` beállítást, ha nem válaszol, mivel a kulcsokat sosem kapott eszköz nem tud válaszolni), majd adja hozzá újra. A címei addig foglaltak maradnak."
+    },
+    "add_device_vault_unwritable": {
+      "message": "Az új eszköz kulcsát nem sikerült menteni a Home Assistant kulcstárába ({error}), ezért a hálózatba léptetés leállt, mielőtt az eszköz bármit megkapott volna: továbbra is új, és semmi sem lett lefoglalva számára a(z) {unicast} címen. Szabadítson fel tárhelyet, vagy javítsa meg a tárolót, majd próbálja újra."
+    },
+    "add_device_commissioning_failed": {
+      "message": "Az eszköz hálózatba léptetése a(z) {unicast} címen megtörtént, de a konfigurálása a(z) {step}. lépésnél sikertelen volt ({error}), és nem erősítette meg a visszaállítást. Az alkalmazás nem ismeri: állítsa vissza a `junghome_ble.reset_pending_device` művelettel (unicast {unicast}), majd adja hozzá újra. A címei addig foglaltak maradnak."
+    },
+    "add_device_record_failed": {
+      "message": "Az eszköz konfigurálása megtörtént, de a(z) {unicast} címen nem lett nyilvántartásba véve ({error}). Az alkalmazás nem ismeri: állítsa vissza a `junghome_ble.reset_pending_device` művelettel (unicast {unicast}), majd adja hozzá újra. A címei addig foglaltak maradnak."
+    },
+    "add_device_no_beacon": {
+      "message": "A hálózat IV-indexe az aktuális Bluetooth-kapcsolaton még nincs megerősítve (nem érkezett rajta hálózati beacon), és az új eszköz rossz értéket kapna. Várja meg a következő kapcsolódást egy JUNG eszközhöz, majd próbálja újra."
+    },
+    "add_device_key_refresh": {
+      "message": "A JUNG HOME alkalmazás éppen megújítja a hálózati kulcsot (kulcsfrissítés, 1. fázis): a most hozzáadott eszköz a kivezetés alatt álló kulcsot kapná. Fejezze be a kulcs megújítását az alkalmazásban (a Home Assistant követi), majd próbálja újra."
+    },
+    "add_device_name_too_long": {
+      "message": "A(z) „{name}” név hosszabb, mint amit a JUNG HOME alkalmazás egy eszköznél elfogad: legfeljebb {max_length} karakter."
+    },
+    "reset_pending_device_unknown": {
+      "message": "A(z) {device} néven nem ismert olyan eszköz, amelyet a Home Assistant hálózatba léptetett, de nem vett nyilvántartásba; a *Egy, a Home Assistant által hozzáadott eszköz nincs nyilvántartva* javítási probléma listázza az ilyen eszközök címét."
+    },
+    "reset_pending_device_address_in_use": {
+      "message": "A(z) {unicast} címen most a hálózat egy másik eszköze van, ezért a rendszer nem küldött visszaállítást, és semmi sem változott. A `force` használatával elfelejtheti az ezen a címen függőben lévő eszközt (ha még létezik, állítsa vissza kézzel)."
+    },
+    "reset_pending_device_no_answer": {
+      "message": "A(z) {unicast} címen lévő eszköz nem erősítette meg a visszaállítását; semmi sem változott. Kézzel visszaállított vagy végleg eltávolított eszköznél használja a `force` beállítást."
+    },
+    "reset_pending_device_send_failed": {
+      "message": "A visszaállítást nem sikerült elküldeni a(z) {unicast} címen lévő eszköznek ({error}); semmi sem változott."
+    },
+    "remove_device_gateway": {
+      "message": "Az átjáró nem távolítható el ezen a módon."
+    },
+    "remove_device_mesh": {
+      "message": "Egy JUNG eszközt nevezzen meg, ne a hálózatot."
+    },
+    "remove_device_unconfirmed": {
+      "message": "A(z) {address} eszköz nem erősítette meg a visszaállítását, és utána sem hirdette magát új eszközként. Lehet, hogy ennek ellenére visszaállt (a megerősítése elveszhet, és lehet, hogy egyetlen Bluetooth-szkenner sincs a hatótávolságában), vagy nem kapta meg a visszaállítást; a mesh-export változatlan. Futtassa újra a műveletet, vagy használja a `force` beállítást, ha az eszköz végleg eltűnt."
+    },
+    "remove_device_proxy": {
+      "message": "A(z) {address} eszköz az a proxy csomópont, amelyen keresztül a Home Assistant csatlakozik: a visszaállítása megszakítaná azt a kapcsolatot, amelyen a megerősítése visszaérkezne. Várja meg, amíg a Home Assistant egy másik eszközön keresztül csatlakozik (Proxy csomópont érzékelő), vagy használja a `force` beállítást."
+    },
+    "device_lock_unknown": {
+      "message": "A(z) {entity} eszköztiltása még nem ismert; az eszköz nem válaszolt a lekérdezésre."
+    },
+    "cover_locked": {
+      "message": "A(z) {entity} tiltva van, és a feloldásáig figyelmen kívül hagyja a parancsokat (Tiltás kapcsoló vagy Tiltási funkció)."
+    },
+    "cover_wind_alarm": {
+      "message": "Szélriasztás blokkolja a(z) {entity} árnyékolót; a riasztás megszűnéséig figyelmen kívül hagyja a parancsokat (Tiltási funkció vagy Tiltás kapcsoló)."
+    },
+    "load_locked": {
+      "message": "A(z) {entity} tiltva van (a JUNG HOME alkalmazásban, egy gombbal vagy a Tiltás kapcsolóval), és a feloldásáig megtartja az állapotát."
+    },
+    "dim_not_dimmable": {
+      "message": "A(z) {entity} nem JUNG HOME fényerő-szabályozó: így csak fényerő-szabályozók és DALI hangolható fehér fényű csatornák szabályozhatók."
+    },
+    "locate_no_answer": {
+      "message": "A(z) {node} JUNG eszköz nem válaszolt az azonosítója hirdetésére vonatkozó kérésre; van tápellátása, és hatótávolságon belül van? Az elemes eszköz alszik, és csak ébren válaszol."
+    },
+    "locate_refused": {
+      "message": "A(z) {node} JUNG eszköz elutasította az azonosítója hirdetését: {status}."
+    },
+    "locate_not_supported": {
+      "message": "A(z) {node} JUNG eszköz nem tudja hirdetni az azonosítóját (a Node Identity nem támogatott)."
+    },
+    "approve_no_gateway": {
+      "message": "Ezt a hálózatot nem JUNG HOME átjáróról állították be (a bejegyzésben nincs átjárócím és token): nincs átjáró, amelyen klienseket lehetne jóváhagyni."
+    },
+    "approve_gateway_distrusted": {
+      "message": "A rendszer nem fordult a(z) {host} címen lévő JUNG HOME átjáróhoz: {error}. Nem történt jóváhagyás."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró már nem fogadja el a Home Assistant hozzáférését, ezért nem történt jóváhagyás. Adjon újra hozzáférést a Home Assistant által kért újrahitelesítéssel (Beállítások → Eszközök és szolgáltatások), majd futtassa ezt újra."
+    },
+    "approve_client_not_waiting": {
+      "message": "Egyetlen „{client}” nevű API-kliens sem vár hozzáférésre az átjárónál (várakozók: {waiting}). Nem történt jóváhagyás."
+    },
+    "approve_gateway_busy": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró egy másik konfigurációs kéréssel van elfoglalva; próbálja újra egy perc múlva. Nem történt jóváhagyás."
+    },
+    "approve_gateway_failed": {
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró nem hajtotta végre a kérést: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "A Home Assistant nem frissíti a JUNG firmware-t: az eszközt a JUNG HOME alkalmazással frissítse."
+    },
+    "add_device_node_not_configured": {
+      "message": "A(z) {unicast} címen lévő új eszközt nem sikerült konfigurálni a(z) {step}. lépésnél ({error}). A Home Assistant a JUNG HOME alkalmazáshoz hasonlóan visszaállította, és az eszköz ezt megerősítette: ismét új eszköz, és semmi sincs lefoglalva számára. Így utasítja el a rendszer azt az eszközt, amely nem az általa hirdetett termék vagy betét; egyébként adja hozzá újra."
+    },
+    "add_device_provisioning_reset": {
+      "message": "Az új eszköz hálózatba léptetése a(z) {unicast} címen nem lett megerősítve ({error}). A Home Assistant visszaállította, és az eszköz ezt megerősítette: ismét új eszköz, és semmi sincs lefoglalva számára. Próbálja újra."
+    },
+    "time_keeper_role_failed": {
+      "message": "A(z) {address} címen lévő eszköz nem vette át az időszerepkörét ({error}). A Time Server modelljének közzététele már módosult: kapcsolja át újra az időforrást, amint az eszköz válaszol."
+    },
+    "load_thermostat_controlled": {
+      "message": "A(z) {entity} eszközt a(z) {thermostats} helyiségtermosztát kapcsolja (a JUNG HOME alkalmazásban összekapcsolva), ezért – az alkalmazáshoz hasonlóan – kézzel nem kapcsolható."
+    },
+    "load_forced_short": {
+      "message": "A(z) {entity} eszközt az érzékelője be- vagy kikapcsolva tartja (tartósan be / tartósan ki): a megszüntetéséhez állítsa az érzékelő automatikus üzemmód kapcsolóját középső állásba."
+    },
+    "load_forced_on_button": {
+      "message": "A(z) {entity} eszközt az érzékelője bekapcsolva tartja (tartósan BE): a megszüntetéséhez nyomja meg az érzékelő BE gombját."
+    },
+    "load_forced_off_button": {
+      "message": "A(z) {entity} eszközt az érzékelője kikapcsolva tartja (tartósan KI): a megszüntetéséhez nyomja meg az érzékelő KI gombját."
+    },
+    "load_forced_on_presence": {
+      "message": "A(z) {entity} eszközt az érzékelője bekapcsolva tartja (tartósan BE): ezt az érzékelő programozógombja szünteti meg."
+    },
+    "load_forced_off_presence": {
+      "message": "A(z) {entity} eszközt az érzékelője kikapcsolva tartja (tartósan KI): ezt az érzékelő programozógombja szünteti meg."
+    },
+    "cover_slats_open": {
+      "message": "A(z) {entity} teljesen nyitva van: a lamellái – a JUNG HOME alkalmazáshoz hasonlóan – csak leengedés után mozgathatók."
+    },
+    "thermostat_boosting": {
+      "message": "A(z) {entity} turbó üzemmódban van: a hőmérséklet beállítása előtt – a JUNG HOME alkalmazáshoz hasonlóan – válasszon másik előbeállítást a turbó befejezéséhez."
+    },
+    "service_detector_device_only": {
+      "message": "A(z) {address} érzékelő csak egy eszközt vezérelhet: célként lámpát, aljzatot vagy eszközt adjon meg, ne helyiséget vagy jelenetet."
+    },
+    "service_detector_mode_unsupported": {
+      "message": "A(z) {address} érzékelő nem vezérelhet célt a(z) {mode} módban: az érzékelőnek nincs gombmódja, ezért csak lámpát, aljzatot vagy árnyékolót kapcsol a cél által meghatározott módban, tiltási funkció, helyiségtermosztát, átjáró vagy célelem nélkül."
+    },
+    "gateway_fetch_refused": {
+      "message": "A rendszer nem kérte le az exportot a(z) {host} címen lévő JUNG HOME átjáróról: {error}. Semmi sem változott; a teendőket a javítási értesítések tartalmazzák."
+    },
+    "service_unknown_area": {
+      "message": "Nincs {id} azonosítójú terület."
+    },
+    "service_not_a_scene": {
+      "message": "A(z) {name} nem egy JUNG HOME hálózat jelenete."
+    },
+    "remove_device_needs_confirm": {
+      "message": "Az eszköz eltávolítása nem vonható vissza: a végrehajtásához adja hozzá a hívásához a \"confirm: true\" paramétert (vagy a \"dry_run: true\" paramétert, hogy lássa, mit tenne)."
+    },
+    "delete_scene_force_needs_confirm": {
+      "message": "Ha egy jelenetet akkor is töröl, amikor egy eszköz nem válaszol, az az eszköz továbbra is tárolni fogja: a végrehajtásához adja hozzá a hívásához a \"confirm: true\" paramétert (vagy a \"dry_run: true\" paramétert, hogy lássa, mit tenne)."
+    },
+    "plan_key_device": {
+      "message": "{key} mostantól ezt vezérli: {target}; {messages} üzenet"
+    },
+    "plan_key_room": {
+      "message": "{key} mostantól a(z) {room} helyiséget vezérli; {messages} üzenet"
+    },
+    "plan_key_scene": {
+      "message": "{key} mostantól a(z) {scene} jelenetet hívja elő; {messages} üzenet"
+    },
+    "plan_key_cleared": {
+      "message": "{key} mostantól nem rendelkezik funkcióval; {messages} üzenet"
+    },
+    "plan_room_joined": {
+      "message": "{devices} mostantól a(z) {room} helyiségben; {messages} üzenet"
+    },
+    "plan_room_left": {
+      "message": "{devices} kikerült a(z) {room} helyiségből; {messages} üzenet"
+    },
+    "plan_room_deleted": {
+      "message": "{room} helyiség törölve; {messages} üzenet"
+    },
+    "plan_device_removed": {
+      "message": "{device} eltávolítva a hálózatból; {messages} üzenet a többi eszköznek"
+    },
+    "plan_scene_deleted": {
+      "message": "{scene} jelenet törölve; {messages} üzenet"
+    },
+    "plan_finished": {
+      "message": "{action} befejezve; {messages} üzenet"
+    },
+    "plan_stopped": {
+      "message": "{action} leállt {applied}/{total} üzenet után: {error}"
+    },
+    "plan_cancelled": {
+      "message": "{action} megszakítva {applied}/{total} üzenet után; a mesh-export rögzíti az alkalmazott módosításokat"
+    },
+    "logbook_scene_from_key": {
+      "message": "előhívta ezt a jelenetet: {scene}"
+    },
+    "logbook_hold_end_timeout": {
+      "message": "az elengedés nem érkezett meg időben"
+    },
+    "logbook_hold_end_link_lost": {
+      "message": "megszakadt a kapcsolat"
+    },
+    "logbook_hold_end_stopped": {
+      "message": "az integráció leállt"
+    },
+    "logbook_scene_number": {
+      "message": "Jelenet {scene}"
+    },
+    "logbook_scene": {
+      "message": "Jelenet"
+    },
+    "logbook_recalled": {
+      "message": "előhívva"
+    },
+    "logbook_recalled_by": {
+      "message": "előhívta: {device}"
+    }
+  },
+  "issues": {
+    "unknown_nodes": {
+      "title": "JUNG HOME eszközök hiányoznak az exportból",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Az export újbóli lekérése az átjáróról",
+            "description": "A(z) {title} JUNG HOME mesh hálózat {count} eszköze hirdeti magát Bluetoothon, de nem szerepel a Home Assistant által betöltött exportban: {devices}. Ezeket az export elkészülte után adták hozzá a rendszerhez (vagy léptették újra hálózatba), ezért a Home Assistantban nincsenek hozzájuk entitások. Erősítse meg, és a Home Assistant a már meglévő hozzáférésével lekéri az aktuális exportot a(z) {host} címen lévő JUNG HOME átjáróról, ellenőrzi, és abból újra beállítja az integrációt, ahogyan az Újrakonfigurálás → Újbóli lekérés az átjáróról is teszi; a lecserélt export másolatként megmarad (`.pre-reconfigure`). A probléma megszűnik, amint az új export tartalmazza őket. Valós eszközökön még nem ellenőrzött."
+          },
+          "upload": {
+            "title": "Új export betöltése",
+            "description": "A(z) {title} JUNG HOME mesh hálózat {count} eszköze hirdeti magát Bluetoothon, de nem szerepel a Home Assistant által betöltött exportban: {devices}. Ezeket az export elkészülte után adták hozzá a rendszerhez (vagy léptették újra hálózatba), ezért a Home Assistantban nincsenek hozzájuk entitások. Exportálja a hálózatot a JUNG HOME alkalmazásból (Projekt → Megosztás fájlként), és töltse fel ide a fájlt: a Home Assistant ellenőrzi, a konfigurációs könyvtárában a `junghome_ble/` alatt tárolja (a mesh hálózat összes kulcsát tartalmazza), és abból újra beállítja az integrációt; a lecserélt export másolatként megmarad. Az a bejegyzés, amely az exportját a kiszolgáló egy elérési útjáról olvasta, ettől kezdve a feltöltött másolatot használja — ha meg szeretné tartani az elérési utat, inkább oda másolja az új fájlt, és használja az Újrakonfigurálás lehetőséget. A probléma megszűnik, amint az új export tartalmazza őket. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "export_file": "Mesh-exportfájl"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS biztonsági mentésből."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
+          "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
+          "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+          "export_keys_stale": "A mesh hálózat eszközei láthatók Bluetoothon, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsait az export elkészülte után megújították (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+          "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, és próbálja újra.",
+          "gateway_busy": "Az átjáró egy másik konfigurációs kérést dolgoz fel. Próbálja újra egy perc múlva.",
+          "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+          "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0 indexű hálózati kulccsal.",
+          "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+          "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
+          "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+          "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
+          "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
+          "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
+          "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+          "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
+        }
+      }
+    },
+    "unknown_nodes_gateway": {
+      "title": "JUNG HOME eszközök hiányoznak az exportból",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Az export újbóli lekérése az átjáróról",
+            "description": "A(z) {title} JUNG HOME mesh hálózat {count} eszköze hirdeti magát Bluetoothon, de nem szerepel a Home Assistant által betöltött exportban: {devices}. Ezeket az export elkészülte után adták hozzá a rendszerhez (vagy léptették újra hálózatba), ezért a Home Assistantban még nincsenek hozzájuk entitások. A Home Assistant lekéri az átjárótól annak aktuális exportját, és magától átveszi, ha az már tartalmazza őket. Erősítse meg, és a Home Assistant a már meglévő hozzáférésével lekéri az aktuális exportot a(z) {host} címen lévő JUNG HOME átjáróról, ellenőrzi, és abból újra beállítja az integrációt, ahogyan az Újrakonfigurálás → Újbóli lekérés az átjáróról is teszi; a lecserélt export másolatként megmarad (`.pre-reconfigure`). Ha a probléma megmarad, az átjáró exportja sem ismeri őket: nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (feltölti a projektjét), majd javítsa újra a problémát. Valós eszközökön még nem ellenőrzött."
+          },
+          "upload": {
+            "title": "Új export betöltése",
+            "description": "A(z) {title} JUNG HOME mesh hálózat {count} eszköze hirdeti magát Bluetoothon, de nem szerepel a Home Assistant által betöltött exportban: {devices}. Ezeket az export elkészülte után adták hozzá a rendszerhez (vagy léptették újra hálózatba), ezért a Home Assistantban még nincsenek hozzájuk entitások. A Home Assistant lekéri az átjárótól annak aktuális exportját, és magától átveszi, ha az már tartalmazza őket. Exportálja a hálózatot a JUNG HOME alkalmazásból (Projekt → Megosztás fájlként), és töltse fel ide a fájlt: a Home Assistant ellenőrzi, a konfigurációs könyvtárában a `junghome_ble/` alatt tárolja (a mesh hálózat összes kulcsát tartalmazza), és abból újra beállítja az integrációt; a lecserélt export másolatként megmarad. Az a bejegyzés, amely az exportját a kiszolgáló egy elérési útjáról olvasta, ettől kezdve a feltöltött másolatot használja — ha meg szeretné tartani az elérési utat, inkább oda másolja az új fájlt, és használja az Újrakonfigurálás lehetőséget. Ha a probléma megmarad, az átjáró exportja sem ismeri őket: nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (feltölti a projektjét), majd javítsa újra a problémát. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "export_file": "Mesh-exportfájl"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS biztonsági mentésből."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
+          "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
+          "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+          "export_keys_stale": "A mesh hálózat eszközei láthatók Bluetoothon, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsait az export elkészülte után megújították (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+          "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, és próbálja újra.",
+          "gateway_busy": "Az átjáró egy másik konfigurációs kérést dolgoz fel. Próbálja újra egy perc múlva.",
+          "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+          "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0 indexű hálózati kulccsal.",
+          "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+          "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
+          "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+          "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
+          "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
+          "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
+          "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+          "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
+        }
+      }
+    },
+    "app_changed": {
+      "title": "A JUNG HOME alkalmazás módosította a rendszert",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Az export újbóli lekérése az átjáróról",
+            "description": "A Home Assistant észlelte, hogy a JUNG HOME alkalmazás módosította a(z) {title} mesh hálózat egyik eszközének konfigurációját (gombhozzárendelést, helyiséget, jelenetet vagy eszközbeállítást), így a Home Assistant által betöltött export már nem feltétlenül egyezik a rendszerrel: az alkalmazásban végzett módosítások még nincsenek meg a Home Assistantban. Erősítse meg, és a Home Assistant a már meglévő hozzáférésével lekéri az aktuális exportot a(z) {host} címen lévő JUNG HOME átjáróról, ellenőrzi, és abból újra beállítja az integrációt, ahogyan az Újrakonfigurálás → Újbóli lekérés az átjáróról is teszi; a lecserélt export másolatként megmarad (`.pre-reconfigure`). Valós eszközökön még nem ellenőrzött."
+          },
+          "upload": {
+            "title": "Új export betöltése",
+            "description": "A Home Assistant észlelte, hogy a JUNG HOME alkalmazás módosította a(z) {title} mesh hálózat egyik eszközének konfigurációját (gombhozzárendelést, helyiséget, jelenetet vagy eszközbeállítást), így a Home Assistant által betöltött export már nem feltétlenül egyezik a rendszerrel: az alkalmazásban végzett módosítások még nincsenek meg a Home Assistantban. Ha végzett az alkalmazásban, exportálja onnan a hálózatot (Projekt → Megosztás fájlként), és töltse fel ide a fájlt: a Home Assistant ellenőrzi, a konfigurációs könyvtárában a `junghome_ble/` alatt tárolja (a mesh hálózat összes kulcsát tartalmazza), és abból újra beállítja az integrációt; a lecserélt export másolatként megmarad. Az a bejegyzés, amely az exportját a kiszolgáló egy elérési útjáról olvasta, ettől kezdve a feltöltött másolatot használja — ha meg szeretné tartani az elérési utat, inkább oda másolja az új fájlt, és használja az Újrakonfigurálás lehetőséget, amely ezt az értesítést is megszünteti. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "export_file": "Mesh-exportfájl"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS biztonsági mentésből."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
+          "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
+          "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+          "export_keys_stale": "A mesh hálózat eszközei láthatók Bluetoothon, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsait az export elkészülte után megújították (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+          "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, és próbálja újra.",
+          "gateway_busy": "Az átjáró egy másik konfigurációs kérést dolgoz fel. Próbálja újra egy perc múlva.",
+          "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+          "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0 indexű hálózati kulccsal.",
+          "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+          "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
+          "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+          "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
+          "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
+          "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
+          "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+          "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
+        }
+      }
+    },
+    "insert_mismatch": {
+      "title": "JUNG HOME nyomógombok az exportban szereplőtől eltérő betéttel",
+      "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen nyomógombjai más betétet hirdetnek, mint amely a Home Assistant által betöltött exportban szerepel (export → eszköz). A betétet az export elkészülte után cserélték ki, így a Home Assistant és az alkalmazás rossz fogyasztótípust mutathat hozzájuk. Ellenőrizze az eszközöket a JUNG HOME alkalmazásban, exportálja újra a hálózatot, és frissítse ezt az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás); a probléma megszűnik, amint az export az eszközök által hirdetett betéteket tartalmazza. Valós eszközökön még nem ellenőrzött."
+    },
+    "node_clock_wrong": {
+      "title": "JUNG HOME eszközök hibás órával",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Idő küldése most",
+            "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen eszközei ütemezéseket futtathatnak (időpont vagy napkelte / napnyugta szerinti kapcsolás), és az órájuk hibás: nincs beállított idejük, több mint egy perccel eltérnek a Home Assistant idejétől, vagy más időzóna-eltolást használnak, mint amelyet a Home Assistant küldött nekik. Az ütemezéseik rossz időben futnak, amíg újra meg nem kapják az időt. A Home Assistant minden csatlakozás után és naponta egyszer elküldi; erősítse meg, és most elküldi, majd újra lekérdezi ezeket az eszközöket. A probléma megszűnik, amint a helyes idővel válaszolnak. Ha visszatér, ellenőrizze a Home Assistant időzónáját (Beállítások → Rendszer → Általános), és azt, hogy az eszközök elérhetők-e. Valós eszközökön még nem ellenőrzött."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "not_connected": "A Home Assistant jelenleg nem csatlakozik a mesh hálózathoz. Próbálja újra, amint csatlakozott."
+        }
+      }
+    },
+    "key_refresh": {
+      "title": "A JUNG HOME mesh hálózat kulcsai változóban vannak",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Az export újbóli lekérése az átjáróról",
+            "description": "A(z) {title} mesh hálózat kulcsfrissítést jelentett be, de a Home Assistant nem hallotta az új hálózati kulcs kiosztását (az elejétől észlelt kulcsfrissítést követi, és az nem okoz problémát). Amint befejeződik, a Home Assistant által használt export kulcsai érvénytelenné válnak, és a vezérlés leáll. Előbb hagyja, hogy a kulcsmegújítás befejeződjön a JUNG HOME alkalmazásban. Erősítse meg, és a Home Assistant a már meglévő hozzáférésével lekéri az aktuális exportot a(z) {host} címen lévő JUNG HOME átjáróról, ellenőrzi, és abból újra beállítja az integrációt, ahogyan az Újrakonfigurálás → Újbóli lekérés az átjáróról is teszi; a lecserélt export másolatként megmarad (`.pre-reconfigure`). Valós eszközökön még nem ellenőrzött."
+          },
+          "upload": {
+            "title": "Új export betöltése",
+            "description": "A(z) {title} mesh hálózat kulcsfrissítést jelentett be, de a Home Assistant nem hallotta az új hálózati kulcs kiosztását (az elejétől észlelt kulcsfrissítést követi, és az nem okoz problémát). Amint befejeződik, a Home Assistant által használt export kulcsai érvénytelenné válnak, és a vezérlés leáll. Előbb hagyja, hogy a kulcsmegújítás befejeződjön a JUNG HOME alkalmazásban. Exportálja a hálózatot a JUNG HOME alkalmazásból (Projekt → Megosztás fájlként), és töltse fel ide a fájlt: a Home Assistant ellenőrzi, a konfigurációs könyvtárában a `junghome_ble/` alatt tárolja (a mesh hálózat összes kulcsát tartalmazza), és abból újra beállítja az integrációt; a lecserélt export másolatként megmarad. Az a bejegyzés, amely az exportját a kiszolgáló egy elérési útjáról olvasta, ettől kezdve a feltöltött másolatot használja — ha meg szeretné tartani az elérési utat, inkább oda másolja az új fájlt, és használja az Újrakonfigurálás lehetőséget. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "export_file": "Mesh-exportfájl"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS biztonsági mentésből."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
+          "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
+          "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+          "export_keys_stale": "A mesh hálózat eszközei láthatók Bluetoothon, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsait az export elkészülte után megújították (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+          "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, és próbálja újra.",
+          "gateway_busy": "Az átjáró egy másik konfigurációs kérést dolgoz fel. Próbálja újra egy perc múlva.",
+          "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+          "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0 indexű hálózati kulccsal.",
+          "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+          "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
+          "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+          "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
+          "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
+          "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
+          "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+          "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
+        }
+      }
+    },
+    "pdus_dropped": {
+      "title": "A JUNG HOME eszközök figyelmen kívül hagyják a Home Assistantot",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Ugrás az eszközök által ismert sorszámok fölé",
+            "description": "A Home Assistant a proxy csomópontján keresztül hallja a(z) {title} JUNG HOME mesh hálózatot, de egyetlen eszköz sem válaszolt az állapotlekérdezéseire. A csomópontok visszajátszásként (replay) eldobják a Home Assistant üzeneteit. Két ok valószínű: ennek az integrációnak a sorszámtára (`.storage/junghome_ble.*`) elveszett, vagy egy régebbi biztonsági mentésből állították vissza, így a Home Assistant most olyan sorszámokat küld, amelyeket a csomópontok már láttak; vagy egy másik mesh-kliens (például a `mesh_poc.py` segédprogram) ugyanazzal a(z) {unicast} unicast címmel küld. Vagy adjon a Home Assistantnak egy új, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk, és győződjön meg róla, hogy más kliens nem használja), vagy ha a tár elveszett vagy vissza lett állítva (és más kliens nem használja a címet), erősítse meg, hogy a Home Assistant 1 048 576-tal előreléptesse a sorszámait, és újracsatlakozzon. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből: egy régebbi másolat csak olyan számokat ismétel, amelyeket az eszközök már láttak. A probléma magától megszűnik, amint egy eszköz ismét válaszol a Home Assistantnak."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva."
+        }
+      }
+    },
+    "address_shared": {
+      "title": "Egy másik kliens használja a Home Assistant JUNG HOME címét",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Ugrás a másik kliens sorszámai fölé",
+            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban olyan üzenetet kapott, amelyet a saját {unicast} unicast címéről küldtek, egy általa soha nem használt sorszámmal: egy másik mesh-kliens ugyanezzel a címmel küld — egy második Home Assistant-telepítés, az erre a címre beállított `mesh_poc.py` segédprogram, vagy ennek a telepítésnek egy máshol elindított másolata. Ha egy címen két küldő osztozik, egymás sorszámait használják fel újra, és az eszközök eldobják mindazt, ami a másik kliens sorszámai alá esik, ezért a Home Assistant semmit nem küld a mesh hálózatnak, amíg ez nincs kijavítva (a parancsok sikertelenek, az állapotok nem frissülnek). Állítsa le a másik klienst, vagy adjon neki vagy a Home Assistantnak egy másik, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk). Ezután erősítse meg, hogy a Home Assistant a másik kliensnél látott sorszámok fölött folytassa a sorszámait, és ismét küldjön. Ha a másik kliens továbbra is erről a címről küld, a probléma visszatér. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva."
+        }
+      }
+    },
+    "address_shared_again": {
+      "title": "Egy másik kliens továbbra is a Home Assistant JUNG HOME címét használja",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Ugrás ismét a másik kliens sorszámai fölé",
+            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban átugrotta egy másik mesh-kliens sorszámait a saját {unicast} címén, de a másik kliens azóta ismét küldött erről a címről: még mindig fut. Amíg fut, az átugrás nem segít. Adjon a Home Assistantnak egy új, nem használt unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), vagy állítsa le a másik klienst, illetve helyezze át egy másik címre. Addig a Home Assistant semmit nem küld a mesh hálózatnak. Csak akkor erősítse meg, ha a másik kliens már nem használja ezt a címet: a Home Assistant ekkor ismét átugorja annak sorszámait, és folytatja a küldést. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva."
+        }
+      }
+    },
+    "bluetooth_unavailable": {
+      "title": "Nincs Bluetooth a JUNG HOME mesh hálózathoz",
+      "description": "A(z) {title} JUNG HOME mesh hálózat Bluetoothon érhető el, de a Home Assistantnak nem maradt csatlakoztatható Bluetooth-adaptere vagy -proxyja: az adapter ki van kapcsolva, ki van húzva vagy meghibásodott, vagy minden aktív kapcsolatokat kezelő ESPHome Bluetooth-proxy offline. A mesh hálózat összes eszköze elérhetetlen, amíg legalább egy vissza nem tér. Ellenőrizze a Beállítások → Eszközök és szolgáltatások → Bluetooth menüpontot. A probléma megszűnik, amint ismét elérhető egy Bluetooth-adapter vagy -proxy."
+    },
+    "duplicate_mesh": {
+      "title": "Két bejegyzés ugyanazt a JUNG HOME mesh hálózatot kezeli",
+      "description": "A(z) {title} és a(z) {others} bejegyzés is ugyanarra a JUNG HOME mesh hálózatra van beállítva. Osztoznak a sorszámszámlálóin (`.storage/junghome_ble.seq.*`), ezért közülük csak az egyik futhat: a(z) {others} fut, a(z) {title} nem indult el. Távolítsa el az egyik bejegyzést (Beállítások → Eszközök és szolgáltatások); ha a(z) {others} bejegyzést távolítja el, utána töltse újra a(z) {title} bejegyzést."
+    },
+    "gateway_import": {
+      "title": "A JUNG HOME Gateway integráció entitásainak átvétele",
+      "description": "A JUNG HOME Gateway integráció a(z) {title} Bluetooth Mesh integráció mellett is be van állítva, így minden lámpa, aljzat, gomb és jelenet kétszer létezik. Helyezze át ide az átjáró entitásait — megtartják entitásazonosítóikat, nevüket, területüket és előzményeiket — a Beállítások → Eszközök és szolgáltatások → JUNG HOME (Bluetooth Mesh) → Újrakonfigurálás → A JUNG HOME Gateway integráció entitásainak importálása menüpontban, majd törölje az átjáró bejegyzését. Hagyja figyelmen kívül ezt a problémát, ha mindkettőt meg szeretné tartani."
+    },
+    "export_stale": {
+      "title": "A JUNG HOME mesh hálózat kulcsai megváltoztak",
+      "fix_flow": {
+        "step": {
+          "gateway_refetch": {
+            "title": "Az export újbóli lekérése az átjáróról",
+            "description": "A Home Assistant csatlakozik a(z) {title} JUNG HOME mesh hálózat egyik csomópontjához, de semmit, amit hall, nem tud visszafejteni az export kulcsaival: egyetlen hálózati üzenet és a csomópont beacon-üzenete sem megy át a hitelesítésen. A mesh hálózat az export elkészülte után kulcsfrissítést hajtott végre (a JUNG HOME alkalmazásban „kulcsmegújítás”), így a fájl elavult. Erősítse meg, és a Home Assistant a már meglévő hozzáférésével lekéri az aktuális exportot a(z) {host} címen lévő JUNG HOME átjáróról, ellenőrzi, és abból újra beállítja az integrációt, ahogyan az Újrakonfigurálás → Újbóli lekérés az átjáróról is teszi; a lecserélt export másolatként megmarad (`.pre-reconfigure`). A probléma megszűnik, amint egy üzenet ismét visszafejthető. Valós eszközökön még nem ellenőrzött."
+          },
+          "upload": {
+            "title": "Új export betöltése",
+            "description": "A Home Assistant csatlakozik a(z) {title} JUNG HOME mesh hálózat egyik csomópontjához, de semmit, amit hall, nem tud visszafejteni az export kulcsaival: egyetlen hálózati üzenet és a csomópont beacon-üzenete sem megy át a hitelesítésen. A mesh hálózat az export elkészülte után kulcsfrissítést hajtott végre (a JUNG HOME alkalmazásban „kulcsmegújítás”), így a fájl elavult. Exportálja a hálózatot a JUNG HOME alkalmazásból (Projekt → Megosztás fájlként), és töltse fel ide a fájlt: a Home Assistant ellenőrzi, a konfigurációs könyvtárában a `junghome_ble/` alatt tárolja (a mesh hálózat összes kulcsát tartalmazza), és abból újra beállítja az integrációt; a lecserélt export másolatként megmarad. Az a bejegyzés, amely az exportját a kiszolgáló egy elérési útjáról olvasta, ettől kezdve a feltöltött másolatot használja — ha meg szeretné tartani az elérési utat, inkább oda másolja az új fájlt, és használja az Újrakonfigurálás lehetőséget. A probléma megszűnik, amint egy üzenet ismét visszafejthető. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "export_file": "Mesh-exportfájl"
+            },
+            "data_description": {
+              "export_file": "`JungHome.json` az alkalmazásból (Megosztás fájlként) vagy `MeshNetwork.json` egy iOS biztonsági mentésből."
+            }
+          }
+        },
+        "error": {
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
+          "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
+          "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
+          "export_keys_stale": "A mesh hálózat eszközei láthatók Bluetoothon, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsait az export elkészülte után megújították (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
+          "gateway_error": "Az átjáró hibával válaszolt. Ellenőrizze az állapotát a JUNG HOME alkalmazásban, és próbálja újra.",
+          "gateway_busy": "Az átjáró egy másik konfigurációs kérést dolgoz fel. Próbálja újra egy perc múlva.",
+          "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
+          "invalid_export": "A fájl nem JUNG HOME mesh-export (vagy sérült): tartalmaznia kell a hálózatot a kulcsaival, a csomópontjaival és egy 0 indexű hálózati kulccsal.",
+          "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
+          "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
+          "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
+          "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
+          "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
+          "upload_failed": "A feltöltött fájlt nem sikerült feldolgozni. Próbálja meg újra feltölteni."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
+          "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
+          "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
+        }
+      }
+    },
+    "gateway_certificate_changed": {
+      "title": "Megváltozott a JUNG HOME átjáró tanúsítványa",
+      "description": "A(z) {host} címen lévő JUNG HOME átjáró már nem egyezik azzal a TLS-tanúsítvánnyal, amelyet a Home Assistant rögzített hozzá: az ezen a címen válaszoló gép más tanúsítványt mutat be, vagy az átjáró csomópontja a mesh hálózaton keresztül másikat jelent. A Home Assistant felhagyott az átjáró használatával (sem hozzáférési tokent, sem exportot nem küld oda); az eszközök Bluetoothon továbbra is működnek. Ha kicserélte az átjárót vagy a tanúsítványát, nyissa meg a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontot, és kérje le újra az exportot az átjáróról; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében — ellenőrizze a hálózatát."
+    },
+    "gateway_sync_failed": {
+      "title": "A JUNG HOME export nem jutott el az átjáróhoz",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Export átadása az átjárónak",
+            "description": "A Home Assistant módosította a JUNG HOME rendszert (helyiséget, gombhozzárendelést vagy jelenetet), és újraírta a mesh-exportját, de a(z) {host} címen lévő JUNG HOME átjáró nem vette át az új exportot: {error}. Amíg ez nem történik meg, az átjáró és az alkalmazás a régi állapotot mutatja — és az alkalmazás következő módosítása felülírná a Home Assistant módosításait. A Home Assistant az alkalmazáshoz hasonlóan még kétszer, 15 másodperces különbséggel újrapróbálkozik. Ellenőrizze, hogy az átjáró elérhető-e, majd erősítse meg, és a Home Assistant most átadja neki az exportot, ahogyan az „Átjáró szinkronizálása” művelet (`junghome_ble.sync_gateway`) is teszi: elutasítja, ha az átjárón olyan módosítások vannak, amelyeket a Home Assistant még nem látott, mert a feltöltés törölné őket. A probléma megszűnik, ha egy feltöltés sikerül. Valós eszközökön még nem ellenőrzött."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "not_loaded": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, jelenleg nem fut. Próbálja újra, amint be van állítva.",
+          "sync_failed": "Az export nem jutott el az átjáróhoz: {error} A probléma megmarad; javítsa újra, amint az ok megszűnt."
+        }
+      }
+    },
+    "plan_interrupted": {
+      "title": "Megszakadt egy JUNG HOME módosítás ({title})",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Megszakadt egy JUNG HOME módosítás",
+            "description": "A Home Assistant a(z) {action} művelet közben leállt: {total} konfigurációs üzenetéből {accepted} jutott el az eszközökhöz. Ezek most rögzítve vannak a mesh-exportban, így az export azt tartalmazza, ami az eszközökön van. A befejezéshez futtassa újra a műveletet ugyanarra a célra. JUNG HOME átjáró esetén a rögzített exportot a következő módosítás vagy a `junghome_ble.sync_gateway` művelet adja át neki. Erősítse meg az értesítés elvetéséhez."
+          }
+        }
+      }
+    },
+    "device_name_rejected": {
+      "title": "Az eszköznév nem jutott el a JUNG HOME alkalmazáshoz",
+      "fix_flow": {
+        "step": {
+          "name": {
+            "title": "Az eszköz átnevezése",
+            "description": "A(z) {device} eszközt a Home Assistantban „{name}” névre nevezték át, de ezt a nevet a JUNG HOME alkalmazás nem fogadja el: a név nem lehet üres, sem 30 karakternél hosszabb, és az alkalmazás a % jelet helyőrző kezdetének tekinti (csak a %% és a %n megengedett). A mesh-export és az alkalmazás megtartja az eszköz régi nevét. Adjon meg egy olyan nevet, amelyet az alkalmazás elfogad: a Home Assistant ezzel nevezi el az eszközt, és — mint minden átnevezést — továbbítja az exportba (átjáró esetén az alkalmazásba is). A probléma megszűnik, amint a név továbbítása megtörtént. Valós eszközökön még nem ellenőrzött.",
+            "data": {
+              "name": "Név"
+            }
+          }
+        },
+        "error": {
+          "name_blank": "A név nem lehet üres.",
+          "name_not_allowed": "Az alkalmazás a % jelet helyőrző kezdetének tekinti: csak a %% és a %n megengedett.",
+          "name_too_long": "Az alkalmazás legfeljebb 30 karakteres neveket fogad el."
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "not_loaded": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, jelenleg nem fut. Próbálja újra, amint be van állítva.",
+          "device_gone": "A probléma által megnevezett eszköz már nincs a Home Assistantban."
+        }
+      }
+    },
+    "vault_key_refresh_lagging": {
+      "title": "A Home Assistant által hozzáadott eszközök nem kapták meg az új hálózati kulcsot",
+      "description": "A JUNG HOME alkalmazás megújította a(z) {title} mesh hálózat hálózati kulcsát, és a Home Assistant a megújítást végig követte. Az alkalmazás nem ismeri a Home Assistant által hozzáadott eszközöket, ezért a Home Assistant maga adja át nekik az új kulcsot, de a következő címeken lévő eszközök nem erősítették meg: {addresses}. Győződjön meg róla, hogy kapnak tápellátást és hatótávolságon belül vannak: a Home Assistant minden új Bluetooth-kapcsolatnál újrapróbálkozik. Az az eszköz, amely sosem kapta meg az új kulcsot, többé nem érhető el: állítsa vissza gyári állapotra, majd adja hozzá újra (előbb távolítsa el a Home Assistantból a `junghome_ble.remove_device` vagy a `junghome_ble.reset_pending_device` művelettel, a `force` megadásával). Valós eszközön még nem próbálták ki. A probléma megszűnik, ha minden ilyen eszköz megerősítette."
+    },
+    "pending_device": {
+      "title": "Egy, a Home Assistant által hozzáadott eszköz nincs nyilvántartva",
+      "description": "A Home Assistant a `junghome_ble.add_device` művelettel hálózatba léptetett egy JUNG eszközt a(z) {title} mesh hálózatban, de a konfigurálása vagy az exportban való rögzítése sikertelen volt: a(z) {addresses} címen lévő eszköz birtokolja a hálózat kulcsait, a JUNG HOME alkalmazás és az export viszont nem ismeri, a címei és elemcsoportjai pedig foglaltak maradnak, hogy más eszköz ne kapja meg őket. Állítsa vissza a `junghome_ble.reset_pending_device` művelettel (a unicast címével), és adja hozzá újra; ha egy eszközt már kézzel visszaállított, vagy az eltűnt, használja a `force` beállítást. Valós eszközön még nem próbálták ki. A probléma megszűnik, ha már nem marad ilyen eszköz."
+    },
+    "vault_unwritable": {
+      "title": "A JUNG HOME eszközkulcsok nem menthetők",
+      "description": "A Home Assistant nem tudta írni a(z) {title} mesh hálózat kulcstárát ({path}; utolsó hiba: {error}) a(z) {address} címen lévő eszköz hozzáadása közben. A kulcstár a Home Assistant által hozzáadott eszközök eszközkulcsait tárolja, amelyek máshol nincsenek meg, amíg az export nem rögzíti őket, ezért a Home Assistant nem léptette hálózatba az eszközt: semmit nem kapott, és továbbra is új eszköz. Ez általában azt jelenti, hogy megtelt a lemez, vagy a fájlrendszert csak olvashatóként csatolták újra, gyakran egy meghibásodó SD-kártya miatt. Szabadítson fel helyet vagy javítsa meg a tárolót (a csak olvashatóként újracsatolt fájlrendszerhez általában a kiszolgáló újraindítása szükséges), majd adja hozzá újra az eszközt; ne szerkessze, törölje vagy cserélje le a kulcstár fájljait. Valós eszközön még nem próbálták ki. A probléma magától megszűnik, amint a kulcstár egy írása sikerül."
+    },
+    "carry_over_conflict": {
+      "title": "A JUNG HOME alkalmazás felülírta a Home Assistant egyik módosítását ({title})",
+      "description": "A Home Assistant átvette azt az exportot, amelyet a JUNG HOME alkalmazás legutóbb átadott az átjárónak, és átvezette rá a saját módosításait, de az alkalmazás időközben ugyanazokat az elemeket módosította. Az alkalmazás változata marad meg a következőknél: {paths}. Az eszközökön még az lehet, amit a Home Assistant írt: {held}. Ellenőrizze ezeket a helyiségeket, jeleneteket és hozzárendeléseket az alkalmazásban és a Home Assistantban, és állítsa be őket újra az egyik oldalról. Az alkalmazás csak egy fájl importálása után látja, amit a Home Assistant hozzáad. A probléma az átjáró exportjának következő, ilyen ütközés nélküli átvételével megszűnik."
+    },
+    "scene_held": {
+      "title": "Eszközök még tárolnak egy törölt JUNG HOME jelenetet ({title})",
+      "description": "Egy jelenetet az „Akkor is, ha egy eszköz nem válaszol” beállítással töröltek, miközben egyes eszközei nem voltak elérhetők vagy elutasították a kérést; ezek még tárolják, és bármely ilyen számú jelenettel előhívják. Jelenetszám: eszközök — {members}. A Home Assistant ezeket a számokat nem adja új jelenetnek. Amikor az eszközök ismét elérhetők, futtassa a „Nem használt jelenetek törlése” műveletet kikapcsolt „Próbafuttatás” beállítással: törli róluk ezeket a számokat, és a probléma megszűnik."
+    },
+    "gateway_token_rejected": {
+      "title": "A JUNG HOME átjáró már nem fogadja el a Home Assistantot",
+      "description": "A(z) {host} címen lévő JUNG HOME átjáró elutasítja azt a hozzáférést, amelyet a Home Assistant a(z) {title} mesh hálózathoz regisztrált (valószínűleg eltávolították a JUNG HOME alkalmazásban a Beállítások → Átjáró → Hozzáférési jogosultságok menüpontban). A Home Assistant továbbra is módosítja a helyiségeket, gombhozzárendeléseket és jeleneteket a saját exportjában, de azt már nem adja át az átjárónak, így az alkalmazás nem látja ezeket a módosításokat; az eszközök továbbra is működnek. A Home Assistant újra hozzáférést kér: kövesse a JUNG HOME újrahitelesítésére vonatkozó kérését (Beállítások → Eszközök és szolgáltatások; a Javítások között is lejárt hitelesítésként szerepel), és adja meg az átjáró hálózatikulcs-jelszavát, vagy hagyja jóvá az új hozzáférési kérelmet az alkalmazásban. A probléma megszűnik, amint az átjáró ismét elfogadja a Home Assistantot; ezután az „Átjáró szinkronizálása” művelet átadja az azóta végzett módosításokat."
+    },
+    "seq_store_lost": {
+      "title": "Elvesztek a(z) {title} JUNG HOME mesh hálózat sorszámai",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Folytatás a már elküldött számok után",
+            "description": "Ennek az integrációnak a sorszámtára (`.storage/junghome_ble.seq.*`) nem tartalmaz használható adatot a Home Assistant {unicast} címéhez, pedig erről a címről már küldtek üzenetet. Ha ismét 0-ról indulna, olyan sorszámokat használna újra, amelyeket az eszközök már láttak: az eszközök figyelmen kívül hagynák a Home Assistantot, és minden újrahasznált szám gyengíti a mesh hálózat titkosítását. A tár visszaállítása biztonsági mentésből ugyanezt okozza — egy régebbi másolat a készítése óta elküldött összes számot megismétli —, ezért ne állítson vissza `junghome_ble.seq.*` fájlokat. Erősítse meg, hogy a Home Assistant 1 048 576 számmal a még kiolvasható utolsó érték után folytassa (ha ilyen nem maradt, akkor 4 194 304-gyel a `junghome_ble.seq.*.floor` fájlban a számlálóval együtt vezetett alsó határ, illetve a 0 után), és újra beállítsa az integrációt."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "floor_not_written": "A sorszámok alsó határát (`.storage/junghome_ble.seq.*.floor`) nem sikerült kiírni: semmi sem változott, és az integráció leállítva marad. Ellenőrizze a lemezt, amelyen a Home Assistant konfigurációja található, majd javítsa újra a problémát."
+        }
+      }
+    },
+    "seq_store_unwritable": {
+      "title": "A JUNG HOME sorszámok nem menthetők",
+      "description": "A Home Assistant több mint egy perce nem tudja írni a(z) {title} mesh hálózat sorszámtárát ({path}; utolsó hiba: {error}). Az eszközöknek küldött minden üzenet új sorszámot kap, és a Home Assistant csak elmentett számokat küld, hogy egy újraindítás soha ne ismételjen meg egyet sem: amíg egy írás nem sikerül, semmit nem küld a mesh hálózatnak — a parancsok sikertelenek, és az állapot nem frissül. Ez általában azt jelenti, hogy megtelt a lemez, vagy a fájlrendszert csak olvashatóként csatolták újra, gyakran egy meghibásodó SD-kártya miatt. Szabadítson fel helyet vagy javítsa meg a tárolót (a csak olvashatóként újracsatolt fájlrendszerhez általában a kiszolgáló újraindítása szükséges); ne szerkessze, törölje vagy cserélje le a tár fájljait. A probléma magától megszűnik, amint egy írás sikerül, és a küldés folytatódik."
+    },
+    "address_in_use": {
+      "title": "A Home Assistant JUNG HOME címe foglalt",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "A Home Assistant áthelyezése a(z) {suggestion} címre",
+            "description": "A(z) {title} mesh hálózat exportjában egy csomópont foglalja el a(z) {unicast} unicast címet, amelyről a Home Assistant küld. Az eszközök a kettőt egyetlen küldőnek tekintenék: az egyiket visszajátszásként eldobják, a válaszok pedig rossz címzetthez jutnak. Erősítse meg, hogy a Home Assistant megkapja a szabad {suggestion} címet, és újra beállítsa az integrációt, ahogyan az Újrakonfigurálás → Haladó → Saját unicast címünk is teszi. Győződjön meg róla, hogy más mesh-kliens (ennek az integrációnak a parancssori segédprogramjai, egy másik Home Assistant) nem küld a(z) {suggestion} címről. A sorszámokat címenként tárolja: az új cím a saját nyilvántartását folytatja, vagy ha a Home Assistantnak nincs hozzá nyilvántartása, kellően magas értékről indul, így egyetlen számot sem küld el kétszer. Valós eszközökön még nem ellenőrzött."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "cannot_load": "A bejegyzés exportja nem olvasható, ezért nem határozható meg szabad cím: semmi sem változott. Töltsön be új exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban.",
+          "no_free_address": "Az export nem hagy szabad címet a Home Assistantnak: semmi sem változott. Ellenőrizze az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban.",
+          "address_taken": "A(z) {suggestion} cím már nem szabad az exportban (időközben megváltozott): semmi sem változott. Új javaslatért javítsa újra a problémát."
+        }
+      }
+    },
+    "address_reserved": {
+      "title": "A Home Assistant JUNG HOME címét kioszthatják",
+      "description": "A(z) {unicast} unicast cím, amelyről a Home Assistant a(z) {title} mesh hálózatban küld, az alkalmazás valamelyik provisionerének címtartományába esik, vagy egy eltávolított csomópont használta. Addig működik, amíg az alkalmazás oda nem léptet hálózatba egy csomópontot; azelőtt helyezze át a Home Assistantot egy szabad címre (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk; a(z) {suggestion} szabad)."
+    },
+    "sequence_space_low": {
+      "title": "Fogynak a JUNG HOME mesh hálózat sorszámai",
+      "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Minden küldő megáll e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update), amelyet a JUNG HOME átjáró magától indít el; a Home Assistant követi, de maga nem indít ilyet. Tartsa az átjárót bekapcsolva és a mesh hálózathoz csatlakoztatva; átjáró nélkül a mesh hálózat leáll, amint egy küldő kifogy a sorszámokból. A probléma magától megszűnik a frissítés után."
+    },
+    "iv_index_mismatch": {
+      "title": "A JUNG HOME mesh hálózat más IV-indexen áll",
+      "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen: ez túl nagy eltérés ahhoz, hogy a Home Assistant követni tudja (legfeljebb 42-vel előre követi a mesh hálózatot, legfeljebb 192 óránként egyszer, és soha nem visszafelé). Addig az eszközök figyelmen kívül hagyják a Home Assistantot. Ez akkor fordul elő, ha a Home Assistant sok IV-frissítés alatt nem volt jelen, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Adjon a Home Assistantnak új unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk): ott a mesh hálózat IV-indexéről indul. Ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan sorszámokat ismétel, amelyeket az eszközök már láttak, a kézi szerkesztést pedig a következő indítás egyébként is felülírja. A probléma magától megszűnik, amikor olyan beacon-üzenet érkezik, amelynek IV-indexét a Home Assistant követni tudja."
+    },
+    "iv_index_ahead": {
+      "title": "A Home Assistant megelőzi a JUNG HOME mesh hálózat IV-indexét",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Visszatérés a mesh hálózat IV-indexére",
+            "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen — vagyis előrébb jár, ami a mesh hálózattal sosem fordul elő: az eszközök figyelmen kívül hagyják a Home Assistantot, és az nem tud követni egy mögötte lévő mesh hálózatot. Ez akkor fordul elő, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Erősítse meg, hogy a Home Assistant visszatérjen a mesh hálózat IV-indexére, és újra beállítsa az integrációt: a sorszámai minden olyan szám fölött folytatódnak, amelyet attól az indextől kezdve küldött, így egyiket sem használja kétszer. Ehelyett ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan számokat ismétel, amelyeket az eszközök már láttak. A másik visszaút egy új unicast cím a Home Assistant számára (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás). Valós eszközökön még nem ellenőrzött: a mesh hálózatnál előrébb járó IV-indexet valós hálózaton még nem láttak."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "iv_index_not_ahead": "A Home Assistant már nem jár elérhetetlenül a mesh hálózat előtt, vagy az IV-állapota megváltozott a probléma jelzése óta: semmi sem változott. Ha a probléma visszatér, javítsa újra.",
+          "seq_store_not_written": "A sorszámok alsó határát (`.storage/junghome_ble.seq.*.floor`) nem sikerült kiírni: semmi sem változott. Ellenőrizze a lemezt, amelyen a Home Assistant konfigurációja található, majd javítsa újra a problémát."
+        }
+      }
+    },
+    "time_keeper_missing": {
+      "title": "A JUNG HOME puck-aktoroknak nincs időforrásuk",
+      "description": "A(z) {title} mesh hálózatban régebbi típusú JUNG puck-aktorok vannak ({pucks}): az időt egy időforrástól kapják, vagyis egy hálózati tápellátású eszköztől, amely továbbítja nekik. A mesh hálózat egyik eszköze sem időforrás, ezért a puck-aktorok időzítői elcsúsznak. Kapcsolja be az *Időforrás* kapcsolót (alapértelmezés szerint letiltott konfigurációs entitás) egy állandóan tápellátást kapó eszközön, például egy aljzaton vagy egy mini aktoron; a JUNG HOME alkalmazás maga választ ki egyet, amikor egy puck-aktort konfigurál. Valós eszközökön még nem ellenőrzött. A probléma megszűnik, amint egy eszköz időforrás lesz."
+    }
+  },
+  "services": {
+    "set_room": {
+      "name": "Helyiség beállítása",
+      "description": "JUNG HOME lámpákat és aljzatokat a mesh hálózat egy helyiségébe helyez (az alkalmazásban „Area”). Még nem létező helyiség csak a „Helyiség létrehozása” beállítással jön létre, így egy elgépelt nevet a művelet elutasít. Az eszköz minden más helyiségből kikerül; a helyiséghez már hozzárendelt gombok ettől kezdve őt is vezérlik. A mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást. Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "room": {
+          "name": "Helyiség",
+          "description": "A helyiség neve a JUNG HOME alkalmazásban."
+        },
+        "create": {
+          "name": "Helyiség létrehozása",
+          "description": "Létrehozza a helyiséget, ha a mesh hálózatban nincs ilyen nevű. Kikapcsolva az ismeretlen nevet a művelet elutasítja."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "add_to_room": {
+      "name": "Hozzáadás helyiséghez",
+      "description": "JUNG HOME lámpákat, aljzatokat és árnyékolókat a mesh hálózat egy további helyiségébe is felvesz: a jelenlegi helyiségeikben is megmaradnak, mivel az alkalmazásban egy eszköz több helyiséghez is tartozhat. Még nem létező helyiség csak a „Helyiség létrehozása” beállítással jön létre. A helyiséghez már hozzárendelt gombok ettől kezdve őket is vezérlik. A mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást. Valós eszközökön még nem ellenőrzött. Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "room": {
+          "name": "Helyiség",
+          "description": "A helyiség neve a JUNG HOME alkalmazásban."
+        },
+        "create": {
+          "name": "Helyiség létrehozása",
+          "description": "Létrehozza a helyiséget, ha a mesh hálózatban nincs ilyen nevű. Kikapcsolva az ismeretlen nevet a művelet elutasítja."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "remove_from_room": {
+      "name": "Eltávolítás helyiségből",
+      "description": "JUNG HOME lámpákat, aljzatokat és árnyékolókat kivesz a mesh hálózat egy helyiségéből; a többi helyiségükben megmaradnak, így előfordulhat, hogy egy eszköz végül egyetlen helyiséghez sem tartozik. Ha egy eszközt egy gomb a helyiséghez való hozzárendelésén keresztül vezérel, a művelet elutasítja, hacsak nincs bekapcsolva az „Akkor is, ha egy gomb vezérli” beállítás: a helyiség elhagyásával az eszköz e gombról is leválik. A mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást. Valós eszközökön még nem ellenőrzött. Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "room": {
+          "name": "Helyiség",
+          "description": "A helyiség neve a JUNG HOME alkalmazásban."
+        },
+        "force": {
+          "name": "Akkor is, ha egy gomb vezérli",
+          "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "create_room": {
+      "name": "Helyiség létrehozása",
+      "description": "Üres helyiséget hoz létre a mesh-exportban (az eszközöknek semmit nem küld). A Home Assistant az alkalmazás tartományának legmagasabb szabad csoportcímét adja neki: az alkalmazás csak egy fájl importálása után látja, és a saját következő helyiségének a legalacsonyabb szabad címet adja. Kérésre visszaadja a helyiség csoportcímét. Csak rendszergazdáknak.",
+      "fields": {
+        "name": {
+          "name": "Név",
+          "description": "Az új helyiség neve."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "rename_room": {
+      "name": "Helyiség átnevezése",
+      "description": "Átnevez egy helyiséget a mesh-exportban (az eszközöknek semmit nem küld). Csak rendszergazdáknak.",
+      "fields": {
+        "room": {
+          "name": "Helyiség",
+          "description": "A helyiség jelenlegi neve."
+        },
+        "new_name": {
+          "name": "Új név",
+          "description": "Az új név."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        }
+      }
+    },
+    "delete_room": {
+      "name": "Helyiség törlése",
+      "description": "Töröl egy helyiséget: az eszközei kikerülnek belőle, a helyiséghez hozzárendelt gombok elveszítik a funkciójukat, és a helyiség kikerül a mesh-exportból. Maguk az eszközök továbbra is működnek. Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "room": {
+          "name": "Helyiség",
+          "description": "A törlendő helyiség neve."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "assign_key": {
+      "name": "Gomb hozzárendelése",
+      "description": "Egy nyomógomb gombját vagy egy érzékelőt hozzárendel egy lámpához, aljzathoz, árnyékolóhoz, helyiségtermosztáthoz, az átjáróhoz, egy helyiséghez vagy egy jelenethez, pontosan úgy, ahogyan a JUNG HOME alkalmazás gombhozzárendelése: a gomb korábbi hozzárendelése megszűnik, a gomb összekapcsolódik a céllal, és beállítódik a gombmódja (az érzékelőnek nincs gombmódja, és csak egyetlen eszközt vezérel). A mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást. Az érzékelő mint forrás és a temperature mód valós eszközökön még nem ellenőrzött. Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "key_entity": {
+          "name": "Gomb",
+          "description": "A gomb gombesemény-entitása, vagy egy érzékelő valamelyik entitása."
+        },
+        "key_device": {
+          "name": "Gomb eszköze",
+          "description": "A gombot tartalmazó nyomógomb-eszköz (ha több gombja van, a „Gomb betűjele” mezővel együtt), vagy egy érzékelő."
+        },
+        "key": {
+          "name": "Gomb betűjele",
+          "description": "Az eszköz melyik gombja: A, B, C vagy D; mini aktor bemeneténél E1 vagy E2."
+        },
+        "target_entity": {
+          "name": "Célentitás",
+          "description": "A lámpa, aljzat, árnyékoló vagy helyiségtermosztát, amelyet a gombnak vezérelnie kell."
+        },
+        "target_device": {
+          "name": "Céleszköz",
+          "description": "Az eszköz, amelyet a gombnak vezérelnie kell: lámpa, aljzat vagy az átjáró (a gomb ekkor a kattintásokat, dupla kattintásokat és nyomva tartásokat jelzi a Home Assistantnak)."
+        },
+        "room": {
+          "name": "Célhelyiség",
+          "description": "A helyiség, amelynek lámpáit vagy aljzatait a gombnak vezérelnie kell."
+        },
+        "scene": {
+          "name": "Céljelenet",
+          "description": "A jelenet, amelyet a gombnak minden eszközön elő kell hívnia, szám vagy név szerint (Jelenet gombmód; a „Mód” mezőt hagyja üresen). Valós eszközön még nem próbálták ki."
+        },
+        "mode": {
+          "name": "Mód",
+          "description": "Mit csinál a gomb: light (be/ki és fényerő-szabályozás), switch (be/ki), move (árnyékolók; nem tesztelt), gateway (eseményjelzés), lock (a fel / be oldal a lámpát vagy aljzatot jelenlegi állapotában tiltja, a le / ki oldal feloldja; valós eszközökön még nem ellenőrzött), temperature (helyiségtermosztát célhőmérséklete; valós eszközökön még nem ellenőrzött), illetve helyiségeknél light_and_switch (lámpák és aljzatok együtt). Üresen hagyva a mód a célhoz igazodik."
+        },
+        "target_element": {
+          "name": "Célelem",
+          "description": "Csak eszköz célnál: a gomb fényerő-szabályozó kliense önmagában a cél egy másik részét vezérli: color_temperature (hangolható fehér lámpa színhőmérséklete, light mód) vagy slat (árnyékoló lamellái, move mód). Valós eszközökön még nem ellenőrzött."
+        },
+        "lock_seconds": {
+          "name": "Tiltási idő",
+          "description": "Csak lock módban: meddig tart a gombbal kiadott tiltás, másodpercben (0 vagy üres: amíg a gomb fel nem oldja). Valós eszközökön még nem ellenőrzött."
+        },
+        "room_area": {
+          "name": "Helyiség terület alapján",
+          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+        },
+        "scene_entity": {
+          "name": "Jelenetentitás",
+          "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "clear_key": {
+      "name": "Gombhozzárendelés törlése",
+      "description": "Megszünteti egy nyomógomb gombjának funkcióját: törli a hozzárendelését egy eszközhöz, az átjáróhoz vagy egy helyiséghez (az alkalmazásban „Nincs funkció”). Visszaadja, hogy az eszközök hány üzenetét alkalmazták, kiírta-e a mesh-exportot, és mely eszközök változtak; „Próbafuttatás” esetén ehelyett azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "key_entity": {
+          "name": "Gomb",
+          "description": "A gomb gombesemény-entitása."
+        },
+        "key_device": {
+          "name": "Gomb eszköze",
+          "description": "A gombot tartalmazó nyomógomb-eszköz (ha több gombja van, a „Gomb betűjele” mezővel együtt)."
+        },
+        "key": {
+          "name": "Gomb betűjele",
+          "description": "Az eszköz melyik gombja: A, B, C vagy D; mini aktor bemeneténél E1 vagy E2."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "create_scene": {
+      "name": "Jelenet létrehozása",
+      "description": "Üres jelenetet hoz létre a mesh-exportban (az eszközöknek semmit nem küld). Eszközöket a „Jelenet mentése” művelettel menthet bele. A Home Assistant az alkalmazás tartományának legmagasabb szabad jelenetszámát adja neki: az alkalmazás csak egy fájl importálása után látja, és a saját következő jelenetének a legalacsonyabb szabad számot adja. Kérésre visszaadja a jelenet számát. Csak rendszergazdáknak.",
+      "fields": {
+        "name": {
+          "name": "Név",
+          "description": "Az új jelenet neve."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "rename_scene": {
+      "name": "Jelenet átnevezése",
+      "description": "Átnevez egy jelenetet a mesh-exportban (az eszközöknek semmit nem küld). Csak rendszergazdáknak.",
+      "fields": {
+        "scene": {
+          "name": "Jelenet",
+          "description": "A jelenet jelenlegi neve vagy száma."
+        },
+        "new_name": {
+          "name": "Új név",
+          "description": "Az új név."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "scene_entity": {
+          "name": "Jelenetentitás",
+          "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        }
+      }
+    },
+    "store_scene": {
+      "name": "Jelenet mentése",
+      "description": "Jelenetbe menti JUNG HOME lámpák, aljzatok, árnyékolók és termosztátok jelenlegi állapotát, ahogyan az alkalmazás „eszköz mentése jelenetbe” funkciója: előbb állítsa be az eszközöket úgy, ahogyan a jelenetnek hagynia kell őket, majd hívja meg ezt a műveletet. Minden eszköz a jelenet alatt tárolja az állapotát (Scene Store) a hozzá tartozó JUNG-leírással együtt, és a mesh-export rögzíti a tagot. A Home Assistant az integráció újratöltése nélkül követi a változást. Ha állapot is meg van adva (kapcsolás, fényerő, színhőmérséklet, hőmérséklet), a művelet minden eszközt előbb erre állít, és megvárja, amíg el is éri; a pozícióval megadott árnyékolót nem mozgatja, hanem a jelenet ezt a pozíciót tárolja hozzá. Csak rendszergazdáknak.",
+      "fields": {
+        "scene": {
+          "name": "Jelenet",
+          "description": "A jelenet neve vagy száma (a „Jelenet létrehozása” művelettel vagy az alkalmazásban létrehozva)."
+        },
+        "action": {
+          "name": "Kapcsolás",
+          "description": "A lámpák és aljzatok be- vagy kikapcsolása mentés előtt."
+        },
+        "brightness_pct": {
+          "name": "Fényerő",
+          "description": "A lámpák fényerejének erre az értékre állítása mentés előtt (a „Kapcsolás” értéke ekkor be)."
+        },
+        "color_temp_kelvin": {
+          "name": "Színhőmérséklet",
+          "description": "A hangolható fehér lámpák színhőmérsékletének erre az értékre állítása mentés előtt."
+        },
+        "position": {
+          "name": "Pozíció",
+          "description": "Az a pozíció, ahová a jelenet az árnyékolót mozgatja: 0 zárva, 100 nyitva."
+        },
+        "tilt_position": {
+          "name": "Lamellapozíció",
+          "description": "Az a lamellapozíció, amelyre a jelenet az árnyékolót állítja; megadás nélkül az árnyékoló pozíciója."
+        },
+        "temperature": {
+          "name": "Hőmérséklet",
+          "description": "A termosztátok erre a hőmérsékletre állítása mentés előtt."
+        },
+        "scene_entity": {
+          "name": "Jelenetentitás",
+          "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        }
+      },
+      "sections": {
+        "state": {
+          "name": "Mentendő állapot",
+          "description": "Előbb erre az állapotra állítja az eszközöket; üresen hagyva a jelenlegi állapotukat menti."
+        }
+      }
+    },
+    "remove_from_scene": {
+      "name": "Eltávolítás jelenetből",
+      "description": "JUNG HOME lámpákat, aljzatokat, árnyékolókat és termosztátokat eltávolít egy jelenetből: minden eszköz elfelejti a jelenetet (Scene Delete), és a tag kikerül a mesh-exportból. A Home Assistant az integráció újratöltése nélkül követi a változást. Csak rendszergazdáknak.",
+      "fields": {
+        "scene": {
+          "name": "Jelenet",
+          "description": "A jelenet neve vagy száma."
+        },
+        "scene_entity": {
+          "name": "Jelenetentitás",
+          "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        }
+      }
+    },
+    "delete_scene": {
+      "name": "Jelenet törlése",
+      "description": "Töröl egy jelenetet: minden eszköz, amely tárolta, elfelejti, az ezeken az eszközökön a jelenetet előhívó gombok elveszítik a hozzárendelésüket, és a jelenet kikerül a mesh-exportból. A Home Assistant az integráció újratöltése nélkül követi a változást. Kérésre visszaadja az „Akkor is, ha egy eszköz nem válaszol” beállítással kihagyott eszközöket (ehhez „Megerősítés” is kell), valamint azt, hogy a gombok üzeneteiből mit alkalmaztak az eszközök; „Próbafuttatás” esetén azt, hogy mit küldene és mit módosítana. Csak rendszergazdáknak.",
+      "fields": {
+        "scene": {
+          "name": "Jelenet",
+          "description": "A törlendő jelenet neve vagy száma."
+        },
+        "force": {
+          "name": "Akkor is, ha egy eszköz nem válaszol",
+          "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        },
+        "scene_entity": {
+          "name": "Jelenetentitás",
+          "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        },
+        "confirm": {
+          "name": "Megerősítés",
+          "description": "Az „Akkor is, ha egy eszköz nem válaszol” beállításhoz szükséges: a jelenetet megtartó eszközt innen nem lehet rávenni, hogy elfelejtse. Próbafuttatáshoz nem szükséges."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "delete_unused_scenes": {
+      "name": "Nem használt jelenetek törlése",
+      "description": "Kiolvassa minden eszköz jelenetregiszterét, és listázza vagy törli azokat a jeleneteket, amelyeket a mesh-export nem ismer (sem jelenetként, sem az alkalmazás egy időzítőjének jeleneteként), ahogyan az alkalmazás is teszi, amikor megnyílik az időzítőlistája. Kifejezett kérés nélkül csak próbafuttatás. Átjáró esetén csak az átjáró aktuális exportjával működik; fájlból beállított hálózaton a törléshez „A mesh-export naprakész” beállítás vagy a törlendő számok megadása szükséges. Eszközönként visszaadja a számokat. Csak rendszergazdáknak.",
+      "fields": {
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak a törlendő számokat listázza; semmit nem töröl. Alapértelmezés szerint bekapcsolva."
+        },
+        "numbers": {
+          "name": "Jelenetszámok",
+          "description": "Csak ezeket a jelenetszámokat törli (egyikük sem lehet a mesh-export jelenete)."
+        },
+        "confirm_stale_export": {
+          "name": "A mesh-export naprakész",
+          "description": "Fájlból beállított hálózathoz: a fájl az alkalmazás minden jelenetét tartalmazza, az exportálása óta létrehozottakat is. Enélkül csak a megadott számok törlődnek."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "sync_gateway": {
+      "name": "Átjáró szinkronizálása",
+      "description": "Átadja a JUNG HOME átjárónak a Home Assistant által használt mesh-exportot, ahogyan az alkalmazás is minden módosítás után. Minden, az exportot újraíró művelet után automatikusan lefut; az „export nem jutott el az átjáróhoz” javítás után az újrapróbálkozáshoz, vagy a fájl saját kezű szerkesztése után hívja meg. Csak rendszergazdáknak.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "get_schedules": {
+      "name": "Ütemezések lekérése",
+      "description": "Kiolvassa a JUNG HOME fogyasztók által önállóan futtatott ütemezéseket (az alkalmazás Automatizálás oldala): fogyasztónként legfeljebb 16 hely, mindegyikben egy időpont, napkelte vagy napnyugta szerinti indítás a hét bizonyos napjain, azzal együtt, hogy mit tesz ekkor a fogyasztó. Entitásonként visszaadja a használt helyeket, az „Ütemezés létrehozása” művelet mezőinek formájában."
+    },
+    "create_schedule": {
+      "name": "Ütemezés létrehozása",
+      "description": "Ütemezést ír minden kijelölt JUNG HOME fogyasztó első szabad helyére, amely ezután önállóan, a Home Assistant nélkül futtatja. Napkelte vagy napnyugta szerinti ütemezés előtt elküldi a csomópontnak a Home Assistant otthonának helyét. Entitásonként visszaadja a felhasznált helyet. Valós eszközön nem tesztelt. Csak rendszergazdáknak.",
+      "fields": {
+        "trigger": {
+          "name": "Eseményindító",
+          "description": "Mikor indul az ütemezés: egy adott időpontban, vagy napkeltekor, illetve napnyugtakor."
+        },
+        "time": {
+          "name": "Időpont",
+          "description": "Időpont szerinti ütemezés időpontja."
+        },
+        "not_before": {
+          "name": "Legkorábban",
+          "description": "A napkelte vagy napnyugta szerinti ütemezés ennél az időpontnál korábban nem indul (megadás nélkül nincs korlát)."
+        },
+        "not_after": {
+          "name": "Legkésőbb",
+          "description": "A napkelte vagy napnyugta szerinti ütemezés ennél az időpontnál később nem indul (megadás nélkül nincs korlát)."
+        },
+        "offset": {
+          "name": "Eltolás",
+          "description": "Hány perccel napkelte vagy napnyugta előtt (negatív) vagy után."
+        },
+        "weekdays": {
+          "name": "A hét napjai",
+          "description": "Azok a napok, amikor az ütemezés indul; megadás nélkül minden nap."
+        },
+        "enabled": {
+          "name": "Engedélyezve",
+          "description": "Indul-e az ütemezés; a letiltott ütemezés az „Ütemezés engedélyezése” műveletre vár."
+        },
+        "action": {
+          "name": "Kapcsolás",
+          "description": "Lámpa vagy aljzat be- vagy kikapcsolása."
+        },
+        "brightness_pct": {
+          "name": "Fényerő",
+          "description": "Az a fényerő, amelyre a fényerő-szabályozó bekapcsol (a „Kapcsolás” értéke ekkor be)."
+        },
+        "color_temp_kelvin": {
+          "name": "Színhőmérséklet",
+          "description": "Hangolható fehér lámpa színhőmérséklete, 100 K-es lépésekben."
+        },
+        "position": {
+          "name": "Pozíció",
+          "description": "Az a pozíció, ahová az árnyékoló mozog: 0 zárva, 100 nyitva."
+        },
+        "tilt_position": {
+          "name": "Lamellapozíció",
+          "description": "Az árnyékoló lamellapozíciója; megadás nélkül az árnyékoló pozíciója."
+        },
+        "temperature": {
+          "name": "Hőmérséklet",
+          "description": "A helyiségtermosztát célhőmérséklete."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Mikor",
+          "description": "Mikor indul az ütemezés."
+        },
+        "what": {
+          "name": "Mi történjen",
+          "description": "Mire állítja a fogyasztót az ütemezés, amikor elindul."
+        }
+      }
+    },
+    "update_schedule": {
+      "name": "Ütemezés módosítása",
+      "description": "Helyben felülírja minden kijelölt JUNG HOME fogyasztó egy használt ütemezési helyét, ahogyan az alkalmazás szerkesztése is, az „Ütemezés létrehozása” művelet mezőivel: mindet adja meg újra, mert amit kihagy, az nem marad meg a hely korábbi tartalmából. Napkelte vagy napnyugta szerinti ütemezés előtt elküldi a csomópontnak a Home Assistant otthonának helyét; ha egy írás sikertelen, visszaírja a hely régi ütemezését. Valós eszközökön még nem ellenőrzött. Csak rendszergazdáknak.",
+      "fields": {
+        "slot": {
+          "name": "Hely",
+          "description": "A felülírandó ütemezési hely száma (0–15), ahogyan az „Ütemezések lekérése” művelet és az Ütemezések érzékelő listázza."
+        },
+        "trigger": {
+          "name": "Eseményindító",
+          "description": "Mikor indul az ütemezés: egy adott időpontban, vagy napkeltekor, illetve napnyugtakor."
+        },
+        "time": {
+          "name": "Időpont",
+          "description": "Időpont szerinti ütemezés időpontja."
+        },
+        "not_before": {
+          "name": "Legkorábban",
+          "description": "A napkelte vagy napnyugta szerinti ütemezés ennél az időpontnál korábban nem indul (megadás nélkül nincs korlát)."
+        },
+        "not_after": {
+          "name": "Legkésőbb",
+          "description": "A napkelte vagy napnyugta szerinti ütemezés ennél az időpontnál később nem indul (megadás nélkül nincs korlát)."
+        },
+        "offset": {
+          "name": "Eltolás",
+          "description": "Hány perccel napkelte vagy napnyugta előtt (negatív) vagy után."
+        },
+        "weekdays": {
+          "name": "A hét napjai",
+          "description": "Azok a napok, amikor az ütemezés indul; megadás nélkül minden nap."
+        },
+        "enabled": {
+          "name": "Engedélyezve",
+          "description": "Indul-e az ütemezés; a letiltott ütemezés az „Ütemezés engedélyezése” műveletre vár."
+        },
+        "action": {
+          "name": "Kapcsolás",
+          "description": "Lámpa vagy aljzat be- vagy kikapcsolása."
+        },
+        "brightness_pct": {
+          "name": "Fényerő",
+          "description": "Az a fényerő, amelyre a fényerő-szabályozó bekapcsol (a „Kapcsolás” értéke ekkor be)."
+        },
+        "color_temp_kelvin": {
+          "name": "Színhőmérséklet",
+          "description": "Hangolható fehér lámpa színhőmérséklete, 100 K-es lépésekben."
+        },
+        "position": {
+          "name": "Pozíció",
+          "description": "Az a pozíció, ahová az árnyékoló mozog: 0 zárva, 100 nyitva."
+        },
+        "tilt_position": {
+          "name": "Lamellapozíció",
+          "description": "Az árnyékoló lamellapozíciója; megadás nélkül az árnyékoló pozíciója."
+        },
+        "temperature": {
+          "name": "Hőmérséklet",
+          "description": "A helyiségtermosztát célhőmérséklete."
+        }
+      },
+      "sections": {
+        "when": {
+          "name": "Mikor",
+          "description": "Mikor indul az ütemezés."
+        },
+        "what": {
+          "name": "Mi történjen",
+          "description": "Mire állítja a fogyasztót az ütemezés, amikor elindul."
+        }
+      }
+    },
+    "enable_schedule": {
+      "name": "Ütemezés engedélyezése",
+      "description": "Lehetővé teszi, hogy a JUNG HOME fogyasztók egy ütemezési helye ismét elinduljon. Csak rendszergazdáknak.",
+      "fields": {
+        "slot": {
+          "name": "Hely",
+          "description": "Az ütemezési hely száma (0–15), ahogyan az „Ütemezések lekérése” művelet és az Ütemezések érzékelő listázza."
+        }
+      }
+    },
+    "disable_schedule": {
+      "name": "Ütemezés letiltása",
+      "description": "Megakadályozza, hogy a JUNG HOME fogyasztók egy ütemezési helye elinduljon, anélkül hogy törölné. Csak rendszergazdáknak.",
+      "fields": {
+        "slot": {
+          "name": "Hely",
+          "description": "Az ütemezési hely száma (0–15), ahogyan az „Ütemezések lekérése” művelet és az Ütemezések érzékelő listázza."
+        }
+      }
+    },
+    "delete_schedule": {
+      "name": "Ütemezés törlése",
+      "description": "Felszabadítja a JUNG HOME fogyasztók egy ütemezési helyét. Csak rendszergazdáknak.",
+      "fields": {
+        "slot": {
+          "name": "Hely",
+          "description": "Az ütemezési hely száma (0–15), ahogyan az „Ütemezések lekérése” művelet és az Ütemezések érzékelő listázza."
+        }
+      }
+    },
+    "set_threshold": {
+      "name": "Küszöbérték beállítása",
+      "description": "Beállítja egy JUNG HOME fogyasztásmérős aljzat egyik küszöbértékét (az alkalmazás Automatikus profilja): ha az aljzat teljesítménye az időtartam alatt végig a megadott szinten marad, az aljzat önállóan, a Home Assistant nélkül bekapcsolja (bekapcsolási küszöbérték) vagy kikapcsolja (kikapcsolási küszöbérték) a kiválasztott lámpákat és aljzatokat. Valós eszközön nem tesztelt. Kérésre visszaadja, hogy az eszközök hány összerendelési üzenetet alkalmaztak. Csak rendszergazdáknak.",
+      "fields": {
+        "threshold": {
+          "name": "Küszöbérték",
+          "description": "Az aljzat két küszöbértéke közül melyiket állítsa be."
+        },
+        "power": {
+          "name": "Teljesítmény",
+          "description": "Teljesítményszint W-ban (0,1 W-os lépésekben); megadás nélkül az aljzat jelenlegi szintje."
+        },
+        "duration": {
+          "name": "Időtartam",
+          "description": "Hány másodpercig kell a teljesítménynek a szinten maradnia; megadás nélkül az aljzat jelenlegi időtartama."
+        },
+        "enabled": {
+          "name": "Engedélyezve",
+          "description": "Kapcsol-e a küszöbérték; a letiltott küszöbérték megtartja a szintjét és az időtartamát. Megadás nélkül a küszöbérték megtartja az állapotát (az új küszöbérték engedélyezett). Ha úgy tiltja le, hogy a másik küszöbérték sem aktív, a lámpák és aljzatok összerendelése az alkalmazáshoz hasonlóan megszűnik: az újbóli engedélyezéskor adja meg ismét az eszközöket."
+        },
+        "devices": {
+          "name": "Eszközök",
+          "description": "A lámpák és aljzatok, amelyeket mindkét küszöbérték kapcsol; a jelenlegi listát váltják fel, megadás nélkül a lista változatlan marad. Ha változik, a mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást."
+        }
+      }
+    },
+    "delete_threshold": {
+      "name": "Küszöbérték törlése",
+      "description": "Törli egy JUNG HOME fogyasztásmérős aljzat mindkét küszöbértékét, és megszünteti az általuk kapcsolt lámpák és aljzatok összerendelését, ahogyan az alkalmazás törlése is. Ha eszközök összerendelése szűnt meg, a Home Assistant az integráció újratöltése nélkül követi az újraírt mesh-exportot. Kérésre visszaadja, hogy az eszközök hány összerendelési üzenetet alkalmaztak. Csak rendszergazdáknak."
+    },
+    "audit_network": {
+      "name": "Hálózat ellenőrzése",
+      "description": "Semmit sem módosítva kiolvassa, mit tartalmaz a JUNG HOME eszközök mesh-konfigurációja — relay, network transmit, default TTL, beacon, GATT proxy és friend, az egyes eszközökön lévő hálózati és alkalmazáskulcsok (index szerint, magát a kulcsot soha), valamint minden modell publikációja, előfizetései és kötött alkalmazáskulcsai —, és összeveti a mesh-exporttal. Eszközönként visszaadja a beállításokat és minden talált eltérést, és listázza a nem válaszoló eszközöket. Az összes eszköz ellenőrzése néhány percig tart; az elemes eszközök alszanak, ezért kimaradnak, hacsak nincsenek külön megadva.",
+      "fields": {
+        "device": {
+          "name": "Eszköz",
+          "description": "Csak az eszköz mögötti mesh-csomópontot ellenőrzi (lámpa, gomb, aljzat vagy maga a csomópont). Üresen hagyva minden hálózati tápellátású csomópontot ellenőriz."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "export_network": {
+      "name": "Hálózat exportálása",
+      "description": "Visszaadja a Home Assistant által használt exportot — az általa módosított helyiségekkel, gombokkal, hozzárendelésekkel és jelenetekkel együtt — a JUNG HOME alkalmazás megosztási fájljaként vagy mesh-adatbázisként, biztonsági mentéshez vagy az alkalmazásba importáláshoz. Csak rendszergazdáknak: a mesh hálózat összes kulcsát tartalmazza.",
+      "fields": {
+        "flavour": {
+          "name": "Formátum",
+          "description": "Az alkalmazás megosztási fájlja (JungHome.json) vagy a mesh-adatbázis (MeshNetwork.json)."
+        },
+        "config_entry_id": {
+          "name": "Hálózat",
+          "description": "Az exportálandó JUNG HOME hálózat; csak akkor szükséges, ha több van."
+        }
+      }
+    },
+    "find_new_devices": {
+      "name": "Új eszközök keresése",
+      "description": "Listázza a közelben lévő, még egyetlen hálózathoz sem tartozó JUNG eszközöket, az `add_device` által igényelt Bluetooth-címmel együtt."
+    },
+    "add_device": {
+      "name": "Eszköz hozzáadása (kísérleti)",
+      "description": "Új JUNG eszközt ad a hálózathoz, ahogyan az alkalmazás tenné: hálózatba lépteti (provisioning) az eszköz által kínált legerősebb módszerrel (Static OOB, ha az eszköz kínálja és meg van adva az értéke, HMAC-SHA256 algoritmussal; egyébként az alkalmazáshoz hasonlóan No OOB — hitelesítés nélkül a folyamat alatt Bluetooth-hatótávolságon belül bárki elfoghatja a hálózat kulcsait), az eszköz által jelentett adatok alapján az alkalmazás szabályai szerint konfigurálja (és elutasítja, ha ez eltér attól, ami a hálózatban már meglévő, azonos termékű eszközön van), majd rögzíti az exportban (és átadja az átjárónak). Ha egy eszköz konfigurálása sikertelen, az alkalmazáshoz hasonlóan visszaállítja. Elemcsoportjai az alkalmazás tartományának legmagasabb szabad csoportcímeit kapják (az alkalmazás csak egy fájl importálása után látja az eszközt). A válasz felsorolja az elvégzett lépéseket. A bejegyzés *Eszközök hozzáadásának engedélyezése a Home Assistant számára* beállítása szükséges hozzá. Csak rendszergazdáknak. A hitelesített módszerek, a konfigurációs szabályok és a visszaállítás valós eszközökön még nem ellenőrzöttek.",
+      "fields": {
+        "address": {
+          "name": "Bluetooth-cím",
+          "description": "Az eszköznek a `find_new_devices` által listázott címe."
+        },
+        "name": {
+          "name": "Név",
+          "description": "Az új eszköz neve."
+        },
+        "config_entry_id": {
+          "name": "Hálózat",
+          "description": "A JUNG HOME hálózat, amelyhez hozzáadja; csak akkor szükséges, ha több van."
+        },
+        "static_oob": {
+          "name": "Static OOB érték",
+          "description": "Csak Static OOB hitelesítést kínáló eszközhöz: a 16 vagy 32 bájtos értéke hexadecimálisan, ahogyan a gyártója dokumentálja (egyetlen JUNG eszközről sem ismert, hogy kínálná). Soha nem kerül a naplóba. Az olyan eszközt, amely csak hitelesített hálózatba léptetést fogad el, enélkül elutasítja, az olyat pedig, amely nem kínálja, ezzel együtt utasítja el."
+        }
+      }
+    },
+    "remove_device": {
+      "name": "Eszköz eltávolítása (kísérleti)",
+      "description": "Visszaállít egy JUNG eszközt (elfelejti a hálózatot, és ismét új eszközzé válik), majd az alkalmazáshoz hasonlóan eltávolítja a hálózatból: a többi eszköz rá mutató hozzárendelései törlődnek, az export eltávolítottként rögzíti, és átadja az átjárónak. Nem vonható vissza. A bejegyzés *Eszközök hozzáadásának és eltávolításának engedélyezése a Home Assistant számára* beállítása szükséges hozzá. „Megerősítés” szükséges; „Próbafuttatás” esetén ehelyett azt adja vissza, mit küldene és mit módosítana, és megerősítés sem kell. Csak rendszergazdáknak.",
+      "fields": {
+        "device": {
+          "name": "Eszköz",
+          "description": "Az eltávolítandó JUNG eszköz (bármelyik hozzá tartozó Home Assistant-eszköz)."
+        },
+        "force": {
+          "name": "Akkor is, ha nem válaszol",
+          "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik."
+        },
+        "confirm": {
+          "name": "Megerősítés",
+          "description": "A végrehajtáshoz szükséges: egy eszköz eltávolítása nem vonható vissza. Próbafuttatáshoz nem szükséges."
+        },
+        "dry_run": {
+          "name": "Próbafuttatás",
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+        }
+      }
+    },
+    "reset_pending_device": {
+      "name": "Függőben lévő eszköz visszaállítása (kísérleti)",
+      "description": "Visszaállít egy JUNG eszközt, amelyet az `add_device` hálózatba léptetett, de nem tudott konfigurálni vagy rögzíteni (ezeket az *Egy, a Home Assistant által hozzáadott eszköz nincs nyilvántartva* című probléma listázza): Config Node Reset üzenetet küld neki a csak a Home Assistant birtokában lévő eszközkulccsal, így ismét új eszközzé válik, és felszabadítja a címeit. Valós eszközön még nem próbálták ki. A bejegyzés *Eszközök hozzáadásának engedélyezése a Home Assistant számára* beállítása szükséges hozzá. Csak rendszergazdáknak.",
+      "fields": {
+        "uuid": {
+          "name": "Eszköz UUID",
+          "description": "Az eszköz UUID-ja, ahogyan az `add_device` vagy a `find_new_devices` megadta."
+        },
+        "unicast": {
+          "name": "Unicast cím",
+          "description": "Az eszköz elsődleges unicast címe (hexadecimálisan, ahogyan a probléma megnevezi); az UUID-val együtt megadva mindkettőnek egyeznie kell."
+        },
+        "force": {
+          "name": "Akkor is, ha nem válaszol",
+          "description": "Akkor is elfelejti az eszközt, ha nem erősíti meg a visszaállítást (kézzel visszaállított vagy véglegesen eltűnt eszköz)."
+        },
+        "config_entry_id": {
+          "name": "Hálózat",
+          "description": "A JUNG HOME hálózat, amelyhez az eszközt hozzáadták; csak akkor szükséges, ha több van."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Eszköz megkeresése",
+      "description": "Egy JUNG eszközzel legfeljebb egy percig hirdetteti a Node Identity azonosítóját — egy olyan Bluetooth-hirdetést, amelyet csak ennek a mesh hálózatnak a kulcsai kötnek az eszközhöz —, majd leállítja, így egy Bluetooth-szkennerrel megállapítható, melyik rádió az adott eszköz. Mást nem módosít; az eszköz egy perc után egyébként is magától leáll. Csak rendszergazdáknak. Valós eszközökön még nem ellenőrzött.",
+      "fields": {
+        "device": {
+          "name": "Eszköz",
+          "description": "A megkeresendő JUNG eszköz (bármelyik hozzá tartozó Home Assistant-eszköz)."
+        },
+        "duration": {
+          "name": "Időtartam",
+          "description": "A hirdetés időtartama másodpercben, 5 és 60 között (az eszköz 60 után magától leáll)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Átjárókliens jóváhagyása",
+      "description": "Listázza a JUNG HOME átjárónál hozzáférésre váró API-klienseket (egy másik integráció, egy szkript), és jóváhagyja a megnevezettet, ahogyan az alkalmazás Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontja. A jóváhagyott kliens megkapja az átjáró teljes API-ját, benne a hálózati exportot a mesh hálózat összes kulcsával: csak olyan klienst hagyjon jóvá, amelyet saját maga indított. Kliensnév nélkül csak listázza őket (kérje a választ). A hozzáférést csak az alkalmazásban lehet visszavonni. Csak rendszergazdáknak, átjáróról beállított hálózathoz. Valós eszközökön még nem ellenőrzött.",
+      "fields": {
+        "client": {
+          "name": "Kliens",
+          "description": "A név, amelyen a kliens hozzáférést kér, pontosan úgy, ahogyan a `waiting` alatt szerepel. Üresen hagyva semmit nem hagy jóvá."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "start_dim": {
+      "name": "Fényerő-szabályozás indítása",
+      "description": "Elindítja egy JUNG HOME fényerő-szabályozó felfelé vagy lefelé szabályozását, mint egy billenő nyomva tartása, a „Fényerő-szabályozás leállítása” műveletig (vagy a tartomány végéig). Valós eszközön még nem próbálták ki.",
+      "fields": {
+        "direction": {
+          "name": "Irány",
+          "description": "Világosabb (up) vagy sötétebb (down)."
+        },
+        "speed": {
+          "name": "Sebesség",
+          "description": "Milyen gyorsan, a fényerő-tartomány százalékában másodpercenként (alapértelmezés 20: kikapcsolt állapotból teljes fényerőig 5 másodperc alatt)."
+        }
+      }
+    },
+    "stop_dim": {
+      "name": "Fényerő-szabályozás leállítása",
+      "description": "Megállítja a „Fényerő-szabályozás indítása” művelettel elindított JUNG HOME fényerő-szabályozót a pillanatnyi szinten. Valós eszközön még nem próbálták ki."
+    },
+    "step_dim": {
+      "name": "Fényerő léptetése",
+      "description": "Egy lépéssel világosabbra vagy sötétebbre állít egy JUNG HOME fényerő-szabályozót. Valós eszközön még nem próbálták ki.",
+      "fields": {
+        "step": {
+          "name": "Lépés",
+          "description": "A fényerő-tartomány százalékában: pozitív érték világosabb, negatív sötétebb."
+        }
+      }
+    }
+  },
+  "selector": {
+    "key_mode": {
+      "options": {
+        "light": "Világítás (be/ki, fényerő-szabályozás)",
+        "switch": "Kapcsolás (be/ki)",
+        "move": "Árnyékoló (nem tesztelt)",
+        "gateway": "Átjáró (események jelentése)",
+        "light_and_switch": "Lámpák és aljzatok (csak helyiségek)",
+        "lock": "Tiltás és feloldás (valós eszközökön még nem ellenőrzött)",
+        "temperature": "Hőmérséklet (helyiségtermosztát, nem tesztelt)"
+      }
+    },
+    "target_element": {
+      "options": {
+        "color_temperature": "Színhőmérséklet (valós eszközökön még nem ellenőrzött)",
+        "slat": "Lamellák (valós eszközökön még nem ellenőrzött)"
+      }
+    },
+    "schedule_trigger": {
+      "options": {
+        "time": "Időpont",
+        "sunrise": "Napkelte",
+        "sunset": "Napnyugta"
+      }
+    },
+    "schedule_action": {
+      "options": {
+        "on": "Be",
+        "off": "Ki"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Hétfő",
+        "tue": "Kedd",
+        "wed": "Szerda",
+        "thu": "Csütörtök",
+        "fri": "Péntek",
+        "sat": "Szombat",
+        "sun": "Vasárnap"
+      }
+    },
+    "threshold": {
+      "options": {
+        "switch_on": "Bekapcsolási küszöb",
+        "switch_off": "Kikapcsolási küszöb"
+      }
+    },
+    "export_flavour": {
+      "options": {
+        "share": "Az alkalmazás megosztási fájlja (JungHome.json)",
+        "cdb": "Mesh-adatbázis (MeshNetwork.json)"
+      }
+    },
+    "dim_direction": {
+      "options": {
+        "up": "Világosabb",
+        "down": "Sötétebb"
+      }
+    },
+    "insert": {
+      "options": {
+        "switch": "Kapcsolóbetét",
+        "two_gang_switch": "2-es kapcsolóbetét",
+        "dimming": "Fényerő-szabályozó betét",
+        "two_gang_dimming": "2-es fényerő-szabályozó betét",
+        "tw_dimming": "DALI-betét",
+        "blind": "Redőnybetét",
+        "extension": "Mellékállomás-betét",
+        "not_available": "Nincs betét"
+      }
+    },
+    "button_layout": {
+      "options": {
+        "one_top_one_bottom": "Gomb felül / alul",
+        "one_rocker": "Billenő",
+        "two_left_two_right": "Gomb | Gomb",
+        "one_left_two_right": "Billenő | Gomb",
+        "two_left_one_right": "Gomb | Billenő",
+        "one_left_one_right": "Billenő | Billenő"
+      }
+    },
+    "product": {
+      "options": {
+        "push_button_1": "Nyomógomb, 1-es",
+        "push_button_2": "Nyomógomb, 2-es",
+        "socket_metering": "Aljzat (fogyasztásméréssel)",
+        "socket": "Aljzat",
+        "switch_actuator_mini": "Kapcsolóaktor, 1 csatornás, mini",
+        "blinds_actuator_mini": "Redőnyaktor, 1 csatornás, mini",
+        "wall_transmitter_1": "Fali adó, 1-es",
+        "wall_transmitter_2": "Fali adó, 2-es",
+        "motion_detector_1m": "Mozgásérzékelő, 1 m",
+        "motion_detector_2m": "Mozgásérzékelő, 2 m",
+        "presence_detector": "Jelenlét-érzékelő",
+        "room_thermostat": "Helyiségtermosztát",
+        "gateway": "Átjáró",
+        "switch_actuator_1_energy": "Kapcsolóaktor, 1 csatornás, 2 bemenetes, energiaméréssel",
+        "switch_actuator_2": "Kapcsolóaktor, 2 csatornás, 2 bemenetes",
+        "dimmer_actuator": "Fényerő-szabályozó aktor, 1 csatornás, 2 bemenetes",
+        "blinds_actuator": "Redőnyaktor PP2, 1 csatornás, 2 bemenetes",
+        "dali_actuator": "DALI-aktor, 1 csatornás, 2 bemenetes",
+        "mini_sensor_mains": "Mini érzékelő, 2 bemenetes, hálózati tápellátású",
+        "mini_sensor_battery": "Mini érzékelő, 2 bemenetes, elemes"
+      }
+    },
+    "device_model": {
+      "options": {
+        "mesh_network": "Bluetooth Mesh hálózat",
+        "switch": "Kapcsolt lámpa",
+        "dimmer": "Szabályozható fényerejű lámpa",
+        "ctl": "Hangolható fehér fényű (DALI) lámpa",
+        "blind": "Zsalúzia- / redőnymeghajtás",
+        "push_buttons": "Nyomógombok",
+        "unknown_product": "Termék: {pid}"
+      }
+    }
+  }
+}
