@@ -870,9 +870,20 @@ async def test_initial_reads_are_chunked_delayed_and_deduplicated(
     ) in counts  # the socket's *Installed* sensor reads through the same queue
     assert (GATEWAY, C.GATEWAY_API_STATUS) in counts  # two sensors, one read
     assert (LIGHT_SWITCH, C.PROPERTY_DEVICE_LOCK) in counts  # *Lock operation*
-    # enabled targets minus the four status LEDs, plus *Installed*, the gateway's status and address, and the
-    # device-lock word of the five device nodes (*Lock operation*)
-    assert len(counts) == 32 - 4 + 1 + 2 + 5
+    # the lock function of every light and the socket, which their own entities read (`LoadLock`), once: the
+    # disabled *Lock* switches ask nothing of their own
+    locks = {addr for addr, pid in counts if pid == C.PROPERTY_LOCK}
+    assert locks == {
+        LIGHT_SWITCH,
+        LIGHT_CTL,
+        LIGHT_DIMMER,
+        LIGHT_OUT1,
+        LIGHT_OUT2,
+        SOCKET,
+    }
+    # enabled targets minus the four status LEDs, plus *Installed*, the gateway's status and address, the
+    # device-lock word of the five device nodes (*Lock operation*) and the six loads' locks
+    assert len(counts) == 32 - 4 + 1 + 2 + 5 + 6
     hub: JungHomeHub = init_with_mesh.runtime_data
     assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == b"\0\0\0\0"
 

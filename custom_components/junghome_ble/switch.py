@@ -4,8 +4,9 @@ A dimmer's *Use previous value* (Light Lightness Default 0: switch on at the las
 
 The lock function (0x0009, the app's "Lock device") is a config switch per lockable load: on locks the output in
 its current state against local and remote operation — for the time limit its `number` entity sets, or until
-switched off. Nothing publishes the lock state (`docs/gap-analysis/control-and-state.md` §5 q. 1): it is read
-once per link like every config entity, and read back when a timed lock should have ended.
+switched off. Nothing publishes the lock state (`docs/gap-analysis/control-and-state.md` §5 q. 1): a light or
+socket reads its own once per link (`config_entities.LoadLock`, one Get shared with this switch), and the switch
+reads it back when a timed lock should have ended. A locked socket shows `locked` and refuses commands (`LoadLock`).
 
 The device lock (0x0001) is a config switch per flag the app offers: *Lock operation* and *Lock factory reset* on
 every node, *Key lock* and *Lock configuration on the unit* on a room thermostat — off by default, since which bit
@@ -42,6 +43,7 @@ from .config_entities import (
     EdgeDetectionEntity,
     FlagEntity,
     LedSyncTarget,
+    LoadLock,
     LockFunctionEntity,
     NightModeTarget,
     PropertyEntity,
@@ -192,8 +194,8 @@ def sensor_publication_nodes(hub: JungHomeHub) -> list[tuple[Node, DeviceInfo]]:
     return out
 
 
-class JungHomeSocket(JungHomeEntity, SwitchEntity):
-    """A switched socket."""
+class JungHomeSocket(LoadLock, SwitchEntity):
+    """A switched socket; refused while locked (`LoadLock`)."""
 
     _attr_device_class = SwitchDeviceClass.OUTLET
     _attr_name = None  # the device *is* the socket
@@ -224,7 +226,8 @@ class JungHomeSocket(JungHomeEntity, SwitchEntity):
         await self._set(False)
 
     async def _set(self, on: bool) -> None:
-        await self._send(self.hub.set_onoff(self.address, on))
+        await self._check_unlocked()
+        await self._send_switch(self.hub.set_onoff(self.address, on), on)
 
 
 class JungHomePropertySwitch(PropertyEntity, SwitchEntity):

@@ -307,6 +307,15 @@
   A push-button advertising another insert than the export's (the insert was replaced after the export was made)
   raises the repair *JUNG HOME push-buttons with another insert than in the export*. The layout is also read from the
   Android app's share export. Unverified on air: the Gets, and the key positions of the mixed layouts.
+- Lights and sockets know when they are locked (review-4 F4-2): a load locked in the JUNG HOME app, by a key or by
+  its *Lock* switch shows `locked: true` (and, for a lock with a time limit, `lock_until`), and a command to it fails
+  with *… is locked … and keeps its state until it is unlocked* instead of a success that changed nothing — the app
+  disables the controls the same way. Each light and socket reads its lock once per link, behind the state refresh
+  and five loads at a time; the *Lock* switch and select share that Get instead of sending their own. The lock is
+  read again before a refusal, as it may have ended unseen (lifted in the app, or past its time limit), and a
+  command a load answers with its old state is reported as locked when the lock read then says so. A known-locked
+  load that leaves a command unanswered is not marked unavailable for it. Unverified on air: what a locked load
+  answers to a Set (`docs/hidden-features.md` §12).
 
 - `add_device` shapes a push-button after a node of the export with the insert it advertises when there is one,
   writes the advertised insert into its app device rows instead of the template's, and runs the app's check of the

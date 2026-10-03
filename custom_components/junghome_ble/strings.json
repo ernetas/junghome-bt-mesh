@@ -1323,6 +1323,9 @@
     "cover_wind_alarm": {
       "message": "A wind alarm holds {entity}; it ignores commands until the alarm is ended (its Lock function or Lock switch)."
     },
+    "load_locked": {
+      "message": "{entity} is locked (in the JUNG HOME app, by a key or by its Lock switch) and keeps its state until it is unlocked."
+    },
     "dim_not_dimmable": {
       "message": "{entity} is not a JUNG HOME dimmer: only dimmers and DALI tunable-white channels can be dimmed this way."
     }

@@ -28,7 +28,7 @@ from homeassistant.const import (
     EntityCategory,
 )
 from homeassistant.core import State
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
@@ -531,7 +531,8 @@ async def test_lock_is_a_hidden_config_switch_of_the_load(
     device = dr.async_get(hass).async_get(entry.device_id)
     assert device is not None
     assert device.name == "Boiler"
-    assert (SOCKET, PID_LOCK) not in mesh.gets  # a disabled entity asks nothing
+    # a disabled entity asks nothing: the one Get of the lock is the socket's own (`LoadLock`)
+    assert mesh.gets.count((SOCKET, PID_LOCK)) == 1
 
 
 async def test_lock_locks_the_current_state_and_unlocks_like_the_app(
@@ -798,6 +799,62 @@ async def test_a_timed_lock_set_elsewhere_is_read_back_too(
     await settle(hass)
     assert mesh.gets[gets:] == [(SOCKET, PID_LOCK)] * 2
     assert hass.states.get(eid).state == STATE_OFF
+
+
+async def test_a_locked_socket_shows_it_and_refuses_commands(
+    hass: HomeAssistant, mesh: PropertyMesh, mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+) -> None:  # fmt: skip
+    """F4-2: the socket reads its own lock once per link (its *Lock* switch is disabled), shows `locked` and refuses
+    to switch while locked, as the app disables the control; reported unlocked, it switches again."""
+    mesh.values[SOCKET, PID_LOCK] = LOCKED
+    await _setup(hass, mock_config_entry)
+    eid = entity_id(hass, "switch", UID_SOCKET)
+    state = hass.states.get(eid)
+    assert state.attributes["locked"] is True
+    assert state.attributes["lock_until"] is None
+    mesh.link.sent.clear()
+    for service in (SERVICE_TURN_ON, SERVICE_TURN_OFF):
+        with pytest.raises(ServiceValidationError) as exc:
+            await _switch(hass, service, eid)
+        assert exc.value.translation_key == "load_locked"
+    assert mesh.link.sent == []  # read within PROPERTY_READ_FRESH: not even a Get
+
+    mesh.link.inject(SOCKET, OUR_ADDRESS, ph.vendor_status(0x05, PID_LOCK, UNLOCKED))
+    await settle(hass)
+    assert hass.states.get(eid).attributes["locked"] is False
+    await _switch(hass, SERVICE_TURN_ON, eid)
+    assert mesh.link.sent[-1][1:] == (
+        SOCKET,
+        M.generic_onoff_set(True, tid=mesh.link.sent[-1][2][3], transition=0),
+    )
+
+
+async def test_the_lock_is_read_once_per_link_for_the_socket_and_its_lock_switch(
+    hass: HomeAssistant, lock_enabled: None, mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+) -> None:  # fmt: skip
+    """The socket's read and its enabled *Lock* switch's share one Get per link (`PropertyReader.read`'s `since`),
+    whichever runs first; the next link asks again."""
+    mesh.values[SOCKET, PID_LOCK] = LOCKED
+    eid = await _setup(hass, mock_config_entry)
+    assert hass.states.get(eid).state == STATE_ON
+    assert (
+        hass.states.get(entity_id(hass, "switch", UID_SOCKET)).attributes["locked"]
+        is True
+    )
+    assert mesh.gets.count((SOCKET, PID_LOCK)) == 1
+
+    infos = mock_bluetooth_env["infos"]
+    mock_bluetooth_env["infos"] = []
+    mesh.link.drop_link()
+    await settle(hass)
+    mock_bluetooth_env["infos"] = infos
+    mock_bluetooth_env["callbacks"][0](infos[0], BluetoothChange.ADVERTISEMENT)
+    await wait_for_link(hass, mock_config_entry)
+    await wait_until(hass, lambda: mesh.gets.count((SOCKET, PID_LOCK)) == 2)
+    await settle(hass, 50)
+    assert mesh.gets.count((SOCKET, PID_LOCK)) == 2
 
 
 # --------------------------------------------------------------------------- device lock (0x0001)

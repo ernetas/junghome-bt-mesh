@@ -13,6 +13,9 @@ setters) only for a kind in `TRANSITION_KINDS`, the only lights that declare the
 gateway ever sends a transition, so which JUNG loads fade is up to the on-air probe (`docs/hidden-features.md` §11);
 until it ran the table is empty, HA drops a `transition` before it reaches a light, and every Set keeps the bytes it
 always had. Unverified on air.
+
+**Locks** (review-4 F4-2): a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
+`lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`).
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ from homeassistant.components.light import (
 from homeassistant.components.light.const import ColorMode, LightEntityFeature
 from homeassistant.exceptions import ServiceValidationError
 
+from .config_entities import LoadLock
 from .const import (
     DIM_MOVE_TRANSITION,
     DIM_STEPS_PER_SECOND,
@@ -37,7 +41,6 @@ from .const import (
 )
 from .entity import (
     JungHomeCentralEntity,
-    JungHomeEntity,
     async_setup_platform,
     light_device_info,
     room_loads,
@@ -96,8 +99,8 @@ def build_entities(hub: JungHomeHub) -> list[LightEntity]:
     return entities
 
 
-class JungHomeLight(JungHomeEntity, LightEntity):
-    """A load output: on/off, dimmable or tunable white depending on the device kind."""
+class JungHomeLight(LoadLock, LightEntity):
+    """A load output: on/off, dimmable or tunable white depending on the device kind; refused while locked."""
 
     _attr_name = None  # the device *is* the light
 
@@ -173,11 +176,14 @@ class JungHomeLight(JungHomeEntity, LightEntity):
         a temperature). Lightness Set for a brightness, OnOff Set otherwise. The temperature is clamped to the
         light's range (HA does not do that for us). A `transition` goes with it for a kind in `TRANSITION_KINDS`.
         """
+        await self._check_unlocked()
         brightness = kwargs.get(ATTR_BRIGHTNESS)
         kelvin = kwargs.get(ATTR_COLOR_TEMP_KELVIN)
         lightness = round(brightness * 65535 / 255) if brightness is not None else None
-        await self._send(
-            self._turn_on(lightness, kelvin, _transition(self.light.kind, kwargs))
+        transition = _transition(self.light.kind, kwargs)
+        await self._send_switch(
+            self._turn_on(lightness, kelvin, transition),
+            True if transition is None else None,
         )
 
     async def _turn_on(
@@ -210,10 +216,11 @@ class JungHomeLight(JungHomeEntity, LightEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Send Generic OnOff Set off (with a `transition` for a kind in `TRANSITION_KINDS`)."""
-        await self._send(
-            self.hub.set_onoff(
-                self.address, False, _transition(self.light.kind, kwargs)
-            )
+        await self._check_unlocked()
+        transition = _transition(self.light.kind, kwargs)
+        await self._send_switch(
+            self.hub.set_onoff(self.address, False, transition),
+            False if transition is None else None,
         )
 
     @property
@@ -224,6 +231,7 @@ class JungHomeLight(JungHomeEntity, LightEntity):
 
     async def async_start_dim(self, direction: str, speed: int) -> None:
         """Start dimming `up` or `down` at `speed` % of the range per second: Generic Move Set. Unverified on air."""
+        await self._check_unlocked()
         delta = round(speed / 100 * LIGHTNESS_RANGE / DIM_STEPS_PER_SECOND)
         await self._send(
             self.hub.move_level(
@@ -240,6 +248,7 @@ class JungHomeLight(JungHomeEntity, LightEntity):
 
     async def async_step_dim(self, step: int) -> None:
         """Dim by `step` % of the range (negative: darker): Generic Delta Set, then read back. Unverified on air."""
+        await self._check_unlocked()
         await self._send(
             self.hub.delta_level(self.address, round(step / 100 * LIGHTNESS_RANGE))
         )

@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import EntityCategory
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
@@ -112,7 +112,10 @@ Page = Literal[
 
 PROPERTY_STATUS_LED = 0x5013
 PROPERTY_REFERENCE_RUN = 0x110D
-PROPERTY_LOCK = 0x0009  # EnforceOutput, the app's lock (`JungHomeLockSwitch`)
+PROPERTY_LOCK = 0x0009  # EnforceOutput, the app's lock (`JungHomeLockSwitch`, `ElementState.note_lock`)
+LOCK_SPEC = P.PROPERTIES[PROPERTY_LOCK]
+# a light's / socket's lock attributes (`LoadLock`)
+ATTR_LOCKED, ATTR_LOCK_UNTIL = "locked", "lock_until"
 PROPERTY_DEVICE_LOCK = 0x0001  # the node's lock flags (`device_lock_targets`)
 GATEWAY_API_STATUS, GATEWAY_IP = (
     0xC000,
@@ -1068,7 +1071,11 @@ def _on_vendor_property_status(hub: JungHomeHub, m: AccessMessage, p: bytes) -> 
     if not cacheable(pid):
         return
     owner = status_owner(hub, m, pid)
-    hub.element_state(owner).properties[pid] = bytes(p[3:])
+    st = hub.element_state(owner)
+    st.properties[pid] = bytes(p[3:])
+    # a load's lock, which its light / socket entity acts on (`LoadLock`)
+    if pid == PROPERTY_LOCK:
+        st.note_lock(st.properties[pid])
     hub.notify_update(owner)
 
 
@@ -2054,6 +2061,15 @@ class LockFunctionEntity(PropertyEntity):
         value = self.property_value
         return value if isinstance(value, P.EnforcedOutput) else None
 
+    async def _read(self) -> bool:
+        """Read the lock, unless the load answered since the link came up: its light or socket reads it once per link.
+
+        That read (`LoadLock._maybe_read_lock`) and this one share one Get, whichever comes first.
+        """
+        return await self.reader.read(
+            self.address, self.spec, since=self.hub.link_since
+        )
+
     async def async_will_remove_from_hass(self) -> None:
         """Drop a pending read-back."""
         self._cancel_expiry()
@@ -2109,6 +2125,151 @@ class LockFunctionEntity(PropertyEntity):
             self.hass,
             self.reader.read(self.address, self.spec, since=time.monotonic()),
             f"{DOMAIN} lock read-back {self.address:04X}",
+        )
+
+
+class LoadLock(JungHomeEntity):
+    """Lock awareness of a light or socket (review-4 F4-2): what the app does with a locked load's controls.
+
+    A load locked in the app, by a key or by its *Lock* switch keeps its state against every command. Nothing
+    publishes the lock (`docs/gap-analysis/control-and-state.md` §5 q. 1), and the app reads 0x0009 of every load
+    when its device list opens: the entity reads it once per link (`_maybe_read_lock`), through the property
+    reader's queue, which runs after the connect-time state refresh, `PROPERTY_READ_CHUNK` loads at a time like
+    it; the *Lock* switch and select share that Get (`PropertyReader.read`'s `since`, `LockFunctionEntity._read`).
+    The answer lands in `ElementState.lock`; the entity shows it as the `locked` and `lock_until` attributes (None:
+    not known yet) and refuses a command while the load is locked (`JungHomeHub.load_locked`) — the app disables
+    the controls. The lock is read again first, as it may have ended unseen: lifted in the app (a Get unless the
+    load answered within PROPERTY_READ_FRESH), or run out — a lock past its time limit is asked anew, and a load
+    that stays silent then is taken as unlocked. A command the load did not confirm although the node answered
+    something meanwhile, or an on / off it answered with the other state (a Status with the old state: review-4
+    D32), makes the entity read the lock too, and report it as locked when it is: the command failed for the lock,
+    not for the reachability. Unverified on air: what a locked load answers to a Set (`docs/hidden-features.md`
+    §12).
+
+    A toggle of a load whose state is not known switches it on (Home Assistant's default), where the app takes an
+    unknown state for on and sends off (`ui:uc:toggledevice`): kept deliberately, as switching a load on is what a
+    user toggling a load that shows nothing expects. Room and central commands (*All lights*, a room's lights) go
+    out unacknowledged to every member and are not refused: a locked member ignores them, as in the app.
+    """
+
+    # `hub.link_count` of the link the lock read was last queued on
+    _lock_link: int | None = None
+
+    @property
+    def lockable(self) -> bool:
+        """Whether the load's node has the lock function (`P.LOCKABLE`)."""
+        node = self.hub.cdb.node_by_addr(self.address)
+        return node is not None and (node.pid or 0) in LOCK_SPEC.products
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The entity's attributes, plus `locked` and, while a timed lock holds, `lock_until` (ISO 8601, UTC)."""
+        attrs = dict(self._attr_extra_state_attributes)
+        st = self.hub.states.get(self.address)
+        if st is None or st.lock is None:
+            attrs[ATTR_LOCKED] = attrs[ATTR_LOCK_UNTIL] = None
+            return attrs
+        attrs[ATTR_LOCKED] = st.locked
+        attrs[ATTR_LOCK_UNTIL] = (
+            st.lock_until.isoformat() if st.locked and st.lock_until else None
+        )
+        return attrs
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe, then queue the lock read once the link is up."""
+        await super().async_added_to_hass()
+        self._maybe_read_lock()
+
+    @callback
+    def _handle_update(self) -> None:
+        self._maybe_read_lock()
+        super()._handle_update()
+
+    @callback
+    def _maybe_read_lock(self) -> None:
+        """Queue the read of the lock once per link (a load that stayed silent is asked on the next one)."""
+        if (
+            not self.lockable
+            or not self.hub.connected
+            or self._lock_link == self.hub.link_count
+        ):
+            return
+        self._lock_link = self.hub.link_count
+        property_reader(self.hass, self.hub).schedule(
+            self.address, self._read_lock, key=PROPERTY_LOCK
+        )
+
+    async def _read_lock(self) -> None:
+        """Ask for the lock unless the load answered since the link came up (the *Lock* switch's read, say)."""
+        await property_reader(self.hass, self.hub).read(
+            self.address, LOCK_SPEC, since=self.hub.link_since
+        )
+
+    async def _check_unlocked(self) -> None:
+        """Refuse a command while the load is locked; read the lock again first, it may have ended unseen."""
+        st = self.hub.states.get(self.address)
+        if not self.lockable or st is None or st.lock is None or not st.lock.locked:
+            return
+        reader = property_reader(self.hass, self.hub)
+        # a lock past its time limit is asked anew; another one unless the load answered within PROPERTY_READ_FRESH
+        await reader.read(
+            self.address,
+            LOCK_SPEC,
+            since=None if st.locked else time.monotonic(),
+        )
+        if self.hub.load_locked(self.address):
+            raise self._locked()
+
+    async def _send(self, command: Awaitable[None]) -> None:
+        """Run the command; one the node answered something to but did not confirm is reported as locked when it is."""
+        asked = time.monotonic()
+        try:
+            await super()._send(command)
+        except HomeAssistantError as err:
+            if (
+                err.translation_key != "device_not_reachable"
+                or not self.lockable
+                or not self._heard_since(asked)
+            ):
+                raise
+            await self._raise_if_locked(asked, err)
+            raise
+
+    async def _send_switch(self, command: Awaitable[None], on: bool | None) -> None:
+        """`_send` an on / off command; one the load answered with the other state is reported as locked if it is.
+
+        With no other request out to the load, such a Status counts for the Set (review-4 D32). `on` is the state
+        asked for; None: nothing to compare — a Set with a transition is answered with where the load is now, not
+        where it is going.
+        """
+        asked = time.monotonic()
+        await self._send(command)
+        st = self.hub.states.get(self.address)
+        if on is not None and st is not None and st.on is not on and self.lockable:
+            await self._raise_if_locked(asked)
+
+    async def _raise_if_locked(
+        self, asked: float, cause: Exception | None = None
+    ) -> None:
+        """Read the lock unless the load answered it since `asked`; raise the refusal when it is locked."""
+        await property_reader(self.hass, self.hub).read(
+            self.address, LOCK_SPEC, since=asked
+        )
+        if self.hub.load_locked(self.address):
+            raise self._locked() from cause
+
+    def _heard_since(self, moment: float) -> bool:
+        """Whether the load's node was heard from at or after `moment` (a `time.monotonic()`)."""
+        node = self.hub.cdb.node_by_addr(self.address)
+        return (
+            node is not None and self.hub.last_heard.get(node.unicast, -1e9) >= moment
+        )
+
+    def _locked(self) -> ServiceValidationError:
+        return ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="load_locked",
+            translation_placeholders={"entity": self.entity_id},
         )
 
 

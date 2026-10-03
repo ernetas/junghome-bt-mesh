@@ -9,8 +9,10 @@ no (SRC, IV, SEQ) twice, nothing replayed or undecryptable, nothing lost that th
 from __future__ import annotations
 
 import shutil
+from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
@@ -123,12 +125,25 @@ async def test_a_node_four_hops_away_answers(
     assert got(sim_mesh.node(ACTUATOR), M.GEN_ONOFF_SET)
 
 
+@pytest.fixture
+def no_lock_reads() -> Generator[None]:
+    """No light reads its lock (`config_entities.LoadLock`): its answer would change the light's attributes at a moment
+    that depends on the property reads queued before it."""
+    with patch(
+        "custom_components.junghome_ble.config_entities.LoadLock._maybe_read_lock"
+    ):
+        yield
+
+
 @pytest.mark.parametrize(
     "sim_options",
     [{"quirks": Quirks(proxy_forwards_every_copy=True), "retransmissions": True}],
 )
 async def test_every_relayed_copy_the_proxy_forwards_is_handled_once(
-    hass: HomeAssistant, sim_mesh: Mesh, init_sim_integration: MockConfigEntry
+    hass: HomeAssistant,
+    sim_mesh: Mesh,
+    no_lock_reads: None,
+    init_sim_integration: MockConfigEntry,
 ) -> None:
     """Network retransmissions and relays put several copies of each PDU on the air, and this proxy forwards them
     all (`FakeProxyLink` never does): the hub's replay protection hands each message out once."""

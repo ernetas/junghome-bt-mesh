@@ -32,6 +32,7 @@ from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import Element, Node
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 
+from . import property_helpers as ph
 from .conftest import settle, wait_for_link, wait_until
 from .helpers import OUR_ADDRESS
 from .test_binary_sensor import RELAY_MOTION, make_detectors_entry, start_detectors
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
 
     from .conftest import FakeProxyLink
 
+fast_timeouts = ph.fast_timeouts
 # the vectors of the app's settings session (on air), NUL-padded as the nodes send them
 HARDWARE_REVISION = b"10000000" + bytes(8)
 MANUFACTURER_NAME = b"Albrecht Jung GmbH & Co.KG" + bytes(10)
@@ -314,6 +316,7 @@ async def test_the_node_device_shows_its_manufacturer_and_hardware_revision(
     mock_bluetooth_env: dict[str, Any],
     fake_link: FakeProxyLink,
     fast_sleep: list[float],
+    fast_timeouts: None,  # the relay's lock read, unanswered here, may be queued before its node's reads
 ) -> None:
     """prop:sig:0x0010 / 0x0011: read at link-up, shown on the node's device, kept for the next setup; a blank
     name leaves JUNG; the LBC blocks and the time role are kept too."""

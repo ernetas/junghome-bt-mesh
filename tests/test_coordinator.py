@@ -297,17 +297,23 @@ def answering_link(fake_link: FakeProxyLink) -> FakeProxyLink:
 
 @pytest.fixture(autouse=True)
 def no_property_reads() -> Generator[None]:
-    """Keep the config entities' initial property reads out of the hub's traffic.
+    """Keep the config entities' initial property reads and the loads' lock reads out of the hub's traffic.
 
-    Every config entity (`config_entities.ConfigEntity`) queues a property or setup-state Get after each connection.
+    Every config entity (`config_entities.ConfigEntity`) queues a property or setup-state Get after each connection,
+    every light and socket a Get of its lock (`config_entities.LoadLock`).
     The tests here assert on exactly what the hub itself sends and receives (`fake_link.sent`, REFRESH_GETS /
     ENERGY_GETS, the drop-detection counters, the link watchdog's silence), and the fake mesh does not answer
     those Gets, so without this patch every test would see dozens of extra PDUs and stray 3 s timeouts. The
     reads have their own tests (test_config_entities.py and the platform modules); this is the one place they
     are switched off, so a hub test that needs them must opt out explicitly.
     """
-    with patch(
-        "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+    with (
+        patch(
+            "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+        ),
+        patch(
+            "custom_components.junghome_ble.config_entities.LoadLock._maybe_read_lock"
+        ),
     ):
         yield
 

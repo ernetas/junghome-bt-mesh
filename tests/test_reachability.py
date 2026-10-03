@@ -27,24 +27,26 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from custom_components.junghome_ble import coordinator
+from custom_components.junghome_ble import const, coordinator
 from custom_components.junghome_ble import services as S
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_BLUETOOTH_UNAVAILABLE,
     REQUEST_ATTEMPTS,
     SIGNAL_LINK_STATE,
+    UNREACHABLE_RECHECK,
     UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import ProxyClient
+from custom_components.junghome_ble.jhmesh.pdu import decode_opcode
 
 from .conftest import (
     FakeProxyLink,
@@ -58,6 +60,7 @@ from .helpers import (
     LIGHT_CTL,
     LIGHT_CTL_TEMPERATURE,
     MESH_UUID,
+    OUR_ADDRESS,
     SOCKET,
     SOCKET_SENSOR,
     UID_LIGHT_CTL,
@@ -84,6 +87,24 @@ def fast_requests() -> Generator[None]:
         timeout == coordinator.REQUEST_TIMEOUT
     )  # the hub relies on the library's default being the app's
     with patch.object(ProxyClient.request, "__defaults__", (FAST_TIMEOUT, *rest)):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def no_property_reads() -> Generator[None]:
+    """Keep the config entities' reads and the loads' per-link lock reads (`config_entities.LoadLock`) out.
+
+    Unanswered here, they hold an element's property reads for their 3 s attempts: the lock read that follows an
+    unconfirmed command would wait behind them, past the verdict on the node.
+    """
+    with (
+        patch(
+            "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+        ),
+        patch(
+            "custom_components.junghome_ble.config_entities.LoadLock._maybe_read_lock"
+        ),
+    ):
         yield
 
 
@@ -261,7 +282,10 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
     fake_link: FakeProxyLink,
 ) -> None:
     """The app completes a pending request on a User Property Status (`D1 27 05`) from the element; that status
-    answers nothing here (it is also what nodes publish unsolicited) — but a node that sent it is there."""
+    answers nothing here (it is also what nodes publish unsolicited) — but a node that sent it is there.
+
+    A node that answered something but not the command may be locked (`config_entities.LoadLock`): its lock is read
+    (here unanswered, quickly) before the action fails as unreachable."""
     hub = hub_of(init_integration)
     eid = entity_id(hass, "switch", UID_SOCKET)
     await settle(hass)
@@ -271,8 +295,9 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
     async def publish_meanwhile(
         char: str, data: bytes, response: bool | None = None
     ) -> None:
+        sets = len(load_sets(fake_link))
         await original(char, data, response)
-        if load_sets(fake_link):
+        if len(load_sets(fake_link)) > sets:  # an attempt of the command, not a Get
             fake_link.inject(
                 SOCKET_SENSOR,
                 0xC000,
@@ -281,18 +306,88 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
 
     fake_link.write_gatt_char = publish_meanwhile  # type: ignore[method-assign]
     keep_alive = AsyncMock(return_value=True)
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
+    sent = len(fake_link.sent)
+    with (
+        patch.object(JungHomeHub, "_keep_alive", keep_alive),
+        patch.object(const, "PROPERTY_READ_TIMEOUT", FAST_TIMEOUT),
+    ):
         with pytest.raises(HomeAssistantError) as exc:
             await switch_on(hass, eid)
         await wait_until(hass, lambda: SOCKET in hub._recheck, what="the verdict")
     keep_alive.assert_awaited_once()
     assert exc.value.translation_key == "device_not_reachable"
+    assert (OUR_ADDRESS, SOCKET, M.vendor_property_get("admin", 0x0009)) in (
+        fake_link.sent[sent:]
+    )
     assert len(load_sets(fake_link)) == REQUEST_ATTEMPTS  # not taken for the answer
     assert not hub.unreachable
     assert hass.states.get(eid).state != STATE_UNAVAILABLE
     assert (
         SOCKET in hub._recheck
     )  # asked again later (the node's primary), with the full budget
+
+
+LOCK_GET = M.vendor_property_get("admin", 0x0009)
+LOCKED = M.vendor_property_status("admin", 0x0009, bytes.fromhex("02010000"))
+
+
+async def test_a_locked_load_that_leaves_a_command_unanswered_stays_reachable(
+    hass: HomeAssistant,
+    fast_requests: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """F4-2: a load known to be locked may ignore a Set altogether; its silence to the command is the lock's, not a
+    sign it is gone: no unreachable mark, a state Get later (whose silence would count). Unverified on air."""
+    hub = hub_of(init_integration)
+    await settle(hass)
+    hub.element_state(SOCKET).note_lock(bytes.fromhex("02010000"))
+    fake_link.sets_silent.add(SOCKET)
+    with (
+        patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)),
+        patch.object(hub, "_schedule_recheck") as recheck,
+    ):
+        with pytest.raises(TimeoutError):
+            await hub.set_onoff(SOCKET, True)  # past the entity, which would refuse it
+        await wait_until(hass, lambda: recheck.called, what="the verdict")
+    recheck.assert_called_once_with(SOCKET, SOCKET, "switch", UNREACHABLE_RECHECK)
+    assert not hub.unreachable
+
+
+async def test_a_command_a_load_answers_with_its_old_state_is_reported_as_locked(
+    hass: HomeAssistant,
+    fast_requests: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """A lock nobody had read yet: the socket answers the Set with its old state — with no other request out to it,
+    that answer counts for the Set (review-4 D32) — so the entity reads its lock and reports the action refused for
+    the lock, rather than a success that changed nothing, and nothing is marked."""
+    hub = hub_of(init_integration)
+    eid = entity_id(hass, "switch", UID_SOCKET)
+    await settle(hass)
+
+    def reply(dst: int, access: bytes) -> bytes | None:
+        if dst != SOCKET:
+            return None
+        if access == LOCK_GET:
+            return LOCKED
+        if decode_opcode(access)[0] == M.GEN_ONOFF_SET:
+            return onoff_status(False)  # the lock holds the socket off
+        return None
+
+    fake_link.app_reply = reply
+    with patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)):
+        with pytest.raises(ServiceValidationError) as exc:
+            await switch_on(hass, eid)
+        await settle(hass)
+    assert exc.value.translation_key == "load_locked"
+    assert len(load_sets(fake_link)) == 1
+    assert hub.load_locked(SOCKET)
+    assert hass.states.get(eid).attributes["locked"] is True
+    assert not hub.unreachable
 
 
 async def test_a_colour_temperature_command_is_accounted_to_the_light(

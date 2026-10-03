@@ -33,6 +33,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from voluptuous import Invalid
 
@@ -46,13 +47,15 @@ from custom_components.junghome_ble.entity import UPDATE_READS, update_reads
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS, Light
 
-from .conftest import FakeProxyLink, load_sets, settle, wait_for_link
+from . import property_helpers as ph
+from .conftest import FakeProxyLink, load_sets, settle, setup_entry, wait_for_link
 from .helpers import (
     LIGHT_CTL,
     LIGHT_CTL_TEMPERATURE,
     LIGHT_DIMMER,
     LIGHT_SWITCH,
     MESH_UUID,
+    OUR_ADDRESS,
     UID_LIGHT_CTL,
     UID_LIGHT_DIMMER,
     UID_LIGHT_OUT2,
@@ -69,6 +72,10 @@ if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from .property_helpers import PropertyMesh
+
+fast_timeouts, mesh = ph.fast_timeouts, ph.mesh
 
 
 async def turn_on(hass: HomeAssistant, eid: str, **data: Any) -> None:
@@ -895,3 +902,146 @@ async def test_update_entity_without_a_link_keeps_the_state(
     await update_entity(hass, eid)
     assert fake_link.sent == []
     assert init_integration.runtime_data.states[LIGHT_SWITCH].on is True
+
+
+# --------------------------------------------------------------------------- locks (review-4 F4-2)
+
+PID_LOCK = 0x0009
+UNLOCKED = bytes.fromhex("00010000")
+LOCKED = bytes.fromhex("02010000")  # the app's "lock the current state", no time limit
+LOCKED_60 = bytes.fromhex("02013c00")  # ... for 60 s
+MALFORMED = bytes.fromhex("02")  # too short for the codec
+
+
+async def start(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    """Set the entry up against the answering mesh and let the per-link reads through."""
+    await setup_entry(hass, entry)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+
+
+def report_lock(link: FakeProxyLink, element: int, value: bytes) -> None:
+    """The load reports its lock function unasked (the Status of a Set from the app, say)."""
+    link.inject(element, OUR_ADDRESS, ph.vendor_status(0x05, PID_LOCK, value))
+
+
+async def test_a_locked_light_shows_it_and_refuses_commands(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+) -> None:  # fmt: skip
+    """F4-2: every light reads its lock once per link (the *Lock* switch is disabled: nothing else asks), shows it
+    as `locked`, and refuses commands while locked — the lock read moments ago is not asked again; once the load
+    reports the unlock, commands go out again. A malformed lock leaves the state as it was."""
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = LOCKED
+    mesh.values[LIGHT_DIMMER, PID_LOCK] = LOCKED
+    await start(hass, mock_config_entry)
+    eid = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    state = hass.states.get(eid)
+    assert state.attributes["locked"] is True
+    assert state.attributes["lock_until"] is None  # no time limit
+    other = hass.states.get(entity_id(hass, "light", UID_LIGHT_CTL))
+    assert other.attributes["locked"] is False
+    assert mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1
+
+    answering_mesh.sent.clear()
+    with pytest.raises(ServiceValidationError) as exc:
+        await turn_on(hass, eid)
+    assert exc.value.translation_key == "load_locked"
+    assert exc.value.translation_placeholders == {"entity": eid}
+    with pytest.raises(ServiceValidationError):
+        await turn_off(hass, eid)
+    dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    for service, data in (
+        ("start_dim", {"direction": "up"}),
+        ("step_dim", {"step": 10}),
+    ):
+        with pytest.raises(ServiceValidationError):
+            await dim(hass, service, dimmer, **data)
+    assert load_sets(answering_mesh) == []  # nothing went out
+    assert (
+        mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1
+    )  # read within PROPERTY_READ_FRESH
+
+    report_lock(answering_mesh, LIGHT_SWITCH, MALFORMED)
+    await settle(hass)
+    assert hass.states.get(eid).attributes["locked"] is True
+    report_lock(answering_mesh, LIGHT_SWITCH, UNLOCKED)
+    await settle(hass)
+    assert hass.states.get(eid).attributes["locked"] is False
+    await turn_on(hass, eid)
+    assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]
+    assert hass.states.get(eid).state == STATE_ON
+
+
+async def test_a_lock_lifted_unseen_is_read_again_before_a_refusal(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+) -> None:  # fmt: skip
+    """A lock lifted in the app is answered to the app alone: a command to a load shown locked asks again first,
+    once the last answer is older than PROPERTY_READ_FRESH, and goes out when the load reports no lock."""
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = LOCKED
+    await start(hass, mock_config_entry)
+    eid = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    assert hass.states.get(eid).attributes["locked"] is True
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = UNLOCKED  # unlocked in the app
+    answering_mesh.sent.clear()
+    with patch("custom_components.junghome_ble.config_entities.PROPERTY_READ_FRESH", 0):
+        await turn_on(hass, eid)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 2
+    assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]
+    assert hass.states.get(eid).attributes["locked"] is False
+
+
+async def test_a_timed_lock_is_read_again_once_it_should_have_ended(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """A lock with a time limit shows when it should end (`lock_until`, counted from its report). Past it, a command
+    reads the lock again however recent the last answer: still locked (relocked, say) is refused, with the end moved
+    on; an unlock lets it through."""
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = LOCKED_60
+    await start(hass, mock_config_entry)
+    eid = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    hub = mock_config_entry.runtime_data
+    until = hub.states[LIGHT_SWITCH].lock_until
+    assert hass.states.get(eid).attributes["lock_until"] == until.isoformat()
+    with pytest.raises(ServiceValidationError):
+        await turn_on(hass, eid)
+    assert (
+        mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1
+    )  # within the limit: no new read
+
+    await tick(hass, freezer, 61)
+    with pytest.raises(ServiceValidationError):
+        await turn_on(hass, eid)  # read again: still locked
+    assert mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 2
+    assert hub.states[LIGHT_SWITCH].lock_until > until
+
+    await tick(hass, freezer, 61)
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = (
+        UNLOCKED  # the lock ran out, and the load told no one
+    )
+    answering_mesh.sent.clear()
+    await turn_on(hass, eid)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 3
+    assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]
+
+
+async def test_a_lock_past_its_time_limit_does_not_block_a_silent_load(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, mesh: PropertyMesh, fast_timeouts: None,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+) -> None:  # fmt: skip
+    """A lock past its time limit is over by its own account: a load that does not answer the read is commanded."""
+    mesh.values[LIGHT_SWITCH, PID_LOCK] = LOCKED_60
+    await start(hass, mock_config_entry)
+    eid = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    hub = mock_config_entry.runtime_data
+    hub.states[LIGHT_SWITCH].lock_until = dt_util.utcnow() - timedelta(seconds=1)
+    mesh.silent.add((LIGHT_SWITCH, PID_LOCK))
+    answering_mesh.sent.clear()
+    await turn_off(hass, eid)
+    assert (
+        mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1 + 3
+    )  # asked: 3 attempts, unanswered
+    assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]

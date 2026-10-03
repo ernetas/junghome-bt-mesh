@@ -118,9 +118,14 @@ def presence_status(detected: bool, lux_raw: bytes | None = None) -> bytes:
 
 @pytest.fixture(autouse=True)
 def no_property_reads() -> Generator[None]:
-    """Keep the config entities' parameter reads out of the traffic these tests look at."""
-    with patch(
-        "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+    """Keep the config entities' parameter reads (and the loads' lock reads) out of the traffic these tests look at."""
+    with (
+        patch(
+            "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+        ),
+        patch(
+            "custom_components.junghome_ble.config_entities.LoadLock._maybe_read_lock"
+        ),
     ):
         yield
 

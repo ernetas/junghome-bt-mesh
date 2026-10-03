@@ -118,7 +118,7 @@ pass removed the markers of the checks that passed.
 | [B9](#b9--homeassistantupdate_entity-reads-the-device) | *update entity* reads the device | a light, a push-button, the app | a setting, restored | — |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
-| [C3](#c3--lock-function-of-a-load-0x0009) | Lock function of a light (`0x0009`) | a light + its key | timed lock | **yes** |
+| [C3](#c3--lock-function-of-a-load-0x0009-and-locked-loads-f4-2) | Lock function of a light (`0x0009`), locked loads (F4-2) | a light + its key, a dimmer, the app | locks, undone | **yes** |
 | [C4](#c4--mini-actuator-inputs-f10) | Mini-actuator inputs (F10) | an input with a contact | setting, restored | **yes** |
 | [C5](#c5--schedules) | Schedules, node clock and location | a light | a schedule slot, freed | — |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
@@ -435,18 +435,54 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   `custom_components/junghome_ble/config_entities.py::DEVICE_LOCK_ENABLED` (bits 1 and 2 here; 3 and 4 are a
   thermostat's, see F).
 
-### C3 · Lock function of a load (`0x0009`)
+### C3 · Lock function of a load (`0x0009`), and locked loads (F4-2)
 
-- **Checks:** the *Lock* switch and *Lock time limit* of a light (docs: *not yet tried on a real device*); what Home
-  Assistant shows while a load ignores it (input for brief 35).
-- **Needs:** `<light>` and the key that drives it; a person. **Safety:** a timed lock that ends by itself.
-- **Do:** enable `<light>`'s *Lock* switch and *Lock time limit*; set the limit to 60 s; turn *Lock* on. Have the key
-  pressed; switch `<light>` from Home Assistant. Wait 70 s.
-- **Capture:** `--src <ha> --grep '0009|enforced'`: the Admin Set `02 01 3c 00` to `<light el>`, and the read-back
-  about 65 s later.
-- **Pass:** the light keeps its state against the key and Home Assistant while locked (note what the light entity
-  and the action reported); the switch turns off by itself after the read-back; the key works again.
-- **Markers:** the docs' lock-function paragraph (the code markers are the blinds', see F).
+- **Checks:** the *Lock* switch and *Lock time limit* of a light (docs: *not yet tried on a real device*); review-4
+  F4-2 (brief 35): what a locked load answers to an OnOff / Lightness Set and whether a lock set in the app reaches
+  anyone but the app (`docs/hidden-features.md` §12); the lights' and sockets' `locked` / `lock_until` attributes,
+  the refusal of a command to a locked load, one lock Get per load and link (shared with an enabled *Lock* switch),
+  and that a locked load never goes unavailable for ignoring a command.
+- **Needs:** `<light>` and the key that drives it, `<dimmer>`, the app; a person. **Safety:** each lock is undone in
+  the item (a timed one ends by itself); the loads keep their states while locked.
+- **Do:**
+  1. The probe, with `tools/mesh_poc.py listen` running in a second shell (or the live sniffer pipe), on `<light el>`
+     and then `<dimmer el>`:
+
+     ```
+     tools/mesh_poc.py prop get <light el> enforced_output                  # unlocked: command 00
+     tools/mesh_poc.py prop set <light el> enforced_output hex:02010000     # lock the current state, no limit
+     tools/mesh_poc.py set <light el> on                                    # the state it is not in (or off)
+     tools/mesh_poc.py prop set <light el> enforced_output hex:00010000     # unlock
+     tools/mesh_poc.py prop set <dimmer el> enforced_output hex:02010000
+     tools/mesh_poc.py lightness <dimmer el> 30000                          # a level it is not at
+     tools/mesh_poc.py set <dimmer el> on                                   # (or off)
+     tools/mesh_poc.py prop set <dimmer el> enforced_output hex:00010000
+     ```
+
+     Then lock `<light>` in the app (device page, *Lock*) and unlock it again, watching `listen`.
+  2. In Home Assistant: enable `<light>`'s *Lock* switch and *Lock time limit*; set the limit to 60 s; turn *Lock* on.
+     `<light>`'s attributes show `locked: true` and `lock_until` about 60 s ahead. Have the key pressed; switch
+     `<light>` from Home Assistant. Wait 70 s, then switch it again.
+  3. Lock `<light>` in the app (no time limit), wait a minute, and switch it from Home Assistant twice (Home
+     Assistant does not know the lock yet). Unlock it in the app; after 15 s switch it from Home Assistant.
+  4. Disable the *Lock* switch and *Lock time limit* again.
+- **Capture:** the probe's `listen` output: per Set, a Status (to the CLI or to the element group) and the state it
+  shows, or the CLI's timeout; any `0x0009` Status while the app locks. `--src <ha> --grep '0009|enforced'`: one
+  Admin Get of `0x0009` per light and socket after each connection (one, not two, for `<light>` with its *Lock* switch
+  enabled), the Admin Set `02 01 3c 00` to `<light el>`, the read-back about 65 s later; in step 3 what each command
+  sent (an OnOff Set, then a Get of `0x0009`).
+- **Pass:** the light keeps its state against the key and Home Assistant while locked; in step 2 the action fails
+  at once with *… is locked … keeps its state until it is unlocked* and sends no Set; after the time limit the
+  command works and the switch has turned off by itself; in step 3 the first command fails with that message (a
+  load that answers with its old state: the lock is read after it), the second is refused at once, and the one
+  after the unlock works; the key works again. Write the probe's answers into `docs/hidden-features.md` §12. If the
+  locked load stays silent instead, step 3's first command fails with *did not answer* and `<light>` goes
+  unavailable until it is heard from (only a lock already known spares it, `JungHomeHub._missed_answer`): note it —
+  the decision is then whether to read the lock after every unanswered command (an unreachable load's action would
+  take one more read to fail).
+- **Markers:** `custom_components/junghome_ble/config_entities.py::LoadLock`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer`, `ui:state:lockfunctioncapability`,
+  the docs' lock-function paragraph and *Locked loads* (the cover's lock markers are the blinds', see F).
 
 ### C4 · Mini-actuator inputs (F10)
 

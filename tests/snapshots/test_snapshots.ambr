@@ -2522,6 +2522,8 @@
     'attributes': ReadOnlyDict({
       <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: None,
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: '2-channel actuator 0400 out 2',
+      'lock_until': None,
+      'locked': None,
       'mesh_address': '0401',
       'rooms': list([
         'Kitchen',
@@ -2585,6 +2587,8 @@
     'attributes': ReadOnlyDict({
       <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: None,
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Kitchen ceiling',
+      'lock_until': None,
+      'locked': None,
       'mesh_address': '0400',
       'rooms': list([
         'Kitchen',
@@ -2653,6 +2657,8 @@
       <LightEntityStateAttribute.COLOR_TEMP_KELVIN: 'color_temp_kelvin'>: None,
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room DALI',
       <LightEntityStateAttribute.HS_COLOR: 'hs_color'>: None,
+      'lock_until': None,
+      'locked': None,
       <LightEntityCapabilityAttribute.MAX_COLOR_TEMP_KELVIN: 'max_color_temp_kelvin'>: 6000,
       'mesh_address': '0232',
       <LightEntityCapabilityAttribute.MIN_COLOR_TEMP_KELVIN: 'min_color_temp_kelvin'>: 2000,
@@ -2721,6 +2727,8 @@
       <LightEntityStateAttribute.BRIGHTNESS: 'brightness'>: None,
       <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: None,
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC ceiling',
+      'lock_until': None,
+      'locked': None,
       'mesh_address': '0300',
       'rooms': list([
         'WC',
@@ -2784,6 +2792,8 @@
     'attributes': ReadOnlyDict({
       <LightEntityStateAttribute.COLOR_MODE: 'color_mode'>: None,
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC mirror',
+      'lock_until': None,
+      'locked': None,
       'mesh_address': '0148',
       'rooms': list([
         'WC',
@@ -10919,6 +10929,8 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'outlet',
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Boiler',
+      'lock_until': None,
+      'locked': None,
       'mesh_address': '0172',
       'rooms': list([
         'Kitchen',

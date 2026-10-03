@@ -65,9 +65,14 @@ def auto_enable_custom_integrations(
 
 @pytest.fixture(autouse=True)
 def no_property_reads() -> Generator[None]:
-    """Keep the config entities' reads out of the traffic: the mesh here answers the charts only."""
-    with patch(
-        "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+    """Keep the config entities' reads and the loads' lock reads out: the mesh here answers the charts only."""
+    with (
+        patch(
+            "custom_components.junghome_ble.config_entities.ConfigEntity._maybe_read"
+        ),
+        patch(
+            "custom_components.junghome_ble.config_entities.LoadLock._maybe_read_lock"
+        ),
     ):
         yield
 

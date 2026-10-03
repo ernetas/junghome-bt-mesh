@@ -1519,17 +1519,31 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/config_entities.py::LockFunctionEntity",
+    "custom_components/junghome_ble/config_entities.py::LoadLock",
+    "custom_components/junghome_ble/coordinator.py::ElementState.note_lock",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer",
+    "custom_components/junghome_ble/light.py::JungHomeLight",
+    "custom_components/junghome_ble/switch.py::JungHomeSocket",
     "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
     "custom_components/junghome_ble/cover.py::JungHomeCover._check_unlocked"
    ],
    "tests": [
     "tests/test_switch.py::test_lock_modes",
     "tests/test_switch.py::test_timed_lock_is_read_back_when_it_should_have_ended",
-    "tests/test_cover.py::test_a_locked_blind_refuses_commands"
+    "tests/test_cover.py::test_a_locked_blind_refuses_commands",
+    "tests/test_light.py::test_a_locked_light_shows_it_and_refuses_commands",
+    "tests/test_light.py::test_a_lock_lifted_unseen_is_read_again_before_a_refusal",
+    "tests/test_light.py::test_a_timed_lock_is_read_again_once_it_should_have_ended",
+    "tests/test_light.py::test_a_lock_past_its_time_limit_does_not_block_a_silent_load",
+    "tests/test_switch.py::test_a_locked_socket_shows_it_and_refuses_commands",
+    "tests/test_switch.py::test_the_lock_is_read_once_per_link_for_the_socket_and_its_lock_switch",
+    "tests/test_config_entities.py::test_initial_reads_are_chunked_delayed_and_deduplicated",
+    "tests/test_reachability.py::test_a_locked_load_that_leaves_a_command_unanswered_stays_reachable",
+    "tests/test_reachability.py::test_a_command_a_load_answers_with_its_old_state_is_reported_as_locked"
    ],
-   "missing": "lock state is read only while the (disabled-by-default) Lock switch / Lock function select / Wind alarm entities exist; the light and switch entities of a locked load carry no locked attribute and do not refuse commands (the cover does), whereas the app reads 0x0009 on every detail page (and after a toggle) and disables the controls On air (on air app settings session) the app reads 0x0009 of every load element when its device list opens (67 Gets in one sweep) and of the socket before each OnOff Get of its page.",
+   "missing": "on-air check: docs/on-air-sweep.md C3 - the probe of docs/hidden-features.md section 12 (what a locked light and dimmer answer to an OnOff / Lightness Set: a Status with the old state, or nothing; whether a lock set in the app reaches anyone but the app), then the locked / lock_until attributes and the refusal of a light locked by its Lock switch and by the app. Built (review-4 F4-2): every light and socket reads 0x0009 once per link through the property reader's queue, one Get shared with the Lock switch / select, and refuses commands while locked (read again first; a timed lock past its limit always). Left as decided: blinds read the lock only through their Lock function select / Wind alarm (no blind here); a load is not read again after every toggle as the app does - only after a command it answered with its old state.",
    "class": "build",
-   "verify": "offline"
+   "verify": "on-air"
   },
   {
    "id": "ui:state:manufacturerinfoscapability",
@@ -2535,19 +2549,19 @@
   },
   {
    "id": "ui:uc:toggledevice",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff",
     "custom_components/junghome_ble/light.py::JungHomeLight.async_turn_off",
-    "custom_components/junghome_ble/switch.py::JungHomeSocket._set"
+    "custom_components/junghome_ble/switch.py::JungHomeSocket._set",
+    "custom_components/junghome_ble/config_entities.py::LoadLock._send_switch"
    ],
    "tests": [
     "tests/test_light.py::test_switched_light",
-    "tests/test_switch.py::test_turn_on_off"
+    "tests/test_switch.py::test_turn_on_off",
+    "tests/test_reachability.py::test_a_command_a_load_answers_with_its_old_state_is_reported_as_locked"
    ],
-   "missing": "a toggle of an entity whose state is unknown turns it ON (HA's ToggleEntity default), where the app treats unknown as ON and sends OFF; and no Admin Get 0x0009 (lock state) follows a toggle of a node without a Scene Action Setup server (see ui:state:lockfunctioncapability)",
-   "class": "build",
-   "verify": "offline"
+   "note": "review-4 F4-2: a toggle of an entity whose state is unknown keeps Home Assistant's ToggleEntity default (it turns the load ON), where the app takes unknown for on and sends OFF - deliberately: switching on is what toggling a load that shows nothing is expected to do in Home Assistant (config_entities.LoadLock docstring). A toggle of a locked load is refused like any command, and the lock (0x0009) is read after a command the load answered with its old state rather than after every toggle."
   },
   {
    "id": "ui:uc:togglefavorite",

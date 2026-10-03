@@ -787,21 +787,26 @@ def version_status(version: bytes) -> bytes:
 
 
 async def test_detector_version_is_read_and_gates_illuminance(
-    hass: HomeAssistant, init_detectors: MockConfigEntry, fake_link: FakeProxyLink
+    hass: HomeAssistant,
+    fast_timeouts: None,  # the relay's lock read, unanswered here, may be queued before its node's version
+    init_detectors: MockConfigEntry,
+    fake_link: FakeProxyLink,
 ) -> None:
     """PLT-03: nothing used to cache SIG 0x001A, so every firmware gate was inert and an old-firmware detector's
     whole-lux reading was divided by 100. The version is asked of each detector's node once per link and cached;
     the gate then applies, and it survives the entry's next reload (config-entity setup reads it at once)."""
-    version_gets = [
-        dst
-        for _src, dst, pdu in fake_link.sent
-        if pdu == M.generic_property_get("manufacturer", SIG_SOFTWARE_VERSION)
-    ]
+
+    def version_gets() -> list[int]:
+        return [
+            dst
+            for _src, dst, pdu in fake_link.sent
+            if pdu == M.generic_property_get("manufacturer", SIG_SOFTWARE_VERSION)
+        ]
+
+    # the motion detector's node, asked after the link came up (the queue may hold its relay's lock read first)
+    await wait_until(hass, lambda: RELAY_MOTION in version_gets())
     assert (
-        RELAY_MOTION in version_gets
-    )  # the motion detector's node, asked after the link came up
-    assert (
-        version_gets.count(RELAY_MOTION) == 1
+        version_gets().count(RELAY_MOTION) == 1
     )  # once per link, however many entities the node has
 
     fake_link.inject(RELAY_MOTION, OUR_ADDRESS, version_status(b"01040000"))

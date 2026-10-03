@@ -90,7 +90,23 @@ One `light` entity per output. The entity is the device, so its name is the name
 - A colour temperature changed elsewhere is followed from the light's *Light CTL Status* and also from a *Light CTL
   Temperature Status* of its temperature element (whether JUNG lights publish the latter is not observed yet).
 - The second output of a two-output insert is a separate light; without app metadata it is named `<node> out 2`.
-- Attributes: `mesh_address` (element address, hex) and `rooms` (the app rooms the load belongs to).
+- Attributes: `mesh_address` (element address, hex), `rooms` (the app rooms the load belongs to), `locked` and
+  `lock_until` (see *Locked loads* below).
+- **Locked loads** (review-4 F4-2). A light locked in the JUNG HOME app, by a key or by its *Lock* switch (the lock
+  function `0x0009`, see [Device parameters](#device-parameters-number-select-switch-button)) keeps its state
+  against every command, and the app disables its controls. Each light reads its lock once per connection, behind
+  the state refresh and five loads at a time like it (the *Lock* switch shares that read instead of sending its
+  own), and shows it as `locked` (`true` / `false`; empty until read) and, for a lock with a time limit,
+  `lock_until` (when it should end, ISO 8601 UTC, counted from the lock's report; empty otherwise). While locked,
+  turning it on or off, `start_dim` and `step_dim` fail with *… is locked (in the JUNG HOME app, by a key or by its
+  Lock switch) and keeps its state until it is unlocked*; nothing is sent. The lock is read again first, as it may
+  have ended unseen — lifted in the app (asked unless the light answered within the last 10 s), or past its time
+  limit (always asked; a light that stays silent then is commanded). A command a light answers with its old state
+  (a lock nobody had read yet) fails the same way once the lock read says so, and a light known to be locked is not
+  marked unavailable for leaving a command unanswered. *All lights* and the room lights send to every member
+  unacknowledged and are not refused: a locked member ignores them, as in the app. A toggle of a light whose state is
+  unknown turns it on (Home Assistant's default; the app sends off), deliberately. **Unverified on air**: what a
+  locked load answers to a Set is still to be probed (`docs/hidden-features.md` §12).
 - **All lights**, on the mesh device, is the app's central "all luminaires" function: one unacknowledged message to
   the lamps' device-type group `FEF5`, which every lamp listens to since it was added in the app, switches them all
   at the same moment (rather than one message per light). With a brightness, the dimmers go to it and the switched
@@ -117,7 +133,9 @@ One `light` entity per output. The entity is the device, so its name is the name
 ### Switch
 
 One `switch` entity per socket with device class `outlet`. The entity is the device, so its name is the socket's name
-in the app. Attributes: `mesh_address`, `rooms`. **All sockets** (mesh device) does the same for the sockets'
+in the app. Attributes: `mesh_address`, `rooms`, `locked`, `lock_until`: a locked socket shows it and refuses to
+switch, exactly as a light does (*Locked loads* under [Light](#light); **unverified on air**). **All sockets** (mesh
+device) does the same for the sockets'
 group `FEF8` as *All lights* does for the lamps. Neither exists when no load listens to its group. **All sockets in
 &lt;room&gt;** (mesh device, one per room with sockets) switches each socket of the room with an unacknowledged
 *Generic OnOff Set* of its own, as the app's area control does.
@@ -622,8 +640,9 @@ off sends command 0 with the priority, time and value last read, as the app does
 lock-out protection set elsewhere). Its **Lock time limit** number next to it (seconds, 0 = no limit, up to 17999 —
 4:59:59, the end of the app's H:MM:SS picker; kept by HA, not a device setting) is the time sent with the next lock;
 a limit kept in minutes by an earlier version is converted. The lock state is read once
-per connection like the other config entities — no device publishes it — and read back 5 s after a timed lock
-should have ended, since the device unlocks itself silently. Attributes while locked: `lock_mode` (`keep_state`,
+per connection — no device publishes it — in one Get shared with the light or socket, which reads it itself and
+shows it as `locked` (see *Locked loads* under [Light](#light)), and read back 5 s after a timed lock should have
+ended, since the device unlocks itself silently. Attributes while locked: `lock_mode` (`keep_state`,
 `lockout_protection`, `wind_alarm`, `enforced_value` — the last is what a rocker's "turn on and lock" key leaves)
 and `lock_time_limit` (s). A lock set from a rocker or the app shows in HA only at the next read. Not yet tried on a
 real device.

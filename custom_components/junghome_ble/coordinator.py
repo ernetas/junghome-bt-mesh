@@ -186,7 +186,7 @@ from .jhmesh.devices import (
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
-from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, Scaled
+from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, EnforcedOutput, Scaled
 from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
 from .node_clocks import NodeClocks
@@ -358,6 +358,7 @@ SIG_PROPERTY_STATUS_BY_SERVER = {
 # The vendor message gateway-mode keys publish their gestures with (docs/cross-repo-analysis.md §1.2).
 VENDOR_USER_PROPERTY_SET_UNACK = 0x10  # LBC User Property Set Unacknowledged
 PROPERTY_BUTTON_EVENT = 0x5012  # KEY_EVT: [counter][code]
+PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`)
 GENERIC_LEVEL_OPCODES = frozenset(
     {M.GEN_LEVEL_SET, M.GEN_LEVEL_SET_UNACK, 0x8209, 0x820A, 0x820B, 0x820C}
 )
@@ -1956,7 +1957,34 @@ class ElementState:
     # the element's current scene (Scene Status / Scene Register Status; 0 = none): what its Scene Server says it
     # last recalled and still shows; None until the element said
     scene: int | None = None
+    # a load's lock function (0x0009, `note_lock`): None until it reported one; and when a timed lock should end
+    lock: EnforcedOutput | None = None
+    lock_until: datetime | None = None
     updated: float = field(default_factory=time.monotonic)
+
+    def note_lock(self, raw: bytes) -> None:
+        """Take a reported lock function (0x0009); its time limit counts from now, as the *Lock* switch counts it.
+
+        Whether a Status carries the time left or the time the lock was set for is not known (a read-back of a
+        timed lock that still holds pushes `lock_until` on by the whole limit again). A malformed value is ignored.
+        """
+        try:
+            value: EnforcedOutput = PROPERTIES[PROPERTY_LOCK].codec.decode(raw)
+        except ValueError:
+            return
+        self.lock = value
+        self.lock_until = (
+            dt_util.utcnow() + timedelta(seconds=value.time_s)
+            if value.locked and value.time_s
+            else None
+        )
+
+    @property
+    def locked(self) -> bool:
+        """Whether the load reported a lock that has not run out yet (its time limit, when it had one)."""
+        if self.lock is None or not self.lock.locked:
+            return False
+        return self.lock_until is None or dt_util.utcnow() < self.lock_until
 
     @property
     def energy_total(self) -> int | None:
@@ -2640,6 +2668,11 @@ class JungHomeHub:
     def connected(self) -> bool:
         """Whether a proxy link is up."""
         return self.proxy.connected
+
+    @property
+    def link_since(self) -> float:
+        """When the current (or last) link came up, a `time.monotonic()`: a read made since is this link's."""
+        return self._link_since
 
     @property
     def link_available(self) -> bool:
@@ -3334,7 +3367,7 @@ class JungHomeHub:
                 # a command went unanswered: ask the proxy now rather than after LINK_IDLE_TIMEOUT of silence
                 if await self._keep_alive():
                     for address, kind, asked in unanswered:
-                        self._missed_answer(address, kind, asked)
+                        self._missed_answer(address, kind, asked, command=True)
                     continue
                 if not self._link_lost.is_set():
                     _LOGGER.warning(
@@ -4495,8 +4528,19 @@ class JungHomeHub:
             self.heartbeats_enabled and node.unicast in self._dead_nodes
         )
 
+    def load_locked(self, address: int) -> bool:
+        """Whether the load at `address` last reported a lock that has not run out (`ElementState.locked`)."""
+        st = self.states.get(address)
+        return st is not None and st.locked
+
     def _missed_answer(
-        self, address: int, kind: str, asked: float, *, full: bool = True
+        self,
+        address: int,
+        kind: str,
+        asked: float,
+        *,
+        full: bool = True,
+        command: bool = False,
     ) -> None:
         """Take note that the element at `address` left a request sent at `asked` (`time.monotonic()`) unanswered.
 
@@ -4513,6 +4557,11 @@ class JungHomeHub:
         Battery nodes sleep between key presses: they are never asked for their state, and a command they miss says
         nothing about whether their keys still work, so they are never marked (the app does not show them as "No
         connection" either).
+
+        Nor is a load known to be locked (`load_locked`) for a `command` it left unanswered: a locked load may well
+        ignore the Set, and is not gone for it (review-4 F4-2) — it is asked again with a state Get after
+        UNREACHABLE_RECHECK, whose silence counts as any other. Whether a locked load answers a Set at all is
+        unverified on air (`docs/hidden-features.md` §12).
         """
         node = self.cdb.node_by_addr(address)
         if node is None or node.pid in BATTERY_PIDS:
@@ -4520,7 +4569,11 @@ class JungHomeHub:
         if node.unicast in self.unreachable:
             self._schedule_recheck(node.unicast, address, kind, UNREACHABLE_REPROBE)
             return
-        if not full or self.last_heard.get(node.unicast, -1e9) >= asked:
+        if (
+            not full
+            or self.last_heard.get(node.unicast, -1e9) >= asked
+            or (command and self.load_locked(address))
+        ):
             self._schedule_recheck(node.unicast, address, kind, UNREACHABLE_RECHECK)
             return
         self._cancel_recheck(node.unicast)

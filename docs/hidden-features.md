@@ -392,3 +392,30 @@ here, and into `TRANSITION_KINDS` / `SCENE_TRANSITIONS`.
 A key in scene mode carries a transition of its own (KeyModeSceneConfig `0x5002`, `[scene u16][transition u32 ms]`;
 the app writes 0, `mesh_config.py` too): writing one from `assign_key` waits for this probe to show that a recalled
 scene fades, and for the key-scene check of the on-air sweep (review-4 brief 30).
+
+## 12. A locked load and a Set (probe pending)
+
+A load locked by its lock function (`0x0009` EnforceOutput: the app's *Lock*, a key in lock mode, Home Assistant's
+*Lock* switch) keeps its state against its keys, scenes and remote commands. What it **answers** to an acknowledged
+Generic OnOff or Light Lightness Set while locked is **not known yet** (review-4 F4-2): a Status with its unchanged
+state, or nothing at all. Nor is it known whether a lock set in the app reaches anyone but the app: the Status
+answering the app's Set goes to the app's address, and no load was seen publishing its lock.
+
+Home Assistant reads every light's and socket's lock once per link and refuses commands to a load known to be locked
+(`config_entities.LoadLock`). Until this probe ran, both outcomes are handled: a Status with the old state counts for
+the Set when no other request is out to the load (review-4 D32), so the entity reads the lock and reports the
+refusal; silence from a load known to be locked does not mark it unreachable (`JungHomeHub._missed_answer`).
+
+The probe, with `tools/mesh_poc.py listen` (or the sniffer) running alongside, on a switch insert and on a dimmer or
+the DALI insert, each unlocked again at the end:
+
+    tools/mesh_poc.py prop get <element> enforced_output                  # unlocked: command 00
+    tools/mesh_poc.py prop set <element> enforced_output hex:02010000     # lock the current state, no time limit
+    tools/mesh_poc.py set <element> on                                    # the state it is not in (or off)
+    tools/mesh_poc.py lightness <element> 30000                           # the dimmer / DALI insert only
+    tools/mesh_poc.py prop set <element> enforced_output hex:00010000     # unlock
+
+For each Set: does a Status come back (to the CLI, or published to the element group), and with which state — or
+does the CLI time out after its attempts? Then lock the same load in the app (device page, *Lock*) and unlock it
+again, watching `listen`: does a `0x0009` Status reach anyone but the app? The results go here; the code markers
+that `docs/on-air-sweep.md` C3 names go once they agree.
