@@ -566,6 +566,41 @@ def test_pages_of_other_device_types() -> None:
     )  # no LED on a binary input
 
 
+def test_firmware_ids_become_entities_only_when_settled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A firmware-only id is a config entity only once a probe settled it (`FIRMWARE_ENTITIES`, review-4 brief 36).
+
+    None is yet. Listed, an id with a codec maps by its codec like an app parameter and starts disabled even where
+    the first Parameters page would enable it; an id still Raw stays unmapped. Nothing is ever written to an id
+    that is not listed.
+    """
+    assert not C.FIRMWARE_ENTITIES
+    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1008, 0x1009, 0x1011, 0x1012, 0x1013, 0x500C):
+        assert spec(pid).source == "firmware"
+        assert C.describe(spec(pid)) is None
+    cooling = spec(0x1206)  # firmware-only, °C like the RTR's app temperatures
+    assert C.describe(cooling) is None
+    monkeypatch.setattr(C, "FIRMWARE_ENTITIES", frozenset({0x1206, 0x1008}))
+    described = C.describe(cooling)
+    assert described is not None
+    assert (described.platform, described.translation_key) == (
+        "number",
+        "rtr_cooling_temperature",
+    )
+    assert C.describe(spec(0x1008)) is None  # Raw: no platform to give it
+    monkeypatch.setitem(C.FIRST_PAGE, "rtr", C.FIRST_PAGE["rtr"] | {0x1206})
+    hub = fake_hub()
+    rtr = _synthetic_node(0x0A, [0x0001, 0x0040])
+    hub.cdb.nodes.append(rtr)
+    (target,) = targets_of(hub, rtr.uuid.lower(), 0x1206)
+    assert (target.address, target.page, target.enabled_default) == (
+        0x0700,
+        "rtr",
+        False,
+    )
+
+
 def test_enabled_by_default_is_the_first_parameters_page() -> None:
     hub = fake_hub()
     enabled = {

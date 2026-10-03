@@ -197,6 +197,9 @@
       "scenes": {
         "default": "mdi:palette-outline"
       },
+      "switch_off_at": {
+        "default": "mdi:timer-off-outline"
+      },
       "link_state": {
         "default": "mdi:bluetooth-connect",
         "state": {

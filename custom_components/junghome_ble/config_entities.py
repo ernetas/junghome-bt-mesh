@@ -144,6 +144,11 @@ UNSAFE_PROPERTIES: frozenset[int] = frozenset(
         0x6016,  # continuous on / off: set on the detector itself, the app only shows it (`sensor.JungHomeForcedOff`)
     }
 )
+# Firmware-only ids (`PropertySpec.source == "firmware"`) whose layout and effect a supervised probe settled on air:
+# only these become config entities, and always disabled by default (`config_targets`). None has been yet — 0x0F00,
+# 0x500C and the hotel / night / presentation ids 0x1008-0x1013 wait for the probe of `docs/on-air-sweep.md` C6
+# (review-4 brief 36), and an id without a codec stays Raw and unmapped here even when listed.
+FIRMWARE_ENTITIES: frozenset[int] = frozenset()
 PROPERTY_WALKING_TEST, PROPERTY_PRESENCE_CONTROL = 0x6001, 0x6003
 PROPERTY_FORCED_OFF = 0x6016
 # Load-element properties that only apply to some load kinds (`Light.kind`); the rest apply to every load.
@@ -197,10 +202,10 @@ class PropertyEntityDescription:
 def describe(spec: PropertySpec) -> PropertyEntityDescription | None:
     """Map a property to its platform by codec, or None when it is not a config entity.
 
-    Read-only ids are sensors (another wave), firmware-only ids have unknown layouts, struct codecs (thresholds,
-    key scene / property configuration, edge detection, astro registers) and the `0x0001` lock flags need
-    dedicated entities (`device_lock_targets`: one switch per flag). The lock function's struct has one: a switch
-    of its own class.
+    Read-only ids are sensors (another wave), firmware-only ids have unknown layouts (except `FIRMWARE_ENTITIES`,
+    the ones a probe settled), struct codecs (thresholds, key scene / property configuration, edge detection,
+    astro registers) and the `0x0001` lock flags need dedicated entities (`device_lock_targets`: one switch per
+    flag). The lock function's struct has one: a switch of its own class.
     """
     if spec.id == PROPERTY_STATUS_LED:
         return PropertyEntityDescription(
@@ -210,7 +215,8 @@ def describe(spec: PropertySpec) -> PropertyEntityDescription | None:
             read=False,
             write="status",
         )
-    if spec.source != "app" or spec.access == "ro" or spec.id in UNSAFE_PROPERTIES:
+    settled = spec.source == "app" or spec.id in FIRMWARE_ENTITIES
+    if not settled or spec.access == "ro" or spec.id in UNSAFE_PROPERTIES:
         return None
     if spec.id == PROPERTY_REFERENCE_RUN or spec.access == "wo":
         return PropertyEntityDescription(  # a button has no state to read
@@ -718,7 +724,9 @@ def config_targets(
                         device_info=element.device_info,
                         page=page,
                         key=element.key,
-                        enabled_default=spec.id in FIRST_PAGE[page],
+                        # an expert parameter, or a settled firmware-only one: disabled by default
+                        enabled_default=spec.id in FIRST_PAGE[page]
+                        and spec.id not in FIRMWARE_ENTITIES,
                         read=description.read,
                     )
                 )

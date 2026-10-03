@@ -710,6 +710,7 @@
     'sensor.kitchen_2_channel_actuator_0400_out_2_power_on_cycles': 'integration',
     'sensor.kitchen_2_channel_actuator_0400_out_2_scenes': 'integration',
     'sensor.kitchen_2_channel_actuator_0400_out_2_schedules': 'integration',
+    'sensor.kitchen_2_channel_actuator_0400_out_2_switches_off_at': 'integration',
     'sensor.kitchen_2_channel_actuator_0400_out_2_switching_cycles': 'integration',
     'sensor.kitchen_boiler_current': 'integration',
     'sensor.kitchen_boiler_energy': None,
@@ -723,15 +724,18 @@
     'sensor.kitchen_boiler_schedules': 'integration',
     'sensor.kitchen_boiler_switch_off_threshold': 'integration',
     'sensor.kitchen_boiler_switch_on_threshold': 'integration',
+    'sensor.kitchen_boiler_switches_off_at': 'integration',
     'sensor.kitchen_boiler_switching_cycles': 'integration',
     'sensor.kitchen_boiler_voltage': 'integration',
     'sensor.kitchen_kitchen_ceiling_power_on_cycles': 'integration',
     'sensor.kitchen_kitchen_ceiling_scenes': 'integration',
     'sensor.kitchen_kitchen_ceiling_schedules': 'integration',
+    'sensor.kitchen_kitchen_ceiling_switches_off_at': 'integration',
     'sensor.kitchen_kitchen_ceiling_switching_cycles': 'integration',
     'sensor.living_room_living_room_dali_power_on_cycles': 'integration',
     'sensor.living_room_living_room_dali_scenes': 'integration',
     'sensor.living_room_living_room_dali_schedules': 'integration',
+    'sensor.living_room_living_room_dali_switches_off_at': 'integration',
     'sensor.living_room_living_room_dali_switching_cycles': 'integration',
     'sensor.living_room_rocker_key_mode_a': 'integration',
     'sensor.living_room_rocker_key_mode_b': 'integration',
@@ -760,10 +764,12 @@
     'sensor.wc_wc_ceiling_power_on_cycles': 'integration',
     'sensor.wc_wc_ceiling_scenes': 'integration',
     'sensor.wc_wc_ceiling_schedules': 'integration',
+    'sensor.wc_wc_ceiling_switches_off_at': 'integration',
     'sensor.wc_wc_ceiling_switching_cycles': 'integration',
     'sensor.wc_wc_mirror_power_on_cycles': 'integration',
     'sensor.wc_wc_mirror_scenes': 'integration',
     'sensor.wc_wc_mirror_schedules': 'integration',
+    'sensor.wc_wc_mirror_switches_off_at': 'integration',
     'sensor.wc_wc_mirror_switching_cycles': 'integration',
   })
 # ---
@@ -7504,6 +7510,57 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.kitchen_2_channel_actuator_0400_out_2_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.kitchen_2_channel_actuator_0400_out_2_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5340-0000-000000000000-0002-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.kitchen_2_channel_actuator_0400_out_2_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: '2-channel actuator 0400 out 2 Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.kitchen_2_channel_actuator_0400_out_2_switches_off_at',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.kitchen_2_channel_actuator_0400_out_2_switching_cycles-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -8239,6 +8296,57 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.kitchen_boiler_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.kitchen_boiler_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5317-0000-000000000000-0001-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.kitchen_boiler_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Boiler Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.kitchen_boiler_switches_off_at',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.kitchen_boiler_switching_cycles-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -8511,6 +8619,57 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.kitchen_kitchen_ceiling_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.kitchen_kitchen_ceiling_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5340-0000-000000000000-0001-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.kitchen_kitchen_ceiling_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Kitchen ceiling Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.kitchen_kitchen_ceiling_switches_off_at',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.kitchen_kitchen_ceiling_switching_cycles-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -8719,6 +8878,57 @@
     }),
     'context': <ANY>,
     'entity_id': 'sensor.living_room_living_room_dali_schedules',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.living_room_living_room_dali_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.living_room_living_room_dali_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5323-0000-000000000000-0001-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.living_room_living_room_dali_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room DALI Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.living_room_living_room_dali_switches_off_at',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -10299,6 +10509,57 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[sensor][sensor.wc_wc_ceiling_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.wc_wc_ceiling_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5330-0000-000000000000-0001-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.wc_wc_ceiling_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC ceiling Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.wc_wc_ceiling_switches_off_at',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_platform_entities[sensor][sensor.wc_wc_ceiling_switching_cycles-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -10508,6 +10769,57 @@
     }),
     'context': <ANY>,
     'entity_id': 'sensor.wc_wc_mirror_schedules',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.wc_wc_mirror_switches_off_at-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.wc_wc_mirror_switches_off_at',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Switches off at',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.TIMESTAMP: 'timestamp'>,
+    'original_icon': None,
+    'original_name': 'Switches off at',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'switch_off_at',
+    'unique_id': '00005eff-fe00-5314-0000-000000000000-0001-off_at',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[sensor][sensor.wc_wc_mirror_switches_off_at-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'timestamp',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC mirror Switches off at',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.wc_wc_mirror_switches_off_at',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -13373,6 +13685,7 @@
       '00005eff-fe00-5314-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
+      '00005eff-fe00-5314-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
@@ -13406,6 +13719,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -13448,6 +13762,7 @@
       '00005eff-fe00-5323-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
+      '00005eff-fe00-5323-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -13485,6 +13800,7 @@
       '00005eff-fe00-5330-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
+      '00005eff-fe00-5330-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -13512,6 +13828,7 @@
       '00005eff-fe00-5340-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
+      '00005eff-fe00-5340-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -13527,6 +13844,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-invert_output switch key=invert_output category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-0002-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
@@ -13615,6 +13933,7 @@
       '00005eff-fe00-5314-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
+      '00005eff-fe00-5314-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
@@ -13648,6 +13967,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -13690,6 +14010,7 @@
       '00005eff-fe00-5323-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
+      '00005eff-fe00-5323-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -13727,6 +14048,7 @@
       '00005eff-fe00-5330-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
+      '00005eff-fe00-5330-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -13754,6 +14076,7 @@
       '00005eff-fe00-5340-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
+      '00005eff-fe00-5340-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -13769,6 +14092,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-invert_output switch key=invert_output category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-0002-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
@@ -13866,6 +14190,7 @@
       '00005eff-fe00-5314-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
+      '00005eff-fe00-5314-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
@@ -13899,6 +14224,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -13941,6 +14267,7 @@
       '00005eff-fe00-5323-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
+      '00005eff-fe00-5323-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -13978,6 +14305,7 @@
       '00005eff-fe00-5330-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
+      '00005eff-fe00-5330-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14005,6 +14333,7 @@
       '00005eff-fe00-5340-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
+      '00005eff-fe00-5340-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14020,6 +14349,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-invert_output switch key=invert_output category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-0002-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
@@ -14228,6 +14558,7 @@
       '00005eff-fe00-5351-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
       '00005eff-fe00-5351-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
       '00005eff-fe00-5351-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
+      '00005eff-fe00-5351-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
       '00005eff-fe00-5351-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
       '00005eff-fe00-5351-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
       '00005eff-fe00-5351-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5351-0000-000000000000-0001',
@@ -14264,6 +14595,7 @@
       '00005eff-fe00-5352-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
       '00005eff-fe00-5352-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
       '00005eff-fe00-5352-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
+      '00005eff-fe00-5352-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
       '00005eff-fe00-5352-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
       '00005eff-fe00-5352-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
       '00005eff-fe00-5352-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5352-0000-000000000000-0001',
@@ -14377,6 +14709,7 @@
       '00005eff-fe00-5314-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
+      '00005eff-fe00-5314-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
@@ -14410,6 +14743,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -14452,6 +14786,7 @@
       '00005eff-fe00-5323-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
+      '00005eff-fe00-5323-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -14489,6 +14824,7 @@
       '00005eff-fe00-5330-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
+      '00005eff-fe00-5330-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14516,6 +14852,7 @@
       '00005eff-fe00-5340-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
+      '00005eff-fe00-5340-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14531,6 +14868,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-invert_output switch key=invert_output category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-0002-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
@@ -14558,6 +14896,7 @@
       '00005eff-fe00-5361-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
+      '00005eff-fe00-5361-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
       '00005eff-fe00-5361-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5361-0000-000000000000-0001',
@@ -14665,6 +15004,7 @@
       '00005eff-fe00-5314-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
+      '00005eff-fe00-5314-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
       '00005eff-fe00-5314-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5314-0000-000000000000-0001',
@@ -14698,6 +15038,7 @@
       '00005eff-fe00-5317-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
+      '00005eff-fe00-5317-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
       '00005eff-fe00-5317-0000-000000000000-0001-power sensor key=power category=None disabled_by=None device=junghome_ble:00005eff-fe00-5317-0000-000000000000-0001',
@@ -14740,6 +15081,7 @@
       '00005eff-fe00-5323-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
+      '00005eff-fe00-5323-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
       '00005eff-fe00-5323-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5323-0000-000000000000-0001',
@@ -14777,6 +15119,7 @@
       '00005eff-fe00-5330-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
+      '00005eff-fe00-5330-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
       '00005eff-fe00-5330-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5330-0000-000000000000-0001',
@@ -14804,6 +15147,7 @@
       '00005eff-fe00-5340-0000-000000000000-0001-local_devices_lock switch key=local_devices_lock category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
+      '00005eff-fe00-5340-0000-000000000000-0001-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
       '00005eff-fe00-5340-0000-000000000000-0001-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0001',
@@ -14819,6 +15163,7 @@
       '00005eff-fe00-5340-0000-000000000000-0002-invert_output switch key=invert_output category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-lock_time_limit number key=lock_time_limit category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-manual_off_enable switch key=manual_off_enable category=config disabled_by=None device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
+      '00005eff-fe00-5340-0000-000000000000-0002-off_at sensor key=switch_off_at category=None disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-off_delay number key=off_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-on_delay number key=on_delay category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',
       '00005eff-fe00-5340-0000-000000000000-0002-power_on_behaviour select key=power_on_behaviour category=config disabled_by=integration device=junghome_ble:00005eff-fe00-5340-0000-000000000000-0002',

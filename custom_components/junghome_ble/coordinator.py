@@ -1925,6 +1925,9 @@ class ElementState:
     target_on: bool | None = None
     target_lightness: int | None = None
     target_kelvin: int | None = None
+    # when the element will be off by its last Generic OnOff Status: on, heading off, with a known remaining time
+    # (a run-on time running out, or a fade to off); None otherwise (`_on_onoff_status`)
+    off_at: datetime | None = None
     # a CTL light's own temperature range (Light CTL Temperature Range Status); None until read
     kelvin_min: int | None = None
     kelvin_max: int | None = None
@@ -5017,12 +5020,23 @@ class JungHomeHub:
 
     @register_status_handler(M.GEN_ONOFF_STATUS)
     def _on_onoff_status(self, m: AccessMessage, p: bytes) -> None:
-        """Store a Generic OnOff Status `[present u8]` or `[present u8][target u8][remaining u8]`: present is the state."""
+        """Store a Generic OnOff Status `[present u8]` or `[present u8][target u8][remaining u8]`: present is the state.
+
+        A load that is on, heading off with a known remaining time, also sets `off_at` (the *Switches off at*
+        sensor); any other Status clears it. Whether a JUNG load with a run-on time (`0x1007`) reports the time left
+        this way is unverified on air (review-4 F4-11): the app ignores the field, and no capture showed it yet.
+        """
         if not p:
             return
         st = self.element_state(m.src)
         st.on = bool(p[0])
         st.target_on = bool(p[1]) if len(p) >= 3 else st.on
+        remaining = M.remaining_time(M.GEN_ONOFF_STATUS, p)
+        st.off_at = (
+            dt_util.utcnow() + timedelta(seconds=remaining)
+            if st.on and not st.target_on and remaining
+            else None
+        )
         self.notify_update(m.src)
 
     @register_status_handler(M.LIGHT_LIGHTNESS_STATUS)

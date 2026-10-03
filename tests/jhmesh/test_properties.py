@@ -486,6 +486,19 @@ def test_catalogue_covers_every_id_the_app_reads_or_writes():
         assert P.PROPERTIES[pid].source == "firmware", f"0x{pid:04X}"
 
 
+def test_firmware_ids_waiting_for_the_probe_stay_raw():
+    """Review-4 brief 36: no codec before a supervised probe settles an id; the runtime statistics are where the
+    devices list them, on the Manufacturer server (`docs/hidden-features.md` §2)."""
+    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1008, 0x1009, 0x1011, 0x1012, 0x1013, 0x500C):
+        spec = P.PROPERTIES[pid]
+        assert spec.source == "firmware", f"0x{pid:04X}"
+        assert spec.codec is P.RAW, f"0x{pid:04X}"
+        assert P.decode(pid, b"\x01\x00") == b"\x01\x00"
+    assert P.PROPERTIES[0x0F00].server == "admin"
+    assert P.PROPERTIES[0x0F01].server == "manufacturer"
+    assert P.PROPERTIES[0x0F02].server == "manufacturer"
+
+
 def test_led_specs_cover_16_triples():
     led_specs = [s for s in P.PROPERTIES.values() if s.element == "led"]
     assert len(led_specs) == 48

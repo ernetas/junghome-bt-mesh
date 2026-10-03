@@ -16,9 +16,11 @@ its meter says it has no `0x0072`, the *Energy* sensor shows `0x006A` (`ElementS
 unverified on air, no puck being in the maintainer's network. So is every key's
 *Key mode* (`0x5003`, diagnostic, off by default), and every load's *Schedules*: the used JH Scheduler slots
 (`schedules.py`, diagnostic, off by default), and every scene member's *Scenes*: the scenes it is in, as the app's
-device page lists them (`JungHomeScenes`, diagnostic, off by default); a metering socket's *Switch-on* / *Switch-off threshold*
-(`thresholds.py`, diagnostic, off by default). And the gateway's *IP address* as its node reports it (`0xC002`, the
-address the app finds the gateway at; diagnostic), read once per link. An entry set up from the gateway also has
+device page lists them (`JungHomeScenes`, diagnostic, off by default); a metering socket's *Switch-on* /
+*Switch-off threshold* (`thresholds.py`, diagnostic, off by default); every light's and socket's *Switches off at*,
+when its last OnOff Status said it will be off (`JungHomeSwitchOffAt`, off by default). And the gateway's *IP
+address* as its node reports it (`0xC002`, the address the app finds the gateway at; diagnostic), read once per
+link. An entry set up from the gateway also has
 what the app's gateway pages show, from the gateway's REST API (`gateway_status.py`, diagnostic, off by default):
 *Firmware version*, *Firmware build*, *Serial number*, *Access requests* (waiting for approval in the app; the app's
 permissions indicator), *API clients* and the *Error log* (the count of its non-debug entries, the latest ten as an
@@ -395,6 +397,7 @@ def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
     entities += [JungHomeKeyMode(hub, target) for target in key_mode_targets(hub)]
     entities += [JungHomeSchedules(hub, target) for target in schedule_targets(hub)]
     entities += scene_list_sensors(hub)
+    entities += switch_off_sensors(hub)
     entities += [JungHomeThreshold(hub, target) for target in threshold_targets(hub)]
     entities += [JungHomeCounterSensor(hub, target) for target in counter_targets(hub)]
     entities += [JungHomeGatewayIp(hub, target) for target in gateway_ip_targets(hub)]
@@ -796,6 +799,49 @@ class JungHomeScenes(JungHomeEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """The mesh address and the scenes' names."""
         return {"mesh_address": f"{self.address:04X}", "scenes": self._scenes}
+
+
+def switch_off_sensors(hub: JungHomeHub) -> list[JungHomeSwitchOffAt]:
+    """Return the *Switches off at* sensor of every light and socket: the loads a run-on time (`0x1007`) applies to."""
+    out = [
+        JungHomeSwitchOffAt(
+            hub,
+            light.address,
+            f"{light.unique_id}-off_at",
+            light_device_info(hub, light),
+        )
+        for light in hub.devices.lights
+    ]
+    out += [
+        JungHomeSwitchOffAt(
+            hub,
+            socket.address,
+            f"{socket.unique_id}-off_at",
+            socket_device_info(hub, socket),
+        )
+        for socket in hub.devices.sockets
+    ]
+    return out
+
+
+class JungHomeSwitchOffAt(JungHomeEntity, SensorEntity):
+    """When the load will be off, by the remaining time of its last Generic OnOff Status (`ElementState.off_at`).
+
+    A Status carries it only while the load is in a transition; a JUNG load with a run-on time might report the
+    time left that way (review-4 F4-11), or might not: unverified on air, so the sensor is off by default and
+    unknown whenever the load is off, stays on, or sent no remaining time. Read-only: nothing is written.
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "switch_off_at"
+    _refresh_kind = "switch"  # `homeassistant.update_entity`: Generic OnOff Get
+
+    @property
+    def native_value(self) -> datetime | None:
+        """The moment the load's last OnOff Status said it will be off; None when it said nothing of the kind."""
+        st = self.hub.states.get(self.address)
+        return st.off_at if st else None
 
 
 class JungHomeThreshold(PropertyEntity, SensorEntity):

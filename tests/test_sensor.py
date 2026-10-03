@@ -77,6 +77,7 @@ from .conftest import (
     wait_until,
 )
 from .helpers import (
+    LIGHT_SWITCH,
     OUR_ADDRESS,
     PROPERTY_ENERGY_SINCE_TURN_ON,
     PROPERTY_POWER_ON_TIME,
@@ -87,10 +88,12 @@ from .helpers import (
     SENSOR_VOLTAGE,
     SOCKET,
     SOCKET_SENSOR,
+    UID_LIGHT_SWITCH,
     UID_PROXY,
     UID_SOCKET,
     admin_property_status,
     entity_id,
+    onoff_status,
     sensor_status,
     vendor_button_event,
 )
@@ -203,6 +206,7 @@ async def test_socket_sensor_set(
         "power_on_cycles",
         "switch_on_threshold",
         "switch_off_threshold",
+        "off_at",
     }
 
 
@@ -287,6 +291,69 @@ async def test_installed_sensor_is_read_once_from_the_meter_element(
     )
     await hass.async_block_till_done()
     assert hass.states.get(eid).state == STATE_UNKNOWN
+
+
+async def test_switch_off_at_is_off_by_default_on_every_light_and_socket(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """*Switches off at* exists for every light and socket, disabled until the user enables it (unverified on air)."""
+    registry = er.async_get(hass)
+    entries = [
+        e
+        for e in er.async_entries_for_config_entry(registry, init_integration.entry_id)
+        if e.domain == "sensor" and e.unique_id.endswith("-off_at")
+    ]
+    hub = init_integration.runtime_data
+    assert len(entries) == len(hub.devices.lights) + len(hub.devices.sockets)
+    for e in entries:
+        assert e.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert e.entity_category is None
+        assert e.translation_key == "switch_off_at"
+
+
+async def test_switch_off_at_follows_the_remaining_time_of_an_onoff_status(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """On, heading off, with a remaining time: the moment it will be off. Anything else clears it (review-4 F4-11)."""
+    uid = f"{UID_LIGHT_SWITCH}-off_at"
+    er.async_get(hass).async_get_or_create("sensor", DOMAIN, uid, disabled_by=None)
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    eid = entity_id(hass, "sensor", uid)
+    state = hass.states.get(eid)
+    assert state is not None
+    assert state.state == STATE_UNKNOWN
+    assert state.attributes[ATTR_DEVICE_CLASS] == SensorDeviceClass.TIMESTAMP
+    now = dt_util.utcnow().replace(microsecond=0)  # a timestamp state has whole seconds
+    freezer.move_to(now)
+
+    def status(on: bool, target: bool | None = None, remaining: int = 0) -> None:
+        fake_link.inject(LIGHT_SWITCH, OUR_ADDRESS, onoff_status(on, target, remaining))
+
+    status(True, False, M.encode_transition(90))  # 9 x 10 s: a run-on time ending
+    await hass.async_block_till_done()
+    assert dt_util.parse_datetime(hass.states.get(eid).state) == now + timedelta(
+        seconds=90
+    )
+
+    for args in (
+        (True,),  # the short form: no transition, nothing scheduled
+        (True, False, 0x3F),  # remaining time unknown
+        (False, True, M.encode_transition(5)),  # off, fading on
+        (True, True, M.encode_transition(5)),  # on and staying on
+        (True, False, 0),  # no time left
+    ):
+        status(True, False, M.encode_transition(90))
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state != STATE_UNKNOWN
+        status(*args)
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == STATE_UNKNOWN, args
 
 
 async def test_wear_counters_are_read_from_the_load(

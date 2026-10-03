@@ -38,6 +38,7 @@ Nothing below names a real address, MAC or file of the installation; fill these 
 | `<socket>`, `<socket el>`, `<meter el>` | a metering socket's switch entity, its load element, its meter element | attributes, *Power* sensor |
 | `<key>`, `<key el>` | a push-button key's event entity and element | event entity attributes `mesh_address`, `connection` |
 | `<input>`, `<input el>` | a mini actuator input's event entity (*Input E1*) and element | as `<key>` |
+| `<mini el>` | a mini actuator's output (its primary element) | the output's light entity, attribute `mesh_address` |
 | `<node>` | a node's primary address | device page |
 | `<scene>` | a scene whose recall is harmless (it only switches lights) | scene entity attribute `scene_number` |
 
@@ -86,7 +87,8 @@ Before group C and D, write down (privately, not in the repository):
   or `prop get <socket el> turn_on_threshold` / `turn_off_threshold`);
 - the connection of the key used in D2: its event entity's `connection`, `connection_address`, `connection_name`,
   its *Key mode* sensor, and `prop get <key el> key_mode`;
-- which room each light used in D3 sits in.
+- which room each light used in D3 sits in;
+- every value A7 reads (the hex `prop get` prints), before C6 changes any of them.
 
 The CLI runs as its own mesh client: keep its default `--source` (`7FFF`) or another free address, never Home
 Assistant's, and pass `--ha-storage <HA config>/.storage` where that directory is reachable so a slip is refused.
@@ -107,6 +109,7 @@ pass removed the markers of the checks that passed.
 | [A4](#a4--passive-checks-over-every-capture) | Own echoes, proxy configuration checks, bounded disconnect | any | nothing | — |
 | [A5](#a5--inserts-and-key-layouts-from-the-adverts-f4-12) | Inserts and key layouts from the adverts | push-buttons | nothing | — |
 | [A6](#a6--node-clocks-time-zones-and-stored-locations-f4-8) | Node clocks, zones, locations; the clock repair | any | nothing | — |
+| [A7](#a7--firmware-only-properties-read-only-f4-3-f4-9-f4-10-f4-11) | Firmware-only properties, read only | push-buttons, a mini, a socket | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -121,6 +124,7 @@ pass removed the markers of the checks that passed.
 | [C3](#c3--lock-function-of-a-load-0x0009-and-locked-loads-f4-2) | Lock function of a light (`0x0009`), locked loads (F4-2) | a light + its key, a dimmer, the app | locks, undone | **yes** |
 | [C4](#c4--mini-actuator-inputs-f10) | Mini-actuator inputs (F10) | an input with a contact | setting, restored | **yes** |
 | [C5](#c5--schedules) | Schedules, node clock and location | a light | a schedule slot, freed | — |
+| [C6](#c6--firmware-only-properties-set-and-restored-brief-36) | Firmware-only properties, set and restored | DALI insert, socket meter, a key, a light | settings, restored | **yes** |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
 | [D2](#d2--key--scene-f15) | Key → scene (F15) | push-button key, harmless scene | key wiring, restored | **yes** |
 | [D3](#d3--rooms-and-scenes-allocated-from-the-top) | Rooms and scenes allocated from the top | a light, the app | room / scene, removed | — |
@@ -244,6 +248,59 @@ says connected and the state refresh is through (a few minutes), then do the lin
   `custom_components/junghome_ble/sensor.py::JungHomeNodeDiagnostic`,
   `custom_components/junghome_ble/strings.json::issues.node_clock_wrong.fix_flow.step.confirm.description`,
   `air:access:5d`, `msg:op:5d`, `msg:op:8237`, `msg:op:823b`, `msg:op:40`, `msg:op:8225`.
+### A7 · Firmware-only properties, read only (F4-3, F4-9, F4-10, F4-11)
+
+- **Checks:** review-4 brief 36, its read-only half — what the firmware-only ids hold on this installation's devices
+  before anything is written: transmission settings `0x0F00`, the runtime statistics `0x0F01` / `0x0F02` (do they
+  count?), key toggle enable `0x500C`, the DALI insert's hotel / basic-light / night / presentation ids `0x1008`,
+  `0x1009`, `0x1011`–`0x1013`; whether a load with a run-on time reports the time left in its OnOff Status (the
+  *Switches off at* sensor); an LED's colour bytes. Home Assistant exposes none of these ids and writes none.
+- **Needs:** a push-button with a switch insert (`<node>` = its primary, `<light el>` its load), the DALI insert
+  (`<tw el0>`), `<dimmer el>`, `<key el>`, `<mini el>`, `<input el>`, `<socket el>` and `<meter el>`.
+  **Safety:** read-only (Gets; the run-on step is an ordinary key press).
+- **Do:** with `tools/mesh_poc.py --cdb <export.json> listen` or the sniffer running alongside; write every value
+  down privately (C6 restores them):
+  ```
+  tools/mesh_poc.py --cdb <export.json> prop lists <tw el0>                  # which ids each server holds
+  tools/mesh_poc.py --cdb <export.json> prop lists <key el>
+  tools/mesh_poc.py --cdb <export.json> prop lists <meter el>
+  # runtime statistics (Manufacturer server), twice, ten minutes apart: do they move?
+  tools/mesh_poc.py --cdb <export.json> prop get <node> current_runtime_stats
+  tools/mesh_poc.py --cdb <export.json> prop get <node> all_time_runtime_stats
+  tools/mesh_poc.py --cdb <export.json> prop get <mini el> current_runtime_stats
+  tools/mesh_poc.py --cdb <export.json> prop get <mini el> all_time_runtime_stats
+  tools/mesh_poc.py --cdb <export.json> prop get <socket el> current_runtime_stats
+  tools/mesh_poc.py --cdb <export.json> prop get <meter el> current_runtime_stats
+  # transmission settings (seen as 0100) and key toggle enable (seen as 01)
+  tools/mesh_poc.py --cdb <export.json> prop get <key el> transmission_settings
+  tools/mesh_poc.py --cdb <export.json> prop get <input el> transmission_settings
+  tools/mesh_poc.py --cdb <export.json> prop get <meter el> transmission_settings
+  tools/mesh_poc.py --cdb <export.json> prop get <key el> key_toggle_enable
+  tools/mesh_poc.py --cdb <export.json> prop get <input el> key_toggle_enable
+  # hotel / basic light / night / presentation, on the DALI insert, a dimmer and a switch insert
+  tools/mesh_poc.py --cdb <export.json> prop get <tw el0> hotel_dimm_value
+  tools/mesh_poc.py --cdb <export.json> prop get <tw el0> basic_light_function_enable
+  tools/mesh_poc.py --cdb <export.json> prop get <tw el0> night_dimm_value
+  tools/mesh_poc.py --cdb <export.json> prop get <tw el0> presentation_mode_enable
+  tools/mesh_poc.py --cdb <export.json> prop get <tw el0> presentation_mode_time
+  tools/mesh_poc.py --cdb <export.json> prop get <dimmer el> hotel_dimm_value
+  tools/mesh_poc.py --cdb <export.json> prop get <light el> hotel_dimm_value
+  # run-on time and the remaining time: only on a light whose run-on time is already set (non-zero)
+  tools/mesh_poc.py --cdb <export.json> prop get <light el> timed_on_duration
+  tools/mesh_poc.py --cdb <export.json> get <light el>                      # right after its key switched it on
+  # LED colour bytes [r][g][b][mode]
+  tools/mesh_poc.py --cdb <export.json> prop get <node> led1_mode_on
+  tools/mesh_poc.py --cdb <export.json> prop get <node> led1_mode_off
+  ```
+  In Home Assistant, enable the *Switches off at* sensor of the light used for the run-on step.
+- **Capture:** the CLI output; `listen` for anything a Get triggers besides its Status (none expected).
+- **Pass:** every Get answered or answered with the property id alone (the element does not have it, as the switch
+  insert for `0x1008`); the runtime statistics either move between the two reads (a counter: note by how much) or
+  not. For the run-on step: `get` prints `target=OFF remaining=…` while the run-on time runs (then *Switches off at*
+  shows that moment), or the short form (then the sensor stays unknown for good and can go). Nothing passes or fails
+  the code here: the readings feed C6 and `docs/hidden-features.md` §13.
+- **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status`,
+  `custom_components/junghome_ble/sensor.py::JungHomeSwitchOffAt`.
 
 ## B · Momentary control
 
@@ -526,6 +583,38 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   the slots and then none; nothing remains after the deletes.
 - **Markers:** `custom_components/junghome_ble/sensor.py::<module>` (the *Schedules* sensor part).
 
+### C6 · Firmware-only properties, set and restored (brief 36)
+
+- **Checks:** review-4 brief 36 step 1 — what the firmware-only ids do, so that only settled ones become entities
+  (`config_entities.FIRMWARE_ENTITIES`, empty until then) and only settled ones get a codec.
+- **Needs:** someone at home watching the loads; A7's values noted; `tools/mesh_poc.py --cdb <export.json> listen`
+  (or the sniffer) running throughout. **Safety:** every value goes back to what A7 read in the same session.
+  **Never enable presentation mode** (`presentation_mode_enable`) unattended: it may switch loads on its own; leave
+  it as read.
+- **Do:** (`<…as read>` = the hex A7 noted)
+  1. Meter rhythm: `prop set <meter el> transmission_settings hex:0000`, then `hex:0200`, then `hex:0101`, each
+     followed by `listen --src <meter el> --seconds 300` (the Sensor Status rhythm is about 65 s today); restore
+     `prop set <meter el> transmission_settings hex:<as read>` and see the rhythm come back.
+  2. Key toggling: `prop set <key el> key_toggle_enable hex:00`; press the key several times (does a single key
+     stop toggling, or does nothing change?); restore `hex:<as read>`.
+  3. DALI insert / dimmer: `prop set <tw el0> basic_light_function_enable hex:01`, switch `<tw light>` off from
+     Home Assistant: does it stay at the hotel value (`hotel_dimm_value`) instead of off? Restore `hex:<as read>`.
+     `prop set <tw el0> night_dimm_value hex:<another value>`, switch the light on (after dark if night means the
+     clock), compare the level; restore. `prop set <tw el0> presentation_mode_time hex:<as read, first two bytes
+     changed>`, `prop get` both presentation ids; restore.
+  4. Run-on remaining time: `prop set <light el> timed_on_duration 20`, `set <light el> on`, then `get <light el>`
+     within the 20 s: is there `target=OFF remaining=…`? Watch *Switches off at*; restore `timed_on_duration` to the
+     value as read.
+  5. LED: `prop set <node> led1_mode_on hex:<r><g><b><mode as read>` with a colour outside the app's palette (each
+     channel 0..100, e.g. `32143c`): does the LED show it, does the read-back keep it? Restore `hex:<as read>`.
+- **Capture:** the CLI output and `listen`; per step, what the load or LED did.
+- **Pass:** each value read back as written and restored at the end. Write every outcome into
+  `docs/hidden-features.md` §13 and `docs/android/properties.md` §1.10; then, per id that is settled: a codec in
+  `jhmesh/properties.py` (number for a percentage, switch for an enable), its id in `FIRMWARE_ENTITIES`, *Switches
+  off at* kept or removed by step 4, an RGB light per LED state only if step 5 worked.
+- **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status`,
+  `custom_components/junghome_ble/sensor.py::JungHomeSwitchOffAt`.
+
 ## D · Rewiring, undone in the sitting
 
 **These change the network's wiring and the export, upload it to the gateway and reload the entry.** Each ends with the
@@ -769,6 +858,8 @@ citing the session and sequence number, open a regression test for each failure,
 | A2 | | | |
 | A3 | | | |
 | A4 | | | |
+| A6 | | | |
+| A7 | | | |
 | B1 | | | |
 | B2 | | | |
 | B3 | | | |
@@ -781,6 +872,7 @@ citing the session and sequence number, open a regression test for each failure,
 | C3 | | | |
 | C4 | | | |
 | C5 | | | |
+| C6 | | | |
 | D1 | | | |
 | D2 | | | |
 | D3 | | | |

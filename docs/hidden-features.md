@@ -158,9 +158,14 @@ bundled in the APK (`android/…/assets/updates/`), and that version reads need 
 5. **Hotel / night / presentation dimming** (`1008/1011/1009/1012/1013`) on dimmer/DALI inserts as expert config
    entities once the semantics are known (values suggest a percentage and a duration; the app's unused strings
    `device_parameter_hotel_*`, `night_light_*`, `presentation_mode` describe them, `device-settings.md` §13.10).
+   **Probe pending** (review-4 brief 36, §13): not settled, so not exposed and never written by Home Assistant; the
+   read-only reads are `on-air-sweep.md` A7, the supervised set-and-restore probe C6.
 6. **key_toggle_enable `500C`** and `transmission_settings 0F00` as expert entities after a capture of what the
-   app does not do with them; **`5014`** on the meter element (static 7-byte record) and **`1FFF`** need a second look.
-   `0x000E server_state_publish_request` tested: acknowledged, no effect with value `01` (§9).
+   app does not do with them — **probe pending** like item 5 (§13; the runtime statistics `0F01/0F02` with them).
+   ~~**`5014`**~~ settled: the commissioning moment, the socket's *Installed* sensor (§10); **`1FFF`** is an empty
+   placeholder on every server (§10). `0x000E server_state_publish_request`: no effect on switch inserts and sockets
+   (§9), a one-message refresh of every light state on dimmers (§10) — settled, not needed as an entity (Home
+   Assistant reads the states itself).
 7. ~~**Location**: write HA's home coordinates to every Location Setup Server once (astro schedules without a phone).~~
    **done**: broadcast after every connection right after Time Set (`coordinator._send_location`, one
    unacknowledged Generic Location Global Set to all nodes — every node has the Location Setup Server on its
@@ -419,3 +424,34 @@ For each Set: does a Status come back (to the CLI, or published to the element g
 does the CLI time out after its attempts? Then lock the same load in the app (device page, *Lock*) and unlock it
 again, watching `listen`: does a `0x0009` Status reach anyone but the app? The results go here; the code markers
 that `docs/on-air-sweep.md` C3 names go once they agree.
+
+## 13. Firmware-only properties (probe pending)
+
+Review-4 brief 36 (F4-3, F4-9, F4-10, F4-11). What is established, from §2, §9 and §10 alone:
+
+| id | name (gateway firmware) | where it was read | value | settled? |
+|---|---|---|---|---|
+| `0x000E` | server_state_publish_request | every node | write-only trigger | **yes** (§10): a dimmer publishes all its light states; others ignore it. No entity: Home Assistant reads the states itself |
+| `0x0F00` | transmission_settings | key elements, socket meter (LBC Admin) | `0100` | no — the brief's hypothesis: the meter's publication rhythm (about 65 s, §3) |
+| `0x0F01` / `0x0F02` | current / all-time runtime stats | every node's LBC Manufacturer server | empty on the socket | no — whether they count anything |
+| `0x500C` | key_toggle_enable | key elements (LBC Admin) | `01` | no — whether `00` stops a single key toggling |
+| `0x1008` / `0x1011` | hotel / night dim value | DALI insert only | `51` / `51` | no — unit (percent?) and when they apply |
+| `0x1009` | basic_light_function_enable | DALI insert only | `0` | no |
+| `0x1012` / `0x1013` | presentation mode enable / time | DALI insert only | 8 bytes each (`00 6f00 2008 000000`, `b400 0020 08000000`) | no — layout unknown; **never enabled unattended** |
+| OnOff Status `[present][target][remaining]` | run-on time `0x1007` | — | — | no — whether a load with a run-on time reports the time left |
+| `0xA0xx` | LED mode `[r][g][b][mode]`, 0..100 | push-buttons, sockets | app palette only | no — whether a colour outside the palette is accepted and shown |
+
+So Home Assistant exposes none of the unsettled ids and writes none of them. What it has meanwhile: an allow-list,
+`config_entities.FIRMWARE_ENTITIES` (empty), of firmware-only ids a probe settled — only those become config
+entities, disabled by default, and only with a codec (the ids above stay `Raw`); the runtime statistics sit on the
+Manufacturer server in the catalogue, where every node lists them; and every light and socket has a *Switches off
+at* sensor (disabled by default, read-only) from the remaining time of an OnOff Status heading off, which stays
+unknown if no JUNG load ever reports one.
+
+The probe, in two halves of `on-air-sweep.md`: **A7** reads every id above (twice for the statistics, minutes apart)
+and the OnOff Status of a light whose run-on time is set, right after its key switched it on — read-only, any time;
+**C6** sets and restores them with someone at home (the meter's rhythm under `0000` / `0200` / `0101`, a key with
+`500C = 00`, the basic-light enable and night value on the DALI insert, the presentation time field, a 20 s run-on
+time, an LED colour outside the palette). The outcomes go here and into `android/properties.md` §1.10; then codecs
+for the settled ids, their entries in `FIRMWARE_ENTITIES` (a number for a percentage, a switch for an enable), and
+the RGB LED light if the colour step worked.

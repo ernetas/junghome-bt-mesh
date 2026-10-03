@@ -386,6 +386,9 @@
       "scenes": {
         "name": "Scenes"
       },
+      "switch_off_at": {
+        "name": "Switches off at"
+      },
       "switch_on_threshold": {
         "name": "Switch-on threshold"
       },

@@ -334,6 +334,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Continuous on/off | `enum` | – | No (diagnostic) | Detectors only, on the node device — **unverified on hardware**: `inactive`, `off` or `on`, whether the detector holds its load off or on through its own slider or keys (vendor property `0x6016`). The app only shows it (on the load's page), so it is read once per link and never written |
 | Battery | `battery` | % | Yes (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device — **unverified on hardware**: read with `Generic Battery Get` right after one of the node's keys reported an event (the node sleeps otherwise and would not answer), never polled; the level from before a restart until then; while the node reports no level (0xFF) the level its battery indicator stands for (good 50 %, low 15 %, critically low 5 %) |
 | Schedules | – | – | No (diagnostic) | Every light, socket, blind and room thermostat whose element hosts the JH Scheduler (all current products): how many of the 16 schedule slots the device holds; attribute `schedules` lists them in the fields [`create_schedule`](#actions-schedules) takes (not recorded in the history). Read once per link, updated by the schedule actions; not yet tried on a real device |
+| Switches off at | `timestamp` | – | No | Every light and socket: the moment the load will be off, when its last `Generic OnOff Status` said it is on, heading off, with a known remaining time (a run-on time running out, a fade to off); `unknown` otherwise. **Unverified on air**: whether a JUNG load with a *Run-on time* reports the time left this way is not known (the app ignores the field), so the sensor may stay `unknown` for good. Read-only; `homeassistant.update_entity` asks the load for its state |
 | Switch-on threshold, Switch-off threshold | `power` | W | No (diagnostic) | Metering sockets only: the power level of the socket's two [thresholds](#actions-thresholds) (LBC Admin `0x5004` / `0x5005`), `unknown` while none is set; attributes `duration` (s), `enabled` and `devices` (the lights and sockets both thresholds switch, from the export's wiring). Read once per link, updated by the actions; not yet tried on a real socket |
 | IP address | – | – | Yes (diagnostic) | On the gateway's node device: the address the gateway node serves over the mesh (`0xC002`, where the app finds the gateway), read once per connection; redacted from the diagnostics |
 | Proxy node | – | – | Yes (diagnostic) | On the *mesh network* device: the JUNG node Home Assistant is currently connected through (known from the node's Bluetooth address the moment the link is up — JUNG nodes advertise from their MAC — and confirmed by the proxy's own Filter Status), `unknown` while disconnected |
@@ -580,6 +581,16 @@ the presence control (`0x6003`) as the app does, asks for the PIR zones (`0x6005
 after five minutes, like the app; a test found running (started in the app) is ended five minutes after it was seen.
 The firmware's constant-light and night-light properties (`0x6018`–`0x6020`) are not exposed: their layout is not
 documented. Key connections and thresholds are [actions](#actions-rooms-and-key-connections).
+
+The JUNG firmware lists more properties than the app uses (`docs/hidden-features.md` §2): *transmission settings*
+(`0x0F00`, on keys and the socket's meter), the runtime statistics (`0x0F01` / `0x0F02`), *key toggle enable*
+(`0x500C`) and, on the DALI insert, the hotel / basic-light / night dim values and the presentation mode (`0x1008`,
+`0x1009`, `0x1011`–`0x1013`). What they do is not known, so none of them is an entity and Home Assistant never
+writes them; a firmware-only property becomes a configuration entity (disabled by default) only once a supervised
+probe on the devices has settled its layout and effect (`config_entities.FIRMWARE_ENTITIES`, empty today; the probe
+is item C6 of `docs/on-air-sweep.md`). The one firmware-only trigger whose effect is known, `0x000E` (a dimmer
+publishes all its light states at once), is not needed: Home Assistant reads the states itself. A key or socket LED
+colour outside the app's palette, which the device may hold, shows as `unknown` in the colour selects.
 
 The **device lock** (`0x0001`, one 16-bit word per node) is a switch per flag the app offers: **Lock operation**
 (no operation on the device itself) and **Lock factory reset** on every device, **Key lock** and **Lock

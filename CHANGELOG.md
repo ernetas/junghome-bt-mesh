@@ -330,6 +330,13 @@
   coordinates). A device that may run schedules with no time, a clock more than a minute off or another zone offset
   than the one sent raises the fixable repair *JUNG HOME devices with a wrong clock*, whose fix sends the time now
   and asks those devices again. Unverified on air.
+- A *Switches off at* sensor on every light and socket (review-4 F4-11; disabled by default): the moment the load
+  will be off, when its OnOff Status says it is on, heading off, with a remaining time — a run-on time running out,
+  or a fade to off. Whether a JUNG load with a run-on time reports the time left at all is unverified on air (the
+  app ignores the field), so the sensor may stay unknown; it only reads. The firmware-only properties of the hotel,
+  basic-light, night and presentation modes, the transmission settings, runtime statistics and key toggle enable
+  (review-4 F4-3, F4-9) stay unexposed and are never written until a supervised probe settles what they do
+  (`docs/on-air-sweep.md` A6 and C6); only ids a probe settled can become entities, and those start disabled.
 
 ### CLI tools and library
 
@@ -376,6 +383,9 @@
 - `ProxyClient` bounds the subscription when it attaches and the disconnect when it detaches by `GATT_TIMEOUT`
   (review-4 R4-11): a transport call that never returned held the connection loop, and its connection slot, for
   good. A disconnect that times out is logged as a warning and left behind. Unverified on air.
+- The catalogue puts the firmware's runtime statistics `0x0F01` / `0x0F02` on the Manufacturer server, where every
+  node lists them (`docs/hidden-features.md` §2): `tools/mesh_poc.py prop get <node> current_runtime_stats` asks
+  there without `--server`. They and the other ids waiting for the probe stay `Raw`.
 - Internal: the integration's hub is tested over the simulated mesh of `tests/sim` as well as over the fake proxy
   link (review-4 Q4-19): `tests/test_hub_sim.py` sets the entry up through the simulated proxy node, so relays, the
   proxy filter, the nodes' replay lists and segmentation work as on air, and every test ends on the simulation's

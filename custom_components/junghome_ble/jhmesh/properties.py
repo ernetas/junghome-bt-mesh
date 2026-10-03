@@ -1114,11 +1114,12 @@ def _fw(
     category: frozenset[int],
     codec: Codec = RAW,
     access: Access = "ro",
+    server: Server = "admin",
     **kw: Any,
 ) -> PropertySpec:
     """Build a firmware-only id (`docs/android/properties.md` §1.10): layout unknown unless a codec is given."""
     return PropertySpec(
-        pid, name, "admin", access, codec, products=category, source="firmware", **kw
+        pid, name, server, access, codec, products=category, source="firmware", **kw
     )
 
 
@@ -1173,9 +1174,12 @@ _VENDOR_SPECS: list[PropertySpec] = [
     _fw(0x000E, "server_state_publish_request", ALL_PRODUCTS, U8, access="wo"),
     _fw(0x0010, "lpn_state_timeout", PB_BATTERY | MINI_INPUT),  # vendor id; SIG 0x0010 lives in SIG_PROPERTIES
     _fw(0x0011, "battery_test_raw_data", PB_BATTERY | MINI_INPUT),
+    # Raw until the supervised probe settles them (review-4 brief 36, `docs/on-air-sweep.md` A7 / C6): 0x0F00 reads
+    # `0100` on key elements and the socket's meter element, meaning unknown; the two runtime statistics sit on the
+    # Manufacturer server of every node (`hidden-features.md` §2), empty on the socket
     _fw(0x0F00, "transmission_settings", ALL_PRODUCTS),
-    _fw(0x0F01, "current_runtime_stats", ALL_PRODUCTS),
-    _fw(0x0F02, "all_time_runtime_stats", ALL_PRODUCTS),
+    _fw(0x0F01, "current_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
+    _fw(0x0F02, "all_time_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
     # --- §1.3 load parameters (element = the load)
     PropertySpec(0x1001, "on_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=1, products=LOAD_HOSTS, set_access=1),
     PropertySpec(0x1002, "off_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=1, products=LOAD_HOSTS, set_access=1),
@@ -1187,6 +1191,9 @@ _VENDOR_SPECS: list[PropertySpec] = [
     PropertySpec(0x100E, "dim_to_warm", "admin", "rw", BOOL, element="load", products=PB_MAINS | MINI_DALI),
     # unsupported on FW 2.0.0.4 ("Lbc Property doesn't exist"); the exact minimum is unknown, 2.2.0.x works
     PropertySpec(0x1014, "rtr_operation_mode", "admin", "rw", BOOL, element="load", products=PB_MAINS | SOCKETS | MINI_SWITCH | RTR, firmware_min=(2, 0, 0, 5)),
+    # hotel / basic light / night / presentation: listed by the DALI insert only (0x1008 = 51, 0x1009 = 0, 0x1011 =
+    # 51, two 8-byte presentation records; `hidden-features.md` §2); names from the gateway firmware, semantics
+    # and units unknown — Raw until the supervised probe settles them (on-air sweep C6)
     _fw(0x1008, "hotel_dimm_value", LOAD_HOSTS, access="rw"),
     _fw(0x1009, "basic_light_function_enable", LOAD_HOSTS, access="rw"),
     # u32 wear counters, read on the socket's load element (118 / 79, `docs/hidden-features.md` §2)
@@ -1258,7 +1265,7 @@ _VENDOR_SPECS: list[PropertySpec] = [
     PropertySpec(0x5013, "key_status_led", "manufacturer", "rw", BOOL, element="key", products=KEY_HOSTS, source="firmware"),
     PropertySpec(0x5014, "meter_timestamp", "manufacturer", "ro", Timestamp7(), element="meter", products=ENERGY_HOSTS, source="firmware"),  # also on the User server
     _fw(0x500A, "key_rtr_temp_step_size", KEY_HOSTS, access="rw", element="key"),
-    _fw(0x500C, "key_toggle_enable", KEY_HOSTS, access="rw", element="key"),
+    _fw(0x500C, "key_toggle_enable", KEY_HOSTS, access="rw", element="key"),  # reads 1; effect unknown (sweep C6)
     # --- §1.7 detectors (element = the sensor element, the node's highest)
     PropertySpec(0x6001, "walking_test", "admin", "rw", BOOL, element="detector", products=DETECTORS),
     PropertySpec(0x6003, "presence_control", "admin", "rw", BOOL, element="detector", products=DETECTORS),
