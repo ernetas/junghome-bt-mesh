@@ -5,8 +5,11 @@ never arrived, a node re-provisioned by hand, an edit made with another tool —
 so. The audit asks each node, with Gets only (it never sends a Set), and compares:
 
 - the node-wide states, one Get each: Relay (with its retransmit), Network Transmit, Default TTL, Secure Network
-  Beacon, GATT Proxy — against the export's `features`, `relayRetransmit`, `networkTransmit`, `defaultTTL` and
-  `secureNetworkBeacon` (a state the export does not record is reported, not compared);
+  Beacon, GATT Proxy, Friend — against the export's `features`, `relayRetransmit`, `networkTransmit`, `defaultTTL`
+  and `secureNetworkBeacon` (a state the export does not record is reported, not compared);
+- the keys the node holds (review-4 F4-15): NetKey Get, and AppKey Get for every NetKey the export gives the node —
+  against its `netKeys` and `appKeys`. Indexes only: a key list carries no key, and no key is ever compared. These
+  and the Friend Get are unverified on air;
 - for every model of every element except the Configuration Server / Client (device-key models: no
   publication, no subscriptions, no AppKey): Model Publication Get, SIG / Vendor Model Subscription Get and
   SIG / Vendor Model App Get — against the model's `publish`, `subscribe` and `bind`.
@@ -57,6 +60,12 @@ SCENE_SUBSCRIPTIONS_MISSING = "scene_subscriptions_missing"
 SUBSCRIPTIONS_EXTRA = "subscriptions_extra"
 APP_KEYS_UNBOUND = "app_keys_unbound"
 APP_KEYS_EXTRA = "app_keys_extra"
+# the node's keys (`setting` names the list: `net_keys` or `app_keys`)
+KEYS_MISSING = "keys_missing"
+KEYS_EXTRA = "keys_extra"
+KEYS_UNANSWERED = "keys_unanswered"
+KEYS_REFUSED = "keys_refused"
+KEY_LISTS = ("net_keys", "app_keys")
 
 # the node-wide Gets: query kind, builder, status opcode, and the settings its status carries
 _SETTING_GETS: tuple[tuple[str, Callable[[], bytes], int, tuple[str, ...]], ...] = (
@@ -70,6 +79,7 @@ _SETTING_GETS: tuple[tuple[str, Callable[[], bytes], int, tuple[str, ...]], ...]
     ("default_ttl", C.default_ttl_get, C.CONFIG_DEFAULT_TTL_STATUS, ("default_ttl",)),
     ("beacon", C.beacon_get, C.CONFIG_BEACON_STATUS, ("beacon",)),
     ("gatt_proxy", C.gatt_proxy_get, C.CONFIG_GATT_PROXY_STATUS, ("gatt_proxy",)),
+    ("friend", C.friend_get, C.CONFIG_FRIEND_STATUS, ("friend",)),
 )
 SETTINGS = tuple(name for *_, names in _SETTING_GETS for name in names)
 
@@ -84,17 +94,23 @@ class Query:
     expect: int
     element: int | None = None
     model: str | None = None
+    net_key: int | None = None  # an AppKey Get's NetKey index
 
     def matches(self, message: AccessMessage) -> bool:
         """Whether `message` answers this Get: it decodes, and a model's status echoes this element and model.
 
         Several Gets to one node are in flight at once and share status opcodes; the echo keeps the answer about
-        one model from passing for another's.
+        one model from passing for another's — and an AppKey List about one NetKey for another's.
         """
         try:
             decoded = C.decode_config(message.opcode, message.params)
         except ValueError:
             return False
+        if self.net_key is not None:
+            return (
+                isinstance(decoded, C.AppKeyList)
+                and decoded.net_key_index == self.net_key
+            )
         if self.model is None:
             return True
         return (
@@ -157,6 +173,9 @@ class NodeAudit:
     settings: dict[str, dict[str, Any]] = field(
         default_factory=dict
     )  # setting → {"export": …, "node": …}
+    keys: dict[str, dict[str, Any]] = field(
+        default_factory=dict
+    )  # `net_keys` / `app_keys` → {"export": [index, …], "node": [index, …]}
     models: list[ModelAudit] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
 
@@ -166,6 +185,7 @@ class NodeAudit:
             "name": self.name,
             "answered": self.answered,
             "settings": self.settings,
+            "keys": self.keys,
             "models": len(self.models),
             "findings": [f.as_dict() for f in self.findings],
         }
@@ -185,10 +205,47 @@ def report(audits: Iterable[NodeAudit]) -> dict[str, Any]:
 
 
 def setting_queries(node: Node) -> list[Query]:
-    """List the five node-wide Gets."""
+    """List the six node-wide Gets."""
     return [
         Query(node.unicast, kind, build(), expect)
         for kind, build, expect, _names in _SETTING_GETS
+    ]
+
+
+def _key_indexes(value: Any) -> list[int] | None:
+    """Read a CDB node's `netKeys` / `appKeys` (`[{"index": 0, …}]`) as sorted indexes; None when not a list."""
+    if not isinstance(value, list):
+        return None
+    return sorted(
+        index
+        for entry in value
+        if isinstance(entry, dict) and (index := _int(entry.get("index"))) is not None
+    )
+
+
+def export_keys(node: Node) -> dict[str, list[int] | None]:
+    """Return the key indexes the export gives `node`; None for a list it does not record."""
+    return {
+        "net_keys": _key_indexes(node.raw.get("netKeys")),
+        "app_keys": _key_indexes(node.raw.get("appKeys")),
+    }
+
+
+def key_queries(node: Node) -> list[Query]:
+    """NetKey Get, then an AppKey Get per NetKey the export gives the node (the primary one when it records none)."""
+    nets = export_keys(node)["net_keys"] or [0]
+    return [
+        Query(node.unicast, "net_keys", C.netkey_get(), C.CONFIG_NETKEY_LIST),
+        *(
+            Query(
+                node.unicast,
+                "app_keys",
+                C.appkey_get(net),
+                C.CONFIG_APPKEY_LIST,
+                net_key=net,
+            )
+            for net in nets
+        ),
     ]
 
 
@@ -289,13 +346,15 @@ def client_exchange(
 async def audit_node(
     exchange: Exchange, node: Node, *, run: Runner = run_chunked
 ) -> NodeAudit:
-    """Ask `node` for its node-wide states, then — when it answered any — for every audited model's; compare."""
+    """Ask `node` for its node-wide states and keys, then — when it answered any — for every audited model's; compare."""
     replies: dict[Query, AccessMessage | None] = {}
 
     async def ask(query: Query) -> None:
         replies[query] = await exchange(query)
 
-    await run([partial(ask, query) for query in setting_queries(node)])
+    await run(
+        [partial(ask, query) for query in setting_queries(node) + key_queries(node)]
+    )
     if not any(replies.values()):
         return NodeAudit(
             node.unicast, node.name, answered=False, findings=[Finding(NODE_UNANSWERED)]
@@ -343,6 +402,7 @@ def export_settings(node: Node) -> dict[str, Any]:
         "default_ttl": _int(raw.get("defaultTTL")),
         "beacon": beacon if isinstance(beacon, bool) else None,
         "gatt_proxy": _int(features.get("proxy")),
+        "friend": _int(features.get("friend")),
     }
 
 
@@ -364,8 +424,48 @@ def _node_settings(reply: AccessMessage) -> dict[str, Any]:
         return {"default_ttl": decoded.ttl}
     if isinstance(decoded, C.BeaconStatus):
         return {"beacon": bool(decoded.beacon)}
+    if isinstance(decoded, C.FriendStatus):
+        return {"friend": decoded.friend}
     assert isinstance(decoded, C.GattProxyStatus)
     return {"gatt_proxy": decoded.gatt_proxy}
+
+
+def _node_keys(
+    node: Node, replies: Mapping[Query, AccessMessage | None]
+) -> tuple[dict[str, list[int] | None], list[Finding]]:
+    """Return the key indexes the node answered (None: not answered, or refused) and the findings of its key Gets.
+
+    The AppKeys are the union over every NetKey asked about; one AppKey Get unanswered or refused leaves them
+    unknown, since the union would be short.
+    """
+    held: dict[str, list[int] | None] = {}
+    findings: list[Finding] = []
+    app_keys: set[int] | None = set()
+    for query in key_queries(node):
+        reply = replies.get(query)
+        if reply is None:
+            findings.append(Finding(KEYS_UNANSWERED, setting=query.kind))
+            if query.kind == "app_keys":
+                app_keys = None
+            else:
+                held["net_keys"] = None
+            continue
+        decoded = C.decode_config(reply.opcode, reply.params)
+        if isinstance(decoded, C.NetKeyList):
+            held["net_keys"] = sorted(decoded.net_key_indexes)
+            continue
+        assert isinstance(
+            decoded, C.AppKeyList
+        )  # `Query.matches` let only this through
+        if not decoded.ok:
+            findings.append(
+                Finding(KEYS_REFUSED, setting="app_keys", actual=decoded.status_name)
+            )
+            app_keys = None
+        elif app_keys is not None:
+            app_keys.update(decoded.app_key_indexes)
+    held["app_keys"] = None if app_keys is None else sorted(app_keys)
+    return held, findings
 
 
 def _hex(addresses: Iterable[int]) -> list[str]:
@@ -463,6 +563,18 @@ def evaluate(node: Node, replies: Mapping[Query, AccessMessage | None]) -> NodeA
                         actual=value,
                     )
                 )
+    expected_keys = export_keys(node)
+    held, key_findings = _node_keys(node, replies)
+    audit.findings += key_findings
+    for name in KEY_LISTS:
+        export, ours = expected_keys[name], held[name]
+        audit.keys[name] = {"export": export, "node": ours}
+        if export is None or ours is None:
+            continue
+        if missing := sorted(set(export) - set(ours)):
+            audit.findings.append(Finding(KEYS_MISSING, setting=name, expected=missing))
+        if extra := sorted(set(ours) - set(export)):
+            audit.findings.append(Finding(KEYS_EXTRA, setting=name, actual=extra))
     for element, raw in _audited_models(node):
         publish = raw.get("publish")
         row = ModelAudit(

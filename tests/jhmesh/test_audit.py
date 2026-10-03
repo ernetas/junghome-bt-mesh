@@ -28,6 +28,9 @@ GETS = {
     C.CONFIG_DEFAULT_TTL_GET,
     C.CONFIG_BEACON_GET,
     C.CONFIG_GATT_PROXY_GET,
+    C.CONFIG_FRIEND_GET,
+    C.CONFIG_NETKEY_GET,
+    C.CONFIG_APPKEY_GET,
     C.CONFIG_MODEL_PUBLICATION_GET,
     C.CONFIG_SIG_MODEL_SUBSCRIPTION_GET,
     C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_GET,
@@ -35,7 +38,7 @@ GETS = {
     C.CONFIG_VENDOR_MODEL_APP_GET,
 }
 # what the fake nodes hold (hidden-features §9), in the export's terms; the fixture export records relay,
-# proxy and TTL only
+# proxy, friend and TTL only
 SETTINGS = {
     "relay": {"export": 1, "node": 1},
     "relay_retransmit": {"export": None, "node": {"count": 3, "interval": 90}},
@@ -43,6 +46,12 @@ SETTINGS = {
     "default_ttl": {"export": 5, "node": 5},
     "beacon": {"export": None, "node": True},
     "gatt_proxy": {"export": 1, "node": 1},
+    "friend": {"export": 2, "node": 2},
+}
+# NetKey 0 and AppKey 0, as the export gives every node
+KEYS = {
+    "net_keys": {"export": [0], "node": [0]},
+    "app_keys": {"export": [0], "node": [0]},
 }
 
 
@@ -81,16 +90,19 @@ async def test_a_node_holding_the_export_has_no_findings(
     assert result.answered
     assert result.findings == []
     assert result.settings == SETTINGS
+    assert result.keys == KEYS
     assert len(result.models) == 30  # 31 models, the Configuration Server left out
     assert {m.model for m in result.models} >= {"1000", "1203", "05271013"}
     assert "0000" not in {m.model for m in result.models}
-    # five node-wide Gets, then three per model — Gets only, never a Set
-    assert len(servers.seen) == 5 + 3 * 30
+    # six node-wide Gets and two for the keys, then three per model — Gets only, never a Set
+    assert len(servers.seen) == 6 + 2 + 3 * 30
     assert {decode_opcode(pdu)[0] for _node, pdu in servers.seen} <= GETS
+    assert (PROXY_NODE, C.netkey_get()) in servers.seen
+    assert (PROXY_NODE, C.appkey_get(0)) in servers.seen
     assert (PROXY_NODE, C.model_app_get(PROXY_NODE, "05271013")) in servers.seen
     assert (PROXY_NODE, C.model_subscription_get(0x0149, "1001")) in servers.seen
-    # five at a time: one chunk of settings, 18 of models, a pause between two chunks of a batch
-    assert paced.sleeps == [A.PAUSE] * 17
+    # five at a time: two chunks of node-wide Gets, 18 of models, a pause between two chunks of a batch
+    assert paced.sleeps == [A.PAUSE] * 18
     onoff = next(m for m in result.models if m.model == "1000")
     assert (onoff.node_publish, onoff.node_subscribe, onoff.node_app_keys) == (
         0xC061,
@@ -103,6 +115,7 @@ async def test_a_node_holding_the_export_has_no_findings(
                 "name": "Push-button 1-gang",
                 "answered": True,
                 "settings": SETTINGS,
+                "keys": KEYS,
                 "models": 30,
                 "findings": [],
             }
@@ -243,11 +256,12 @@ async def test_a_silent_node_is_not_asked_about_its_models(
     result = await audit(attached, cdb, GATEWAY)
 
     assert not result.answered
-    assert len(servers.seen) == 5  # the node-wide Gets, once each
+    assert len(servers.seen) == 8  # the node-wide and key Gets, once each
     assert result.as_dict() == {
         "name": "Gateway",
         "answered": False,
         "settings": {},
+        "keys": {},
         "models": 0,
         "findings": [{"kind": "node_unanswered"}],
     }
@@ -327,7 +341,9 @@ def test_evaluate_counts_a_missing_answer_as_unanswered(cdb: CDB) -> None:
     node = cdb.node_by_addr(GATEWAY)
     assert node is not None
     result = A.evaluate(node, {})
-    assert [f.kind for f in result.findings] == ["setting_unanswered"] * 6 + [
+    assert [f.kind for f in result.findings] == ["setting_unanswered"] * 7 + [
+        "keys_unanswered"
+    ] * 2 + [
         "publication_unanswered",
         "subscriptions_unanswered",
         "app_keys_unanswered",
@@ -366,6 +382,126 @@ def test_a_query_takes_only_the_answer_about_its_own_model(cdb: CDB) -> None:
     ttl = next(q for q in A.setting_queries(node) if q.kind == "default_ttl")
     assert ttl.matches(_reply(C.CONFIG_DEFAULT_TTL_STATUS, b"\x05"))
     assert not ttl.matches(_reply(C.CONFIG_DEFAULT_TTL_STATUS, b""))
+
+
+async def test_a_node_missing_a_key_is_reported_by_index(
+    attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
+) -> None:
+    """The key lists are compared by index: a node lacking AppKey 0, holding NetKey 1 the export does not give it."""
+    servers.node_app_keys[GATEWAY] = []
+    servers.net_keys[GATEWAY] = [0, 1]
+
+    result = await audit(attached, cdb, GATEWAY)
+
+    assert kinds(result) == [
+        {"kind": "keys_extra", "setting": "net_keys", "actual": [1]},
+        {"kind": "keys_missing", "setting": "app_keys", "expected": [0]},
+    ]
+    assert result.keys == {
+        "net_keys": {"export": [0], "node": [0, 1]},
+        "app_keys": {"export": [0], "node": []},
+    }
+    assert A.report([result])["nodes"]["00DC"]["keys"] == result.keys
+
+
+async def test_a_node_without_the_export_s_netkey_refuses_its_appkey_get(
+    attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
+) -> None:
+    servers.net_keys[GATEWAY] = [1]
+    servers.silent_gets.add((PROXY_NODE, "net_keys"))
+
+    result = await audit(attached, cdb, GATEWAY)
+
+    assert kinds(result) == [
+        {
+            "kind": "keys_refused",
+            "setting": "app_keys",
+            "actual": "Invalid NetKey Index",
+        },
+        {"kind": "keys_missing", "setting": "net_keys", "expected": [0]},
+        {"kind": "keys_extra", "setting": "net_keys", "actual": [1]},
+    ]
+    assert result.keys["app_keys"] == {"export": [0], "node": None}
+
+    other = await audit(attached, cdb, PROXY_NODE)
+    assert kinds(other) == [{"kind": "keys_unanswered", "setting": "net_keys"}]
+    assert other.keys["net_keys"] == {"export": [0], "node": None}
+
+
+async def test_unanswered_appkey_gets_leave_the_appkeys_unknown(
+    attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
+) -> None:
+    """An AppKey Get per NetKey the export gives the node; one left unanswered, the union would be short."""
+    node = cdb.node_by_addr(GATEWAY)
+    assert node is not None
+    node.raw["netKeys"] = [{"index": 0}, {"index": 1}]
+    servers.net_keys[GATEWAY] = [0, 1]
+    servers.silent_gets.add((GATEWAY, "app_keys"))
+
+    result = await audit(attached, cdb, GATEWAY)
+
+    assert (GATEWAY, C.appkey_get(1)) in servers.seen
+    assert kinds(result) == [{"kind": "keys_unanswered", "setting": "app_keys"}] * 2
+    assert result.keys["app_keys"] == {"export": [0], "node": None}
+
+
+async def test_one_refused_appkey_get_leaves_the_appkeys_unknown(
+    attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
+) -> None:
+    """NetKey 0 refused, NetKey 1 answered: the AppKeys of NetKey 1 alone would pass for all of them."""
+    node = cdb.node_by_addr(GATEWAY)
+    assert node is not None
+    node.raw["netKeys"] = [{"index": 1}, {"index": 0}]
+    servers.net_keys[GATEWAY] = [1]
+
+    result = await audit(attached, cdb, GATEWAY)
+
+    assert kinds(result) == [
+        {
+            "kind": "keys_refused",
+            "setting": "app_keys",
+            "actual": "Invalid NetKey Index",
+        },
+        {"kind": "keys_missing", "setting": "net_keys", "expected": [0]},
+    ]
+    assert result.keys["app_keys"] == {"export": [0], "node": None}
+
+
+def test_export_keys_not_recorded_as_a_list_are_not_compared(cdb: CDB) -> None:
+    node = cdb.node_by_addr(GATEWAY)
+    assert node is not None
+    node.raw = {"netKeys": "0", "appKeys": [{"index": "0"}, {"index": 2}, 3]}
+    assert A.export_keys(node) == {"net_keys": None, "app_keys": [2]}
+    # the primary NetKey is asked about when the export names none
+    assert [q.net_key for q in A.key_queries(node)] == [None, 0]
+    netkeys = C.CONFIG_NETKEY_LIST
+    result = A.evaluate(
+        node,
+        {
+            A.key_queries(node)[0]: _reply(netkeys, bytes.fromhex("0000")),
+            A.key_queries(node)[1]: _reply(
+                C.CONFIG_APPKEY_LIST, bytes.fromhex("0000000200")
+            ),
+        },
+    )
+    assert result.keys == {
+        "net_keys": {"export": None, "node": [0]},
+        "app_keys": {"export": [2], "node": [2]},
+    }
+    assert not [f for f in result.findings if f.kind.startswith("keys_")]
+
+
+def test_an_appkey_query_takes_only_the_list_of_its_own_netkey(cdb: CDB) -> None:
+    node = cdb.node_by_addr(GATEWAY)
+    assert node is not None
+    netkeys, appkeys = A.key_queries(node)
+    assert appkeys.matches(_reply(C.CONFIG_APPKEY_LIST, bytes.fromhex("0000000000")))
+    assert not appkeys.matches(
+        _reply(C.CONFIG_APPKEY_LIST, bytes.fromhex("0001000000"))
+    )
+    assert not appkeys.matches(_reply(C.CONFIG_NETKEY_LIST, bytes.fromhex("0000")))
+    assert netkeys.matches(_reply(C.CONFIG_NETKEY_LIST, bytes.fromhex("0000")))
+    assert not netkeys.matches(_reply(C.CONFIG_NETKEY_LIST, b"\x00"))
 
 
 class _Client:

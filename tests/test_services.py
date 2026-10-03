@@ -2689,6 +2689,8 @@ ADMIN_CALLS: dict[str, dict[str, Any]] = {
     "add_device": {"address": "AA:BB:CC:DD:EE:FF", "name": "New"},
     "remove_device": {"device": "any"},
     "reset_pending_device": {"unicast": "0D20"},
+    "locate_node": {"device": "any"},
+    "approve_gateway_client": {"client": "ioBroker"},
 }
 
 

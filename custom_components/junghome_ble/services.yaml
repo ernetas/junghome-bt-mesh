@@ -752,6 +752,31 @@ reset_pending_device:
         config_entry:
           integration: junghome_ble
 
+locate_node:
+  fields:
+    device:
+      required: true
+      selector:
+        device:
+          integration: junghome_ble
+    duration:
+      default: 60
+      selector:
+        number:
+          min: 5
+          max: 60
+          unit_of_measurement: s
+
+approve_gateway_client:
+  fields:
+    client:
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
 
 start_dim:
   target:

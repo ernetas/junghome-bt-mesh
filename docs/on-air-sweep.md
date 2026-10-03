@@ -110,6 +110,8 @@ pass removed the markers of the checks that passed.
 | [A5](#a5--inserts-and-key-layouts-from-the-adverts-f4-12) | Inserts and key layouts from the adverts | push-buttons | nothing | — |
 | [A6](#a6--node-clocks-time-zones-and-stored-locations-f4-8) | Node clocks, zones, locations; the clock repair | any | nothing | — |
 | [A7](#a7--firmware-only-properties-read-only-f4-3-f4-9-f4-10-f4-11) | Firmware-only properties, read only | push-buttons, a mini, a socket | nothing | — |
+| [A8](#a8--keys-held-and-friend-in-the-audit-f4-15) | Audit: keys held and Friend (`msg:op:8001`, `8042`, `800f`) | any mains node | nothing | — |
+| [A9](#a9--firmware-entities-f4-18-u4-11) | *Firmware* `update` entities | any node | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -119,6 +121,7 @@ pass removed the markers of the checks that passed.
 | [B7](#b7--a-plan-to-an-unreachable-device-is-refused) | Plan refused for an unreachable device | a light on its own breaker | power of one light | — |
 | [B8](#b8--transitions-probe-f4-1) | Transitions probe: which loads fade | DALI, dimmer, switch insert, a scene | load states | **yes** |
 | [B9](#b9--homeassistantupdate_entity-reads-the-device) | *update entity* reads the device | a light, a push-button, the app | a setting, restored | — |
+| [B10](#b10--locate_node-node-identity-f4-15) | `locate_node`: Node Identity on, then off (`msg:op:8047`) | any mains node, a BLE scanner | nothing kept | — |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
 | [C3](#c3--lock-function-of-a-load-0x0009-and-locked-loads-f4-2) | Lock function of a light (`0x0009`), locked loads (F4-2) | a light + its key, a dimmer, the app | locks, undone | **yes** |
@@ -138,6 +141,7 @@ pass removed the markers of the checks that passed.
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
 | [E4](#e4--a-key-renewal-in-the-app-decision) | Key renewal in the app (decision) | the app | **the network key** | — |
+| [E5](#e5--approve-a-gateway-api-client-f4-17) | `approve_gateway_client` | gateway, a second API client | **an approved client** | — |
 | [F](#f--not-checkable-here) | Not checkable here | — | — | — |
 | [G](#g--already-seen-on-air) | Seen on air before; markers to drop | — | — | — |
 
@@ -304,6 +308,33 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status`,
   `custom_components/junghome_ble/sensor.py::JungHomeSwitchOffAt`.
 
+### A8 · Keys held and Friend in the audit (F4-15)
+
+- **Checks:** review-4 brief 41 — `audit_network` asks each mains node *NetKey Get*, *AppKey Get* (NetKey 0) and
+  *Friend Get* besides its other Gets, and every node answers: a NetKey List and an AppKey List of indexes, a Friend
+  Status (2, not supported, expected on every node: `docs/hidden-features.md` §1).
+- **Needs:** any mains node. **Safety:** read-only (Gets).
+- **Do:** `tools/mesh_poc.py --cdb <export.json> config audit <node>` on a light and a socket node; then in Home
+  Assistant `audit_network` with `device` set to the same light.
+- **Capture:** `--src <ha> --grep 'NetKey|AppKey|Friend'`: one *NetKey Get*, one *AppKey Get netkey=0* and one
+  *Friend Get* per node, each answered (`NetKey List netkeys=[0]`, `AppKey List Success: netkey=0 appkeys=[0]`,
+  `Friend Status not supported`). The lists carry indexes only; nothing to keep private.
+- **Pass:** the CLI prints `net_keys 0  app_keys 0`; the action's `keys` read `export` = `node` = `[0]` for both lists,
+  `settings.friend` `{export: 2, node: 2}`, and no `keys_*` finding.
+- **Markers:** `msg:op:8001`, `msg:op:8002`, `msg:op:8042`, `msg:op:8043`, `msg:op:800f`, `msg:op:8011`,
+  `custom_components/junghome_ble/jhmesh/audit.py::<module>`.
+
+### A9 · Firmware entities (F4-18, U4-11)
+
+- **Checks:** review-4 brief 41 — each node's *Firmware* `update` entity shows the version the device page shows and
+  the one the app bundles for the product, and offers no install.
+- **Needs:** any node. **Safety:** read-only (nothing is sent: the version is the one already read).
+- **Do:** enable the *Firmware* entity of a push-button, a socket and a mini actuator; open each.
+- **Capture:** none.
+- **Pass:** installed and latest version both shown (`2.2.0.2` on a push-button, `2.2.0.1` on a socket or mini
+  actuator), *Up-to-date*, no *Install* button; the release summary names the JUNG HOME app.
+- **Markers:** none in the code (the comparison is offline); the docs' *Firmware* section ends on it.
+
 ## B · Momentary control
 
 Loads switch or dim and are set back by hand; nothing persists on a device.
@@ -453,6 +484,24 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 - **Capture:** `--src <ha>`: one Get per update, none for a second update within 2 s.
 - **Pass:** the entity shows the app's new value at once; the light its real state. Set the value back.
 - **Markers:** none of its own on these loads (the code is marked only for the hardware in [F](#f--not-checkable-here)).
+
+### B10 · `locate_node`: Node Identity (F4-15)
+
+- **Checks:** review-4 brief 41 — `locate_node` sends a *Node Identity Set* (running) with the node's device key,
+  the node answers *Node Identity Status running* and advertises its Node Identity instead of the Network ID, and
+  the Set off follows after `duration`.
+- **Needs:** a mains node (`<node>`), a Bluetooth scanner near it (Home Assistant's Bluetooth advertisement monitor,
+  or a phone app). **Safety:** reversible: the node stops by itself after 60 s.
+- **Do:** `locate_node` with `device` the node's device and `duration: 30`, response on; watch the scanner for the
+  node's MAC; wait a minute.
+- **Capture:** `--src <ha> --grep 'Node Identity'`: the Set (`running`), its Status from `<node>`, the Set off 30 s
+  later and its Status (`stopped`).
+- **Pass:** the response `{node: <node>, seconds: 30}`; the scanner shows the node's Mesh Proxy service data change
+  from the Network ID (type 0) to a Node Identity (type 1) and back; Home Assistant's link is unaffected.
+- **Markers:** `msg:op:8047`, `msg:op:8048`, `msg:op:8046`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.async_locate`,
+  `custom_components/junghome_ble/services.py::_locate_node`,
+  `custom_components/junghome_ble/strings.json::services.locate_node.description`.
 
 ## C · Settings, changed and set back
 
@@ -919,6 +968,25 @@ spend.
   `custom_components/junghome_ble/coordinator.py::async_release_network_id`,
   `custom_components/junghome_ble/config_flow.py::mesh_proxies_without_match`.
 
+### E5 · Approve a gateway API client (F4-17)
+
+- **Checks:** review-4 brief 41 — `approve_gateway_client` lists the requests waiting at the gateway and approves
+  the one named with `POST config {"data": {"api_client_accept": <name>}}` over the pinned connection.
+- **Needs:** a gateway entry; a second API client that asks the gateway for access (the gateway integration being
+  set up without a password, or a `POST /api/junghome/register` from a script on the LAN). **Stays changed:** that
+  client holds a token for the gateway's whole API; revoke it in the app afterwards if it was only for the test
+  (*Access permissions*; note that the app's reset revokes Home Assistant's token too, which E1 then renews).
+- **Do:** start the client's request; within its three minutes run `approve_gateway_client` without `client`
+  (response on), then with the name it listed.
+- **Capture:** none on air (HTTPS); Home Assistant's log at INFO.
+- **Pass:** the first call answers the name under `waiting`; the second `{approved: <name>, waiting: []}`, the client
+  receives its token, the *Access requests* sensor drops to 0; the log names the client and never the token. A
+  misspelt name is refused and approves nothing.
+- **Markers:** `net:http:post-config:permissionsdto`,
+  `custom_components/junghome_ble/gateway_api.py::JungHomeGatewayApi.approve_client`,
+  `custom_components/junghome_ble/services.py::_approve_gateway_client`,
+  `custom_components/junghome_ble/strings.json::services.approve_gateway_client.description`.
+
 ## F · Not checkable here
 
 | Why | Markers |
@@ -962,6 +1030,8 @@ citing the session and sequence number, open a regression test for each failure,
 | A4 | | | |
 | A6 | | | |
 | A7 | | | |
+| A8 | | | |
+| A9 | | | |
 | B1 | | | |
 | B2 | | | |
 | B3 | | | |
@@ -969,6 +1039,7 @@ citing the session and sequence number, open a regression test for each failure,
 | B5 | | | |
 | B6 | | | |
 | B7 | | | |
+| B10 | | | |
 | C1 | | | |
 | C2 | | | |
 | C3 | | | |
@@ -985,3 +1056,4 @@ citing the session and sequence number, open a regression test for each failure,
 | E2 | | | |
 | E3 | | | |
 | E4 | | | |
+| E5 | | | |

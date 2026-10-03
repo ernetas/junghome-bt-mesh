@@ -371,7 +371,30 @@
   byte but for the new rows. Unverified with the app: the shapes come from the Android app's decompile and no app has
   imported such a file yet; try it on a spare app install first (`docs/on-air-sweep.md`, section F).
 
+- `audit_network` also checks the keys each device holds and its Friend state (review-4 F4-15): a NetKey Get and an
+  AppKey Get per network key the export gives the device, compared by index with the export's `netKeys` and
+  `appKeys` — a key list carries indexes only, and no key is compared or shown. Each node's result has a `keys` entry
+  (`net_keys` / `app_keys`, `export` and `node` each), and the findings `keys_missing`, `keys_extra`,
+  `keys_unanswered` and `keys_refused`; `settings` has `friend`. Unverified on air.
+- The action `junghome_ble.locate_node` (administrators only; review-4 F4-15) has a device advertise its Node Identity
+  for up to a minute, then switches it off again, so a Bluetooth scanner tells its radio from the others; a device
+  stops by itself after a minute anyway. Unverified on air.
+- The action `junghome_ble.approve_gateway_client` (administrators only; review-4 F4-17) lists the access requests
+  waiting at the JUNG HOME Gateway and approves the one named, as the app's *Access permissions → Open requests*
+  does — only a name the gateway lists as waiting, never without one, over the pinned connection and under the
+  export's rules (the gateway node vouched for the pin, the token not rejected). Revoking access and the gateway's
+  network settings stay with the app. Unverified on air.
+- A read-only *Firmware* `update` entity per node but the gateway (review-4 F4-18, U4-11; diagnostic, off by
+  default): the software version the node reports against the version the JUNG HOME app 2.2.0 bundles for its
+  product. An older one shows as an update available, with the release summary pointing to the app: Home Assistant
+  only compares, it offers no install and never transfers firmware.
+
 ### CLI tools and library
+
+- `jhmesh.config_messages` builds Config NetKey Get, AppKey Get, Friend Get and Node Identity Get / Set, and decodes
+  the NetKey List, AppKey List (`NetKeyList`, `AppKeyList`: indexes only), Friend Status and Node Identity Status,
+  `describe_config` naming each (review-4 F4-15). `jhmesh.audit` asks them (`key_queries`, `export_keys`,
+  `NodeAudit.keys`), and `tools/mesh_poc.py config audit` prints the key indexes a node holds next to the export's.
 
 - `jhmesh.messages.time_get()` and `time_zone_get()` build Time Get and Time Zone Get; `decode_time_status()` and
   `decode_time_zone_status()` return a `TimeStatus` (with its `utc`, None for a node without a time) and a

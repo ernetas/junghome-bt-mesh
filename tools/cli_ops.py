@@ -457,6 +457,13 @@ def _setting_text(value: Any) -> str:
     return str(value)
 
 
+def _keys_text(value: list[int] | None) -> str:
+    """The key indexes a node holds as the audit reports them: `?` unanswered, `-` none, `0,1` otherwise."""
+    if value is None:
+        return "?"
+    return ",".join(map(str, value)) or "-"
+
+
 def audit_row_text(row: ModelAudit) -> str:
     """`0148 1203     publish C061 → C061  subscribe C00F,C061,FEF5 → C061  appkeys 0 → 0`.
 
@@ -498,7 +505,7 @@ def finding_text(finding: Finding) -> str:
 
 
 def audit_text(cdb: CDB, audit: NodeAudit) -> str:
-    """One node's audit for the terminal: its node-wide states, the models worth a row, every finding, a verdict.
+    """One node's audit for the terminal: its node-wide states and keys, the models worth a row, every finding, a verdict.
 
     A model gets a row when it publishes or subscribes, in the export or on the node, or has a finding — the
     AppKey binding alone (AppKey 0 on nearly every model) would bury them.
@@ -518,6 +525,19 @@ def audit_text(cdb: CDB, audit: NodeAudit) -> str:
             for name, s in audit.settings.items()
         )
     )
+    if audit.keys:
+        lines.append(
+            "  "
+            + "  ".join(
+                f"{name} {_keys_text(k['node'])}"
+                + (
+                    ""
+                    if k["export"] in (None, k["node"])
+                    else f" (export {_keys_text(k['export'])})"
+                )
+                for name, k in audit.keys.items()
+            )
+        )
     flagged = {(f.element, f.model) for f in audit.findings}
     lines += [
         "  " + audit_row_text(m)

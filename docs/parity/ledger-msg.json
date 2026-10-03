@@ -473,21 +473,31 @@
   },
   {
    "id": "msg:op:8001",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config AppKey Get builder (NetKeyIndex u16 LE, 12 bit). The app sends it as the read side of AddAppKeyMessageBuilder (expects 0x8003 there). Verify: one read-only AppKey Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::appkey_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::key_queries"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
+    "tests/jhmesh/test_audit.py::test_unanswered_appkey_gets_leave_the_appkeys_unknown"
+   ],
+   "note": "Unverified on air (review 4 brief 41): Config AppKey Get per NetKey the export gives the node; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8002",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config AppKey List decoder / describe() entry (Status u8, NetKeyIndex, AppKey indexes packed 2 per 3 B). Verify: one read-only AppKey Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_appkey_list",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::AppKeyList",
+    "custom_components/junghome_ble/jhmesh/audit.py::_node_keys"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
+    "tests/jhmesh/test_audit.py::test_a_node_missing_a_key_is_reported_by_index",
+    "tests/jhmesh/test_audit.py::test_a_node_without_the_export_s_netkey_refuses_its_appkey_get"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the AppKey List answering it, compared by index with the node's `appKeys`; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8003",
@@ -588,11 +598,16 @@
   },
   {
    "id": "msg:op:800f",
-   "status": "na",
-   "code": [],
-   "tests": [],
-   "class": "declined",
-   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::friend_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::_SETTING_GETS"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_friend_get_and_status",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ],
+   "note": "Unverified on air (review 4 brief 41): Config Friend Get, read only: becoming a Friend stays declined (docs/roadmap.md, 'Friend and Low Power Node'); `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8010",
@@ -604,11 +619,17 @@
   },
   {
    "id": "msg:op:8011",
-   "status": "na",
-   "code": [],
-   "tests": [],
-   "class": "declined",
-   "reason": "Declined: every node reports the Friend and Low Power features unsupported (docs/hidden-features.md §1), and the app never sends it. Decision record: docs/roadmap.md, '### Candidates from the device side', 'Not worth doing' (review 4, report 6 §1), 'Friend and Low Power Node'."
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_friend_status",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::FriendStatus",
+    "custom_components/junghome_ble/jhmesh/audit.py::_node_settings"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_friend_get_and_status",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the Friend Status answering it, compared with the export's `features.friend` (2, not supported, on every node per docs/hidden-features.md section 1); `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8012",
@@ -1062,21 +1083,30 @@
   },
   {
    "id": "msg:op:8042",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config NetKey Get builder / constant (0 B). Verify: one read-only NetKey Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::netkey_get",
+    "custom_components/junghome_ble/jhmesh/audit.py::key_queries"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
+    "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
+   ],
+   "note": "Unverified on air (review 4 brief 41): Config NetKey Get; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8043",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config NetKey List decoder / describe() (NetKey indexes packed 2 per 3 B); _unpack_key_index_list exists and could be reused. Verify: one read-only NetKey Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_netkey_list",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::NetKeyList",
+    "custom_components/junghome_ble/jhmesh/audit.py::_node_keys"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
+    "tests/jhmesh/test_audit.py::test_a_node_missing_a_key_is_reported_by_index"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the NetKey List answering it, compared by index with the node's `netKeys`; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8044",
@@ -1110,30 +1140,42 @@
   },
   {
    "id": "msg:op:8046",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config Node Identity Get builder (NetKeyIndex u16 LE); review-3 Phase 3 lists Node Identity as a library gap. Verify: one read-only Node Identity Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::node_identity_get"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_identity_get_set_and_status"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the builder and its describe only; nothing in Home Assistant sends it (the locator's Set answers with the same status)."
   },
   {
    "id": "msg:op:8047",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config Node Identity Set builder (NetKeyIndex, Identity u8). Verify: a Set only starts Node Identity advertising for 60 s (harmless); the adverts are already decoded by advert.py.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::node_identity_set",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_locate",
+    "custom_components/junghome_ble/services.py::_locate_node"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_identity_get_set_and_status",
+    "tests/test_audit.py::test_locate_switches_the_node_identity_on_and_off_again",
+    "tests/test_audit.py::test_unloading_the_entry_drops_the_pending_off"
+   ],
+   "note": "Unverified on air (review 4 brief 41): Config Node Identity Set on (the node advertises its Node Identity for 60 s at most); the `locate_node` action sends it, then the Set off (docs/on-air-sweep.md B10)."
   },
   {
    "id": "msg:op:8048",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "No Config Node Identity Status decoder / describe() (Status, NetKeyIndex, Identity). Verify: one read-only Node Identity Get to any node.",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/config_messages.py::decode_node_identity_status",
+    "custom_components/junghome_ble/jhmesh/config_messages.py::NodeIdentityStatus"
+   ],
+   "tests": [
+    "tests/jhmesh/test_config_messages.py::test_node_identity_get_set_and_status",
+    "tests/test_audit.py::test_a_node_that_cannot_or_will_not_advertise_its_identity_is_reported"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the Node Identity Status answering the Set (running, or not supported); the `locate_node` action sends it, then the Set off (docs/on-air-sweep.md B10)."
   },
   {
    "id": "msg:op:8049",

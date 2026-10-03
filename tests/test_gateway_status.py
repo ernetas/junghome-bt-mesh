@@ -24,6 +24,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
     EntityCategory,
 )
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -100,12 +101,15 @@ LOG = [
 class FakeRest:
     """What the gateway answers: a value, or an exception to raise; the hosts every call went to.
 
-    `once` answers the next `GET config` before `config` does.
+    `once` answers the next `GET config` before `config` does; `approve` is what an approval raises (None: it
+    lands, the name is kept in `approved`).
     """
 
     def __init__(self) -> None:
         self.config: Any = CONFIG
         self.health: Any = LOG
+        self.approve: Exception | None = None
+        self.approved: list[str] = []
         self.once: list[Exception] = []
         self.calls: list[tuple[str, str]] = []
 
@@ -129,9 +133,16 @@ def rest() -> Generator[FakeRest]:
     async def health_status(api: JungHomeGatewayApi) -> list[GatewayHealthEntry]:
         return fake.answer("health", api.host)  # type: ignore[no-any-return]
 
+    async def approve_client(api: JungHomeGatewayApi, name: str) -> None:
+        fake.calls.append(("approve", api.host))
+        if fake.approve is not None:
+            raise fake.approve
+        fake.approved.append(name)
+
     with (
         patch.object(JungHomeGatewayApi, "config", config),
         patch.object(JungHomeGatewayApi, "health_status", health_status),
+        patch.object(JungHomeGatewayApi, "approve_client", approve_client),
     ):
         yield fake
 
@@ -578,3 +589,134 @@ async def test_the_sync_record_is_taken_over_from_the_entry_once(
     await hass.config_entries.async_remove(entry.entry_id)
     await settle(hass)
     assert key not in hass_storage
+
+
+# --------------------------------------------------------------------------- approve_gateway_client (review-4 F4-17)
+
+
+async def approve(hass: HomeAssistant, **data: Any) -> Any:
+    return await hass.services.async_call(
+        DOMAIN, "approve_gateway_client", data, blocking=True, return_response=True
+    )
+
+
+def refusal(caught: pytest.ExceptionInfo[HomeAssistantError]) -> str | None:
+    return caught.value.translation_key
+
+
+async def test_approve_lists_the_waiting_clients_and_approves_only_one_named(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    rest: FakeRest,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Without a name nothing is approved; a name the gateway does not list as waiting is refused; the one named
+    is approved, and the answer lists who is still waiting. The token never reaches the log."""
+    caplog.set_level(logging.DEBUG)
+    rest.config = replace(CONFIG, clients_asking=("ioBroker", "Someone"))
+    assert await approve(hass) == {"approved": None, "waiting": ["ioBroker", "Someone"]}
+    with pytest.raises(ServiceValidationError) as caught:
+        await approve(hass, client="iobroker")  # exactly as listed
+    assert refusal(caught) == "approve_client_not_waiting"
+    assert caught.value.translation_placeholders == {
+        "client": "iobroker",
+        "waiting": "ioBroker, Someone",
+    }
+    assert rest.approved == []
+
+    assert await approve(hass, client="ioBroker") == {
+        "approved": "ioBroker",
+        "waiting": ["Someone"],
+    }
+    assert rest.approved == ["ioBroker"]
+    assert "Approved the API client 'ioBroker' at the gateway junghome.local" in (
+        caplog.text
+    )
+    assert "tok.en" not in caplog.text
+    # without asking for the response, the action answers nothing (and still approves)
+    rest.config = replace(CONFIG, clients_asking=("Other",))
+    await hass.services.async_call(
+        DOMAIN, "approve_gateway_client", {"client": "Other"}, blocking=True
+    )
+    assert rest.approved == ["ioBroker", "Other"]
+    rest.config = replace(CONFIG, clients_asking=())
+    with pytest.raises(ServiceValidationError) as caught:
+        await approve(hass, client="Other")
+    assert caught.value.translation_placeholders["waiting"] == "-"  # type: ignore[index]
+
+
+async def test_approve_failures_raise_the_repairs_and_send_nothing_unsafe(
+    hass: HomeAssistant, entry: MockConfigEntry, rest: FakeRest
+) -> None:
+    """A rejected token raises its repair (and the reauth), after which the gateway is not asked; another
+    certificate raises the certificate repair; busy and failing gateways say so; an answer clears both repairs."""
+    issues = ir.async_get(hass)
+    rest.approve = GatewayAuthError("POST config: HTTP 401")
+    with pytest.raises(HomeAssistantError) as caught:
+        await approve(hass, client="Someone")
+    assert refusal(caught) == "approve_gateway_token_rejected"
+    assert issues.async_get_issue(DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+    assert len(reauth_flows(hass, entry)) == 1
+    asked = len(rest.calls)
+    with pytest.raises(HomeAssistantError) as caught:
+        await approve(hass, client="Someone")
+    assert refusal(caught) == "approve_gateway_token_rejected"
+    assert len(rest.calls) == asked  # not asked with a rejected token
+    hass.config_entries.flow.async_abort(reauth_flows(hass, entry)[0]["flow_id"])
+    ir.async_delete_issue(hass, DOMAIN, issue_id(entry, ISSUE_GATEWAY_TOKEN))
+
+    rest.approve = None
+    rest.config = GatewayCertificateMismatch(HOST, "ab" * 32, "cd" * 32)
+    with pytest.raises(HomeAssistantError) as caught:
+        await approve(hass, client="Someone")
+    assert refusal(caught) == "gateway_certificate_changed"
+    assert caught.value.translation_placeholders == {
+        "host": HOST,
+        "expected": "ab" * 32,
+        "observed": "cd" * 32,
+    }
+    assert issues.async_get_issue(DOMAIN, issue_id(entry, ISSUE_GATEWAY_CERTIFICATE))
+
+    for error, key in (
+        (GatewayBusy("busy"), "approve_gateway_busy"),
+        (GatewayUnreachable("GET config: TimeoutError"), "approve_gateway_failed"),
+    ):
+        rest.config = error
+        with pytest.raises(HomeAssistantError) as caught:
+            await approve(hass, client="Someone")
+        assert refusal(caught) == key
+    assert rest.approved == []
+
+    rest.config = CONFIG
+    await approve(hass, client="Someone")
+    assert rest.approved == ["Someone"]
+    assert (
+        issues.async_get_issue(DOMAIN, issue_id(entry, ISSUE_GATEWAY_CERTIFICATE))
+        is None
+    )
+
+
+async def test_approve_needs_a_gateway_the_mesh_vouched_for(
+    hass: HomeAssistant, entry: MockConfigEntry, rest: FakeRest, tmp_path: Path
+) -> None:
+    """A pin the gateway node has not vouched for is not used, and an entry without a gateway has none to ask."""
+    rest.calls.clear()
+    with (
+        patch.object(
+            type(entry.runtime_data),
+            "async_gateway_distrust",
+            return_value="the gateway node has not confirmed the pinned certificate",
+        ),
+        pytest.raises(HomeAssistantError) as caught,
+    ):
+        await approve(hass, client="Someone")
+    assert refusal(caught) == "approve_gateway_distrusted"
+    assert rest.calls == []
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_SOURCE: "upload"}
+    )
+    await settle(hass)  # the change reloads the entry
+    with pytest.raises(ServiceValidationError) as caught:
+        await approve(hass, client="Someone")
+    assert refusal(caught) == "approve_no_gateway"
+    assert rest.calls == []

@@ -902,6 +902,11 @@
       "room_lights": {
         "name": "All lights in {room}"
       }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
     }
   },
   "device_automation": {
@@ -1349,6 +1354,36 @@
     },
     "dim_not_dimmable": {
       "message": "{entity} is not a JUNG HOME dimmer: only dimmers and DALI tunable-white channels can be dimmed this way."
+    },
+    "locate_no_answer": {
+      "message": "The JUNG device {node} did not answer the request to advertise its identity; is it powered and in range? A battery device is asleep and answers only while awake."
+    },
+    "locate_refused": {
+      "message": "The JUNG device {node} refused to advertise its identity: {status}."
+    },
+    "locate_not_supported": {
+      "message": "The JUNG device {node} cannot advertise its identity (Node Identity is not supported)."
+    },
+    "approve_no_gateway": {
+      "message": "This network was not set up from a JUNG HOME Gateway (no gateway address and token in the entry): there is no gateway to approve clients at."
+    },
+    "approve_gateway_distrusted": {
+      "message": "The JUNG HOME Gateway at {host} was not asked: {error}. Nothing was approved."
+    },
+    "approve_gateway_token_rejected": {
+      "message": "The JUNG HOME Gateway at {host} no longer accepts Home Assistant's access, so nothing was approved. Grant access again through the re-authentication Home Assistant asks for (Settings → Devices & services), then run this again."
+    },
+    "approve_client_not_waiting": {
+      "message": "No API client named “{client}” is waiting for access at the gateway (waiting: {waiting}). Nothing was approved."
+    },
+    "approve_gateway_busy": {
+      "message": "The JUNG HOME Gateway at {host} is busy with another configuration request; try again in a minute. Nothing was approved."
+    },
+    "approve_gateway_failed": {
+      "message": "The JUNG HOME Gateway at {host} did not do what was asked: {error}."
+    },
+    "firmware_update_in_app": {
+      "message": "Home Assistant does not update JUNG firmware: update the device with the JUNG HOME app."
     }
   },
   "issues": {
@@ -2005,7 +2040,7 @@
     },
     "audit_network": {
       "name": "Audit network",
-      "description": "Reads, without changing anything, what the JUNG HOME devices' mesh configuration holds — relay, network transmit, default TTL, beacon and GATT proxy, and for every model its publication, subscriptions and bound application keys — and compares it with the mesh export. Answers per device with its settings and every difference found, and lists the devices that did not answer. Auditing every device takes a few minutes; battery devices are asleep and left out unless named.",
+      "description": "Reads, without changing anything, what the JUNG HOME devices' mesh configuration holds — relay, network transmit, default TTL, beacon, GATT proxy and friend, the network and application keys each device holds (by index, never a key), and for every model its publication, subscriptions and bound application keys — and compares it with the mesh export. Answers per device with its settings and every difference found, and lists the devices that did not answer. Auditing every device takes a few minutes; battery devices are asleep and left out unless named.",
       "fields": {
         "device": {
           "name": "Device",
@@ -2086,6 +2121,34 @@
         "config_entry_id": {
           "name": "Network",
           "description": "The JUNG HOME network the device was added to; only needed when there are several."
+        }
+      }
+    },
+    "locate_node": {
+      "name": "Locate device",
+      "description": "Has a JUNG device advertise its Node Identity — a Bluetooth advertisement only this mesh's keys tie to the device — for up to a minute and then stop, so a Bluetooth scanner can tell which radio is that device. Changes nothing else; the device stops by itself after a minute anyway. Administrators only. Unverified on air.",
+      "fields": {
+        "device": {
+          "name": "Device",
+          "description": "The JUNG device to locate (any of its devices in Home Assistant)."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Seconds of advertising, 5 to 60 (a device stops by itself after 60)."
+        }
+      }
+    },
+    "approve_gateway_client": {
+      "name": "Approve gateway client",
+      "description": "Lists the API clients waiting for access at the JUNG HOME Gateway (another integration, a script) and approves the one named, as the app's Settings → Gateway → Access permissions → Open requests does. An approved client gets the gateway's whole API, the network export with every mesh key included: approve only a client you started yourself. Without a client name it only lists them (turn on the response). Revoking access stays with the app. Administrators only, for a network set up from the gateway. Unverified on air.",
+      "fields": {
+        "client": {
+          "name": "Client",
+          "description": "The name the client asks for access as, exactly as listed under `waiting`. Left empty, nothing is approved."
+        },
+        "config_entry_id": {
+          "name": "Mesh network",
+          "description": "Which JUNG HOME network, when more than one is configured."
         }
       }
     },

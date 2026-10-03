@@ -9,7 +9,9 @@ running hub take the rewritten export over in place (`model_update`, review-4 D2
 link stays up; adding or removing a node still reloads the entry). The schedule actions write no export: they go to
 the loads' own JH Scheduler (`schedules.py`) and change no model; a socket threshold is a property plus wiring
 (`thresholds.py`), and the model follows only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
-what the nodes' Configuration Servers hold against the export and changes nothing. The dimming actions
+what the nodes' Configuration Servers hold against the export and changes nothing. `locate_node` has a node advertise
+its Node Identity for a minute at most; `approve_gateway_client` lists the access requests waiting at the gateway and
+approves the one named (review-4 F4-15, F4-17). The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
 for administrators only (review-4 W4-9).
@@ -23,6 +25,7 @@ reloaded hub's link, which connects in the background.
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
@@ -43,6 +46,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.service import (
     async_register_admin_service,
     async_register_platform_entity_service,
@@ -62,10 +66,14 @@ from .const import (
     DEFAULT_UNUSED_SCENES_DRY_RUN,
     DIM_DEFAULT_SPEED,
     DOMAIN,
+    ISSUE_GATEWAY_CERTIFICATE,
+    ISSUE_GATEWAY_TOKEN,
+    LOCATE_MIN_SECONDS,
+    LOCATE_SECONDS,
     OPTION_ALLOW_PROVISIONING,
     SERVICE_LINK_WAIT,
 )
-from .coordinator import ENTRY_LOCKS, entry_lock
+from .coordinator import ENTRY_LOCKS, entry_lock, issue_id
 from .entity import (
     button_gang,
     buttons_device_id,
@@ -73,6 +81,14 @@ from .entity import (
     mesh_identifier,
     node_identifier,
 )
+from .gateway_api import (
+    GatewayAuthError,
+    GatewayBusy,
+    GatewayCertificateMismatch,
+    GatewayError,
+    api_for_entry,
+)
+from .jhmesh import config_messages as C
 from .jhmesh import vendor_models as V
 from .jhmesh.audit import report
 from .jhmesh.devices import (
@@ -101,6 +117,7 @@ from .mesh_config import (
     MeshConfigurator,
     run_to_end,
     scene_action_for,
+    token_rejected_open,
 )
 from .model_update import async_follow_export
 from .schedules import (
@@ -127,6 +144,8 @@ if TYPE_CHECKING:
     from .coordinator import JungHomeHub
     from .identity import VaultKeeper
     from .jhmesh.properties import Threshold
+
+_LOGGER = logging.getLogger(__name__)
 
 SERVICE_SET_ROOM = "set_room"
 SERVICE_ADD_TO_ROOM = "add_to_room"
@@ -162,6 +181,11 @@ SERVICE_ADD_DEVICE = (
 )
 # admin only, with OPTION_ALLOW_PROVISIONING: a device add_device provisioned but did not record (review-4 D2)
 SERVICE_RESET_PENDING_DEVICE = "reset_pending_device"
+SERVICE_LOCATE_NODE = (
+    "locate_node"  # admin only: it changes what a node advertises, for a minute
+)
+# admin only: an approved client gets the gateway's whole API, the export with every key of the mesh included
+SERVICE_APPROVE_GATEWAY_CLIENT = "approve_gateway_client"
 SERVICE_START_DIM = "start_dim"
 SERVICE_STOP_DIM = "stop_dim"
 SERVICE_STEP_DIM = "step_dim"
@@ -177,6 +201,8 @@ RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_FIND_NEW_DEVICES: SupportsResponse.ONLY,
     SERVICE_ADD_DEVICE: SupportsResponse.OPTIONAL,
     SERVICE_RESET_PENDING_DEVICE: SupportsResponse.OPTIONAL,
+    SERVICE_LOCATE_NODE: SupportsResponse.OPTIONAL,
+    SERVICE_APPROVE_GATEWAY_CLIENT: SupportsResponse.OPTIONAL,
 }
 # Review-4 W4-9 (decision M8): every other action rewires, deletes or writes the export and the devices, and is for
 # administrators only (`async_register_admin_service`); these only read. Moving a name here opens it to every user.
@@ -397,6 +423,19 @@ ADD_DEVICE_SCHEMA = vol.Schema(
 )
 ATTR_UUID = "uuid"
 ATTR_UNICAST = "unicast"
+ATTR_DURATION = "duration"
+LOCATE_NODE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICE): cv.string,
+        vol.Optional(ATTR_DURATION, default=LOCATE_SECONDS): vol.All(
+            vol.Coerce(int), vol.Range(min=LOCATE_MIN_SECONDS, max=LOCATE_SECONDS)
+        ),
+    }
+)
+ATTR_CLIENT = "client"
+APPROVE_GATEWAY_CLIENT_SCHEMA = vol.Schema(
+    {vol.Optional(ATTR_CLIENT): vol.All(cv.string, vol.Length(min=1)), **_ENTRY_FIELD}
+)
 
 
 def _unicast(value: Any) -> int:
@@ -595,6 +634,12 @@ def async_setup_services(hass: HomeAssistant) -> None:
             SERVICE_RESET_PENDING_DEVICE,
             _reset_pending_device,
             RESET_PENDING_DEVICE_SCHEMA,
+        ),
+        (SERVICE_LOCATE_NODE, _locate_node, LOCATE_NODE_SCHEMA),
+        (
+            SERVICE_APPROVE_GATEWAY_CLIENT,
+            _approve_gateway_client,
+            APPROVE_GATEWAY_CLIENT_SCHEMA,
         ),
     ]
     for name, handler, schema in handlers:
@@ -1534,6 +1579,126 @@ async def _audit_network(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
 
     await _run(hass, entry_id, operation)
     return response
+
+
+async def _locate_node(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Have a node advertise its Node Identity for `duration` seconds (review-4 F4-15; unverified on air).
+
+    Admin only: a Config Node Identity Set, sealed with the node's device key, then the same Set off
+    (`JungHomeHub.async_locate`). It changes nothing but what the node advertises, and the node stops by itself
+    within a minute. Locked like the other actions, on a live link.
+    """
+    entry_id, unicast = _resolve_node(hass, call.data[ATTR_DEVICE])
+    if unicast is None:
+        raise _validation("remove_device_mesh")
+    seconds = call.data[ATTR_DURATION]
+    response: dict[str, Any] = {}
+
+    async def operation(configurator: MeshConfigurator) -> bool:
+        hub = configurator.hub
+        node = hub.cdb.node_by_addr(unicast)
+        assert node is not None  # `_resolve_node` found it in this export
+        try:
+            status = await hub.async_locate(node, seconds)
+        except TimeoutError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="locate_no_answer",
+                translation_placeholders={"node": f"{unicast:04X}"},
+            ) from err
+        except (ConnectionError, OSError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="send_failed"
+            ) from err
+        if not status.ok:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="locate_refused",
+                translation_placeholders={
+                    "node": f"{unicast:04X}",
+                    "status": status.status_name,
+                },
+            )
+        if status.identity != C.NODE_IDENTITY_RUNNING:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="locate_not_supported",
+                translation_placeholders={"node": f"{unicast:04X}"},
+            )
+        response.update(node=f"{unicast:04X}", seconds=seconds)
+        return False
+
+    await _run(hass, entry_id, operation)
+    return response if call.return_response else None
+
+
+def _gateway_failure(key: str, **placeholders: str) -> HomeAssistantError:
+    return HomeAssistantError(
+        translation_domain=DOMAIN,
+        translation_key=key,
+        translation_placeholders=placeholders,
+    )
+
+
+async def _approve_gateway_client(
+    hass: HomeAssistant, call: ServiceCall
+) -> ServiceResponse:
+    """List the API clients waiting for approval at the gateway; approve the one `client` names (review-4 F4-17).
+
+    Admin only, and only explicit: nothing is approved without a name, and only a name the gateway lists as waiting
+    right now (`GET config`, `api_client_name_asking`) — an approved client gets the gateway's whole API, the
+    export with every key included. The gateway is asked under the export's rules: pinned to its certificate
+    (`api_for_entry`), only once the gateway node vouched for that pin, not while it rejects Home Assistant's
+    token; a rejected token and another certificate raise their repairs as the upload does. Resetting the
+    permissions and the gateway's network settings stay with the app. Unverified on air.
+    """
+    entry_id = _entry_for_hub_services(hass, call.data)
+    hub = _hub(hass, entry_id)
+    api = api_for_entry(hass, hub.entry)
+    if api is None:
+        raise _validation("approve_no_gateway")
+    if (distrust := await hub.async_gateway_distrust()) is not None:
+        raise _gateway_failure(
+            "approve_gateway_distrusted", host=api.host, error=distrust
+        )
+    if token_rejected_open(hass, hub.entry):
+        raise _gateway_failure("approve_gateway_token_rejected", host=api.host)
+    name: str | None = call.data.get(ATTR_CLIENT)
+    try:
+        waiting = list((await api.config()).clients_asking)
+        if name is not None:
+            if name not in waiting:
+                raise _validation(
+                    "approve_client_not_waiting",
+                    client=name,
+                    waiting=", ".join(waiting) or "-",
+                )
+            await api.approve_client(name)
+    except GatewayAuthError as err:
+        if hub.configurator is not None:
+            hub.configurator.report_token_rejected(api)
+        raise _gateway_failure("approve_gateway_token_rejected", host=api.host) from err
+    except GatewayCertificateMismatch as err:
+        hub.async_raise_certificate_issue()
+        raise _gateway_failure(
+            "gateway_certificate_changed",
+            host=api.host,
+            expected=err.expected,
+            observed=err.observed,
+        ) from err
+    except GatewayBusy as err:
+        raise _gateway_failure("approve_gateway_busy", host=api.host) from err
+    except GatewayError as err:
+        raise _gateway_failure(
+            "approve_gateway_failed", host=api.host, error=str(err)
+        ) from err
+    for issue in (ISSUE_GATEWAY_TOKEN, ISSUE_GATEWAY_CERTIFICATE):
+        ir.async_delete_issue(hass, DOMAIN, issue_id(hub.entry, issue))
+    if name is not None:
+        _LOGGER.info("Approved the API client %r at the gateway %s", name, api.host)
+        waiting.remove(name)
+    response: dict[str, Any] = {"approved": name, "waiting": waiting}
+    return response if call.return_response else None
 
 
 # ------------------------------------------------------------------ schedules

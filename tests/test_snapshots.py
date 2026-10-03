@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 
 # Platforms with entities that are disabled by default on the fixture network (diagnostic socket sensors, expert
 # device parameters); the others register everything enabled, which the first pass shows as `disabled_by: None`.
-PLATFORMS_WITH_DISABLED_ENTITIES = ["number", "select", "sensor", "switch"]
+PLATFORMS_WITH_DISABLED_ENTITIES = ["number", "select", "sensor", "switch", "update"]
 # every fixture network: its export and metadata directory (None: a share export, the names travel inside)
 NETWORKS: dict[str, tuple[Path, str | None]] = {
     "base": (Path(CDB_PATH), META_DIR),

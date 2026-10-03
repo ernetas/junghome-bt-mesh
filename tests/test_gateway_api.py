@@ -386,7 +386,8 @@ async def test_every_request_is_pinned(
         await api.register_by_password("pw")
         await api.fetch_project()
         await api.upload_project(_share_export())
-    assert seen == [fingerprint_ssl(FINGERPRINT)] * 5
+        await api.approve_client("ioBroker")
+    assert seen == [fingerprint_ssl(FINGERPRINT)] * 6
     assert all(s is fingerprint_ssl(FINGERPRINT) for s in seen)
     assert api.fingerprint == FINGERPRINT
 
@@ -491,6 +492,36 @@ async def test_upload_project_errors(
     aioclient_mock.post(f"{API}/config", status=401)
     with pytest.raises(GatewayAuthError):
         await api.upload_project(_share_export())
+
+
+async def test_approve_client(
+    api: JungHomeGatewayApi,
+    aioclient_mock: AiohttpClientMocker,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """`POST config {"data": {"api_client_accept": <name>}}` with the token — the app's *Open requests* (pinned:
+    `test_every_request_is_pinned`)."""
+    caplog.set_level(logging.DEBUG)
+    api.token = TOKEN
+    aioclient_mock.post(f"{API}/config", json={"message": "OK"})
+    await api.approve_client("ioBroker")
+    method, url, body, headers = aioclient_mock.mock_calls[0]
+    assert (method, str(url), headers) == ("POST", f"{API}/config", {"token": TOKEN})
+    assert body == {"data": {"api_client_accept": "ioBroker"}}
+    assert TOKEN not in caplog.text
+    for status, error, raised in (
+        (429, None, GatewayBusy),
+        (400, "unknown client", GatewayError),
+        (401, None, GatewayAuthError),
+    ):
+        aioclient_mock.clear_requests()
+        aioclient_mock.post(
+            f"{API}/config", status=status, json={"error": error} if error else None
+        )
+        with pytest.raises(raised) as caught:
+            await api.approve_client("ioBroker")
+        if error:
+            assert str(caught.value) == "POST config: HTTP 400 (unknown client)"
 
 
 # --------------------------------------------------------------------------- status and error log

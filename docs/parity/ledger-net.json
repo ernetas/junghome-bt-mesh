@@ -2665,12 +2665,11 @@
   },
   {
    "id": "net:http:post-config:gatewaynetworkdto",
-   "status": "gap",
+   "status": "na",
    "code": [],
    "tests": [],
-   "missing": "no POST config {\"data\":{\"ip_dhcp\",\"ip_address\",\"ip_subnet\",\"ip_dns\"}} (gateway IP settings); offline against a faked gateway REST API (as tests/test_gateway_api.py), then proven on the installation's gateway (a wrong setting makes it unreachable)",
-   "class": "build",
-   "verify": "on-air"
+   "class": "declined",
+   "reason": "Declined: docs/ha-integration.md, '### Actions: gateway access requests' (review 4 brief 41, F4-17): the gateway's IP settings stay with the app: a wrong one makes the gateway unreachable for the app and Home Assistant alike."
   },
   {
    "id": "net:http:post-config:gatewayprojectdto",
@@ -2687,21 +2686,28 @@
   },
   {
    "id": "net:http:post-config:permissionsdto",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no POST config {\"data\":{\"api_client_accept\":\"<name>\"}} (approve a third-party API client); offline against a faked gateway REST API, then proven on the installation's gateway",
-   "class": "build",
-   "verify": "on-air"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/gateway_api.py::JungHomeGatewayApi.approve_client",
+    "custom_components/junghome_ble/services.py::_approve_gateway_client"
+   ],
+   "tests": [
+    "tests/test_gateway_api.py::test_approve_client",
+    "tests/test_gateway_api.py::test_every_request_is_pinned",
+    "tests/test_gateway_status.py::test_approve_lists_the_waiting_clients_and_approves_only_one_named",
+    "tests/test_gateway_status.py::test_approve_failures_raise_the_repairs_and_send_nothing_unsafe",
+    "tests/test_gateway_status.py::test_approve_needs_a_gateway_the_mesh_vouched_for",
+    "tests/test_services.py::test_rewiring_actions_are_for_administrators_only"
+   ],
+   "note": "Unverified on air (review 4 brief 41): the admin-only action `approve_gateway_client` approves one client the gateway lists as waiting in `api_client_name_asking`, by its name, over the pinned connection (docs/on-air-sweep.md E5)."
   },
   {
    "id": "net:http:post-config:resetpermissionsdto",
-   "status": "gap",
+   "status": "na",
    "code": [],
    "tests": [],
-   "missing": "no POST config {\"data\":{\"api_client_reset\":true}} (revoke every API client); every client would include Home Assistant's own token; offline against a faked gateway REST API, then proven on the installation's gateway",
-   "class": "build",
-   "verify": "on-air"
+   "class": "declined",
+   "reason": "Declined: docs/ha-integration.md, '### Actions: gateway access requests' (review 4 brief 41, F4-17): revoking every API client revokes Home Assistant's own token too; it stays with the app."
   },
   {
    "id": "net:pref:display_gateway_debug_log",

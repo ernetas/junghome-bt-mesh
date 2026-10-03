@@ -4536,11 +4536,18 @@
   },
   {
    "id": "mgmt:flow:checkfordeviceupdate",
-   "status": "na",
-   "code": [],
-   "tests": [],
-   "class": "declined",
-   "reason": "Declined: firmware update over GATT (Silabs OTA) is review-3 N9 (docs/review-3/plan.md, '## Phase 4 — owning the network', N9 \"Firmware update (Silabs OTA over GATT)\", risk \"a failed update leaves an unprovisioned node\"). docs/review-3/plan.md, '## Status' (Phase 4): \"Not started: N6, N8 (little gain next to the link-loss grace, costs a proxy connection slot), N9, N10, N11, N13.\"; '## Suggested order', item 4: \"N6 / N9 / N10 / N11 / N13 only after N3 is proven.\" docs/roadmap.md, '## 1. Where we are': \"Provisioning / removal / firmware update | — | out of scope (explicitly)\" (provisioning and removal have been built since, firmware update has not)."
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/update.py::JungHomeFirmware",
+    "custom_components/junghome_ble/update.py::BUNDLED_FIRMWARE"
+   ],
+   "tests": [
+    "tests/test_update.py::test_the_table_is_the_apps",
+    "tests/test_update.py::test_equal_older_and_unknown_versions",
+    "tests/test_update.py::test_a_version_not_reported_yet_is_unknown",
+    "tests/test_update.py::test_nothing_installs"
+   ],
+   "note": "The check only (review 4 brief 41, F4-18 / U4-11): a read-only update entity per node compares the node's software version with the application image the app bundles for its product id; hardware revisions and the room thermostat's STM32 image are not compared, and the update itself stays declined (review-3 N9, mgmt:flow:updatedevice)."
   },
   {
    "id": "mgmt:flow:checkformissingdevices",

@@ -388,6 +388,12 @@
     "reset_pending_device": {
       "service": "mdi:restore-alert"
     },
+    "locate_node": {
+      "service": "mdi:map-marker-radius"
+    },
+    "approve_gateway_client": {
+      "service": "mdi:account-check-outline"
+    },
     "start_dim": {
       "service": "mdi:brightness-auto"
     },

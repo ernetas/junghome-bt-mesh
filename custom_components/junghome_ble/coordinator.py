@@ -2341,6 +2341,8 @@ class JungHomeHub:
         ] = {}  # node unicast → its pending re-ask
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread: dict[int, CALLBACK_TYPE] = {}
+        # node unicast → the pending end of its Node Identity advert (`async_locate`)
+        self._locating: dict[int, CALLBACK_TYPE] = {}
         self._heartbeats_configured_at: float | None = None
         self._rebuilding = (
             False  # `async_begin_rebuild` ran: a reload replaces this hub
@@ -2589,10 +2591,15 @@ class JungHomeHub:
         self._cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
         # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
-        for cancel in (*self._recheck.values(), *self._transition_reread.values()):
+        for cancel in (
+            *self._recheck.values(),
+            *self._transition_reread.values(),
+            *self._locating.values(),  # the nodes stop by themselves within 60 s
+        ):
             cancel()
         self._recheck.clear()
         self._transition_reread.clear()
+        self._locating.clear()
         for addr in list(self._delayed_clicks):
             self._cancel_delayed_click(addr)
         self._end_holds(HOLD_END_STOPPED)
@@ -4501,6 +4508,70 @@ class JungHomeHub:
             self.audits[node.unicast] = result
             results.append(result)
         return results
+
+    # ------------------------------------------------------------------ the locator (Node Identity)
+    async def async_locate(self, node: Node, seconds: float) -> C.NodeIdentityStatus:
+        """Have `node` advertise its Node Identity, and ask it to stop after `seconds` (review-4 F4-15).
+
+        A Config Node Identity Set (device key, like the audit's Gets) to the node's primary unicast: the node then
+        advertises the Mesh Proxy service with its Node Identity — a hash only the mesh's keys resolve to this node
+        — instead of the Network ID, so a scanner tells its radio from the others. The Set off follows after
+        `seconds` (a second call restarts the count). The node stops by itself after 60 s at most (Mesh Profile
+        §7.2.2.2.3), so an off lost on the way, or never sent because the entry stopped, leaves nothing running. A
+        node that answers *not supported* or an error status gets no off. Unanswered raises TimeoutError, no link
+        ConnectionError. Unverified on air.
+        """
+        status = await self._node_identity(node, running=True)
+        if status.ok and status.identity == C.NODE_IDENTITY_RUNNING:
+            if (cancel := self._locating.pop(node.unicast, None)) is not None:
+                cancel()
+
+            @callback
+            def stop(_now: datetime) -> None:
+                self._locating.pop(node.unicast, None)
+                self.entry.async_create_background_task(
+                    self.hass,
+                    self._stop_locating(node),
+                    f"{DOMAIN} locate {node.unicast:04X} off",
+                )
+
+            self._locating[node.unicast] = async_call_later(self.hass, seconds, stop)
+        return status
+
+    async def _stop_locating(self, node: Node) -> None:
+        """Send the Node Identity Set off; the node stops by itself anyway, so a failure is only logged."""
+        try:
+            await self._node_identity(node, running=False)
+        except (TimeoutError, ConnectionError, OSError) as err:
+            _LOGGER.debug(
+                "%04X: Node Identity not switched off (%r); it stops by itself",
+                node.unicast,
+                err,
+            )
+
+    async def _node_identity(
+        self, node: Node, *, running: bool
+    ) -> C.NodeIdentityStatus:
+        """Send a Node Identity Set for the primary NetKey and return the Node Identity Status that answers it."""
+
+        def decodes(message: AccessMessage) -> bool:
+            try:
+                C.decode_config(message.opcode, message.params)
+            except ValueError:
+                return False
+            return True
+
+        reply = await self.proxy.request_config(
+            node.unicast,
+            C.node_identity_set(running),
+            C.CONFIG_NODE_IDENTITY_STATUS,
+            timeout=AUDIT_TIMEOUT,
+            retries=AUDIT_RETRIES,
+            match=decodes,
+        )
+        status = C.decode_config(reply.opcode, reply.params)
+        assert isinstance(status, C.NodeIdentityStatus)  # what the opcode decodes to
+        return status
 
     # ------------------------------------------------------------------ heartbeats (per-node liveness)
     @property

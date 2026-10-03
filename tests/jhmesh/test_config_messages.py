@@ -815,17 +815,17 @@ def test_heartbeat_count_range_matches_measured_probe():
 
 def test_describe_config_with_devkey_never_dumps_undecoded_bytes():
     """`messages.describe(devkey=True)` routes every Config opcode it names here; the byte-count guard has to
-    hold for an opcode this module does not name (Node Identity Set 0x8046, say) and for a malformed message
+    hold for an opcode this module does not name (Friend Set 0x8010, say) and for a malformed message
     that carries no key, since under a device key any undecoded bytes may be key material."""
     assert (
-        C.describe_config(0x8046, h("0000" + "aa" * 16))
-        == "Config op 8046 0000" + "aa" * 16
+        C.describe_config(0x8010, h("0000" + "aa" * 16))
+        == "Config op 8010 0000" + "aa" * 16
     )
     assert (
-        C.describe_config(0x8046, h("0000" + "aa" * 16), devkey=True)
-        == "Config op 8046 <18 bytes>"
+        C.describe_config(0x8010, h("0000" + "aa" * 16), devkey=True)
+        == "Config op 8010 <18 bytes>"
     )
-    assert C.describe_config(0x8046, b"", devkey=True) == "Config op 8046 <0 bytes>"
+    assert C.describe_config(0x8010, b"", devkey=True) == "Config op 8010 <0 bytes>"
     assert (
         C.describe_config(0x8016, h("0000")) == "Config Key Refresh Phase Set ?? 0000"
     )
@@ -903,3 +903,88 @@ def test_model_app_get_and_list():
     assert C.describe_config(0x804C, h("004801001000")) == (
         "Config SIG Model App List ?? 004801001000"
     )
+
+
+# ----------------------------------------------------------------------------- keys held, Node Identity, Friend (F4-15)
+
+
+def test_key_list_gets_and_lists():
+    """NetKey Get / AppKey Get and their lists: indexes packed two per 3 octets, never a key."""
+    assert C.netkey_get() == h("8042")
+    assert C.appkey_get() == h("80010000")
+    assert C.appkey_get(0x456) == h("80015604")
+    with pytest.raises(ValueError, match="12-bit"):
+        C.appkey_get(0x1000)
+    assert C.decode_netkey_list(h("0000")) == C.NetKeyList([0])
+    assert C.decode_netkey_list(h("0120000300")) == C.NetKeyList([1, 2, 3])
+    with pytest.raises(ValueError, match="need 2 bytes"):
+        C.decode_netkey_list(b"\x00")
+    with pytest.raises(ValueError, match="odd key index bytes"):
+        C.decode_netkey_list(bytes(4))
+    assert C.decode_appkey_list(h("00 5604 012000".replace(" ", ""))) == (
+        C.AppKeyList(0, 0x456, [1, 2])
+    )
+    refused = C.decode_appkey_list(h("040100"))
+    assert (refused.ok, refused.status_name, refused.app_key_indexes) == (
+        False,
+        "Invalid NetKey Index",
+        [],
+    )
+    with pytest.raises(ValueError, match="need 3 bytes"):
+        C.decode_appkey_list(h("0000"))
+    assert C.decode_config(C.CONFIG_NETKEY_LIST, h("0000")) == C.NetKeyList([0])
+    assert C.decode_config(C.CONFIG_APPKEY_LIST, h("0000000000")) == C.AppKeyList(
+        0, 0, [0]
+    )
+    assert C.describe_config(0x8042, b"") == "Config NetKey Get"
+    assert C.describe_config(0x8001, h("0100")) == "Config AppKey Get netkey=1"
+    assert C.describe_config(0x8043, h("0120000300")) == (
+        "Config NetKey List netkeys=[1,2,3]"
+    )
+    assert C.describe_config(0x8002, h("0000000020000300")) == (
+        "Config AppKey List Success: netkey=0 appkeys=[0,2,3]"
+    )
+    assert C.describe_config(0x8002, h("0401")) == "Config AppKey List ?? 0401"
+
+
+def test_node_identity_get_set_and_status():
+    assert C.node_identity_get() == h("80460000")
+    assert C.node_identity_get(0x456) == h("80465604")
+    assert C.node_identity_set(True) == h("8047000001")
+    assert C.node_identity_set(False, 0x456) == h("8047560400")
+    with pytest.raises(ValueError, match="12-bit"):
+        C.node_identity_set(True, -1)
+    assert C.decode_node_identity_status(h("00000001")) == C.NodeIdentityStatus(
+        0, 0, C.NODE_IDENTITY_RUNNING
+    )
+    unsupported = C.decode_config(C.CONFIG_NODE_IDENTITY_STATUS, h("00560402"))
+    assert unsupported == C.NodeIdentityStatus(0, 0x456, C.NODE_IDENTITY_NOT_SUPPORTED)
+    with pytest.raises(ValueError, match="need 4 bytes"):
+        C.decode_node_identity_status(h("000000"))
+    assert C.describe_config(0x8046, h("0000")) == "Config Node Identity Get netkey=0"
+    assert C.describe_config(0x8047, h("000001")) == (
+        "Config Node Identity Set netkey=0 running"
+    )
+    assert C.describe_config(0x8047, h("0000")) == "Config Node Identity Set ?? 0000"
+    assert C.describe_config(0x8048, h("00000000")) == (
+        "Config Node Identity Status Success: netkey=0 stopped"
+    )
+    assert C.describe_config(0x8048, h("04000002")) == (
+        "Config Node Identity Status Invalid NetKey Index: netkey=0 not supported"
+    )
+    assert C.describe_config(0x8048, h("00000007")) == (
+        "Config Node Identity Status Success: netkey=0 state 7"
+    )
+
+
+def test_friend_get_and_status():
+    assert C.friend_get() == h("800f")
+    assert C.decode_friend_status(b"\x02") == C.FriendStatus(C.FEATURE_NOT_SUPPORTED)
+    assert C.decode_config(C.CONFIG_FRIEND_STATUS, b"\x00") == C.FriendStatus(0)
+    with pytest.raises(ValueError, match="need 1 bytes"):
+        C.decode_friend_status(b"")
+    assert C.describe_config(0x800F, b"") == "Config Friend Get"
+    assert C.describe_config(0x8011, b"\x02") == "Config Friend Status not supported"
+    assert (
+        C.describe_config(0x8010, b"\x01") == "Config op 8010 01"
+    )  # Friend Set: not built

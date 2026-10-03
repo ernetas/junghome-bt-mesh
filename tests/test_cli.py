@@ -857,6 +857,10 @@ def test_audit_texts():
             "default_ttl": {"export": 5, "node": 3},
             "beacon": {"export": None, "node": None},
         },
+        keys={
+            "net_keys": {"export": [0], "node": [0]},
+            "app_keys": {"export": [0], "node": []},
+        },
         models=[
             ok,
             audit.ModelAudit(
@@ -870,6 +874,7 @@ def test_audit_texts():
     )
     assert ops.audit_text(cdb, quiet).splitlines()[1:] == [
         "  default_ttl 3 (export 5)  beacon ?",
+        "  net_keys 0  app_keys - (export 0)",
         "  " + ops.audit_row_text(ok),
         "  0149 1003     publish 0000 → 0000  subscribe - → -  appkeys 0 → -",
         "  ! 0149 1003 app_keys_unbound: expected 0",
@@ -920,6 +925,7 @@ def test_cmd_config_audit(
     assert mesh_poc.main(["config", "audit", "0149"]) == 0  # any element of the node
     out = capsys.readouterr().out
     assert "relay 1  relay_retransmit 3x90ms  network_transmit 3x100ms" in out
+    assert "  net_keys 0  app_keys 0\n" in out
     assert "0148 1000     publish C061 → C061" in out
     assert "! 0148 1203 scene_subscriptions_missing: expected C00F,FEF5" in out
     assert "! 0148 1004 subscriptions_unanswered" in out

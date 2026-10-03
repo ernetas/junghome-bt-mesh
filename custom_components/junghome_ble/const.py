@@ -120,6 +120,10 @@ SERVICE_LINK_WAIT: Final = 30.0
 # The "Identify" button: Health Attention Set for this many seconds (the node's LED blinks; the app uses 5 s while
 # provisioning). Accepted by every node, `docs/hidden-features.md` §3.
 IDENTIFY_SECONDS: Final = 10
+# The `locate_node` action (review-4 F4-15): seconds of Node Identity advertising. A node stops by itself after 60 s
+# (Mesh Profile §7.2.2.2.3), so longer would not hold; the Set off follows after the time asked for.
+LOCATE_SECONDS: Final = 60
+LOCATE_MIN_SECONDS: Final = 5
 
 # The JUNG HOME Gateway integration (github.com/ernetas/junghome) whose entities `migration.py` takes over.
 GATEWAY_DOMAIN: Final = "junghome"
@@ -163,6 +167,7 @@ PLATFORMS: Final = [
     "select",
     "sensor",
     "switch",
+    "update",
 ]
 
 SIGNAL_UPDATE: Final = f"{DOMAIN}_update_{{}}_{{}}"  # per entry id and element address: unicasts repeat across meshes

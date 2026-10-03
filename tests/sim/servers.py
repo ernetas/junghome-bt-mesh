@@ -76,6 +76,8 @@ class ConfigState:
     network_transmit: tuple[int, int] = (2, 9)  # count, interval steps
     beacon: int = 1
     gatt_proxy: int = 1
+    friend: int = C.FEATURE_NOT_SUPPORTED  # as every JUNG node (hidden-features §1)
+    node_identity: int = C.NODE_IDENTITY_STOPPED
     models: dict[tuple[int, str], ModelConfig] = field(default_factory=dict)
 
 
@@ -623,6 +625,24 @@ class Servers:
             if op == C.CONFIG_GATT_PROXY_SET:
                 cfg.gatt_proxy = p[0]
             answer(C.CONFIG_GATT_PROXY_STATUS, bytes([cfg.gatt_proxy]))
+        elif op == C.CONFIG_FRIEND_GET:
+            answer(C.CONFIG_FRIEND_STATUS, bytes([cfg.friend]))
+        elif op == C.CONFIG_NETKEY_GET:
+            answer(C.CONFIG_NETKEY_LIST, pack_key_indexes([0]))
+        elif op == C.CONFIG_APPKEY_GET:
+            index = int.from_bytes(p[:2], "little") & 0xFFF
+            code = C.STATUS_SUCCESS if index == 0 else STATUS_INVALID_NETKEY
+            keys = sorted(node.app_keys) if index == 0 else []
+            answer(C.CONFIG_APPKEY_LIST, bytes([code]) + p[:2] + pack_key_indexes(keys))
+        elif op in (C.CONFIG_NODE_IDENTITY_GET, C.CONFIG_NODE_IDENTITY_SET):
+            index = int.from_bytes(p[:2], "little") & 0xFFF
+            code = C.STATUS_SUCCESS if index == 0 else STATUS_INVALID_NETKEY
+            if code == C.STATUS_SUCCESS and op == C.CONFIG_NODE_IDENTITY_SET:
+                cfg.node_identity = p[2]
+            answer(
+                C.CONFIG_NODE_IDENTITY_STATUS,
+                bytes([code]) + p[:2] + bytes([cfg.node_identity]),
+            )
         elif op == C.CONFIG_NODE_RESET:
             answer(C.CONFIG_NODE_RESET_STATUS, b"")
             # the status goes out first; the node then forgets the network

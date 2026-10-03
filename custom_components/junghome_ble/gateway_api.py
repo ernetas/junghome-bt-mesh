@@ -8,8 +8,11 @@ what the config flow and the configurator need: `version()` as a reachability pr
 token (`register()` waits until the user approves the request in the app, `register_by_password()` is immediate),
 `fetch_project()` for the app's export the gateway holds and `upload_project()` to hand a changed export back (the
 app's `POST config {"data": {"project_file": …}}`); `config()` and `health_status()` read what the app's gateway
-pages show (its status and its error log, `gateway_status.py`). Response bodies are never logged: the export carries
-every mesh key and the register replies carry the token.
+pages show (its status and its error log, `gateway_status.py`); `approve_client()` approves an API client's access
+request as the app's *Access permissions* page does (`POST config {"data": {"api_client_accept": …}}`, review-4
+F4-17). The app's *revoke all* (`api_client_reset`, which would revoke Home Assistant's own token too) and the
+gateway's network settings are left out on purpose. Response bodies are never logged: the export carries every mesh
+key and the register replies carry the token.
 """
 
 from __future__ import annotations
@@ -346,6 +349,15 @@ class JungHomeGatewayApi:
             raise GatewayError(f"GET healthstatus: HTTP {status}")
         return entries
 
+    async def approve_client(self, name: str) -> None:
+        """Approve the API client `name` asks for access as (`POST config {"data": {"api_client_accept": name}}`).
+
+        What the app's *Access permissions → Open requests* does (`PermissionsDTO`); the client then gets a token
+        for the gateway's whole API. `GatewayBusy` on 429, `GatewayError` with the gateway's message otherwise.
+        Unverified on air.
+        """
+        await self._post_config({"api_client_accept": name}, GATEWAY_REQUEST_TIMEOUT)
+
     async def register(self, user_name: str = GATEWAY_USER_NAME) -> str:
         """`POST /register`: ask for a token and wait until the user approves the request in the app.
 
@@ -425,11 +437,12 @@ class JungHomeGatewayApi:
         few seconds). `GatewayBusy` on 429 (another configuration request is running, retry in a minute),
         `GatewayError` with the gateway's message otherwise.
         """
+        await self._post_config({"project_file": export}, GATEWAY_UPLOAD_TIMEOUT)
+
+    async def _post_config(self, data: dict[str, Any], timeout: float) -> None:
+        """`POST config {"data": data}`, every command's route; `GatewayBusy` on 429, `GatewayError` unless 200."""
         status, body = await self._request(
-            "POST",
-            "config",
-            timeout=GATEWAY_UPLOAD_TIMEOUT,
-            json={"data": {"project_file": export}},
+            "POST", "config", timeout=timeout, json={"data": data}
         )
         if status == HTTP_TOO_MANY:
             raise GatewayBusy("the gateway is busy with another configuration request")

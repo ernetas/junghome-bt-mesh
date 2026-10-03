@@ -748,6 +748,22 @@ repair issue [*JUNG HOME push-buttons with another insert than in the export*](#
 the export's insert keeps deciding its devices until a new export is loaded. The device diagnostics show, per node,
 what the export, the advertisement and an answer said (`insert`) and the decoded answers (`node_info`).
 
+### Firmware
+
+Every node but the gateway has a **Firmware** `update` entity on its node device (diagnostic, off by default;
+review-4 F4-18, U4-11). It compares the software version the node reports (the device page's firmware, SIG `0x001A`)
+with the version the JUNG HOME app 2.2.0 bundles for the node's product (`update.BUNDLED_FIRMWARE`, from
+`docs/android/firmware-products.md`): *Up-to-date* when it is the same or newer, *Update available* when the node runs
+an older one, unknown while the node has not reported its version or for a product the app has no image for. The
+release summary says where the update comes from: **the JUNG HOME app**, which streams the image to the device over its
+own Bluetooth connection. Home Assistant only compares — it never downloads, transfers or installs firmware: the entity
+has no install feature, so there is no *Install* button and `update.install` is refused (a failed update can leave a
+device out of the network; review-3 N9). Only the application image is compared, by product: the hardware revisions an
+image is meant for, the bootloader and secure-element images and the room thermostat's STM32 co-processor image are
+not (the node reports none of them). The gateway gets none: the app has no image for it, it updates itself (its version
+is the *Firmware version* sensor of an entry set up from the gateway). Every node of this installation runs the version
+its app bundles; an *Update available* has not been seen on air.
+
 ## Prerequisites
 
 1. **The mesh export of the JUNG HOME app.** You can provide it in three ways; the first needs no file handling at all:
@@ -1489,8 +1505,11 @@ The export says how every device is wired; the devices themselves are what count
 reports that the two drifted apart (a Config message that never arrived, a device re-added by hand). The audit
 asks, with device-key *Gets* only — it never changes anything — and compares:
 
-- per device: Relay (with its retransmit), Network Transmit, Default TTL, Secure Network Beacon and GATT Proxy
-  against the export's node entry (a state the export does not record is shown, not compared);
+- per device: Relay (with its retransmit), Network Transmit, Default TTL, Secure Network Beacon, GATT Proxy and
+  Friend against the export's node entry (a state the export does not record is shown, not compared);
+- per device, the keys it holds (review-4 F4-15): *NetKey Get*, and *AppKey Get* for every network key the export
+  gives it, against its `netKeys` and `appKeys` — by index only: the answers carry no key, and no key is compared or
+  shown;
 - per model (all but the Configuration Server): its publication, its subscriptions and its bound AppKeys against
   the model's `publish`, `subscribe` and `bind`.
 
@@ -1502,28 +1521,76 @@ response_variable: audit
 
 - **`junghome_ble.audit_network`** — optional `device` (only the node behind it) or `config_entry_id`. Answers
   (response only) `nodes` — per node address its `name`, whether it `answered`, its `settings` (`export` / `node`
-  value each; transmits as `count` transmissions `interval` ms apart), the number of `models` checked and its
-  `findings` — plus `unanswered` (the silent nodes), `findings` (their total) and `skipped` (battery devices: they
+  value each; transmits as `count` transmissions `interval` ms apart), its `keys` (`net_keys` / `app_keys`, the
+  `export` and `node` indexes each), the number of `models` checked and its `findings` — plus `unanswered` (the silent nodes), `findings` (their total) and `skipped` (battery devices: they
   sleep, so the network-wide audit leaves them out; name one as `device` to ask it anyway). A finding has a `kind`
   and, as it applies, `element`, `model`, `setting`, `expected` (what the export has and the device lacks) and
   `actual` (what the device holds instead): `setting_differs`, `setting_unanswered`, `node_unanswered`,
   `publication_differs`, `subscriptions_missing`, `subscriptions_extra`, `app_keys_unbound`, `app_keys_extra`, and
   `publication_` / `subscriptions_` / `app_keys_` + `unanswered` or `refused` (the device answered with an error
-  status although the export expects something). `scene_subscriptions_missing` is the one expected on a healthy
+  status although the export expects something), and for the keys `keys_missing` (an index the export gives the
+  device and it lacks), `keys_extra`, `keys_unanswered` and `keys_refused`, each with `setting` `net_keys` or
+  `app_keys`. `scene_subscriptions_missing` is the one expected on a healthy
   installation: the export lists room and device-type groups on the Scene (Setup) Servers that the app never sent
   to the devices; scenes are recalled to all devices, so they do no harm. The gateway's GATT Proxy shows as a
   `setting_differs` too: its export entry says *not supported*, it runs one.
 
 A device takes three Gets per model: about a hundred for a push-button, sent five at a time like the state refresh
-after a connection, so auditing every device takes a few minutes. A device that answers none of the five
-device-wide Gets is reported unanswered and not asked about its models. The last result per device stays in the
+after a connection, so auditing every device takes a few minutes. A device that answers none of the eight
+device-wide Gets (six states, two key lists) is reported unanswered and not asked about its models. The last result per device stays in the
 diagnostics until the integration reloads or follows a changed export. Not yet run on the installation; the CLI's earlier `config audit`
-(publications and subscriptions only) was, with the results in `docs/hidden-features.md` §9.
+(publications and subscriptions only) was, with the results in `docs/hidden-features.md` §9. The Friend and key
+Gets are unverified on air.
+
+**Locating a device.** `junghome_ble.locate_node` (administrators only) has one device advertise its *Node
+Identity* — the Mesh Proxy advertisement that names the device by a hash only this mesh's keys resolve — instead of
+the network's, so a Bluetooth scanner (Home Assistant's Bluetooth advertisement monitor, a phone app) tells its radio
+from the others: a Config *Node Identity Set* with the device key, and the same Set off after `duration` seconds (5
+to 60, default 60; a device stops by itself after 60 s whatever happens, so an off lost on the way leaves nothing
+running). It changes nothing else.
+
+```yaml
+action: junghome_ble.locate_node
+data: { device: 8b1f0c…, duration: 30 }   # any of the device's devices; answers {node, seconds}
+```
+
+A device that answers *not supported*, refuses or does not answer fails the action and gets no off; a battery device
+is asleep and answers only while awake. Unverified on air.
 
 A hop matrix (how many hops every device is from every other) is not offered: measuring it needs Heartbeat
 Publication and Subscription *Sets* on every pair of devices (`tools/mesh_poc.py config hopmatrix`,
 `docs/hop-matrix.md`), and the heartbeat option's publications only reach Home Assistant — their hop count to
 Home Assistant is in the diagnostics (`heartbeats`).
+
+### Actions: gateway access requests
+
+Another program that talks to the JUNG HOME Gateway — the gateway integration next to this one, a script — asks the
+gateway for access, and the request waits to be approved in the app (*Settings → Gateway → Access permissions →
+Open requests*; the *Access requests* sensor counts them). `junghome_ble.approve_gateway_client` approves one from
+Home Assistant instead (review-4 F4-17), for an entry set up from the gateway:
+
+```yaml
+action: junghome_ble.approve_gateway_client
+data: {}                    # lists the waiting requests: {approved: null, waiting: ["ioBroker"]}
+response_variable: requests
+---
+action: junghome_ble.approve_gateway_client
+data: { client: ioBroker }  # approves that one: {approved: "ioBroker", waiting: []}
+```
+
+- **Administrators only, and only explicit.** An approved client gets the gateway's whole API — the network export
+  with every mesh key included — so nothing is approved without a `client`, and only a name the gateway lists as
+  waiting right now (`GET /api/junghome/config`, `api_client_name_asking`), spelt exactly as listed; anything else is
+  refused and nothing is sent. Approve only a request you started yourself.
+- **The export's rules.** The gateway is asked over the pinned connection, only once the gateway node vouched for the
+  pinned certificate, and not while it rejects Home Assistant's own token; a rejected token or another certificate
+  raises the same repair as an upload (`POST /api/junghome/config {"data": {"api_client_accept": "<name>"}}`, the
+  app's own request). Neither the token nor the answer bodies are logged.
+- **Left to the app, on purpose:** revoking access (*Access permissions → reset*, `api_client_reset`: it revokes every
+  client, Home Assistant's own token included) and the gateway's network settings (a wrong address makes the gateway
+  unreachable for the app and Home Assistant alike).
+
+Unverified on air.
 
 ## Known limitations
 
@@ -2257,6 +2324,7 @@ Layout of `custom_components/junghome_ble/`:
 | `inserts.py` | `NodeInserts` (`hub.inserts`): each node's insert and key layout from the export, its JUNG advertisement (`_adv_seen`) or a read-only Get (a connect-time step); the device models and key positions they give; the `insert_mismatch` repair; `apply_reported` before the devices are registered. Unverified on air |
 | `node_clocks.py` | `NodeClocks` (`hub.clocks`): each node's clock offset, zone offset and stored location from the Time Status, Time Zone Status and Generic Location Global Status it sends (the handlers are in `coordinator.py`); the read after the daily Time Set (`read_all`: mains nodes only, five at a time); the fixable `node_clock_wrong` repair (`async_fix`); the *Clock offset* sensor's value and the diagnostics. Unverified on air |
 | `keep_awake.py` | `KeepAwake` (`hub.keep_awake`): the app's keep-alive for a battery node while a Config plan or a parameter change addresses it — one task per node, reference-counted holds, an `Admin Get 0x5001` once the node was quiet for `KEEP_AWAKE_INTERVAL`, none while there is no link |
+| `update.py` | The read-only *Firmware* `update` entity per node: the node's software version against `BUNDLED_FIRMWARE`, the app's bundled image per product id; no install feature (review-4 F4-18) |
 | `gateway_api.py`, `tls.py` | The JUNG HOME Gateway REST client the config flow uses (access request / password registration, project download) and the certificate pinning it relies on (the gateway's certificate is self-signed; the pin comes over the mesh, `0xC003`, or is confirmed in the flow and then checked against `0xC003` by the hub before the gateway is used) |
 | `diagnostics.py` | Entry and device diagnostics, in every entry state (an entry not loaded: its state, reason, visible proxies and export summary); the link history; keys, token, paths (in error texts too) and Bluetooth addresses redacted |
 | `backup.py` | The backup platform: `async_pre_backup` marks every mesh's sequence-number records with a token of the backup (`in_backup`, `HAState.backup_token`) and waits up to `BACKUP_WRITE_TIMEOUT` for both copies to carry it; `async_post_backup` removes it. `JungHomeHub.async_create` skips a record carrying a token this process did not set `SEQ_SKIP_AHEAD` ahead (`_async_skip_restored_record`) |

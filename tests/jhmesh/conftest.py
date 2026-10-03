@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from collections.abc import Callable, Iterator
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -589,15 +590,18 @@ class FakeBleak:
 
 
 # the node-wide states every fake node holds (wire fields): relay on, 2 retransmissions 90 ms apart; 2 network
-# retransmissions 100 ms apart; TTL 5; beacon on; GATT proxy on — what the installation answered (hidden-features §9)
+# retransmissions 100 ms apart; TTL 5; beacon on; GATT proxy on — what the installation answered (hidden-features §9);
+# Friend not supported (hidden-features §1)
 CONFIG_DEFAULTS: dict[str, Any] = {
     "relay": (1, 2, 8),
     "network_transmit": (2, 9),
     "default_ttl": 5,
     "beacon": 1,
     "gatt_proxy": 1,
+    "friend": 2,
 }
 _CONFIG_NODE_GETS = {
+    C.CONFIG_FRIEND_GET: "friend",
     C.CONFIG_RELAY_GET: "relay",
     C.CONFIG_NETWORK_TRANSMIT_GET: "network_transmit",
     C.CONFIG_DEFAULT_TTL_GET: "default_ttl",
@@ -656,8 +660,11 @@ class FakeConfigServers:
     A callable for ``FakeBleak.auto_config`` and the integration tests' ``FakeProxyLink.config_reply``. What a node
     holds apart from the export is set per test: ``settings[node][kind]`` (wire fields, `CONFIG_DEFAULTS`' shape),
     ``publish`` / ``subscribe`` / ``app_keys`` by (element, model); ``refuse`` by (element, model, kind) gives
-    that status code instead; ``silent`` nodes answer nothing, ``silent_gets`` swallows a Get by (element, model,
-    kind) — or (node, kind) for a node-wide one. ``seen`` lists every (node, access pdu) asked.
+    that status code instead; ``net_keys`` / ``node_app_keys`` by node the key indexes it holds (an AppKey Get for a
+    NetKey it lacks is refused, *Invalid NetKey Index*); ``identity`` by node its Node Identity state, which a Node
+    Identity Set changes, and ``identity_status`` the status code it answers that Set with; ``silent`` nodes answer
+    nothing, ``silent_gets`` swallows a Get by (element, model, kind) — or (node, kind) for a node-wide one,
+    `net_keys`, `app_keys` and `node_identity` included. ``seen`` lists every (node, access pdu) asked.
     """
 
     def __init__(self, cdb: CDB) -> None:
@@ -667,6 +674,10 @@ class FakeConfigServers:
         self.subscribe: dict[tuple[int, str], list[int]] = {}
         self.app_keys: dict[tuple[int, str], list[int]] = {}
         self.refuse: dict[tuple[int, str, str], int] = {}
+        self.net_keys: dict[int, list[int]] = {}
+        self.node_app_keys: dict[int, list[int]] = {}
+        self.identity: dict[int, int] = {}
+        self.identity_status: dict[int, int] = {}
         self.silent: set[int] = set()
         self.silent_gets: set[tuple[Any, ...]] = set()
         self.seen: list[tuple[int, bytes]] = []
@@ -681,17 +692,24 @@ class FakeConfigServers:
         op, _cid, p = decode_opcode(access)
         if node in self.silent:
             return None
+        answer: Callable[[], bytes]
         if op in _CONFIG_NODE_GETS:
             kind = _CONFIG_NODE_GETS[op]
-            if (node, kind) in self.silent_gets:
-                return None
-            return self._node_status(node, kind)
-        kind = _CONFIG_MODEL_GETS[op]
-        element = int.from_bytes(p[:2], "little")
-        model = C.model_id_str(C.decode_model_id(p[2:]))
-        if (element, model, kind) in self.silent_gets:
-            return None
-        return self._model_status(element, model, kind, p)
+            asked: tuple[Any, ...] = (node, kind)
+            answer = partial(self._node_status, node, kind)
+        elif op in (C.CONFIG_NETKEY_GET, C.CONFIG_APPKEY_GET):
+            kind = "net_keys" if op == C.CONFIG_NETKEY_GET else "app_keys"
+            asked, answer = (node, kind), partial(self._key_list, node, kind, p)
+        elif op in (C.CONFIG_NODE_IDENTITY_GET, C.CONFIG_NODE_IDENTITY_SET):
+            asked = (node, "node_identity")
+            answer = partial(self._node_identity, node, op, p)
+        else:
+            kind = _CONFIG_MODEL_GETS[op]
+            element = int.from_bytes(p[:2], "little")
+            model = C.model_id_str(C.decode_model_id(p[2:]))
+            asked = (element, model, kind)
+            answer = partial(self._model_status, element, model, kind, p)
+        return None if asked in self.silent_gets else answer()
 
     def _node_status(self, node: int, kind: str) -> bytes:
         value = {**CONFIG_DEFAULTS, **self.settings.get(node, {})}[kind]
@@ -709,8 +727,53 @@ class FakeConfigServers:
             "default_ttl": C.CONFIG_DEFAULT_TTL_STATUS,
             "beacon": C.CONFIG_BEACON_STATUS,
             "gatt_proxy": C.CONFIG_GATT_PROXY_STATUS,
+            "friend": C.CONFIG_FRIEND_STATUS,
         }[kind]
         return encode_opcode(status) + bytes([value])
+
+    def _node_identity(self, node: int, op: int, p: bytes) -> bytes:
+        """The Node Identity Status: a Set changes the state unless refused (`identity_status`) or unsupported."""
+        status = self.identity_status.get(node, C.STATUS_SUCCESS)
+        state = self.identity.get(node, C.NODE_IDENTITY_STOPPED)
+        if (
+            op == C.CONFIG_NODE_IDENTITY_SET
+            and status == C.STATUS_SUCCESS
+            and state != C.NODE_IDENTITY_NOT_SUPPORTED
+        ):
+            state = self.identity[node] = p[2]
+        return (
+            encode_opcode(C.CONFIG_NODE_IDENTITY_STATUS)
+            + bytes([status])
+            + p[:2]
+            + bytes([state])
+        )
+
+    def _key_list(self, node: int, kind: str, get: bytes) -> bytes:
+        """The NetKey List, or the AppKey List of the NetKey `get` names; the export's indexes unless set apart.
+
+        A node the export does not list with its keys (one being commissioned) holds the primary NetKey and
+        AppKey 0.
+        """
+        found = self.cdb.node_by_addr(node)
+
+        def held(key: str) -> list[int]:
+            if found is None or key not in found.raw:
+                return [0]
+            return [k["index"] for k in found.raw[key]]
+
+        nets = self.net_keys.get(node, held("netKeys"))
+        if kind == "net_keys":
+            return encode_opcode(C.CONFIG_NETKEY_LIST) + pack_key_indexes(nets)
+        net = int.from_bytes(get[:2], "little")
+        if net not in nets:
+            return encode_opcode(C.CONFIG_APPKEY_LIST) + bytes([0x04]) + get[:2]
+        keys = self.node_app_keys.get(node, held("appKeys"))
+        return (
+            encode_opcode(C.CONFIG_APPKEY_LIST)
+            + bytes([C.STATUS_SUCCESS])
+            + get[:2]
+            + pack_key_indexes(keys)
+        )
 
     def _model_status(self, element: int, model: str, kind: str, get: bytes) -> bytes:
         """The model's status: `get` (element + model id) echoed behind the status byte, then its value."""

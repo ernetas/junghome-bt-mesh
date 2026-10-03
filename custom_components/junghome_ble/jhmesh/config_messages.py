@@ -6,8 +6,10 @@ docs/android/network-logic.md §1.5 and §3.2): AppKey Add, Composition Data, Mo
 Publication Get/Set, Model Subscription Add/Delete/Delete All/Get, GATT Proxy, Default TTL, Relay, Network
 Transmit, Beacon, Node Reset, and the SIG / Vendor Model App Get the read-only audit adds (`audit.py`) — plus the key management messages of a key refresh (NetKey / AppKey Add, Update
 and Delete, Key Refresh Phase; the app's KeyRenewal sends NetKey Update and Key Refresh Phase Set, network-logic.md
-§6), which `describe_config` shows without their key bytes. Virtual-address forms, heartbeat, friend and node
-identity are out of scope (the app never sends them).
+§6), which `describe_config` shows without their key bytes. Heartbeat Publication / Subscription serve the liveness
+option and the hop matrix. Review-4 F4-15 adds what the app never sends: the audit's NetKey Get, AppKey Get and
+Friend Get (the lists carry key *indexes*, never a key), and Node Identity Get / Set for the locator
+(`locate_node`). Virtual-address forms and Friend Set are out of scope.
 
 Model identifiers: a SIG model is its 16-bit id (0x1000); a vendor model is `company_id << 16 | model_id`
 (0x05271013) — exactly what the CDB's model strings ("1000", "05271013") parse to, so builders accept either
@@ -26,6 +28,7 @@ from .pdu import encode_opcode, is_unicast
 
 CONFIG_APPKEY_ADD, CONFIG_APPKEY_UPDATE = 0x00, 0x01
 CONFIG_APPKEY_DELETE, CONFIG_APPKEY_STATUS = 0x8000, 0x8003
+CONFIG_APPKEY_GET, CONFIG_APPKEY_LIST = 0x8001, 0x8002
 CONFIG_COMPOSITION_DATA_GET, CONFIG_COMPOSITION_DATA_STATUS = 0x8008, 0x02
 CONFIG_BEACON_GET, CONFIG_BEACON_SET, CONFIG_BEACON_STATUS = 0x8009, 0x800A, 0x800B
 CONFIG_DEFAULT_TTL_GET, CONFIG_DEFAULT_TTL_SET, CONFIG_DEFAULT_TTL_STATUS = (
@@ -33,6 +36,10 @@ CONFIG_DEFAULT_TTL_GET, CONFIG_DEFAULT_TTL_SET, CONFIG_DEFAULT_TTL_STATUS = (
     0x800D,
     0x800E,
 )
+CONFIG_FRIEND_GET, CONFIG_FRIEND_STATUS = (
+    0x800F,
+    0x8011,
+)  # Friend Set (0x8010) is not built
 CONFIG_GATT_PROXY_GET, CONFIG_GATT_PROXY_SET, CONFIG_GATT_PROXY_STATUS = (
     0x8012,
     0x8013,
@@ -79,6 +86,12 @@ CONFIG_MODEL_APP_BIND, CONFIG_MODEL_APP_STATUS, CONFIG_MODEL_APP_UNBIND = (
     CONFIG_NETKEY_STATUS,
     CONFIG_NETKEY_UPDATE,
 ) = 0x8040, 0x8041, 0x8044, 0x8045
+CONFIG_NETKEY_GET, CONFIG_NETKEY_LIST = 0x8042, 0x8043
+(
+    CONFIG_NODE_IDENTITY_GET,
+    CONFIG_NODE_IDENTITY_SET,
+    CONFIG_NODE_IDENTITY_STATUS,
+) = 0x8046, 0x8047, 0x8048
 CONFIG_NODE_RESET, CONFIG_NODE_RESET_STATUS = 0x8049, 0x804A
 (
     CONFIG_SIG_MODEL_APP_GET,
@@ -110,6 +123,8 @@ CONFIG_NAMES = {
     CONFIG_APPKEY_UPDATE: "AppKey Update",
     CONFIG_APPKEY_DELETE: "AppKey Delete",
     CONFIG_APPKEY_STATUS: "AppKey Status",
+    CONFIG_APPKEY_GET: "AppKey Get",
+    CONFIG_APPKEY_LIST: "AppKey List",
     CONFIG_COMPOSITION_DATA_GET: "Composition Data Get",
     CONFIG_COMPOSITION_DATA_STATUS: "Composition Data Status",
     CONFIG_BEACON_GET: "Beacon Get",
@@ -118,6 +133,8 @@ CONFIG_NAMES = {
     CONFIG_DEFAULT_TTL_GET: "Default TTL Get",
     CONFIG_DEFAULT_TTL_SET: "Default TTL Set",
     CONFIG_DEFAULT_TTL_STATUS: "Default TTL Status",
+    CONFIG_FRIEND_GET: "Friend Get",
+    CONFIG_FRIEND_STATUS: "Friend Status",
     CONFIG_GATT_PROXY_GET: "GATT Proxy Get",
     CONFIG_GATT_PROXY_SET: "GATT Proxy Set",
     CONFIG_GATT_PROXY_STATUS: "GATT Proxy Status",
@@ -149,6 +166,11 @@ CONFIG_NAMES = {
     CONFIG_NETKEY_DELETE: "NetKey Delete",
     CONFIG_NETKEY_STATUS: "NetKey Status",
     CONFIG_NETKEY_UPDATE: "NetKey Update",
+    CONFIG_NETKEY_GET: "NetKey Get",
+    CONFIG_NETKEY_LIST: "NetKey List",
+    CONFIG_NODE_IDENTITY_GET: "Node Identity Get",
+    CONFIG_NODE_IDENTITY_SET: "Node Identity Set",
+    CONFIG_NODE_IDENTITY_STATUS: "Node Identity Status",
     CONFIG_NODE_RESET: "Node Reset",
     CONFIG_SIG_MODEL_APP_GET: "SIG Model App Get",
     CONFIG_SIG_MODEL_APP_LIST: "SIG Model App List",
@@ -186,8 +208,10 @@ STATUS_NAMES = {
     0x11: "Invalid Binding",
 }
 
-# GATT Proxy / Relay / Beacon state values (§4.2.11, §4.2.8, §4.2.10)
+# GATT Proxy / Relay / Beacon / Friend state values (§4.2.11, §4.2.8, §4.2.10, §4.2.13)
 FEATURE_DISABLED, FEATURE_ENABLED, FEATURE_NOT_SUPPORTED = 0, 1, 2
+# Node Identity state values (§4.2.12): its advert stopped / running (60 s at most, §7.2.2.2.3) / not supported
+NODE_IDENTITY_STOPPED, NODE_IDENTITY_RUNNING, NODE_IDENTITY_NOT_SUPPORTED = 0, 1, 2
 
 # The app's publication parameters (network-logic.md §1.5): node default TTL, no period, no retransmission.
 PUBLISH_TTL_DEFAULT = 0xFF
@@ -380,6 +404,39 @@ def key_refresh_phase_set(transition: int, net_key_index: int = 0) -> bytes:
         + _key_index(net_key_index, "NetKey index").to_bytes(2, "little")
         + bytes([transition])
     )
+
+
+def appkey_get(net_key_index: int = 0) -> bytes:
+    """Config AppKey Get: `[netKeyIndex u16]` — the AppKeys bound to that NetKey the node holds, as indexes."""
+    return encode_opcode(CONFIG_APPKEY_GET) + _key_index(
+        net_key_index, "NetKey index"
+    ).to_bytes(2, "little")
+
+
+def netkey_get() -> bytes:
+    """Config NetKey Get: the NetKeys the node holds, as indexes."""
+    return encode_opcode(CONFIG_NETKEY_GET)
+
+
+def node_identity_get(net_key_index: int = 0) -> bytes:
+    """Config Node Identity Get: `[netKeyIndex u16]`."""
+    return encode_opcode(CONFIG_NODE_IDENTITY_GET) + _key_index(
+        net_key_index, "NetKey index"
+    ).to_bytes(2, "little")
+
+
+def node_identity_set(running: bool, net_key_index: int = 0) -> bytes:
+    """Config Node Identity Set: `[netKeyIndex u16][identity u8]` — start (1) or stop (0) the Node Identity advert."""
+    return (
+        encode_opcode(CONFIG_NODE_IDENTITY_SET)
+        + _key_index(net_key_index, "NetKey index").to_bytes(2, "little")
+        + bytes([NODE_IDENTITY_RUNNING if running else NODE_IDENTITY_STOPPED])
+    )
+
+
+def friend_get() -> bytes:
+    """Config Friend Get."""
+    return encode_opcode(CONFIG_FRIEND_GET)
 
 
 def composition_data_get(page: int = 0) -> bytes:
@@ -742,6 +799,36 @@ class KeyRefreshPhaseStatus(ConfigStatus):
 
 
 @dataclass(frozen=True)
+class AppKeyList(ConfigStatus):
+    """Config AppKey List: `[status][netKeyIndex u16][appKeyIndexes packed]` — the AppKeys bound to that NetKey."""
+
+    net_key_index: int
+    app_key_indexes: list[int]
+
+
+@dataclass(frozen=True)
+class NetKeyList:
+    """Config NetKey List: `[netKeyIndexes packed]`."""
+
+    net_key_indexes: list[int]
+
+
+@dataclass(frozen=True)
+class NodeIdentityStatus(ConfigStatus):
+    """Config Node Identity Status: `[status][netKeyIndex u16][identity]` (0 stopped, 1 running, 2 not supported)."""
+
+    net_key_index: int
+    identity: int
+
+
+@dataclass(frozen=True)
+class FriendStatus:
+    """Config Friend Status: `[friend]` (0 disabled, 1 enabled, 2 not supported)."""
+
+    friend: int
+
+
+@dataclass(frozen=True)
 class CompositionElement:
     """One element of Composition Data page 0: location descriptor and the model ids it hosts."""
 
@@ -965,6 +1052,36 @@ def decode_key_refresh_phase_status(params: bytes) -> KeyRefreshPhaseStatus:
     )
 
 
+def decode_appkey_list(params: bytes) -> AppKeyList:
+    """Decode Config AppKey List."""
+    _need(params, 3, "AppKey List")
+    return AppKeyList(
+        params[0],
+        int.from_bytes(params[1:3], "little") & 0xFFF,
+        _unpack_key_index_list(params[3:], "AppKey List"),
+    )
+
+
+def decode_netkey_list(params: bytes) -> NetKeyList:
+    """Decode Config NetKey List (a node holds one NetKey at least)."""
+    _need(params, 2, "NetKey List")
+    return NetKeyList(_unpack_key_index_list(params, "NetKey List"))
+
+
+def decode_node_identity_status(params: bytes) -> NodeIdentityStatus:
+    """Decode Config Node Identity Status."""
+    _need(params, 4, "Node Identity Status")
+    return NodeIdentityStatus(
+        params[0], int.from_bytes(params[1:3], "little") & 0xFFF, params[3]
+    )
+
+
+def decode_friend_status(params: bytes) -> FriendStatus:
+    """Decode Config Friend Status."""
+    _need(params, 1, "Friend Status")
+    return FriendStatus(params[0])
+
+
 def decode_composition_data(params: bytes) -> CompositionData:
     """Decode Config Composition Data Status; only page 0 is understood (ValueError otherwise)."""
     _need(params, 11, "Composition Data Status")
@@ -1139,6 +1256,10 @@ def decode_node_reset_status(params: bytes) -> NodeResetStatus:
 
 ConfigDecoded = (
     AppKeyStatus
+    | AppKeyList
+    | NetKeyList
+    | NodeIdentityStatus
+    | FriendStatus
     | NetKeyStatus
     | KeyRefreshPhaseStatus
     | CompositionData
@@ -1160,6 +1281,10 @@ ConfigDecoded = (
 
 _STATUS_DECODERS: dict[int, Callable[[bytes], ConfigDecoded]] = {
     CONFIG_APPKEY_STATUS: decode_appkey_status,
+    CONFIG_APPKEY_LIST: decode_appkey_list,
+    CONFIG_NETKEY_LIST: decode_netkey_list,
+    CONFIG_NODE_IDENTITY_STATUS: decode_node_identity_status,
+    CONFIG_FRIEND_STATUS: decode_friend_status,
     CONFIG_NETKEY_STATUS: decode_netkey_status,
     CONFIG_KEY_REFRESH_PHASE_STATUS: decode_key_refresh_phase_status,
     CONFIG_COMPOSITION_DATA_STATUS: decode_composition_data,
@@ -1242,12 +1367,22 @@ def _describe_params(opcode: int, p: bytes) -> str:  # noqa: PLR0911  # flat opc
     if opcode in (CONFIG_NETKEY_ADD, CONFIG_NETKEY_UPDATE):
         _need(p, 18, CONFIG_NAMES[opcode])
         return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} key=<16 bytes>"
-    if opcode in (CONFIG_NETKEY_DELETE, CONFIG_KEY_REFRESH_PHASE_GET):
+    if opcode in (
+        CONFIG_NETKEY_DELETE,
+        CONFIG_KEY_REFRESH_PHASE_GET,
+        CONFIG_APPKEY_GET,
+        CONFIG_NODE_IDENTITY_GET,
+    ):
         _need(p, 2, CONFIG_NAMES[opcode])
         return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF}"
     if opcode == CONFIG_KEY_REFRESH_PHASE_SET:
         _need(p, 3, "Key Refresh Phase Set")
         return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} transition={p[2]}"
+    if opcode == CONFIG_NODE_IDENTITY_SET:
+        _need(p, 3, "Node Identity Set")
+        return (
+            f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} {_identity_name(p[2])}"
+        )
     if opcode == CONFIG_COMPOSITION_DATA_GET:
         _need(p, 1, "Composition Data Get")
         return f"page={p[0]}"
@@ -1317,6 +1452,15 @@ def _describe_status(d: ConfigDecoded) -> str:  # noqa: PLR0911  # one branch pe
         return f"{prefix}netkey={d.net_key_index} appkey={d.app_key_index}"
     if isinstance(d, NetKeyStatus):
         return f"{prefix}netkey={d.net_key_index}"
+    if isinstance(d, AppKeyList):
+        keys = ",".join(str(i) for i in d.app_key_indexes)
+        return f"{prefix}netkey={d.net_key_index} appkeys=[{keys}]"
+    if isinstance(d, NetKeyList):
+        return f"netkeys=[{','.join(str(i) for i in d.net_key_indexes)}]"
+    if isinstance(d, NodeIdentityStatus):
+        return f"{prefix}netkey={d.net_key_index} {_identity_name(d.identity)}"
+    if isinstance(d, FriendStatus):
+        return _feature_name(d.friend)
     if isinstance(d, KeyRefreshPhaseStatus):
         return f"{prefix}netkey={d.net_key_index} phase={d.phase}"
     if isinstance(d, CompositionData):
@@ -1368,3 +1512,7 @@ def _feature_name(state: int) -> str:
     return {0: "disabled", 1: "enabled", 2: "not supported"}.get(
         state, f"state {state}"
     )
+
+
+def _identity_name(state: int) -> str:
+    return {0: "stopped", 1: "running", 2: "not supported"}.get(state, f"state {state}")
