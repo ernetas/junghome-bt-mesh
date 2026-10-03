@@ -44,6 +44,9 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.junghome_ble import mesh_config, repairs
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble.climate import temperature_to_level
+from custom_components.junghome_ble.configurator import executor as executor_mod
+from custom_components.junghome_ble.configurator import plan as plan_mod
+from custom_components.junghome_ble.configurator import store as store_mod
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
@@ -828,7 +831,7 @@ async def test_a_late_duplicate_of_the_previous_status_does_not_answer_the_next_
     next Publication Set's answer — only a late duplicate of that first status arrives. Same node, same opcode, same
     device key; only the echoed model tells it apart, and it must not pass for the answer (the plan would record a
     publication the node never took)."""
-    monkeypatch.setattr(mesh_config, "CONFIG_TIMEOUT", 0.05)
+    monkeypatch.setattr(executor_mod, "CONFIG_TIMEOUT", 0.05)
     first = C.model_publication_set(ROCKER_A, DIMMER_GROUP, "1001")
     silent = C.model_publication_set(ROCKER_A, DIMMER_GROUP, "1003")
     env.silent.add(silent)
@@ -2359,7 +2362,7 @@ async def test_a_moved_gateway_is_followed_before_a_change(
 def no_upload_retries(monkeypatch: pytest.MonkeyPatch) -> None:
     """No automatic retry of a failed upload: it would repair each failure a test sets up to see (the retries have
     their own tests in test_mesh_config.py)."""
-    monkeypatch.setattr(mesh_config, "GATEWAY_UPLOAD_RETRIES", 0)
+    monkeypatch.setattr(store_mod, "GATEWAY_UPLOAD_RETRIES", 0)
 
 
 @pytest.mark.usefixtures("no_upload_retries")
@@ -3125,7 +3128,7 @@ async def test_setup_records_a_plan_a_crash_interrupted_and_sets_up_again(
     await journal.async_save(
         {
             "action": "junghome_ble.set_room",
-            "steps": [mesh_config._step_json(s) for s in (step, pending)],
+            "steps": [plan_mod._step_json(s) for s in (step, pending)],
             "accepted": 1,
             "prepare": None,
             "happened": None,

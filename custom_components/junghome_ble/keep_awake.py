@@ -13,7 +13,7 @@ next hold). Like the app's, it stays quiet while the operation itself talks to t
 `KEEP_AWAKE_INTERVAL` passed without a message from it (`JungHomeHub.last_heard`). It can still overlap an operation's
 request that is waiting out its retries on a silent node; the replies do not mix: the keep-alive's is matched on the
 ButtonLayout id, and the operation's Admin requests on theirs (`PropertyReader._get` / `write`,
-`MeshConfigurator._admin_status`; the Config messages have their own opcodes). It does not wake the node: the
+`configurator.executor.PlanExecutor._admin_status`; the Config messages have their own opcodes). It does not wake the node: the
 operation's first message still has to find it awake, and a node that stays silent is reported as asleep, asking the
 user to press one of its keys and run the action again (`mesh_config`, `config_entities`); a lost link is reported as
 such. Mains nodes are never held. How long a transmitter stays awake after a key press or a message, and whether it

@@ -150,7 +150,7 @@ def test_every_issue_wording_links_to_a_heading_of_the_maintenance_page() -> Non
 def _issue_calls() -> list[tuple[str, ast.Call]]:
     """(`file:line`, call) of every `ir.async_create_issue(...)` in the integration."""
     found: list[tuple[str, ast.Call]] = []
-    for path in sorted(COMPONENT.glob("*.py")):
+    for path in sorted(COMPONENT.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         found.extend(
             (f"{path.name}:{node.lineno}", node)
@@ -189,7 +189,7 @@ async def test_the_sync_repair_hands_the_export_to_the_gateway(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     configurator = _configurator(hass, init_integration.entry_id)
-    configurator._sync_refused(
+    configurator.store._sync_refused(
         SimpleNamespace(host=HOST),  # type: ignore[arg-type]
         "the gateway could not be checked",
         False,

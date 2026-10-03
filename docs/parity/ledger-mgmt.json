@@ -264,7 +264,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.add_group",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room"
    ],
    "tests": [
     "tests/jhmesh/test_export.py::test_add_group_allocates_the_lowest_free_address_like_the_app",
@@ -289,7 +289,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.add_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_scene"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.create_scene"
    ],
    "tests": [
     "tests/jhmesh/test_export.py::test_add_scene_allocates_the_lowest_free_number",
@@ -361,7 +361,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/jhmesh/test_remove_node.py::test_a_removed_node_leaves_no_wiring_behind",
@@ -456,7 +456,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_group",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_key_mode"
    ],
    "tests": [
     "tests/jhmesh/test_export.py::test_remove_group_unwires_members_and_linked_buttons",
@@ -479,7 +479,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.delete_scene"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.delete_scene"
    ],
    "tests": [
     "tests/jhmesh/test_export.py::test_remove_scene_drops_cdb_meta_and_scene_info_rows"
@@ -535,7 +535,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.rename_group",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_room"
    ],
    "tests": [
     "tests/jhmesh/test_export.py::test_rename_group_changes_cdb_and_meta"
@@ -1196,7 +1196,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_get",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_sensor_publication"
+    "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.set_sensor_publication"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_get",
@@ -1340,7 +1340,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step"
+    "custom_components/junghome_ble/configurator/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
@@ -1663,7 +1663,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_publication_status",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._request"
+    "custom_components/junghome_ble/configurator/executor.py::PlanExecutor._request"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_status_round_trips_the_set",
@@ -1689,7 +1689,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step",
+    "custom_components/junghome_ble/configurator/plan.py::config_step",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups"
    ],
    "tests": [
@@ -1706,7 +1706,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step"
+    "custom_components/junghome_ble/configurator/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -2045,7 +2045,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._bind_step"
+    "custom_components/junghome_ble/configurator/plan.py::bind_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",
@@ -2193,7 +2193,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::node_reset",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_node_feature_builders",
@@ -2208,7 +2208,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_node_reset_status",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_single_field_statuses",
@@ -3076,7 +3076,7 @@
    "id": "mgmt:debug:meshgroupdetailsviewmodel.deletegroup",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_key_mode",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_group"
    ],
    "tests": [
@@ -3334,7 +3334,7 @@
    "id": "mgmt:debug:meshnetworkviewmodel.checkforpublicationforsensorserver",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::sensor_publication",
+    "custom_components/junghome_ble/configurator/wiring.py::sensor_publication",
     "custom_components/junghome_ble/switch.py::JungHomeSensorPublication"
    ],
    "tests": [
@@ -3464,7 +3464,7 @@
    "id": "mgmt:debug:meshnetworkviewmodel.togglepublicationforsensorservers",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_sensor_publication",
+    "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.set_sensor_publication",
     "custom_components/junghome_ble/switch.py::JungHomeSensorPublication"
    ],
    "tests": [
@@ -3650,7 +3650,7 @@
    "id": "mgmt:debug:projectdebugviewmodel.exportproject",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.sync_gateway",
+    "custom_components/junghome_ble/configurator/store.py::ExportStore.sync_gateway",
     "custom_components/junghome_ble/services.py::_sync_gateway"
    ],
    "tests": [
@@ -3663,7 +3663,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_gateway_refetch",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._adopt_gateway_export"
+    "custom_components/junghome_ble/configurator/store.py::ExportStore._adopt_gateway_export"
    ],
    "tests": [
     "tests/test_config_flow.py::test_reconfigure_flow",
@@ -4120,8 +4120,8 @@
    "id": "mgmt:err:configureminiactuatorconnectionerror",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::_failure",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._send"
+    "custom_components/junghome_ble/configurator/store.py::_failure",
+    "custom_components/junghome_ble/configurator/executor.py::PlanExecutor.send"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_refused_config_status_stops_the_plan_and_records_what_was_applied",
@@ -4141,7 +4141,7 @@
    "id": "mgmt:err:configureminiactuatorconnectionerror.connectionfailed",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._send",
+    "custom_components/junghome_ble/configurator/executor.py::PlanExecutor.send",
     "custom_components/junghome_ble/strings.json::exceptions.service_config_refused"
    ],
    "tests": [
@@ -4564,7 +4564,7 @@
     "custom_components/junghome_ble/jhmesh/devices.py::expected_device_count",
     "custom_components/junghome_ble/jhmesh/devices.py::SINGLE_DEVICE_PIDS",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.device_rows",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.record_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.record_node",
     "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
@@ -4601,7 +4601,7 @@
    "id": "mgmt:flow:configurationmeshapiimpl",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/jhmesh/config_messages.py::node_reset"
    ],
    "tests": [
@@ -4679,7 +4679,7 @@
    "id": "mgmt:flow:configureminiactuatorconnection",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
     "custom_components/junghome_ble/jhmesh/devices.py::KeyConnection"
    ],
    "tests": [
@@ -4846,7 +4846,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeTimeKeeper",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_time_keeper",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.set_time_keeper",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._report_time_keeper",
     "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.ensure_time_keeper_group",
@@ -5170,7 +5170,7 @@
    "code": [
     "custom_components/junghome_ble/identity.py::async_vault_keeper",
     "custom_components/junghome_ble/jhmesh/vault.py::choose_ranges",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._with_identity"
+    "custom_components/junghome_ble/configurator/store.py::ExportStore.with_identity"
    ],
    "tests": [
     "tests/test_identity.py::test_identity_ranges_are_chosen_once_and_kept",
@@ -5198,7 +5198,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/jhmesh/test_remove_node.py::test_a_removed_node_leaves_no_wiring_behind",
@@ -5281,7 +5281,7 @@
    "id": "mgmt:flow:resetdevice",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node"
    ],
    "tests": [
@@ -7224,7 +7224,7 @@
    "id": "mgmt:setup:finished",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.record_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.record_node",
     "custom_components/junghome_ble/jhmesh/onboarding.py::record"
    ],
    "tests": [
@@ -7653,7 +7653,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/strings.json::exceptions.remove_device_unconfirmed",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_refusals"
@@ -8204,7 +8204,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_remove_device",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_resets_it_and_takes_it_out"

@@ -24,12 +24,22 @@ from unittest.mock import patch
 import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import issue_registry as ir
 
 from custom_components.junghome_ble import keep_awake as keep_awake_mod
 from custom_components.junghome_ble import mesh_config as mc
+from custom_components.junghome_ble.configurator import executor as executor_mod
+from custom_components.junghome_ble.configurator import nodes as nodes_mod
+from custom_components.junghome_ble.configurator import plan as plan_mod
+from custom_components.junghome_ble.configurator import rooms as rooms_mod
+from custom_components.junghome_ble.configurator import scenes as scenes_mod
+from custom_components.junghome_ble.configurator import store as store_mod
+from custom_components.junghome_ble.configurator import wiring as wiring_mod
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
+    GATEWAY_UPLOAD_RETRY_DELAY,
+    OPTION_PROVISIONER_IDENTITY,
 )
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
@@ -44,16 +54,25 @@ from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.cdb import CDB, InvalidExport
 from custom_components.junghome_ble.jhmesh.client import LocalState, ProxyClient
-from custom_components.junghome_ble.jhmesh.devices import Metadata
+from custom_components.junghome_ble.jhmesh.devices import Metadata, is_room
 from custom_components.junghome_ble.jhmesh.export import (
     ALLOCATION_MARGIN,
     AllocationCrowded,
+    ExportError,
+    ModelChange,
+    NewerExportError,
     ProjectFile,
     as_int,
     function_code,
+    raw_model,
 )
 from custom_components.junghome_ble.jhmesh.fileio import backup_paths
-from custom_components.junghome_ble.jhmesh.merge import MISSING, Change, Key
+from custom_components.junghome_ble.jhmesh.merge import (
+    MISSING,
+    Change,
+    Key,
+    diff_documents,
+)
 from custom_components.junghome_ble.jhmesh.pdu import (
     NetworkPDU,
     decode_opcode,
@@ -296,7 +315,7 @@ class FakeEntry:
 
 class FakeConfigEntries:
     """Only `async_update_entry`'s `data` replacement, which `_mark_synced` uses, and the bench's entry for a
-    retried upload (`mesh_config._retry_upload`)."""
+    retried upload (`store_mod._retry_upload`)."""
 
     def __init__(self) -> None:
         self.entries: dict[str, FakeEntry] = {}
@@ -437,9 +456,9 @@ def fast(monkeypatch: pytest.MonkeyPatch) -> FastAsyncio:
     fa = FastAsyncio()
     monkeypatch.setattr(client_mod, "asyncio", fa)
     monkeypatch.setattr(client_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
-    monkeypatch.setattr(mc, "CONFIG_TIMEOUT", 0.05)
-    monkeypatch.setattr(mc, "KEY_MODE_TIMEOUT", 0.05)
-    monkeypatch.setattr(mc, "SCENE_TIMEOUT", 0.05)
+    monkeypatch.setattr(executor_mod, "CONFIG_TIMEOUT", 0.05)
+    monkeypatch.setattr(executor_mod, "KEY_MODE_TIMEOUT", 0.05)
+    monkeypatch.setattr(executor_mod, "SCENE_TIMEOUT", 0.05)
     return fa
 
 
@@ -486,7 +505,9 @@ async def make_bench(
 def adverts() -> Iterator[set[str]]:
     """The UUIDs advertising as new devices: the bench has no Bluetooth, so `remove_node` looks here (W4-7)."""
     seen: set[str] = set()
-    with patch.object(mc, "advertises_unprovisioned", lambda _hass, uuid: uuid in seen):
+    with patch.object(
+        nodes_mod, "advertises_unprovisioned", lambda _hass, uuid: uuid in seen
+    ):
         yield seen
 
 
@@ -1117,7 +1138,7 @@ async def test_a_detector_takes_no_key_only_mode(
     """No fixture has a detector next to a thermostat or a lockable load: the RTR network's push-button stands in for
     one. A thermostat's set-point, a lock and a target element live in a key's KeyMode / property mode, which a
     detector does not have: refused before anything is sent, the derived `temperature` too."""
-    monkeypatch.setattr(mc, "DETECTOR_PIDS", frozenset({0x0001}))
+    monkeypatch.setattr(rooms_mod, "DETECTOR_PIDS", frozenset({0x0001}))
     bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
     with pytest.raises(ServiceValidationError) as exc:
         await bench.configurator.assign_key(RTR_KEY, **kwargs)
@@ -1132,7 +1153,7 @@ async def test_a_stand_in_detector_drives_a_light_without_a_key_mode(
     tmp_path: Path, fast: FastAsyncio, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The same stand-in in the mode the light gives: wired as a key, with no vendor write at all."""
-    monkeypatch.setattr(mc, "DETECTOR_PIDS", frozenset({0x0001}))
+    monkeypatch.setattr(rooms_mod, "DETECTOR_PIDS", frozenset({0x0001}))
     bench = await make_bench(tmp_path, FIXTURES / "MeshNetwork-rtr.json")
     assert await bench.configurator.assign_key(RTR_KEY, element=RTR_TW_LIGHT)
     assert pub(bench.reload(), RTR_KEY, "1003") == 0xC044
@@ -1291,9 +1312,9 @@ def test_scene_link_row_without_a_load_group() -> None:
     pf = ProjectFile.load(ANDROID_PATH)
     gateway = pf.cdb.element(GATEWAY)
     assert gateway is not None
-    assert MeshConfigurator._scene_link_group(pf, gateway) is None
+    assert wiring_mod.scene_link_group(pf, gateway) is None
     pf.meta["keyModeSceneConfigExports"] = []
-    MeshConfigurator._record_scene_link(pf, 0x0999, 4, None)
+    wiring_mod.record_scene_link(pf, 0x0999, 4, None)
     assert pf.meta["keyModeSceneConfigExports"] == [
         {
             "sceneConfig": {
@@ -1308,7 +1329,7 @@ def test_scene_link_row_without_a_load_group() -> None:
     pf.meta["keyModeSceneConfigExports"] = [
         {"sceneConfig": {"sceneId": 1}, "elementAddress": "0149"}
     ]
-    MeshConfigurator._record_scene_link(pf, 0x0999, 4, None)
+    wiring_mod.record_scene_link(pf, 0x0999, 4, None)
     assert pf.meta["keyModeSceneConfigExports"][-1] == {
         "sceneConfig": {
             "sceneId": 4,
@@ -1321,10 +1342,10 @@ def test_scene_link_row_without_a_load_group() -> None:
 
 def test_confirms_property() -> None:
     status = admin_status(0x5002, scene_config(3))[3:]
-    assert mc._confirms_property(status, 0x5002, scene_config(3))
-    assert not mc._confirms_property(status, 0x5002, scene_config(4))
-    assert not mc._confirms_property(status, 0x5003, scene_config(3))
-    assert not mc._confirms_property(status[:5], 0x5002, scene_config(3))
+    assert wiring_mod._confirms_property(status, 0x5002, scene_config(3))
+    assert not wiring_mod._confirms_property(status, 0x5002, scene_config(4))
+    assert not wiring_mod._confirms_property(status, 0x5003, scene_config(3))
+    assert not wiring_mod._confirms_property(status[:5], 0x5002, scene_config(3))
 
 
 # ----------------------------------------------------------------------------- key -> room
@@ -1537,7 +1558,7 @@ async def test_clear_key_leaves_virtual_and_fixed_group_subscriptions_alone(
     bench = await prepare(tmp_path, "virtual", lambda doc: edited_network(doc, edit))
     assert await bench.configurator.clear_key(ROCKER_A) is True
     assert bench.config_pdus() == CLEAR_ROCKER_A
-    raw = mc.raw_model(bench.reload().cdb.element(ROCKER_A), "1001")  # type: ignore[arg-type]
+    raw = raw_model(bench.reload().cdb.element(ROCKER_A), "1001")  # type: ignore[arg-type]
     assert raw["subscribe"] == [label, "8123", "FFFD"]
     assert caplog.text.count("cannot be removed from here") == 3
 
@@ -1565,7 +1586,7 @@ async def test_socket_target_binds_the_property_server_before_its_publication(
     )
     el = bench.reload().cdb.element(SOCKET_SENSOR)
     assert el is not None
-    assert mc.raw_model(el, "05271013")["bind"] == [0]
+    assert raw_model(el, "05271013")["bind"] == [0]
 
 
 # ----------------------------------------------------------------------------- rooms
@@ -1745,7 +1766,7 @@ async def test_a_load_may_end_up_in_no_room(bench: Bench) -> None:
     cdb = CDB.load(bench.path)
     el = cdb.element(DALI_LOAD)
     assert el is not None
-    rooms = {a for a, n in cdb.groups.items() if mc.is_room(a, n)}
+    rooms = {a for a, n in cdb.groups.items() if is_room(a, n)}
     assert not any(a in rooms for m in LIVING_MODELS for a in el.subscriptions(m))
 
 
@@ -2042,7 +2063,7 @@ async def test_a_silent_node_stops_the_plan_and_records_what_was_applied(
         "applied": mc.applied_text(1, 11),
     }
     sent = [a for _n, a in bench.config_pdus()]
-    assert sent.count(silent) == mc.CONFIG_RETRIES
+    assert sent.count(silent) == executor_mod.CONFIG_RETRIES
     assert sent[-1] == silent
     assert bench.app_pdus() == []
     pf = bench.reload()
@@ -2104,7 +2125,7 @@ async def test_a_stopped_plan_into_a_new_room_records_the_room(bench: Bench) -> 
     """`set_rooms` creates a missing room in the planned copy only; a stop must not record subscriptions to a
     group `_record`'s fresh read of the file has never heard of (CFG-02) — the next room HA or the app creates
     would otherwise take that same address and silently inherit these loads."""
-    group = mc.load_project(str(bench.path), None).free_group_address()
+    group = wiring_mod.load_project(str(bench.path), None).free_group_address()
     silent = sub_add(DIMMER_LOAD, group, "1000")
     bench.config.silent.add(silent)
     with pytest.raises(HomeAssistantError):
@@ -2164,16 +2185,16 @@ async def test_record_drops_a_keys_link_row_once_every_tagged_step_of_the_plan_i
     steps last, so through `assign_key`/`clear_key` a stopped plan never has all of a key's tagged steps done
     with something else still pending — `finished` is always empty there. A future caller mixing more than one
     key's tagged steps in one plan would not be; this keeps that branch covered against it."""
-    pf = await bench.configurator._load()
-    key = bench.configurator._element(pf, DIMMER_KEY)
-    accepted = bench.configurator._clear_steps(pf, key)
+    pf = await bench.configurator.store.load()
+    key = wiring_mod.find_element(pf, DIMMER_KEY)
+    accepted = wiring_mod.clear_steps(pf, key)
     extra = mc.ConfigStep(
         SOCKET_NODE,
         b"",
         0,
-        change=mc.ModelChange(SOCKET_NODE, "1000", SOCKET_GROUP, "subscribe"),
+        change=ModelChange(SOCKET_NODE, "1000", SOCKET_GROUP, "subscribe"),
     )
-    await bench.configurator._record(accepted, [*accepted, extra])
+    await bench.configurator.executor.record(accepted, [*accepted, extra])
     assert link_rows(bench.reload()) == []
 
 
@@ -2231,7 +2252,7 @@ async def test_a_duplicated_status_of_the_previous_step_cannot_mask_a_refusal(
 async def test_a_malformed_config_status_counts_as_a_refusal(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(mc.C, "decode_config", lambda _op, _p: None)
+    monkeypatch.setattr(C, "decode_config", lambda _op, _p: None)
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_key == "service_config_refused"
@@ -2245,7 +2266,7 @@ async def test_a_short_config_status_counts_as_a_refusal(
     def truncated(_op: int, _p: bytes) -> None:
         raise ValueError("short")
 
-    monkeypatch.setattr(mc.C, "decode_config", truncated)
+    monkeypatch.setattr(C, "decode_config", truncated)
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_placeholders["status"] == "malformed status"
@@ -2401,7 +2422,7 @@ async def test_a_newer_export_on_disk_is_never_overwritten(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The app rewrote the file while we were talking to the mesh: the write is refused, nothing is lost."""
-    original_load = mc.load_project
+    original_load = wiring_mod.load_project
 
     def load_then_app_writes(path: str, metadata_dir: str | None) -> ProjectFile:
         pf = original_load(path, metadata_dir)
@@ -2410,12 +2431,12 @@ async def test_a_newer_export_on_disk_is_never_overwritten(
         newer.save(force=True)  # bumps the timestamp past ours
         return pf
 
-    monkeypatch.setattr(mc, "load_project", load_then_app_writes)
+    monkeypatch.setattr(store_mod, "load_project", load_then_app_writes)
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_key == "service_export_newer"
     assert exc.value.translation_placeholders == {"path": str(bench.path)}
-    assert isinstance(exc.value.__cause__, mc.NewerExportError)
+    assert isinstance(exc.value.__cause__, NewerExportError)
     assert "From the app" in bench.reload().user_groups().values()
     assert subs(bench.reload(), DALI_LOAD, "1000") == [DALI_GROUP, LAMPS, LIVING]
     assert (
@@ -2466,7 +2487,7 @@ async def test_unreadable_or_unwritable_export(
 async def test_operations_are_serialised_by_the_lock(bench: Bench) -> None:
     gate = asyncio.Event()
     order: list[str] = []
-    original_load = bench.configurator._load
+    original_load = bench.configurator.store.load
 
     async def slow_load() -> ProjectFile:
         order.append("load")
@@ -2474,7 +2495,7 @@ async def test_operations_are_serialised_by_the_lock(bench: Bench) -> None:
             await gate.wait()
         return await original_load()
 
-    bench.configurator._load = slow_load  # type: ignore[method-assign]
+    bench.configurator.store.load = slow_load  # type: ignore[method-assign]
     first = asyncio.ensure_future(bench.configurator.create_room("One"))
     second = asyncio.ensure_future(bench.configurator.create_room("Two"))
     for _ in range(10):
@@ -2493,7 +2514,7 @@ async def test_operations_are_serialised_by_the_lock(bench: Bench) -> None:
 
 def test_element_groups_fall_back_to_meta_rows(tmp_path: Path) -> None:
     pf = ProjectFile.load(ANDROID_PATH)
-    groups = mc.element_groups(pf)
+    groups = wiring_mod.element_groups(pf)
     assert groups[ROCKER_A] == ROCKER_A_GROUP
     assert groups[GATEWAY] == GATEWAY_GROUP
     # a CDB group renamed by hand: the meta row still maps it
@@ -2502,23 +2523,23 @@ def test_element_groups_fall_back_to_meta_rows(tmp_path: Path) -> None:
         for g in pf.net["groups"]
     ]
     pf.cdb.groups[ROCKER_A_GROUP] = "renamed"
-    assert mc.element_groups(pf)[ROCKER_A] == ROCKER_A_GROUP
+    assert wiring_mod.element_groups(pf)[ROCKER_A] == ROCKER_A_GROUP
     # a meta row for a group the CDB does not have is ignored
     pf.meta["elementConnectionGroups"].append(
         {"elementAddress": 0x0999, "groupAddress": 0xC0FF}
     )
-    assert 0x0999 not in mc.element_groups(pf)
+    assert 0x0999 not in wiring_mod.element_groups(pf)
     pf.meta["elementConnectionGroups"].append(
         {"elementAddress": "zz", "groupAddress": True}
     )
-    assert mc.element_groups(pf)[ROCKER_A] == ROCKER_A_GROUP
+    assert wiring_mod.element_groups(pf)[ROCKER_A] == ROCKER_A_GROUP
 
 
 def test_confirms_key_mode() -> None:
-    assert mc._confirms_key_mode(bytes.fromhex("0350 03 05"), 5)
-    assert not mc._confirms_key_mode(bytes.fromhex("0350 03 05"), 0)
-    assert not mc._confirms_key_mode(bytes.fromhex("0650 03 05"), 5)
-    assert not mc._confirms_key_mode(bytes.fromhex("0350 03"), 5)
+    assert wiring_mod._confirms_key_mode(bytes.fromhex("0350 03 05"), 5)
+    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0350 03 05"), 0)
+    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0650 03 05"), 5)
+    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0350 03"), 5)
 
 
 def test_function_code_and_as_int() -> None:
@@ -3038,9 +3059,7 @@ async def test_create_and_rename_scene(bench: Bench, scenes: SceneServer) -> Non
     assert not scenes.seen  # nothing went on air
     # the scene range exhausted (the fixture's provisioner owns 1..0x1999: patched rather than filled)
     with (
-        patch.object(
-            ProjectFile, "free_scene_number", side_effect=mc.ExportError("full")
-        ),
+        patch.object(ProjectFile, "free_scene_number", side_effect=ExportError("full")),
         pytest.raises(ServiceValidationError) as err3,
     ):
         await bench.configurator.create_scene("One too many")
@@ -3084,9 +3103,9 @@ def test_scene_action_for_every_load_kind() -> None:
         V.ACTION_TEMPERATURE, temperature_c=5.0
     )
     assert mc.scene_action_for("detector", state) is None
-    assert mc._scene_register_status_name(0x07) == "status 0x07"
-    assert mc._scene_register_status_name(2) == "Scene Not Found"
-    assert not mc._confirms_scene_action(b"\x01", 1, None)
+    assert wiring_mod._scene_register_status_name(0x07) == "status 0x07"
+    assert wiring_mod._scene_register_status_name(2) == "Scene Not Found"
+    assert not wiring_mod._confirms_scene_action(b"\x01", 1, None)
 
 
 async def test_scene_register_status_malformed_and_members_without_the_vendor_model(
@@ -3219,7 +3238,7 @@ async def test_two_channel_node_shares_one_scene_register(
 
 def test_config_step_matches_the_status_that_echoes_it() -> None:
     """The Status must echo the step's element / model / address; a foreign one is not this step's answer."""
-    change = mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
+    change = ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
     step = mc.ConfigStep(
         DALI_NODE, sub_add(ROCKER_A, DIMMER_GROUP, "1001"), 0x801F, change=change
     )
@@ -3246,7 +3265,7 @@ def test_config_step_matches_the_status_that_echoes_it() -> None:
         DALI_NODE,
         pub_set(ROCKER_A, 0, "1001"),
         0x8019,
-        change=mc.ModelChange(ROCKER_A, "1001", 0, "publish"),
+        change=ModelChange(ROCKER_A, "1001", 0, "publish"),
     )
     assert clear.matches(
         status(0x8019, b"\x00" + bytes.fromhex("3402 0000 0000 ff 00 00 0110"))
@@ -3274,12 +3293,12 @@ def test_config_step_matches_the_status_that_echoes_it() -> None:
 
 
 def test_ordered_puts_additions_first_and_drops_superseded_clears() -> None:
-    sub = mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
-    unsub_same = mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "unsubscribe")
-    unsub_other = mc.ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe")
-    clear_pub = mc.ModelChange(ROCKER_A, "1001", 0, "publish")
-    set_pub = mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "publish")
-    clear_other_pub = mc.ModelChange(ROCKER_A, "1003", 0, "publish")
+    sub = ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
+    unsub_same = ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "unsubscribe")
+    unsub_other = ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe")
+    clear_pub = ModelChange(ROCKER_A, "1001", 0, "publish")
+    set_pub = ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "publish")
+    clear_other_pub = ModelChange(ROCKER_A, "1003", 0, "publish")
     steps = [
         mc.ConfigStep(DALI_NODE, b"a", 0, change=clear_pub),
         mc.ConfigStep(DALI_NODE, b"b", 0, change=unsub_same),
@@ -3307,16 +3326,16 @@ def test_replay_applies_every_kind_of_step_idempotently() -> None:
             DALI_NODE,
             b"",
             0,
-            change=mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe"),
+            change=ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe"),
         ),
         mc.ConfigStep(
             DALI_NODE,
             b"",
             0,
-            change=mc.ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe"),
+            change=ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe"),
         ),
         mc.ConfigStep(
-            DALI_NODE, b"", 0, change=mc.ModelChange(ROCKER_A, "1001", 0, "publish")
+            DALI_NODE, b"", 0, change=ModelChange(ROCKER_A, "1001", 0, "publish")
         ),
     ):
         mc.replay(pf, step)
@@ -3329,7 +3348,7 @@ def test_replay_applies_every_kind_of_step_idempotently() -> None:
             DALI_NODE,
             b"",
             0,
-            change=mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "publish"),
+            change=ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "publish"),
             unlinks=DIMMER_KEY,
         ),
     )
@@ -3341,13 +3360,13 @@ def test_replay_applies_every_kind_of_step_idempotently() -> None:
 def test_drop_link_rows_removes_only_the_named_keys_row() -> None:
     pf = ProjectFile.load(ANDROID_PATH)
     assert [r["elementAddress"] for r in link_rows(pf)] == [DIMMER_KEY]
-    mc._drop_link_rows(pf, DIMMER_KEY)
+    plan_mod._drop_link_rows(pf, DIMMER_KEY)
     assert link_rows(pf) == []
-    mc._drop_link_rows(pf, DIMMER_KEY)  # idempotent: no row left to drop
+    plan_mod._drop_link_rows(pf, DIMMER_KEY)  # idempotent: no row left to drop
     assert link_rows(pf) == []
     # the scene row goes with its key's old wiring too, and only that key's
     assert scene_key_rows(pf) == [SWITCH_KEY]
-    mc._drop_link_rows(pf, SWITCH_KEY)
+    plan_mod._drop_link_rows(pf, SWITCH_KEY)
     assert scene_key_rows(pf) == []
 
 
@@ -3557,12 +3576,12 @@ def test_a_device_row_with_unreadable_location_ids_is_skipped() -> None:
     pf = ProjectFile.load(ANDROID_PATH)
     key = pf.cdb.element(DIMMER_KEY)
     assert key is not None
-    good = MeshConfigurator._device_entry(pf, key.node, key.location)
+    good = wiring_mod.device_entry(pf, key.node, key.location)
     assert good is not None
     pf.meta["devices"].insert(
         0, {"deviceId": {"nodeId": key.node.uuid, "locationIds": ["x"]}}
     )
-    assert MeshConfigurator._device_entry(pf, key.node, key.location) is good
+    assert wiring_mod.device_entry(pf, key.node, key.location) is good
 
 
 async def test_remove_from_scenes_records_the_loads_removed_before_the_one_that_failed(
@@ -3713,9 +3732,11 @@ async def with_gateway(
     stubbed here); a retry of a failed upload still pending at the end is cancelled, as the hub's stop does."""
     doc = json.loads(ProjectFile.load(bench.path).share_json())
     gateway = FakeGateway(doc)
-    monkeypatch.setattr(MeshConfigurator, "gateway", property(lambda _self: gateway))
-    monkeypatch.setattr(mc.ir, "async_create_issue", lambda *_a, **_k: None)
-    monkeypatch.setattr(mc.ir, "async_delete_issue", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        store_mod.ExportStore, "gateway", property(lambda _self: gateway)
+    )
+    monkeypatch.setattr(ir, "async_create_issue", lambda *_a, **_k: None)
+    monkeypatch.setattr(ir, "async_delete_issue", lambda *_a, **_k: None)
     bench.set_synced(mc.export_digest(doc))
     yield gateway
     retry = bench.configurator.upload_retry
@@ -3927,7 +3948,7 @@ async def test_an_adopted_export_is_written_atomically_with_a_backup(
         return real_replace(self, target)
 
     monkeypatch.setattr(Path, "replace", spy)
-    await bench.configurator._adopt_gateway_export()
+    await bench.configurator.store._adopt_gateway_export()
     bak = bench.path.with_name(bench.path.name + ".bak")
     assert bak.read_bytes() == bench.original
     assert "From the app" in bench.reload().user_groups().values()
@@ -3950,7 +3971,7 @@ async def test_an_adopted_export_that_cannot_be_written_is_a_translated_error(
     def refuse(*_args: Any, **_kwargs: Any) -> None:
         raise OSError("read-only")
 
-    monkeypatch.setattr(mc, "write_private_with_backup", refuse)
+    monkeypatch.setattr(store_mod, "write_private_with_backup", refuse)
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.create_room("Attic")
     assert exc.value.translation_key == "service_export_write_failed"
@@ -4041,7 +4062,7 @@ async def test_a_legacy_entrys_bootstrap_tolerates_an_on_disk_timestamp_it_canno
     def boom() -> str | None:
         raise OSError("gone")
 
-    monkeypatch.setattr(bench.configurator, "_timestamp_on_disk", boom)
+    monkeypatch.setattr(bench.configurator.store, "_timestamp_on_disk", boom)
     await bench.configurator.create_room("Attic")
     rooms = list(bench.reload().user_groups().values())
     assert "From the app" in rooms
@@ -4050,7 +4071,7 @@ async def test_a_legacy_entrys_bootstrap_tolerates_an_on_disk_timestamp_it_canno
 
 def test_digest_on_disk_returns_none_for_unparsable_json(bench: Bench) -> None:
     bench.path.write_text("not json")
-    assert bench.configurator._digest_on_disk() is None
+    assert bench.configurator.store._digest_on_disk() is None
 
 
 async def test_disk_timestamp_or_none_swallows_an_unreadable_file(
@@ -4059,8 +4080,8 @@ async def test_disk_timestamp_or_none_swallows_an_unreadable_file(
     def boom() -> str | None:
         raise OSError("gone")
 
-    monkeypatch.setattr(bench.configurator, "_timestamp_on_disk", boom)
-    assert await bench.configurator._disk_timestamp_or_none() is None
+    monkeypatch.setattr(bench.configurator.store, "_timestamp_on_disk", boom)
+    assert await bench.configurator.store._disk_timestamp_or_none() is None
 
 
 async def test_a_meta_only_app_change_on_the_gateway_is_adopted_not_overwritten(
@@ -4116,7 +4137,7 @@ async def test_a_failed_upload_is_retried_like_the_app_does(
     ms): so does an automatic upload here, in the background, with the same export; the time of the upload that
     went through is recorded (`gateway_last_sync`)."""
     fa = FastAsyncio()
-    monkeypatch.setattr(mc, "asyncio", fa)
+    monkeypatch.setattr(store_mod, "asyncio", fa)
     refusals: list[Exception] = [GatewayBusy("busy"), GatewayError("HTTP 500")]
     real_upload = with_gateway.upload_project
 
@@ -4136,7 +4157,7 @@ async def test_a_failed_upload_is_retried_like_the_app_does(
     retry = bench.configurator.upload_retry
     assert retry is not None
     await retry
-    assert fa.sleeps == [mc.GATEWAY_UPLOAD_RETRY_DELAY] * 2 == [15.0, 15.0]
+    assert fa.sleeps == [GATEWAY_UPLOAD_RETRY_DELAY] * 2 == [15.0, 15.0]
     assert len(with_gateway.uploads) == 1
     assert "Attic" in json.dumps(with_gateway.uploads[0]["meta"])
     assert bench.sync.synced == mc.export_digest(with_gateway.uploads[0])
@@ -4161,9 +4182,11 @@ async def test_a_refused_upload_is_not_retried_and_a_newer_one_supersedes_a_retr
     """A refusal of ours (the gateway holds changes HA has not seen, a rejected token) is final: no retry. A
     pending retry is dropped by the next change's own upload, and by `sync_gateway`."""
     fa = FastAsyncio()
-    monkeypatch.setattr(mc, "asyncio", fa)
+    monkeypatch.setattr(store_mod, "asyncio", fa)
     with_gateway.refuse_upload = GatewayAuthError("POST config: HTTP 401")
-    monkeypatch.setattr(mc.MeshConfigurator, "report_token_rejected", lambda *_a: None)
+    monkeypatch.setattr(
+        store_mod.ExportStore, "report_token_rejected", lambda *_a: None
+    )
     await bench.configurator.create_room("Attic")
     assert bench.configurator.upload_retry is None
     calls = 0
@@ -4214,7 +4237,7 @@ async def test_a_retry_follows_the_entry_through_a_reload_and_ends_without_it(
     the export on disk through the configurator the reload created. An entry that is not loaded after all, or an
     export that no longer loads, ends it."""
     fa = FastAsyncio()
-    monkeypatch.setattr(mc, "asyncio", fa)
+    monkeypatch.setattr(store_mod, "asyncio", fa)
     entry = bench.hub.entry
     with_gateway.refuse_upload = GatewayBusy("busy")
     await entry.setup_lock.acquire()  # a reload in progress
@@ -4223,7 +4246,7 @@ async def test_a_retry_follows_the_entry_through_a_reload_and_ends_without_it(
     assert retry is not None
     for _ in range(5):
         await asyncio.sleep(0)
-    assert fa.sleeps[0] == mc.GATEWAY_UPLOAD_RETRY_DELAY
+    assert fa.sleeps[0] == GATEWAY_UPLOAD_RETRY_DELAY
     assert set(fa.sleeps[1:]) == {mc.RELOAD_POLL}  # waiting, the attempt not spent
     # the reload replaced the hub's configurator; it takes the upload
     replacement = MeshConfigurator(bench.hub)  # type: ignore[arg-type]
@@ -4384,7 +4407,7 @@ async def test_a_cdb_only_gateway_export_over_a_disk_file_with_no_meta_either_pl
     inner = json.loads(base64.b64decode(gateway_doc(bench.path)["network"]))
     with_gateway.doc = {"meshNetwork": inner}
     bench.path.write_text(json.dumps({"meshNetwork": inner}))
-    await bench.configurator._adopt_gateway_export()  # no exception
+    await bench.configurator.store._adopt_gateway_export()  # no exception
     assert json.loads(bench.path.read_text()) == {"meshNetwork": inner}
 
 
@@ -4496,9 +4519,9 @@ def issues(monkeypatch: pytest.MonkeyPatch) -> dict[str, dict[str, Any]]:
         def async_get_issue(_domain: str, issue_id: str) -> SimpleNamespace | None:
             return SimpleNamespace(active=True) if issue_id in raised else None
 
-    monkeypatch.setattr(mc.ir, "async_create_issue", create)
-    monkeypatch.setattr(mc.ir, "async_delete_issue", delete)
-    monkeypatch.setattr(mc.ir, "async_get", lambda _hass: Registry)
+    monkeypatch.setattr(ir, "async_create_issue", create)
+    monkeypatch.setattr(ir, "async_delete_issue", delete)
+    monkeypatch.setattr(ir, "async_get", lambda _hass: Registry)
     return raised
 
 
@@ -4601,7 +4624,7 @@ async def test_the_unknown_node_refresh_logs_an_export_the_hub_could_not_load(
     def broken(_text: str) -> set[str]:
         raise InvalidExport("no usable network key")
 
-    monkeypatch.setattr(mc, "_listed_macs", broken)
+    monkeypatch.setattr(store_mod, "_listed_macs", broken)
     assert await bench.configurator.adopt_for_unknown_nodes(["30:FB:10:00:00:01"]) == []
     assert "does not parse: no usable network key" in caplog.text
     assert bench.file_unchanged()
@@ -4632,8 +4655,8 @@ async def battery_bench(tmp_path: Path, fast: FastAsyncio) -> Bench:
 
 def test_ordered_sends_the_sleepy_nodes_steps_first_within_each_half() -> None:
     """Additions still go before clears; within each half the battery node's steps lead, in plan order."""
-    add = mc.ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
-    drop = mc.ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe")
+    add = ModelChange(ROCKER_A, "1001", DIMMER_GROUP, "subscribe")
+    drop = ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe")
     steps = [
         mc.ConfigStep(DALI_NODE, b"mains drop", 0, change=drop),
         mc.ConfigStep(TRANSMITTER, b"sleepy drop", 0, change=drop),
@@ -4880,8 +4903,8 @@ def issue_calls(monkeypatch: pytest.MonkeyPatch) -> dict[str, dict[str, Any]]:
     def delete(_hass: Any, _domain: str, issue: str) -> None:
         raised.pop(issue, None)
 
-    monkeypatch.setattr(mc.ir, "async_create_issue", create)
-    monkeypatch.setattr(mc.ir, "async_delete_issue", delete)
+    monkeypatch.setattr(ir, "async_create_issue", create)
+    monkeypatch.setattr(ir, "async_delete_issue", delete)
     return raised
 
 
@@ -5338,7 +5361,7 @@ async def test_a_cancelled_room_move_records_the_room_it_created(
 ) -> None:
     """`set_room` into a new room, cancelled after the first of the socket's steps: the room and that
     subscription are recorded, as for a refusal (CFG-02)."""
-    group = mc.load_project(str(bench.path), None).free_group_address()
+    group = wiring_mod.load_project(str(bench.path), None).free_group_address()
     await cancelled(
         bench, 1, bench.configurator.set_room(SOCKET_NODE, "Garage", create=True)
     )
@@ -5356,7 +5379,7 @@ async def test_a_cancellation_during_the_key_mode_write_records_the_whole_wiring
         raise asyncio.CancelledError
 
     with (
-        patch.object(MeshConfigurator, "_write_key_mode", stop),
+        patch.object(rooms_mod.Keys, "_write_key_mode", stop),
         pytest.raises(asyncio.CancelledError),
     ):
         await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
@@ -5374,7 +5397,7 @@ async def test_a_cancelled_scene_store_records_the_member_whose_store_took(
         raise asyncio.CancelledError
 
     with (
-        patch.object(MeshConfigurator, "_scene_action", stop),
+        patch.object(executor_mod.PlanExecutor, "scene_action", stop),
         pytest.raises(asyncio.CancelledError),
     ):
         await bench.configurator.store_scene(2, DALI_LOAD, ON)
@@ -5388,9 +5411,9 @@ async def test_cancelled_scene_removals_record_the_loads_done_before(
     """`remove_from_scenes` and `delete_scene` (with *Delete anyway* too: a cancellation is no member to skip)
     cancelled at their second load: the first one's leaving is recorded."""
     calls = 0
-    original = MeshConfigurator._delete_from_register
+    original = scenes_mod.Scenes._delete_from_register
 
-    async def second_cancelled(self: MeshConfigurator, *args: Any) -> None:
+    async def second_cancelled(self: scenes_mod.Scenes, *args: Any) -> None:
         nonlocal calls
         calls += 1
         if calls == 2:
@@ -5408,7 +5431,7 @@ async def test_cancelled_scene_removals_record_the_loads_done_before(
         assert len(members) == 2
         calls = 0
         with (
-            patch.object(MeshConfigurator, "_delete_from_register", second_cancelled),
+            patch.object(scenes_mod.Scenes, "_delete_from_register", second_cancelled),
             pytest.raises(asyncio.CancelledError),
         ):
             await operation()
@@ -5470,9 +5493,11 @@ async def test_a_cancelled_plan_whose_record_fails_is_logged_and_still_cancelled
     bench: Bench, caplog: pytest.LogCaptureFixture
 ) -> None:
     async def unwritable(*_args: Any) -> None:
-        raise mc._failure("service_export_write_failed", path="x", error="disk full")
+        raise store_mod._failure(
+            "service_export_write_failed", path="x", error="disk full"
+        )
 
-    with patch.object(MeshConfigurator, "_write", unwritable):
+    with patch.object(store_mod.ExportStore, "_write", unwritable):
         await cancelled(
             bench, 2, bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
         )
@@ -5483,20 +5508,38 @@ async def test_a_cancelled_plan_whose_record_fails_is_logged_and_still_cancelled
     assert bench.file_unchanged()
 
 
+async def test_the_facade_reads_and_writes_the_parts_state(
+    bench: Bench, with_gateway: FakeGateway
+) -> None:
+    """`MeshConfigurator` is a facade (review-4 brief 55): its state is the store's and the executor's."""
+    configurator = bench.configurator
+    assert configurator.path == str(bench.path) == configurator.store.path
+    assert configurator.gateway is with_gateway
+    lock = asyncio.Lock()
+    configurator.lock = lock
+    assert configurator.store.lock is lock
+    configurator.hub = bench.hub  # type: ignore[assignment]
+    assert configurator.store.hub is bench.hub
+    assert configurator.executor.hub is bench.hub
+    outcome = mc.PlanOutcome(action="x")
+    configurator.outcome = outcome
+    assert configurator.executor.outcome is outcome
+
+
 async def test_a_cancelled_save_is_written_but_left_to_sync_gateway(
     bench: Bench, with_gateway: FakeGateway, caplog: pytest.LogCaptureFixture
 ) -> None:
     """The write runs to its end; the upload that would follow is not held up for: `sync_gateway` does it."""
     writing = asyncio.Event()
     written = asyncio.Event()
-    original = MeshConfigurator._write
+    original = store_mod.ExportStore._write
 
-    async def slow_write(self: MeshConfigurator, pf: ProjectFile) -> None:
+    async def slow_write(self: store_mod.ExportStore, pf: ProjectFile) -> None:
         writing.set()
         await written.wait()
         await original(self, pf)
 
-    with patch.object(MeshConfigurator, "_write", slow_write):
+    with patch.object(store_mod.ExportStore, "_write", slow_write):
         task = asyncio.ensure_future(bench.configurator.create_room("Attic"))
         await writing.wait()
         task.cancel()
@@ -5531,7 +5574,7 @@ async def crashed(
     async def no_record(*_args: Any) -> None:
         return None
 
-    with patch.object(MeshConfigurator, "_record_stopped", no_record):
+    with patch.object(executor_mod.PlanExecutor, "_record_stopped", no_record):
         await cancelled(bench, accepted, operation)
     assert bench.journal.data is not None
     return dict(bench.journal.data)
@@ -5629,7 +5672,7 @@ async def test_a_replayed_journal_applies_the_plans_bookkeeping_once(
 ) -> None:
     """The room a plan creates, a room link's row and a reset node's exclusion are in the journal too; replayed
     twice they are recorded once."""
-    group = mc.load_project(str(bench.path), None).free_group_address()
+    group = wiring_mod.load_project(str(bench.path), None).free_group_address()
     operations: list[tuple[Callable[[], Coroutine[Any, Any, Any]], int]] = [
         (lambda: bench.configurator.set_room(SOCKET_NODE, "Garage", create=True), 1),
         (lambda: bench.configurator.assign_key(ROCKER_A, room="WC"), 1),
@@ -5677,9 +5720,11 @@ async def test_a_journal_that_cannot_be_replayed(
     )
 
     async def unwritable(*_args: Any) -> None:
-        raise mc._failure("service_export_write_failed", path="x", error="disk full")
+        raise store_mod._failure(
+            "service_export_write_failed", path="x", error="disk full"
+        )
 
-    with patch.object(MeshConfigurator, "_write", unwritable):
+    with patch.object(store_mod.ExportStore, "_write", unwritable):
         assert await restart(bench).async_replay_journal() is False
     assert bench.journal.data == journal
     assert "tried again at the next start" in caplog.text
@@ -5717,7 +5762,7 @@ def test_a_journalled_step_reads_back_as_it_was() -> None:
             DALI_NODE,
             sub_del(ROCKER_A, DALI_GROUP, "1001"),
             C.CONFIG_MODEL_SUBSCRIPTION_STATUS,
-            change=mc.ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe"),
+            change=ModelChange(ROCKER_A, "1001", DALI_GROUP, "unsubscribe"),
             unlinks=ROCKER_A,
         ),
         mc.ConfigStep(
@@ -5727,8 +5772,8 @@ def test_a_journalled_step_reads_back_as_it_was() -> None:
             bind=(SOCKET_SENSOR, "05271013"),
         ),
     ]
-    rows = json.loads(json.dumps([mc._step_json(s) for s in steps]))
-    assert [mc._step_from_json(row) for row in rows] == steps
+    rows = json.loads(json.dumps([plan_mod._step_json(s) for s in steps]))
+    assert [plan_mod._step_from_json(row) for row in rows] == steps
 
 
 # ----------------------------------------------------------------------------- dry runs (review-4 W I3)
@@ -5832,7 +5877,7 @@ async def test_a_dry_run_sends_writes_and_journals_nothing_and_answers_the_real_
     assert [m for m in messages if m.startswith("Config ")] == sent_config
     sent_app = iter(described(bench.app_pdus()[before.app :]))
     assert all(m in sent_app for m in messages if not m.startswith("Config "))
-    real = mc.diff_documents(snapshot, bench.reload().snapshot())
+    real = diff_documents(snapshot, bench.reload().snapshot())
     assert [d["path"] for d in dry["diff"]] == [c.where() for c in real]
 
 
@@ -5913,7 +5958,7 @@ async def test_a_dry_run_merges_the_identity_from_a_copy_and_saves_no_vault(
     """With the provisioner identity on, the plan is made on the export as the real run would make it (Home
     Assistant's ranges), from a copy of the vault: the vault in memory and on disk stay as they were. A merge that
     fails leaves the dry run planning without it."""
-    bench.hub.entry.options = {mc.OPTION_PROVISIONER_IDENTITY: True}
+    bench.hub.entry.options = {OPTION_PROVISIONER_IDENTITY: True}
     vault = bench.hub.vault.identity()
     store: MemoryStore = bench.hub.vault._store  # type: ignore[assignment]
     dry = await bench.configurator.dry_run(lambda c: c.create_room("Attic"))

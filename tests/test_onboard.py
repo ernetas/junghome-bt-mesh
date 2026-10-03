@@ -24,6 +24,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import mesh_config, onboard
 from custom_components.junghome_ble import services as svc
+from custom_components.junghome_ble.configurator import nodes as nodes_mod
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_SOURCE,
@@ -578,8 +579,8 @@ async def test_remove_device_refusals(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     hub = provisioning_entry.runtime_data
-    monkeypatch.setattr(mesh_config, "NODE_RESET_TIMEOUT", 0.01)
-    monkeypatch.setattr(mesh_config, "RESET_ADVERT_WAIT", 0.01)
+    monkeypatch.setattr(nodes_mod, "NODE_RESET_TIMEOUT", 0.01)
+    monkeypatch.setattr(nodes_mod, "RESET_ADVERT_WAIT", 0.01)
     fake_link.config_reply = lambda _node, _access: None  # nobody answers
     with refused(HomeAssistantError, "remove_device_unconfirmed"):
         await hass.services.async_call(
@@ -656,9 +657,9 @@ async def test_an_unconfirmed_reset_is_looked_for_among_new_devices(
     """Review-4 W4-7: a node can take the reset and lose its status. Advertising as a new device after the reset,
     it is recorded as removed; one that already advertised so before it (a scanner's stale advert data) proves
     nothing, and the error says it may have been reset."""
-    monkeypatch.setattr(mesh_config, "NODE_RESET_TIMEOUT", 0.01)
-    monkeypatch.setattr(mesh_config, "RESET_ADVERT_WAIT", 0.05)
-    monkeypatch.setattr(mesh_config, "RESET_ADVERT_POLL", 0.01)
+    monkeypatch.setattr(nodes_mod, "NODE_RESET_TIMEOUT", 0.01)
+    monkeypatch.setattr(nodes_mod, "RESET_ADVERT_WAIT", 0.05)
+    monkeypatch.setattr(nodes_mod, "RESET_ADVERT_POLL", 0.01)
     hub = provisioning_entry.runtime_data
     advert = reset_advert(hub, network_id, 0x0300)
     if stale:

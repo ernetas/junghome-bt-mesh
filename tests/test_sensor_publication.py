@@ -18,6 +18,7 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.junghome_ble import mesh_config
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import switch as SW
+from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
 from custom_components.junghome_ble.const import DOMAIN
 from custom_components.junghome_ble.entity import node_identifier
 from custom_components.junghome_ble.jhmesh import config_messages as C
@@ -156,7 +157,7 @@ async def test_set_sensor_publication_refusals(hass: HomeAssistant, env: Env) ->
         await configurator.set_sensor_publication(0x7FFF, True)
     assert exc.value.translation_key == "service_unknown_element"
     with (
-        patch.object(mesh_config, "element_groups", return_value={}),
+        patch.object(thresholds_mod, "element_groups", return_value={}),
         pytest.raises(ServiceValidationError) as exc,
     ):
         await configurator.set_sensor_publication(SOCKET, True)

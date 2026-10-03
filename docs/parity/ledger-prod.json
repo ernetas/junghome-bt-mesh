@@ -1597,7 +1597,7 @@
     "custom_components/junghome_ble/switch.py::JungHomeEdgeMode",
     "custom_components/junghome_ble/select.py::JungHomeEdgeBehaviour",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeInputState",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_mini_actuator_inputs_are_named_e1_e2_as_in_the_app",
@@ -1758,7 +1758,7 @@
     "custom_components/junghome_ble/jhmesh/devices.py::Light",
     "custom_components/junghome_ble/jhmesh/devices.py::_is_load",
     "custom_components/junghome_ble/light.py::JungHomeLight",
-    "custom_components/junghome_ble/mesh_config.py::_sibling_channels",
+    "custom_components/junghome_ble/configurator/wiring.py::_sibling_channels",
     "custom_components/junghome_ble/sensor.py::JungHomeSchedules"
    ],
    "tests": [
@@ -1970,8 +1970,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
@@ -1989,8 +1989,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
@@ -2008,8 +2008,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
@@ -2028,8 +2028,8 @@
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -2049,9 +2049,9 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
-    "custom_components/junghome_ble/mesh_config.py::MODE_TEMPERATURE",
-    "custom_components/junghome_ble/mesh_config.py::derive_mode",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::MODE_TEMPERATURE",
+    "custom_components/junghome_ble/configurator/wiring.py::derive_mode",
     "custom_components/junghome_ble/services.py::KEY_TARGET_TYPES"
    ],
    "tests": [
@@ -2069,8 +2069,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
@@ -2089,8 +2089,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::KEY_MODE",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
@@ -2987,7 +2987,7 @@
     "custom_components/junghome_ble/switch.py::JungHomeSensorPublication",
     "custom_components/junghome_ble/switch.py::JungHomeSensorPublication._read",
     "custom_components/junghome_ble/switch.py::sensor_publication_nodes",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_sensor_publication"
+    "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.set_sensor_publication"
    ],
    "tests": [
     "tests/test_sensor_publication.py::test_sensor_publication_nodes",
@@ -3805,7 +3805,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::PropertyModeCodec",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_scene_config_and_property_mode_codecs",
@@ -3846,8 +3846,8 @@
    "id": "prod:ui:control_switch_category_selection_gateway",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_assign_key_to_the_gateway_uses_key_mode_6",
@@ -3858,10 +3858,10 @@
    "id": "prod:ui:control_switch_category_selection_title",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.clear_key",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.clear_key",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_assign_key_to_a_dimmer_sends_the_apps_light_mode_sequence",
@@ -3890,7 +3890,7 @@
    "id": "prod:ui:control_switch_scene_selection_header",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
     "custom_components/junghome_ble/jhmesh/properties.py::SceneConfigCodec",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
    ],
@@ -3931,7 +3931,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::Detector",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_detector",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
     "custom_components/junghome_ble/services.py::_resolve_key",
     "custom_components/junghome_ble/services.py::_detector_behind"
    ],
@@ -4012,9 +4012,9 @@
    "id": "prod:ui:device_info_scenes_description",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_scenes",
-    "custom_components/junghome_ble/mesh_config.py::_sibling_channels",
-    "custom_components/junghome_ble/mesh_config.py::_scene_register_status_name"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.remove_from_scenes",
+    "custom_components/junghome_ble/configurator/wiring.py::_sibling_channels",
+    "custom_components/junghome_ble/configurator/wiring.py::_scene_register_status_name"
    ],
    "tests": [
     "tests/test_services.py::test_store_and_remove_from_scene",
@@ -4064,7 +4064,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_remove_device",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node"
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node"
    ],
    "tests": [
     "tests/test_onboard.py::test_remove_device_resets_it_and_takes_it_out"
@@ -4110,7 +4110,7 @@
    "id": "prod:ui:groups_header",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_rooms"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.set_rooms"
    ],
    "tests": [
     "tests/test_services.py::test_set_room_by_device_and_entity_targets",
@@ -4203,7 +4203,7 @@
    "id": "prod:ui:mini_actuator_connection_category_title",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key",
     "custom_components/junghome_ble/jhmesh/devices.py::INPUT_NAMES",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets"
    ],
@@ -4461,7 +4461,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/thresholds.py::threshold_targets",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_threshold_devices",
+    "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.set_threshold_devices",
     "custom_components/junghome_ble/sensor.py::JungHomeThreshold"
    ],
    "tests": [

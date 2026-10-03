@@ -17,6 +17,7 @@ from custom_components.junghome_ble import mesh_config
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import thresholds as T
 from custom_components.junghome_ble.config_entities import PropertyReader
+from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
 from custom_components.junghome_ble.const import DOMAIN
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import properties as P
@@ -304,7 +305,7 @@ async def test_set_threshold_devices_edge_cases(hass: HomeAssistant, env: Env) -
         SOCKET
     )  # the export's meter: no wiring, no publication
     assert env.config_calls == []
-    with patch.object(mesh_config, "element_groups", return_value={}):
+    with patch.object(thresholds_mod, "element_groups", return_value={}):
         assert not await configurator.set_threshold_devices(SOCKET, [])
     pf = env.reload()
     switch = pf.cdb.element(LIGHT_SWITCH)
@@ -369,7 +370,7 @@ async def test_a_later_socket_failing_still_has_the_model_follow_an_earlier_one(
         wired.append(address)
         if len(wired) == 1:
             return await real_wiring(self, address, devices, **kwargs)
-        with patch.object(mesh_config, "threshold_client", return_value=None):
+        with patch.object(thresholds_mod, "threshold_client", return_value=None):
             return await real_wiring(
                 self, address, devices, **kwargs
             )  # fails after its _load
@@ -629,7 +630,7 @@ async def test_refused_wiring_writes_no_threshold(
     """The configurator's checks run before the threshold is written: a refused call leaves the socket as it was
     rather than holding a new, active threshold with the old wiring."""
     with (
-        patch.object(mesh_config, "element_groups", return_value={}),
+        patch.object(thresholds_mod, "element_groups", return_value={}),
         pytest.raises(ServiceValidationError) as err,
     ):
         await call(
@@ -782,19 +783,19 @@ async def test_set_threshold_devices_refusals(hass: HomeAssistant, env: Env) -> 
         await configurator.set_threshold_devices(SOCKET, [0x0149])  # a key
     assert err.value.translation_key == "service_not_a_load"
     with (
-        patch.object(mesh_config, "element_groups", return_value={}),
+        patch.object(thresholds_mod, "element_groups", return_value={}),
         pytest.raises(ServiceValidationError) as err,
     ):
         await configurator.set_threshold_devices(SOCKET, [LIGHT_DIMMER])
     assert err.value.translation_key == "service_no_element_group"
     with (
-        patch.object(mesh_config, "threshold_client", return_value=None),
+        patch.object(thresholds_mod, "threshold_client", return_value=None),
         pytest.raises(ServiceValidationError) as err,
     ):
         await configurator.set_threshold_devices(SOCKET, [])
     assert err.value.translation_key == "threshold_not_supported"
     with (
-        patch.object(mesh_config, "threshold_client", return_value=None),
+        patch.object(thresholds_mod, "threshold_client", return_value=None),
         pytest.raises(ServiceValidationError) as err,
     ):
         await configurator.unwire_threshold(SOCKET)
@@ -812,7 +813,7 @@ async def test_nothing_to_unwire_without_an_element_group(
     both thresholds and is done, rather than failing after the clear for want of the group."""
     hub = env.hub
     env.thresholds[SOCKET, SWITCH_ON] = wire(P.Threshold(42.0, 30, True))
-    with patch.object(mesh_config, "element_groups", return_value={}):
+    with patch.object(thresholds_mod, "element_groups", return_value={}):
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
     assert env.thresholds[SOCKET, SWITCH_ON] == wire(T.CLEARED)
     assert env.thresholds[SOCKET, SWITCH_OFF] == wire(T.CLEARED)

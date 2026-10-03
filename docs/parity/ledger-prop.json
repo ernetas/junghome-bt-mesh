@@ -776,7 +776,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::SceneConfigCodec",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_scene_config"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_scene_config"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_scene_config_and_property_mode_codecs",
@@ -789,9 +789,9 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODES",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_key_mode",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
    ],
@@ -843,8 +843,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
@@ -861,8 +861,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
@@ -879,8 +879,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_lock_function"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_a_lost_link_during_the_property_mode_reset",
@@ -1594,8 +1594,8 @@
    "id": "prop:model:0x05271015",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key"
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_assign_key_to_the_gateway_uses_key_mode_6",

@@ -5157,7 +5157,7 @@ async def test_gateway_export_refresh_overwrites_nothing_it_must_not(
     with patch.object(JungHomeGatewayApi, "fetch_project", gw.fetch_project):
         gw.answers.append(newer)
         with patch(
-            "custom_components.junghome_ble.mesh_config.write_private_with_backup",
+            "custom_components.junghome_ble.configurator.store.write_private_with_backup",
             side_effect=OSError("read-only"),
         ):
             await gw.advert(network_id, NEW_MAC)

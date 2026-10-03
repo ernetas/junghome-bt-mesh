@@ -149,9 +149,9 @@ async def key_files_written(
     # the export, every way the configurator writes it: a save (with its backup), the app's upload kept as the
     # merge base, the pre-adoption copy, an adopted export replacing the file
     configurator = MeshConfigurator(hub)
-    await configurator._write(await configurator._read())
-    await hass.async_add_executor_job(configurator._keep_app_copy)
-    await hass.async_add_executor_job(configurator._keep_pre_adopt_copy)
+    await configurator.store._write(await configurator.store.read())
+    await hass.async_add_executor_job(configurator.store._keep_app_copy)
+    await hass.async_add_executor_job(configurator.store._keep_pre_adopt_copy)
     await hass.async_add_executor_job(
         write_private_with_backup, export, export.read_bytes()
     )

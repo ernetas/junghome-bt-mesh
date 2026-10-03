@@ -322,9 +322,9 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._step",
+    "custom_components/junghome_ble/configurator/plan.py::config_step",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.unwire_threshold"
+    "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.unwire_threshold"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
@@ -506,10 +506,10 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
     "custom_components/junghome_ble/properties/reader.py::PropertyReader.write",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._reset_property_mode",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._admin_status",
-    "custom_components/junghome_ble/mesh_config.py::KEY_MODE_CLIENTS",
+    "custom_components/junghome_ble/configurator/executor.py::PlanExecutor._admin_status",
+    "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/properties/targets.py::edge_detection_targets",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
    ],
@@ -1517,7 +1517,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_publication_status",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._rooms_of"
+    "custom_components/junghome_ble/configurator/wiring.py::rooms_of"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_status_round_trips_the_set",
@@ -1529,8 +1529,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._add_room",
-    "custom_components/junghome_ble/mesh_config.py::THRESHOLD_TARGET_MODELS"
+    "custom_components/junghome_ble/configurator/wiring.py::add_room",
+    "custom_components/junghome_ble/configurator/wiring.py::THRESHOLD_TARGET_MODELS"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -1545,8 +1545,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._add_room",
-    "custom_components/junghome_ble/mesh_config.py::threshold_wiring"
+    "custom_components/junghome_ble/configurator/wiring.py::add_room",
+    "custom_components/junghome_ble/configurator/wiring.py::threshold_wiring"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -1656,7 +1656,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._device_entry"
+    "custom_components/junghome_ble/configurator/wiring.py::device_entry"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",

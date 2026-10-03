@@ -615,6 +615,12 @@
   link holds. `tests/test_fake_conformance.py` holds the three proxy fakes to one behaviour (filter type answers,
   segmentation and acknowledgements, replay protection, IV Update): the integration's fake now answers the filter
   type it was asked for, and the library's drops a replayed PDU and fails its test on one.
+- Internal: the mesh configurator is split (review-4 brief 55, A4-5): `mesh_config.MeshConfigurator` is a facade over
+  the new `configurator/` package — the plan model (`plan.py`) and the planners (`wiring.py`, plain functions, a
+  `ProjectFile` in and Config steps out, no Home Assistant import), the export store with the gateway sync, the plan
+  journal and the upload retry (`store.py`), the plan executor (`executor.py`) and the rooms / keys, scenes,
+  thresholds and nodes operations. The operations, their Config messages and their order, the export writes, the
+  journal and the vault are unchanged; the upload retry reads the export through `ExportStore.read` / `upload`.
 - Internal: `docs/on-air-sweep.md` is the checklist of the on-air sweep (review-4 brief 30): every behaviour still
   unverified that this installation can check, from watch-only to key-changing, with its steps, captures, pass
   criterion, hardware and whether it can be undone, and what cannot be checked here and why. `tools/on_air.py`

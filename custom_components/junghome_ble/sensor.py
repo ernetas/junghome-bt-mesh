@@ -663,7 +663,7 @@ class JungHomeGatewayErrorLog(
 class JungHomeGatewayLastSync(SensorEntity):
     """When Home Assistant last handed its export to the gateway (the app's `gateway_last_sync`), from its record.
 
-    Recorded by every successful upload (`MeshConfigurator._upload`) in the entry's `GatewaySync` record, which
+    Recorded by every successful upload (`configurator.store.ExportStore.upload`) in the entry's `GatewaySync` record, which
     says so through `SIGNAL_GATEWAY_SYNCED` (review-4 H I-10: no longer an `entry.data` write and an update
     listener); known without a link or an answer from the gateway, so always available.
     """
@@ -750,7 +750,7 @@ class JungHomeSchedules(ConfigEntity, SensorEntity):
         return out
 
 
-# the models that make an element a scene member (`mesh_config.MeshConfigurator._scene_load`): the node's Scene
+# the models that make an element a scene member (`configurator.wiring.scene_load`): the node's Scene
 # Setup Server holds the register, a channel's JUNG Scene Action Setup server its own list
 SCENE_SETUP_SERVER, SCENE_ACTION_SETUP = "1204", "05271017"
 

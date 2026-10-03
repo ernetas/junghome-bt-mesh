@@ -23,10 +23,11 @@ from unittest.mock import patch
 
 import pytest
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import issue_registry as ir
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from custom_components.junghome_ble import mesh_config as mc
+from custom_components.junghome_ble.configurator import executor as executor_mod
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode
 from custom_components.junghome_ble.mesh_config import MeshConfigurator
@@ -255,11 +256,11 @@ async def test_a_plan_stopped_anywhere_leaves_the_export_equal_to_the_nodes(
         nodes.stop = (how, accepted)
         if how == "crash":
             # Home Assistant killed when the stop comes: nothing records the plan but its journal
-            with patch.object(MeshConfigurator, "_record_stopped", _nothing):
+            with patch.object(executor_mod.PlanExecutor, "_record_stopped", _nothing):
                 outcome = await run(bench, nodes, OPERATIONS[name])
             if accepted < total:
                 assert bench.journal.data
-                with patch.object(mc.ir, "async_create_issue"):
+                with patch.object(ir, "async_create_issue"):
                     await MeshConfigurator(bench.hub).async_replay_journal()  # type: ignore[arg-type]
         else:
             outcome = await run(bench, nodes, OPERATIONS[name])

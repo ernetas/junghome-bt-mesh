@@ -7,7 +7,7 @@ provisioner UUID, which must stay the same for the file's entry to stay Home Ass
 
 Written whenever there is something to keep — a node provisioned, recorded or removed, ranges chosen — whatever
 the options say: it is local data only. What reaches the network's file (and the gateway) is decided by the
-*provisioner identity* option alone (`mesh_config.MeshConfigurator._with_identity`), off by default. No key is
+*provisioner identity* option alone (`configurator.store.ExportStore.with_identity`), off by default. No key is
 ever logged.
 
 Every write is checked (`TrackedStore`, as the sequence store's): Home Assistant's `Store.async_save` only logs a

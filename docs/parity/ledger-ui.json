@@ -430,7 +430,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_assign_key",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.assign_key"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key"
    ],
    "tests": [
     "tests/test_services.py::test_assign_key_by_device_and_letter_to_a_room_and_the_gateway"
@@ -483,7 +483,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_remove_device",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/strings.json::exceptions.remove_device_unconfirmed"
    ],
    "tests": [
@@ -546,7 +546,7 @@
    "id": "ui:msg:scenes_device_not_reachable_title",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.store_scenes",
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
     "custom_components/junghome_ble/strings.json::exceptions.service_no_reply"
    ],
    "tests": [
@@ -557,7 +557,7 @@
    "id": "ui:msg:series_timer_scene_not_available_title",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.store_scenes",
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
     "custom_components/junghome_ble/entity.py::product_name"
    ],
    "tests": [
@@ -851,7 +851,7 @@
     "custom_components/junghome_ble/services.py::_rename_room",
     "custom_components/junghome_ble/services.py::_set_room",
     "custom_components/junghome_ble/services.py::_delete_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_room",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room",
     "custom_components/junghome_ble/light.py::async_setup_entry"
    ],
    "tests": [
@@ -1020,8 +1020,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_rename_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_device"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.rename_scene",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_device"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room",
@@ -1930,7 +1930,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_store_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.store_scenes"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_store_scene_stores_writes_the_action_and_records_the_member",
@@ -1958,10 +1958,10 @@
     "custom_components/junghome_ble/jhmesh/export.py::RENAME_MAX_LENGTH",
     "custom_components/junghome_ble/jhmesh/export.py::name_length",
     "custom_components/junghome_ble/jhmesh/export.py::_rename_limit",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._room_name",
-    "custom_components/junghome_ble/mesh_config.py::_name_error",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_device",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_room",
+    "custom_components/junghome_ble/configurator/wiring.py::check_room_name",
+    "custom_components/junghome_ble/configurator/wiring.py::name_error",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_device",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_room",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.rename_device",
     "custom_components/junghome_ble/device_names.py::NAME_ERRORS"
    ],
@@ -2038,7 +2038,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_create_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room",
@@ -2054,7 +2054,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_set_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.set_rooms"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.set_rooms"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_set_room_moves_a_load_between_rooms"
@@ -2068,7 +2068,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_remove_from_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_from_scenes"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.remove_from_scenes"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_remove_from_scene_and_delete_scene",
@@ -2083,7 +2083,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_delete_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._write_key_mode"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_key_mode"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_delete_room_unwires_members_and_linked_keys",
@@ -2098,7 +2098,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_delete_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.delete_scene"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.delete_scene"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_remove_from_scene_and_delete_scene",
@@ -2399,7 +2399,7 @@
    "id": "ui:uc:observeprojectbubbleindicators",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator._upload",
+    "custom_components/junghome_ble/configurator/store.py::ExportStore.upload",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeGatewayStatus"
    ],
    "tests": [
@@ -2460,7 +2460,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_clear_key",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.clear_key"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.clear_key"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_clear_key_of_a_device_link",
@@ -2536,7 +2536,7 @@
    "id": "ui:uc:resetdevice",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.remove_node",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.remove_node",
     "custom_components/junghome_ble/services.py::_remove_device"
    ],
    "tests": [
@@ -2583,7 +2583,7 @@
    "id": "ui:uc:updatedevicedata",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_device",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_device",
     "custom_components/junghome_ble/device_names.py::async_track_device_names",
     "custom_components/junghome_ble/device_names.py::async_write_name"
    ],
@@ -2710,7 +2710,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_rename_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_room"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room"
@@ -2733,7 +2733,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_rename_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_scene"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.rename_scene"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_and_delete_scene",
@@ -3383,7 +3383,7 @@
    "id": "ui:vm:devicedetailsviewmodel.updatedevicename",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_device",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_device",
     "custom_components/junghome_ble/device_names.py::async_track_device_names",
     "custom_components/junghome_ble/device_names.py::async_write_name"
    ],
@@ -3532,7 +3532,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_create_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room",
@@ -3567,7 +3567,7 @@
    "id": "ui:vm:groupdetailsviewmodel.observegroups",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.create_room",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.create_room",
     "custom_components/junghome_ble/strings.json::exceptions.service_room_exists"
    ],
    "tests": [
@@ -3612,7 +3612,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_rename_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_room"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room",
@@ -3861,7 +3861,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/services.py::_clear_key",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.clear_key"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.clear_key"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_clear_key_drops_publications_subscriptions_and_the_room_link"
@@ -3947,7 +3947,7 @@
    "id": "ui:vm:nameconfigviewmodel.observegroup",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_room"
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_room"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_create_rename_delete_room"
@@ -3968,8 +3968,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/services.py::_rename_room",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_scene",
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.rename_device"
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.rename_scene",
+    "custom_components/junghome_ble/configurator/rooms.py::Rooms.rename_device"
    ],
    "tests": [
     "tests/test_services.py::test_create_rename_delete_room",
@@ -4328,7 +4328,7 @@
    "id": "ui:vm:scenedetailsviewmodel.updatescene",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/mesh_config.py::MeshConfigurator.store_scenes",
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
     "custom_components/junghome_ble/services.py::_store_scene"
    ],
    "tests": [

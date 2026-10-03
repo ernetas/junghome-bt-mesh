@@ -71,7 +71,8 @@ TRANSLATED = sorted(p for p in EN.parent.glob("*.json") if p != EN)
 ICONS = COMPONENT / "icons.json"
 SERVICES_YAML = COMPONENT / "services.yaml"
 CONFIG_FLOW = COMPONENT / "config_flow.py"
-SOURCES = sorted(COMPONENT.glob("*.py"))
+# the integration's modules, its packages' too (`configurator/`, review-4 brief 55)
+SOURCES = sorted(COMPONENT.rglob("*.py"))
 
 REFERENCE = re.compile(r"^\[%key:(?P<path>[^%]+)%\]$")
 OWN_REFERENCE_PREFIX = f"component::{DOMAIN}::"
@@ -88,7 +89,10 @@ CONSTANT_KEY = re.compile(r"translation_key\s*=\s*(?P<ref>[A-Za-z_][\w.]*)(?![\w
 PLAN_KEY = re.compile(r'"(?P<key>plan_[a-z_]+)"')
 # the logbook's own lines: `logbook_message(hass, "x"` is the `exceptions` key `logbook_x`
 LOGBOOK_KEY = re.compile(r'logbook_message\(\s*hass,\s*"(?P<key>[a-z_]+)"')
-SERVICE_ERROR = re.compile(r'\b_(?:validation|failure)\(\s*"(?P<key>[a-z0-9_]+)"')
+# ... and a planner's refusal, which the configurator raises as the `exceptions` key it names (`PlanError`)
+SERVICE_ERROR = re.compile(
+    r'\b(?:_validation|_failure|PlanError)\(\s*"(?P<key>[a-z0-9_]+)"'
+)
 # config flow: `errors["base"] = "x"` / `errors[CONF_X] = "x"` / `{"base": "x"}`, `reason="x"`, `step_id="x"` or
 # `step_id=CONSTANT`, `menu_options=[...]` literal lists, `vol.Required(CONF_X` / `vol.Optional(CONF_X`
 FLOW_ERROR = re.compile(r'(?:errors\[[^\]]+\]\s*=|"base"\s*:)\s*"(?P<key>[a-z_]+)"')
@@ -429,7 +433,9 @@ def test_constant_translation_keys_exist(strings: dict[str, Any]) -> None:
                 if not ref.rsplit(".", 1)[-1].isupper():
                     continue  # `key`, `spec.name`, `target.translation_key`: only known at runtime
                 checked += 1
-                value = _resolve_constant(path.stem, ref)
+                value = _resolve_constant(
+                    ".".join(path.relative_to(COMPONENT).with_suffix("").parts), ref
+                )
                 where = f"{path.name}:{number} {ref}"
                 if not isinstance(value, str):
                     problems.append(f"{where} does not resolve to a string constant")
@@ -491,7 +497,10 @@ def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
     """Every `plan_*` logbook line the configurator and the actions word (review-4 W I7) has its text."""
     found = {
         match.group("key")
-        for path in (COMPONENT / "services.py", COMPONENT / "mesh_config.py")
+        for path in (
+            COMPONENT / "services.py",
+            *sorted((COMPONENT / "configurator").glob("*.py")),
+        )
         for match in PLAN_KEY.finditer(path.read_text(encoding="utf-8"))
     }
     assert {"plan_finished", "plan_stopped", "plan_cancelled", "plan_key_room"} <= found
