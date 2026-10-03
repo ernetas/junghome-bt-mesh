@@ -524,6 +524,11 @@ Dependencies (hard unless marked *soft*):
   `confirm: true` for `remove_device` and a forced `delete_scene`, sectioned action forms (49). Merging renumbered the
   sweep's duplicate C8 / D11 items (C9, D12) and changed the node-name format from `<unit> (<product>)`, which nested
   parentheses for the metering socket. Open choice: a dry run does not read the gateway's newer export (documented).
+- **Wave 14 (briefs 50–51): done.** U4-8, H4-9 the gateway found by zeroconf (`_junghome._tcp`, its advertisement
+  seen on the installation; the setup from the card unverified on air), the unicast address under a collapsed
+  *Advanced* section, an icon for every action, `gateway_busy` (50); U4-1, U4-16 German translation, device models and
+  logbook lines in the server's language, the parity test over every translation (51, decision M4 taken). Brief 68
+  added: the 24 further languages of the JUNG HOME gateway integration.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -531,4 +536,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 50–67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 52–68 are TODO; the on-air sweep is the maintainer's.
