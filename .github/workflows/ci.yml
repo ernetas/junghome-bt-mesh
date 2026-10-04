@@ -54,6 +54,11 @@ jobs:
         run: python -m ruff check .
       - name: Format
         run: python -m ruff format --check .
+      - name: Privacy scan
+        # tools/privacy_scan.py (standard library only): no MAC, UUID, IP address, 128-bit value or home-directory
+        # path outside the documentation ranges, the made-up shapes and tools/privacy_allowlist.txt. It prints file,
+        # line and kind, never the value. Its `--history` mode is a check to run by hand, not here.
+        run: python tools/privacy_scan.py
       - name: Workflows (actionlint, with shellcheck on every `run:` script)
         # The image bundles shellcheck, so the inline scripts are checked too. Pinned by digest like the HACS image
         # below (renovate.json `docker:pinDigests`); run without the repository token.

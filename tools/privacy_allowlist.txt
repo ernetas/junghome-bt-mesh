@@ -1,0 +1,115 @@
+# The values tools/privacy_scan.py lets through, each reviewed: one `<kind> <value>` per line, `#` starts a comment.
+# Kinds: mac, uuid, ip, hex128, home-path. Letter case and the MAC separator do not matter; a UUID entry also covers
+# its 32 digits without dashes, and a MAC entry the node UUID (EUI-64) made from it. The documentation ranges and
+# made-up shapes need no entry (the scanner's docstring). Keep this list short: a test or a page that needs an
+# identifier takes a documentation-range or made-up one; an entry here is for a value that has to be what it is.
+# This file is not scanned itself.
+
+# Pseudonyms of the installation's nodes (docs/network-topology.md, `tools/mesh_report.py --anonymise`: the vendor
+# OUI kept, the other 24 bits a keyed hash); their node UUIDs follow from them. A regenerated page has new ones.
+mac 30:FB:10:23:5B:28
+mac 30:FB:10:30:E7:56
+mac 30:FB:10:31:58:7C
+mac 30:FB:10:68:8F:8D
+mac 30:FB:10:80:4C:1E
+mac 30:FB:10:92:8F:F5
+mac 30:FB:10:9C:22:78
+mac 30:FB:10:A8:38:83
+mac 30:FB:10:BB:F8:6D
+mac 30:FB:10:BF:56:69
+mac 30:FB:10:C1:3B:A6
+mac 30:FB:10:C3:2B:D2
+mac 30:FB:10:DF:47:7D
+mac 30:FB:10:EB:E0:2B
+mac 50:32:5F:D6:8F:FF
+mac 5C:C7:C1:0A:A9:84
+mac 60:B6:47:56:3D:00
+mac 60:B6:47:C5:76:6C
+mac 60:B6:47:D2:C1:AE
+mac 60:B6:47:D9:B6:AC
+mac 60:B6:47:DD:D7:07
+mac 60:B6:47:DF:6D:DC
+mac 6C:5C:B1:D6:6A:E2
+mac 90:AB:96:A0:7A:5A
+mac 90:AB:96:B6:72:76
+mac 90:AB:96:B6:EC:39
+mac 90:AB:96:D3:35:56
+mac 98:0C:33:B9:D3:81
+mac F0:82:C0:F0:5A:F0
+
+# Pseudonyms of the installation's mesh and provisioner UUIDs (the same page).
+uuid 0FAAECF7-BB00-4A1F-8974-FD4A96D9F560
+uuid 1BAF3ADE-18C9-4EB3-9488-B3F149C46126
+
+# Test addresses: a JUNG-OUI address in docstrings and tests, its neighbour, a non-resolvable private address
+# (rotates on air, identifies nothing), the documentation block with the locally administered bit set.
+mac 2F:AC:F8:13:BF:42
+mac 30:FB:10:12:34:56
+mac 30:FB:10:12:34:57
+mac 4A:00:5E:00:53:77
+
+# Vendor GATT UUIDs every JUNG device (and the app) carries: Silicon Labs OTA, the JUNG Device Information
+# characteristics.
+uuid 1D14D6EE-FD63-4FA1-BFA4-8F47B42119F0
+uuid 5D40AA0E-0A15-412D-A961-A3763C30C5EB
+uuid 946A8BF1-5F9B-4B23-A220-361CA026BDB1
+uuid 984227F3-34FC-4045-A5D0-2C581F81A153
+uuid F7BF3564-FB6D-4E53-88A4-5E37E0326063
+
+# Test UUIDs: not a node UUID (FFFE in place, a non-zero tail); a version-4 UUID over counting octets.
+uuid 00005EFF-FE00-5314-1234-56789ABCDEF0
+uuid 00010203-0405-4607-8809-0A0B0C0D0E0F
+
+# Mesh Profile / Mesh Protocol sample data (§8): keys, salts, derived keys, provisioning and private-beacon vectors.
+hex128 0520adad5e0142aa3e325087b4ec16d8
+hex128 0953fa93e7caac9638f58820220a398e
+hex128 2ba14ffa0df84a2831938d57d276cab4
+hex128 3216d1509884b533248541792b877f98
+hex128 3bbb6f1fbd53e157417f308ce7aec58f
+hex128 4c715bd4a64b938f99b453351653124f
+hex128 5423d967da639a99cb02231a83f7d254
+hex128 55a2a2bca04cd32ff6f346bd0a0c1a3a
+hex128 5a09d60797eeb4478aada59db3352a0d
+hex128 5faabe187337c71cc6c973369dcaa79a
+hex128 63964771734fbd76e3b40519d1d94a48
+hex128 69c4e0d86a7b0430d8cdb78070b4c55a
+hex128 6be76842460b2d3a5850d4698409f1bb
+hex128 7dd7364cd842ad18c17c2b820c84c3d6
+hex128 8026ac01ee9dddfd2169326d23f3afdf
+hex128 8026ac21cfdc18c52fdef772e0e17308
+hex128 84396c435ac48560b5965385253e210c
+hex128 8b19ac31d58b124c946209b5db1021b9
+hex128 8b84eedec100067d670971dd2aa700cf
+hex128 9d6dd0e96eb25dc19a40ed9914f8f03f
+hex128 9f589181a0f50de73c8070c7a6d27f46
+hex128 a21c7d45f201cf9489a2fb57145015b4
+hex128 b38a114dfdca1fe153bd2c1e0dc46ac2
+hex128 b73cefbd641ef2ea598c2b6efb62f79c
+hex128 c80253af86b33dfa450bbdb2a191fea3
+hex128 ca478cdac626b7a8522d7272dd124f26
+hex128 e31fe046c68ec339c425fc6629f0336f
+hex128 eeba521c196b52cc2e37aa40329f554e
+hex128 efb2255e6422d330088e09bb015ed707
+hex128 f6ed15a8934afbe7d83e8dcb57fcf5d7
+hex128 f7a2a44f8e8a8029064f173ddc1e2b00
+
+# Fixture values: the sample virtual-address label (§3.4.2.3), a second NetKey for the config-flow tests.
+hex128 0073e7e4d8b9440faf8415df4c56c0e1
+hex128 a1b2c3d4e5f60718293a4b5c6d7e8f90
+
+# Digests the decompiled app ships: its Room schema identity hash, the MD5s of its firmware schema files.
+hex128 1d1d1b7c8d5df29b6b506bb4d7be3d56
+hex128 2df93ffafde55cd203a3d45e9f338910
+hex128 31af397a8137ee9cb006bdfbe581a9a1
+hex128 3813fb457fb6191d73a2ba8fb8744373
+hex128 51d4a6e9752483506778918a10f287c3
+hex128 8394ae9cb3679dd212c1ebfb9789bdc2
+hex128 a0a0f3ba482d55724354ae836a5973d8
+hex128 a7c68b4a43cd4a46ec507d879d257f47
+hex128 af24f4affcd9e41da9a3cec1767dbbec
+hex128 c8224aecbb15bd3577793ee517bcbf63
+hex128 e87df82ddd8f44322578ff6345d16a1f
+
+# The capture host's install directory: the `--api` default of tools/mesh_sniff.py and the layout
+# tools/mesh-sniff.service (`%h/nrfsniff`) expects.
+home-path ~/nrfsniff
