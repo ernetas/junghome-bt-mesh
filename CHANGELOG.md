@@ -30,6 +30,22 @@
   `iv_update_due`, `complete_iv_update`, `persist_durably`), `ProxyClient.start_iv_update` and
   `pdu.secure_network_beacon`.
 
+### Changed
+
+- **A locked light that is on no longer takes a new brightness for a success** (review-4 brief 72, the on-air
+  sweep's follow-ups from C3). A Lightness or colour-temperature-and-brightness command counts as applied only when
+  the light's answer shows the level asked for, as its present level or the target of a fade, within 1 %; a light
+  that answers with its old level is checked for a lock, and the action fails with *… is locked* when it is. A lock
+  the light published itself — a locked load does on every command it refuses — now counts as fresh: the refusal
+  comes at once, without reading the lock first, and a command within 10 s of such a publication is refused without
+  a read too. Unverified on air.
+- **`audit_network` tells a key's clients hearing their load apart from stray subscriptions** (review-4 brief 72,
+  the on-air sweep's A8). A client model (a key's Generic OnOff, Level, Light Lightness or Light CTL Client and the
+  like) subscribed to the element group of a load on the same device, which the export does not list there, is no
+  longer a `subscriptions_extra` finding: it is a note of its own kind, `client_subscriptions`, listed under the
+  node's new `notes` and not counted in `findings`. The diagnostics and the CLI's `config audit` show it the same
+  way. Unverified on air.
+
 ### Fixed
 
 - **Segmented messages are acknowledged as Mesh Protocol 1.1 §3.5.3.4 specifies** (review-4 P I-8): the receiver now

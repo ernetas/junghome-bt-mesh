@@ -30,6 +30,7 @@ from .const import (
     CONFIG_REREAD_INTERVAL,
     DOMAIN,
     PROPERTY_READ_CHUNK,
+    PROPERTY_READ_FRESH,
     SIGNAL_UPDATE,
 )
 from .entity import JungHomeEntity
@@ -673,12 +674,16 @@ class LoadLock(JungHomeEntity):
     The answer lands in `ElementState.lock`; the entity shows it as the `locked` and `lock_until` attributes (None:
     not known yet) and refuses a command while the load is locked (`JungHomeHub.load_locked`) — the app disables
     the controls. The lock is read again first, as it may have ended unseen: lifted in the app (a Get unless the
-    load answered within PROPERTY_READ_FRESH), or run out — a lock past its time limit is asked anew, and a load
-    that stays silent then is taken as unlocked. A command the load did not confirm although the node answered
-    something meanwhile, or an on / off it answered with the other state (a Status with the old state),
-    makes the entity read the lock too, and report it as locked when it is: the command failed for the lock,
-    not for the reachability. On air a locked switch insert and DALI insert answered an OnOff or Lightness Set with
-    a Status of their unchanged state (`docs/hidden-features.md` §12); the refusal itself is unverified on air.
+    load reported its lock within PROPERTY_READ_FRESH, answering a Get or publishing it), or run out — a lock past
+    its time limit is asked anew, and a load that stays silent then is taken as unlocked. A command the load did not
+    confirm although the node answered something meanwhile, an on / off it answered with the other state (a Status
+    with the old state), or a lightness it answered with neither the level asked for nor a fade towards it (within
+    the load's step, `STATE_STEP`), makes the entity read the lock too, and report it as locked when it is: the
+    command failed for the lock, not for the reachability. The read is a Get only when the load has not reported its
+    lock since the command went out: a locked load publishes it on every Set it refuses
+    (`ElementState.lock_reported_since`). On air a locked switch insert and DALI insert answered an OnOff or
+    Lightness Set with a Status of their unchanged state and published their lock (`docs/hidden-features.md` §12);
+    the refusal itself, and a locked light that is on refusing a new level, are unverified on air.
 
     A toggle of a load whose state is not known switches it on (Home Assistant's default), where the app takes an
     unknown state for on and sends off (`ui:uc:toggledevice`): kept deliberately, as switching a load on is what a
@@ -825,13 +830,16 @@ class LoadLock(JungHomeEntity):
         st = self.hub.states.get(self.address)
         if not self.lockable or st is None or st.lock is None or not st.lock.locked:
             return
-        reader = property_reader(self.hass, self.hub)
-        # a lock past its time limit is asked anew; another one unless the load answered within PROPERTY_READ_FRESH
-        await reader.read(
-            self.address,
-            LOCK_SPEC,
-            since=None if st.locked else time.monotonic(),
-        )
+        # a lock past its time limit is asked anew; another one unless the load reported it (answering a Get or
+        # publishing it) within PROPERTY_READ_FRESH
+        if not (
+            st.locked and st.lock_reported_since(time.monotonic() - PROPERTY_READ_FRESH)
+        ):
+            await property_reader(self.hass, self.hub).read(
+                self.address,
+                LOCK_SPEC,
+                since=None if st.locked else time.monotonic(),
+            )
         if self.hub.load_locked(self.address):
             raise self._locked()
 
@@ -850,26 +858,46 @@ class LoadLock(JungHomeEntity):
             await self._raise_if_locked(asked, err)
             raise
 
-    async def _send_switch(self, command: Awaitable[None], on: bool | None) -> None:
-        """`_send` an on / off command; one the load answered with the other state is reported as locked if it is.
+    async def _send_switch(
+        self,
+        command: Awaitable[None],
+        on: bool | None,
+        lightness: int | None = None,
+    ) -> None:
+        """`_send` a command; one the load answered with a state it did not ask for is reported as locked if it is.
 
         With no other request out to the load, such a Status counts for the Set. `on` is the state
         asked for; None: nothing to compare — a Set with a transition is answered with where the load is now, not
-        where it is going.
+        where it is going. `lightness` is the level a Lightness or CTL Set asked for: the Status must show it, as
+        the present level or as the target of a fade (`ElementState.shows_lightness`) — a locked light that is on
+        answers with its old level, which the on / off alone would take for a success. A light that clamped the level
+        to its range costs one lock read, and the command stands.
         """
         asked = time.monotonic()
         await self._send(command)
         st = self.hub.states.get(self.address)
-        if on is not None and st is not None and st.on is not on and self.lockable:
+        if (
+            st is not None
+            and self.lockable
+            and (
+                (on is not None and st.on is not on)
+                or (lightness is not None and not st.shows_lightness(lightness))
+            )
+        ):
             await self._raise_if_locked(asked)
 
     async def _raise_if_locked(
         self, asked: float, cause: Exception | None = None
     ) -> None:
-        """Read the lock unless the load answered it since `asked`; raise the refusal when it is locked."""
-        await property_reader(self.hass, self.hub).read(
-            self.address, LOCK_SPEC, since=asked
-        )
+        """Read the lock unless the load reported it since `asked`; raise the refusal when it is locked.
+
+        A lock the load published since then (a locked load does on every Set it refuses) needs no Get.
+        """
+        st = self.hub.states.get(self.address)
+        if st is None or not st.lock_reported_since(asked):
+            await property_reader(self.hass, self.hub).read(
+                self.address, LOCK_SPEC, since=asked
+            )
         if self.hub.load_locked(self.address):
             raise self._locked() from cause
 

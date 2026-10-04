@@ -884,6 +884,22 @@ def test_audit_texts():
     assert ops.audit_text(cdb, quiet).endswith(
         "3 models checked; everything matches the export"
     )
+    # a client hearing its load: a note, shown apart and not counted
+    quiet.notes.append(
+        audit.Finding("client_subscriptions", 0x0149, "1302", actual=["C061"])
+    )
+    assert ops.audit_text(cdb, quiet).splitlines()[-2:] == [
+        "  · 0149 1302 client_subscriptions: node C061",
+        "  3 models checked; everything matches the export (1 harmless note)",
+    ]
+    quiet.notes.append(
+        audit.Finding("client_subscriptions", 0x0149, "1305", actual=["C061"])
+    )
+    assert ops.audit_text(cdb, quiet).endswith("(2 harmless notes)")
+    quiet.notes.clear()
+    assert ops.audit_text(cdb, quiet).endswith(
+        "3 models checked; everything matches the export"
+    )
 
 
 class _AuditClient:

@@ -508,7 +508,8 @@ def audit_text(cdb: CDB, audit: NodeAudit) -> str:
     """One node's audit for the terminal: its node-wide states and keys, the models worth a row, every finding, a verdict.
 
     A model gets a row when it publishes or subscribes, in the export or on the node, or has a finding — the
-    AppKey binding alone (AppKey 0 on nearly every model) would bury them.
+    AppKey binding alone (AppKey 0 on nearly every model) would bury them. Notes (`·`) follow the findings (`!`)
+    and do not count against the verdict.
     """
     lines = [cdb.label(audit.node)]
     if not audit.answered:
@@ -549,12 +550,18 @@ def audit_text(cdb: CDB, audit: NodeAudit) -> str:
         or (m.element, m.model) in flagged
     ]
     lines += ["  ! " + finding_text(f) for f in audit.findings]
+    lines += ["  · " + finding_text(f) for f in audit.notes]
     lines.append(
         f"  {len(audit.models)} models checked; "
         + (
             f"{len(audit.findings)} findings"
             if audit.findings
             else "everything matches the export"
+        )
+        + (
+            f" ({len(audit.notes)} harmless note{'s' if len(audit.notes) > 1 else ''})"
+            if audit.notes
+            else ""
         )
     )
     return "\n".join(lines)

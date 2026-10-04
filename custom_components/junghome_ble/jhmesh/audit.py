@@ -20,7 +20,10 @@ such as *Not a Subscribe Model*) is fine as long as the export expects nothing o
 Every difference is a `Finding`. Two deviations a healthy installation shows are reported like the others, one
 of them under a kind of its own: the Scene Server / Scene Setup Server subscriptions the export lists but the
 nodes never got (`scene_subscriptions_missing`: phantom entries, scenes are recalled to all-nodes —
-docs/hidden-features.md §9), and the gateway's GATT Proxy, which its export entry records as not supported.
+docs/hidden-features.md §9), and the gateway's GATT Proxy, which its export entry records as not supported. A
+third is no problem at all and is kept apart, in `NodeAudit.notes`: a client model (`CLIENT_MODELS`) subscribed
+to the element group of a load on its node, which the export does not list there (`client_subscriptions`: on air
+a light node's key element's Light Lightness and Light CTL Clients hear their load's statuses that way, §9).
 
 The transport and the pacing stay the caller's: an `Exchange` sends one Get and returns the reply (None when the
 node stays silent), a `Runner` runs a batch of them — `run_chunked` a few at a time with a pause in between, the
@@ -46,12 +49,15 @@ __all__ = [
     "APP_KEYS_EXTRA",
     "APP_KEYS_UNBOUND",
     "CHUNK",
+    "CLIENT_MODELS",
+    "CLIENT_SUBSCRIPTIONS",
     "CONFIG_MODELS",
     "KEYS_EXTRA",
     "KEYS_MISSING",
     "KEYS_REFUSED",
     "KEYS_UNANSWERED",
     "KEY_LISTS",
+    "LOAD_SERVERS",
     "NODE_UNANSWERED",
     "PAUSE",
     "PUBLICATION_DIFFERS",
@@ -82,6 +88,13 @@ __all__ = [
 
 CONFIG_MODELS = frozenset({"0000", "0001"})  # Configuration Server / Client
 SCENE_MODELS = frozenset({"1203", "1204"})  # Scene Server / Scene Setup Server
+# Generic OnOff / Level / Default Transition Time / Power OnOff, Scene, Light Lightness / CTL / HSL clients: one
+# subscribed to a load's element group hears the load's statuses, and that is all (`CLIENT_SUBSCRIPTIONS`)
+CLIENT_MODELS = frozenset(
+    {"1001", "1003", "1005", "1009", "1205", "1302", "1305", "1309"}
+)
+# a load's state servers: where the export has them publish is the load's element group
+LOAD_SERVERS = frozenset({"1000", "1002", "1300", "1303", "1306"})
 CHUNK = (
     5  # Gets in flight at once (what the app and the integration's state refresh do)
 )
@@ -95,6 +108,8 @@ PUBLICATION_DIFFERS = "publication_differs"
 SUBSCRIPTIONS_MISSING = "subscriptions_missing"
 SCENE_SUBSCRIPTIONS_MISSING = "scene_subscriptions_missing"
 SUBSCRIPTIONS_EXTRA = "subscriptions_extra"
+# a note, not a finding: a client model subscribed to a load's element group the export does not list on it
+CLIENT_SUBSCRIPTIONS = "client_subscriptions"
 APP_KEYS_UNBOUND = "app_keys_unbound"
 APP_KEYS_EXTRA = "app_keys_extra"
 # the node's keys (`setting` names the list: `net_keys` or `app_keys`)
@@ -202,7 +217,10 @@ class ModelAudit:
 
 @dataclass
 class NodeAudit:
-    """The audit of one node; `findings` is empty when the node holds what the export says."""
+    """The audit of one node; `findings` is empty when the node holds what the export says.
+
+    `notes` are deviations from the export that are no problem (`CLIENT_SUBSCRIPTIONS`): shown, never counted.
+    """
 
     node: int
     name: str
@@ -215,10 +233,14 @@ class NodeAudit:
     )  # `net_keys` / `app_keys` → {"export": [index, …], "node": [index, …]}
     models: list[ModelAudit] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
+    notes: list[Finding] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
-        """Return the node's result for an action response or the diagnostics (model rows counted, not listed)."""
-        return {
+        """Return the node's result for an action response or the diagnostics (model rows counted, not listed).
+
+        `notes` only when there are any.
+        """
+        out: dict[str, Any] = {
             "name": self.name,
             "answered": self.answered,
             "settings": self.settings,
@@ -226,10 +248,16 @@ class NodeAudit:
             "models": len(self.models),
             "findings": [f.as_dict() for f in self.findings],
         }
+        if self.notes:
+            out["notes"] = [f.as_dict() for f in self.notes]
+        return out
 
 
 def report(audits: Iterable[NodeAudit]) -> dict[str, Any]:
-    """Summarise several nodes: each node's result by its address, the silent nodes, the number of findings."""
+    """Summarise several nodes: each node's result by its address, the silent nodes, the number of findings.
+
+    Notes are not findings and are not counted.
+    """
     audits = list(audits)
     return {
         "nodes": {f"{a.node:04X}": a.as_dict() for a in audits},
@@ -527,9 +555,29 @@ def _model_answer(row: ModelAudit, query: Query, reply: AccessMessage | None) ->
         row.node_app_keys = tuple(sorted(decoded.app_key_indexes))
 
 
-def _model_findings(row: ModelAudit) -> list[Finding]:
-    """List one model's differences: a Get unanswered, refused although the export expects something, or apart."""
+def _load_groups(node: Node) -> frozenset[int]:
+    """Return the element groups of the node's loads: where the export has their state servers publish."""
+    groups = {
+        parse_address(publish["address"])
+        for element in node.elements
+        for raw in element.raw_models
+        if raw["modelId"] in LOAD_SERVERS
+        and isinstance(publish := raw.get("publish"), dict)
+        and "address" in publish
+    }
+    return frozenset(groups - {0})
+
+
+def _model_findings(
+    row: ModelAudit, load_groups: frozenset[int]
+) -> tuple[list[Finding], list[Finding]]:
+    """List one model's differences and its notes.
+
+    A difference is a Get unanswered, refused although the export expects something, or apart. A client model's subscriptions to `load_groups` (the element groups of its node's loads) that the export does
+    not list are a note (`CLIENT_SUBSCRIPTIONS`); its other extra subscriptions are findings as any model's.
+    """
     out: list[Finding] = []
+    notes: list[Finding] = []
     here = partial(Finding, element=row.element, model=row.model)
     expected: dict[str, Any] = {
         "publication": row.export_publish,
@@ -564,14 +612,18 @@ def _model_findings(row: ModelAudit) -> list[Finding]:
                 else SUBSCRIPTIONS_MISSING
             )
             out.append(here(kind, expected=_hex(missing)))
-        if extra := set(row.node_subscribe) - set(row.export_subscribe):
+        extra = set(row.node_subscribe) - set(row.export_subscribe)
+        if row.model in CLIENT_MODELS and (heard := extra & load_groups):
+            notes.append(here(CLIENT_SUBSCRIPTIONS, actual=_hex(heard)))
+            extra -= heard
+        if extra:
             out.append(here(SUBSCRIPTIONS_EXTRA, actual=_hex(extra)))
     if row.node_app_keys is not None:
         if missing := set(row.export_app_keys) - set(row.node_app_keys):
             out.append(here(APP_KEYS_UNBOUND, expected=sorted(missing)))
-        if extra := set(row.node_app_keys) - set(row.export_app_keys):
-            out.append(here(APP_KEYS_EXTRA, actual=sorted(extra)))
-    return out
+        if extra_keys := set(row.node_app_keys) - set(row.export_app_keys):
+            out.append(here(APP_KEYS_EXTRA, actual=sorted(extra_keys)))
+    return out, notes
 
 
 def evaluate(node: Node, replies: Mapping[Query, AccessMessage | None]) -> NodeAudit:
@@ -612,6 +664,7 @@ def evaluate(node: Node, replies: Mapping[Query, AccessMessage | None]) -> NodeA
             audit.findings.append(Finding(KEYS_MISSING, setting=name, expected=missing))
         if extra := sorted(set(ours) - set(export)):
             audit.findings.append(Finding(KEYS_EXTRA, setting=name, actual=extra))
+    load_groups = _load_groups(node)
     for element, raw in _audited_models(node):
         publish = raw.get("publish")
         row = ModelAudit(
@@ -626,5 +679,7 @@ def evaluate(node: Node, replies: Mapping[Query, AccessMessage | None]) -> NodeA
         for query in _model_gets(node, element, row.model):
             _model_answer(row, query, replies.get(query))
         audit.models.append(row)
-        audit.findings += _model_findings(row)
+        findings, notes = _model_findings(row, load_groups)
+        audit.findings += findings
+        audit.notes += notes
     return audit

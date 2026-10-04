@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 
 from homeassistant.util import dt as dt_util
 
+from .jhmesh.messages import STATE_STEP
 from .jhmesh.properties import PROPERTIES, EnforcedOutput
 
 PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`)
@@ -70,6 +71,8 @@ class ElementState:
     # a load's lock function (0x0009, `note_lock`): None until it reported one; and when a timed lock should end
     lock: EnforcedOutput | None = None
     lock_until: datetime | None = None
+    # when the load last reported its lock (`time.monotonic()`): a Get's answer or its own publication alike
+    lock_at: float | None = None
     updated: float = field(default_factory=time.monotonic)
 
     def note_lock(self, raw: bytes) -> None:
@@ -83,10 +86,29 @@ class ElementState:
         except ValueError:
             return
         self.lock = value
+        self.lock_at = time.monotonic()
         self.lock_until = (
             dt_util.utcnow() + timedelta(seconds=value.time_s)
             if value.locked and value.time_s
             else None
+        )
+
+    def lock_reported_since(self, moment: float) -> bool:
+        """Whether the load reported its lock at or after `moment` (a `time.monotonic()`).
+
+        A lock the load published to its element group — when locked, and on every Set it refuses — is as fresh as
+        one a Get read (`LoadLock`'s refusal needs no Get after it).
+        """
+        return self.lock_at is not None and self.lock_at >= moment
+
+    def shows_lightness(self, lightness: int) -> bool:
+        """Whether the last Lightness or CTL Status shows `lightness` (within the load's own step, `STATE_STEP`).
+
+        Present or target: a load fading towards it (its Status with a target and the remaining time) took the Set.
+        """
+        return any(
+            value is not None and abs(value - lightness) <= STATE_STEP
+            for value in (self.lightness, self.target_lightness)
         )
 
     @property

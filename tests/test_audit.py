@@ -182,16 +182,27 @@ async def test_the_mesh_device_audits_the_network_and_the_diagnostics_keep_the_r
     servers: FakeConfigServers,
 ) -> None:
     servers.subscribe[SWITCH, "1203"] = [0xC061]  # as on air: the element group only
+    # as on air (sweep A8): the key element's Lightness and CTL Clients hear the load's element group
+    servers.subscribe[0x0149, "1302"] = servers.subscribe[0x0149, "1305"] = [0xC061]
     mesh = device_id(hass, init_integration, f"mesh:{MESH_UUID}")
 
     response = await audit(hass, device=mesh)
 
     assert sorted(response["nodes"]) == MAINS
     assert response["unanswered"] == response["skipped"] == []
-    assert response["findings"] == 1
+    assert response["findings"] == 1  # the notes are not findings
     assert response["nodes"]["0148"]["findings"] == [SCENE_FINDING]
+    assert response["nodes"]["0148"]["notes"] == [
+        {
+            "kind": "client_subscriptions",
+            "element": "0149",
+            "model": model,
+            "actual": ["C061"],
+        }
+        for model in ("1302", "1305")
+    ]
     assert response["nodes"]["0148"]["models"] == 30
-    assert response["nodes"]["00DC"] == GATEWAY_RESULT
+    assert response["nodes"]["00DC"] == GATEWAY_RESULT  # no notes: none shown
 
     diagnostics = await get_diagnostics_for_config_entry(
         hass, hass_client, init_integration

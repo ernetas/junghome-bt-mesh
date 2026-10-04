@@ -248,6 +248,38 @@ async def test_scene_server_subscriptions_the_nodes_never_got_have_a_kind_of_the
     ]
 
 
+async def test_key_clients_hearing_their_load_are_a_note_not_a_finding(
+    attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
+) -> None:
+    """As on air (sweep A8): the key element's Light Lightness and CTL Clients subscribe to the load's element group
+    (`C061`, where its OnOff Server publishes), which the export does not list on them — a note, not counted. A
+    stray subscription beside it, and the load's group on a model that is no client, are still findings."""
+    key = 0x0149
+    servers.subscribe[key, "1302"] = [0xC061]
+    servers.subscribe[key, "1305"] = [0xC061]
+    servers.subscribe[key, "1003"] = [0xC061, LIVING]  # a client, and a stray beside
+    servers.subscribe[key, "05271013"] = [0xC061, 0xC062]  # no client
+
+    result = await audit(attached, cdb, PROXY_NODE)
+
+    here = {"element": "0149"}
+    assert kinds(result) == [
+        {"kind": "subscriptions_extra", **here, "model": "1003", "actual": ["C010"]},
+        {
+            "kind": "subscriptions_extra",
+            **here,
+            "model": "05271013",
+            "actual": ["C061"],
+        },
+    ]
+    assert [n.as_dict() for n in result.notes] == [
+        {"kind": "client_subscriptions", **here, "model": model, "actual": ["C061"]}
+        for model in ("1003", "1302", "1305")
+    ]
+    assert result.as_dict()["notes"] == [n.as_dict() for n in result.notes]
+    assert A.report([result])["findings"] == 2  # the notes are not counted
+
+
 async def test_a_silent_node_is_not_asked_about_its_models(
     attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
 ) -> None:

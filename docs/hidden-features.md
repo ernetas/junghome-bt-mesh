@@ -243,8 +243,12 @@ them, the nodes hold only the element group on `1203` and nothing on `1204`. Pha
 practice: the app, the rockers and HA recall scenes to `0xFFFF` (`network-logic.md` §4.3), never to a room group.
 Worth remembering when `export.py` mirrors the app's room wiring. The on-air sweep's audit of a light node (A8)
 found the other direction too: its key element's Light Lightness Client and Light CTL Client (`1302`, `1305`)
-subscribe to the load's element group, which the export does not list on them (`audit_network` reports it as
-`subscriptions_extra`). Harmless as well: a client that hears the load's statuses.
+subscribe to the load's element group, which the export does not list on them. Harmless as well: a client that
+hears the load's statuses. The audit (`jhmesh.audit`, `audit_network`, `config audit`) therefore reports a client
+model (Generic OnOff / Level / Default Transition Time / Power OnOff, Scene, Light Lightness / CTL / HSL client)
+subscribed to the element group of a load on its own node — the address the export has the load's state servers
+publish to — as a note of its own kind, `client_subscriptions`, kept apart from the findings and not counted; any
+other extra subscription, on a client or not, stays `subscriptions_extra` (review-4 brief 72; unverified on air).
 
 **How Sets are acknowledged** (`probe_sets.py`, `probe_sig_sets.py`; the matrix `device-settings.md` §13 q.3 was
 waiting for): LBC Admin Property Set → unicast Status in ~0.25 s, no publication, value changed or not (except the
@@ -446,7 +450,10 @@ at all — and whether a lock reaches anyone but the client that set it.
 Home Assistant reads every light's and socket's lock once per link and refuses commands to a load known to be locked
 (`config_entities.LoadLock`). It takes the load's published `0x0009` Status like any vendor Status, so a lock set
 by another client shows at once; a command a locked load answers with its old state counts for the Set when no
-other request is out to the load (review-4 D32), so the entity reads the lock and reports the refusal; and an unlock
+other request is out to the load (review-4 D32), so the entity reads the lock and reports the refusal — for a
+brightness, the level must show (present, or the target of a fade), so a locked light that is on and answers with
+its old level is refused too; the lock the load publishes on the refused Set counts as fresh, so no Get follows
+it (review-4 brief 72, unverified on air); and an unlock
 from Home Assistant never carries priority 0 (`LockFunctionEntity.async_unlock`: the plain unlock when no lock is
 known, else the lock's own priority). Silence from a load known to be locked still does not mark it unreachable
 (`Liveness.missed_answer`), for an answer lost on the air.

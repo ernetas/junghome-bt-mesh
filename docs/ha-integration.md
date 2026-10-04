@@ -108,17 +108,22 @@ One `light` entity per output. The entity is the device, so its name is the name
   `lock_until` (when it should end, ISO 8601 UTC, counted from the lock's report; empty otherwise). While locked,
   turning it on or off, `start_dim` and `step_dim` fail with *… is locked (in the JUNG HOME app, by a key or by its
   Lock switch) and keeps its state until it is unlocked*; nothing is sent. The lock is read again first, as it may
-  have ended unseen — lifted in the app (asked unless the light answered within the last 10 s), or past its time
-  limit (always asked; a light that stays silent then is commanded). A command a light answers with its old state
-  (a lock nobody had read yet) fails the same way once the lock read says so, and a light known to be locked is not
+  have ended unseen — lifted in the app (asked unless the light reported its lock within the last 10 s, answering a
+  read or publishing it), or past its time limit (always asked; a light that stays silent then is commanded). A
+  command a light answers with its old state (a lock nobody had read yet) fails the same way once the lock read says
+  so; for a brightness that means the level: a light that is on and answers a new brightness with its old level
+  (neither the level asked for nor a fade towards it, within 1 %) is checked for a lock, where on / off alone would
+  have counted it a success (review-4 brief 72; a light that clamps the level to its range costs one lock read and
+  the command stands). The lock is read then only when the light has not published it since the command: a locked
+  light publishes it on every Set it refuses, so the refusal comes at once. A light known to be locked is not
   marked unavailable for leaving a command unanswered. *All lights* and the room lights send to every member
   unacknowledged and are not refused: a locked member ignores them, as in the app. A toggle of a light whose state is
   unknown turns it on (Home Assistant's default; the app sends off), deliberately. On air (the on-air sweep's C3, a
   switch insert and the DALI insert locked from the command line) a locked light answers an OnOff or Lightness Set
   with its unchanged state, and publishes its lock to its element group when locked and again on each Set it
   refuses; Home Assistant takes that publication, so a lock set by another client shows at once
-  (`docs/hidden-features.md` §12). **Unverified on air**: the attributes and the refusal in Home Assistant, and a
-  lock set in the app.
+  (`docs/hidden-features.md` §12). **Unverified on air**: the attributes and the refusal in Home Assistant, a
+  locked light that is on answering a new brightness, and a lock set in the app.
 - **Loads a room thermostat switches, and detector relays** (review-4 F4-16). The app disables a load's controls in
   two more cases, and so does Home Assistant. A light or socket a room thermostat switches — the app's thermostat
   link: the load's *Generic OnOff* server listens to the element group the thermostat's OnOff client publishes to —
@@ -1876,6 +1881,10 @@ asks, with device-key *Gets* only — it never changes anything — and compares
 - per model (all but the Configuration Server): its publication, its subscriptions and its bound AppKeys against
   the model's `publish`, `subscribe` and `bind`.
 
+A client model of a device (a key's Generic OnOff, Level, Light Lightness or Light CTL Client and the like)
+subscribed to the element group of a load of the same device, which the export does not list on it, is no problem:
+the client hears its load's statuses. It is reported apart, as a note (`client_subscriptions`), not as a finding.
+
 ```yaml
 action: junghome_ble.audit_network
 data: { device: 8b1f0c… }   # optional: a light, key, socket or node device; the mesh device or nothing = every device
@@ -1896,7 +1905,10 @@ response_variable: audit
   `app_keys`. `scene_subscriptions_missing` is the one expected on a healthy
   installation: the export lists room and device-type groups on the Scene (Setup) Servers that the app never sent
   to the devices; scenes are recalled to all devices, so they do no harm. The gateway's GATT Proxy shows as a
-  `setting_differs` too: its export entry says *not supported*, it runs one.
+  `setting_differs` too: its export entry says *not supported*, it runs one. A node with notes also has `notes`, in
+  the shape of a finding: `client_subscriptions` with `element`, `model` and `actual` (the load's element groups the
+  client holds); notes are not counted in `findings`, and a node without any has no `notes`. The diagnostics keep
+  them with the node's result.
 
 A device takes three Gets per model: about a hundred for a push-button, sent five at a time like the state refresh
 after a connection, so auditing every device takes a few minutes. A device that answers none of the eight
@@ -1905,8 +1917,8 @@ diagnostics until the integration reloads or follows a changed export. The CLI's
 audit: its earlier run (publications and subscriptions) is in `docs/hidden-features.md` §9, and in the on-air sweep
 it asked a light and a socket device for their keys and Friend — both lists `[0]`, Friend *not supported* — and
 found the light's key element's Light Lightness and Light CTL clients subscribed to the element group, which the
-export does not list there (`subscriptions_extra`, harmless: the clients hear the load's statuses). `audit_network`
-itself is unverified on air.
+export does not list there (then a `subscriptions_extra`; now the `client_subscriptions` note, review-4 brief 72).
+`audit_network` itself, and the note, are unverified on air.
 
 **Locating a device.** `junghome_ble.locate_node` (administrators only) has one device advertise its *Node
 Identity* — the Mesh Proxy advertisement that names the device by a hash only this mesh's keys resolve — instead of

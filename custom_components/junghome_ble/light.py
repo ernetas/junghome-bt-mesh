@@ -16,7 +16,9 @@ until it ran the table is empty, HA drops a `transition` before it reaches a lig
 always had. Unverified on air.
 
 **Locks**: a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
-`lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`).
+`lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`). A brightness counts
+as applied only when the light's Status shows it (or a fade towards it): a locked light that is on answers a
+Lightness Set with its old level, and the action then fails for the lock.
 """
 
 from __future__ import annotations
@@ -190,6 +192,8 @@ class JungHomeLight(LoadLock, LightEntity):
         await self._send_switch(
             self._turn_on(lightness, kelvin, transition),
             True if transition is None else None,
+            # a level asked for must show in the Status: a locked light that is on answers with its old one
+            None if self.light.kind == "switch" else lightness,
         )
 
     async def _turn_on(
