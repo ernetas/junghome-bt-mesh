@@ -21,6 +21,12 @@ Lint and formatting: `.venv/bin/python -m ruff check .` and `.venv/bin/python -m
 `requirements-lint.txt` pins, as CI's `lint` job installs it: `.venv/bin/pip install -r requirements-lint.txt`;
 configured in `pyproject.toml`; the `lint` job gates the others).
 
+`noxfile.py` runs the CI jobs locally from the same pins, one session each: `lint` (with actionlint, shellcheck
+and zizmor from ci.yml's images when Docker is there), `types`, `tests`, `tests-library-<oldest Python>`, `build`,
+`floor` and `package` (`nox -l` lists them; `validate` runs on GitHub only), plus `regen-fixtures` and `snapshots`,
+which rewrite files for review. `.pre-commit-config.yaml` runs ruff, the JSON / TOML / YAML checks and the privacy
+scan on every commit and mypy before every push (`pre-commit install`, `pre-commit install --hook-type pre-push`).
+
 ## Synthetic fixtures
 
 The fixtures are synthetic throughout: the keys (`00112233…`-style patterns) and the identities — node UUIDs are
@@ -30,6 +36,16 @@ the maintainer's installation (`docs/network-topology.md`, generated with `tools
 pseudonymised too: every MAC keeps its vendor OUI with the other 24 bits replaced, the mesh, provisioner and node
 UUIDs are replaced, and room, scene and device names are generic stand-ins; `docs/hop-matrix.md` names nodes by
 unicast address only.
+
+`tools/privacy_scan.py` (CI's `lint` job, the pre-commit hook) keeps the whole tree that way: a MAC, a UUID, an
+IPv4 address, 32 hex digits or a home-directory path fails the scan unless it lies in a documentation range (MACs
+`00:00:5E:00:53:xx`, addresses in `192.0.2.0/24`, `198.51.100.0/24` and `203.0.113.0/24`), has a made-up shape
+(`11:22:33:44:55:66`, `00112233…`, mostly zeros) or is in `tools/privacy_allowlist.txt`: the pseudonyms above, Mesh
+Profile sample data, vendor GATT UUIDs, each with its reason. It names the file, the line and the kind, never the
+value. A new test takes a documentation-range or made-up identifier; only a value that has to be what it is goes on
+the allowlist. Docs name the maintainer's machines by role (`<workspace>`, the capture host), not by path.
+`tools/privacy_scan.py --history` counts the commits of `git log` with an assistant session trailer or a personal
+e-mail address (counts only): a check to run by hand before publishing, since no change to the tree can fix them.
 
 ## Test infrastructure
 

@@ -1,0 +1,35 @@
+# Checks before every commit (`pre-commit install`), and mypy before every push
+# (`pre-commit install --hook-type pre-push`). The same checks CI's `lint` job and the `tests` job's typing step run,
+# on the files of the commit; `nox -s lint` and `nox -s types` run them on the whole tree (noxfile.py).
+# The hook repositories are pinned to a commit, with the tag it carries: ruff at the version requirements-lint.txt
+# pins. `pre-commit autoupdate --freeze` moves them; keep ruff in step with requirements-lint.txt.
+minimum_pre_commit_version: "4.4.0"  # `language: unsupported` (formerly `system`)
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd  # frozen: v0.16.9
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+        # the blueprints use Home Assistant's `!input` tag, which only its own loader knows (tests/test_blueprints.py
+        # loads them with it): syntax only there
+        args: [--unsafe]
+  - repo: local
+    hooks:
+      - id: privacy-scan
+        name: privacy scan (tools/privacy_scan.py)
+        entry: python tools/privacy_scan.py
+        language: python  # standard library only: an empty environment of its own
+        types: [text]
+      - id: mypy
+        name: mypy (the development venv's, with Home Assistant)
+        entry: .venv/bin/python -m mypy
+        language: unsupported
+        pass_filenames: false
+        types: [python]
+        stages: [pre-push]

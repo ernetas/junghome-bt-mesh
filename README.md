@@ -48,6 +48,10 @@ The app's export holds every key of your mesh: anyone with the file can control 
 Keep it private. Home Assistant stores its copy readable by itself only and never puts a key into diagnostics or
 logs. See [SECURITY.md](SECURITY.md) for what is stored where and how to report a vulnerability.
 
+The research notes describe the maintainer's own installation under pseudonyms (a MAC keeps only its vendor's OUI;
+UUIDs and names are stand-ins), and the tests run on synthetic keys and documentation-range addresses;
+`tools/privacy_scan.py` checks every commit for anything else ([testing](docs/dev/testing.md#synthetic-fixtures)).
+
 ## Disclaimer & legal
 
 This is an **independent, unofficial** project. It is **not** affiliated with, authorized, sponsored, or endorsed by

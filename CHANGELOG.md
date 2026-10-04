@@ -72,6 +72,18 @@
   opcode it names (`tests/jhmesh/describe_golden.txt`) and the tools' `--help` (`tests/cli_help/`), unchanged by
   either. The integration still imports its bundled `jhmesh` relatively: the absolute imports wait for the first
   publication on PyPI (`docs/roadmap.md`). Nothing changes in behaviour.
+- Internal: a privacy scan and local copies of the CI jobs (review-4 brief 64, Q4-14, Q4-15, Q4-18, D1–D3).
+  `tools/privacy_scan.py` (standard library only) fails on a MAC, UUID, IPv4 address, 128-bit hex value or
+  home-directory path that is not in a documentation range, not made up by its shape and not on the reviewed
+  `tools/privacy_allowlist.txt` (the topology page's pseudonyms, Mesh Profile sample data, vendor GATT UUIDs); it
+  names file, line and kind, never the value, and runs in CI's `lint` job. `--history` counts session trailers and
+  personal e-mail addresses in the commit history, by hand. The docs no longer carry workspace or home-directory
+  paths, the capture host's setup beyond what the sniffer needs, an occupancy remark or the installation's zone
+  offset; the tests use documentation-range gateway addresses, a neutral time zone and made-up identifiers where
+  they had capture-looking ones. `.gitignore` covers the whole `android/` tree, an app export saved anywhere outside
+  `tests/fixtures/`, `.claude/` and `*.tmp`. `.pre-commit-config.yaml` runs ruff, the JSON / TOML / YAML checks and
+  the privacy scan on every commit and mypy before a push; `noxfile.py` has a session per CI job, plus
+  `regen-fixtures` and `snapshots`. Nothing changes in behaviour.
 
 ### Fixed
 
