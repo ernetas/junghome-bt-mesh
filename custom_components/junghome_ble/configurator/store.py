@@ -1448,6 +1448,18 @@ class ExportStore:
             "export": json.loads(rendered),
         }
 
+    async def async_file(self) -> bytes:
+        """Return the export's bytes as they are on disk, once the running operation is done with the file.
+
+        For the download (`export_view.ExportDownloadView`): under the lock, so a plan being sent and the write that
+        records it end first — the file then holds what the nodes hold — and nothing is merged or rendered; what the
+        app or a backup gets is the file itself. `OSError` when it cannot be read.
+        """
+        async with self.lock:
+            return await self.hub.hass.async_add_executor_job(
+                Path(self.path).read_bytes
+            )
+
     async def sync_gateway(self) -> bool:
         """Upload the export the entry points at to the gateway, as it is on disk (the retry of a failed sync).
 

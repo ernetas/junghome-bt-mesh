@@ -294,6 +294,26 @@ Home Assistant backups include everything the integration needs. Restoring one i
 restore and continues its counters far enough ahead (**unverified on air**). Do not restore the
 integration's files by hand from an older copy.
 
+## Downloading the export
+
+Home Assistant keeps the installation's export on the host and writes its own changes into it (rooms, scenes, key
+connections, names). To import it into the JUNG HOME app — which otherwise never learns about them unless a gateway
+entry hands them over — or to keep a copy, an administrator can download it:
+
+1. *Developer tools → Actions*, choose **Download export** (`junghome_ble.download_export`), switch on *Return
+   response* and run it. With several JUNG HOME networks, pick the network (or any of its devices).
+2. The answer has a `url` such as `/api/junghome_ble/export/…?authSig=…`. Put it after your Home Assistant address in
+   the same browser, for example `https://homeassistant.local:8123/api/junghome_ble/export/…`, **within five
+   minutes**: then the link stops working. It only works for the administrator who asked for it.
+3. The browser saves `JungHome.json`. In the app, import it as a project file, next to *Share via file* under
+   *Project*.
+
+**The file holds every key of your installation.** Import it, or store it somewhere only you can reach, then delete
+it from the computer it was downloaded to; never send it by e-mail or chat. Importing replaces the app's project: on
+your only phone, keep the app's own export (*Project → Share via file*) first. That the app takes Home Assistant's
+file is **unverified with the app**.
+[Details](../ha-integration.md#actions-export-download)
+
 ## Removing the integration
 
 1. Turn off the *Node heartbeats* option first, if you turned it on.

@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Non envoyé : {node} a répondu à {message} par {found}, mais l'export du mesh indique {expected} ({others} autres différences). L'installation a changé après la création de l'export du mesh (dans l'application JUNG HOME, par la réinitialisation d'un appareil ou par une action précédente interrompue à mi-chemin), et le plan écraserait ce que l'export ne décrit plus. Exportez à nouveau le projet depuis l'application, ou laissez Home Assistant reprendre l'export de la passerelle, puis relancez l'action ; avec `force`, elle s'exécute sans cette vérification. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Le lien de téléchargement est créé pour l'administrateur qui le demande : lancez l'action depuis l'interface de Home Assistant (Outils de développement → Actions) ou via son API avec le jeton d'un administrateur, pas depuis une automatisation."
+    },
     "applied_nothing": {
       "message": "Rien n'a été appliqué avant ; l'export du mesh est inchangé."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Client",
           "description": "Le nom sous lequel le client demande l'accès, exactement tel que listé sous `waiting`. Laissé vide, rien n'est approuvé."
+        },
+        "config_entry_id": {
+          "name": "Réseau mesh",
+          "description": "Quel réseau JUNG HOME, lorsque plusieurs sont configurés."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Télécharger l'export",
+      "description": "Répond par un lien qui télécharge l'export que Home Assistant conserve pour le réseau JUNG HOME (JungHome.json, avec les pièces, touches, liaisons et scènes modifiées par Home Assistant), pour l'importer dans l'app JUNG HOME ou le garder comme sauvegarde. Le lien est un chemin sur l'adresse de Home Assistant et fonctionne cinq minutes, uniquement pour l'administrateur qui l'a demandé. Le fichier contient toutes les clés de l'installation : supprimez-le une fois importé ou rangé en lieu sûr. Réservé aux administrateurs. L'import dans l'app n'a pas encore été vérifié avec l'app.",
+      "fields": {
+        "device": {
+          "name": "Appareil",
+          "description": "N'importe quel appareil du réseau dont l'export est à télécharger. Vide : le seul réseau, ou celui choisi comme réseau mesh."
         },
         "config_entry_id": {
           "name": "Réseau mesh",

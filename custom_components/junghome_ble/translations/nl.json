@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Niet verzonden: {node} antwoordde op {message} met {found}, maar de mesh-export zegt {expected} ({others} andere verschillen). De installatie is gewijzigd nadat de mesh-export is gemaakt (in de JUNG HOME-app, door een reset van een apparaat of door een eerdere actie die halverwege stopte), en het plan zou overschrijven wat de export niet meer beschrijft. Exporteer het project opnieuw vanuit de app, of laat Home Assistant de export van de gateway overnemen, en voer de actie opnieuw uit; met `force` loopt ze zonder deze controle. {applied}"
     },
+    "download_export_no_session": {
+      "message": "De downloadlink wordt gemaakt voor de beheerder die erom vraagt: voer de actie uit vanuit de interface van Home Assistant (Ontwikkelhulpmiddelen → Acties) of via de API met het token van een beheerder, niet vanuit een automatisering."
+    },
     "applied_nothing": {
       "message": "Daarvoor is niets toegepast; de mesh-export is ongewijzigd."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Client",
           "description": "De naam waaronder de client toegang vraagt, precies zoals vermeld onder `waiting`. Leeg gelaten wordt niets goedgekeurd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Export downloaden",
+      "description": "Antwoordt met een link die de export downloadt die Home Assistant voor het JUNG HOME-netwerk bewaart (JungHome.json, met de ruimtes, toetsen, koppelingen en scènes die Home Assistant heeft gewijzigd), om die in de JUNG HOME-app te importeren of als back-up te bewaren. De link is een pad op het adres van Home Assistant en werkt vijf minuten, alleen voor de beheerder die erom vroeg. Het bestand bevat elke sleutel van de installatie: verwijder het zodra het is geïmporteerd of veilig opgeborgen. Alleen voor beheerders. Het importeren in de app is nog niet met de app gecontroleerd.",
+      "fields": {
+        "device": {
+          "name": "Apparaat",
+          "description": "Een willekeurig apparaat van het netwerk waarvan de export moet worden gedownload. Leeg: het enige netwerk, of het als mesh-netwerk gekozen netwerk."
         },
         "config_entry_id": {
           "name": "Mesh-netwerk",

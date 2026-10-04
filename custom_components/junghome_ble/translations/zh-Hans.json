@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "未发送：{node} 对 {message} 的应答为 {found}，但 Mesh 导出文件中为 {expected}（另有 {others} 处差异）。Mesh 导出文件生成后，安装已发生更改（在 JUNG HOME 应用中、因设备重置，或因之前中途停止的操作），该计划将覆盖导出文件已不再描述的内容。请从应用重新导出项目，或让 Home Assistant 接管网关的导出文件，然后再次运行该操作；使用 `force` 时将不进行此检查。{applied}"
     },
+    "download_export_no_session": {
+      "message": "下载链接是为请求它的管理员生成的：请从 Home Assistant 界面（开发者工具 → 操作）或使用管理员令牌通过其 API 运行此操作，而不要从自动化中运行。"
+    },
     "applied_nothing": {
       "message": "在此之前没有应用任何内容；Mesh 导出文件未改变。"
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "客户端",
           "description": "客户端请求访问时使用的名称，须与 `waiting` 下列出的完全一致。留空时，不会批准任何客户端。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "download_export": {
+      "name": "下载导出",
+      "description": "返回一个链接，用于下载 Home Assistant 为 JUNG HOME 网络保存的导出（JungHome.json，含 Home Assistant 更改过的房间、按键、连接和场景），以便导入 JUNG HOME 应用或作为备份保存。该链接是 Home Assistant 地址上的一个路径，有效期五分钟，且仅对请求它的管理员有效。该文件包含安装的所有密钥：导入或妥善保存后请将其删除。仅限管理员。导入应用一事尚未在应用中验证。",
+      "fields": {
+        "device": {
+          "name": "设备",
+          "description": "要下载其导出的网络中的任意设备。留空：唯一的网络，或选为 Mesh 网络的那一个。"
         },
         "config_entry_id": {
           "name": "Mesh 网络",

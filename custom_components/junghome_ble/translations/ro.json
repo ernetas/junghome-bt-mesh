@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Netrimis: {node} a răspuns la {message} cu {found}, dar exportul rețelei mesh indică {expected} (alte diferențe: {others}). Instalația s-a schimbat după crearea exportului rețelei mesh (în aplicația JUNG HOME, prin resetarea unui dispozitiv sau printr-o acțiune anterioară oprită la jumătate), iar planul ar suprascrie ce exportul nu mai descrie. Exportă din nou proiectul din aplicație sau lasă Home Assistant să preia exportul gateway-ului și rulează din nou acțiunea; cu `force` rulează fără această verificare. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Linkul de descărcare este creat pentru administratorul care îl cere: rulează acțiunea din interfața Home Assistant (Instrumente pentru dezvoltatori → Acțiuni) sau prin API-ul său cu tokenul unui administrator, nu dintr-o automatizare."
+    },
     "applied_nothing": {
       "message": "Nimic nu a fost aplicat înainte; exportul rețelei mesh este neschimbat."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Client",
           "description": "Numele sub care clientul cere acces, exact cum este listat sub `waiting`. Lăsat gol, nu se aprobă nimic."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Descarcă exportul",
+      "description": "Răspunde cu un link care descarcă exportul pe care Home Assistant îl păstrează pentru rețeaua JUNG HOME (JungHome.json, cu camerele, tastele, legăturile și scenele modificate de Home Assistant), pentru a-l importa în aplicația JUNG HOME sau a-l păstra ca copie de rezervă. Linkul este o cale la adresa Home Assistant și funcționează cinci minute, doar pentru administratorul care l-a cerut. Fișierul conține toate cheile instalației: șterge-l după ce a fost importat sau pus la loc sigur. Doar pentru administratori. Importul în aplicație nu a fost încă verificat cu aplicația.",
+      "fields": {
+        "device": {
+          "name": "Dispozitiv",
+          "description": "Orice dispozitiv al rețelei al cărei export trebuie descărcat. Gol: singura rețea sau cea aleasă ca rețea mesh."
         },
         "config_entry_id": {
           "name": "Rețea mesh",

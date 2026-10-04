@@ -158,6 +158,7 @@ pass removed the markers of the checks that passed.
 | [E4](#e4--a-key-renewal-in-the-app-decision) | Key renewal in the app (decision) | the app | **the network key** | — |
 | [E5](#e5--approve-a-gateway-api-client-f4-17) | `approve_gateway_client` | gateway, a second API client | **an approved client** | — |
 | [E6](#e6--home-assistant-starts-an-iv-update-p-i-11) | `start_iv_update`: Home Assistant starts an IV Update (decision) | any proxy node | **the IV index, for good** | — |
+| [E7](#e7--download-the-export-and-import-it-into-the-app-u4-17) | `download_export`: the signed link, and the file imported into the app | the app (a spare phone, or the app's project kept first) | **the app's project**, unless on a spare phone | **yes** |
 | [F](#f--not-checkable-here) | Not checkable here | — | — | — |
 | [G](#g--already-seen-on-air) | Seen on air before; markers to drop | — | — | — |
 
@@ -1324,6 +1325,28 @@ spend.
   `custom_components/junghome_ble/strings.json::issues.sequence_space_low.description` (and every translation),
   `custom_components/junghome_ble/strings.json::services.start_iv_update.description`,
   `mgmt:api:meshnetwork.setivindex`.
+
+### E7 · Download the export and import it into the app (U4-17)
+
+- **Checks:** review-4 brief 76 — `download_export` answers a path signed for five minutes for the administrator who
+  asked; the view serves the export on disk as `JungHome.json` to that administrator only; and the JUNG HOME app
+  imports the file Home Assistant wrote, with the rooms, scenes and key connections Home Assistant changed.
+- **Needs:** an administrator's browser; the app on a spare phone, or the production app after its own project was
+  kept (*Project → Share via file*, the file stored safely). **Stays changed:** on the production phone the app's
+  project is replaced by Home Assistant's file (import the kept file again to undo); nothing on a spare phone. Nothing
+  is sent on the mesh; the download itself changes nothing.
+- **Do:** *Developer tools → Actions → Download export*, *Return response* on; open the answered path after Home
+  Assistant's address within five minutes; open it again after five minutes; open it from a private window while
+  still valid (no login). Then import the downloaded file into the app and look at a room, a scene and a key
+  connection Home Assistant changed earlier (D7 or D12 leave some); switch a light from the app.
+- **Capture:** none on air; Home Assistant's log at INFO.
+- **Pass:** the browser saves `JungHome.json`, byte for byte the file on the host; after five minutes the link answers
+  401; the log says a link was made, for whom, and who downloaded it, never the link. The app imports the file
+  without an error, shows Home Assistant's changes, and controls the devices. **Fail:** the app refuses the file or
+  loses devices — note the app version and the error, and keep the file private. Delete the downloaded file afterwards.
+- **Markers:** `custom_components/junghome_ble/actions/download.py::<module>`,
+  `custom_components/junghome_ble/actions/download.py::_download_export`,
+  `custom_components/junghome_ble/strings.json::services.download_export.description`.
 
 ## F · Not checkable here
 

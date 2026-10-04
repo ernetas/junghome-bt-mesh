@@ -1643,6 +1643,9 @@
     "start_iv_update_not_stored": {
       "message": "Home Assistant could not write the new IV index to its sequence-number store, so it did not start the IV Update; see the log."
     },
+    "download_export_no_session": {
+      "message": "The download link is made for the administrator who asks for it: run the action from Home Assistant's interface (Developer tools → Actions) or through its API with an administrator's token, not from an automation."
+    },
     "applied_nothing": {
       "message": "Nothing before it was applied; the mesh export is unchanged."
     },
@@ -2898,6 +2901,20 @@
         "force": {
           "name": "Even if not needed",
           "description": "Start it although no sender has used three quarters of its sequence numbers yet."
+        },
+        "config_entry_id": {
+          "name": "Mesh network",
+          "description": "Which JUNG HOME network, when more than one is configured."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Download export",
+      "description": "Answers a link that downloads the export Home Assistant holds for the JUNG HOME network (JungHome.json, with the rooms, keys, links and scenes Home Assistant changed), to import into the JUNG HOME app or keep as a backup. The link is a path on Home Assistant's address and works for five minutes, only for the administrator who asked for it. The file holds every key of the installation: delete it once it is imported or stored safely. Administrators only. Importing the file into the app is unverified with the app.",
+      "fields": {
+        "device": {
+          "name": "Device",
+          "description": "Any device of the network whose export to download. Left empty: the only network, or the one chosen as mesh network."
         },
         "config_entry_id": {
           "name": "Mesh network",

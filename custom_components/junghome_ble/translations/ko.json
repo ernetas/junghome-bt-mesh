@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "전송되지 않음: {node}이(가) {message}에 {found}(으)로 응답했지만 메시 내보내기 파일에는 {expected}(으)로 되어 있습니다(기타 차이 {others}건). 메시 내보내기 파일을 만든 후 설치가 변경되었으므로(JUNG HOME 앱에서, 기기 초기화로, 또는 도중에 멈춘 이전 작업으로) 계획이 내보내기 파일에 더 이상 없는 내용을 덮어쓰게 됩니다. 앱에서 프로젝트를 다시 내보내거나 Home Assistant가 게이트웨이의 내보내기 파일을 인계받게 한 다음 작업을 다시 실행하세요. `force`를 사용하면 이 확인 없이 실행됩니다. {applied}"
     },
+    "download_export_no_session": {
+      "message": "다운로드 링크는 요청한 관리자를 위해 만들어집니다. 자동화가 아니라 Home Assistant 화면(개발자 도구 → 작업)에서 또는 관리자 토큰으로 API를 통해 작업을 실행하세요."
+    },
     "applied_nothing": {
       "message": "그 전에 적용된 것은 없습니다. 메시 내보내기 파일은 변경되지 않았습니다."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "클라이언트",
           "description": "클라이언트가 액세스를 요청할 때 사용한 이름으로, `waiting` 아래에 표시된 그대로 입력합니다. 비워 두면 아무것도 승인되지 않습니다."
+        },
+        "config_entry_id": {
+          "name": "메시 네트워크",
+          "description": "여러 개가 구성된 경우 사용할 JUNG HOME 네트워크입니다."
+        }
+      }
+    },
+    "download_export": {
+      "name": "내보내기 다운로드",
+      "description": "Home Assistant가 JUNG HOME 네트워크에 대해 보관하는 내보내기(JungHome.json, Home Assistant가 변경한 방, 키, 연결, 장면 포함)를 다운로드하는 링크를 반환합니다. JUNG HOME 앱으로 가져오거나 백업으로 보관할 수 있습니다. 링크는 Home Assistant 주소의 경로이며, 요청한 관리자에게만 5분 동안 유효합니다. 이 파일에는 설치의 모든 키가 들어 있으므로 가져오거나 안전하게 보관한 뒤에는 삭제하세요. 관리자 전용입니다. 앱으로 가져오는 것은 아직 앱에서 검증되지 않았습니다.",
+      "fields": {
+        "device": {
+          "name": "기기",
+          "description": "내보내기를 다운로드할 네트워크의 아무 기기입니다. 비워 두면 유일한 네트워크 또는 메시 네트워크로 선택한 네트워크입니다."
         },
         "config_entry_id": {
           "name": "메시 네트워크",

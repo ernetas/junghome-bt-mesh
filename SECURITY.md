@@ -26,8 +26,9 @@ device of the mesh, reconfigure it, or take it over.
   hand when they are no longer needed. Home Assistant's own `.storage` directory keeps the mode Home Assistant gives it.
   Home Assistant backups contain all of these: keep them as private as the export itself.
 - Keys never appear in logs, diagnostics downloads or error messages. The `junghome_ble.export_network` action
-  returns the whole export, keys included, and is limited to administrators; so are `add_device` (it hands a new
-  device the network's keys) and `remove_device`.
+  returns the whole export, keys included, and is limited to administrators; so are `download_export` (its link,
+  signed for five minutes for the administrator who asked, downloads the export file; the view behind it answers
+  administrators only), `add_device` (it hands a new device the network's keys) and `remove_device`.
 - The gateway connection is pinned to the certificate the gateway presented at setup, re-confirmed over the mesh;
   its access token is stored in the config entry.
 

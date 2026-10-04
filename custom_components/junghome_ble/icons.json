@@ -456,6 +456,9 @@
     "start_iv_update": {
       "service": "mdi:counter"
     },
+    "download_export": {
+      "service": "mdi:file-download-outline"
+    },
     "start_dim": {
       "service": "mdi:brightness-auto"
     },

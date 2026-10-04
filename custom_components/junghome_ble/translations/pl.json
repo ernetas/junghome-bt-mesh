@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Nie wysłano: {node} odpowiedział na {message} wartością {found}, ale eksport mesh podaje {expected} (pozostałe różnice: {others}). Instalacja zmieniła się po wykonaniu eksportu mesh (w aplikacji JUNG HOME, przez reset urządzenia albo przez wcześniejszą akcję, która zatrzymała się w połowie), a plan nadpisałby to, czego eksport już nie opisuje. Wyeksportuj projekt z aplikacji ponownie albo pozwól Home Assistant przejąć eksport z bramki i uruchom akcję jeszcze raz; z `force` działa bez tego sprawdzenia. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Link do pobrania jest tworzony dla administratora, który o niego prosi: uruchom akcję z interfejsu Home Assistant (Narzędzia deweloperskie → Akcje) lub przez jego API z tokenem administratora, a nie z automatyzacji."
+    },
     "applied_nothing": {
       "message": "Wcześniej nic nie zostało zastosowane; eksport mesh się nie zmienił."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Klient",
           "description": "Nazwa, pod którą klient prosi o dostęp, dokładnie tak jak na liście `waiting`. Jeśli puste, nic nie jest zatwierdzane."
+        },
+        "config_entry_id": {
+          "name": "Sieć mesh",
+          "description": "Która sieć JUNG HOME, gdy skonfigurowano więcej niż jedną."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Pobierz eksport",
+      "description": "Zwraca link, który pobiera eksport przechowywany przez Home Assistant dla sieci JUNG HOME (JungHome.json, z pomieszczeniami, przyciskami, powiązaniami i scenami zmienionymi przez Home Assistant), aby zaimportować go do aplikacji JUNG HOME lub zachować jako kopię zapasową. Link jest ścieżką pod adresem Home Assistant i działa przez pięć minut, tylko dla administratora, który o niego poprosił. Plik zawiera wszystkie klucze instalacji: usuń go, gdy tylko zostanie zaimportowany lub bezpiecznie przechowany. Tylko dla administratorów. Import do aplikacji nie został jeszcze sprawdzony z aplikacją.",
+      "fields": {
+        "device": {
+          "name": "Urządzenie",
+          "description": "Dowolne urządzenie sieci, której eksport ma zostać pobrany. Puste: jedyna sieć albo ta wybrana jako sieć mesh."
         },
         "config_entry_id": {
           "name": "Sieć mesh",

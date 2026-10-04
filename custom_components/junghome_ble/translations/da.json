@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Ikke sendt: {node} svarede {found} på {message}, men mesh-eksporten siger {expected} ({others} flere forskelle). Installationen er ændret, efter mesh-eksporten blev lavet (i JUNG HOME-appen, ved en nulstilling af en enhed eller af en tidligere handling, der stoppede halvvejs), og planen ville overskrive det, eksporten ikke længere beskriver. Eksportér projektet fra appen igen, eller lad Home Assistant overtage gatewayens eksport, og kør handlingen igen; med `force` kører den uden dette tjek. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Downloadlinket laves til den administrator, der beder om det: kør handlingen fra Home Assistants brugerflade (Udviklerværktøjer → Handlinger) eller via dens API med en administrators token, ikke fra en automatisering."
+    },
     "applied_nothing": {
       "message": "Intet blev anvendt før det; mesh-eksporten er uændret."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Klient",
           "description": "Det navn, klienten beder om adgang som, præcis som det står under `waiting`. Hvis det er tomt, godkendes intet."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netværk",
+          "description": "Hvilket JUNG HOME-netværk, når der er konfigureret mere end ét."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Download eksport",
+      "description": "Svarer med et link, der downloader den eksport, Home Assistant har for JUNG HOME-netværket (JungHome.json, med de rum, taster, forbindelser og scener, Home Assistant har ændret), så den kan importeres i JUNG HOME-appen eller gemmes som sikkerhedskopi. Linket er en sti på Home Assistants adresse og virker i fem minutter, kun for den administrator, der bad om det. Filen indeholder alle installationens nøgler: slet den, når den er importeret eller gemt sikkert. Kun for administratorer. Importen i appen er endnu ikke afprøvet med appen.",
+      "fields": {
+        "device": {
+          "name": "Enhed",
+          "description": "En vilkårlig enhed i det netværk, hvis eksport skal downloades. Tom: det eneste netværk eller det, der er valgt som mesh-netværk."
         },
         "config_entry_id": {
           "name": "Mesh-netværk",

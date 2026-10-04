@@ -2789,6 +2789,7 @@ ADMIN_CALLS: dict[str, dict[str, Any]] = {
     "locate_node": {"device": "any"},
     "approve_gateway_client": {"client": "ioBroker"},
     "start_iv_update": {"confirm": True, "force": True},
+    "download_export": {},
 }
 
 
@@ -2812,7 +2813,7 @@ async def test_rewiring_actions_are_for_administrators_only(
                 data,
                 blocking=True,
                 context=user,
-                return_response=name == "export_network",
+                return_response=name in {"export_network", "download_export"},
             )
     found = await hass.services.async_call(
         DOMAIN,

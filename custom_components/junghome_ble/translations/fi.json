@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Ei lähetetty: {node} vastasi viestiin {message} arvolla {found}, mutta mesh-verkon viennissä on {expected} (muita eroja: {others}). Asennusta on muutettu mesh-verkon viennin jälkeen (JUNG HOME -sovelluksessa, laitteen nollauksella tai aiemmalla toiminnolla, joka pysähtyi kesken), ja suunnitelma korvaisi sen, mitä vienti ei enää kuvaa. Vie projekti sovelluksesta uudelleen tai anna Home Assistantin ottaa yhdyskäytävän vienti käyttöön ja suorita toiminto uudelleen; asetuksella `force` se suoritetaan ilman tätä tarkistusta. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Latauslinkki tehdään sitä pyytävälle ylläpitäjälle: suorita toiminto Home Assistantin käyttöliittymästä (Kehittäjätyökalut → Toiminnot) tai sen API:n kautta ylläpitäjän tunnuksella, ei automaatiosta."
+    },
     "applied_nothing": {
       "message": "Ennen sitä mitään ei otettu käyttöön; mesh-verkon vienti on ennallaan."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Asiakas",
           "description": "Nimi, jolla asiakas pyytää käyttöoikeutta, täsmälleen kuten se näkyy kohdassa `waiting`. Tyhjänä mitään ei hyväksytä."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Lataa vienti",
+      "description": "Vastaa linkillä, joka lataa Home Assistantin JUNG HOME -verkosta säilyttämän viennin (JungHome.json, mukana Home Assistantin muuttamat huoneet, painikkeet, kytkennät ja tilannekuvat), jotta sen voi tuoda JUNG HOME -sovellukseen tai säilyttää varmuuskopiona. Linkki on polku Home Assistantin osoitteessa ja toimii viisi minuuttia, vain sitä pyytäneelle ylläpitäjälle. Tiedosto sisältää asennuksen kaikki avaimet: poista se, kun se on tuotu tai tallennettu turvalliseen paikkaan. Vain ylläpitäjille. Tuontia sovellukseen ei ole vielä varmistettu sovelluksella.",
+      "fields": {
+        "device": {
+          "name": "Laite",
+          "description": "Mikä tahansa sen verkon laite, jonka vienti ladataan. Tyhjänä: ainoa verkko tai verkoksi valittu."
         },
         "config_entry_id": {
           "name": "Verkko",

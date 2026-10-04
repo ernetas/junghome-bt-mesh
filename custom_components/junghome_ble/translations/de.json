@@ -1620,6 +1620,9 @@
     "service_preflight_differs": {
       "message": "Nicht gesendet: {node} hat auf {message} mit {found} geantwortet, der Mesh-Export sagt aber {expected} ({others} weitere Abweichungen). Die Installation wurde nach dem Mesh-Export geändert (in der JUNG HOME App, durch das Zurücksetzen eines Geräts oder durch eine frühere Aktion, die mittendrin stehen blieb), und der Plan würde überschreiben, was der Export nicht mehr beschreibt. Exportiere das Projekt erneut aus der App oder lass Home Assistant den Export des Gateways übernehmen und führe die Aktion noch einmal aus; mit `force` läuft sie ohne diese Prüfung. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Der Download-Link wird für den Administrator erstellt, der ihn anfordert: Führe die Aktion in der Oberfläche von Home Assistant (Entwicklerwerkzeuge → Aktionen) oder über seine API mit dem Token eines Administrators aus, nicht aus einer Automatisierung."
+    },
     "applied_nothing": {
       "message": "Davor wurde nichts übernommen; der Mesh-Export ist unverändert."
     },
@@ -2857,6 +2860,20 @@
         "client": {
           "name": "Client",
           "description": "Der Name, unter dem der Client Zugriff anfragt, genau wie unter `waiting` gelistet. Leer gelassen, wird nichts freigegeben."
+        },
+        "config_entry_id": {
+          "name": "Mesh-Netzwerk",
+          "description": "Welches JUNG HOME Netzwerk, wenn mehrere eingerichtet sind."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Export herunterladen",
+      "description": "Antwortet mit einem Link, der den Export herunterlädt, den Home Assistant für das JUNG HOME Netzwerk hält (JungHome.json, mit den Räumen, Tasten, Verknüpfungen und Szenen, die Home Assistant geändert hat), um ihn in die JUNG HOME App zu importieren oder als Sicherung aufzubewahren. Der Link ist ein Pfad auf der Adresse von Home Assistant und gilt fünf Minuten, nur für den Administrator, der ihn angefordert hat. Die Datei enthält jeden Schlüssel der Installation: Lösche sie, sobald sie importiert oder sicher abgelegt ist. Nur für Administratoren. Der Import in die App ist mit der App noch nicht geprüft.",
+      "fields": {
+        "device": {
+          "name": "Gerät",
+          "description": "Ein beliebiges Gerät des Netzwerks, dessen Export heruntergeladen werden soll. Leer: das einzige Netzwerk oder das als Mesh-Netzwerk gewählte."
         },
         "config_entry_id": {
           "name": "Mesh-Netzwerk",

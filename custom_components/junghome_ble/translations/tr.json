@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Gönderilmedi: {node}, {message} iletisine {found} yanıtını verdi, ancak mesh dışa aktarımı {expected} diyor ({others} fark daha). Kurulum, mesh dışa aktarımı yapıldıktan sonra değişti (JUNG HOME uygulamasında, bir cihazın sıfırlanmasıyla veya yarıda kalan önceki bir eylemle) ve plan, dışa aktarımın artık tanımlamadığı şeylerin üzerine yazardı. Projeyi uygulamadan yeniden dışa aktarın veya Home Assistant'ın ağ geçidinin dışa aktarımını devralmasına izin verin ve eylemi yeniden çalıştırın; `force` ile bu denetim yapılmadan çalışır. {applied}"
     },
+    "download_export_no_session": {
+      "message": "İndirme bağlantısı onu isteyen yönetici için oluşturulur: eylemi bir otomasyondan değil, Home Assistant arayüzünden (Geliştirici araçları → Eylemler) ya da bir yöneticinin belirteciyle API'si üzerinden çalıştırın."
+    },
     "applied_nothing": {
       "message": "Öncesinde hiçbir şey uygulanmadı; mesh dışa aktarımı değişmedi."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "İstemci",
           "description": "İstemcinin erişim istediği ad; `waiting` altında listelendiği şekliyle. Boş bırakılırsa hiçbir şey onaylanmaz."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Dışa aktarımı indir",
+      "description": "Home Assistant'ın JUNG HOME ağı için tuttuğu dışa aktarımı (JungHome.json; Home Assistant'ın değiştirdiği odalar, tuşlar, bağlantılar ve sahnelerle birlikte) indiren bir bağlantıyla yanıt verir; JUNG HOME uygulamasına içe aktarmak ya da yedek olarak saklamak için. Bağlantı, Home Assistant adresindeki bir yoldur ve yalnızca onu isteyen yönetici için beş dakika geçerlidir. Dosya kurulumun tüm anahtarlarını içerir: içe aktarıldıktan ya da güvenli bir yere konduktan sonra silin. Yalnızca yöneticiler. Uygulamaya içe aktarma henüz uygulamayla doğrulanmadı.",
+      "fields": {
+        "device": {
+          "name": "Cihaz",
+          "description": "Dışa aktarımı indirilecek ağın herhangi bir cihazı. Boş bırakılırsa: tek ağ ya da mesh ağı olarak seçilen."
         },
         "config_entry_id": {
           "name": "Mesh ağı",

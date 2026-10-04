@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "No s'ha enviat: {node} ha respost a {message} amb {found}, però l'exportació del mesh diu {expected} ({others} diferències més). La instal·lació ha canviat després de fer l'exportació del mesh (a l'aplicació JUNG HOME, per un restabliment d'un dispositiu o per una acció anterior que es va aturar a mitges), i el pla sobreescriuria el que l'exportació ja no descriu. Torna a exportar el projecte des de l'aplicació, o deixa que Home Assistant adopti l'exportació de la passarel·la, i torna a executar l'acció; amb `force` s'executa sense aquesta comprovació. {applied}"
     },
+    "download_export_no_session": {
+      "message": "L'enllaç de baixada es fa per a l'administrador que el demana: executa l'acció des de la interfície de Home Assistant (Eines per a desenvolupadors → Accions) o a través de la seva API amb el testimoni d'un administrador, no des d'una automatització."
+    },
     "applied_nothing": {
       "message": "No s'ha aplicat res abans; l'exportació del mesh no ha canviat."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Client",
           "description": "El nom amb què el client demana accés, exactament com apareix a `waiting`. Si es deixa buit, no s'aprova res."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Baixa l'exportació",
+      "description": "Respon amb un enllaç que baixa l'exportació que Home Assistant conserva de la xarxa JUNG HOME (JungHome.json, amb les estances, les tecles, les connexions i les escenes que Home Assistant ha canviat), per importar-la a l'aplicació JUNG HOME o guardar-la com a còpia de seguretat. L'enllaç és un camí a l'adreça de Home Assistant i funciona cinc minuts, només per a l'administrador que l'ha demanat. El fitxer conté totes les claus de la instal·lació: suprimeix-lo un cop importat o desat en un lloc segur. Només per a administradors. La importació a l'aplicació encara no s'ha verificat amb l'aplicació.",
+      "fields": {
+        "device": {
+          "name": "Dispositiu",
+          "description": "Qualsevol dispositiu de la xarxa de la qual es vol baixar l'exportació. Buit: l'única xarxa, o la triada com a xarxa mesh."
         },
         "config_entry_id": {
           "name": "Xarxa mesh",

@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Ni poslano: {node} je na {message} odgovoril z {found}, izvoz mesh pa navaja {expected} (drugih razlik: {others}). Namestitev se je po izdelavi izvoza mesh spremenila (v aplikaciji JUNG HOME, s ponastavitvijo naprave ali s prejšnjim dejanjem, ki se je ustavilo na pol poti), in načrt bi prepisal tisto, česar izvoz ne opisuje več. Projekt znova izvozite iz aplikacije ali pustite, da Home Assistant prevzame izvoz prehoda, in dejanje znova zaženite; z `force` se izvede brez tega preverjanja. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Povezava za prenos se ustvari za skrbnika, ki jo zahteva: dejanje zaženite iz vmesnika Home Assistant (Orodja za razvijalce → Dejanja) ali prek njegovega API-ja z žetonom skrbnika, ne iz avtomatizacije."
+    },
     "applied_nothing": {
       "message": "Pred tem ni bilo uveljavljeno nič; izvoz mesh je nespremenjen."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Odjemalec",
           "description": "Ime, pod katerim odjemalec prosi za dostop, natanko kot je navedeno pod `waiting`. Če ostane prazno, se nič ne odobri."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Prenesi izvoz",
+      "description": "Odgovori s povezavo, ki prenese izvoz, ki ga Home Assistant hrani za omrežje JUNG HOME (JungHome.json, s prostori, tipkami, povezavami in scenami, ki jih je spremenil Home Assistant), da ga uvozite v aplikacijo JUNG HOME ali shranite kot varnostno kopijo. Povezava je pot na naslovu Home Assistant in deluje pet minut, samo za skrbnika, ki jo je zahteval. Datoteka vsebuje vse ključe namestitve: izbrišite jo, ko je uvožena ali varno shranjena. Samo za skrbnike. Uvoz v aplikacijo z aplikacijo še ni preverjen.",
+      "fields": {
+        "device": {
+          "name": "Naprava",
+          "description": "Katera koli naprava omrežja, katerega izvoz želite prenesti. Prazno: edino omrežje ali tisto, izbrano kot omrežje mesh."
         },
         "config_entry_id": {
           "name": "Omrežje mesh",

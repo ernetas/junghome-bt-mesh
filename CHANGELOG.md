@@ -12,6 +12,17 @@
   words; a legend explains them. An SVG for the stock picture-entity card, nothing to install; readable in light and
   dark; redrawn only when what it shows changed, at most once a minute. The diagnostics carry the same snapshot as
   `topology`. The user guide's mesh health dashboard shows the card. Unverified on air.
+- **Download Home Assistant's export through a signed, short-lived link** (review-4 U4-17): the action
+  `junghome_ble.download_export` (administrators only; the entry, or any of its devices) answers
+  `{url, expires_in: 300}`, a path signed with Home Assistant's `async_sign_path` for five minutes and for the session
+  of the administrator who asked. It opens `GET /api/junghome_ble/export/<entry id>`, which serves the export on the
+  host as it is on disk — after the change running on the entry has written it — as `JungHome.json`, the name of the
+  app's share file (an entry set up from the iOS app's mesh database keeps the database's own name), with
+  `Cache-Control: no-store`; to an administrator only (403 otherwise, 401 without a login or a valid signature, 404
+  for an unknown entry or a file gone from the host). So the app can import the rooms, scenes and key connections
+  Home Assistant changed, or the file be kept as a backup, without shell access to the host. A call from an automation
+  of the system is refused (the link would open for nobody). The log says that a link was made and for whom, never
+  the link. That the app imports the file is unverified with the app. The integration now depends on `http`.
 
 ## 1.3.0
 

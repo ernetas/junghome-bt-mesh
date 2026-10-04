@@ -70,6 +70,7 @@ from .coordinator import (
 from .coordinator import JungHomeConfigEntry as JungHomeConfigEntry
 from .device_names import async_track_device_names
 from .entity import current_device_identifiers, register_parent_devices
+from .export_view import ExportDownloadView
 from .identity import async_vault_keeper
 from .jhmesh.cdb import CDB
 from .jhmesh.client import MESH_PROXY_SERVICE
@@ -140,8 +141,9 @@ def sweep_incoming(
 
 
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
-    """Register the services once; they resolve the config entry per call. Sweep stale incoming exports."""
+    """Register the services and the export download once; they resolve the entry per call. Sweep stale incoming exports."""
     async_setup_services(hass)
+    hass.http.register_view(ExportDownloadView())
     removed = await hass.async_add_executor_job(
         sweep_incoming, Path(hass.config.path(STORAGE_DIR)), INCOMING_MAX_AGE
     )

@@ -1475,7 +1475,7 @@ events described under [Event](#event). The integration registers no conditions 
 
 **Who may run them.** Every `junghome_ble` action that rewires, deletes or writes the export or the devices — rooms,
 key connections, scenes (`store_scene` included: it writes every member's scene register and the export, and can
-add members), schedules, thresholds, `sync_gateway`, `export_network`, `start_iv_update` and adding or removing devices — is for
+add members), schedules, thresholds, `sync_gateway`, `export_network`, `download_export`, `start_iv_update` and adding or removing devices — is for
 administrators only: a call from a user who is no administrator, or with such a user's long-lived token, fails with
 *Unauthorized* (review-4 W4-9). Automations triggered by the system run with no user and are not affected; a
 script or dashboard button a non-administrator starts runs as that user and is refused. Open to every user:
@@ -1994,6 +1994,46 @@ data: { client: ioBroker }  # approves that one: {approved: "ioBroker", waiting:
   unreachable for the app and Home Assistant alike).
 
 Unverified on air.
+
+### Actions: export download
+
+The export Home Assistant keeps on the host carries what it changed — rooms, scenes, key connections, thresholds,
+names — which the JUNG HOME app never receives unless a gateway entry hands it over. **`junghome_ble.download_export`**
+(review-4 U4-17) answers a link that downloads that file, to import it into the app or keep it as a backup, without
+shell access to the host:
+
+```yaml
+action: junghome_ble.download_export
+data: {}   # optional: config_entry_id, or any device of the entry as device
+# answers {url: /api/junghome_ble/export/<entry id>?authSig=…, expires_in: 300}
+```
+
+- **How to use it.** *Developer tools → Actions*, pick *Download export*, switch on *Return response* (the action
+  only answers) and run it; put the answered `url` after your Home Assistant address in the same browser
+  (`https://homeassistant.local:8123/api/junghome_ble/export/…`) within five minutes. The browser saves the file as
+  `JungHome.json`, the name of the app's own share file; an entry set up from the iOS app's mesh database and its
+  metadata folder keeps the database, which is saved under its own name (`MeshNetwork.json`; `export_network` with
+  flavour `share` renders the share file from it).
+- **What it serves.** The file as it is on disk — not rendered, not merged — once the change running on the entry, if
+  any, has written it: the download waits for the configurator's lock, which a plan holds until the write that records
+  it. With the [provisioner identity](#home-assistant-as-a-provisioner-experimental) option on, the file holds Home
+  Assistant's provisioner entry as of its last write. An entry set up from the gateway serves the export it last
+  fetched or adopted, with its own changes carried over. An entry that is not loaded is served as it is on disk.
+- **Who.** The link is made with Home Assistant's own `async_sign_path` for the session of the administrator who asked
+  (the browser's connection, or the token of a REST API call) and expires after five minutes; the view behind it,
+  `GET /api/junghome_ble/export/<entry id>` (authenticated), answers an administrator only — 403 to any other user,
+  401 without a login or with an expired or forged signature, 404 for an id that is no entry of this integration or
+  an export gone from the host. A call without such a session — an automation started by the system — is refused,
+  as the link would open for nobody. The answer is `Cache-Control: no-store`. The log says that a link was made and
+  for whom, and who downloaded which entry's export; never the link, its signature or the file. Home Assistant's own
+  HTTP logs (an access log you enabled, the warning about a failed login) may show the path with an expired
+  signature.
+- **The file holds every key of the installation.** Delete it once it is imported or stored somewhere safe; see
+  [Is my export safe?](user/faq.md#is-my-export-safe).
+
+That the JUNG HOME app imports the downloaded file — with the rows Home Assistant wrote into it — is **unverified with
+the app**; the [on-air sweep](on-air-sweep.md) has the check (E7): import it on a spare phone, or after keeping a
+backup of the app's project.
 
 ### Actions: IV Update
 

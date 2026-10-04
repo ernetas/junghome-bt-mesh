@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Nincs elküldve: {node} a(z) {message} üzenetre ezt válaszolta: {found}, de a mesh-export szerint {expected} (további eltérések: {others}). A telepítés a mesh-export elkészülte után megváltozott (a JUNG HOME alkalmazásban, egy eszköz visszaállításával vagy egy korábbi, félúton leállt művelet miatt), és a terv felülírná azt, amit az export már nem ír le. Exportálja újra a projektet az alkalmazásból, vagy hagyja, hogy a Home Assistant átvegye az átjáró exportját, majd futtassa újra a műveletet; a `force` beállítással ellenőrzés nélkül fut. {applied}"
     },
+    "download_export_no_session": {
+      "message": "A letöltési hivatkozás az azt kérő rendszergazda számára készül: futtasd a műveletet a Home Assistant felületéről (Fejlesztői eszközök → Műveletek) vagy az API-ján keresztül egy rendszergazda tokenjével, ne automatizálásból."
+    },
     "applied_nothing": {
       "message": "Előtte semmi sem lett alkalmazva; a mesh-export változatlan."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Kliens",
           "description": "A név, amelyen a kliens hozzáférést kér, pontosan úgy, ahogyan a `waiting` alatt szerepel. Üresen hagyva semmit nem hagy jóvá."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Export letöltése",
+      "description": "Egy hivatkozással válaszol, amely letölti a Home Assistant által a JUNG HOME hálózathoz tárolt exportot (JungHome.json, a Home Assistant által módosított helyiségekkel, gombokkal, kapcsolatokkal és jelenetekkel), hogy a JUNG HOME alkalmazásba importálható vagy biztonsági mentésként megőrizhető legyen. A hivatkozás egy útvonal a Home Assistant címén, és öt percig érvényes, csak a kérő rendszergazda számára. A fájl a telepítés minden kulcsát tartalmazza: töröld, amint importáltad vagy biztonságos helyre tetted. Csak rendszergazdáknak. Az alkalmazásba importálás az alkalmazással még nincs ellenőrizve.",
+      "fields": {
+        "device": {
+          "name": "Eszköz",
+          "description": "A hálózat bármely eszköze, amelynek exportját le kell tölteni. Üresen: az egyetlen hálózat, vagy a mesh hálózatként kiválasztott."
         },
         "config_entry_id": {
           "name": "Mesh hálózat",

@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Ikke sendt: {node} svarte {found} på {message}, men mesh-eksporten sier {expected} ({others} flere forskjeller). Installasjonen er endret etter at mesh-eksporten ble laget (i JUNG HOME-appen, ved en tilbakestilling av en enhet eller av en tidligere handling som stoppet halvveis), og planen ville overskrevet det eksporten ikke lenger beskriver. Eksporter prosjektet fra appen på nytt, eller la Home Assistant overta gatewayens eksport, og kjør handlingen igjen; med `force` kjører den uten denne kontrollen. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Nedlastingslenken lages for administratoren som ber om den: kjør handlingen fra Home Assistants brukergrensesnitt (Utviklerverktøy → Handlinger) eller gjennom API-et med en administrators token, ikke fra en automatisering."
+    },
     "applied_nothing": {
       "message": "Ingenting ble brukt før det; mesh-eksporten er uendret."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Klient",
           "description": "Navnet klienten ber om tilgang som, nøyaktig slik det står under `waiting`. Står det tomt, godkjennes ingenting."
+        },
+        "config_entry_id": {
+          "name": "Mesh-nettverk",
+          "description": "Hvilket JUNG HOME-nettverk, når mer enn ett er konfigurert."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Last ned eksport",
+      "description": "Svarer med en lenke som laster ned eksporten Home Assistant har for JUNG HOME-nettverket (JungHome.json, med rommene, tastene, koblingene og scenene Home Assistant har endret), for å importere den i JUNG HOME-appen eller ta vare på den som sikkerhetskopi. Lenken er en sti på Home Assistants adresse og virker i fem minutter, bare for administratoren som ba om den. Filen inneholder alle nøklene til installasjonen: slett den når den er importert eller lagret trygt. Bare for administratorer. Importen i appen er ennå ikke prøvd med appen.",
+      "fields": {
+        "device": {
+          "name": "Enhet",
+          "description": "En hvilken som helst enhet i nettverket som eksporten skal lastes ned for. Tom: det eneste nettverket, eller det som er valgt som mesh-nettverk."
         },
         "config_entry_id": {
           "name": "Mesh-nettverk",

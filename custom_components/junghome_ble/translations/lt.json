@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Neišsiųsta: {node} į {message} atsakė {found}, bet tinklo eksporte nurodyta {expected} (kitų skirtumų: {others}). Po tinklo eksporto sukūrimo instaliacija pasikeitė („JUNG HOME“ programėlėje, atkūrus įrenginį arba dėl ankstesnio veiksmo, kuris sustojo pusiaukelėje), ir planas perrašytų tai, ko eksportas nebeaprašo. Iš naujo eksportuokite projektą programėlėje arba leiskite Home Assistant perimti sietuvo eksportą ir paleiskite veiksmą dar kartą; su `force` jis vykdomas be šio patikrinimo. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Atsisiuntimo nuoroda sukuriama ją prašančiam administratoriui: paleiskite veiksmą iš Home Assistant sąsajos (Kūrėjo įrankiai → Veiksmai) arba per jo API su administratoriaus prieigos raktu, ne iš automatizavimo."
+    },
     "applied_nothing": {
       "message": "Prieš tai niekas nebuvo pritaikyta; tinklo eksportas nepakito."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Klientas",
           "description": "Pavadinimas, kuriuo klientas prašo prieigos, tiksliai toks, koks nurodytas sąraše `waiting`. Palikus tuščią, nieko netvirtinama."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Atsisiųsti eksportą",
+      "description": "Atsako nuoroda, kuria atsisiunčiamas eksportas, kurį Home Assistant laiko „JUNG HOME“ tinklui (JungHome.json, su Home Assistant pakeistomis patalpomis, mygtukais, sąsajomis ir scenomis), kad jį būtų galima importuoti į „JUNG HOME“ programėlę arba laikyti kaip atsarginę kopiją. Nuoroda yra kelias Home Assistant adresu ir galioja penkias minutes, tik ją paprašiusiam administratoriui. Faile yra visi instaliacijos raktai: ištrinkite jį, kai tik jis bus importuotas arba saugiai padėtas. Tik administratoriams. Importas į programėlę su programėle dar nepatikrintas.",
+      "fields": {
+        "device": {
+          "name": "Įrenginys",
+          "description": "Bet kuris tinklo, kurio eksportą norima atsisiųsti, įrenginys. Tuščia: vienintelis tinklas arba pasirinktas kaip tinklas."
         },
         "config_entry_id": {
           "name": "Tinklas",

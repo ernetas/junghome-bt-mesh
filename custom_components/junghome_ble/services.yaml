@@ -923,6 +923,17 @@ start_iv_update:
         config_entry:
           integration: junghome_ble
 
+download_export:
+  fields:
+    device:
+      selector:
+        device:
+          integration: junghome_ble
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
 
 start_dim:
   target:

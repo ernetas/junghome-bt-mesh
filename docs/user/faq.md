@@ -76,7 +76,10 @@ devices. So:
 - Home Assistant stores its copy (and its backup copies) readable by itself only, in `junghome_ble/` of the
   configuration folder; keep that folder out of backups you share;
 - diagnostics downloads and logs never contain a key;
-- if you used a file on the host, delete it once you no longer need it.
+- if you used a file on the host, delete it once you no longer need it;
+- the export can be downloaded by an administrator only, through a link that works for five minutes and only for
+  the administrator who asked for it ([Downloading the export](maintenance.md#downloading-the-export)); delete the
+  downloaded file once it is imported into the app or stored safely.
 
 If an export did leak, renew the network key in the JUNG HOME app (a *key renewal*), then give Home Assistant the
 new export.

@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Não enviado: {node} respondeu a {message} com {found}, mas a exportação da mesh diz {expected} ({others} outras diferenças). A instalação mudou depois que a exportação da mesh foi feita (no aplicativo JUNG HOME, pela redefinição de um dispositivo ou por uma ação anterior que parou no meio), e o plano sobrescreveria o que a exportação não descreve mais. Exporte o projeto novamente pelo aplicativo, ou deixe o Home Assistant assumir a exportação do gateway, e execute a ação de novo; com `force` ela é executada sem esta verificação. {applied}"
     },
+    "download_export_no_session": {
+      "message": "O link de download é criado para o administrador que o solicita: execute a ação pela interface do Home Assistant (Ferramentas de desenvolvedor → Ações) ou pela API dele com o token de um administrador, não a partir de uma automação."
+    },
     "applied_nothing": {
       "message": "Nada foi aplicado antes; a exportação da mesh não mudou."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Cliente",
           "description": "O nome com o qual o cliente pede acesso, exatamente como listado em `waiting`. Vazio, nada é aprovado."
+        },
+        "config_entry_id": {
+          "name": "Rede mesh",
+          "description": "Qual rede JUNG HOME, quando houver mais de uma configurada."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Baixar exportação",
+      "description": "Responde com um link que baixa a exportação que o Home Assistant mantém da rede JUNG HOME (JungHome.json, com os cômodos, teclas, conexões e cenas que o Home Assistant alterou), para importá-la no app JUNG HOME ou guardá-la como backup. O link é um caminho no endereço do Home Assistant e funciona por cinco minutos, apenas para o administrador que o pediu. O arquivo contém todas as chaves da instalação: apague-o assim que for importado ou guardado em local seguro. Somente administradores. A importação no app ainda não foi verificada com o app.",
+      "fields": {
+        "device": {
+          "name": "Dispositivo",
+          "description": "Qualquer dispositivo da rede cuja exportação deve ser baixada. Vazio: a única rede, ou a escolhida como rede mesh."
         },
         "config_entry_id": {
           "name": "Rede mesh",

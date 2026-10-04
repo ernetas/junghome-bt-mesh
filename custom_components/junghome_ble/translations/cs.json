@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Neodesláno: {node} odpověděl na {message} hodnotou {found}, ale export mesh uvádí {expected} (dalších rozdílů: {others}). Instalace se po vytvoření exportu mesh změnila (v aplikaci JUNG HOME, resetem zařízení nebo dřívější akcí, která se zastavila v polovině) a plán by přepsal to, co export už nepopisuje. Exportujte projekt z aplikace znovu, nebo nechte Home Assistant převzít export z brány, a spusťte akci znovu; s `force` proběhne bez této kontroly. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Odkaz ke stažení se vytváří pro správce, který o něj žádá: spusťte akci z rozhraní Home Assistant (Vývojářské nástroje → Akce) nebo přes jeho API s tokenem správce, ne z automatizace."
+    },
     "applied_nothing": {
       "message": "Předtím nebylo nic provedeno; export mesh se nezměnil."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Klient",
           "description": "Název, pod kterým klient žádá o přístup, přesně jak je uveden pod `waiting`. Je-li prázdné, nic se neschválí."
+        },
+        "config_entry_id": {
+          "name": "Síť mesh",
+          "description": "Která síť JUNG HOME, pokud je jich nastaveno více."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Stáhnout export",
+      "description": "Vrátí odkaz, kterým se stáhne export, který Home Assistant uchovává pro síť JUNG HOME (JungHome.json, s místnostmi, tlačítky, vazbami a scénami, které Home Assistant změnil), aby se dal importovat do aplikace JUNG HOME nebo uschovat jako záloha. Odkaz je cesta na adrese Home Assistant a platí pět minut, jen pro správce, který o něj požádal. Soubor obsahuje všechny klíče instalace: smažte ho, jakmile je importován nebo bezpečně uložen. Jen pro správce. Import do aplikace zatím nebyl s aplikací ověřen.",
+      "fields": {
+        "device": {
+          "name": "Zařízení",
+          "description": "Libovolné zařízení sítě, jejíž export se má stáhnout. Prázdné: jediná síť, nebo ta zvolená jako síť mesh."
         },
         "config_entry_id": {
           "name": "Síť mesh",

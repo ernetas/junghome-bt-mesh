@@ -1619,6 +1619,9 @@
     "service_preflight_differs": {
       "message": "Non inviato: {node} ha risposto a {message} con {found}, ma l'esportazione mesh indica {expected} ({others} altre differenze). L'installazione è cambiata dopo l'esportazione mesh (nell'app JUNG HOME, con il ripristino di un dispositivo o per un'azione precedente interrotta a metà) e il piano sovrascriverebbe ciò che l'esportazione non descrive più. Esporta di nuovo il progetto dall'app, oppure lascia che Home Assistant rilevi l'esportazione del gateway, ed esegui di nuovo l'azione; con `force` viene eseguita senza questo controllo. {applied}"
     },
+    "download_export_no_session": {
+      "message": "Il link di download viene creato per l'amministratore che lo richiede: esegui l'azione dall'interfaccia di Home Assistant (Strumenti per sviluppatori → Azioni) o tramite la sua API con il token di un amministratore, non da un'automazione."
+    },
     "applied_nothing": {
       "message": "Prima non è stato applicato nulla; l'esportazione mesh è invariata."
     },
@@ -2856,6 +2859,20 @@
         "client": {
           "name": "Client",
           "description": "Il nome con cui il client chiede l'accesso, esattamente come elencato sotto `waiting`. Se lasciato vuoto, non viene approvato nulla."
+        },
+        "config_entry_id": {
+          "name": "Rete mesh",
+          "description": "Quale rete JUNG HOME, quando ne è configurata più di una."
+        }
+      }
+    },
+    "download_export": {
+      "name": "Scarica l'esportazione",
+      "description": "Risponde con un link che scarica l'esportazione che Home Assistant conserva per la rete JUNG HOME (JungHome.json, con le stanze, i tasti, i collegamenti e le scene modificati da Home Assistant), da importare nell'app JUNG HOME o da tenere come backup. Il link è un percorso sull'indirizzo di Home Assistant e funziona per cinque minuti, solo per l'amministratore che lo ha chiesto. Il file contiene tutte le chiavi dell'impianto: eliminalo una volta importato o messo al sicuro. Solo per amministratori. L'importazione nell'app non è ancora stata verificata con l'app.",
+      "fields": {
+        "device": {
+          "name": "Dispositivo",
+          "description": "Un qualsiasi dispositivo della rete di cui scaricare l'esportazione. Vuoto: l'unica rete, o quella scelta come rete mesh."
         },
         "config_entry_id": {
           "name": "Rete mesh",

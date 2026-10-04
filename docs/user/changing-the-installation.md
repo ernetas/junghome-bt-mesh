@@ -134,8 +134,10 @@ The JUNG HOME app never downloads the project by itself; it only knows what it d
   repair notice lists what Home Assistant had set there. The app itself keeps showing its own view until it loads the
   project again.
 - **Without a gateway:** the app does not see Home Assistant's changes, and its next change can overwrite them. Get
-  the current file with the action *Export network* (`junghome_ble.export_network`, flavour `share`) and import it
-  into the app, or make such changes in the app instead.
+  the current file with the action *Download export* (`junghome_ble.download_export`, see
+  [Downloading the export](maintenance.md#downloading-the-export)) or *Export network*
+  (`junghome_ble.export_network`, flavour `share`) and import it into the app, or make such changes in the app
+  instead.
 
 What Home Assistant wrote stays on the devices either way; only the app's view can lag behind.
 
