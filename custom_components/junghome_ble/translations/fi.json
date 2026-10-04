@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Onko tämä JUNG HOME -asennuksesi?",
-        "description": "Verkon {network_id} Bluetooth Mesh -välityssolmu on kantaman sisällä. Home Assistant tarjoaa jokaista näkemäänsä Bluetooth Mesh -verkkoa, myös muiden merkkien verkkoja — esimerkiksi naapurin valaisimia. Jatka vain, jos tämä on JUNG HOME -asennuksesi; sen jälkeen sinulta kysytään sovelluksen mesh-verkon vientiä."
+        "description": "Verkon {network_id} JUNG HOME Bluetooth Mesh -välityssolmu on kantaman sisällä. Home Assistant tarjoaa jokaista näkemäänsä JUNG HOME -asennusta, myös naapurin. Jatka vain, jos tämä on asennuksesi; sen jälkeen sinulta kysytään sovelluksen mesh-verkon vientiä."
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME -yhdyskäytävä löytyi",
@@ -198,6 +198,7 @@
       "already_configured": "Tämä mesh-verkko on jo määritetty.",
       "already_in_progress": "Tämän mesh-verkon määritys on jo käynnissä.",
       "not_supported": "Tämä Bluetooth-laite ei ole mesh-välityssolmu (Mesh Proxy).",
+      "not_jung": "Tämä Bluetooth Mesh -välityssolmu ei mainosta JUNGin valmistajatietoja: se ei ole JUNG HOME -laite.",
       "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
       "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin.",
       "reconfigure_successful": "Mesh-verkon vienti päivitettiin.",

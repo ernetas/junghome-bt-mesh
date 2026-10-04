@@ -40,8 +40,8 @@ Home Assistant may find the installation by itself, under *Settings → Devices 
 - a card *JUNG HOME Gateway …* when a JUNG HOME Gateway is on your network. Select **Add** and confirm: you go straight
   to the gateway form below, with the gateway's address filled in. (Setting up from this card has not been tried on
   a real installation yet: **unverified on air**.)
-- a card *Bluetooth Mesh …* when a Bluetooth Mesh network is in range. Home Assistant offers every one it sees, other
-  brands' too: confirm only if it is your JUNG HOME installation.
+- a card *Bluetooth Mesh …* when a JUNG HOME installation is in range. Home Assistant offers every one it sees, a
+  neighbour's too: confirm only if it is yours.
 
 Otherwise go to *Settings → Devices & services → Add integration* and search for **JUNG HOME Bluetooth Mesh**.
 Either way (but for the gateway card) you are asked where the network export comes from. Pick one of the three:

@@ -1,8 +1,8 @@
 """Config flow: point the integration at the JUNG HOME app's mesh export.
 
-Entry points: manual (user), Bluetooth discovery of any Mesh Proxy advertisement, zeroconf discovery of the JUNG HOME
-Gateway, reconfigure, and reauth. All but reauth and zeroconf lead to the same menu: fetch the export from the JUNG HOME
-Gateway, upload the app's export file, or name a file that is already on the Home Assistant host; zeroconf goes
+Entry points: manual (user), Bluetooth discovery of a JUNG node's Mesh Proxy advertisement, zeroconf discovery of the
+JUNG HOME Gateway, reconfigure, and reauth. All but reauth and zeroconf lead to the same menu: fetch the export from the
+JUNG HOME Gateway, upload the app's export file, or name a file that is already on the Home Assistant host; zeroconf goes
 straight to the gateway form with the address the gateway announced. Our unicast address sits in a collapsed
 *Advanced* section of every source form (review-4 U4-8): the default suits every installation with one Home
 Assistant. Fetched and uploaded exports are kept under `<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold
@@ -14,11 +14,15 @@ is currently advertising (its Network ID is derived from the NetKey in the file)
 another Network ID mean a stale export (`export_keys_stale`), not a mesh out of range. A fetched or uploaded file
 lives as `.incoming-<flow id>.json` until it passes; every failure path, and the flow's removal, deletes it.
 
-Discovery offers any Mesh Proxy (the manifest matches service 0x1828 alone) and never a configured mesh: not by the
-entry's unique id (the Network ID), nor by a Network ID or node MAC the entry's mesh is known by after a key refresh
-(`coordinator.KnownMesh`). The gateway's mDNS announcement (`_junghome._tcp`, TXT `serial`, `manufacturer=JUNG`) is
-offered once per gateway serial, and never for a gateway an entry already names by that address; the address is only
-prefilled, and the certificate is pinned exactly as for a typed one.
+Discovery offers a Mesh Proxy that also carries JUNG's manufacturer data (company id 0x0527: the manifest's matcher
+needs both, and the step aborts `not_jung` without it; review-4 H I-7) and never a configured mesh: an advertisement
+whose Network ID or Node Identity any configured entry's keys derive (the export's, and a followed key refresh's),
+or from a node MAC of its export, is that mesh (`coordinator.KnownMesh`). An entry's unique id is its mesh UUID
+(decision M10, H I-9), which no advertisement carries and no key refresh changes; a discovery flow holds the
+advertised Network ID as its unique id only until the export is given. The gateway's mDNS announcement
+(`_junghome._tcp`, TXT `serial`, `manufacturer=JUNG`) is offered once per gateway serial, and never for a gateway an
+entry already names by that address; the address is only prefilled, and the certificate is pinned exactly as for a
+typed one.
 
 The gateway is only ever spoken to over a connection pinned to its certificate (`tls.py`). The pin comes from the
 mesh when the hub is connected (the gateway node reports its own certificate fingerprint), else from the entry
@@ -129,6 +133,7 @@ from .const import (
 from .coordinator import (
     KNOWN_MESHES,
     KnownMesh,
+    abort_discovery_flows,
     async_apply_followed_key_refresh,
     async_known_mesh,
     async_release_network_id,
@@ -149,6 +154,7 @@ from .gateway_api import (
     JungHomeGatewayApi,
 )
 from .identity import async_vault_keeper
+from .jhmesh.advert import JUNG_COMPANY_ID
 from .jhmesh.cdb import CDB, UUID_PATTERN, InvalidExport
 from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
 from .jhmesh.devices import InvalidMetadata, Metadata, room_names
@@ -627,7 +633,7 @@ async def validate_input(
         errors[CONF_UNICAST] = "address_in_use"
     else:
         # a key refresh the hub followed to its end since the export was made, as the setup applies it: the
-        # proxies advertise its new key, and the entry's unique id is that key's Network ID
+        # proxies advertise its new key
         await async_apply_followed_key_refresh(hass, cdb, unicast)
     if not errors and not proxy_in_range(hass, cdb):
         errors["base"] = (
@@ -636,6 +642,47 @@ async def validate_input(
             else "no_proxy_visible"
         )
     return cdb, errors
+
+
+def mesh_unique_id(mesh_uuid: str) -> str:
+    """Return the unique id of an entry of the mesh `mesh_uuid`: the UUID in lower case with its dashes (M10, H I-9).
+
+    The export's own form but for the case (`meshUUID`, which the app writes in upper case); the entities' unique
+    ids use the same. A key refresh does not change it, unlike the Network ID the entries used before.
+    """
+    return mesh_uuid.lower()
+
+
+async def async_migrate_unique_id(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Make `entry`'s unique id its mesh UUID (`mesh_unique_id`, entry version 1.3); False to try again next start.
+
+    The mesh UUID is the one the entry recorded, else its export's: an export that cannot be read leaves the entry as
+    it is, and its setup reports the export. Another entry of the same mesh (which should not exist: they would
+    share the sequence numbers) leaves both their unique ids as they are, said once in the log. Never raises: an
+    entry is set up whatever this finds. Unverified on air (the migration of the installation's entry).
+    """
+    mesh_uuid = await configured_mesh_uuid(hass, entry)
+    if mesh_uuid is None:
+        _LOGGER.info(
+            "%s keeps its unique id until its export can be read: %s",
+            entry.title,
+            entry.data.get(CONF_CDB_PATH),
+        )
+        return False
+    unique_id = mesh_unique_id(mesh_uuid)
+    if entry.unique_id == unique_id:
+        return True
+    holder = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, unique_id)
+    if holder is not None or await _mesh_uuid_taken(
+        hass, mesh_uuid, exclude=entry.entry_id
+    ):
+        _LOGGER.warning(
+            "%s keeps its unique id: another entry belongs to the same mesh. Remove one of them",
+            entry.title,
+        )
+        return True
+    hass.config_entries.async_update_entry(entry, unique_id=unique_id)
+    return True
 
 
 async def configured_mesh_uuid(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
@@ -767,13 +814,13 @@ async def _mesh_uuid_taken(
 ) -> bool:
     """Return True when another entry already belongs to this mesh (by mesh UUID, which survives a key refresh).
 
-    The unique id above is the Network ID, which a key refresh changes: without this check, fetching or
-    uploading the same mesh's (refreshed) export through "Add integration" instead of the existing entry's
-    Reconfigure would create a second entry for it. Two entries sharing a mesh would then also share its
-    sequence-number store (`seq_store.seq_store`, keyed on the mesh UUID) — each holding its own stale
-    in-memory copy of the other addresses' records (`HAState._addresses`, loaded once) and overwriting them
-    with that stale copy on every save, which can roll a sibling entry's counter backwards on its next load.
-    One entry per mesh avoids the race outright; point the user at Reconfigure instead.
+    The unique id is the mesh UUID too (decision M10), but an entry whose export could not be read at its migration
+    still holds the Network ID it had before: without this check, fetching or uploading the same mesh's export
+    through "Add integration" instead of the existing entry's Reconfigure would create a second entry for it. Two
+    entries sharing a mesh would then also share its sequence-number store (`seq_store.seq_store`, keyed on the
+    mesh UUID) — each holding its own stale in-memory copy of the other addresses' records (`HAState._addresses`,
+    loaded once) and overwriting them with that stale copy on every save, which can roll a sibling entry's counter
+    backwards on its next load. One entry per mesh avoids the race outright; point the user at Reconfigure instead.
     """
     for entry in hass.config_entries.async_entries(DOMAIN):
         if (
@@ -913,11 +960,15 @@ async def async_replace_export(
         ):
             ir.async_delete_issue(hass, DOMAIN, issue)
         remember_device_rooms(hass, entry)
+        # an entry its migration could not reach (its export unreadable) takes the mesh UUID now; one whose mesh
+        # another entry holds keeps its own
+        unique_id = mesh_unique_id(cdb.mesh_uuid)
+        holder = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, unique_id)
         async_update_and_reload(
             hass,
             entry,
             {**entry.data, **data},
-            unique_id=network_id.hex(),
+            unique_id=unique_id if holder in (None, entry) else None,
             options=options,
         )
         return "reconfigure_successful"
@@ -930,9 +981,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Set up a mesh from its app export, started by the user or by Bluetooth discovery of a proxy."""
 
     VERSION = 1
-    MINOR_VERSION = (
-        2  # 1.2: every entry names its `CONF_SOURCE` (`__init__.async_migrate_entry`)
-    )
+    # 1.2: every entry names its `CONF_SOURCE`; 1.3: the unique id is the mesh UUID (`__init__.async_migrate_entry`)
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Start with no discovered network, no gateway and no file in flight."""
@@ -974,29 +1024,31 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> ConfigFlowResult:
-        """Handle an advertising Mesh Proxy: de-duplicate on its Network ID and ask for the export.
+        """Handle an advertising JUNG Mesh Proxy: nothing for a configured mesh, else ask for the export.
 
-        Review-4 H4-4: not only on the entries' unique ids. A configured mesh mid key refresh, or after one the
-        entry's unique id has not caught up with, advertises another Network ID; its nodes keep their MACs
-        (`coordinator.KnownMesh`). Such a discovery is the configured mesh: it aborts, and an entry waiting for a
-        proxy (`SETUP_RETRY`) is retried at once, as Home Assistant does for a unique-id match.
+        Review-4 H I-7: the manifest matches a Mesh Proxy with JUNG's manufacturer data (0x0527) only; an
+        advertisement without it that gets here anyway aborts `not_jung`. A configured mesh is recognised by its keys
+        and nodes (`coordinator.KnownMesh`: the Network ID or a Node Identity of any configured entry's keys, the
+        followed key refresh's included, or a node MAC of its export), never by the entry's unique id — the mesh
+        UUID, which no advertisement carries (H I-9). Such a discovery aborts, and an entry waiting for a proxy
+        (`SETUP_RETRY`) is retried at once, as Home Assistant does for a unique-id match. Another mesh's Network ID
+        is the flow's unique id until the export is given: one card per mesh, and an ignored one stays ignored.
+        Unverified on air (no card for the configured mesh).
         """
-        sd = discovery_info.service_data.get(MESH_PROXY_SERVICE, b"")
+        if JUNG_COMPANY_ID not in discovery_info.manufacturer_data:
+            return self.async_abort(reason="not_jung")
+        sd = bytes(discovery_info.service_data.get(MESH_PROXY_SERVICE, b""))
+        for entry in self._async_current_entries(include_ignore=False):
+            known = await async_known_mesh_of(self.hass, entry)
+            if known is not None and known.recognises(sd, discovery_info.address):
+                if entry.state is ConfigEntryState.SETUP_RETRY:
+                    self.hass.config_entries.async_schedule_reload(entry.entry_id)
+                return self.async_abort(reason="already_configured")
         if not sd or sd[0] != 0x00 or len(sd) < 9:
             return self.async_abort(reason="not_supported")
         self._discovered_network_id = bytes(sd[1:9])
         await self.async_set_unique_id(self._discovered_network_id.hex())
         self._abort_if_unique_id_configured()
-        address = discovery_info.address.upper()
-        for entry in self._async_current_entries(include_ignore=False):
-            known = await async_known_mesh_of(self.hass, entry)
-            if known is not None and (
-                self._discovered_network_id in known.network_ids
-                or address in known.macs
-            ):
-                if entry.state is ConfigEntryState.SETUP_RETRY:
-                    self.hass.config_entries.async_schedule_reload(entry.entry_id)
-                return self.async_abort(reason="already_configured")
         self.context["title_placeholders"] = {
             "name": f"Bluetooth Mesh {self._discovered_network_id.hex()}"
         }
@@ -1005,7 +1057,7 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Confirm the discovered network before asking for the export: any brand's mesh is offered here."""
+        """Confirm the discovered network before asking for the export: a neighbour's JUNG mesh is offered too."""
         if user_input is not None:
             return await self.async_step_user()
         assert self._discovered_network_id is not None
@@ -1023,8 +1075,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         The manifest matches the service type `_junghome._tcp.local.`; a TXT `manufacturer` other than JUNG, or no
         `serial`, is not the gateway. A gateway an entry already names by this address (or the announced host name)
         aborts. Nothing is sent to the address: it only prefills the gateway form, and the certificate is pinned
-        there as for a typed address (`_async_pin`). The entry's own unique id stays the Network ID, set when the
-        export is loaded (`_async_finish_checked`); this flow's `gateway-<serial>` only collapses the announcements.
+        there as for a typed address (`_async_pin`). The entry's own unique id is the mesh UUID, set when the export
+        is loaded (`_async_finish_checked`); this flow's `gateway-<serial>` only collapses the announcements.
         """
         properties = discovery_info.properties
         manufacturer = properties.get("manufacturer")
@@ -1077,8 +1129,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Replace the entry's export with a new one of the same mesh and/or change our address.
 
         The mesh is identified by its `meshUUID`, not by the Network ID: a NetKey refresh changes the Network
-        ID, and re-exporting is exactly how one recovers from a refresh. The entry's unique_id (the Network ID
-        that Bluetooth discovery sees) is updated from the export so discovery keeps de-duplicating.
+        ID, and re-exporting is exactly how one recovers from a refresh. The entry's unique id is the mesh UUID
+        (decision M10); discovery recognises the mesh by the new export's keys from its next setup on.
         """
         entry = self._get_reconfigure_entry()
         options = [SOURCE_GATEWAY, SOURCE_UPLOAD, SOURCE_PATH]
@@ -1770,17 +1822,23 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason=reason)
         if self._discovered_network_id and network_id != self._discovered_network_id:
             raise _FormError({"base": "network_mismatch"})
-        # not `raise_on_progress`: a proxy in range leaves a discovery flow of this very mesh pending, which must
-        # not abort a manual setup at its last step; creating the entry ends that flow (`async_finish_flow`)
-        await self.async_set_unique_id(network_id.hex(), raise_on_progress=False)
+        # the mesh UUID from here on (decision M10); not `raise_on_progress`: another flow of this mesh at the same
+        # step must not abort this one at its last step
+        await self.async_set_unique_id(
+            mesh_unique_id(cdb.mesh_uuid), raise_on_progress=False
+        )
         self._abort_if_unique_id_configured()
-        # the Network ID just cleared is derived from the NetKey and changes on a key refresh: re-check the mesh
-        # UUID, which does not, so a refreshed export of an already-configured mesh cannot found a second entry
+        # an entry whose migration has not reached it yet still holds a Network ID: its recorded mesh UUID counts
         if await _mesh_uuid_taken(self.hass, cdb.mesh_uuid):
             raise _FormError({"base": "mesh_already_configured"})
         if self._area_choice is None and room_names(cdb):
             return await self._async_ask_areas(data, cdb)
         await self._async_keep_incoming(data, cdb)
+        # a proxy in range leaves a discovery card of this very mesh, held by its Network ID: it goes with the entry
+        for key in cdb.rx_net_keys(0):
+            abort_discovery_flows(
+                self.hass, key.network_id.hex(), keep_flow=self.flow_id
+            )
         return self.async_create_entry(
             title=f"JUNG HOME mesh {cdb.mesh_uuid[:8]}",
             data=data,

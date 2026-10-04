@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "¿Es esta tu instalación JUNG HOME?",
-        "description": "Hay al alcance un proxy Bluetooth Mesh de la red {network_id}. Home Assistant ofrece todas las redes Bluetooth Mesh que ve, también las de otras marcas, por ejemplo las luces de un vecino. Continúa solo si es tu instalación JUNG HOME; a continuación se te pedirá la exportación mesh de la aplicación."
+        "description": "Hay al alcance un proxy Bluetooth Mesh de JUNG HOME de la red {network_id}. Home Assistant ofrece todas las instalaciones JUNG HOME que ve, también la de un vecino. Continúa solo si es tu instalación; a continuación se te pedirá la exportación mesh de la aplicación."
       },
       "zeroconf_confirm": {
         "title": "Pasarela JUNG HOME encontrada",
@@ -198,6 +198,7 @@
       "already_configured": "Esta red mesh ya está configurada.",
       "already_in_progress": "Ya hay una configuración de esta red mesh en curso.",
       "not_supported": "Este dispositivo Bluetooth no es un Mesh Proxy.",
+      "not_jung": "Este proxy Bluetooth Mesh no anuncia datos de fabricante de JUNG: no es un dispositivo JUNG HOME.",
       "network_mismatch": "La exportación pertenece a una red mesh distinta de la de esta entrada.",
       "mesh_already_configured": "Este mesh ya está configurado como otra entrada; dos entradas de un mismo mesh compartirían sus números de secuencia. Reconfigura esa entrada en su lugar o elimínala primero.",
       "reconfigure_successful": "Se actualizó la exportación mesh.",

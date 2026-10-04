@@ -981,13 +981,23 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
    `unzip junghome_ble.zip -d /config/custom_components/`).
 3. Restart Home Assistant.
 4. Add the integration:
-   - **Discovery.** As soon as a Bluetooth Mesh proxy is seen, a *Bluetooth Mesh &lt;network id&gt;* card appears
-     under **Settings → Devices & services → Discovered**. Select **Add** and confirm (*Is this your JUNG HOME
-     installation?* — any brand's mesh is offered); you are then asked for the export. A mesh that is already set up
-     is not offered again: neither by its Network ID, nor during or after a key refresh (by the new key's Network ID
-     once Home Assistant follows the refresh, and by the MACs of the export's nodes whatever they advertise). When
-     the refresh completes, a card of the new Network ID still pending, or one you ignored, is removed. The
-     key-refresh cases are unverified on air.
+   - **Discovery.** As soon as a JUNG Bluetooth Mesh proxy is seen, a *Bluetooth Mesh &lt;network id&gt;* card
+     appears under **Settings → Devices & services → Discovered**. Only JUNG nodes are offered: the manifest matches
+     the Mesh Proxy service together with JUNG's manufacturer data (company id 0x0527), which JUNG nodes advertise
+     next to it (28 of the 29 proxies of the installation it was built against carried it in Home Assistant's stored
+     advertisements; one is enough to find the mesh); another brand's proxy shows no card. Select **Add** and confirm
+     (*Is this your JUNG HOME installation?* — a neighbour's JUNG mesh is offered too); you are then asked for the
+     export. A mesh that is already set up is not offered again: a proxy advertising the Network ID or a Node
+     Identity of any configured entry's keys is that mesh — during or after a key refresh by the new key too, once
+     Home Assistant follows the refresh — and so is any node of the export, by its MAC, whatever it advertises. When
+     the refresh completes, a card of the new Network ID still pending, or one you ignored, is removed. That no card
+     appears for the configured mesh is unverified on air, and so are the key-refresh cases.
+
+     The entry's unique id is the mesh UUID (lower case, with its dashes, as the export's `meshUUID`), which a key
+     refresh does not change; entries up to 1.1.0 used the Network ID and take the mesh UUID at the first start
+     (entry version 1.3). An entry whose export cannot be read then keeps its old id and tries again at the next
+     start; two entries of one mesh both keep theirs, and the log says so once. The migration of a real entry is
+     unverified on air.
    - **Gateway discovery (zeroconf).** The JUNG HOME Gateway announces itself over mDNS (service
      `_junghome._tcp.local.`, TXT records `serial`, `mac`, `version`, `manufacturer=JUNG`); a *JUNG HOME Gateway
      &lt;address&gt;* card appears. Confirming it opens the gateway form with the announced IPv4 address filled in;
@@ -996,7 +1006,7 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
      however often it announces itself; none for an announcement whose `manufacturer` is not JUNG or that carries no
      serial, and none for a gateway an entry already names by the announced address or host name. An entry that
      names it `junghome.local` is not recognised: its card is offered, and finishing it ends with *already
-     configured* (the Network ID of the fetched export). Setting up from the card is unverified on air.
+     configured* (the mesh UUID of the fetched export). Setting up from the card is unverified on air.
    - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME Bluetooth Mesh*,
      choose where the export comes from (gateway, upload, or a path on the host) and fill in the
      [configuration parameters](#configuration-parameters). The discovery card leads to the same choice.
@@ -2060,8 +2070,9 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   are stored with the sequence numbers — written at once, and for the mesh rather than for Home Assistant's address,
   so neither a crash right after a step nor a new unicast address loses them — so a restart during the refresh
   resumes it, and after it completes every setup uses the new key in place of the export's old one (a gateway export
-  fetched later has it anyway); the entry's unique id follows the new Network ID. A stored Phase 2 or 3 without its proof (written before proofs were kept)
-  is taken up as an accepted key only, until the proxy's next beacon proves it.
+  fetched later has it anyway); the entry's unique id, the mesh UUID, stays as it is. A stored Phase 2 or 3 without
+  its proof (written before proofs were kept) is taken up as an accepted key only, until the proxy's next beacon
+  proves it.
 
   **Devices Home Assistant added** (`add_device`) are not in the app's database, so the app never hands them the new
   key: at Phase 3 they would be cut off until factory-reset. Home Assistant hands it to them itself (*unverified on

@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "사용 중인 JUNG HOME 설치 환경이 맞습니까?",
-        "description": "네트워크 {network_id}의 Bluetooth Mesh 프록시가 범위 내에 있습니다. Home Assistant는 감지한 모든 Bluetooth Mesh 네트워크를 제안하며, 여기에는 다른 브랜드의 네트워크(예: 이웃집 조명)도 포함됩니다. 이것이 사용자의 JUNG HOME 설치 환경인 경우에만 계속하세요. 계속하면 앱의 메시 내보내기 파일을 요청합니다."
+        "description": "네트워크 {network_id}의 JUNG HOME Bluetooth Mesh 프록시가 범위 내에 있습니다. Home Assistant는 감지한 모든 JUNG HOME 설치 환경을 제안하며, 여기에는 이웃집의 것도 포함됩니다. 이것이 사용자의 설치 환경인 경우에만 계속하세요. 계속하면 앱의 메시 내보내기 파일을 요청합니다."
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME 게이트웨이를 발견했습니다",
@@ -198,6 +198,7 @@
       "already_configured": "이 메시 네트워크는 이미 구성되어 있습니다.",
       "already_in_progress": "이 메시 네트워크의 설정이 이미 진행 중입니다.",
       "not_supported": "이 Bluetooth 기기는 메시 프록시가 아닙니다.",
+      "not_jung": "이 Bluetooth Mesh 프록시는 JUNG 제조사 데이터를 광고하지 않습니다. JUNG HOME 기기가 아닙니다.",
       "network_mismatch": "내보내기 파일이 이 항목과 다른 메시 네트워크에 속합니다.",
       "mesh_already_configured": "이 메시는 이미 다른 항목으로 설정되어 있습니다. 한 메시에 항목이 두 개 있으면 시퀀스 번호를 공유하게 됩니다. 대신 해당 항목을 재구성하거나 먼저 제거하세요.",
       "reconfigure_successful": "메시 내보내기 파일이 업데이트되었습니다.",

@@ -115,6 +115,7 @@ pass removed the markers of the checks that passed.
 | [A8](#a8--keys-held-and-friend-in-the-audit-f4-15) | Audit: keys held and Friend (`msg:op:8001`, `8042`, `800f`) | any mains node | nothing | — |
 | [A9](#a9--firmware-entities-f4-18-u4-11) | *Firmware* `update` entities | any node | nothing | — |
 | [A10](#a10--gateway-discovery-u4-8) | The gateway's mDNS card, the gateway form prefilled | gateway | nothing | — |
+| [A11](#a11--jung-only-discovery-and-the-mesh-uuid-as-unique-id-m10) | The entry's unique id migrated to the mesh UUID; no discovery card for the configured mesh | any | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -367,6 +368,27 @@ says connected and the state refresh is through (a few minutes), then do the lin
   not needed.
 - **Markers:** `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_zeroconf_confirm`,
   `custom_components/junghome_ble/strings.json::config.step.zeroconf_confirm.description`.
+
+### A11 · JUNG-only discovery and the mesh UUID as unique id (M10)
+
+- **Checks:** review-4 H I-7, H I-9 (brief 69, decision M10) — the first start after the upgrade migrates the entry
+  (version 1.3): its unique id, the Network ID until 1.1.0, becomes the mesh UUID in lower case; Bluetooth discovery
+  matches only proxies with JUNG manufacturer data (0x0527) and shows no card for the configured mesh, which it
+  recognises by its keys and nodes, not by the unique id.
+- **Needs:** the configured entry, the JUNG proxies in range. **Safety:** read-only (`core.config_entries` is only
+  read, never edited; nothing is sent to the mesh).
+- **Do:**
+  1. Before the upgrade, note the entry's `unique_id`, `version` and `minor_version` in
+     `<config>/.storage/core.config_entries` (read only).
+  2. Upgrade, restart Home Assistant, wait until the entry is loaded and a few minutes for the proxies' adverts.
+  3. Read `core.config_entries` again; open *Settings → Devices & services → Discovered*.
+- **Capture:** none (Home Assistant's own adverts are enough); the log of `custom_components.junghome_ble` at INFO.
+- **Pass:** the `unique_id` is the export's `meshUUID` in lower case with its dashes, `minor_version` is 3, and the
+  log has no *keeps its unique id* line; no *Bluetooth Mesh* card is under *Discovered* (a card for another JUNG
+  mesh, a neighbour's, would be right); the entry loaded as before.
+- **Markers:** `custom_components/junghome_ble/__init__.py::async_migrate_entry`,
+  `custom_components/junghome_ble/config_flow.py::async_migrate_unique_id`,
+  `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_bluetooth`.
 
 ## B · Momentary control
 

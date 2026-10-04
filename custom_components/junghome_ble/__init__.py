@@ -21,6 +21,7 @@ from .config_flow import (
     LOAD_ERRORS,
     SOURCE_GATEWAY,
     SOURCE_UPLOAD,
+    async_migrate_unique_id,
     certificate_issue_id,
     forget_stored_export,
     infer_source,
@@ -150,12 +151,16 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Bring an entry up to the flow's version: 1.2 names every entry's `CONF_SOURCE` (HAC-07).
+    """Bring an entry up to the flow's version: 1.2 names its `CONF_SOURCE` (HAC-07), 1.3 its unique id the mesh UUID.
 
     Entries from before `CONF_SOURCE` had none, and the places that branch on it disagreed about them: an old
     gateway entry never refreshed its export for an unknown node, and removing an old gateway or upload entry left
     the export we had stored (every mesh key) on disk. `needs_rebuild` compares against what the hub was built
     from, and this runs before setup, so it causes no reload.
+
+    Up to 1.2 the unique id was the Network ID, which a key refresh changes (decision M10, H I-9). An entry whose
+    mesh UUID cannot be read yet (its export unreadable) stays at 1.2 and is set up as it is; the next start tries
+    again (`config_flow.async_migrate_unique_id`). Nothing here fails the setup. Unverified on air.
     """
     if entry.version != 1:
         return False  # a newer major version (a downgrade): not ours to read
@@ -163,6 +168,8 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = dict(entry.data)
         data.setdefault(CONF_SOURCE, infer_source(hass, data))
         hass.config_entries.async_update_entry(entry, data=data, minor_version=2)
+    if entry.minor_version < 3 and await async_migrate_unique_id(hass, entry):
+        hass.config_entries.async_update_entry(entry, minor_version=3)
     return True
 
 

@@ -37,7 +37,7 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
-from custom_components.junghome_ble.jhmesh.advert import mac_from_uuid
+from custom_components.junghome_ble.jhmesh.advert import JUNG_COMPANY_ID, mac_from_uuid
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import (
     MESH_PROXY_DATA_IN,
@@ -258,6 +258,18 @@ def make_service_info(
     return BluetoothServiceInfoBleak.from_device_and_advertisement_data(
         dev, adv, "local", 0.0, True
     )
+
+
+# the manufacturer data a JUNG proxy advertises next to its Mesh Proxy service (company id 0x0527, an
+# `LBCAdvertisementData` type-1 record): the manifest's Bluetooth matcher needs both (review-4 H I-7)
+JUNG_ADVERT = {JUNG_COMPANY_ID: bytes.fromhex("0101000000")}
+
+
+def make_discovery_info(
+    network_id: bytes, address: str = PROXY_ADDRESS
+) -> BluetoothServiceInfoBleak:
+    """A JUNG proxy as Bluetooth discovery hands it to the flow: Mesh Proxy service data and JUNG manufacturer data."""
+    return make_service_info(network_id, address, manufacturer_data=JUNG_ADVERT)
 
 
 def make_node_identity_info(
@@ -1272,10 +1284,11 @@ def no_connect_beacon(
 
 @pytest.fixture
 def mock_config_entry() -> MockConfigEntry:
+    """An entry of the fixture mesh: its unique id the mesh UUID, as the flow sets it (decision M10)."""
     return MockConfigEntry(
         domain=DOMAIN,
         title="JUNG HOME mesh test",
-        unique_id="1fbd2c61a4b6e5a4",
+        unique_id="1baf3ade-0000-4000-8000-000000000001",
         data={
             CONF_CDB_PATH: CDB_PATH,
             CONF_METADATA_DIR: META_DIR,

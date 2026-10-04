@@ -9,6 +9,18 @@
   `jhmesh`. Existing `logger:` settings for `jhmesh` keep working — `jhmesh.trace` is its child and follows it — and
   `jhmesh.trace` can now be set on its own (see *Added*). A filter that matches the logger name exactly (a log
   viewer's, say) needs `jhmesh.trace` added. The diagnostics gain a `link_stats` section.
+- **The entry's unique id becomes the mesh UUID by itself at the first start** (decision M10, review-4 H I-9): it
+  was the Network ID, which a key refresh in the app changes (Home Assistant moved it along). The mesh UUID, in lower
+  case as the export's `meshUUID`, never changes; nothing else about the entry changes, and nothing is asked of you
+  (entry version 1.3). An entry whose export cannot be read at that start keeps its old id and tries again at the
+  next one; two entries of one mesh (which should not exist) both keep theirs, and the log says so once. The
+  migration of a real entry is unverified on air.
+- **The Bluetooth discovery card appears for JUNG mesh proxies only** (review-4 H I-7): the integration now matches a
+  Mesh Proxy only together with JUNG's manufacturer data (company id 0x0527), which JUNG nodes advertise next to it;
+  another brand's Bluetooth Mesh network no longer shows a card (and one that gets to the flow anyway ends with
+  *not a JUNG device*). A configured mesh is recognised by its keys — the Network ID or a Node Identity of any
+  configured entry's keys, a followed key refresh's included — and by its nodes' MACs, no longer by the entry's
+  unique id. That no card appears for the configured mesh is unverified on air.
 
 ### Added
 

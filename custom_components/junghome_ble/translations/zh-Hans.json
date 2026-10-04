@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "这是您的 JUNG HOME 系统吗？",
-        "description": "网络 {network_id} 的一个 Bluetooth Mesh 代理在范围内。Home Assistant 会提供它看到的每个 Bluetooth Mesh 网络，包括其他品牌的网络——例如邻居家的灯。仅当这是您的 JUNG HOME 系统时才继续；随后会要求您提供应用的 Mesh 导出文件。"
+        "description": "网络 {network_id} 的一个 JUNG HOME Bluetooth Mesh 代理在范围内。Home Assistant 会提供它看到的每个 JUNG HOME 系统，包括邻居家的系统。仅当这是您的系统时才继续；随后会要求您提供应用的 Mesh 导出文件。"
       },
       "zeroconf_confirm": {
         "title": "已发现 JUNG HOME 网关",
@@ -198,6 +198,7 @@
       "already_configured": "此 Mesh 网络已配置。",
       "already_in_progress": "此 Mesh 网络的设置已在进行中。",
       "not_supported": "此蓝牙设备不是 Mesh 代理。",
+      "not_jung": "此 Bluetooth Mesh 代理未广播 JUNG 制造商数据：它不是 JUNG HOME 设备。",
       "network_mismatch": "该导出文件属于另一个 Mesh 网络，而非此条目的网络。",
       "mesh_already_configured": "此 Mesh 已设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。",
       "reconfigure_successful": "Mesh 导出文件已更新。",

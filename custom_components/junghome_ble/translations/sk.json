@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Je toto vaša inštalácia JUNG HOME?",
-        "description": "V dosahu je proxy Bluetooth Mesh siete {network_id}. Home Assistant ponúka každú sieť Bluetooth Mesh, ktorú vidí, aj siete iných značiek — napríklad svetlá suseda. Pokračujte, len ak ide o vašu inštaláciu JUNG HOME; potom budete požiadaní o export mesh z aplikácie."
+        "description": "V dosahu je proxy Bluetooth Mesh JUNG HOME siete {network_id}. Home Assistant ponúka každú inštaláciu JUNG HOME, ktorú vidí, aj inštaláciu suseda. Pokračujte, len ak ide o vašu inštaláciu; potom budete požiadaní o export mesh z aplikácie."
       },
       "zeroconf_confirm": {
         "title": "Nájdená brána JUNG HOME",
@@ -198,6 +198,7 @@
       "already_configured": "Táto sieť mesh je už nakonfigurovaná.",
       "already_in_progress": "Nastavenie tejto siete mesh už prebieha.",
       "not_supported": "Toto zariadenie Bluetooth nie je Mesh Proxy.",
+      "not_jung": "Tento proxy Bluetooth Mesh nevysiela údaje výrobcu JUNG: nejde o zariadenie JUNG HOME.",
       "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
       "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte.",
       "reconfigure_successful": "Export mesh bol aktualizovaný.",

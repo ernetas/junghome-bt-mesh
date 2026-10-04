@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Ar tai jūsų „JUNG HOME“ sistema?",
-        "description": "Pasiekiamas tinklo {network_id} Bluetooth Mesh tarpinis mazgas. Home Assistant siūlo kiekvieną matomą Bluetooth Mesh tinklą, taip pat ir kitų gamintojų, pavyzdžiui, kaimyno šviestuvus. Tęskite tik tada, jei tai jūsų „JUNG HOME“ sistema; tada būsite paprašyti programėlės tinklo eksporto."
+        "description": "Pasiekiamas tinklo {network_id} „JUNG HOME“ Bluetooth Mesh tarpinis mazgas. Home Assistant siūlo kiekvieną matomą „JUNG HOME“ sistemą, taip pat ir kaimyno. Tęskite tik tada, jei tai jūsų sistema; tada būsite paprašyti programėlės tinklo eksporto."
       },
       "zeroconf_confirm": {
         "title": "Rastas „JUNG HOME“ sietuvas",
@@ -198,6 +198,7 @@
       "already_configured": "Šis tinklas jau sukonfigūruotas.",
       "already_in_progress": "Šio tinklo nustatymas jau vyksta.",
       "not_supported": "Šis Bluetooth įrenginys nėra Bluetooth Mesh tarpinis mazgas.",
+      "not_jung": "Šis Bluetooth Mesh tarpinis mazgas neskelbia JUNG gamintojo duomenų: tai ne „JUNG HOME“ įrenginys.",
       "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
       "mesh_already_configured": "Šis tinklas jau nustatytas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite.",
       "reconfigure_successful": "Tinklo eksportas atnaujintas.",

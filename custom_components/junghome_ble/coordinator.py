@@ -111,6 +111,7 @@ from .jhmesh.client import (
     Heartbeat,
     ProxyClient,
     SequenceStalled,
+    classify_proxy_advert,
 )
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
@@ -306,18 +307,38 @@ def entry_lock(hass: HomeAssistant, entry_id: str) -> asyncio.Lock:
 
 @dataclass
 class KnownMesh:
-    """What Bluetooth discovery recognises an entry's mesh by (review-4 H4-4), beyond the entry's unique id.
+    """What Bluetooth discovery recognises an entry's mesh by (review-4 H4-4, H I-7): its keys and its nodes.
 
-    `network_ids`: the export's keys (both of an export written mid key refresh) and the key of a refresh the hub
-    follows, whatever its phase — mid refresh, and after one completed while the hub was not looking at the unique
-    id, the proxies advertise a Network ID the unique id does not hold. `macs`: the export's nodes, which advertise
-    from their public MAC (`jhmesh.advert.mac_from_uuid`) whatever key they hold — a node of this mesh after a key
-    refresh the export lacks is still this mesh, and a new entry for it could only end at `mesh_already_configured`.
-    Unverified on air (no key refresh on this installation); the MAC is the node UUID on every node here.
+    Not the entry's unique id: that is the mesh UUID (decision M10), which no advertisement carries. `keys`: the
+    export's NetKeys (both of an export written mid key refresh) and the key of a refresh the hub follows, whatever
+    its phase — a proxy advertising the Network ID or a Node Identity of any of them is this mesh
+    (`jhmesh.client.classify_proxy_advert` over `unicasts`, the export's nodes). `macs`: the export's nodes, which
+    advertise from their public MAC (`jhmesh.advert.mac_from_uuid`) whatever key they hold — a node of this mesh
+    after a key refresh the export lacks is still this mesh, and a new entry for it could only end at
+    `mesh_already_configured`. Unverified on air (no key refresh on this installation); the MAC is the node UUID on
+    every node here.
     """
 
-    network_ids: set[bytes]
+    keys: list[NetKeyMaterial]
+    unicasts: tuple[int, ...]
     macs: frozenset[str]
+
+    @property
+    def network_ids(self) -> set[bytes]:
+        """Return the Network IDs of `keys`."""
+        return {key.network_id for key in self.keys}
+
+    def add_key(self, key: NetKeyMaterial) -> None:
+        """Recognise the mesh under `key` too (a key refresh the hub follows)."""
+        if key.network_id not in self.network_ids:
+            self.keys.append(key)
+
+    def recognises(self, service_data: bytes, address: str) -> bool:
+        """Whether a proxy advertising `service_data` (0x1828) from `address` is a node of this mesh."""
+        return (
+            address.upper() in self.macs
+            or classify_proxy_advert(service_data, self.keys, self.unicasts) is not None
+        )
 
 
 # `KnownMesh` by entry id: every setup records it (`__init__.async_setup_entry`, before the not-ready check), the hub
@@ -339,13 +360,15 @@ async def async_known_mesh(hass: HomeAssistant, cdb: CDB, unicast: int) -> Known
     The followed refresh is the one a hub at address `unicast` reads (`_stored_key_refresh`), proven or not: an
     unproven key only stops discovery offering that Network ID, it is never used to transmit.
     """
-    ids = {nk.network_id for nk in cdb.rx_net_keys(NET_KEY_INDEX)}
+    known = KnownMesh(
+        list(cdb.rx_net_keys(NET_KEY_INDEX)),
+        tuple(n.unicast for n in cdb.nodes),
+        node_macs(cdb),
+    )
     data = await seq_store(hass, cdb).async_load()
     if (stored := _stored_key_refresh(data, f"{unicast:04X}")) is not None:
-        ids.add(
-            NetKeyMaterial.derive(KeyRefreshRecord.from_stored(stored).key).network_id
-        )
-    return KnownMesh(ids, node_macs(cdb))
+        known.add_key(NetKeyMaterial.derive(KeyRefreshRecord.from_stored(stored).key))
+    return known
 
 
 def remember_known_mesh(hass: HomeAssistant, entry_id: str, known: KnownMesh) -> None:
@@ -358,6 +381,18 @@ def forget_known_mesh(hass: HomeAssistant, entry_id: str) -> None:
     hass.data.get(KNOWN_MESHES, {}).pop(entry_id, None)
 
 
+@callback
+def abort_discovery_flows(
+    hass: HomeAssistant, network_id: str, *, keep_flow: str | None = None
+) -> None:
+    """Abort our flows holding the unique id `network_id` (a discovery's, until its export is given) but `keep_flow`."""
+    for flow in hass.config_entries.flow.async_progress_by_handler(
+        DOMAIN, include_uninitialized=True, match_context={"unique_id": network_id}
+    ):
+        if flow["flow_id"] != keep_flow:
+            hass.config_entries.flow.async_abort(flow["flow_id"])
+
+
 async def async_release_network_id(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -365,18 +400,15 @@ async def async_release_network_id(
     *,
     keep_flow: str | None = None,
 ) -> None:
-    """Free `network_id` for `entry`'s unique id: no discovery flow of it left, no ignored entry holding it (H4-4).
+    """Drop what discovery left for `network_id`, `entry`'s own mesh: its flows, an ignored entry holding it (H4-4).
 
-    After a key refresh the proxies advertise the new Network ID before the entry's unique id holds it: a discovery
-    flow it started is the entry's own mesh, and an entry the user made by *Ignore* on that flow would make the
-    unique-id update collide (Home Assistant logs an error and raises a core repair). `keep_flow` is the flow
-    asking (a reconfigure), which must not abort itself. Unverified on air.
+    After a key refresh the proxies advertise the new Network ID: a discovery flow it started before Home Assistant
+    knew the key as this mesh's (its unique id is the Network ID until an export is given) is the entry's own mesh,
+    and so is an entry the user made by *Ignore* on such a flow. The entry's own unique id is the mesh UUID and
+    never moves (decision M10). `keep_flow` is the flow asking (a reconfigure), which must not abort itself.
+    Unverified on air.
     """
-    for flow in hass.config_entries.flow.async_progress_by_handler(
-        DOMAIN, include_uninitialized=True, match_context={"unique_id": network_id}
-    ):
-        if flow["flow_id"] != keep_flow:
-            hass.config_entries.flow.async_abort(flow["flow_id"])
+    abort_discovery_flows(hass, network_id, keep_flow=keep_flow)
     holder = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, network_id)
     if holder is not None and holder.source == SOURCE_IGNORE:
         _LOGGER.info(
@@ -1945,14 +1977,14 @@ class JungHomeHub:
     def _on_key_refresh(self, phase: int, key: NetKeyMaterial) -> None:
         """Clear the key-refresh issue: the provisioner's refresh moved on and the client followed it (review-3 N2b).
 
-        Once it completes (phase 0, reported only on proof that the mesh moved: review-4 D4) the Network ID is the
-        new key's: the entry's unique id follows, so discovery keeps recognising this mesh. The export keeps the old key until it is fetched again; every setup puts the
-        followed one in its place (`async_apply_followed_key_refresh`). Every move — a proven Phase 1 included —
-        takes the devices Home Assistant added along as far as it is proven (`vault_refresh.py`, review-4 D11).
+        The export keeps the old key until it is fetched again; every setup puts the followed one in its place
+        (`async_apply_followed_key_refresh`). Every move — a proven Phase 1 included — takes the devices Home
+        Assistant added along as far as it is proven (`vault_refresh.py`, review-4 D11). The entry's unique id is
+        the mesh UUID, which a key refresh does not change (decision M10, H I-9): nothing moves it.
 
-        Review-4 H4-4: from the first move on, discovery recognises the new key's Network ID as this mesh
-        (`KNOWN_MESHES`); at completion a discovery flow it started before is aborted and an ignored entry holding
-        it removed before the unique id moves (`async_release_network_id`).
+        Review-4 H4-4: from the first move on, discovery recognises the new key as this mesh (`KNOWN_MESHES`); once
+        the refresh completes (phase 0, reported only on proof that the mesh moved: review-4 D4) a discovery flow it
+        started before is aborted and an ignored entry holding its Network ID removed (`async_release_network_id`).
         """
         ir.async_delete_issue(
             self.hass, DOMAIN, issue_id(self.entry, ISSUE_KEY_REFRESH)
@@ -1961,19 +1993,11 @@ class JungHomeHub:
         if (
             known := self.hass.data.get(KNOWN_MESHES, {}).get(self.entry.entry_id)
         ) is not None:
-            known.network_ids.add(key.network_id)
-        if phase == 0 and self.entry.unique_id != (network_id := key.network_id.hex()):
-            # eager: without an ignored entry to remove, the unique id has moved when this returns
+            known.add_key(key)
+        if phase == 0:
             self.hass.async_create_task(
-                self._async_follow_network_id(network_id), eager_start=True
-            )
-
-    async def _async_follow_network_id(self, network_id: str) -> None:
-        """Move the entry's unique id to the completed refresh's Network ID, once nothing else holds it."""
-        await async_release_network_id(self.hass, self.entry, network_id)
-        if self.hass.config_entries.async_get_entry(self.entry.entry_id) is self.entry:
-            self.hass.config_entries.async_update_entry(
-                self.entry, unique_id=network_id
+                async_release_network_id(self.hass, self.entry, key.network_id.hex()),
+                eager_start=True,
             )
 
     # ------------------------------------------------------------------ commands

@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Це ваша інсталяція JUNG HOME?",
-        "description": "У зоні досяжності є проксі Bluetooth Mesh мережі {network_id}. Home Assistant пропонує кожну мережу Bluetooth Mesh, яку бачить, зокрема мережі інших брендів — наприклад, освітлення сусіда. Продовжуйте, лише якщо це ваша інсталяція JUNG HOME; після цього вас попросять надати mesh-експорт застосунку."
+        "description": "У зоні досяжності є проксі Bluetooth Mesh JUNG HOME мережі {network_id}. Home Assistant пропонує кожну інсталяцію JUNG HOME, яку бачить, зокрема інсталяцію сусіда. Продовжуйте, лише якщо це ваша інсталяція; після цього вас попросять надати mesh-експорт застосунку."
       },
       "zeroconf_confirm": {
         "title": "Знайдено шлюз JUNG HOME",
@@ -198,6 +198,7 @@
       "already_configured": "Цю mesh-мережу вже налаштовано.",
       "already_in_progress": "Налаштування цієї mesh-мережі вже триває.",
       "not_supported": "Цей пристрій Bluetooth не є проксі Bluetooth Mesh.",
+      "not_jung": "Цей проксі Bluetooth Mesh не транслює дані виробника JUNG: це не пристрій JUNG HOME.",
       "network_mismatch": "Експорт належить до іншої mesh-мережі, ніж цей запис.",
       "mesh_already_configured": "Цю mesh-мережу вже налаштовано як інший запис; два записи однієї mesh-мережі спільно використовували б її порядкові номери. Натомість переналаштуйте той запис або спершу видаліть його.",
       "reconfigure_successful": "Mesh-експорт оновлено.",

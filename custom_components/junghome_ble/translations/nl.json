@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Is dit je JUNG HOME-installatie?",
-        "description": "Een Bluetooth Mesh-proxy van netwerk {network_id} is binnen bereik. Home Assistant biedt elk Bluetooth Mesh-netwerk aan dat het ziet, ook die van andere merken — bijvoorbeeld de lampen van een buur. Ga alleen verder als dit je JUNG HOME-installatie is; daarna wordt je om de mesh-export van de app gevraagd."
+        "description": "Een JUNG HOME Bluetooth Mesh-proxy van netwerk {network_id} is binnen bereik. Home Assistant biedt elke JUNG HOME-installatie aan die het ziet, ook die van een buur. Ga alleen verder als dit je installatie is; daarna wordt je om de mesh-export van de app gevraagd."
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME Gateway gevonden",
@@ -198,6 +198,7 @@
       "already_configured": "Dit mesh-netwerk is al geconfigureerd.",
       "already_in_progress": "Het instellen van dit mesh-netwerk is al bezig.",
       "not_supported": "Dit Bluetooth-apparaat is geen Mesh-proxy.",
+      "not_jung": "Deze Bluetooth Mesh-proxy adverteert geen JUNG-fabrikantgegevens: het is geen JUNG HOME-apparaat.",
       "network_mismatch": "De export hoort bij een ander mesh-netwerk dan dit item.",
       "mesh_already_configured": "Deze mesh is al ingesteld als een ander item; twee items van één mesh zouden de volgnummers delen. Herconfigureer in plaats daarvan dat item, of verwijder het eerst.",
       "reconfigure_successful": "De mesh-export is bijgewerkt.",

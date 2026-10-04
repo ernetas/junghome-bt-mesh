@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "これはお使いの JUNG HOME の設備ですか？",
-        "description": "ネットワーク {network_id} の Bluetooth Mesh プロキシが範囲内にあります。Home Assistant は、検出したすべての Bluetooth Mesh ネットワークを提示します。他社製のもの（たとえば隣家の照明）も含まれます。これがお使いの JUNG HOME の設備である場合にのみ続行してください。続行すると、アプリのメッシュのエクスポートを求められます。"
+        "description": "ネットワーク {network_id} の JUNG HOME Bluetooth Mesh プロキシが範囲内にあります。Home Assistant は、検出したすべての JUNG HOME の設備を提示します。隣家のものも含まれます。これがお使いの設備である場合にのみ続行してください。続行すると、アプリのメッシュのエクスポートを求められます。"
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME ゲートウェイが見つかりました",
@@ -198,6 +198,7 @@
       "already_configured": "このメッシュネットワークはすでに設定されています。",
       "already_in_progress": "このメッシュネットワークのセットアップはすでに進行中です。",
       "not_supported": "この Bluetooth デバイスはメッシュプロキシではありません。",
+      "not_jung": "この Bluetooth Mesh プロキシは JUNG のメーカーデータをアドバタイズしていません。JUNG HOME のデバイスではありません。",
       "network_mismatch": "このエクスポートは、このエントリとは別のメッシュネットワークのものです。",
       "mesh_already_configured": "このメッシュはすでに別のエントリとしてセットアップされています。1 つのメッシュに 2 つのエントリがあると、シーケンス番号を共有してしまいます。代わりにそのエントリを再構成するか、先にそのエントリを削除してください。",
       "reconfigure_successful": "メッシュのエクスポートを更新しました。",

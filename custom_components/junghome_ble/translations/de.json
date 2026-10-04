@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Ist das deine JUNG HOME Installation?",
-        "description": "Ein Bluetooth-Mesh-Proxy des Netzwerks {network_id} ist in Reichweite. Home Assistant bietet jedes Bluetooth-Mesh-Netzwerk an, das es sieht, auch die anderer Hersteller – etwa die Leuchten eines Nachbarn. Fahre nur fort, wenn das deine JUNG HOME Installation ist; danach wirst du nach dem Mesh-Export der App gefragt."
+        "description": "Ein JUNG HOME Bluetooth-Mesh-Proxy des Netzwerks {network_id} ist in Reichweite. Home Assistant bietet jede JUNG HOME Installation an, die es sieht, auch die eines Nachbarn. Fahre nur fort, wenn das deine Installation ist; danach wirst du nach dem Mesh-Export der App gefragt."
       },
       "gateway": {
         "title": "Export vom JUNG HOME Gateway abrufen",
@@ -199,6 +199,7 @@
       "already_configured": "Dieses Mesh-Netzwerk ist bereits eingerichtet.",
       "already_in_progress": "Die Einrichtung dieses Mesh-Netzwerks läuft bereits.",
       "not_supported": "Dieses Bluetooth-Gerät ist kein Mesh-Proxy.",
+      "not_jung": "Dieser Bluetooth-Mesh-Proxy sendet keine JUNG-Herstellerdaten: Er ist kein JUNG HOME Gerät.",
       "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
       "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst.",
       "reconfigure_successful": "Der Mesh-Export wurde aktualisiert.",

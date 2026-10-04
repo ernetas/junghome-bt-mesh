@@ -32,7 +32,7 @@ from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
 
 from . import key_scan
 from .conftest import CDB_PATH, FakeProxyLink, make_service_info, settle, wait_for_link
-from .helpers import LIGHT_SWITCH, SEQ_STORE_KEY
+from .helpers import LIGHT_SWITCH, MESH_UUID, SEQ_STORE_KEY
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -108,7 +108,9 @@ async def follow_a_key_refresh(
     link.inject_beacon()  # phase 3: the old key is revoked
     await settle(hass)
     assert hub.proxy.key_refresh_phase == 0
-    assert entry.unique_id == new.network_id.hex()
+    assert (
+        entry.unique_id == MESH_UUID
+    )  # the mesh UUID: a key refresh leaves it (decision M10)
     bluetooth["infos"] = [make_service_info(new.network_id)]
     assert await hass.config_entries.async_reload(entry.entry_id)
     await wait_for_link(hass, entry)

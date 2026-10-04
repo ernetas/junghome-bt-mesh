@@ -30,9 +30,9 @@ key to the gateway; without a gateway, or for a key that should only drive Home 
 
 ## Why is there a "Bluetooth Mesh network" in Discovered that is not mine?
 
-Home Assistant offers every Bluetooth Mesh network it sees, not only JUNG HOME ones — a neighbour's lights, for
-example. The card (*Bluetooth Mesh* and the network's id) asks *Is this your JUNG HOME installation?*; if it is not,
-ignore the card. Your own installation is offered once and not again after you set it up. A *JUNG HOME Gateway* card
+Home Assistant offers every JUNG HOME installation it sees over Bluetooth — a neighbour's too. Other brands' Bluetooth
+Mesh networks are not offered. The card (*Bluetooth Mesh* and the network's id) asks *Is this your JUNG HOME
+installation?*; if it is not, ignore the card. Your own installation is offered once and not again after you set it up. A *JUNG HOME Gateway* card
 is different: only a JUNG HOME Gateway announces itself that way, and one an entry already uses at that address is
 not offered.
 

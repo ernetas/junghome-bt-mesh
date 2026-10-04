@@ -555,6 +555,11 @@ Dependencies (hard unless marked *soft*):
   energy, clock, export watch, connect-time reads, repair issues, the link manager, gestures, and one registry that
   cancels the hub's timers and tasks in the old stop order, with a `Backoff` helper. The state cache, the status
   handlers, the commands, scenes and sequence accounting stay in `coordinator.py` (not in the brief's steps).
+- **Wave 18, brief 69: done.** H I-7 the Bluetooth matcher needs JUNG's manufacturer data next to the Mesh Proxy
+  service (`not_jung` in the flow); H I-9 the entry's unique id is the mesh UUID (lower case, with dashes), entry
+  version 1.3 migrates it at the first start and leaves an unreadable export's entry for the next one; discovery
+  recognises a configured mesh by the Network ID or Node Identity of its keys and its nodes' MACs; a key refresh no
+  longer moves the unique id (decision M10). The migration on the real entry and the absent card: sweep A11.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`. 1.1.0: waves 3–17.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in

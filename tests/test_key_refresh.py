@@ -34,6 +34,7 @@ from custom_components.junghome_ble.jhmesh.vault import RefreshProgress, VaultNo
 from .conftest import (
     CDB_PATH,
     FakeProxyLink,
+    make_discovery_info,
     make_service_info,
     settle,
     wait_for_link,
@@ -149,8 +150,9 @@ async def test_the_apps_key_refresh_is_followed_and_survives_a_reload(
     mock_bluetooth_env: dict[str, Any],
 ) -> None:
     """NetKey Update, Phase Set 2, then the new key's beacons: HA transmits with the new key from phase 2 and, once
-    the refresh is complete, the entry's unique id is the new Network ID. A reload keeps the new key although the
-    export still has the old one, and finds the proxies advertising the new Network ID.
+    the refresh is complete, the entry's unique id is still the mesh UUID (decision M10, H I-9: nothing moves it).
+    A reload keeps the new key although the export still has the old one, and finds the proxies advertising the new
+    Network ID.
 
     Review 4: Phase Set 2 alone (a request) no longer moves HA; the proxy's beacon under the new key does."""
     hub = init_integration.runtime_data
@@ -180,7 +182,7 @@ async def test_the_apps_key_refresh_is_followed_and_survives_a_reload(
     fake_link.inject_beacon()  # the new key, no flag: phase 3
     await settle(hass)
     assert hub.proxy.key_refresh_phase == 0
-    assert init_integration.unique_id == new.network_id.hex()
+    assert init_integration.unique_id == MESH_UUID
     # a reload: the export still has the old key, the proxies advertise the new Network ID
     assert fake_link.nk is not old
     mock_bluetooth_env["infos"] = [make_service_info(new.network_id)]
@@ -198,20 +200,20 @@ async def test_mid_refresh_a_proxy_of_the_new_key_is_not_offered_as_a_new_mesh(
     mock_bluetooth_env: dict[str, Any],
 ) -> None:
     """Review-4 H4-4: from the first move of a refresh the hub follows on, the new key's Network ID is this mesh
-    for discovery, before the entry's unique id holds it (from an address the export lacks: a new node)."""
+    for discovery (from an address the export lacks: a new node); the entry's unique id, the mesh UUID, never
+    holds a Network ID."""
     await app_refresh(hass, fake_link, up_to=1)
-    assert init_integration.unique_id != NEW_ID.hex()
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=make_service_info(NEW_ID, address=OTHER_ADDRESS),
+        data=make_discovery_info(NEW_ID, address=OTHER_ADDRESS),
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
 
 
 @pytest.mark.parametrize("ignore", [False, True], ids=["pending", "ignored"])
-async def test_the_completed_refresh_takes_the_new_network_id_from_a_discovery(
+async def test_the_completed_refresh_drops_the_discovery_of_the_new_network_id(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
@@ -220,13 +222,13 @@ async def test_the_completed_refresh_takes_the_new_network_id_from_a_discovery(
     ignore: bool,
 ) -> None:
     """H4-4: the new key's proxies were offered as a new mesh before the hub knew the key, and the user left the
-    discovery pending or pressed *Ignore*. At completion the flow is aborted and the ignored entry removed before
-    the unique id moves: no "already in use" error, no core repair."""
+    discovery pending or pressed *Ignore*. At completion the flow is aborted and the ignored entry removed; the
+    entry's unique id stays the mesh UUID."""
     caplog.set_level(logging.INFO)
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=make_service_info(NEW_ID, address=OTHER_ADDRESS),
+        data=make_discovery_info(NEW_ID, address=OTHER_ADDRESS),
     )
     assert result["type"] is FlowResultType.FORM
     if ignore:
@@ -240,7 +242,7 @@ async def test_the_completed_refresh_takes_the_new_network_id_from_a_discovery(
     assert (ignored is not None) is ignore
     await app_refresh(hass, fake_link)
     await hass.async_block_till_done()
-    assert init_integration.unique_id == NEW_ID.hex()
+    assert init_integration.unique_id == MESH_UUID
     assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
     assert hass.config_entries.async_entries(DOMAIN) == [init_integration]
     assert "already in use" not in caplog.text

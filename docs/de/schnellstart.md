@@ -32,8 +32,8 @@ Unter *Einstellungen → Geräte & Dienste → Entdeckt* erscheint oft von selbs
 
 - *JUNG HOME Gateway …*, wenn ein JUNG HOME Gateway im Netzwerk ist: **Hinzufügen** und bestätigen führt direkt zum
   Gateway-Formular unten, mit der Adresse des Gateways schon eingetragen (noch nicht auf echter Hardware geprüft).
-- *Bluetooth Mesh …*, wenn ein Bluetooth-Mesh-Netzwerk in Reichweite ist. Home Assistant bietet jedes an, das es
-  sieht, auch die anderer Hersteller: nur hinzufügen, wenn es deine JUNG HOME Installation ist.
+- *Bluetooth Mesh …*, wenn eine JUNG HOME Installation in Reichweite ist. Home Assistant bietet jede an, die es
+  sieht, auch die eines Nachbarn: nur hinzufügen, wenn es deine ist.
 
 Sonst *Einstellungen → Geräte & Dienste → Integration hinzufügen → JUNG HOME Bluetooth Mesh*. Home Assistant fragt
 dann (außer bei der Gateway-Karte), woher der Netzwerk-Export der App kommt — eine der drei Quellen:

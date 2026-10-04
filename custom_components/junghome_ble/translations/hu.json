@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Ez az Ön JUNG HOME rendszere?",
-        "description": "A(z) {network_id} hálózat egyik Bluetooth Mesh proxyja hatótávolságon belül van. A Home Assistant minden általa észlelt Bluetooth Mesh hálózatot felajánl, a más gyártókét is – például egy szomszéd lámpáit. Csak akkor folytassa, ha ez az Ön JUNG HOME rendszere; ezután meg kell adnia az alkalmazás mesh-exportját."
+        "description": "A(z) {network_id} hálózat egyik JUNG HOME Bluetooth Mesh proxyja hatótávolságon belül van. A Home Assistant minden általa észlelt JUNG HOME rendszert felajánl, egy szomszédét is. Csak akkor folytassa, ha ez az Ön rendszere; ezután meg kell adnia az alkalmazás mesh-exportját."
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME átjáró található",
@@ -198,6 +198,7 @@
       "already_configured": "Ez a mesh hálózat már be van állítva.",
       "already_in_progress": "Ennek a mesh hálózatnak a beállítása már folyamatban van.",
       "not_supported": "Ez a Bluetooth-eszköz nem Mesh proxy.",
+      "not_jung": "Ez a Bluetooth Mesh proxy nem hirdet JUNG gyártói adatokat: nem JUNG HOME eszköz.",
       "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
       "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése közösen használná a sorszámait. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el.",
       "reconfigure_successful": "A mesh-export frissült.",

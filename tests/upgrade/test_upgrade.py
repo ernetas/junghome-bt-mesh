@@ -7,9 +7,10 @@ answering mesh, the *WC mirror* light switched on and off, the entry unloaded, t
 `junghome_ble.*` document of `hass_storage` dumped. It is synthetic (the fixture network, the fixture's keys), and
 holds no clock time. Add one per release the same way, from that release's tag.
 
-The current code must set the entry up from it, migrate the entry and the stores to the versions it writes now,
-carry the sequence number on (the first PDU it sends is numbered above everything the release sent: no nonce is
-reused across the upgrade) and keep the replay list the release stored.
+The current code must set the entry up from it, migrate the entry (up to 1.2 its unique id was the Network ID, from
+1.3 on it is the mesh UUID) and the stores to the versions it writes now, carry the sequence number on (the first PDU
+it sends is numbered above everything the release sent: no nonce is reused across the upgrade) and keep the replay
+list the release stored.
 """
 
 from __future__ import annotations
@@ -73,6 +74,8 @@ async def test_upgrade_from_a_release(
         JungHomeConfigFlow.VERSION,
         JungHomeConfigFlow.MINOR_VERSION,
     )
+    # whatever the release's unique id (1.0.0 and 1.1.0: the Network ID), it is the mesh UUID now (decision M10)
+    assert entry.unique_id == "1baf3ade-0000-4000-8000-000000000001"
     # the sequence number goes on from where the release stopped: nothing it sent is sent again
     assert fake_link.rpl[int(OUR_ADDRESS, 16)][1] >= record["seq"]
     assert not fake_link.replayed

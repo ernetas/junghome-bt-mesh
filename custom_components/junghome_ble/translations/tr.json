@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Bu sizin JUNG HOME kurulumunuz mu?",
-        "description": "{network_id} ağına ait bir Bluetooth Mesh proxy'si menzilde. Home Assistant gördüğü her Bluetooth Mesh ağını önerir, başka markalarınkini de — örneğin bir komşunun lambalarını. Yalnızca bu sizin JUNG HOME kurulumunuzsa devam edin; ardından uygulamanın mesh dışa aktarımı istenir."
+        "description": "{network_id} ağına ait bir JUNG HOME Bluetooth Mesh proxy'si menzilde. Home Assistant gördüğü her JUNG HOME kurulumunu önerir, bir komşununkini de. Yalnızca bu sizin kurulumunuzsa devam edin; ardından uygulamanın mesh dışa aktarımı istenir."
       },
       "zeroconf_confirm": {
         "title": "JUNG HOME Gateway bulundu",
@@ -198,6 +198,7 @@
       "already_configured": "Bu mesh ağı zaten yapılandırılmış.",
       "already_in_progress": "Bu mesh ağının kurulumu zaten devam ediyor.",
       "not_supported": "Bu Bluetooth cihazı bir Mesh Proxy değil.",
+      "not_jung": "Bu Bluetooth Mesh proxy'si JUNG üretici verisi yayınlamıyor: bir JUNG HOME cihazı değil.",
       "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
       "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın.",
       "reconfigure_successful": "Mesh dışa aktarımı güncellendi.",

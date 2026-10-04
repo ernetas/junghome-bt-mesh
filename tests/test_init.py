@@ -836,7 +836,7 @@ async def test_pre_source_entries_are_migrated(
     )  # the migration runs whether setup then works or not
     await hass.async_block_till_done()
     assert entry.data[CONF_SOURCE] == kind
-    assert entry.minor_version == 2
+    assert entry.minor_version == 3
 
 
 def test_infer_source_counts_only_files_the_flows_wrote(hass: HomeAssistant) -> None:
@@ -864,28 +864,114 @@ def test_infer_source_counts_only_files_the_flows_wrote(hass: HomeAssistant) -> 
 
 
 async def test_a_migrated_entry_keeps_its_source(hass: HomeAssistant) -> None:
-    """HAC-07: an entry that already names its source only gets the new minor version."""
+    """HAC-07: an entry that already names its source keeps it."""
     data = {CONF_CDB_PATH: CDB_PATH, CONF_UNICAST: "0D00", CONF_SOURCE: "path"}
     entry = MockConfigEntry(domain=DOMAIN, version=1, minor_version=1, data=data)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert (entry.data[CONF_SOURCE], entry.minor_version) == ("path", 2)
+    assert (entry.data[CONF_SOURCE], entry.minor_version) == ("path", 3)
 
 
 async def test_migrate_entry_leaves_other_versions_alone(hass: HomeAssistant) -> None:
     """HAC-07: HA only calls the migration for an older entry; called directly, it refuses a major version it does
-    not know (a downgrade) and leaves an entry already at 1.2 as it is."""
+    not know (a downgrade) and leaves an entry already at 1.3 as it is."""
     data = {CONF_CDB_PATH: CDB_PATH, CONF_UNICAST: "0D00"}
     newer = MockConfigEntry(domain=DOMAIN, version=2, data=data)
     newer.add_to_hass(hass)
     assert await async_migrate_entry(hass, newer) is False
     current = MockConfigEntry(
-        domain=DOMAIN, unique_id="current", version=1, minor_version=2, data=data
+        domain=DOMAIN, unique_id="current", version=1, minor_version=3, data=data
     )
     current.add_to_hass(hass)
     assert await async_migrate_entry(hass, current) is True
     assert CONF_SOURCE not in current.data
+    assert current.unique_id == "current"
+
+
+def _entry_of_1_1_0(
+    cdb_path: str = CDB_PATH, unique_id: str = "1fbd2c61a4b6e5a4", **data: Any
+) -> MockConfigEntry:
+    """An entry as 1.1.0 left it: version 1.2, its unique id the Network ID of the export's key (decision M10)."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title="JUNG HOME mesh 1BAF3ADE",
+        unique_id=unique_id,
+        version=1,
+        minor_version=2,
+        data={
+            CONF_SOURCE: "path",
+            CONF_CDB_PATH: cdb_path,
+            CONF_UNICAST: "0D00",
+            **data,
+        },
+    )
+
+
+@pytest.mark.parametrize("recorded", [True, False], ids=["recorded", "from_export"])
+async def test_the_unique_id_becomes_the_mesh_uuid(
+    hass: HomeAssistant, recorded: bool
+) -> None:
+    """H I-9 (decision M10): a 1.1.0 entry's unique id, the Network ID a key refresh changes, becomes its mesh UUID
+    in lower case before setup — the one it recorded (in the export's upper case), else its export's."""
+    entry = _entry_of_1_1_0(**({CONF_MESH_UUID: MESH_UUID.upper()} if recorded else {}))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is not ConfigEntryState.MIGRATION_ERROR
+    assert entry.unique_id == MESH_UUID == MESH_UUID.lower()
+    assert (entry.version, entry.minor_version) == (1, 3)
+
+
+async def test_an_unreadable_export_leaves_the_unique_id_until_the_next_start(
+    hass: HomeAssistant, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An entry whose mesh UUID cannot be read (nothing recorded, its export gone) is not refused for it: it keeps
+    its unique id and version, its setup reports the export as before, and the next start migrates it."""
+    export = tmp_path / "export.json"
+    entry = _entry_of_1_1_0(str(export))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.SETUP_ERROR  # the export, not the migration
+    assert (entry.unique_id, entry.minor_version) == ("1fbd2c61a4b6e5a4", 2)
+    assert "keeps its unique id until its export can be read" in caplog.text
+
+    shutil.copy(CDB_PATH, export)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert (entry.unique_id, entry.minor_version) == (MESH_UUID, 3)
+
+
+async def test_two_entries_of_one_mesh_keep_their_unique_ids(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Two entries of one mesh should not exist; if they do, neither takes the mesh UUID (both cannot hold it),
+    each says so once, and both are at 1.3 so it is not said again."""
+    first = _entry_of_1_1_0(**{CONF_MESH_UUID: MESH_UUID.upper()})
+    second = _entry_of_1_1_0(unique_id="2782f5a013b49cc2")
+    first.add_to_hass(hass)
+    second.add_to_hass(hass)
+    for entry, unique_id in ((first, "1fbd2c61a4b6e5a4"), (second, "2782f5a013b49cc2")):
+        assert await async_migrate_entry(hass, entry) is True
+        assert (entry.unique_id, entry.minor_version) == (unique_id, 3)
+    assert caplog.text.count("keeps its unique id: another entry belongs") == 2
+
+
+async def test_a_mesh_uuid_another_entry_holds_is_not_taken_twice(
+    hass: HomeAssistant,
+) -> None:
+    """An entry already holding the mesh UUID whose mesh cannot be read (nothing recorded, its export gone) still
+    holds it: the other entry keeps its own unique id rather than share it."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=MESH_UUID,
+        data={CONF_CDB_PATH: "/gone.json", CONF_UNICAST: "0D02"},
+    ).add_to_hass(hass)
+    entry = _entry_of_1_1_0()
+    entry.add_to_hass(hass)
+    assert await async_migrate_entry(hass, entry) is True
+    assert (entry.unique_id, entry.minor_version) == ("1fbd2c61a4b6e5a4", 3)
 
 
 # --------------------------------------------------------------------------- stored files (S5 / S8)

@@ -23,7 +23,7 @@
       },
       "bluetooth_confirm": {
         "title": "Je to vaša namestitev JUNG HOME?",
-        "description": "Proxy Bluetooth Mesh omrežja {network_id} je v dosegu. Home Assistant ponudi vsako omrežje Bluetooth Mesh, ki ga zazna, tudi omrežja drugih znamk — na primer sosedove luči. Nadaljujte le, če je to vaša namestitev JUNG HOME; nato boste vprašani za izvoz mesh iz aplikacije."
+        "description": "Proxy Bluetooth Mesh JUNG HOME omrežja {network_id} je v dosegu. Home Assistant ponudi vsako namestitev JUNG HOME, ki jo zazna, tudi sosedovo. Nadaljujte le, če je to vaša namestitev; nato boste vprašani za izvoz mesh iz aplikacije."
       },
       "zeroconf_confirm": {
         "title": "Najden prehod JUNG HOME",
@@ -198,6 +198,7 @@
       "already_configured": "To omrežje mesh je že konfigurirano.",
       "already_in_progress": "Nastavitev tega omrežja mesh že poteka.",
       "not_supported": "Ta naprava Bluetooth ni Mesh Proxy.",
+      "not_jung": "Ta proxy Bluetooth Mesh ne oglašuje podatkov proizvajalca JUNG: ni naprava JUNG HOME.",
       "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
       "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite.",
       "reconfigure_successful": "Izvoz mesh je bil posodobljen.",

@@ -26,6 +26,7 @@ import pytest
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from habluetooth.models import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import ble_device_matches
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_IGNORE,
@@ -88,6 +89,7 @@ from custom_components.junghome_ble.coordinator import (
     remember_known_mesh,
     seq_store_for_uuid,
 )
+from custom_components.junghome_ble.jhmesh.advert import JUNG_COMPANY_ID
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
@@ -100,9 +102,11 @@ from custom_components.junghome_ble.tls import CONF_GATEWAY_FINGERPRINT
 
 from .conftest import (
     CDB_PATH,
+    JUNG_ADVERT,
     META_DIR,
     PROXY_ADDRESS,
     SHARE_EXPORT_PATH,
+    make_discovery_info,
     make_node_identity_info,
     make_service_info,
     settle,
@@ -367,7 +371,8 @@ async def test_user_flow(
     assert (
         result["data"] == ENTRY_DATA
     )  # the address is normalised to 4 upper-case hex digits
-    assert result["result"].unique_id == network_id.hex() == "1fbd2c61a4b6e5a4"
+    # the mesh UUID as the export holds it, in lower case (decision M10), not the Network ID
+    assert result["result"].unique_id == MESH_UUID.lower() != network_id.hex()
     assert len(mock_setup_entry.mock_calls) == 1
     assert _incoming_files(hass) == []  # nothing copied for a path on the host
     assert not _stored(hass).exists()
@@ -393,7 +398,7 @@ async def test_user_flow_share_export(
         CONF_MESH_UUID: MESH_UUID,
         CONF_SOURCE: "path",
     }
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
 
 
 def _write(path: Path, text: str) -> str:
@@ -723,31 +728,39 @@ async def test_user_flow_already_configured(
     assert result["reason"] == "already_configured"
 
 
+@pytest.mark.parametrize("legacy", [False, True], ids=["mesh_uuid", "network_id"])
 async def test_user_flow_refuses_a_second_entry_for_an_already_configured_mesh(
     hass: HomeAssistant,
     mock_bluetooth_env: dict[str, Any],
     mock_setup_entry: AsyncMock,
     mock_config_entry: MockConfigEntry,
     refreshed_network: tuple[str, bytes],
+    legacy: bool,
 ) -> None:
-    """A NetKey refresh gives an already-configured mesh a *new* Network ID, so the unique-id de-duplication above
-    cannot catch a second "Add integration" of its (freshly fetched/uploaded) export — only its unchanged mesh
-    UUID can. Two entries sharing one mesh would also share its sequence-number store (`seq_store.seq_store`,
+    """A NetKey refresh gives an already-configured mesh a *new* Network ID; a second "Add integration" of its
+    (freshly fetched/uploaded) export is caught by its unchanged mesh UUID: the entry's unique id (decision M10),
+    or — for an entry whose migration has not reached it, still holding its old Network ID — the mesh UUID it
+    recorded. Two entries sharing one mesh would also share its sequence-number store (`seq_store.seq_store`,
     keyed on the mesh UUID) without coordinating their writes to it (each holds its own stale copy of the other
     addresses' records and can roll the other's counter backwards on its next load) — refuse instead and point at
     the existing entry's Reconfigure, exactly as it is documented."""
-    mock_config_entry.add_to_hass(hass)
+    entry = _entry(MESH_UUID) if legacy else mock_config_entry
+    entry.add_to_hass(hass)
     new_path, new_id = refreshed_network
     mock_bluetooth_env["infos"] = [make_service_info(new_id)]
     flow_id = await _start_user_flow(hass)
     result = await hass.config_entries.flow.async_configure(
         flow_id, {**FORM_INPUT, CONF_CDB_PATH: new_path}
     )
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "path"
-    assert result["errors"] == {"base": "mesh_already_configured"}
+    if legacy:
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "path"
+        assert result["errors"] == {"base": "mesh_already_configured"}
+    else:
+        assert result["type"] is FlowResultType.ABORT
+        assert result["reason"] == "already_configured"
     assert [e.entry_id for e in hass.config_entries.async_entries(DOMAIN)] == [
-        mock_config_entry.entry_id
+        entry.entry_id
     ]
     assert mock_setup_entry.mock_calls == []
 
@@ -784,7 +797,7 @@ async def test_gateway_flow_password(
         CONF_GATEWAY_SYNCED: export_digest(_share_export()),
         **GATEWAY_DATA,
     }
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
     # the export is on disk, private, verbatim, and no temporary file is left behind
     assert json.loads(stored.read_text()) == _share_export()
     assert stat.S_IMODE(stored.stat().st_mode) == 0o600
@@ -1119,7 +1132,7 @@ async def test_gateway_flow_from_bluetooth_network_mismatch(
 ) -> None:
     """The discovered proxy belongs to another mesh than the export the gateway serves."""
     _mock_gateway(aioclient_mock)
-    other = make_service_info(b"\x22" * 8, address="11:22:33:44:55:66")
+    other = make_discovery_info(b"\x22" * 8, address="11:22:33:44:55:66")
     mock_bluetooth_env["infos"].append(other)
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=other
@@ -1888,7 +1901,7 @@ async def test_upload_flow(
         CONF_UNICAST: "0D00",
         CONF_MESH_UUID: MESH_UUID,
     }
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
     assert json.loads(stored.read_text()) == _share_export()
     assert stat.S_IMODE(stored.stat().st_mode) == 0o600
     assert _incoming_files(hass) == []
@@ -1975,7 +1988,9 @@ async def test_bluetooth_flow(
     network_id: bytes,
 ) -> None:
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_discovery_info(network_id),
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "bluetooth_confirm"
@@ -2002,7 +2017,7 @@ async def test_bluetooth_flow(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == ENTRY_DATA
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
     assert len(mock_setup_entry.mock_calls) == 1
 
 
@@ -2016,7 +2031,9 @@ async def test_user_flow_finishes_while_a_discovery_of_the_same_mesh_is_pending(
     """CFG-13: a proxy in range leaves a "Discovered" card for its mesh; a manual setup of that mesh must finish
     (and the card go with the new entry) rather than abort at its last step with "already_in_progress"."""
     discovered = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_discovery_info(network_id),
     )
     assert discovered["step_id"] == "bluetooth_confirm"
     flow_id = await _start_user_flow(hass)
@@ -2024,7 +2041,7 @@ async def test_user_flow_finishes_while_a_discovery_of_the_same_mesh_is_pending(
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
     assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
 
 
@@ -2035,7 +2052,7 @@ async def test_bluetooth_flow_network_mismatch(
     service_info: Any,
 ) -> None:
     """The discovered proxy belongs to another mesh than the export that was provided."""
-    other = make_service_info(b"\x22" * 8, address="11:22:33:44:55:66")
+    other = make_discovery_info(b"\x22" * 8, address="11:22:33:44:55:66")
     mock_bluetooth_env["infos"].append(other)
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=other
@@ -2062,7 +2079,7 @@ async def test_bluetooth_flow_network_mismatch(
 async def test_bluetooth_flow_not_supported(
     hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], service_data: bytes
 ) -> None:
-    info = make_service_info(b"\x00" * 8)
+    info = make_discovery_info(b"\x00" * 8)
     info.service_data = {next(iter(info.service_data)): service_data}
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=info
@@ -2071,15 +2088,96 @@ async def test_bluetooth_flow_not_supported(
     assert result["reason"] == "not_supported"
 
 
+def test_the_manifest_matches_jung_proxies_only() -> None:
+    """Review-4 H I-7 (decision M10), as hassfest and Home Assistant's Bluetooth matcher read the manifest: one
+    matcher, which needs the Mesh Proxy service *and* JUNG's manufacturer data (company id 0x0527 = 1319)."""
+    manifest = json.loads(
+        (Path(junghome_ble.__file__).parent / "manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["bluetooth"] == [
+        {
+            "service_uuid": MESH_PROXY_SERVICE,
+            "manufacturer_id": JUNG_COMPANY_ID,
+            "connectable": True,
+        }
+    ]
+    matcher = {"domain": DOMAIN, **manifest["bluetooth"][0]}
+    assert ble_device_matches(matcher, make_discovery_info(b"\x11" * 8))
+    # another brand's proxy: no manufacturer data, or another company's
+    assert not ble_device_matches(matcher, make_service_info(b"\x11" * 8))
+    assert not ble_device_matches(
+        matcher, make_service_info(b"\x11" * 8, manufacturer_data={0x0059: b"\x01"})
+    )
+    # a JUNG device that is no proxy (unprovisioned, or proxy off)
+    jung_only = BluetoothServiceInfoBleak.from_device_and_advertisement_data(
+        BLEDevice(OTHER_ADDRESS, None, {}),
+        AdvertisementData(
+            local_name=None,
+            manufacturer_data=JUNG_ADVERT,
+            service_data={},
+            service_uuids=[],
+            tx_power=None,
+            rssi=-50,
+            platform_data=(),
+        ),
+        "local",
+        0.0,
+        True,
+    )
+    assert not ble_device_matches(matcher, jung_only)
+
+
+async def test_bluetooth_flow_not_jung(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], network_id: bytes
+) -> None:
+    """A Mesh Proxy without JUNG's manufacturer data is not offered, should one get past the manifest's matcher."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_service_info(network_id, address=OTHER_ADDRESS),
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_jung"
+
+
+@pytest.mark.parametrize("advertised", ["network_id", "node_identity"])
 async def test_bluetooth_flow_already_configured(
     hass: HomeAssistant,
     mock_bluetooth_env: dict[str, Any],
     mock_config_entry: MockConfigEntry,
-    service_info: Any,
+    cdb: CDB,
+    network_id: bytes,
+    advertised: str,
 ) -> None:
+    """H I-9: a proxy of a configured mesh is recognised by the entry's keys, not by its unique id (the mesh UUID,
+    which no advertisement carries): its Network ID, or a Node Identity of one of the export's nodes, from an
+    address the export lacks. Aborted silently, no card."""
     mock_config_entry.add_to_hass(hass)
+    info = make_discovery_info(network_id, address=OTHER_ADDRESS)
+    if advertised == "node_identity":
+        node = cdb.nodes[0].unicast
+        info.service_data = make_node_identity_info(cdb, node).service_data
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=service_info
+        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=info
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
+
+
+async def test_bluetooth_flow_of_an_ignored_discovery(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any]
+) -> None:
+    """A mesh whose card the user ignored stays ignored: the discovery flow holds its Network ID as unique id."""
+    MockConfigEntry(
+        domain=DOMAIN, source=SOURCE_IGNORE, unique_id=(b"\x22" * 8).hex(), data={}
+    ).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=make_discovery_info(b"\x22" * 8, address=OTHER_ADDRESS),
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
@@ -2105,7 +2203,7 @@ async def test_bluetooth_flow_recognises_a_configured_mesh_under_its_followed_ke
             result = await hass.config_entries.flow.async_init(
                 DOMAIN,
                 context={"source": SOURCE_BLUETOOTH},
-                data=make_service_info(new_id, address=address),
+                data=make_discovery_info(new_id, address=address),
             )
             assert result["type"] is FlowResultType.ABORT
             assert result["reason"] == "already_configured"
@@ -2121,13 +2219,15 @@ async def test_bluetooth_flow_retries_an_entry_waiting_for_its_mesh(
     retrying.add_to_hass(hass)
     retrying.mock_state(hass, ConfigEntryState.SETUP_RETRY)
     remember_known_mesh(
-        hass, retrying.entry_id, KnownMesh(set(), frozenset({PROXY_ADDRESS}))
+        hass, retrying.entry_id, KnownMesh([], (), frozenset({PROXY_ADDRESS}))
     )
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": SOURCE_BLUETOOTH},
-            data=make_service_info(b"\x44" * 8),  # node 0148's MAC, another Network ID
+            data=make_discovery_info(
+                b"\x44" * 8
+            ),  # node 0148's MAC, another Network ID
         )
         assert result["reason"] == "already_configured"
         reload.assert_called_once_with(retrying.entry_id)
@@ -2135,7 +2235,7 @@ async def test_bluetooth_flow_retries_an_entry_waiting_for_its_mesh(
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": SOURCE_BLUETOOTH},
-            data=make_service_info(b"\x44" * 8),
+            data=make_discovery_info(b"\x44" * 8),
         )
         assert result["reason"] == "already_configured"
         reload.assert_called_once()
@@ -2150,7 +2250,7 @@ async def test_bluetooth_flow_offers_a_mesh_beside_an_entry_whose_export_is_unre
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=make_service_info(b"\x44" * 8, address=OTHER_ADDRESS),
+        data=make_discovery_info(b"\x44" * 8, address=OTHER_ADDRESS),
     )
     assert result["type"] is FlowResultType.FORM
     assert entry.entry_id not in hass.data[KNOWN_MESHES]
@@ -2250,7 +2350,7 @@ async def test_zeroconf_flow_prefills_the_gateway_form(
     await hass.async_block_till_done()
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == network_id.hex()
+    assert result["result"].unique_id == MESH_UUID.lower()
     assert result["data"][CONF_SOURCE] == "gateway"
     assert result["data"][CONF_GATEWAY_HOST] == ZC_HOST
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == FINGERPRINT
@@ -2389,7 +2489,7 @@ async def test_reconfigure_flow(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    # the mesh UUID is recorded from now on, the Network ID stays the unique_id
+    # the mesh UUID is recorded from now on, and it is the unique id
     assert mock_config_entry.data == {
         CONF_CDB_PATH: CDB_PATH,
         CONF_METADATA_DIR: "",
@@ -2397,7 +2497,7 @@ async def test_reconfigure_flow(
         CONF_MESH_UUID: MESH_UUID,
         CONF_SOURCE: "path",
     }
-    assert mock_config_entry.unique_id == "1fbd2c61a4b6e5a4"
+    assert mock_config_entry.unique_id == MESH_UUID.lower()
     assert len(mock_setup_entry.mock_calls) == 1  # the entry was reloaded
 
 
@@ -2440,7 +2540,8 @@ async def test_reconfigure_flow_after_key_refresh(
     recorded_uuid: str | None,
 ) -> None:
     """After a NetKey refresh the export of the *same* mesh carries a new Network ID: the documented recovery
-    (export again, Reconfigure) must succeed and move the entry's unique_id to the new Network ID."""
+    (export again, Reconfigure) must succeed; the entry's unique id is the mesh UUID, which the refresh left alone
+    (decision M10), and an entry that still held its old Network ID takes it now."""
     new_path, new_id = refreshed_network
     mock_bluetooth_env["infos"] = [
         make_service_info(new_id)
@@ -2449,7 +2550,7 @@ async def test_reconfigure_flow_after_key_refresh(
     entry.add_to_hass(hass)
     # a node of the export is recognised by its MAC whatever it advertises (review-4 H4-4) ...
     discovery = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=make_service_info(new_id)
+        DOMAIN, context={"source": SOURCE_BLUETOOTH}, data=make_discovery_info(new_id)
     )
     assert discovery["type"] is FlowResultType.ABORT
     assert discovery["reason"] == "already_configured"
@@ -2457,7 +2558,7 @@ async def test_reconfigure_flow_after_key_refresh(
     discovery = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=make_service_info(new_id, address=OTHER_ADDRESS),
+        data=make_discovery_info(new_id, address=OTHER_ADDRESS),
     )
     assert discovery["type"] is FlowResultType.FORM
 
@@ -2469,7 +2570,7 @@ async def test_reconfigure_flow_after_key_refresh(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert entry.unique_id == new_id.hex() != "1fbd2c61a4b6e5a4"
+    assert entry.unique_id == MESH_UUID.lower()
     assert entry.data == {**ENTRY_DATA, CONF_CDB_PATH: new_path}
     assert len(mock_setup_entry.mock_calls) == 1
     # the stale discovery flow is gone, and the refreshed network is no longer offered as a new one
@@ -2477,7 +2578,7 @@ async def test_reconfigure_flow_after_key_refresh(
     discovery = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=make_service_info(new_id, address=OTHER_ADDRESS),
+        data=make_discovery_info(new_id, address=OTHER_ADDRESS),
     )
     assert discovery["type"] is FlowResultType.ABORT
     assert discovery["reason"] == "already_configured"
@@ -2490,9 +2591,8 @@ async def test_reconfigure_after_key_refresh_removes_an_ignored_discovery(
     refreshed_network: tuple[str, bytes],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """H4-4: the user pressed *Ignore* on the discovery of the new Network ID. The reconfigure removes that entry
-    before the unique id moves (no "already in use" error, no core repair) and forgets what discovery knew the
-    mesh by: the next setup records the new export's."""
+    """H4-4: the user pressed *Ignore* on the discovery of the new Network ID, the entry's own mesh. The reconfigure
+    removes that entry and forgets what discovery knew the mesh by: the next setup records the new export's."""
     new_path, new_id = refreshed_network
     mock_bluetooth_env["infos"] = [make_service_info(new_id)]
     entry = _entry(MESH_UUID)
@@ -2501,7 +2601,7 @@ async def test_reconfigure_after_key_refresh_removes_an_ignored_discovery(
         domain=DOMAIN, source=SOURCE_IGNORE, unique_id=new_id.hex(), data={}
     )
     ignored.add_to_hass(hass)
-    remember_known_mesh(hass, entry.entry_id, KnownMesh(set(), frozenset()))
+    remember_known_mesh(hass, entry.entry_id, KnownMesh([], (), frozenset()))
     caplog.set_level(logging.INFO)
     result = await _start_reconfigure(hass, entry, "path")
     result = await hass.config_entries.flow.async_configure(
@@ -2511,7 +2611,7 @@ async def test_reconfigure_after_key_refresh_removes_an_ignored_discovery(
     result = await through_areas(hass, result)
     assert result["reason"] == "reconfigure_successful"
     assert hass.config_entries.async_get_entry(ignored.entry_id) is None
-    assert entry.unique_id == new_id.hex()
+    assert entry.unique_id == MESH_UUID.lower()
     assert "already in use" not in caplog.text
     assert "Removing the ignored discovery of JUNG HOME mesh test's mesh" in caplog.text
     assert entry.entry_id not in hass.data[KNOWN_MESHES]
@@ -2552,7 +2652,7 @@ async def test_reconfigure_applies_the_key_refresh_the_hub_followed(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert entry.unique_id == new.network_id.hex()
+    assert entry.unique_id == MESH_UUID.lower()
 
 
 @pytest.mark.parametrize(
@@ -2615,7 +2715,7 @@ async def test_reconfigure_flow_legacy_entry_without_readable_export(
         CONF_CDB_PATH: other_path,
         CONF_MESH_UUID: OTHER_MESH_UUID,
     }
-    assert entry.unique_id == other_id.hex()
+    assert entry.unique_id == OTHER_MESH_UUID.lower()
 
 
 async def test_reconfigure_of_a_legacy_entry_refuses_a_mesh_another_entry_owns(
@@ -2653,6 +2753,28 @@ async def test_reconfigure_of_a_legacy_entry_refuses_a_mesh_another_entry_owns(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "mesh_already_configured"
     assert dict(entry.data) == before
+
+
+async def test_reconfigure_of_a_second_entry_of_a_mesh_keeps_its_unique_id(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Two entries of one mesh (which should not exist) both keep their unique ids: a reconfigure of the one still
+    holding its Network ID does not take the mesh UUID the other holds (Home Assistant would log the id as in use)."""
+    mock_config_entry.add_to_hass(hass)
+    entry = _entry(MESH_UUID)
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure(hass, entry, "path")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], FORM_INPUT
+    )
+    await hass.async_block_till_done()
+    result = await through_areas(hass, result)
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.unique_id == "1fbd2c61a4b6e5a4"
+    assert mock_config_entry.unique_id == MESH_UUID.lower()
 
 
 async def test_reconfigure_refetch(
