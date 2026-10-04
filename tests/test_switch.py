@@ -582,6 +582,30 @@ async def test_unlock_keeps_the_priority_of_the_lock_it_releases(
     assert hass.states.get(eid).state == STATE_OFF
 
 
+@pytest.mark.parametrize(
+    ("reported", "sent"),
+    [
+        # unlocked as a light reported it on air: command 0, priority 0, no time limit, a 4-byte value
+        ("0000000000000000", "00010000"),
+        # the app's lock as the light reported it on air: the unlock keeps its priority (and the fields read)
+        ("0201000000000000", "0001000000000000"),
+    ],
+)
+async def test_unlock_never_sends_priority_0(
+    hass: HomeAssistant, lock_enabled: None, mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],
+    reported: str, sent: str,
+) -> None:  # fmt: skip
+    """On air an unlocked light reports priority 0, and refuses an unlock with priority 0 (`00 00 00 00` answered
+    with the property id alone, the lock kept; the app's `00 01 00 00` unlocked it): with no lock to release, the
+    unlock is the plain one, not the fields read."""
+    mesh.values[SOCKET, PID_LOCK] = bytes.fromhex(reported)
+    eid = await _setup(hass, mock_config_entry)
+    await _switch(hass, SERVICE_TURN_OFF, eid)
+    assert mesh.sets[-1] == (SOCKET, PID_LOCK, bytes.fromhex(sent))
+    assert hass.states.get(eid).state == STATE_OFF
+
+
 async def test_unlock_of_an_unknown_lock_state_sends_the_plain_unlock(
     hass: HomeAssistant, lock_enabled: None, mesh: PropertyMesh,
     mock_config_entry: MockConfigEntry, mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],

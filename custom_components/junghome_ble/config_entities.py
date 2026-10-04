@@ -574,9 +574,10 @@ def lock_mode(value: P.EnforcedOutput) -> str:
 class LockFunctionEntity(PropertyEntity):
     """An entity over a load's lock function (0x0009): the *Lock* switch, a blind's *Lock function* and *Wind alarm*.
 
-    Nothing publishes the lock state (`docs/gap-analysis/control-and-state.md` §5 q. 1): it is read once per link like
-    every config entity, and read back when a timed lock should have ended — the device ends it on its own and
-    tells no one. Entities of the same load that want the read-back at the same moment share one Get
+    It is read once per link like every config entity, and read back when a timed lock should have ended — the device
+    ends it on its own and is not known to tell anyone. A lock set by another client reaches it without a read: the
+    load publishes its lock (an LBC User Property Status of 0x0009) to its element group when locked and on every
+    Set it refuses while locked (seen on air, `docs/hidden-features.md` §12), and every vendor Status is taken. Entities of the same load that want the read-back at the same moment share one Get
     (`PropertyReader.read`'s `since`).
     """
 
@@ -630,10 +631,15 @@ class LockFunctionEntity(PropertyEntity):
             )
 
     async def async_unlock(self) -> None:
-        """Unlock: command 0 with the priority, time and value last read, as the app does."""
+        """Unlock: command 0 with the priority, time and value of the lock last read, as the app does.
+
+        Without a lock to release (none read, or the load reported itself unlocked) it is the plain unlock
+        `00 01 00 00`: an unlocked load reports priority 0, and a load refuses an unlock with priority 0 (on air, a
+        locked light answered `00 00 00 00` with the property id alone and stayed locked).
+        """
         self._cancel_expiry()
         current = self.lock
-        if current is not None:
+        if current is not None and current.locked:
             await self.async_write_value(replace(current, command=P.ENFORCE_UNLOCK))
         else:
             await self.async_write_value(P.UNLOCK)
@@ -658,9 +664,10 @@ class LockFunctionEntity(PropertyEntity):
 class LoadLock(JungHomeEntity):
     """Lock awareness of a light or socket: what the app does with a locked load's controls.
 
-    A load locked in the app, by a key or by its *Lock* switch keeps its state against every command. Nothing
-    publishes the lock (`docs/gap-analysis/control-and-state.md` §5 q. 1), and the app reads 0x0009 of every load
-    when its device list opens: the entity reads it once per link (`_maybe_read_lock`), through the property
+    A load locked in the app, by a key or by its *Lock* switch keeps its state against every command. The app reads
+    0x0009 of every load when its device list opens; the load also publishes its lock to its element group when
+    locked, and again on every Set it refuses (an LBC User Property Status, seen on air), which lands here like
+    any vendor Status. The entity reads it once per link (`_maybe_read_lock`), through the property
     reader's queue, which runs after the connect-time state refresh, `PROPERTY_READ_CHUNK` loads at a time like
     it; the *Lock* switch and select share that Get (`PropertyReader.read`'s `since`, `LockFunctionEntity._read`).
     The answer lands in `ElementState.lock`; the entity shows it as the `locked` and `lock_until` attributes (None:
@@ -670,8 +677,8 @@ class LoadLock(JungHomeEntity):
     that stays silent then is taken as unlocked. A command the load did not confirm although the node answered
     something meanwhile, or an on / off it answered with the other state (a Status with the old state),
     makes the entity read the lock too, and report it as locked when it is: the command failed for the lock,
-    not for the reachability. Unverified on air: what a locked load answers to a Set (`docs/hidden-features.md`
-    §12).
+    not for the reachability. On air a locked switch insert and DALI insert answered an OnOff or Lightness Set with
+    a Status of their unchanged state (`docs/hidden-features.md` §12); the refusal itself is unverified on air.
 
     A toggle of a load whose state is not known switches it on (Home Assistant's default), where the app takes an
     unknown state for on and sends off (`ui:uc:toggledevice`): kept deliberately, as switching a load on is what a

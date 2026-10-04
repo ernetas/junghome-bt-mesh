@@ -87,6 +87,9 @@
 
 ### Fixed
 
+- Turning a load's *Lock* switch off, or a blind's *Lock function* to *Unlocked*, while the load reports no lock
+  sends the plain unlock `00 01 00 00`. It sent the fields last read, and an unlocked load reports priority 0, which
+  a load refuses in an unlock: the action failed with *does not have the setting*. Found by the on-air sweep (C3).
 - Carrying Home Assistant's changes over onto a newer app export no longer reports a removal as a conflict when the
   app had removed what it sat in (a node, a model, an exclusion): the result is what both sides wanted, so it counts
   as applied. Found by the merge's property test.
