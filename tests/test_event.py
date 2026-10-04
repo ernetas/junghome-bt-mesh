@@ -597,7 +597,7 @@ async def test_every_hold_ends_after_the_maximum(
     # the maximum here) ends at DIM_HOLD_MAX, its quiet timer with it
     got.clear()
     with patch(
-        "custom_components.junghome_ble.hub_gestures.DIM_HOLD_QUIET", DIM_HOLD_MAX * 2
+        "custom_components.junghome_ble.hub.gestures.DIM_HOLD_QUIET", DIM_HOLD_MAX * 2
     ):
         fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, _delta(500, 4))
         await hass.async_block_till_done()

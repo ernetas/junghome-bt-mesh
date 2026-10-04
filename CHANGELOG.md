@@ -674,21 +674,22 @@
   air follow once the maintainer has made them. `tests/upgrade/` loads what v1.0.0 stored (its config entry and its
   sequence-number store, dumped by the tag's own test harness) into the current code and checks the migration, that
   the sequence number carries on and that the stored replay list holds.
-- Internal: the hub's remaining components (review-4 brief 60: A4-3, A4-13), each moved verbatim out of
-  `JungHomeHub` into the `hub/` package with its own state: `hub/liveness.py` (`Liveness`, `hub.liveness`: the nodes'
-  reachability and heartbeats; the diagnostics read `hub.liveness.configured_at` instead of a private attribute),
-  `hub/energy.py` (`Energy`, `hub.energy`: the meter readings and counters, their polls, the reset, the history
-  import's trigger), `hub/clock.py` (`Clock`, `hub.clock`: the Time Set and location broadcasts), `hub/export_watch.py`
-  (`ExportWatch`, `hub.export_watch`: the unknown nodes, the gateway's export refresh and the gateway's trust),
-  `hub/refresh.py` (`Refresh`, `hub.refresh`: the connect-time reads), `hub/issues.py` (`Issues`, `hub.issues`: the
-  repair issues and their fixes) and `hub/link.py` (`LinkManager`, `hub.link`: the connection loop, proxy choice,
-  connect, watchdog, keep-alive, Filter Status watch and the link-loss grace). Every timer and task the hub stops is registered by name in
-  `hub/lifecycle.py` (`Lifecycle`, `hub.lifecycle`), and `async_stop` cancels them through it in the order it always
-  did (a test pins that order); the connection loop's back-off and the export re-fetch's are one `Backoff`. The hub
-  keeps one-line delegations for what entities, actions, the configurator and the diagnostics call
-  (`node_alive`, `unreachable`, `last_heard`, `heartbeats`, …); the tests of each component moved out of
-  `tests/test_coordinator.py` into `tests/test_hub_<component>.py`. Log lines of the moved code come from the
-  component's logger. No behaviour changes.
+- Internal: the hub's remaining components (review-4 brief 60: A4-3, A4-13). `JungHomeHub` is the composition root
+  of the `hub/` package, each component moved verbatim out of it with its own state: `hub/liveness.py` (`Liveness`:
+  the nodes' reachability and heartbeats; the diagnostics read `hub.liveness.configured_at` instead of a private
+  attribute), `hub/energy.py` (`Energy`: the meter readings and counters, their polls, the reset, the trigger of the
+  history import), `hub/clock.py` (`Clock`: the Time Set and location broadcasts), `hub/export_watch.py`
+  (`ExportWatch`: the unknown nodes, the gateway's export refresh and the gateway's trust), `hub/refresh.py`
+  (`Refresh`: the connect-time reads), `hub/issues.py` (`Issues`: the repair issues and their fixes) and
+  `hub/link.py` (`LinkManager`: the connection loop, proxy choice, connect, watchdog, keep-alive, Filter Status
+  watch and the link-loss grace); `hub_gestures.py` moved to `hub/gestures.py`. Every timer and task the hub stops
+  is registered by name in `hub/lifecycle.py` (`Lifecycle`), and `async_stop` cancels them through it in the order
+  it always did (a test pins that order); the connection loop's back-off and the export re-fetch's are one
+  `Backoff`. The hub keeps one-line delegations for what entities, actions, the repairs, the configurator and the
+  diagnostics call (`node_alive`, `unreachable`, `last_heard`, `link_available`, `async_wait_connected`,
+  `reset_consumption`, …); the tests of each component moved out of `tests/test_coordinator.py` into
+  `tests/test_hub_<component>.py`. Log lines of the moved code come from the component's logger. No behaviour
+  changes.
 - Docs (review-4 brief 43: D29, Q4-10, Q4-11, U4-4, U4-10): a task-based user guide for Home Assistant users
   (`docs/user/`: getting started, everyday use, buttons and automations with a recipe for a key that only talks to
   Home Assistant, energy, changing the installation, maintenance with every repair notice, FAQ) and a German quick

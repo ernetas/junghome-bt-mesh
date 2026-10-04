@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_call_later
 
-from .const import (
+from custom_components.junghome_ble.const import (
     ATTR_REASON,
     BUTTON_REPEAT_WINDOW,
     DEFAULT_CLICK_DELAY,
@@ -39,12 +39,14 @@ from .const import (
     OPTION_CLICK_DELAY,
     TID_REPEAT_WINDOW,
 )
-from .jhmesh import messages as M
-from .jhmesh.devices import Button
+from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.jhmesh.devices import Button
 
 if TYPE_CHECKING:
-    from .coordinator import JungHomeHub, LinkEnd
-    from .jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.jhmesh.client import AccessMessage
+
+    from .link import LinkEnd
 
 _LOGGER = logging.getLogger(__name__)
 

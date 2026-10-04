@@ -73,7 +73,7 @@ class Refresh:
         await self.hub.clock.send_location()
         if not await self._refresh_all():
             return
-        # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
+        # a link lost meanwhile cancelled this task (`LinkManager.cancel_refresh`): the link is still the one refreshed
         self.hub.link.link_refresh = time.monotonic() - self.hub.link.link_since
         self.hub.link.set_link_state(LINK_CONNECTED)
         await self.hub.energy.poll()
@@ -343,7 +343,7 @@ class Refresh:
     ) -> None:
         """Ask one load for its state now, with the connect-time refresh's Get for its kind; best effort.
 
-        The reply lands in `states` through `_on_message`, as every status does. A lost link is left for the
+        The reply lands in `states` through `JungHomeHub._on_message`, as every status does. A lost link is left for the
         caller's next send to report. `quiet`: one attempt, its miss no verdict on the node (the periodic re-probe of
         a node already known to be unreachable).
         """

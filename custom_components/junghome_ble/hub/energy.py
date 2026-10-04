@@ -267,7 +267,7 @@ class Energy:
         """Ask a load's meter element for its readings, one property-qualified Sensor Get per `meter_readings` entry.
 
         The meter ignores an unqualified Sensor Get, so the readings are asked for one at a time; each reply is a
-        Sensor Status `_on_sensor_status` stores. One attempt each: the meter publishes every change afterwards,
+        Sensor Status `JungHomeHub._on_sensor_status` stores. One attempt each: the meter publishes every change afterwards,
         so a missed reading is filled in by its next publication.
         """
         addr = load.meter_address
@@ -309,7 +309,7 @@ class Energy:
         """Zero a metered load's resettable energy total (a socket's power-on hours too), as the app's "reset consumption" does.
 
         One acknowledged Admin Property Set per COUNTER_RESETS entry the load has (`counter_element`), each answered
-        by an Admin Property Status that `_on_sig_property_status` stores. JUNG firmware may only publish the status
+        by an Admin Property Status that `JungHomeHub._on_sig_property_status` stores. JUNG firmware may only publish the status
         of a Set that changed something, so an unanswered Set is read back with a Get. The first counter that does
         not read 0 stops the reset with CounterNotReset; an unanswered read-back raises TimeoutError. The energy
         puck's reset (0x006A on its meter) is the app's (`device-settings.md` §5.2), unverified on air.

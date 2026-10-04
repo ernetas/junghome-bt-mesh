@@ -442,7 +442,7 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 - **Pass:** each hold gives one `hold_start` (`direction: up` / `down`) and one `hold_end` without `reason`, plus the
   `dim` events; the short press gives no hold. Record which form the rocker uses: the derivation was written from the
   SIG semantics only.
-- **Markers:** `custom_components/junghome_ble/hub_gestures.py::ButtonGestures.dim_hold`.
+- **Markers:** `custom_components/junghome_ble/hub/gestures.py::ButtonGestures.dim_hold`.
 
 ### B6 · Link-loss grace, re-send, short links
 

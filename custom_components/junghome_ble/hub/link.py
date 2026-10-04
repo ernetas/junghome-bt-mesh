@@ -351,7 +351,7 @@ class LinkManager:
         LINK_IDLE_TIMEOUT of silence only triggers a keep-alive Get (`_keep_alive`); the link is dropped when that
         goes unanswered as well. A link that went away while the keep-alive was out was lost, not silent.
 
-        A probe a load command asked for (`_load_command`) also settles whether the nodes that left their commands
+        A probe a load command asked for (`JungHomeHub._load_command`) also settles whether the nodes that left their commands
         unanswered are unreachable: only when the proxy answered it is the silence theirs.
         """
         self.unanswered.clear()  # misses of an earlier link: the new link's refresh asks those nodes again

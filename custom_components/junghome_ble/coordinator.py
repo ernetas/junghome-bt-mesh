@@ -88,12 +88,12 @@ from .hub.export_watch import (
     ExportWatch,
     is_gateway_host,
 )
+from .hub.gestures import ButtonGestures, EventListener
 from .hub.issues import SEQ_STALL_ISSUE_AFTER, Issues
 from .hub.lifecycle import Lifecycle, async_cancel_task
 from .hub.link import LINK_HISTORY, LinkEnd, LinkManager, LinkRecord
 from .hub.liveness import Liveness
 from .hub.refresh import ONOFF_GET, STATE_GETS, Refresh
-from .hub_gestures import ButtonGestures, EventListener
 from .identity import async_vault_keeper
 from .inserts import NodeInserts
 from .jhmesh import config_messages as C
@@ -694,7 +694,7 @@ class JungHomeHub:
         self.rx_decoded_link = 0
         self.rx_undecodable_link = 0
         # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
-        # suppression and the event listeners (`hub_gestures.py`, review-4 A4-3); it ends its holds on link loss
+        # suppression and the event listeners (`hub/gestures.py`, review-4 A4-3); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
         # element → (what its last state Set asked for, its cached values before it), for `async_wait_settled`
         self._requested: dict[
@@ -1890,7 +1890,7 @@ class JungHomeHub:
         if len(p) >= 4 and int.from_bytes(p[:2], "little") == PROPERTY_BUTTON_EVENT:
             self.gestures.button_event(m.src, p[2], p[3])
 
-    # ------------------------------------------------------------------ buttons (`hub_gestures.py`)
+    # ------------------------------------------------------------------ buttons (`hub/gestures.py`)
     @property
     def click_delay(self) -> bool:
         """Whether a `click` is held back until a double click can no longer follow (the `click_delay` option)."""

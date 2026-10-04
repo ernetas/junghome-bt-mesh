@@ -1129,12 +1129,12 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_vendor_property_set",
-    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.button_event",
+    "custom_components/junghome_ble/hub/gestures.py::ButtonGestures.button_event",
     "custom_components/junghome_ble/jhmesh/properties.py::KeyEvent"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_vendor_button_events",
-    "tests/test_coordinator.py::test_double_press_copies_interleave",
+    "tests/test_hub_gestures.py::test_vendor_button_events",
+    "tests/test_hub_gestures.py::test_double_press_copies_interleave",
     "tests/test_event.py::test_vendor_events",
     "tests/jhmesh/test_properties.py::test_key_event_codec"
    ]
@@ -1701,7 +1701,7 @@
    "tests": [
     "tests/test_switch.py::test_turn_on_off",
     "tests/test_light.py::test_switched_light",
-    "tests/test_coordinator.py::test_sig_button_messages"
+    "tests/test_hub_gestures.py::test_sig_button_messages"
    ]
   },
   {
@@ -1709,11 +1709,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_set",
-    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.from_button"
+    "custom_components/junghome_ble/hub/gestures.py::ButtonGestures.from_button"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_sig_button_messages",
-    "tests/test_coordinator.py::test_sig_button_messages_are_deduplicated",
+    "tests/test_hub_gestures.py::test_sig_button_messages",
+    "tests/test_hub_gestures.py::test_sig_button_messages_are_deduplicated",
     "tests/test_event.py::test_sig_events"
    ]
   },
@@ -1774,7 +1774,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.move_level",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_move_set",
     "custom_components/junghome_ble/light.py::JungHomeLight.async_start_dim",
-    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.dim_hold"
+    "custom_components/junghome_ble/hub/gestures.py::ButtonGestures.dim_hold"
    ],
    "tests": [
     "tests/test_light.py::test_dim_actions_move_and_step_the_level_server",
@@ -1967,11 +1967,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_recall",
-    "custom_components/junghome_ble/hub_gestures.py::ButtonGestures.from_button",
+    "custom_components/junghome_ble/hub/gestures.py::ButtonGestures.from_button",
     "custom_components/junghome_ble/logbook.py::async_describe_events"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_sig_button_messages",
+    "tests/test_hub_gestures.py::test_sig_button_messages",
     "tests/test_logbook.py::test_scene_recall_from_a_key",
     "tests/test_event.py::test_sig_events"
    ]
