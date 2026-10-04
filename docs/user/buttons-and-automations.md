@@ -142,8 +142,8 @@ room* (`junghome_ble.delete_room`).
 ## Blueprints
 
 Blueprints are ready-made automations: you import one once, then make an automation from it by filling in a form —
-which key, which lights — without writing YAML. The project offers five. **Unverified on air:** none of them has been
-run with a real key yet.
+which key, which lights — without writing YAML. The project offers six. **Unverified on air:** none of the key
+blueprints has been run with a real key yet, and the offline blueprint has not seen a device lose power.
 
 | Blueprint | What it does | |
 |---|---|---|
@@ -152,6 +152,7 @@ run with a real key yet.
 | [Key runs up to six actions](../../blueprints/automation/junghome_ble/rocker_scene_selector.yaml) | A scene, script or anything else for each of click, double click and hold, on the upper and the lower half | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Frocker_scene_selector.yaml) |
 | [Lights on with presence](../../blueprints/automation/junghome_ble/presence_lighting.yaml) | Lights on when a motion, occupancy or presence sensor detects someone (optionally only below an illuminance), off a set time after it clears | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Fpresence_lighting.yaml) |
 | [Appliance finished](../../blueprints/automation/junghome_ble/appliance_finished.yaml) | A notification when a washing machine, dryer or dishwasher on a metering socket has finished (see [Energy](energy.md#washing-machine-finished)) | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Fappliance_finished.yaml) |
+| [Device offline](../../blueprints/automation/junghome_ble/device_offline_notify.yaml) | A notification when a JUNG device has stopped answering for a set time (from *Unreachable devices*, see [Mesh health dashboard](everyday-use.md#mesh-health-dashboard)), and optionally another when it answers again | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fernetas%2Fjunghome-bt-mesh%2Fmain%2Fblueprints%2Fautomation%2Fjunghome_ble%2Fdevice_offline_notify.yaml) |
 
 **Before you use the key blueprints:**
 

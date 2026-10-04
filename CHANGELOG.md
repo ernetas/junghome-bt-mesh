@@ -33,6 +33,10 @@
   message. Every change of the link state is one `link_state from=… to=…` debug line. In the library, `ProxyClient`
   keeps the counts in a `jhmesh.stats.LinkStats` per link (`link_stats`) and in total (`total_stats`);
   `rx_undecryptable`, `rx_garbage` and `rx_proxy_config_dropped` read from it.
+- A *JUNG HOME device offline* blueprint (`device_offline_notify.yaml`, with the others in
+  `blueprints/automation/junghome_ble/`): a notification when a device has stayed in the *Unreachable devices* sensor
+  for a set time (5 minutes by default), and optionally another when it answers again. Devices that go together are
+  named together; a lost connection to the mesh reports neither. Unverified on air.
 
 ### Changed
 

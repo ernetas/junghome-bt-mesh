@@ -124,7 +124,8 @@ Three entities on the mesh network device tell how the installation is doing (**
 - **Unreachable devices** counts the mains-powered devices that do not answer, and names them in its attribute
   `devices`. A device counts from the moment it leaves a request unanswered (or, with the *Node heartbeats* option,
   stops sending its sign of life) until it is heard again; battery devices sleep and never count. It is unavailable
-  while there is no connection: then *Mesh connection* is the one that tells.
+  while there is no connection: then *Mesh connection* is the one that tells. The
+  [Device offline](buttons-and-automations.md#blueprints) blueprint turns it into a notification.
 - **Mesh overview** (a diagnostic) shows how many mains-powered devices answer, and has a row per device in its
   attribute `nodes`: `name`, `area`, `product`, `reachable` (`true` / `false`; empty for a battery device, which
   sleeps), `last_seen`, `rssi` (the signal in dBm), `scanner` (the Bluetooth adapter or proxy that hears the device

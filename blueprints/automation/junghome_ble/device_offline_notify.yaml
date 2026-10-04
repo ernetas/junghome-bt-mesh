@@ -1,0 +1,112 @@
+blueprint:
+  name: JUNG HOME device offline
+  description: >-
+    Notify when a JUNG HOME device stops answering, and optionally when it answers again, from the *Unreachable
+    devices* sensor on the mesh network device (integration *JUNG HOME Bluetooth Mesh*).
+
+
+    A mains-powered device counts as offline once it left a request unanswered (or, with the *Node heartbeats*
+    option, stopped sending its sign of life); battery devices sleep and are never reported. The notification
+    comes only if the device is still offline after the set time, so a short dropout stays quiet, and it names
+    every device that went offline together. With *Notify when back*, a second notification names each of them
+    once it answers again. While Home Assistant has no connection to the mesh the sensor is unavailable and
+    nothing is reported either way: alert on the *Mesh connection* sensor for that. A device still offline when
+    Home Assistant restarts is reported again once it is found unanswering after the restart.
+
+
+    Unverified on air: no device has been taken off the mains under the sensor yet.
+  domain: automation
+  source_url: https://raw.githubusercontent.com/ernetas/junghome-bt-mesh/main/blueprints/automation/junghome_ble/device_offline_notify.yaml
+  homeassistant:
+    min_version: 2026.9.0
+  input:
+    unreachable_sensor:
+      name: Unreachable devices sensor
+      description: The *Unreachable devices* sensor of the mesh network device.
+      selector:
+        entity:
+          filter:
+            - integration: junghome_ble
+              domain: sensor
+    offline_for:
+      name: Offline for at least
+      description: How long a device must stay offline before it is reported.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 120
+          step: 1
+          unit_of_measurement: min
+    offline_action:
+      name: Offline notification
+      description: >-
+        What to do when devices went offline, for example a notify action to your phone. The variable `devices`
+        lists their names.
+      default:
+        - action: persistent_notification.create
+          data:
+            title: JUNG HOME device offline
+            message: "Not answering: {{ devices | join(', ') }}."
+      selector:
+        action: {}
+    notify_back:
+      name: Notify when back
+      description: Also run the action below when a reported device answers again.
+      default: false
+      selector:
+        boolean: {}
+    back_action:
+      name: Back notification
+      description: What to do when reported devices answer again. The variable `devices` lists their names.
+      default:
+        - action: persistent_notification.create
+          data:
+            title: JUNG HOME device back
+            message: "Answering again: {{ devices | join(', ') }}."
+      selector:
+        action: {}
+
+# one run per change of the list: each watches the devices that joined it, from the wait to their return
+mode: parallel
+max: 100
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input unreachable_sensor
+    attribute: devices
+
+variables:
+  sensor: !input unreachable_sensor
+  notify_back: !input notify_back
+  # the names that joined the list; a list missing on either side (the sensor unavailable: no link) tells nothing
+  gone: >-
+    {% set before = trigger.from_state.attributes.get('devices') if trigger.from_state else none %}
+    {% set after = trigger.to_state.attributes.get('devices') if trigger.to_state else none %}
+    {{ after | reject('in', before) | list if before is not none and after is not none else [] }}
+
+actions:
+  - condition: "{{ gone | count > 0 }}"
+  - delay:
+      minutes: !input offline_for
+  # without a link the list is not there: wait for it before telling who is still missing
+  - wait_template: "{{ states(sensor) not in ['unavailable', 'unknown'] }}"
+  - variables:
+      devices: "{{ gone | select('in', state_attr(sensor, 'devices') or []) | list }}"
+  - condition: "{{ devices | count > 0 }}"
+  - sequence: !input offline_action
+  - condition: "{{ notify_back }}"
+  - variables:
+      waiting: "{{ devices }}"
+  - repeat:
+      while: "{{ waiting | count > 0 }}"
+      sequence:
+        # back: answering while there is a link (the list is still there), not merely unlisted during a link loss
+        - wait_template: >-
+            {{ states(sensor) not in ['unavailable', 'unknown']
+               and waiting | reject('in', state_attr(sensor, 'devices') or []) | list | count > 0 }}
+        - variables:
+            devices: "{{ waiting | reject('in', state_attr(sensor, 'devices') or []) | list }}"
+            waiting: "{{ waiting | select('in', state_attr(sensor, 'devices') or []) | list }}"
+        - sequence: !input back_action

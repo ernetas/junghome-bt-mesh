@@ -73,6 +73,7 @@ AUTOMATION = "automation.blueprint_test"
 def test_the_folder_holds_the_blueprints() -> None:
     assert BLUEPRINTS == [
         "appliance_finished.yaml",
+        "device_offline_notify.yaml",
         "presence_lighting.yaml",
         "rocker_dim_jung_light.yaml",
         "rocker_light_control.yaml",
@@ -569,3 +570,111 @@ async def test_appliance_finished_runs_the_chosen_action(
     await set_power(hass, 10)
     await tick(hass, freezer, 61)
     assert len(ran) == 1
+
+
+# ----------------------------------------------------------------------------- device_offline_notify
+
+
+UNREACHABLE = "sensor.jung_home_mesh_unreachable_devices"
+
+
+async def set_unreachable(hass: HomeAssistant, *names: str) -> None:
+    """Write the *Unreachable devices* sensor as the integration does: the count, and the names in `devices`."""
+    hass.states.async_set(UNREACHABLE, str(len(names)), {"devices": list(names)})
+    await run_ready()
+
+
+async def lose_link(hass: HomeAssistant) -> None:
+    """The sensor without a link: unavailable, and without its attributes (HA writes none for it)."""
+    hass.states.async_set(UNREACHABLE, "unavailable")
+    await run_ready()
+
+
+async def test_device_offline_notifies_after_the_delay(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """Five minutes by default; a dropout shorter than that stays quiet; no word of the return unless asked."""
+    notified = async_mock_service(hass, "persistent_notification", "create")
+    await set_unreachable(hass)
+    await use_blueprint(
+        hass, "device_offline_notify.yaml", {"unreachable_sensor": UNREACHABLE}
+    )
+    await set_unreachable(hass, "Hall light")
+    await tick(hass, freezer, 120)
+    await set_unreachable(hass)  # back within the delay
+    await tick(hass, freezer, 600)
+    assert notified == []
+    await set_unreachable(hass, "Hall light")
+    await tick(hass, freezer, 240)
+    await set_unreachable(hass, "Hall light", "Desk dimmer")
+    await tick(hass, freezer, 61)
+    assert [call.data for call in notified] == [
+        {"title": "JUNG HOME device offline", "message": "Not answering: Hall light."}
+    ]
+    await tick(hass, freezer, 240)
+    assert notified[1].data["message"] == "Not answering: Desk dimmer."
+    await set_unreachable(hass)
+    await tick(hass, freezer, 600)
+    assert len(notified) == 2
+
+
+async def test_device_offline_reports_the_return_of_each_device(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """Devices that went together are reported together, and each back on its own; a link loss is no return."""
+    offline = async_mock_service(hass, "test", "offline")
+    back = async_mock_service(hass, "test", "back")
+    await set_unreachable(hass)
+    await use_blueprint(
+        hass,
+        "device_offline_notify.yaml",
+        {
+            "unreachable_sensor": UNREACHABLE,
+            "offline_for": 1,
+            "notify_back": True,
+            "offline_action": [
+                {"action": "test.offline", "data": {"devices": "{{ devices }}"}}
+            ],
+            "back_action": [
+                {"action": "test.back", "data": {"devices": "{{ devices }}"}}
+            ],
+        },
+    )
+    await set_unreachable(hass, "Hall light", "Desk dimmer")
+    await tick(hass, freezer, 61)
+    assert [call.data["devices"] for call in offline] == [["Hall light", "Desk dimmer"]]
+    await lose_link(hass)  # the list is gone, but nobody came back
+    await set_unreachable(hass, "Hall light", "Desk dimmer")  # nor did anyone leave
+    await tick(hass, freezer, 120)
+    assert back == []
+    assert len(offline) == 1
+    await set_unreachable(hass, "Desk dimmer")
+    assert [call.data["devices"] for call in back] == [["Hall light"]]
+    await set_unreachable(hass)
+    assert [call.data["devices"] for call in back] == [["Hall light"], ["Desk dimmer"]]
+
+
+async def test_device_offline_waits_for_the_link_to_tell(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """Without a link when the time is up, the list read once the link is back decides."""
+    offline = async_mock_service(hass, "test", "offline")
+    await set_unreachable(hass)
+    await use_blueprint(
+        hass,
+        "device_offline_notify.yaml",
+        {
+            "unreachable_sensor": UNREACHABLE,
+            "offline_for": 1,
+            "offline_action": [
+                {"action": "test.offline", "data": {"devices": "{{ devices }}"}}
+            ],
+        },
+    )
+    await set_unreachable(hass, "Hall light")
+    await set_unreachable(hass, "Hall light", "Desk dimmer")
+    await lose_link(hass)
+    await tick(hass, freezer, 120)
+    assert offline == []
+    await set_unreachable(hass, "Desk dimmer")  # the light answered meanwhile
+    assert [call.data["devices"] for call in offline] == [["Desk dimmer"]]

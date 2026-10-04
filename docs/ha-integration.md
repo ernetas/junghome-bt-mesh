@@ -1321,17 +1321,21 @@ least 10 s, so a shorter wait would give up on a slow proxy that was about to co
 
 Entity IDs below depend on the names in your app; check them under **Settings → Devices & services**.
 
-**Blueprints.** The repository's `blueprints/automation/junghome_ble/` holds five automation blueprints (not part of
+**Blueprints.** The repository's `blueprints/automation/junghome_ble/` holds six automation blueprints (not part of
 the integration's download): a key switches and dims any lights (`rocker_light_control.yaml`: clicks by half,
 `press_on` / `press_off`, a `light.turn_on` loop with `brightness_step_pct` every 0.35 s for at most 30 steps while a
 half is held, ended by the next event of the key in `mode: restart`), a key dims a JUNG light
 (`rocker_dim_jung_light.yaml`: `start_dim` on `hold_start`, `stop_dim` on `hold_end`), a key runs one action per
 gesture and half (`rocker_scene_selector.yaml`), presence lighting from any motion / occupancy / presence sensor with
-an optional illuminance threshold (`presence_lighting.yaml`), and an appliance-finished notification from a power
-sensor (`appliance_finished.yaml`). The key blueprints listen to the `junghome_ble_button_action` event naming the
-key's event entity. The user guide's [Blueprints](user/buttons-and-automations.md#blueprints) has the import links
-and the manual install. The key blueprints are **unverified on air**; a JUNG detector in the presence blueprint
-too (none on this installation). They are tested against the pinned Home Assistant (`tests/test_blueprints.py`).
+an optional illuminance threshold (`presence_lighting.yaml`), an appliance-finished notification from a power
+sensor (`appliance_finished.yaml`), and a device-offline notification from the *Unreachable devices* sensor
+(`device_offline_notify.yaml`: a run per change of its `devices`, reporting the names that joined it and are still
+listed after the set delay, read once the link is back if it is down then; with *Notify when back*, each of them
+again once it leaves the list while the sensor is available, not when the list disappears with the link). The key
+blueprints listen to the `junghome_ble_button_action` event naming the key's event entity. The user guide's
+[Blueprints](user/buttons-and-automations.md#blueprints) has the import links and the manual install. The key
+blueprints are **unverified on air**, as is the offline blueprint (no device has lost power under it); a JUNG
+detector in the presence blueprint too (none on this installation). They are tested against the pinned Home Assistant (`tests/test_blueprints.py`).
 
 **Double-click a rocker linked to the gateway to run a scene**
 

@@ -126,7 +126,7 @@ pass removed the markers of the checks that passed.
 | [B8](#b8--transitions-probe-f4-1) | Transitions probe: which loads fade | DALI, dimmer, switch insert, a scene | load states | **yes** |
 | [B9](#b9--homeassistantupdate_entity-reads-the-device) | *update entity* reads the device | a light, a push-button, the app | a setting, restored | — |
 | [B10](#b10--locate_node-node-identity-f4-15) | `locate_node`: Node Identity on, then off (`msg:op:8047`) | any mains node, a BLE scanner | nothing kept | — |
-| [B11](#b11--mesh-health-a-breaker-off-u4-7) | *Mesh connection*, *Unreachable devices*, *Mesh overview* | a light on its own breaker | power of one light | **yes** |
+| [B11](#b11--mesh-health-a-breaker-off-u4-7) | *Mesh connection*, *Unreachable devices*, *Mesh overview*, the offline blueprint | a light on its own breaker | power of one light | **yes** |
 | [B12](#b12--blueprints-with-a-person-at-the-keys-u4-3) | Key blueprints on a real key | gateway-mode key, a dimmer | load states | **yes** |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
@@ -562,19 +562,25 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 
 - **Checks:** review-4 brief 45 — *Unreachable devices* counts a mains device that lost power and names it, the
   *Mesh overview* row says `reachable: false`, both go back when it is heard again; *Mesh connection* follows the
-  link; each row's `scanner` names the adapter or proxy that hears the node.
+  link; each row's `scanner` names the adapter or proxy that hears the node; the *device offline* blueprint over
+  *Unreachable devices* notifies of both.
 - **Needs:** `<light>` on a breaker you may switch off (as in [B7](#b7--a-plan-to-an-unreachable-device-is-refused);
   the two can share the sitting), a person at the breaker. **Safety:** one light without power for a few minutes.
-- **Do:** note *Unreachable devices* (0) and the *Mesh overview* attribute `nodes`; switch the breaker off; switch
-  `<light>` in Home Assistant until it is unavailable (or, with *Node heartbeats* on, wait four minutes); switch the
-  breaker on and wait until the light answers. Optionally switch the Bluetooth proxy off for a minute and on again.
+- **Do:** make an automation from the *JUNG HOME device offline* blueprint with *Offline for at least* 1 and *Notify
+  when back* on; note *Unreachable devices* (0) and the *Mesh overview* attribute `nodes`; switch the breaker off;
+  switch `<light>` in Home Assistant until it is unavailable (or, with *Node heartbeats* on, wait four minutes); after
+  two minutes switch the breaker on and wait until the light answers. Optionally switch the Bluetooth proxy off for a
+  minute and on again. Delete the automation (the blueprint may stay).
 - **Capture:** none needed; the entities' history and the log's *did not answer a request* / *is reachable again*.
 - **Pass:** *Unreachable devices* goes to 1 with the light's node device in `devices`, back to 0 when it answers;
   its `nodes` row shows `reachable: false` within a minute and `true` again; `scanner` names your adapter or proxy;
   with the proxy off, *Mesh connection* goes off after 20 s and *Unreachable devices* unavailable, both back with it.
+  The blueprint's notification names the light's node device a minute after it is listed, and a second one when it
+  answers; the proxy off and on reports neither.
 - **Markers:** `custom_components/junghome_ble/binary_sensor.py::JungHomeMeshConnection`,
   `custom_components/junghome_ble/sensor.py::JungHomeUnreachableDevices`,
-  `custom_components/junghome_ble/sensor.py::JungHomeMeshOverview`.
+  `custom_components/junghome_ble/sensor.py::JungHomeMeshOverview`,
+  `blueprints/automation/junghome_ble/device_offline_notify.yaml::blueprint.description`.
 ### B12 · Blueprints with a person at the keys (U4-3)
 
 - **Checks:** review-4 brief 46 — the key blueprints do on a real key what `tests/test_blueprints.py` drives them
