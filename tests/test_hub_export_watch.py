@@ -112,7 +112,7 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         BluetoothChange.ADVERTISEMENT,
     )
     callback_(
-        make_service_info(network_id, address="5509DA5D-8030-253D-A681-1A25C5C09316"),
+        make_service_info(network_id, address="B0C1D2E3-F405-1627-3849-5A6B7C8D9EAF"),
         BluetoothChange.ADVERTISEMENT,
     )
     callback_(
@@ -891,10 +891,10 @@ async def test_an_address_that_is_no_host_is_not_followed(
 
 
 def test_gateway_hosts() -> None:
-    assert coordinator.is_gateway_host("192.168.1.20")
+    assert coordinator.is_gateway_host("192.0.2.20")
     assert coordinator.is_gateway_host("junghome.local")
     assert coordinator.is_gateway_host("JungHome-2")
-    assert not coordinator.is_gateway_host("192.168.1")
+    assert not coordinator.is_gateway_host("192.0.2")
     assert not coordinator.is_gateway_host("a..b")
 
 

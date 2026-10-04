@@ -366,9 +366,7 @@ async def test_the_gateway_token_never_reaches_the_cache_or_the_diagnostics(
     )  # whatever level an earlier test left the mesh logger at
     hub = init_integration.runtime_data
     fake_link.inject(GATEWAY, PHONE, manufacturer_status(PID_TOKEN, TOKEN))
-    fake_link.inject(
-        GATEWAY, PHONE, manufacturer_status(PID_GATEWAY_IP, b"192.168.1.20")
-    )
+    fake_link.inject(GATEWAY, PHONE, manufacturer_status(PID_GATEWAY_IP, b"192.0.2.20"))
     fake_link.inject(GATEWAY, PHONE, manufacturer_status(PID_FINGERPRINT, b"AB" * 16))
     await settle(hass)
     assert (
@@ -379,14 +377,14 @@ async def test_the_gateway_token_never_reaches_the_cache_or_the_diagnostics(
     kept = hub.states[GATEWAY].properties
     assert PID_TOKEN not in kept  # nothing of the gateway's credentials is kept ...
     assert PID_FINGERPRINT not in kept
-    assert kept[PID_GATEWAY_IP] == b"192.168.1.20"  # ... but the address it shows
+    assert kept[PID_GATEWAY_IP] == b"192.0.2.20"  # ... but the address it shows
 
     dump = json.dumps(
         await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
     )
     assert "C001" not in dump
-    assert "192.168.1.20" not in dump
-    assert b"192.168.1.20".hex() not in dump
+    assert "192.0.2.20" not in dump
+    assert b"192.0.2.20".hex() not in dump
     assert TOKEN.decode() not in dump
     assert TOKEN.hex() not in dump
 
@@ -394,7 +392,7 @@ async def test_the_gateway_token_never_reaches_the_cache_or_the_diagnostics(
     hub.states.setdefault(GATEWAY, hub.element_state(GATEWAY)).properties[PID_TOKEN] = (
         TOKEN
     )
-    hub.states[GATEWAY].properties[PID_GATEWAY_IP] = b"192.168.1.20"
+    hub.states[GATEWAY].properties[PID_GATEWAY_IP] = b"192.0.2.20"
     device = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, NODE_GATEWAY_ID), init_integration.entry_id
     )
@@ -799,7 +797,8 @@ async def test_device_diagnostics_of_an_unknown_device(
             f"[Errno 18] Invalid cross-device link: {REDACTED} -> {REDACTED}",
         ),
         ("cannot open /config/x.json, giving up", f"cannot open {REDACTED}, giving up"),
-        ("cannot open ~/x.json", f"cannot open {REDACTED}"),
+        # a home-relative path, joined at run time so tools/privacy_scan.py does not take it for a real one
+        (f"cannot open {Path('~') / 'x.json'}", f"cannot open {REDACTED}"),
         (
             "read/write 1/3 failed",
             "read/write 1/3 failed",

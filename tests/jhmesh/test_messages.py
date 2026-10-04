@@ -410,8 +410,8 @@ def test_describe_never_shows_the_gateway_api_token():
         "LBC Manufacturer Property Status prop 0xC001 access=1 value=<redacted> gateway_api_token=<redacted>"
     )
     # the other gateway credentials are plain text on purpose (the app shows them)
-    assert M.describe(h("cb2705") + h("02c0") + b"\x01" + b"192.168.1.5\x00") == (
-        "LBC Manufacturer Property Status prop 0xC002 access=1 value=3139322e3136382e312e3500 gateway_ip=192.168.1.5"
+    assert M.describe(h("cb2705") + h("02c0") + b"\x01" + b"192.0.2.5\x00") == (
+        "LBC Manufacturer Property Status prop 0xC002 access=1 value=3139322e302e322e3500 gateway_ip=192.0.2.5"
     )
 
 
@@ -752,26 +752,26 @@ def test_sensor_get_builder_and_describe():
 
 # ----------------------------------------------------------------------------- Time Set (Mesh Model spec §5.2.1.2)
 
-EEST = timezone(timedelta(hours=3))
+UTC_PLUS_2 = timezone(timedelta(hours=2))
 
 
 def test_time_set_vector():
-    """12:00:00.5 EEST = 09:00:00.5 UTC. Days 2000-01-01..2025-01-01 = 25*365 + 7 leap = 9132, + 257 to
-    Sep 15 = 9389 days; 9389*86400 + 9*3600 + 37 (TAI-UTC) = 811_242_037 = 0x305A9235."""
-    when = datetime(2025, 9, 15, 12, 0, 0, 500_000, tzinfo=EEST)
+    """12:00:00.5 UTC+2 = 10:00:00.5 UTC. Days 2000-01-01..2025-01-01 = 25*365 + 7 leap = 9132, + 257 to
+    Sep 15 = 9389 days; 9389*86400 + 10*3600 + 37 (TAI-UTC) = 811_245_637 = 0x305AA045."""
+    when = datetime(2025, 9, 15, 12, 0, 0, 500_000, tzinfo=UTC_PLUS_2)
     pdu = M.time_set(when)
     assert pdu == (
         h("5c")  # Time Set opcode
-        + h("35925a3000")  # TAI seconds u40 LE
+        + h("45a05a3000")  # TAI seconds u40 LE
         + h("80")  # subsecond: 0.5 s * 256 = 128
         + h("00")  # uncertainty
         + h("4802")  # authority=0 | (37 + 255) << 1 = 0x0248, u16 LE
-        + h("4c")
-    )  # zone offset: +3 h = 12 quarter hours + 64 = 76
+        + h("48")
+    )  # zone offset: +2 h = 8 quarter hours + 64 = 72
     assert len(pdu) == 11
     assert (
         M.describe(pdu)
-        == "Time Set 2025-09-15T12:00:00.500000+03:00 tai=811242037 uncertainty=0ms authority=0 tai_utc_delta=37"
+        == "Time Set 2025-09-15T12:00:00.500000+02:00 tai=811245637 uncertainty=0ms authority=0 tai_utc_delta=37"
     )
 
 
@@ -792,7 +792,7 @@ def test_time_set_explicit_fields_and_zone():
         == "Time Set 2025-09-15T03:15:00-05:45 tai=811242038 uncertainty=30ms authority=1 tai_utc_delta=38"
     )
     assert M.time_set(when, zone_offset=timedelta(0)) == M.time_set(when)
-    assert M.time_set(when.astimezone(EEST), zone_offset=timedelta(0))[1:6] == h(
+    assert M.time_set(when.astimezone(UTC_PLUS_2), zone_offset=timedelta(0))[1:6] == h(
         "35925a3000"
     )  # the instant, not the wall clock
     assert M.time_set(M.TAI_EPOCH)[1:6] == (37).to_bytes(5, "little")
@@ -1437,10 +1437,10 @@ def test_describe_health_and_time_model_statuses():
     assert M.describe(h("8004")) == "Health Attention Get"
     assert M.describe(h("8034")) == "Health Period Get"
     assert M.describe(h("820d")) == "Default Transition Time Get"
-    assert M.describe(h("823d") + h("4c400000000000")) == (
-        "Time Zone Status current=+180min new=+0min change_tai=0"
+    assert M.describe(h("823d") + h("48400000000000")) == (
+        "Time Zone Status current=+120min new=+0min change_tai=0"
     )
-    assert M.describe(h("823d") + h("4c")) == "Time Zone Status 4c"
+    assert M.describe(h("823d") + h("48")) == "Time Zone Status 48"
     assert M.describe(h("8240") + h("2401ff000000000000")) == (
         "TAI-UTC Delta Status current=37s new=0s change_tai=0"
     )
@@ -1529,19 +1529,19 @@ def test_decode_time_status():
 
 
 def test_time_status_reads_back_what_time_set_sends():
-    when = (M.TAI_EPOCH + timedelta(seconds=811_242_000.25)).astimezone(EEST)
+    when = (M.TAI_EPOCH + timedelta(seconds=811_242_000.25)).astimezone(UTC_PLUS_2)
     status = M.decode_time_status(M.time_set(when)[1:])
     assert status.utc == when
-    assert status.zone_offset == 180
+    assert status.zone_offset == 120
 
 
 def test_decode_time_zone_status():
     """`[current][new]` in quarter hours + 64, then the TAI second of the change (§5.2.1.7)."""
-    assert M.decode_time_zone_status(h("4c50") + h("0102030405")) == M.TimeZoneStatus(
-        180, 240, 0x0504030201
+    assert M.decode_time_zone_status(h("4850") + h("0102030405")) == M.TimeZoneStatus(
+        120, 240, 0x0504030201
     )
     assert M.decode_time_zone_status(h("4040") + bytes(5)) == M.TimeZoneStatus(0, 0, 0)
-    for bad in (b"", h("4c50010203")):
+    for bad in (b"", h("4850010203")):
         with pytest.raises(ValueError, match="not a Time Zone Status"):
             M.decode_time_zone_status(bad)
 

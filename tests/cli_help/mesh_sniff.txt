@@ -12,7 +12,7 @@ Two halves that may run on different machines (`docs/sniffer.md`):
 
     # live view from the machine that holds the export (the capture host never sees a key):
     ssh sniffhost '/path/to/venv/bin/python - capture --api /path/to/extcap --ndjson -' < tools/mesh_sniff.py \
-        | .venv/bin/python tools/mesh_sniff.py decode --export ~/Downloads/JungHome.json -
+        | .venv/bin/python tools/mesh_sniff.py decode --export JungHome.json -
 
     # record on the sniffer host, decode later
     python3 mesh_sniff.py capture --api ~/nrfsniff/extcap --seconds 600 --ndjson cap.ndjson --pcap cap.pcap

@@ -830,13 +830,13 @@ async def test_secret_and_unknown_vendor_statuses_are_not_cached(
     assert hub.states[GATEWAY].properties == before
     assert signalled == []
     fake_link.inject(
-        GATEWAY, PHONE, vendor_status(0x0B, PID_GATEWAY_IP, b"10.0.0.2", access=1)
+        GATEWAY, PHONE, vendor_status(0x0B, PID_GATEWAY_IP, b"198.51.100.2", access=1)
     )
     fake_link.inject(
         GATEWAY, PHONE, vendor_status(0x0B, PID_API_STATUS, b"\x03", access=1)
     )
     await hass.async_block_till_done()
-    assert hub.states[GATEWAY].properties[PID_GATEWAY_IP] == b"10.0.0.2"
+    assert hub.states[GATEWAY].properties[PID_GATEWAY_IP] == b"198.51.100.2"
     assert hub.states[GATEWAY].properties[PID_API_STATUS] == b"\x03"
     assert len(signalled) == 2
 
@@ -855,7 +855,7 @@ async def test_gateway_status_and_address(
     mesh.values[GATEWAY, PID_API_STATUS] = (
         b"\x02"  # a client waits for approval, the API is not up
     )
-    mesh.values[GATEWAY, PID_GATEWAY_IP] = b"10.0.0.7\x00\x00"
+    mesh.values[GATEWAY, PID_GATEWAY_IP] = b"198.51.100.7\x00\x00"
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
     await settle(hass)
@@ -870,7 +870,7 @@ async def test_gateway_status_and_address(
     address = entity_id(hass, "sensor", f"node:{NODE_GATEWAY}-gateway_ip")
     assert hass.states.get(available).state == STATE_OFF
     assert hass.states.get(waiting).state == STATE_ON
-    assert hass.states.get(address).state == "10.0.0.7"
+    assert hass.states.get(address).state == "198.51.100.7"
     assert mesh.gets.count((GATEWAY, PID_API_STATUS)) == 1  # two sensors, one read
     assert mesh.gets.count((GATEWAY, PID_GATEWAY_IP)) == 1
     registry = er.async_get(hass)
@@ -895,7 +895,7 @@ async def test_gateway_status_and_address(
         fake_link.inject(GATEWAY, PHONE, vendor_status(0x0B, pid, b"", access=1))
     await settle(hass)
     assert hass.states.get(available).state == STATE_ON
-    assert hass.states.get(address).state == "10.0.0.7"
+    assert hass.states.get(address).state == "198.51.100.7"
 
 
 async def test_initial_reads_are_chunked_delayed_and_deduplicated(

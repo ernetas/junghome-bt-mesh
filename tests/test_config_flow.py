@@ -137,7 +137,7 @@ ENTRY_DATA = {
 OTHER_NETKEY = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
 OTHER_ADDRESS = "11:22:33:44:55:66"  # a proxy no node of the export advertises from
 
-HOST = "192.168.1.50"
+HOST = "192.0.2.50"
 API = f"https://{HOST}/api/junghome"
 TOKEN = "tok-first"
 TOKEN_2 = "tok-second"
@@ -3047,7 +3047,7 @@ async def test_reconfigure_gateway_step_other_gateway(
     mock_learn: AsyncMock,
 ) -> None:
     """A different address than the entry's gateway: its token is not tried, access is requested anew."""
-    other_api = "https://10.0.0.9/api/junghome"
+    other_api = "https://198.51.100.9/api/junghome"
     aioclient_mock.get(f"{other_api}/version/", json={"api_version": "1.5.0"})
     aioclient_mock.post(f"{other_api}/register", json={"token": TOKEN_2})
     aioclient_mock.get(f"{other_api}/project/junghome", json=_share_export())
@@ -3055,7 +3055,7 @@ async def test_reconfigure_gateway_step_other_gateway(
     entry.add_to_hass(hass)
     result = await _start_reconfigure(hass, entry, "gateway")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {**GATEWAY_INPUT, CONF_GATEWAY_HOST: "10.0.0.9"}
+        result["flow_id"], {**GATEWAY_INPUT, CONF_GATEWAY_HOST: "198.51.100.9"}
     )
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _advance_progress(hass, result)
@@ -3063,12 +3063,12 @@ async def test_reconfigure_gateway_step_other_gateway(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert entry.data[CONF_GATEWAY_HOST] == "10.0.0.9"
+    assert entry.data[CONF_GATEWAY_HOST] == "198.51.100.9"
     assert entry.data[CONF_GATEWAY_TOKEN] == TOKEN_2
     assert _calls(aioclient_mock, "/project/junghome")[0][3] == {"token": TOKEN_2}
     # another host: the entry's pin does not apply, the certificate was learned for the new one
     mock_learn.assert_awaited_once()
-    assert mock_learn.call_args[0][1] == "10.0.0.9"
+    assert mock_learn.call_args[0][1] == "198.51.100.9"
 
 
 async def test_reconfigure_upload(

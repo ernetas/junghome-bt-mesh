@@ -1,10 +1,10 @@
 # JUNG HOME mesh sniffer: unattended advertising-bearer capture with the nRF Sniffer dongle (docs/sniffer.md,
-# "Unattended capture"). One NDJSON file per day under ~/nrfsniff/captures, byte-identical repeats folded
+# "Unattended capture"). One NDJSON file per day under %h/nrfsniff/captures, byte-identical repeats folded
 # (`--dedupe 2`), no key anywhere near it. The dongle has one user: stop the service before an ad-hoc capture.
 #
 #   scp tools/mesh_sniff.py sniffhost:nrfsniff/ && scp tools/mesh-sniff.service sniffhost:.config/systemd/user/
 #   ssh sniffhost 'systemctl --user daemon-reload && systemctl --user enable --now mesh-sniff.service'
-#   (the user must linger: `loginctl enable-linger`, already the case on sniffhost)
+#   (the user must linger: `loginctl enable-linger`)
 
 [Unit]
 Description=JUNG HOME mesh sniffer: unattended advertising-bearer capture (nRF Sniffer on /dev/ttyACM0)

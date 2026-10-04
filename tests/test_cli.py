@@ -130,7 +130,7 @@ def test_resolve_property_by_name_and_id():
         ("secure_element_version", "0.1.2.13", h("0d020100")),
         ("key_property_value_up", "0201", h("0201")),  # raw: hex
         ("led1_mode_on", "hex:64000005", h("64000005")),  # struct-like: hex escape
-        ("gateway_ip", "192.168.1.5", b"192.168.1.5"),
+        ("gateway_ip", "192.0.2.5", b"192.0.2.5"),
     ],
 )
 def test_parse_value(prop: str, text: str, wire: bytes):

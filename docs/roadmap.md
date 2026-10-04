@@ -207,7 +207,7 @@ What the full sweep of every Bluetooth layer could not do, or left half-done —
 - [x] Does the *Identify* button blink the LED? **Yes** (bedroom-door push-button `0297`). The
   button moved to the device whose LED it is (a push-button's buttons device, the socket) — the user looked for it
   there first.
-- [ ] The stray JUNG 1-gang push-button `30:FB:10:60:A3:82` advertising without a mesh near the living-room door:
+- [ ] The stray JUNG 1-gang push-button (JUNG OUI `30:FB:10`) advertising without a mesh near the living-room door:
   a spare / unpaired insert, or a neighbour's?
 
 **Infrastructure to check (HA side):**

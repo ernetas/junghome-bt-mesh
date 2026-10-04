@@ -1,5 +1,5 @@
 {
- "source": "~/nrfsniff/captures/*.ndjson + ~/nrfsniff/*.ndjson on the sniffer host, decoded there with the installation's export (keys never leave it); including settings.json: the JUNG HOME Android app's 10-minute settings session (role pidNone/el0 = unicast 0001, the app's provisioner node, which the export lists without a product id). Records carry parameter lengths only, never parameter values.",
+ "source": "the capture files on the capture host (the daily captures of tools/mesh-sniff.service and ad-hoc ones), decoded there with the installation's export (keys never leave it); including settings.json: the JUNG HOME Android app's 10-minute settings session (role pidNone/el0 = unicast 0001, the app's provisioner node, which the export lists without a product id). Records carry parameter lengths only, never parameter values.",
  "records": [
   {
    "kind": "access",

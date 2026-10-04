@@ -158,7 +158,7 @@ def test_raw_and_text_codecs():
     with pytest.raises(ValueError, match="expected bytes"):
         P.RAW.encode(5)
     text = P.Text()
-    assert text.decode(b"192.168.1.5\x00\x00") == "192.168.1.5"
+    assert text.decode(b"192.0.2.5\x00\x00") == "192.0.2.5"
     assert text.decode(b" sha256:ab \x00") == "sha256:ab"
     assert text.encode("JUNG") == b"JUNG"
     with pytest.raises(ValueError, match="expected a string"):
@@ -719,7 +719,7 @@ def test_duplicate_ids_are_rejected_when_indexing():
         ),
         (0x5012, h("0305"), False, "key_event=KeyEvent(counter=3, event='pushed')"),
         (0xC001, b"very-secret-token", False, "gateway_api_token=<redacted>"),
-        (0xC002, b"192.168.1.5\x00", False, "gateway_ip=192.168.1.5"),
+        (0xC002, b"192.0.2.5\x00", False, "gateway_ip=192.0.2.5"),
         (0xC000, b"\x01", False, "gateway_api_status=api_available"),
         (0x001A, b"02020002", True, "software_version=2.2.0.2"),
         (0x006D, h("102700"), True, "power_on_time=10000h"),
@@ -771,7 +771,10 @@ def test_secret_specs_are_redacted_even_when_their_codec_cannot_decode(
     monkeypatch.setattr(type(spec.codec), "decode", staticmethod(refuse))
     token = b"very-secret-token"
     assert P.describe_status(0xC001, token) == "gateway_api_token=<redacted>"
-    assert P.describe_status(0xC002, b"10.0.0.1") == "gateway_ip=?31302e302e302e31"
+    assert (
+        P.describe_status(0xC002, b"198.51.100.1")
+        == "gateway_ip=?3139382e35312e3130302e31"
+    )
     assert P.format_value(spec, "anything") == P.REDACTED == "<redacted>"
     assert [s.name for s in P.PROPERTIES.values() if s.secret] == ["gateway_api_token"]
     assert not any(s.secret for s in P.SIG_PROPERTIES.values())

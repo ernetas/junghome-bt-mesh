@@ -5,9 +5,9 @@ document for the resulting work. Tick items as they land; keep the evidence cita
 
 | Label | What | Where |
 |---|---|---|
-| **B** | this repo — Bluetooth-direct HA integration `custom_components/junghome_ble` + `jhmesh` | `~/junghome-bt-mesh` |
-| **G** | gateway-based HA integration `custom_components/junghome` (HACS, 1.5.0b6, REST + WS) | `~/w/p/junghome` (git) — its own tracker: `docs/cross-repo-analysis.md` there |
-| **FW** | JUNG HOME Gateway microSD dump, firmware v2.1.3 build 2840, API 1.5.0 | `~/jung/sdc1..4`; `sdc2` is byte-identical to `~/w/p/junghome/disk_dump/jung/sdc2` and a later dump's `sdb2` (verified with `diff -rq`); only the data partition (`sdc4`/`sdb4`) differs (`bt_mesh_project.json`, `cdb_functions.json`, `jung_home_project.json`, `btmesh_sequence_number` 0x9FC000 → 0xA68000) |
+| **B** | this repo — Bluetooth-direct HA integration `custom_components/junghome_ble` + `jhmesh` | `<workspace>/junghome-bt-mesh` |
+| **G** | gateway-based HA integration `custom_components/junghome` (HACS, 1.5.0b6, REST + WS) | `<workspace>/junghome` (git) — its own tracker: `docs/cross-repo-analysis.md` there |
+| **FW** | JUNG HOME Gateway microSD dump, firmware v2.1.3 build 2840, API 1.5.0 | `<dump>/sdc1..4`; `sdc2` is byte-identical to the `sdc2` of an earlier dump kept next to **G** and a later dump's `sdb2` (verified with `diff -rq`); only the data partition (`sdc4`/`sdb4`) differs (`bt_mesh_project.json`, `cdb_functions.json`, `jung_home_project.json`, `btmesh_sequence_number` 0x9FC000 → 0xA68000) |
 
 FW path shorthands: `MW` = `sdc2/opt/middleware/dist`, `BT` = `sdc2/opt/bt_tunnel/lbc-gw-bt-tunnel_pi-zero`,
 `RES6` = `sdc4/middleware/res_6`. Never copy key material from the dump or the iOS backup into any doc.
@@ -330,7 +330,7 @@ with it (details in `docs/sniffer.md` "What the first captures established").
   newline, once the writer kept the iOS top-level key order (`network` first; `export.Style.outer_keys`). Its
   `cachedGroupConnectionMetadata[].function` is the enum **name** (`"LIGHT"`), like Android's.
 
-## 9. G items (tracked in `~/w/p/junghome/docs/cross-repo-analysis.md`)
+## 9. G items (tracked in `<workspace>/junghome/docs/cross-repo-analysis.md`)
 
 Summary for cross-reference: reauth never reloads a `SETUP_ERROR` entry (`config_flow.py:501-518`, reproduced);
 event entities available without WS; deleted scenes linger `unavailable`; WS-failure repair fires on every gateway

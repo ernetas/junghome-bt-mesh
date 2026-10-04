@@ -97,7 +97,7 @@ Read from `0148` (switch insert), `0232` (DALI) and `0173` (meter); all answered
 | **Health Attention / Period** (`0148`) | 0 / 0 | `Health Attention Set` = "identify me" — the app uses attention only in the provisioning invite. Written: `Attention Set 10` answered `10`, the timer read `7` three seconds later and `0` after eleven — now the *Identify* button of every node in HA. **The LED does blink** (the user watched the bedroom-door push-button `0297`; the node answered `Attention Status 10`). |
 | **Health Fault Status** (`0148`, `0172`) | test 0, company `0527`, faults `[0x81]` | every node reports vendor fault `0x81`; meaning unknown (`0x80`–`0xFF` are vendor-specific codes). Worth watching across nodes / after a mains loss. |
 | **Sensor Cadence / Settings / Series / Column** (`0173`) | status carries the property id only | the Sensor Setup Server is there but holds **no cadence**: the ~65 s publication rhythm is firmware, not configurable (`sniffer.md`) |
-| Time (`0148`) | correct to the second (local time zone +180 min, TAI−UTC 37 s) | HA sends Time Set daily; **Time Role** = 3 (client). The app's "time keeper" switch is Time Role 2 + a publication to `FEFF` |
+| Time (`0148`) | correct to the second (local zone offset as set in HA, TAI−UTC 37 s) | HA sends Time Set daily; **Time Role** = 3 (client). The app's "time keeper" switch is Time Role 2 + a publication to `FEFF` |
 | Generic Location Global (`0148`) | not configured | set by the app only when an astro schedule is created, with the phone's GPS; HA could set `zone.home` once for every node |
 | Generic Location Local, Generic Battery (`0148`) | no answer | not served (no Battery Server on mains devices) |
 
@@ -175,7 +175,7 @@ bundled in the APK (`android/…/assets/updates/`), and that version reads need 
 
 ## 8. On air outside the mesh PDUs — what a node tells anyone (sniffer + one GATT connection)
 
-Advertising survey (`~/nrfsniff/adv_survey.py`, `jung_adv.py` on the sniffer host; 60 s + 180 s):
+Advertising survey (`adv_survey.py`, `jung_adv.py` on the capture host; 60 s + 180 s):
 
 - The proxy advertisement of every node is a connectable `ADV_IND` with Flags `06`, the 16-bit UUID list `1828`
   and service data `1828` type `00` + Network ID (~28 per node per second across the three channels). No local
@@ -220,7 +220,7 @@ mode). The mesh traffic itself stays properly encrypted and address-randomised.
 
 All read-only or idempotent (values written back unchanged), CLI address `0D03`, sniffer recording the air side.
 
-**Inventory of the 30 nodes** (`~/…/scratchpad/inventory.py`, one connection):
+**Inventory of the 30 nodes** (a one-off `inventory.py` script, one connection):
 - Firmware: every push-button (pid 1 / 2) on **2.2.0.2**, every mini actuator (pid 4) and socket (pid 3) on
   **2.2.0.1**; the gateway has no SIG property server to ask.
 - Clocks (`Time Get`): 27 nodes answered, all within **−0.8 … +0.9 s** of this Mac — HA's daily `Time Set` does its

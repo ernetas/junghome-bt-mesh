@@ -665,20 +665,20 @@ def test_decoder_private_beacon_spec_vector(cdb: CDB):
 
 def test_decoder_unprovisioned_device_beacons(air: Air, decoder: MeshDecoder):
     """A device waiting to be provisioned: its UUID and OOB Information (named), and the URI hash when it has one."""
-    uuid = h("70cf7c9732a345b691494810d2e9cbf4")
+    uuid = h("f0e1d2c3b4a5968778695a4b3c2d1e0f")
     got = decoder.feed(air.record(b"\x00" + uuid + b"\x00\x00", kind="beacon"))
     assert got.kind == "unprovisioned"
     assert got.text == (
-        "unprovisioned device beacon 70CF7C97-32A3-45B6-9149-4810D2E9CBF4 oob=0000"
+        "unprovisioned device beacon F0E1D2C3-B4A5-9687-7869-5A4B3C2D1E0F oob=0000"
     )
     assert got.device is not None
-    assert got.device.uuid == "70CF7C97-32A3-45B6-9149-4810D2E9CBF4"
+    assert got.device.uuid == "F0E1D2C3-B4A5-9687-7869-5A4B3C2D1E0F"
     assert got.beacon is None
     got = decoder.feed(
         air.record(b"\x00" + uuid + b"\x08\x02" + h("d97478b3"), kind="beacon")
     )
     assert got.text == (
-        "unprovisioned device beacon 70CF7C97-32A3-45B6-9149-4810D2E9CBF4"
+        "unprovisioned device beacon F0E1D2C3-B4A5-9687-7869-5A4B3C2D1E0F"
         " oob=0802 (URI, on box) uri_hash=d97478b3"
     )
     assert got.device is not None

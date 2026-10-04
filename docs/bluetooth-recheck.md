@@ -1,8 +1,8 @@
 # Full Bluetooth recheck — every layer, what was verified, what is still open
 
-Done (user away) against the live installation: 30 nodes (29 devices + gateway), firmware
+Done against the live installation: 30 nodes (29 devices + gateway), firmware
 2.2.0.1 / 2.2.0.2, keys from the app's share export of the same day. Instruments: the nRF sniffer on the HA host
-(`sniffer.md`), bleak on a Mac in the flat, the CLI at address `0D03`, Home Assistant's own Bluetooth diagnostics
+(`sniffer.md`), bleak on a Mac in radio range, the CLI at address `0D03`, Home Assistant's own Bluetooth diagnostics
 (three ESPHome proxies). Everything below is read-only or was written back unchanged; nothing was left modified.
 Open items are collected in `roadmap.md` § "TODO from the Bluetooth recheck".
 
@@ -22,7 +22,7 @@ Legend: ✅ verified on air · 📄 from firmware / app code only · ❌ could n
 | Secure Network Beacons | ✅ | ~1 per 10 s network-wide (spec's adaptive rate), IV 0, no flags. |
 | Unprovisioned Device Beacons / PB-ADV | ✅ | none in any capture (nothing is being provisioned). |
 | Node Identity adverts | ✅ | none (all nodes stopped, Config Node Identity Get = 0); a node can be told to advertise it (not tested — write). |
-| Other radios | ✅ | Daikin AC, Xiaomi `fe95`, an Apple iBeacon, ESPHome devices; **one JUNG 1-gang push-button `30:FB:10:60:A3:82` advertising the JUNG record with appearance but no mesh service (unprovisioned, or another network) at −70 dBm from the living-room-door proxy** — a spare / unpaired device? |
+| Other radios | ✅ | Daikin AC, Xiaomi `fe95`, an Apple iBeacon, ESPHome devices; **one JUNG 1-gang push-button (JUNG OUI `30:FB:10`) advertising the JUNG record with appearance but no mesh service (unprovisioned, or another network) at −70 dBm from the living-room-door proxy** — a spare / unpaired device? |
 
 ## 2. GATT (what anyone can connect to, no key)
 
@@ -44,7 +44,7 @@ Legend: ✅ verified on air · 📄 from firmware / app code only · ❌ could n
 | Segmentation / SAR | ✅ | segmented TX and RX with acks (2-segment property statuses, version reads); the gateway acks segment 1 with `block=1`, then both. SAR Configuration Server (Mesh 1.1) answers: Receiver `43 11 02`, Transmitter `71 72 11 03` (devices); the gateway does not answer SAR Gets. |
 | Replay protection | ✅ | per-source SeqAuth on nodes (a burnt address is dropped silently — `0D00`); crpl 64 on devices, 720 on the gateway. |
 | Heartbeats | ✅ | every node publishes when asked (Config Heartbeat Publication Set), 64 s, TTL 5, `features=0003`; all 29 reach HA (≤ 4 hops). Heartbeat Subscription works as a hop counter between two nodes (`config hops`; `hidden-features.md` §10). |
-| Time | ✅ | all answering nodes within ±1 s (HA's daily Time Set), zone +180 min, TAI−UTC 37 s, Time Role client (3) on devices. |
+| Time | ✅ | all answering nodes within ±1 s (HA's daily Time Set), zone offset as set in HA, TAI−UTC 37 s, Time Role client (3) on devices. |
 | IV Update / Key Refresh | 📄 | IV 0, phase 0; IV Update following implemented and unit-tested, never seen on air (forecast: within 6–12 months) — a long passive capture would catch it. Key Refresh is followed from the provisioner's NetKey Update / Phase Set messages (unit-tested, never seen on air); a flagged beacon no known key authenticates raises the `key_refresh` repair hint (`ha-integration.md`). |
 
 ## 4. Models and states (application layer)

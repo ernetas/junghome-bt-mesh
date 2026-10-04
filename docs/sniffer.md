@@ -18,13 +18,14 @@ counter and one of the node's proxy slots.
 ## Hardware and setup
 
 - nRF52840 dongle with Nordic's **nRF Sniffer for Bluetooth LE 4.1.1** firmware (USB `1915:522a`, appears as
-  `/dev/ttyACM0`), on the Home Assistant host `sniffhost` (Arch Linux, user in group `uucp`).
-- Nordic's extcap package unpacked in `~/nrfsniff/extcap` (`nrf_sniffer_ble.py`, `SnifferAPI/`) with a venv in
-  `~/nrfsniff/venv` (`pyserial`, `psutil`) and a `README.md` next to them (it first lived under `/tmp`, moved
-  so it survives a reboot).
-- Two quirks of Nordic's package on that host: the extcap wants its interface named `<port>-<version>`
-  (`/dev/ttyACM0-4.1.1`), and `SnifferAPI/Filelock.py` writes `/var/lock/LCK..ttyACM0`, which is root-only on Arch
-  (`PermissionError`). `tools/mesh_sniff.py` drives `SnifferAPI` directly and disables that lock (the dongle has one
+  `/dev/ttyACM0`), on the Home Assistant host (`sniffhost` in the examples below); the capture user needs access
+  to the serial device (the group that owns it, `uucp` or `dialout` depending on the distribution).
+- Nordic's extcap package unpacked in `~/nrfsniff/extcap` (`nrf_sniffer_ble.py`, `SnifferAPI/`; the `--api`
+  default of `tools/mesh_sniff.py`) with a venv in `~/nrfsniff/venv` (`pyserial`, `psutil`): the layout
+  `tools/mesh-sniff.service` expects.
+- Two quirks of Nordic's package: the extcap wants its interface named `<port>-<version>` (`/dev/ttyACM0-4.1.1`),
+  and `SnifferAPI/Filelock.py` writes `/var/lock/LCK..ttyACM0`, which is root-only on Arch Linux, the distribution
+  of the host it was found on (`PermissionError`). `tools/mesh_sniff.py` drives `SnifferAPI` directly and disables that lock (the dongle has one
   user).
 - The sniffer listens to **one advertising channel at a time** and hops 37 → 38 → 39. A mesh node sends each PDU on
   all three channels, `networkTransmit.count` (3 here) times, and every relay repeats it, so a PDU is heard many
@@ -44,7 +45,7 @@ lives and turns those lines (or a Nordic pcap) into decrypted, described message
 # live view; the script itself is streamed to the sniffer host, nothing is installed there
 ssh sniffhost '~/nrfsniff/venv/bin/python -W ignore - capture --api ~/nrfsniff/extcap --ndjson -' \
     < tools/mesh_sniff.py \
-  | .venv/bin/python tools/mesh_sniff.py decode --export ~/Downloads/JungHome.json -
+  | .venv/bin/python tools/mesh_sniff.py decode --export JungHome.json -
 
 # record on the sniffer host (NDJSON for us, pcap for Wireshark), decode later
 python3 mesh_sniff.py capture --api ~/nrfsniff/extcap --seconds 600 --ndjson base.ndjson --pcap base.pcap
@@ -142,14 +143,14 @@ decoding happens here, on demand:
 scp tools/mesh_sniff.py sniffhost:nrfsniff/ && scp tools/mesh-sniff.service sniffhost:.config/systemd/user/
 ssh sniffhost 'systemctl --user daemon-reload && systemctl --user enable --now mesh-sniff.service'
 ssh sniffhost cat nrfsniff/captures/mesh-<date>-0000.ndjson \
-  | .venv/bin/python tools/mesh_sniff.py decode --export ~/Downloads/JungHome.json --beacons --grep 'IV|Key' -
+  | .venv/bin/python tools/mesh_sniff.py decode --export JungHome.json --beacons --grep 'IV|Key' -
 ```
 
 The dongle has one user: `systemctl --user stop mesh-sniff` before an ad-hoc capture (`--follow`, a pcap for
-Wireshark), `start` afterwards. The user session must linger (`loginctl enable-linger`; it does on `sniffhost`).
+Wireshark), `start` afterwards. The user session must linger (`loginctl enable-linger`).
 
 Nordic's `SnifferAPI` also appends every packet to its own `/tmp/logs/capture.pcap` (rotated to `.1` at ~3 GB)
-whatever the caller asks for; on `sniffhost` `/tmp` is a tmpfs, and a day of that held 5.6 GB of RAM.
+whatever the caller asks for; where `/tmp` is a tmpfs, a day of that held 5.6 GB of RAM.
 `load_sniffer_api` replaces that writer with a no-op, so deploy the current `mesh_sniff.py` with the unit — an older
 copy still fills `/tmp`.
 
@@ -158,7 +159,8 @@ copy still fills `/tmp`.
 `capture --pcap` writes a LINKTYPE_NORDIC_BLE (272) pcap. **Verified** with TShark 4.2.5 (a
 throwaway `alpine` container, `apk add tshark`): a 90 s capture — 42,607 BLE frames, 2,036 mesh Network PDUs and
 12 beacons, the same counts as the NDJSON — decrypts completely once the keys are in Wireshark's
-*BTMesh Network and Application keys* table: `~/.config/wireshark/btmesh_nw_keys`, one line per AppKey,
+*BTMesh Network and Application keys* table: the file `btmesh_nw_keys` in Wireshark's personal configuration
+folder (*About → Folders*), one line per AppKey,
 
 ```
 "0x<NetKey 32 hex>","0x<AppKey 32 hex>","0x00000000"

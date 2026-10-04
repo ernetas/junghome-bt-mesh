@@ -723,7 +723,7 @@ async def test_mesh_fingerprint_needs_a_link_and_a_gateway_node(
         result = await _choose(hass, result, "gateway")
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
-            {CONF_GATEWAY_HOST: "10.0.0.9", **advanced("0d00")},
+            {CONF_GATEWAY_HOST: "198.51.100.9", **advanced("0d00")},
         )
     assert result["errors"] == {"base": "cannot_connect"}
     learn.assert_awaited_once()

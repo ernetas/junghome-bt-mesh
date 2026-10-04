@@ -258,7 +258,7 @@ async def test_the_new_keys_proxies_are_ours_once_the_refresh_is_followed(
     """Review-4 R4-8: the advert verdicts the client keeps do not outlive a key change — a proxy advertising the new
     Network ID was another network's until the refresh was followed, and is one of ours from then on."""
     hub = init_integration.runtime_data
-    advert = make_service_info(NEW_ID, address="30:FB:10:00:02:01")
+    advert = make_service_info(NEW_ID, address="30:FB:10:00:00:21")
     mock_bluetooth_env["infos"] = [advert]
     assert hub.visible_proxies() == []
     fake_link.inject_from_provisioner(LIGHT_SWITCH, C.netkey_update(NEW_KEY))
