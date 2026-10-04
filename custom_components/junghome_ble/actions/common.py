@@ -1,6 +1,6 @@
 """What every action shares: the entry's configurator and hub, the fields several actions take, running an operation.
 
-`_run` / `_execute` run a configurator operation under the entry's lock (`coordinator.ENTRY_LOCKS`), on a live
+`_run` / `_execute` run a configurator operation under the entry's lock (`coordinator.entry_lock`), on a live
 link (`_wait_for_link`), have the hub follow the export (`_follow`) and report the call's plan (`_report_plan`);
 `async_configure` runs an entity's operation the same way.
 """
@@ -25,7 +25,7 @@ from custom_components.junghome_ble.const import (
     EVENT_PLAN,
     SERVICE_LINK_WAIT,
 )
-from custom_components.junghome_ble.coordinator import ENTRY_LOCKS, entry_lock
+from custom_components.junghome_ble.data import entry_lock, jung_data
 from custom_components.junghome_ble.jhmesh.devices import (
     Blind,
     Device,
@@ -143,7 +143,7 @@ def async_register_configurator(
     hass.data.setdefault(CONFIGURATORS, {})[entry.entry_id] = MeshConfigurator(
         entry.runtime_data
     )
-    hass.data.setdefault(ENTRY_LOCKS, {})
+    jung_data(hass)
 
 
 @callback

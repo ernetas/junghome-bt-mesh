@@ -43,7 +43,6 @@ from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.util.hass_dict import HassKey
 
 from .areas import async_move_devices
 from .const import (
@@ -64,6 +63,7 @@ from .coordinator import (
     load_network,
     remember_known_mesh,
 )
+from .data import jung_data
 from .entity import (
     JungHomeEntity,
     current_device_identifiers,
@@ -90,12 +90,6 @@ _LOGGER = logging.getLogger(__name__)
 _MISSING: Final = object()
 _PRIVATE_ATTR: Final = (
     "__attr_"  # where Home Assistant's cached `_attr_` properties keep their values
-)
-
-
-# entry id -> each device's room before an export change (`remember_device_rooms`), until `async_sync_areas` takes it
-ROOMS_BEFORE: HassKey[dict[str, dict[str, str | None]]] = HassKey(
-    f"{DOMAIN}_rooms_before"
 )
 
 
@@ -141,9 +135,7 @@ def remember_device_rooms(hass: HomeAssistant, entry: ConfigEntry) -> None:
         entry.options.get(OPTION_SYNC_AREAS, DEFAULT_SYNC_AREAS)
         and entry.state is ConfigEntryState.LOADED
     ):
-        hass.data.setdefault(ROOMS_BEFORE, {})[entry.entry_id] = device_rooms(
-            entry.runtime_data
-        )
+        jung_data(hass).rooms_before[entry.entry_id] = device_rooms(entry.runtime_data)
 
 
 def async_sync_areas(hass: HomeAssistant, entry: ConfigEntry, hub: JungHomeHub) -> int:
@@ -152,7 +144,7 @@ def async_sync_areas(hass: HomeAssistant, entry: ConfigEntry, hub: JungHomeHub) 
     `OPTION_SYNC_AREAS` (off by default): a device the user placed in an area of their own stays there
     (`areas.async_move_devices`). Unverified on air.
     """
-    before = hass.data.get(ROOMS_BEFORE, {}).pop(entry.entry_id, None)
+    before = jung_data(hass).rooms_before.pop(entry.entry_id, None)
     if before is None or not entry.options.get(OPTION_SYNC_AREAS, DEFAULT_SYNC_AREAS):
         return 0
     changed = {

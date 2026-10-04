@@ -41,6 +41,7 @@ from custom_components.junghome_ble.const import (
     GATEWAY_UPLOAD_RETRY_DELAY,
     OPTION_PROVISIONER_IDENTITY,
 )
+from custom_components.junghome_ble.data import jung_data
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayBusy,
@@ -432,12 +433,12 @@ class Bench:
     @property
     def journal(self) -> MemoryStore:
         """The entry's plan journal."""
-        return self.hub.hass.data[mc.PLAN_JOURNALS][self.hub.entry.entry_id]  # type: ignore[no-any-return]
+        return jung_data(self.hub.hass).plan_journals[self.hub.entry.entry_id]  # type: ignore[return-value]
 
     @property
     def held(self) -> MemoryStore:
         """The entry's held scene numbers."""
-        return self.hub.hass.data[mc.HELD_SCENES][self.hub.entry.entry_id]  # type: ignore[no-any-return]
+        return jung_data(self.hub.hass).held_scenes[self.hub.entry.entry_id]  # type: ignore[return-value]
 
     @property
     def sync(self) -> mc.GatewaySync:
@@ -489,9 +490,9 @@ async def make_bench(
     hub.entry.runtime_data = hub
     hub.hass.config_entries.entries[hub.entry.entry_id] = hub.entry
     # the plan journal (`configurator.store.plan_journal`) in memory
-    hub.hass.data[mc.PLAN_JOURNALS] = {hub.entry.entry_id: MemoryStore()}
+    jung_data(hub.hass).plan_journals[hub.entry.entry_id] = MemoryStore()  # type: ignore[assignment]
     # ... and the held scene numbers (`configurator.scenes.held_scenes`)
-    hub.hass.data[mc.HELD_SCENES] = {hub.entry.entry_id: MemoryStore()}
+    jung_data(hub.hass).held_scenes[hub.entry.entry_id] = MemoryStore()  # type: ignore[assignment]
     # ... and the gateway sync record (`configurator.store.gateway_sync`)
     hub.hass.data[mc.GATEWAY_SYNCS] = {
         hub.entry.entry_id: mc.GatewaySync(hub.hass, hub.entry.entry_id, MemoryStore())  # type: ignore[arg-type]

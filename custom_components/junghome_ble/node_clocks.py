@@ -26,12 +26,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import dt as dt_util
-from homeassistant.util.hass_dict import HassKey
 
 from . import const
 from .const import (
@@ -45,12 +44,12 @@ from .const import (
     SIGNAL_NODE,
     learn_more_url,
 )
+from .data import jung_data
 from .device_info import health_nodes
 from .jhmesh import messages as M
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
     from datetime import datetime
 
     from .jhmesh.cdb import Element, Node
@@ -58,18 +57,6 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-
-class ScheduleSlots(Protocol):
-    """What the clocks read of an entry's scheduler (`schedules.Scheduler`): the slots each load was read with."""
-
-    @property
-    def slots(self) -> Mapping[int, Sequence[object]]:
-        """Each load's JH Scheduler slots as last read, by load element."""
-
-
-# the entry's schedulers (`schedules.scheduler`), here so the clocks can see what they cached; the value is the
-# `schedules.Scheduler`, named by what is read of it so this module does not import the schedules
-SCHEDULERS: HassKey[dict[str, ScheduleSlots]] = HassKey(f"{DOMAIN}_schedulers")
 
 TIME_SERVER = "1200"
 LOCATION_SERVER = "100E"
@@ -193,7 +180,7 @@ class NodeClocks:
         The slots are known only where the *Schedules* sensor or a schedule action read them (`schedules.Scheduler`);
         a load nothing read may have schedules the app made.
         """
-        scheduler = self.hub.hass.data.get(SCHEDULERS, {}).get(self.hub.entry.entry_id)
+        scheduler = jung_data(self.hub.hass).schedulers.get(self.hub.entry.entry_id)
         for address, device in self.hub.devices.by_address.items():
             element = self.hub.cdb.element(address)
             if (

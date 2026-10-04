@@ -73,6 +73,7 @@ from .const import (
     TIME_SET_INTERVAL,
     issue_id,
 )
+from .data import entry_lock
 from .device_info import update_node_device
 from .element_state import ElementState
 from .hub.clock import Clock, next_utc_offset_change
@@ -192,7 +193,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 # Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
-# `const.py`; A4-3: the hub's components into `hub/`; A4-11: `ElementState` into `element_state.py`); re-exported for the modules and tests that import them from here.
+# `const.py`; A4-3: the hub's components into `hub/`; A4-11: `ElementState` into `element_state.py`, `entry_lock`
+# into `data.py`); re-exported for the modules and tests that import them from here.
 __all__ = [
     "GATEWAY_CERTIFICATE_CHANGED",
     "GATEWAY_UNVERIFIED",
@@ -226,6 +228,7 @@ __all__ = [
     "async_migrate_legacy_seq_store",
     "async_remove_node_versions",
     "async_skip_seq_store_ahead",
+    "entry_lock",
     "is_gateway_host",
     "issue_id",
     "lacks_precise_energy",
@@ -297,16 +300,6 @@ def register_status_handler[H: StatusHandler](
         return handler
 
     return register
-
-
-# One lock per entry, kept across reloads, around everything that works on a hub and may replace it: the service
-# calls (`actions.common._run`) and the unknown-node refresh's reload (`ExportWatch._reload_for_export`).
-ENTRY_LOCKS: HassKey[dict[str, asyncio.Lock]] = HassKey(f"{DOMAIN}_service_locks")
-
-
-def entry_lock(hass: HomeAssistant, entry_id: str) -> asyncio.Lock:
-    """Return the entry's lock (`ENTRY_LOCKS`), created on first use."""
-    return hass.data.setdefault(ENTRY_LOCKS, {}).setdefault(entry_id, asyncio.Lock())
 
 
 @dataclass

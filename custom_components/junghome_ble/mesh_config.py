@@ -90,10 +90,9 @@ from .configurator.plan import (
     applied_unused_deleted,
 )
 from .configurator.rooms import Keys, Rooms
-from .configurator.scenes import HELD_SCENES, Scenes, held_scenes, scene_action_for
+from .configurator.scenes import Scenes, held_scenes, scene_action_for
 from .configurator.store import (
     GATEWAY_SYNCS,
-    PLAN_JOURNALS,
     RELOAD_POLL,
     UPLOAD_RETRIES,
     ExportStore,
@@ -149,10 +148,8 @@ __all__ = [
     "APPLIED_NOTHING",
     "APPLIED_SCENE_WIRED",
     "GATEWAY_SYNCS",
-    "HELD_SCENES",
     "LOCK_SECONDS_MAX",
     "MODES",
-    "PLAN_JOURNALS",
     "RELOAD_POLL",
     "SENSOR_SERVER",
     "TARGET_ELEMENTS",

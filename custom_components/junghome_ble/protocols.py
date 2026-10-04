@@ -23,7 +23,7 @@ these Protocols' users.
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Iterable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -222,6 +222,14 @@ class GatewayPollsView(Protocol):
     """What the hub keeps up to date in the gateway's REST status polls (`gateway_status.GatewayPolls`)."""
 
     node: Node
+
+
+class ScheduleSlots(Protocol):
+    """What the clocks read of an entry's scheduler (`schedules.Scheduler`): the slots each load was read with."""
+
+    @property
+    def slots(self) -> Mapping[int, Sequence[object]]:
+        """Each load's JH Scheduler slots as last read, by load element."""
 
 
 @dataclass

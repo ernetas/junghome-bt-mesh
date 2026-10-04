@@ -58,6 +58,8 @@
   `entity.py`), `element_state.py`, `bus_events.py` (from `event.py`), `actions/dim.py` (from `light.py`).
   `TypedDict`s describe the export's `meta` rows (`jhmesh.export.DeviceRow`, `RoomLinkRow`, `SceneLinkRow`, …),
   a sequence-number record (`seq_store.SeqRecord`) and the diagnostics (`diagnostics.EntryDiagnostics`, …).
+  `data.JungHomeData` holds six of the registries `hass.data` kept under keys of their own (the entries' locks,
+  plan journals and histories, held scenes, rooms before an export change, schedulers), with the same accessors.
   Nothing changes in behaviour.
 
 ### Fixed

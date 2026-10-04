@@ -19,7 +19,7 @@ what they would send and change (`actions.common._execute`, `MeshConfigurator.dr
 logged in the logbook and the diagnostics (`actions.common._report_plan`); what cannot be undone needs `confirm`
 (review-4 W I3, W I6, W I7, W I9).
 
-Calls for one entry are serialised (`coordinator.ENTRY_LOCKS`, kept across reloads, taken by the unknown-node
+Calls for one entry are serialised (`coordinator.entry_lock`, kept across reloads, taken by the unknown-node
 refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options
 change, a call that could not follow in place); a call that goes on air then waits (`SERVICE_LINK_WAIT`) for the
 reloaded hub's link, which connects in the background.

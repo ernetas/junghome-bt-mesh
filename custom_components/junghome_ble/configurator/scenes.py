@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
-from homeassistant.util.hass_dict import HassKey
 
 from custom_components.junghome_ble.const import (
     DEFAULT_UNUSED_SCENES_DRY_RUN,
@@ -25,6 +24,7 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.conversions import level_to_temperature
 from custom_components.junghome_ble.coordinator import issue_id
+from custom_components.junghome_ble.data import jung_data
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.devices import load_kind
@@ -72,9 +72,6 @@ SCENE_ACTION_CAPACITY, SCENE_REGISTER_CAPACITY = 8, 16
 
 
 HELD_SCENES_VERSION = 1
-HELD_SCENES: HassKey[dict[str, Store[dict[str, Any]]]] = HassKey(
-    f"{DOMAIN}_held_scenes"
-)
 
 
 def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
@@ -85,7 +82,7 @@ def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
     skipped device would join every recall of the new scene — and `delete_unused_scenes` lets go of a pair once the
     register no longer holds it. Numbers and addresses, no key material.
     """
-    stores = hass.data.setdefault(HELD_SCENES, {})
+    stores = jung_data(hass).held_scenes
     if entry_id not in stores:
         stores[entry_id] = Store(
             hass, HELD_SCENES_VERSION, f"{DOMAIN}.{entry_id}.held_scenes"

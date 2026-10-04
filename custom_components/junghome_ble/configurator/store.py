@@ -48,6 +48,7 @@ from custom_components.junghome_ble.const import (
     learn_more_url,
 )
 from custom_components.junghome_ble.coordinator import issue_id
+from custom_components.junghome_ble.data import jung_data
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -168,9 +169,6 @@ def token_rejected_open(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 PLAN_JOURNAL_VERSION = 1
-PLAN_JOURNALS: HassKey[dict[str, Store[dict[str, Any]]]] = HassKey(
-    f"{DOMAIN}_plan_journals"
-)
 
 
 def plan_journal(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
@@ -179,7 +177,7 @@ def plan_journal(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
     `{"action", "steps", "accepted", "prepare", "happened"}` of the plan being sent (`PlanExecutor.send`);
     gone when no plan's outcome is left unrecorded. It holds Config PDUs and addresses, no key material.
     """
-    journals = hass.data.setdefault(PLAN_JOURNALS, {})
+    journals = jung_data(hass).plan_journals
     if entry_id not in journals:
         journals[entry_id] = Store(
             hass, PLAN_JOURNAL_VERSION, f"{DOMAIN}.{entry_id}.plan_journal"
@@ -315,9 +313,6 @@ class PlanOutcome:
 
 
 PLAN_HISTORY_SIZE = 5  # finished or stopped calls the diagnostics show per entry
-PLAN_HISTORIES: HassKey[dict[str, deque[dict[str, Any]]]] = HassKey(
-    f"{DOMAIN}_plan_histories"
-)
 
 
 def plan_history(hass: HomeAssistant, entry_id: str) -> deque[dict[str, Any]]:
@@ -325,7 +320,7 @@ def plan_history(hass: HomeAssistant, entry_id: str) -> deque[dict[str, Any]]:
 
     `{"action", "outcome", "applied", "total", "steps", "error"}`: step texts and an error key, no key material.
     """
-    histories = hass.data.setdefault(PLAN_HISTORIES, {})
+    histories = jung_data(hass).plan_histories
     return histories.setdefault(entry_id, deque(maxlen=PLAN_HISTORY_SIZE))
 
 

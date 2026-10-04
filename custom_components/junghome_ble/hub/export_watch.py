@@ -36,6 +36,7 @@ from custom_components.junghome_ble.const import (
     issue_id,
     learn_more_url,
 )
+from custom_components.junghome_ble.data import entry_lock
 from custom_components.junghome_ble.device_info import PRODUCT_NAMES
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi, api_for_entry
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -434,7 +435,7 @@ class ExportWatch:
         )
 
     async def _reload_for_export(self) -> None:
-        """Follow the adopted export, under the entry's lock (`ENTRY_LOCKS`, review-3 W11): in place, else by a reload.
+        """Follow the adopted export, under the entry's lock (`entry_lock`, review-3 W11): in place, else by a reload.
 
         A service call holds that lock while it works on this hub — waiting for its link, planning, sending — and
         has the entry follow the export itself afterwards; a reload in between would tear the hub down under it.
@@ -442,11 +443,6 @@ class ExportWatch:
         entry that is no longer loaded needs nothing more. The new nodes' devices show up without a reload
         (`model_update.async_follow_export`, review-4 D23).
         """
-        # the coordinator imports this module: its lock helper is imported here, when it is first needed
-        from custom_components.junghome_ble.coordinator import (  # noqa: PLC0415
-            entry_lock,
-        )
-
         async with entry_lock(self.hub.hass, self.hub.entry.entry_id):
             if (
                 self.hub.entry.state is ConfigEntryState.LOADED
