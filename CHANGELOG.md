@@ -679,7 +679,8 @@
   reachability and heartbeats; the diagnostics read `hub.liveness.configured_at` instead of a private attribute),
   `hub/energy.py` (`Energy`, `hub.energy`: the meter readings and counters, their polls, the reset, the history
   import's trigger), `hub/clock.py` (`Clock`, `hub.clock`: the Time Set and location broadcasts), `hub/export_watch.py`
-  (`ExportWatch`, `hub.export_watch`: the unknown nodes, the gateway's export refresh and the gateway's trust). The hub
+  (`ExportWatch`, `hub.export_watch`: the unknown nodes, the gateway's export refresh and the gateway's trust),
+  `hub/refresh.py` (`Refresh`, `hub.refresh`: the connect-time reads). The hub
   keeps one-line delegations for what entities, actions, the configurator and the diagnostics call
   (`node_alive`, `unreachable`, `last_heard`, `heartbeats`, …); the tests of each component moved out of
   `tests/test_coordinator.py` into `tests/test_hub_<component>.py`. Log lines of the moved code come from the

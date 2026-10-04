@@ -688,7 +688,7 @@ async def test_battery_nodes_get_no_health_entities_and_are_not_surveyed(
         assert f"node:{UUID_2G.lower()}-{suffix}" not in unique_ids
     answer_fault_gets(fake_link, 0x81)
     fake_link.sent.clear()
-    await init_detectors.runtime_data._get_faults()
+    await init_detectors.runtime_data.refresh._get_faults()
     asked = {dst for _, dst, pdu in fake_link.sent if pdu == M.health_fault_get()}
     assert RELAY_MOTION in asked
     assert asked.isdisjoint({TRANSMITTER_1G, TRANSMITTER_2G})
@@ -833,7 +833,7 @@ async def test_fault_register_is_asked_of_every_node_and_shown_where_identify_is
     hub = init_integration.runtime_data
     answer_fault_gets(fake_link, 0x81)
     fake_link.sent.clear()
-    await hub._get_faults()
+    await hub.refresh._get_faults()
     await hass.async_block_till_done()
     # every node was asked once, the phone (no product) not at all; the answers filled the entities
     assert [dst for _, dst, pdu in fake_link.sent if pdu == M.health_fault_get()] == (
@@ -922,11 +922,11 @@ async def test_fault_survey_stops_with_the_link(
     hub = init_integration.runtime_data
     fake_link.sent.clear()
     fake_link.write_error = OSError("GATT write failed")
-    await hub._get_faults()
+    await hub.refresh._get_faults()
     assert not fake_link.sent
     fake_link.write_error = None
     with patch.object(hub.proxy, "request", side_effect=TimeoutError("no response")):
-        await hub._get_faults()
+        await hub.refresh._get_faults()
     assert (
         hub.states.get(LIGHT_SWITCH) is None or hub.states[LIGHT_SWITCH].faults is None
     )

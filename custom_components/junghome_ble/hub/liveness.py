@@ -267,7 +267,7 @@ class Liveness:
 
         The nodes still to be told are `heartbeats_publishing` (every heartbeat node when nothing is recorded);
         each that confirms leaves the list, and the next link with the option off asks the rest again
-        (`_after_connect`) — the publication has CountLog 0xFF, a node told nothing publishes forever.
+        (`Refresh.after_connect`) — the publication has CountLog 0xFF, a node told nothing publishes forever.
         """
         pending = self.heartbeats_publishing
         nodes = [n for n in self.heartbeat_nodes if not pending or n.unicast in pending]
@@ -415,7 +415,7 @@ class Liveness:
     def check_heartbeats(self, _now: datetime) -> None:
         """Mark the nodes whose deadline passed as dead and tell their entities; renew the publications when due.
 
-        A link that stays up for days would otherwise never repeat the configuration (`_after_connect` runs it
+        A link that stays up for days would otherwise never repeat the configuration (`Refresh.after_connect` runs it
         once per link). A dead node is asked again every HEARTBEAT_REPROBE_INTERVAL (`_reprobe_dead`): a node
         that rebooted — a mains blip, seen on a mini actuator — starts with an empty heartbeat
         publication and would otherwise stay unavailable until the next renewal, hours later. So is a node whose

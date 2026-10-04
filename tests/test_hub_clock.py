@@ -114,12 +114,12 @@ async def test_time_set_goes_out_before_the_refresh(
     refresh, they never went out on a link lost before it was through. A refresh cut short sends nothing more."""
     hub = hub_of(init_answered)
     fake_link.sent.clear()
-    with patch.object(hub, "_refresh_all", AsyncMock(return_value=False)):
-        await hub._after_connect()
+    with patch.object(hub.refresh, "_refresh_all", AsyncMock(return_value=False)):
+        await hub.refresh.after_connect()
     assert [dst for _, dst, _ in fake_link.sent] == [ALL_NODES] * BROADCASTS
     assert_time_set(fake_link.sent[0], dt_util.now())
     # a link already gone: nothing goes out, and nothing is raised
     fake_link.sent.clear()
     fake_link.write_error = ConnectionError("proxy disconnected")
-    await hub._after_connect()
+    await hub.refresh.after_connect()
     assert not fake_link.sent

@@ -662,7 +662,7 @@
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_health_fault_status",
     "custom_components/junghome_ble/jhmesh/messages.py::decode_health_fault_status",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults_of"
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_faults_of"
    ],
    "tests": [
     "tests/test_binary_sensor.py::test_fault_status_drives_the_entity",
@@ -1275,13 +1275,13 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+    "custom_components/junghome_ble/hub/refresh.py::Refresh.get_scene_actions",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_scene_actions_of"
    ],
    "tests": [
     "tests/jhmesh/test_vendor_models.py::test_scene_action_get_and_set_builders",
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_a_late_scene_action_status_does_not_shift_onto_the_next_scene"
+    "tests/test_hub_refresh.py::test_a_late_scene_action_status_does_not_shift_onto_the_next_scene"
    ]
   },
   {
@@ -1290,12 +1290,12 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/vendor_models.py::decode_scene_action_status",
     "custom_components/junghome_ble/jhmesh/vendor_models.py::scene_action_reply_to",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_scene_actions_of"
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_scene_actions_of"
    ],
    "tests": [
     "tests/jhmesh/test_vendor_models.py::test_decode_scene_action_status",
-    "tests/test_coordinator.py::test_scene_action_read_tolerates_a_malformed_status_and_a_lost_link",
-    "tests/test_coordinator.py::test_scene_action_dropped_when_element_no_longer_lists_it"
+    "tests/test_hub_refresh.py::test_scene_action_read_tolerates_a_malformed_status_and_a_lost_link",
+    "tests/test_hub_refresh.py::test_scene_action_dropped_when_element_no_longer_lists_it"
    ]
   },
   {
@@ -1572,8 +1572,8 @@
    "id": "air:access:8031",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults_of",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_faults",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_faults_of",
     "custom_components/junghome_ble/jhmesh/messages.py::health_fault_get"
    ],
    "tests": [
@@ -1680,8 +1680,8 @@
    "id": "air:access:8201",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_get",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._keep_alive"
    ],
@@ -1732,8 +1732,8 @@
    "id": "air:access:8205",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/hub/refresh.py::STATE_GETS",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_level_get"
    ],
    "tests": [
@@ -1980,8 +1980,8 @@
    "id": "air:access:824b",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/hub/refresh.py::STATE_GETS",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/jhmesh/messages.py::light_lightness_get"
    ],
    "tests": [
@@ -2051,8 +2051,8 @@
    "id": "air:access:825d",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/hub/refresh.py::STATE_GETS",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_get"
    ],
    "tests": [
@@ -2088,15 +2088,15 @@
    "id": "air:access:8261",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_state",
+    "custom_components/junghome_ble/hub/refresh.py::STATE_GETS",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_ctl_temperature_status"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
     "tests/test_coordinator.py::test_ctl_temperature_status_updates_only_the_colour_temperature",
-    "tests/test_coordinator.py::test_an_unanswered_temperature_element_leaves_a_tunable_white_light_available"
+    "tests/test_hub_refresh.py::test_an_unanswered_temperature_element_leaves_a_tunable_white_light_available"
    ],
    "reason": "The connect-time refresh reads each CTL light's temperature element (el1) with 0x8261 right after its range Get on el0, as the gateway reads a tunable-white light (settings capture: 0x8262 to the lights' el0 0210 / 016A, 0x8261 to their el1 016B / 026F / 0233); the 0x8266 answer lands on the light through _on_ctl_temperature_status. No extra Get after another client's 0x8264: the gateway polls el1 with 0x8261 all day (1521 Gets in the captures, against 79 gateway 0x8264), and the 0x8266 answers it gets are forwarded to HA by the proxy's empty blacklist filter and applied whatever their destination, so a Get of ours would only add to that traffic. Its silence does not count toward the node's reachability (_get_state counted=False): it is the third Get to the same node in one refresh, after the light's own state and range, and one the app never sends; under the app's rule one unanswered request marks the node at once (_missed_answer), and the light's own state Get already decides that."
   },
@@ -2104,8 +2104,8 @@
    "id": "air:access:8262",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::STATE_GETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::STATE_GETS",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_get"
    ],
    "tests": [

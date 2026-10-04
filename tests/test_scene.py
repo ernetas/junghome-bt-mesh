@@ -394,7 +394,7 @@ async def test_current_scenes_are_read_after_the_connection(
     hub = init_integration.runtime_data
     fake_link.sent.clear()
     fake_link.current_scenes[LIGHT_SWITCH] = 1
-    await hub._get_current_scenes()
+    await hub.refresh.get_current_scenes()
     await hass.async_block_till_done()
     assert fake_link.sent == [(OUR_ADDRESS, LIGHT_SWITCH, M.scene_get())]
     assert hub.states[LIGHT_SWITCH].scene == 1
@@ -406,18 +406,18 @@ async def test_current_scenes_are_read_after_the_connection(
         await hass.async_block_till_done()
 
     with patch.object(hub.proxy, "request", side_effect=published):
-        await hub._get_current_scenes()
+        await hub.refresh.get_current_scenes()
     assert hub.states[LIGHT_SWITCH].scene == 2
     assert events == []
     hub.cdb.scenes = {}
     fake_link.sent.clear()
-    await hub._get_current_scenes()
+    await hub.refresh.get_current_scenes()
     assert fake_link.sent == []  # no scene stored anywhere: nothing to ask
     hub.cdb.scenes = {1: [LIGHT_CTL]}
     with patch.object(hub.proxy, "request", side_effect=TimeoutError):
-        await hub._get_current_scenes()
+        await hub.refresh.get_current_scenes()
     with patch.object(hub.proxy, "request", side_effect=ConnectionError("gone")):
-        await hub._get_current_scenes()
+        await hub.refresh.get_current_scenes()
     assert hub.element_state(LIGHT_CTL).scene is None
 
 

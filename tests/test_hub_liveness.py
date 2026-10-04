@@ -770,11 +770,11 @@ async def test_heartbeats_still_publishing_until_every_node_confirmed(
         )
 
     fake_link.config_reply = reply
-    await hub._after_connect()
+    await hub.refresh.after_connect()
     assert init_answered.data[CONF_HEARTBEATS_PUBLISHING] == [f"{stubborn:04X}"]
     fake_link.config_sent.clear()
     fake_link.config_reply = None
-    await hub._after_connect()
+    await hub.refresh.after_connect()
     assert [
         dst for _src, dst, pdu in fake_link.config_sent if pdu == HEARTBEAT_OFF
     ] == [stubborn]
@@ -791,7 +791,7 @@ async def test_heartbeats_recorded_as_one_flag_are_every_nodes_to_tell(
         init_answered, data={**init_answered.data, CONF_HEARTBEATS_PUBLISHING: True}
     )
     assert hub.liveness.heartbeats_publishing == set(HEARTBEAT_NODES)
-    await hub._after_connect()
+    await hub.refresh.after_connect()
     assert sorted(
         dst for _src, dst, pdu in fake_link.config_sent if pdu == HEARTBEAT_OFF
     ) == sorted(HEARTBEAT_NODES)

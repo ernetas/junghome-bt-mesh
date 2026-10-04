@@ -38,7 +38,7 @@
     "custom_components/junghome_ble/jhmesh/devices.py::pick_insert",
     "custom_components/junghome_ble/jhmesh/cdb.py::Node",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._adv_seen",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/inserts.py::NodeInserts.node_model",
     "custom_components/junghome_ble/entity.py::node_device_info",
     "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS"

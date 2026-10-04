@@ -191,8 +191,8 @@ says connected and the state refresh is through (a few minutes), then do the lin
   Get*s follow the state refresh; on the second link the Time Set, location, state Gets and energy poll appear again,
   the scene-action, fault and *Scene Get* rounds do not.
 - **Pass:** both orders as above. Do not copy the location's parameters into any note.
-- **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_step`,
+- **Markers:** `custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect`,
+  `custom_components/junghome_ble/hub/refresh.py::Refresh.connect_step`,
   `custom_components/junghome_ble/const.py::CONNECT_STEP_FRESH`,
   `custom_components/junghome_ble/hub/clock.py::Clock.send_location`.
 

@@ -3,7 +3,7 @@
 **Fault register** (`JungHomeFaultSensor`, one per mains node, diagnostic, device class *problem*): the Health Server's
 registered faults. JUNG nodes register the vendor codes 0x81 (every device) and 0x80 (some) — what they mean is
 unknown, the app never looks and nothing publishes them (`docs/hidden-features.md` §10) — so the hub reads the
-register at link-up (`JungHomeHub._get_faults`, `_connect_step`) and the entity mirrors `ElementState.faults` of the node's
+register at link-up (`Refresh._get_faults`, `_connect_step`) and the entity mirrors `ElementState.faults` of the node's
 primary element. The codes are attributes; the register is cleared with `mesh_poc.py health <node> --clear`.
 
 **Detectors.** A detector (`jhmesh.devices.Detector`: the `1001` OnOff client + `1100` Sensor Server element of a product 0x07 /

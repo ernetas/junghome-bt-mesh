@@ -16,7 +16,7 @@ import asyncio
 import logging
 import time
 from collections import deque
-from collections.abc import Awaitable, Callable, Container, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import partial
@@ -45,7 +45,6 @@ from .const import (
     CONNECT_BACKOFF_MAX,
     CONNECT_BACKOFF_MIN,
     CONNECT_BEACON_WAIT,
-    CONNECT_STEP_FRESH,
     DEFAULT_HEARTBEATS,
     DOMAIN,
     EXPORT_STALE_THRESHOLD,
@@ -74,7 +73,6 @@ from .const import (
     KEEP_ALIVE_ATTEMPTS,
     KEEP_ALIVE_TIMEOUT,
     LINK_BLUETOOTH_OFF,
-    LINK_CONNECTED,
     LINK_CONNECTING,
     LINK_DISCONNECTED,
     LINK_FAILED,
@@ -88,7 +86,6 @@ from .const import (
     OPTION_HEARTBEATS,
     PROXY_ADVERT_MAX_AGE,
     REFRESH_CHUNK,
-    REFRESH_RETRIES,
     REQUEST_ATTEMPTS,
     RESTART_BLOCK,
     RESTART_SLACK,
@@ -126,6 +123,7 @@ from .hub.export_watch import (
     is_gateway_host,
 )
 from .hub.liveness import Liveness
+from .hub.refresh import ONOFF_GET, STATE_GETS, Refresh
 from .hub_gestures import ButtonGestures, EventListener
 from .identity import async_vault_keeper
 from .inserts import NodeInserts
@@ -296,19 +294,6 @@ PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`
 GENERIC_LEVEL_OPCODES = frozenset(
     {M.GEN_LEVEL_SET, M.GEN_LEVEL_SET_UNACK, 0x8209, 0x820A, 0x820B, 0x820C}
 )
-# State Get and the status opcode that answers it, per load kind (`Light.kind` / "switch" / a blind's "level"), plus
-# the colour-temperature range a CTL light supports ("ctl_range": read once per connection, it is a device property)
-# and the colour temperature on its temperature element ("ctl_temperature": Light CTL Temperature Get to the element
-# after the light's, as the gateway reads it; its silence is not counted toward reachability, see `_refresh_all`).
-# A socket's meter element is not here: its readings need one qualified Sensor Get each (`Energy.get_readings`).
-STATE_GETS: dict[str, tuple[Callable[[], bytes], int]] = {
-    "ctl": (M.light_ctl_get, M.LIGHT_CTL_STATUS),
-    "dimmer": (M.light_lightness_get, M.LIGHT_LIGHTNESS_STATUS),
-    "ctl_range": (M.light_ctl_temperature_range_get, M.LIGHT_CTL_TEMP_RANGE_STATUS),
-    "ctl_temperature": (M.light_ctl_temperature_get, M.LIGHT_CTL_TEMP_STATUS),
-    "level": (M.generic_level_get, M.GEN_LEVEL_STATUS),  # blind position / slats
-}
-ONOFF_GET: tuple[Callable[[], bytes], int] = (M.generic_onoff_get, M.GEN_ONOFF_STATUS)
 SCENE_ACTION_SETUP = (
     "05271017"  # the JUNG vendor model that says what an element does in a scene
 )
@@ -715,10 +700,11 @@ class JungHomeHub:
         self._link_up = asyncio.Event()
         self.link_count = 0  # links made so far: entities tell "asked on this link already" from "ask again" by it
         self._connect_failure_logged = False  # the first failure of a link-down period is a WARNING, the rest DEBUG
-        self.link_state = LINK_SEARCHING  # one of LINK_STATES (`_set_link_state`), for the link state sensor
+        self.link_state = LINK_SEARCHING  # one of LINK_STATES (`set_link_state`), for the link state sensor
         self._bluetooth_off = False  # `bluetooth_unavailable` is raised
         self._task: asyncio.Task[None] | None = None
-        self.refresh_task: asyncio.Task[None] | None = None
+        # the connect-time reads of every link (`hub/refresh.py`)
+        self.refresh = Refresh(self)
         # the metered loads' polls and reads, and the time and location broadcasts (`hub/energy.py`, `hub/clock.py`)
         self.energy = Energy(self)
         self.clock = Clock(self)
@@ -727,8 +713,8 @@ class JungHomeHub:
         self._unsub_adv: Callable[[], None] | None = None
         self._was_available = False
         self._last_rx = time.monotonic()  # when the proxy last forwarded anything we could decode, or named itself (link watchdog)
-        self._rx_messages = 0  # decoded access messages, any destination
-        self._rx_to_us = (
+        self.rx_messages = 0  # decoded access messages, any destination
+        self.rx_to_us = (
             0  # ... of which unicast to our address: proof that nodes accept our PDUs
         )
         self._pdus_dropped = False
@@ -737,22 +723,19 @@ class JungHomeHub:
         self._address_shared_skipped = False
         # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe),
         # and the watchdog waiting for its Filter Status (`_filter_status_overdue`)
-        self._beacon_authenticated = False
+        self.beacon_authenticated = False
         self._unsub_filter_watch: Callable[[], None] | None = None
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
         self.audits: dict[int, NodeAudit] = {}
         # scene number → {member element → its JUNG scene action (None: stored without a description)}, read from
-        # the members' Scene Action Setup servers at link-up (`_get_scene_actions`, `_connect_step`)
+        # the members' Scene Action Setup servers at link-up (`Refresh.get_scene_actions`, `Refresh.connect_step`)
         self.scene_actions: dict[int, dict[int, V.Action | None]] = {}
-        # the channels whose scene list answered (`_get_scene_actions_of`): only theirs narrows `scenes_of`
+        # the channels whose scene list answered (`Refresh._get_scene_actions_of`): only theirs narrows `scenes_of`
         self.scene_lists_read: set[int] = set()
         # element → the scene numbers its register held when it last reported it (Scene Register Status)
         self.scene_registers: dict[int, tuple[int, ...]] = {}
         # scene number → when EVENT_SCENE_RECALLED last fired for it (`note_scene_recall`, SCENE_RECALL_WINDOW)
         self._scene_recalls: dict[int, float] = {}
-        # elements asked for their current scene right now (`_get_current_scene_of`): their Scene Status is an
-        # answer, even if the firmware publishes it to its group instead of sending it to us
-        self._scene_gets: set[int] = set()
         self.node_by_mac = nodes_by_mac(cdb)  # the node behind a Bluetooth address
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
         self.configurator: MeshConfigurator | None = None
@@ -783,17 +766,15 @@ class JungHomeHub:
         # how the last link ended, None while one is up (`_link_ended`); when the current one came up (monotonic)
         self._link_end: LinkEnd | None = NO_LINK
         self._link_since = 0.0
-        # how the link before the current one ended, for the connect-time steps (`_connect_step`)
-        self._previous_link = NO_LINK
-        # connect-time step → when its last complete round ended (monotonic; `_connect_step`)
-        self._connect_steps_done: dict[str, float] = {}
+        # how the link before the current one ended, for the connect-time steps (`Refresh.connect_step`)
+        self.previous_link = NO_LINK
         # proxy MAC → its links in a row that ended within SHORT_LINK (`_judge_link`)
         self._short_links: dict[str, int] = {}
         self._link_loss_listeners: list[Callable[[LinkEnd], None]] = []
         # the last LINK_HISTORY links, oldest first (`_link_ended`); for the current one: how long its state refresh
         # took (None until it is through) and the store's `held_back_total` when it came up
         self.link_history: deque[LinkRecord] = deque(maxlen=LINK_HISTORY)
-        self._link_refresh: float | None = None
+        self.link_refresh: float | None = None
         self._held_back_at_link = 0.0
         self._probe_link = (
             asyncio.Event()
@@ -823,8 +804,8 @@ class JungHomeHub:
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
         self._built_from = (hub_data(entry.data), dict(entry.options))
         # per link: what the proxy forwarded that our keys could open, and what they could not (stale export detection)
-        self._rx_decoded_link = 0
-        self._rx_undecodable_link = 0
+        self.rx_decoded_link = 0
+        self.rx_undecodable_link = 0
         self._export_stale = False
         # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
         # suppression and the event listeners (`hub_gestures.py`, review-4 A4-3); it ends its holds on link loss
@@ -1042,8 +1023,8 @@ class JungHomeHub:
         try:
             await self._cancel(self._task)
             self._task = None
-            await self._cancel(self.refresh_task)
-            self.refresh_task = None
+            await self._cancel(self.refresh.task)
+            self.refresh.task = None
             await self._cancel(self.energy.task)
             self.energy.task = None
             await self._cancel(self.liveness.heartbeat_task)
@@ -1271,20 +1252,22 @@ class JungHomeHub:
     def _reread_scenes(self) -> None:
         """Ask the scene members for their actions and current scenes again: now, or on the next link."""
         for step in ("scene actions", "current scenes"):
-            self._connect_steps_done.pop(step, None)
+            self.refresh.connect_steps_done.pop(step, None)
         if self.connected:
             self.entry.async_create_background_task(
                 self.hass, self._read_scenes(), f"{DOMAIN} scene reads"
             )
 
     async def _read_scenes(self) -> None:
-        await self._connect_step("scene actions", self._get_scene_actions)
-        await self._connect_step("current scenes", self._get_current_scenes)
+        await self.refresh.connect_step("scene actions", self.refresh.get_scene_actions)
+        await self.refresh.connect_step(
+            "current scenes", self.refresh.get_current_scenes
+        )
 
     async def _welcome(self, loads: set[int], nodes: list[Node]) -> None:
         """Ask the loads an export added for their state, and its mains nodes for heartbeats, over the current link."""
         try:
-            await self.chunked(self._state_jobs(loads))
+            await self.chunked(self.refresh.state_jobs(loads))
         except ConnectionError as err:
             _LOGGER.debug("state read of the new loads aborted: %s", err)
             return
@@ -1407,7 +1390,7 @@ class JungHomeHub:
                     "an unexpected error in the connection loop", penalise=False
                 )
                 self._set_available(False)
-                self._set_link_state(LINK_FAILED)
+                self.set_link_state(LINK_FAILED)
                 await asyncio.sleep(CONNECT_BACKOFF_MAX)
 
     async def _connection_pass(
@@ -1435,7 +1418,7 @@ class JungHomeHub:
         self._report_bluetooth_unavailable(
             False
         )  # a proxy node was seen: something hears the mesh
-        self._set_link_state(LINK_CONNECTING)
+        self.set_link_state(LINK_CONNECTING)
         try:
             await self._connect_to(info)
         except Exception as err:  # any BLE failure: try the next node
@@ -1452,7 +1435,7 @@ class JungHomeHub:
             )
             self._connect_failure_logged = True
             self._set_available(False)
-            self._set_link_state(LINK_FAILED)
+            self.set_link_state(LINK_FAILED)
             await asyncio.sleep(backoff[0])
             backoff[0] = min(backoff[0] * 2, CONNECT_BACKOFF_MAX)
             return
@@ -1598,7 +1581,7 @@ class JungHomeHub:
     async def _keep_alive(self) -> bool:
         """Ask a node for its state to tell a quiet mesh from a dead link; True when the proxy delivered anything.
 
-        A Get is the one message JUNG firmware always answers (`_refresh_all`), so an unanswered keep-alive means
+        A Get is the one message JUNG firmware always answers (`Refresh._refresh_all`), so an unanswered keep-alive means
         the proxy no longer forwards (or the element is gone: up to KEEP_ALIVE_ATTEMPTS distinct elements are
         tried). Traffic of any kind arriving meanwhile counts as well. A send the sequence-number store holds
         back is waited for (`while_seq_stalls`), not taken for a dead link; one that cannot go out at all (the
@@ -1633,7 +1616,7 @@ class JungHomeHub:
             return True
         return self._last_rx != before
 
-    def _set_link_state(self, state: str) -> None:
+    def set_link_state(self, state: str) -> None:
         """Record the link's state (one of `LINK_STATES`) and tell the link state sensor when it changed."""
         if state == self.link_state:
             return
@@ -1649,7 +1632,7 @@ class JungHomeHub:
         """
         off = bluetooth.async_scanner_count(self.hass, connectable=True) == 0
         self._report_bluetooth_unavailable(off)
-        self._set_link_state(LINK_BLUETOOTH_OFF if off else LINK_SEARCHING)
+        self.set_link_state(LINK_BLUETOOTH_OFF if off else LINK_SEARCHING)
 
     def _report_bluetooth_unavailable(self, off: bool) -> None:
         """Raise (or clear) the repair issue for a Home Assistant without a connectable Bluetooth scanner.
@@ -1700,8 +1683,8 @@ class JungHomeHub:
             max_attempts=2,
             use_services_cache=True,
         )
-        self._rx_decoded_link = self._rx_undecodable_link = 0
-        self._beacon_authenticated = False
+        self.rx_decoded_link = self.rx_undecodable_link = 0
+        self.beacon_authenticated = False
         # counted before the attach: `proxy.connected` turns True inside it, and an entity added right then must
         # already see the new link's number (`config_entities.PropertyEntity._maybe_read`)
         self.link_count += 1
@@ -1710,10 +1693,10 @@ class JungHomeHub:
             # lost while attach() settled after the filter request (review-4 R4-3): a failed connection, not a link
             # to report as up for a moment and then as lost — the entities would flap
             raise ConnectionError("the link was lost while it was set up")
-        self._previous_link = self._link_end or NO_LINK
+        self.previous_link = self._link_end or NO_LINK
         self._link_end = None
         self._link_since = time.monotonic()
-        self._link_refresh = None
+        self.link_refresh = None
         self._held_back_at_link = self.state.held_back_total
         self._connect_failure_logged = False
         self.proxy_address = info.address
@@ -1731,9 +1714,9 @@ class JungHomeHub:
         self._link_up.set()
         self._last_rx = time.monotonic()
         self._set_available(True)
-        self._set_link_state(
+        self.set_link_state(
             LINK_UPDATING
-        )  # until the connect-time state refresh is through (`_after_connect`)
+        )  # until the connect-time state refresh is through (`Refresh.after_connect`)
         self._cancel_refresh()  # a refresh still running from the previous link would keep polling through this one
         if (
             self.proxy.proxy_addr is None
@@ -1742,8 +1725,8 @@ class JungHomeHub:
                 self.hass, FILTER_STATUS_TIMEOUT, self._filter_status_overdue
             )
         self.energy.arm_poll()
-        self.refresh_task = self.entry.async_create_background_task(
-            self.hass, self._after_connect(), f"{DOMAIN} refresh"
+        self.refresh.task = self.entry.async_create_background_task(
+            self.hass, self.refresh.after_connect(), f"{DOMAIN} refresh"
         )
         self.export_watch.check_pin()
         self.export_watch.request_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
@@ -1751,10 +1734,10 @@ class JungHomeHub:
 
     def _cancel_refresh(self) -> None:
         """Cancel the per-link background work: the connect-time refresh, a running energy poll, the Filter Status watchdog."""
-        for task in (self.refresh_task, self.energy.task):
+        for task in (self.refresh.task, self.energy.task):
             if task is not None:
                 task.cancel()
-        self.refresh_task = self.energy.task = None
+        self.refresh.task = self.energy.task = None
         self._cancel_filter_watch()
 
     def _cancel_filter_watch(self) -> None:
@@ -1780,7 +1763,7 @@ class JungHomeHub:
         if (
             not self.connected
             or self.proxy.proxy_addr is not None  # the status did arrive
-            or not self._beacon_authenticated
+            or not self.beacon_authenticated
             or self.proxy.filter_writes == 0
             or self.state.stalled_for is not None
         ):
@@ -1792,7 +1775,7 @@ class JungHomeHub:
             FILTER_STATUS_TIMEOUT,
             self.proxy.state.src,
         )
-        self._report_pdus_dropped(True)
+        self.report_pdus_dropped(True)
 
     def _set_available(self, available: bool) -> None:
         """Record the link state and tell the entities, unless it is "still unavailable" with nothing to clear.
@@ -1872,13 +1855,13 @@ class JungHomeHub:
                 end.lasted,
                 reason,
                 penalise,
-                self._link_refresh,
+                self.link_refresh,
                 self.state.held_back_total - self._held_back_at_link,
             )
         )
         self._cancel_refresh()
         self._start_grace()
-        self._set_link_state(LINK_DISCONNECTED)
+        self.set_link_state(LINK_DISCONNECTED)
         _LOGGER.info(
             "The link through proxy node %s ended after %.0f s: %s",
             self.proxy_address,
@@ -1922,163 +1905,12 @@ class JungHomeHub:
         self._last_rx = time.monotonic()
         self._cancel_filter_watch()
         if self._pdus_dropped:
-            self._report_pdus_dropped(False)
+            self.report_pdus_dropped(False)
         if self.proxy_node == proxy_unicast:
             return
         self.proxy_node = proxy_unicast
         _LOGGER.debug("Proxy %s is mesh node %04X", self.proxy_address, proxy_unicast)
         async_dispatcher_send(self.hass, SIGNAL_CONNECTION.format(self.entry.entry_id))
-
-    async def _after_connect(self) -> None:
-        """Run a link's connect-time sequence: the clock and location, the state refresh, then the slower reads.
-
-        Time Set and the location go first, right after the proxy filter `attach` wrote (review-4 R I-5): two
-        unacknowledged broadcasts, they need no refresh to be through, and sent after it they never went out on a
-        link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
-        fault reads are not repeated soon after a round on a link that held (`_connect_step`); the heartbeat
-        configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The new order is unverified on air.
-        """
-        await self.clock.send_time()
-        await self.clock.send_location()
-        if not await self._refresh_all():
-            return
-        # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
-        self._link_refresh = time.monotonic() - self._link_since
-        self._set_link_state(LINK_CONNECTED)
-        await self.energy.poll()
-        await self.energy.backfill_history()
-        await self.liveness.configure_heartbeats()
-        if not self.heartbeats_enabled and self.liveness.heartbeats_publishing:
-            # the option went off while some nodes could not be told (link down, a node silent or refusing)
-            await self.liveness.async_disable_heartbeats()
-        await self._connect_step("scene actions", self._get_scene_actions)
-        await self._connect_step("faults", self._get_faults)
-        await self._connect_step("current scenes", self._get_current_scenes)
-        await self._connect_step("inserts", self.inserts.read_unknown)
-
-    async def _connect_step(
-        self, name: str, step: Callable[[], Awaitable[bool]]
-    ) -> None:
-        """Run a connect-time read, unless its last complete round is recent and the link before this one held.
-
-        A link that lasted SHORT_LINK kept the hub hearing the nodes' publications (a Scene Status after every
-        recall); a round within CONNECT_STEP_FRESH of this link is current enough, and repeating it on every link
-        is what made a link that comes and goes keep the mesh busy (review-4 R I-5). After a short link — a failed
-        connection to `_judge_link` — the round runs again: what the hub heard through that link proves little.
-        `step` returns True when it got through. Unverified on air.
-        """
-        done = self._connect_steps_done.get(name)
-        if (
-            done is not None
-            and time.monotonic() - done < CONNECT_STEP_FRESH
-            and self._previous_link.lasted >= SHORT_LINK
-        ):
-            _LOGGER.debug(
-                "%s read %.0f s ago: not asked again on this link",
-                name,
-                time.monotonic() - done,
-            )
-            return
-        if await step():
-            self._connect_steps_done[name] = time.monotonic()
-
-    async def _get_faults(self) -> bool:
-        """Ask every mains node for its registered Health faults (Health Fault Get to its primary element).
-
-        JUNG nodes keep the vendor faults 0x81 / 0x80 registered (meaning unknown, `docs/hidden-features.md` §10)
-        and nothing publishes the register, so the fault binary sensors are filled at link-up (`_connect_step`),
-        one unicast Get per node REFRESH_CHUNK at a time; a single all-nodes Get loses answers in the collision.
-        False when the link went away first.
-        """
-        try:
-            await self.chunked(
-                [
-                    partial(self._get_faults_of, node.unicast)
-                    for node in self.cdb.nodes
-                    if node.pid is not None and node.pid not in BATTERY_PIDS
-                ]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("fault read aborted: %s", err)
-            return False
-        return True
-
-    async def _get_faults_of(self, addr: int) -> None:
-        """Read one node's fault register; the Health Fault Status handler stores it."""
-        try:
-            await self.proxy.request(
-                addr,
-                M.health_fault_get(),
-                M.HEALTH_FAULT_STATUS,
-                retries=REFRESH_RETRIES,
-            )
-        except TimeoutError:
-            _LOGGER.debug("%04X did not answer its Health Fault Get", addr)
-
-    async def _get_scene_actions(self) -> bool:
-        """Ask every scene member what it does in its scenes (JUNG Scene Action Setup), for the scene entities.
-
-        One list Get per member channel, then one Get per scene it names — a few dozen messages on a typical
-        installation, at link-up (`_connect_step`). The export knows the members, not their actions; nothing publishes
-        them, so this is the only way to show "what does this scene do". The export lists the element the Scene
-        Store went to (the node's primary, for both channels of a two-channel node), so every channel of that node
-        is asked, as the app asks each channel for its own list (`GetScenesForDevice`). False when the link went
-        away first.
-        """
-        members = sorted(
-            {
-                channel
-                for addresses in self.cdb.scenes.values()
-                for addr in addresses
-                for channel in self.scene_action_channels(addr)
-            }
-        )
-        if not members:
-            return True
-        try:
-            await self.chunked(
-                [partial(self._get_scene_actions_of, addr) for addr in members]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("scene action read aborted: %s", err)
-            return False
-        async_dispatcher_send(self.hass, SIGNAL_SCENES.format(self.entry.entry_id))
-        return True
-
-    async def _get_current_scenes(self) -> bool:
-        """Ask every element holding a scene register for its current scene (Scene Get), as the app reads it.
-
-        The Scene Status handler stores the answer (an answer to us, not a publication: it fires no event). After
-        that the nodes keep it current themselves: they publish a Scene Status after every recall. False when the
-        link went away first.
-        """
-        registers = sorted(
-            {a for addresses in self.cdb.scenes.values() for a in addresses}
-        )
-        if not registers:
-            return True
-        try:
-            await self.chunked(
-                [partial(self._get_current_scene_of, addr) for addr in registers]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("current scene read aborted: %s", err)
-            return False
-        return True
-
-    async def _get_current_scene_of(self, addr: int) -> None:
-        self._scene_gets.add(addr)
-        try:
-            await self.proxy.request(
-                addr,
-                M.scene_get(),
-                M.SCENE_STATUS,
-                retries=REFRESH_RETRIES,
-            )
-        except TimeoutError:
-            _LOGGER.debug("%04X did not answer its Scene Get", addr)
-        finally:
-            self._scene_gets.discard(addr)
 
     def scenes_of(self, addr: int) -> list[int]:
         """Return the scenes the load element at `addr` is a member of (the app's `GetScenesForDevice`).
@@ -2125,131 +1957,6 @@ class JungHomeHub:
         return [
             e.address for e in element.node.elements if SCENE_ACTION_SETUP in e.models
         ]
-
-    async def _get_scene_actions_of(self, addr: int) -> None:
-        """Read one element's scene list and the action of each scene into `scene_actions`.
-
-        Each reply must name the scene it was asked for (`V.scene_action_reply_to`): matched on source and opcode
-        alone, a late duplicate answer for one scene would land on the next. An answered list replaces what was
-        known of the element, so a scene it no longer lists stops showing its old action.
-        """
-
-        def answers(scene: int) -> Callable[[AccessMessage], bool]:
-            fits = V.scene_action_reply_to(scene)
-            return lambda m: fits(m.params)
-
-        try:
-            reply = await self.proxy.request(
-                addr,
-                V.scene_action_get(),
-                V.SCENE_ACTION_SETUP_STATUS,
-                expect_cid=M.JUNG_CID,
-                retries=REFRESH_RETRIES,
-                match=answers(V.SCENE_LIST),
-            )
-            listed = V.decode_scene_action_status(reply.params).scenes or ()
-            self.scene_lists_read.add(addr)
-            for scene in [s for s in self.scene_actions if s not in listed]:
-                self.scene_actions[scene].pop(addr, None)
-                if not self.scene_actions[scene]:
-                    del self.scene_actions[scene]
-            for scene in listed:
-                reply = await self.proxy.request(
-                    addr,
-                    V.scene_action_get(scene),
-                    V.SCENE_ACTION_SETUP_STATUS,
-                    expect_cid=M.JUNG_CID,
-                    retries=REFRESH_RETRIES,
-                    match=answers(scene),
-                )
-                status = V.decode_scene_action_status(reply.params)
-                self.scene_actions.setdefault(scene, {})[addr] = status.action
-        except TimeoutError:  # a status too short to name its scene is no answer either
-            _LOGGER.debug("%04X did not answer its Scene Action Setup Get", addr)
-
-    async def _refresh_all(self) -> bool:
-        """Ask every load for its state, a few at a time (the app does the same on start), waiting for the replies.
-
-        A blind is asked for its position and, when it has one, its slat level (Generic Level Get to each element).
-        CTL lights are also asked for their colour-temperature range (after the states: it changes nothing visible
-        until a temperature is set), then their temperature element for its colour temperature (Light CTL
-        Temperature Get, the gateway's read of a tunable-white light: range from the light, temperature from the
-        element after it). That last Get is a third one to the same node in the same refresh and one the app never
-        sends, so its silence does not count toward the node's reachability (`counted=False`): under the app's rule
-        one unanswered request marks the node unreachable at once (`Liveness.missed_answer`), and the light's own state Get
-        already decides that for the node. Returns False when the link went away before the refresh was through.
-
-        A metered load's meter element gets one job that asks for its readings property by property (`Energy.get_readings`).
-
-        Gets are the one message JUNG firmware always answers with a unicast status, so a refresh nobody answered while
-        other nodes' traffic kept arriving means the mesh discards our PDUs: a stale sequence number (lost store) or
-        another client using our address. So does one nobody answered on a link whose beacon authenticated and which
-        forwarded nothing decodable at all: a proxy that dropped our filter request keeps its default (empty)
-        whitelist, so there *is* no other traffic to hear. Sends are otherwise fire-and-forget, so this is the only
-        place to notice.
-        """
-        jobs = self._state_jobs()
-        heard, answered = self._rx_messages, self._rx_to_us
-        try:
-            await self.chunked(jobs)
-        except ConnectionError as err:
-            _LOGGER.debug("refresh aborted: %s", err)
-            return False
-        if self._rx_to_us > answered:
-            self._report_pdus_dropped(False)
-        elif jobs and (
-            self._rx_messages > heard
-            or (self._beacon_authenticated and self._rx_decoded_link == 0)
-        ):
-            _LOGGER.error(
-                "No JUNG device answered the state refresh although the link works: the nodes discard our messages "
-                "(stale sequence number, or address %04X is used by another client)",
-                self.proxy.state.src,
-            )
-            self._report_pdus_dropped(True)
-        return True
-
-    def _state_jobs(
-        self, only: Container[int] | None = None
-    ) -> list[Callable[[], Awaitable[None]]]:
-        """Return the state refresh's Gets (`_refresh_all`): of every load, or of the loads at the addresses in `only`."""
-        devices = self.devices
-        lights = [d for d in devices.lights if only is None or d.address in only]
-        jobs: list[Callable[[], Awaitable[None]]] = [
-            partial(self._get_state, light.address, light.kind) for light in lights
-        ]
-        jobs += [
-            partial(self._get_state, sock.address, "switch")
-            for sock in devices.sockets
-            if only is None or sock.address in only
-        ]
-        jobs += [
-            partial(self.energy.get_readings, load)
-            for load in devices.metered
-            if only is None or load.address in only
-        ]
-        jobs += [
-            partial(self._get_state, addr, "level")
-            for blind in devices.blinds
-            if only is None or blind.address in only
-            for addr in blind.level_elements
-        ]
-        jobs += [
-            partial(self._get_state, light.address, "ctl_range")
-            for light in lights
-            if light.kind == "ctl"
-        ]
-        jobs += [
-            partial(
-                self._get_state,
-                light.temperature_address,
-                "ctl_temperature",
-                counted=False,
-            )
-            for light in lights
-            if light.kind == "ctl" and light.temperature_address is not None
-        ]
-        return jobs
 
     async def chunked(self, jobs: Sequence[Callable[[], Awaitable[object]]]) -> None:
         """Run the jobs REFRESH_CHUNK at a time with a short pause in between (as the app does).
@@ -2309,34 +2016,8 @@ class JungHomeHub:
     async def async_refresh_element(
         self, addr: int, kind: str, *, quiet: bool = False
     ) -> None:
-        """Ask one load for its state now, with the connect-time refresh's Get for its kind; best effort.
-
-        The reply lands in `states` through `_on_message`, as every status does. A lost link is left for the
-        caller's next send to report. `quiet`: one attempt, its miss no verdict on the node (the periodic re-probe of
-        a node already known to be unreachable).
-        """
-        try:
-            await self._get_state(addr, kind, quiet=quiet)
-        except ConnectionError as err:
-            _LOGGER.debug("%04X: state Get not sent: %s", addr, err)
-
-    async def _get_state(
-        self, addr: int, kind: str, *, quiet: bool = False, counted: bool = True
-    ) -> None:
-        """Send `kind`'s state Get to `addr` and wait for its status; a miss counts toward reachability if `counted`."""
-        get, status = STATE_GETS.get(kind, ONOFF_GET)
-        asked = time.monotonic()
-        try:
-            await self.proxy.request(
-                addr,
-                get(),
-                status,
-                retries=1 if quiet else REFRESH_RETRIES,
-            )
-        except TimeoutError:
-            _LOGGER.debug("%04X did not answer its state Get", addr)
-            if counted:
-                self.liveness.missed_answer(addr, kind, asked, full=not quiet)
+        """Ask one load for its state now; best effort (`Refresh.async_refresh_element`)."""
+        await self.refresh.async_refresh_element(addr, kind, quiet=quiet)
 
     async def async_wait_settled(self, addr: int, kind: str) -> bool:
         """Ask a load for its state until it answers with no transition left (present = target); True once it does.
@@ -2649,8 +2330,8 @@ class JungHomeHub:
     def _on_message(self, m: AccessMessage) -> None:
         """Account for the traffic (link watchdog, drop detection, stale-export detection, the app), then hand the message to its handler."""
         self._last_rx = time.monotonic()
-        self._rx_messages += 1
-        self._rx_decoded_link += 1
+        self.rx_messages += 1
+        self.rx_decoded_link += 1
         self._note_seq(m.src, m.seq)
         self.liveness.heard_from(m.src)
         if self.heartbeats_enabled:
@@ -2660,9 +2341,9 @@ class JungHomeHub:
                 False
             )  # our keys opened something: the export fits the mesh after all
         if m.dst == self.proxy.state.src:
-            self._rx_to_us += 1
+            self.rx_to_us += 1
             if self._pdus_dropped:
-                self._report_pdus_dropped(
+                self.report_pdus_dropped(
                     False
                 )  # a node answered us: our PDUs get through again
         if self.app_follow is not None:
@@ -3006,7 +2687,7 @@ class JungHomeHub:
         """Store an element's current scene; a published one after a recall nobody reported is the scene event.
 
         JUNG nodes publish `[status][current]` to their group after each recall they carry out; an answer to a
-        Scene Get only updates the state: ours (`_get_current_scenes`) — sent to us, or published while the Get
+        Scene Get only updates the state: ours (`Refresh.get_current_scenes`) — sent to us, or published while the Get
         waits for it, as JUNG firmware does with other answers — and the app's or the gateway's, sent to their
         unicast address (the proxy filter is a blacklist, so those reach us too). A publication (to a group, or any
         address that is no unicast one) of a scene no recall reported within SCENE_RECALL_WINDOW (a recall Home
@@ -3023,7 +2704,7 @@ class JungHomeHub:
         if (
             status.current
             and not is_unicast(m.dst)
-            and m.src not in self._scene_gets
+            and m.src not in self.refresh.scene_gets
             and self.note_scene_recall(status.current)
         ):
             from .event import fire_scene_recalled  # noqa: PLC0415
@@ -3107,7 +2788,7 @@ class JungHomeHub:
             if beacon.key_refresh:
                 self.report_key_refresh()
             return
-        self._beacon_authenticated = True
+        self.beacon_authenticated = True
         self._check_iv_index(beacon.iv_index)
 
     def _check_iv_index(self, network: int) -> None:
@@ -3203,11 +2884,11 @@ class JungHomeHub:
         completed after the export was made (`docs/cross-repo-analysis.md` §5). Without this the symptom is only a
         silent link dropped by the watchdog every LINK_IDLE_TIMEOUT.
         """
-        self._rx_undecodable_link += 1
+        self.rx_undecodable_link += 1
         if (
             not self._export_stale
-            and self._rx_decoded_link == 0
-            and self._rx_undecodable_link >= EXPORT_STALE_THRESHOLD
+            and self.rx_decoded_link == 0
+            and self.rx_undecodable_link >= EXPORT_STALE_THRESHOLD
         ):
             self._report_export_stale(True)
 
@@ -3223,7 +2904,7 @@ class JungHomeHub:
             "Nothing heard through proxy node %s can be decrypted with the keys of the export (%d messages so far): "
             "the mesh keys changed — export the network again and reconfigure",
             self.proxy_address,
-            self._rx_undecodable_link,
+            self.rx_undecodable_link,
         )
         ir.async_create_issue(
             self.hass,
@@ -3302,7 +2983,7 @@ class JungHomeHub:
             # not the proxy's fault: no verdict on it, and the entities keep the grace (review-4 R4-3)
             await self._drop_link("sequence numbers skipped ahead", penalise=False)
 
-    def _report_pdus_dropped(self, dropped: bool) -> None:
+    def report_pdus_dropped(self, dropped: bool) -> None:
         """Raise (or clear) the repair issue for a mesh that ignores us although the link works (the caller logs why).
 
         Raised by the Filter Status watchdog and by an unanswered state refresh; cleared by a Filter Status or by
@@ -3351,7 +3032,7 @@ class JungHomeHub:
                 self.entry.title,
             )
         if self._pdus_dropped:
-            self._report_pdus_dropped(False)
+            self.report_pdus_dropped(False)
         self._report_address_shared()
 
     def _report_address_shared(self) -> None:

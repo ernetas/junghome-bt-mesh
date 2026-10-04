@@ -596,7 +596,7 @@ async def test_new_loads_are_asked_and_new_nodes_get_heartbeats(env: Env) -> Non
 
 async def test_scenes_are_read_again_on_the_next_link_when_none_is_up(env: Env) -> None:
     hub = env.hub
-    hub._connect_steps_done["scene actions"] = hub._connect_steps_done[
+    hub.refresh.connect_steps_done["scene actions"] = hub.refresh.connect_steps_done[
         "current scenes"
     ] = 1.0
     with (
@@ -607,8 +607,8 @@ async def test_scenes_are_read_again_on_the_next_link_when_none_is_up(env: Env) 
     ):
         hub._reread_scenes()
     task.assert_not_called()
-    assert "scene actions" not in hub._connect_steps_done
-    assert "current scenes" not in hub._connect_steps_done
+    assert "scene actions" not in hub.refresh.connect_steps_done
+    assert "current scenes" not in hub.refresh.connect_steps_done
 
 
 async def test_the_transitions_recorder_sees_a_lost_state(

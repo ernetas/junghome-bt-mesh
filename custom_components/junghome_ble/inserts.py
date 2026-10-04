@@ -304,7 +304,7 @@ class NodeInserts:
         """Ask each push-button nothing told about for its InsertId and its ButtonLayout (read-only; a connect step).
 
         True when every node asked answered (or there was none to ask): the step is then not repeated soon
-        (`JungHomeHub._connect_step`). False when one stayed silent or the link went away.
+        (`Refresh.connect_step`). False when one stayed silent or the link went away.
         """
         complete = True
         for node in [n for n in self.hub.cdb.nodes if self._unknown(n)]:

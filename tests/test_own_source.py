@@ -56,9 +56,7 @@ async def test_another_client_on_our_address_stops_sends_until_the_repair(
 ) -> None:
     hub = hub_of(init_integration)
     seq = hub.state.seq
-    hub._report_pdus_dropped(
-        True
-    )  # what the nodes dropping our PDUs looked like so far
+    hub.report_pdus_dropped(True)  # what the nodes dropping our PDUs looked like so far
 
     with caplog.at_level(logging.ERROR):
         seen = other_client_sends(fake_link)
@@ -78,7 +76,7 @@ async def test_another_client_on_our_address_stops_sends_until_the_repair(
     )
     # the shared address is the explanation: no `pdus_dropped` next to it, and none raised while it is open
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
-    hub._report_pdus_dropped(True)
+    hub.report_pdus_dropped(True)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
     # nothing goes out, not even after waiting: no number is taken, none can collide

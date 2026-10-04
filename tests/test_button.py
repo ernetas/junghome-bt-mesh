@@ -329,7 +329,7 @@ async def init_reset_enabled(
     hub = mock_config_entry.runtime_data
     await wait_until(
         hass,
-        lambda: hub.refresh_task is None or hub.refresh_task.done(),
+        lambda: hub.refresh.task is None or hub.refresh.task.done(),
         what="the connect-time refresh",
     )
     # nobody answered the refresh either (every request gives up after milliseconds here), so every node counts as

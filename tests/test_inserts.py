@@ -356,16 +356,16 @@ async def test_the_reads_are_a_connect_step(
     fake_link: FakeProxyLink,
     fast_sleep: list[float],
 ) -> None:
-    """The Gets run after the link's other reads, once per link (`JungHomeHub._connect_step`)."""
+    """The Gets run after the link's other reads, once per link (`Refresh.connect_step`)."""
     answer_gets(fake_link)
     hub = await set_up(hass, mock_config_entry)
-    hub._previous_link = coordinator.LinkEnd("the proxy disconnected", None, 0.0)
+    hub.previous_link = coordinator.LinkEnd("the proxy disconnected", None, 0.0)
     with patch.object(
         hub.inserts, "read_unknown", AsyncMock(return_value=True)
     ) as step:
-        await hub._after_connect()
+        await hub.refresh.after_connect()
     step.assert_awaited_once()
-    assert "inserts" in hub._connect_steps_done
+    assert "inserts" in hub.refresh.connect_steps_done
 
 
 def test_node_adverts_take_the_records_of_the_nodes_alone(

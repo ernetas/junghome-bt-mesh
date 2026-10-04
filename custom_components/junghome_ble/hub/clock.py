@@ -1,6 +1,6 @@
 """The time and location one hub broadcasts to the nodes (review-4 A4-3).
 
-Time Set and the home location go to all nodes at the start of every link (`JungHomeHub._after_connect`), Time Set
+Time Set and the home location go to all nodes at the start of every link (`Refresh.after_connect`), Time Set
 again once a day with a read of the nodes' clocks (`send_time_daily`) and right after each change of the local UTC
 offset (`arm_offset_change`, `next_utc_offset_change`): the nodes' timers and astro schedules have no other clock.
 """

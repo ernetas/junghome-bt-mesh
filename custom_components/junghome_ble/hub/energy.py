@@ -246,11 +246,11 @@ class Energy:
     def _poll_energy_periodic(self, _now: datetime) -> None:
         """Start a poll every ENERGY_POLL_INTERVAL while a link is up and the previous one is through.
 
-        The connect-time refresh ends with a poll of its own (`_after_connect`), so a tick during it is skipped too.
+        The connect-time refresh ends with a poll of its own (`Refresh.after_connect`), so a tick during it is skipped too.
         """
         if not self.hub.connected or any(
             task is not None and not task.done()
-            for task in (self.hub.refresh_task, self.task)
+            for task in (self.hub.refresh.task, self.task)
         ):
             return
         self.task = self.hub.entry.async_create_background_task(

@@ -4193,7 +4193,7 @@
     "custom_components/junghome_ble/strings.json::exceptions.send_failed"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_refresh_stops_on_send_failure",
+    "tests/test_hub_refresh.py::test_refresh_stops_on_send_failure",
     "tests/test_link_loss.py::test_a_command_in_the_grace_waits_for_the_next_link"
    ]
   },
@@ -4225,11 +4225,11 @@
    "id": "mgmt:err:loadstatefordevices.loadalldevicesnotreachable",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
+    "tests/test_hub_refresh.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
@@ -4237,11 +4237,11 @@
    "id": "mgmt:err:loadstatefordevices.loadstateerror",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
+    "tests/test_hub_refresh.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
@@ -4249,11 +4249,11 @@
    "id": "mgmt:err:loadstatefordevices.loadstatefailed",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
+    "tests/test_hub_refresh.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
@@ -4974,7 +4974,7 @@
    "id": "mgmt:flow:loadinitialdevicestate",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_pin"
    ],
@@ -4989,14 +4989,14 @@
    "id": "mgmt:flow:loadstatefordevices",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/const.py::REFRESH_CHUNK"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
-    "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair"
+    "tests/test_hub_refresh.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair"
    ],
    "note": "acknowledged Gets in chunks of REFRESH_CHUNK instead of one every 300 ms; unreachable nodes counted per node"
   },
@@ -5019,7 +5019,7 @@
    "tests": [
     "tests/jhmesh/test_client.py::test_request_config_retries_then_times_out",
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
-    "tests/test_coordinator.py::test_refresh_stops_on_send_failure"
+    "tests/test_hub_refresh.py::test_refresh_stops_on_send_failure"
    ],
    "note": "3 attempts x 3 s like the app; fails fast without a link; unanswered nodes become unreachable; models are bound up front instead of lazily"
   },
@@ -5120,7 +5120,7 @@
    "id": "mgmt:flow:observedeviceconnectionstate",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_link_state",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_link_state",
     "custom_components/junghome_ble/sensor.py::JungHomeLinkStateSensor",
     "custom_components/junghome_ble/const.py::LINK_STATES"
    ],
@@ -5978,7 +5978,7 @@
    "id": "mgmt:model:0002",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_faults",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._get_faults",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._command.check",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_health_fault_status"
    ],
@@ -8055,7 +8055,7 @@
     "custom_components/junghome_ble/strings.json::exceptions.service_not_connected"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_refresh_stops_on_send_failure",
+    "tests/test_hub_refresh.py::test_refresh_stops_on_send_failure",
     "tests/test_translations.py::test_service_error_keys_exist"
    ]
   },
@@ -8322,7 +8322,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/strings.json::entity.sensor.link_state"
    ],
    "tests": [
@@ -8334,7 +8334,7 @@
    "id": "mgmt:str:proxy_loading_new_connection_title",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all"
+    "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh"
@@ -8992,7 +8992,7 @@
    "id": "mgmt:time:broadcastonconnect",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
+    "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/hub/clock.py::Clock.send_time"
    ],
    "tests": [

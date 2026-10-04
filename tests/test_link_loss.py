@@ -20,6 +20,7 @@ from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.junghome_ble.hub import clock
+from custom_components.junghome_ble.hub.refresh import Refresh
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS
 
@@ -387,12 +388,12 @@ async def test_the_link_history_tells_why_the_last_links_ended(
     hub = hub_of(init_integration)
     assert list(hub.link_history) == []
     assert hub.link_history.maxlen == coordinator.LINK_HISTORY == 20
-    with patch.object(JungHomeHub, "_refresh_all", AsyncMock(return_value=True)):
+    with patch.object(Refresh, "_refresh_all", AsyncMock(return_value=True)):
         fake_link.drop_link()  # the proxy went away
         await wait_for_link(hass, init_integration, connected=False)
         await wait_for_link(hass, init_integration)
         await wait_until(
-            hass, lambda: hub._link_refresh is not None, what="the second refresh"
+            hass, lambda: hub.link_refresh is not None, what="the second refresh"
         )
         await hub.async_skip_ahead()  # we end the second link ourselves
         await wait_for_link(hass, init_integration)
@@ -431,7 +432,7 @@ async def test_a_link_lost_before_its_refresh_records_none(
 ) -> None:
     """A link that went before its state refresh got through has no refresh time."""
     hub = hub_of(init_integration)
-    with patch.object(JungHomeHub, "_refresh_all", AsyncMock(return_value=False)):
+    with patch.object(Refresh, "_refresh_all", AsyncMock(return_value=False)):
         fake_link.drop_link()
         await wait_for_link(hass, init_integration, connected=False)
         await wait_for_link(hass, init_integration)

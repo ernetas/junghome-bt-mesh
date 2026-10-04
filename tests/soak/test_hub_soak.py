@@ -306,7 +306,7 @@ def check_bounds(hass: HomeAssistant, hub: Any, record: Record) -> None:
     # one connection loop, at most one connect-time sequence and one reader worker; reads in chunks
     for counts in record.tasks:
         assert counts["JungHomeHub._connection_loop"] == 1
-        assert counts["JungHomeHub._after_connect"] <= 1
+        assert counts["Refresh.after_connect"] <= 1
         assert counts["PropertyReader._run"] <= 1
         busiest = counts.most_common(1)[0]
         assert busiest[1] <= max(PROPERTY_READ_CHUNK, REFRESH_CHUNK), busiest
