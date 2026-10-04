@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Topologie mesh"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Putere"

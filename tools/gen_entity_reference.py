@@ -61,6 +61,7 @@ PLATFORMS: dict[str, tuple[str, str]] = {
     "climate": ("Climate (room thermostats)", "climate"),
     "sensor": ("Sensors", "sensor"),
     "binary_sensor": ("Binary sensors", "binary-sensor"),
+    "image": ("Images", "image"),
     "event": ("Events (keys and inputs)", "event"),
     "scene": ("Scenes", "scene"),
     "button": ("Buttons", "device-parameters-number-select-switch-button"),

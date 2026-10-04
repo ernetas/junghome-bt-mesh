@@ -107,7 +107,8 @@ shows up as **several Home Assistant devices**, because the app shows it that wa
   *Input E2* on a mini actuator);
 - one **mesh network device** for the whole installation, with *All lights*, *All sockets*, one *All lights in …*
   per room (hidden at first, see [Everyday use](everyday-use.md#lights)), the connection status, and the
-  [mesh health](everyday-use.md#mesh-health-dashboard): *Mesh connection*, *Unreachable devices* and *Mesh overview*.
+  [mesh health](everyday-use.md#mesh-health-dashboard): *Mesh connection*, *Unreachable devices*, *Mesh overview*
+  and the *Mesh topology* picture.
 
 Each scene of the app becomes a scene entity. Many settings and diagnostics exist but are **disabled** at first, as
 the app keeps them in its expert mode; the [entity reference](entities.md) lists them all and says which are on.

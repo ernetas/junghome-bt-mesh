@@ -2291,6 +2291,58 @@
     'state': 'unknown',
   })
 # ---
+# name: test_platform_entities[image][image.jung_home_mesh_test_mesh_topology-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'image',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'image.jung_home_mesh_test_mesh_topology',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Mesh topology',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Mesh topology',
+    'platform': 'junghome_ble',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'mesh_topology',
+    'unique_id': '1baf3ade-0000-4000-8000-000000000001-mesh-topology',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_platform_entities[image][image.jung_home_mesh_test_mesh_topology-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <ImageEntityStateAttribute.ACCESS_TOKEN: 'access_token'>: 'c0ffee',
+      <EntityStateAttribute.ENTITY_PICTURE: 'entity_picture'>: '/api/image_proxy/image.jung_home_mesh_test_mesh_topology?token=c0ffee',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'JUNG HOME mesh test Mesh topology',
+    }),
+    'context': <ANY>,
+    'entity_id': 'image.jung_home_mesh_test_mesh_topology',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': '2020-01-01T00:00:00+00:00',
+  })
+# ---
 # name: test_platform_entities[light][light.jung_home_mesh_test_all_lights-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -14868,6 +14920,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -15132,6 +15185,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -15529,6 +15583,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -15700,6 +15755,7 @@
       '1baf3ade-0000-4000-8000-000000000002-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
       '1baf3ade-0000-4000-8000-000000000002-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
       '1baf3ade-0000-4000-8000-000000000002-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
+      '1baf3ade-0000-4000-8000-000000000002-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
       '1baf3ade-0000-4000-8000-000000000002-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
       '1baf3ade-0000-4000-8000-000000000002-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
       '1baf3ade-0000-4000-8000-000000000002-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000002',
@@ -15951,6 +16007,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -16275,6 +16332,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
@@ -16574,6 +16632,7 @@
       '1baf3ade-0000-4000-8000-000000000001-link-state sensor key=link_state category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-connection binary_sensor key=mesh_connection category=None disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh-overview sensor key=mesh_overview category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
+      '1baf3ade-0000-4000-8000-000000000001-mesh-topology image key=mesh_topology category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-mesh_sequence_used sensor key=mesh_sequence_used category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-proxy sensor key=proxy_node category=diagnostic disabled_by=None device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',
       '1baf3ade-0000-4000-8000-000000000001-room-c00f-lights light key=room_lights category=None disabled_by=None hidden_by=integration device=junghome_ble:mesh:1baf3ade-0000-4000-8000-000000000001',

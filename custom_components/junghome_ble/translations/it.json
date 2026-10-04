@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Topologia mesh"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Potenza"

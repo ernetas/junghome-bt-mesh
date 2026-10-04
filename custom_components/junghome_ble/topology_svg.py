@@ -1,0 +1,428 @@
+"""The mesh's shape as a picture: a topology snapshot rendered as SVG (review-4 U4-14), without Home Assistant.
+
+A snapshot (`Topology`) is what the *Mesh topology* image shows and the diagnostics' `topology` lists: Home
+Assistant (its own address, whether it has a link), the node it is connected through (the link's proxy) and every
+node of the export with its name, room, features (relay, proxy, friend, low power, from the export), the hops of its
+last heartbeat, whether it answers and, for one that does not or sleeps, when it was last heard. `mesh_topology.py`
+takes it from the hub; equal snapshots render the same bytes, so the entity redraws only when it changes.
+
+The picture (`render_svg`) puts Home Assistant at the top with the link's proxy next to it, and the other nodes in
+bands by hop count below (1 hop, 2 hops, …; `HOP_BANDS` and more share the last), the nodes whose hops are not known
+in a band of their own under a dashed line. Nothing claims a path the mesh does not report: the only line drawn is
+Home Assistant's link to its proxy. Each node's state is a marker shape *and* colour *and* a word (reachable,
+unreachable, asleep, not known); its features are lettered badges *and* a line of words; the link's proxy has a thick
+border and says so; a legend explains all of it. The layout is sorted (band, name, address), so the picture does not
+jump between updates; at most `MAX_COLUMNS` boxes a row, so its size grows with the node count alone (bounded for
+large meshes). Names are stripped of characters XML cannot hold, cut to fit and escaped. The colours are the light
+ones as attributes and the dark ones under `prefers-color-scheme: dark`, on a neutral background with a border of its
+own, so the picture reads on either theme. Its words are English.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from html import escape
+from typing import Any, Final
+
+# the geometry, in px
+MARGIN: Final = 16
+BOX_W: Final = 220
+BOX_H: Final = 92
+GAP_X: Final = 12
+GAP_Y: Final = 14
+LINK_GAP: Final = 72  # between Home Assistant's box and its proxy's: room for the link's line and its word
+BAND_HEAD: Final = 24  # a band's heading above its boxes
+BAND_GAP: Final = 18
+MIN_COLUMNS: Final = (
+    3  # the top band (two boxes and the link) and the legend need this width
+)
+MAX_COLUMNS: Final = 4
+HOP_BANDS: Final = 8  # nodes this many hops away and more share one band
+NAME_CHARS: Final = 23  # what fits left of the badge column: bold 12 px for the name, 11 px for the rest
+LINE_CHARS: Final = 29
+LEGEND_LINE: Final = 18
+
+# colour name → (light, dark): the light one as the element's attribute, the dark one in the style's media query
+PALETTE: Final = {
+    "bg": ("#f6f7f9", "#1b1c1f"),
+    "frame": ("#c7c9cf", "#45474d"),
+    "card": ("#ffffff", "#26282c"),
+    "edge": ("#9a9ca4", "#6b6e75"),
+    "text": ("#1d1f23", "#e7e8ea"),
+    "muted": ("#5d6068", "#a3a6ad"),
+    "ok": ("#1a7f37", "#3fb950"),
+    "bad": ("#c62828", "#f47067"),
+    "sleep": ("#6e7781", "#9198a1"),
+    "link": ("#0969da", "#58a6ff"),
+    "relay": ("#9a6700", "#d29922"),
+    "proxy": ("#0969da", "#58a6ff"),
+    "friend": ("#8250df", "#a371f7"),
+    "low_power": ("#1b7c83", "#39c5cf"),
+    "badge_text": ("#ffffff", "#0d1117"),
+}
+# the features a node has (export `features`, 1 = enabled), as badge letter, colour and word
+FEATURES: Final = (
+    ("relay", "R", "relay"),
+    ("proxy", "P", "proxy"),
+    ("friend", "F", "friend"),
+    ("low_power", "L", "low power"),
+)
+# a node's state → its marker, colour and word
+STATES: Final = {
+    "reachable": ("ok", "reachable"),
+    "unreachable": ("bad", "unreachable"),
+    "asleep": ("sleep", "asleep (battery)"),
+    "unknown": ("sleep", "not known (no link)"),
+}
+LEGEND: Final = (
+    ("reachable", "reachable: answers"),
+    ("unreachable", "unreachable: did not answer"),
+    ("asleep", "asleep: a battery device"),
+    ("unknown", "not known: no link"),
+    ("link", "link proxy: Home Assistant's way in"),
+    ("relay", "R relay: passes messages on"),
+    ("proxy", "P proxy: offers a Bluetooth link"),
+    ("friend", "F friend: keeps messages for sleepers"),
+    ("low_power", "L low power: sleeps, has a friend"),
+)
+FOOTNOTE: Final = (
+    "Bands: the hops of each device's last heartbeat (option Node heartbeats)."
+)
+# what XML 1.0 cannot carry at all, not even escaped
+_NOT_XML = re.compile("[^\t\n\r\x20-퟿-�\U00010000-\U0010ffff]")
+
+
+@dataclass(frozen=True, kw_only=True)
+class TopologyNode:
+    """One node as the picture shows it.
+
+    `reachable` is None for a battery node (it sleeps) and for every node without a link; `hops` None while no
+    heartbeat of it was heard; `last_heard` (local time, minutes) only for a node that is not reachable — one that
+    answers is heard all the time, and the picture would change with every message.
+    """
+
+    unicast: int
+    name: str
+    room: str | None = None
+    relay: bool = False
+    proxy: bool = False
+    friend: bool = False
+    low_power: bool = False
+    battery: bool = False
+    hops: int | None = None
+    reachable: bool | None = None
+    last_heard: str | None = None
+
+    @property
+    def state(self) -> str:
+        """The node's state, a key of `STATES`."""
+        if self.reachable is not None:
+            return "reachable" if self.reachable else "unreachable"
+        return "asleep" if self.battery else "unknown"
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the node as the diagnostics show it: its address in hex, the rest as shown."""
+        return {
+            "unicast": f"{self.unicast:04X}",
+            "name": self.name,
+            "room": self.room,
+            "features": [key for key, _, _ in FEATURES if getattr(self, key)],
+            "battery": self.battery,
+            "hops": self.hops,
+            "reachable": self.reachable,
+            "last_heard": self.last_heard,
+        }
+
+
+@dataclass(frozen=True, kw_only=True)
+class Topology:
+    """What the picture shows: Home Assistant (`address`), whether it has a link, through which node, every node."""
+
+    address: int
+    connected: bool
+    proxy: int | None
+    nodes: tuple[TopologyNode, ...]
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the snapshot as the diagnostics show it, its nodes in the picture's order."""
+        proxy, bands = _bands(self)
+        return {
+            "home_assistant": f"{self.address:04X}",
+            "connected": self.connected,
+            "proxy": None if proxy is None else f"{proxy.unicast:04X}",
+            "nodes": [n.as_dict() for n in ([proxy] if proxy else [])]
+            + [n.as_dict() for _, members in bands for n in members],
+        }
+
+
+def _sort_key(node: TopologyNode) -> tuple[str, int]:
+    return (node.name.casefold(), node.unicast)
+
+
+def _band_title(hops: int | None) -> str:
+    if hops is None:
+        return "Hops not known"
+    if hops >= HOP_BANDS:
+        return f"{HOP_BANDS} or more hops"
+    return "1 hop" if hops == 1 else f"{hops} hops"
+
+
+def _bands(
+    topology: Topology,
+) -> tuple[TopologyNode | None, list[tuple[str, list[TopologyNode]]]]:
+    """Return the link's proxy (None without one) and the other nodes by band, sorted: (title, nodes), nearest first."""
+    proxy = next(
+        (
+            n
+            for n in topology.nodes
+            if topology.connected and n.unicast == topology.proxy
+        ),
+        None,
+    )
+    grouped: dict[int | None, list[TopologyNode]] = {}
+    for node in topology.nodes:
+        if node is not proxy:
+            band = None if node.hops is None else min(node.hops, HOP_BANDS)
+            grouped.setdefault(band, []).append(node)
+    order = sorted(
+        grouped, key=lambda band: (band is None, 0 if band is None else band)
+    )
+    return proxy, [
+        (_band_title(band), sorted(grouped[band], key=_sort_key)) for band in order
+    ]
+
+
+def clean(text: str, limit: int) -> str:
+    """`text` without what XML cannot hold, cut to `limit` characters (an ellipsis marks a cut), escaped."""
+    text = _NOT_XML.sub("", text)
+    if len(text) > limit:
+        text = text[: limit - 1].rstrip() + "\N{HORIZONTAL ELLIPSIS}"
+    return escape(text, quote=True)
+
+
+def _paint(fill: str | None = None, stroke: str | None = None) -> str:
+    """Return the attributes painting an element: its classes (`f-`/`s-` + a `PALETTE` name) and the light values.
+
+    No `fill` paints the inside `none` (an outline); every element has a fill or a stroke colour.
+    """
+    classes = [f"f-{fill}"] if fill else []
+    attributes = [f'fill="{PALETTE[fill][0]}"' if fill else 'fill="none"']
+    if stroke:
+        classes.append(f"s-{stroke}")
+        attributes.append(f'stroke="{PALETTE[stroke][0]}"')
+    return f'class="{" ".join(classes)}" ' + " ".join(attributes)
+
+
+def _style() -> str:
+    """Return the dark colours: every palette colour as a fill class and a stroke class."""
+    rules = "".join(
+        f".f-{name}{{fill:{dark}}}.s-{name}{{stroke:{dark}}}"
+        for name, (_, dark) in PALETTE.items()
+    )
+    return f"<style>@media (prefers-color-scheme: dark){{{rules}}}</style>"
+
+
+def _text(
+    x: int,
+    y: int,
+    text: str,
+    *,
+    size: int = 11,
+    colour: str = "text",
+    bold: bool = False,
+    middle: bool = False,
+) -> str:
+    """Return a line of (already clean) text at `x`, `y` (its baseline), from its start or, `middle`, centred."""
+    weight = ' font-weight="bold"' if bold else ""
+    anchor = ' text-anchor="middle"' if middle else ""
+    return f'<text x="{x}" y="{y}" font-size="{size}"{weight}{anchor} {_paint(colour)}>{text}</text>'
+
+
+def _marker(state: str, cx: int, cy: int) -> str:
+    """Return the shape of a state: a filled circle, a cross, a hollow square, a diamond; a house for Home Assistant."""
+    if state == "reachable":
+        return f'<circle cx="{cx}" cy="{cy}" r="6" {_paint("ok")}/>'
+    if state == "unreachable":
+        return (
+            f'<path d="M{cx - 5} {cy - 5}L{cx + 5} {cy + 5}M{cx + 5} {cy - 5}L{cx - 5} {cy + 5}" '
+            f'stroke-width="3" {_paint(stroke="bad")}/>'
+        )
+    if state == "asleep":
+        return (
+            f'<rect x="{cx - 5}" y="{cy - 5}" width="10" height="10" stroke-width="2" '
+            f"{_paint(stroke='sleep')}/>"
+        )
+    if state == "unknown":
+        return (
+            f'<path d="M{cx} {cy - 6}L{cx + 6} {cy}L{cx} {cy + 6}L{cx - 6} {cy}Z" stroke-width="2" '
+            f"{_paint(stroke='sleep')}/>"
+        )
+    # Home Assistant
+    return f'<path d="M{cx - 6} {cy + 6}V{cy}L{cx} {cy - 6}L{cx + 6} {cy}V{cy + 6}Z" {_paint("link")}/>'
+
+
+def _badge(key: str, letter: str, cx: int, cy: int) -> str:
+    return f'<circle cx="{cx}" cy="{cy}" r="7" {_paint(key)}/>' + _text(
+        cx, cy + 3, letter, size=9, colour="badge_text", bold=True, middle=True
+    )
+
+
+def _box(x: int, y: int, *, link: bool = False, state: str | None = None) -> str:
+    """Return a node's frame: thick in the link colour for the link's proxy (and Home Assistant), dashed unreachable."""
+    if link:
+        stroke = f'stroke-width="3" {_paint("card", "link")}'
+    elif state == "unreachable":
+        stroke = f'stroke-width="1.5" stroke-dasharray="6 4" {_paint("card", "bad")}'
+    else:
+        stroke = f'stroke-width="1" {_paint("card", "edge")}'
+    return f'<rect x="{x}" y="{y}" width="{BOX_W}" height="{BOX_H}" rx="6" {stroke}/>'
+
+
+def _node(node: TopologyNode, x: int, y: int, *, link: bool = False) -> str:
+    """One node's box: marker, name, room and address, state, features as words and badges, when last heard."""
+    state = node.state
+    colour, word = STATES[state]
+    where = (
+        f"{node.room} \N{MIDDLE DOT} {node.unicast:04X}"
+        if node.room
+        else f"{node.unicast:04X}"
+    )
+    status = f"link proxy \N{MIDDLE DOT} {word}" if link else word
+    features = [
+        (key, letter, name) for key, letter, name in FEATURES if getattr(node, key)
+    ]
+    lines = [(where, "muted"), (status, colour)]
+    if features:
+        lines.append(
+            (" \N{MIDDLE DOT} ".join(name for _, _, name in features), "muted")
+        )
+    if node.last_heard is not None:
+        lines.append((f"last heard {node.last_heard}", "muted"))
+    parts = [
+        _box(x, y, link=link, state=state),
+        _marker(state, x + 16, y + 17),
+        _text(x + 30, y + 21, clean(node.name, NAME_CHARS), size=12, bold=True),
+    ]
+    parts += [
+        _text(x + 30, y + 38 + 16 * i, clean(line, LINE_CHARS), colour=line_colour)
+        for i, (line, line_colour) in enumerate(lines)
+    ]
+    parts += [
+        _badge(key, letter, x + BOX_W - 13, y + 15 + 18 * i)
+        for i, (key, letter, _) in enumerate(features)
+    ]
+    return f"<g>{''.join(parts)}</g>"
+
+
+def _home_assistant(topology: Topology, x: int, y: int) -> str:
+    status, colour = ("connected", "ok") if topology.connected else ("no link", "bad")
+    return (
+        f"<g>{_box(x, y, link=True)}{_marker('home', x + 16, y + 17)}"
+        f"{_text(x + 30, y + 21, 'Home Assistant', size=12, bold=True)}"
+        f"{_text(x + 30, y + 38, f'address {topology.address:04X}', colour='muted')}"
+        f"{_text(x + 30, y + 54, status, colour=colour)}</g>"
+    )
+
+
+def _summary(topology: Topology) -> str:
+    """Return the line under the title: how many devices, and how many of them are in each state."""
+    counts: dict[str, int] = {}
+    for node in topology.nodes:
+        counts[node.state] = counts.get(node.state, 0) + 1
+    total = len(topology.nodes)
+    parts = [f"{total} device" + ("" if total == 1 else "s")]
+    if not topology.connected:
+        parts.append("no link")
+    parts += [
+        f"{counts[state]} {state}"
+        for state in ("reachable", "unreachable", "asleep")
+        if counts.get(state)
+    ]
+    return " \N{MIDDLE DOT} ".join(parts)
+
+
+def _legend(x: int, y: int, width: int) -> tuple[list[str], int]:
+    """Return the legend's elements from `y` down, in two columns, and the height it takes."""
+    out = [_text(x, y + 12, "Legend", size=12, colour="muted", bold=True)]
+    half = (len(LEGEND) + 1) // 2
+    column = width // 2
+    for i, (key, words) in enumerate(LEGEND):
+        cx = x + 8 + (i // half) * column
+        cy = y + 30 + (i % half) * LEGEND_LINE
+        if key in STATES:
+            sample = _marker(key, cx, cy - 4)
+        elif key == "link":
+            sample = (
+                f'<rect x="{cx - 7}" y="{cy - 10}" width="14" height="12" rx="2" stroke-width="3" '
+                f"{_paint('card', 'link')}/>"
+            )
+        else:
+            sample = _badge(key, words[0], cx, cy - 4)
+        out += [sample, _text(cx + 14, cy, clean(words, 48))]
+    bottom = y + 30 + half * LEGEND_LINE
+    out.append(_text(x, bottom, clean(FOOTNOTE, 96), colour="muted"))
+    return out, bottom + 8 - y
+
+
+def render_svg(topology: Topology) -> str:
+    """Return the picture of `topology` (module docstring): the same snapshot, the same text, whatever the order."""
+    proxy, bands = _bands(topology)
+    widest = max((len(members) for _, members in bands), default=0)
+    columns = max(MIN_COLUMNS, min(MAX_COLUMNS, widest))
+    width = 2 * MARGIN + columns * BOX_W + (columns - 1) * GAP_X
+    inner = width - 2 * MARGIN
+    body = [
+        _text(MARGIN, MARGIN + 18, "Mesh topology", size=16, bold=True),
+        _text(MARGIN, MARGIN + 36, clean(_summary(topology), 120), colour="muted"),
+    ]
+    y = MARGIN + 52
+    # the top band: Home Assistant and, with a link, the node it goes through
+    body.append(_home_assistant(topology, MARGIN, y))
+    if proxy is not None:
+        px = MARGIN + BOX_W + LINK_GAP
+        mid = y + BOX_H // 2
+        body += [
+            (
+                f'<line x1="{MARGIN + BOX_W}" y1="{mid}" x2="{px}" y2="{mid}" stroke-width="3" '
+                f"{_paint(stroke='link')}/>"
+            ),
+            _text(
+                MARGIN + BOX_W + LINK_GAP // 2,
+                mid - 6,
+                "link",
+                colour="link",
+                middle=True,
+            ),
+            _node(proxy, px, y, link=True),
+        ]
+    y += BOX_H + BAND_GAP
+    for title, members in bands:
+        if title == _band_title(None):
+            body.append(
+                f'<line x1="{MARGIN}" y1="{y}" x2="{width - MARGIN}" y2="{y}" stroke-width="1" '
+                f'stroke-dasharray="4 4" {_paint(stroke="edge")}/>'
+            )
+            y += 6
+        body.append(_text(MARGIN, y + 16, title, size=12, colour="muted", bold=True))
+        y += BAND_HEAD
+        for i, node in enumerate(members):
+            row, column = divmod(i, columns)
+            body.append(
+                _node(
+                    node, MARGIN + column * (BOX_W + GAP_X), y + row * (BOX_H + GAP_Y)
+                )
+            )
+        rows = -(-len(members) // columns)
+        y += rows * (BOX_H + GAP_Y) - GAP_Y + BAND_GAP
+    legend, legend_height = _legend(MARGIN, y, inner)
+    body += legend
+    height = y + legend_height + MARGIN
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" font-family="sans-serif" role="img" aria-label="Mesh topology">'
+        f"<title>Mesh topology</title>{_style()}"
+        f'<rect x="0.5" y="0.5" width="{width - 1}" height="{height - 1}" rx="8" stroke-width="1" '
+        f"{_paint('bg', 'frame')}/>"
+        f"{''.join(body)}</svg>\n"
+    )

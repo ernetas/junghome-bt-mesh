@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import (
@@ -525,6 +526,42 @@ def node_unit_device_info(hub: HubView, node: Node) -> DeviceInfo:
             if sock.node is node:
                 return socket_device_info(hub, sock)
     return node_device_info(hub, node)
+
+
+def node_device(
+    hub: HubView, registry: dr.DeviceRegistry, node: Node
+) -> dr.DeviceEntry | None:
+    """Return the node's device registry entry; None while it is not registered."""
+    device = registry.async_get(hub.device_ids.get(node_identifier(node), ""))
+    return device if isinstance(device, dr.DeviceEntry) else None
+
+
+def node_label(hub: HubView, registry: dr.DeviceRegistry, node: Node) -> str:
+    """Return the name the node's device shows: the user's rename, else the integration's name for it."""
+    device = node_device(hub, registry, node)
+    names = (device.name_by_user, device.name) if device is not None else ()
+    return next((name for name in names if name), f"{node.name} {node.unicast:04X}")
+
+
+def node_areas(hub: HubView) -> dict[int, str]:
+    """Return the area of each node with one, by unicast: its node device's, else the first among its children's.
+
+    A light's, a socket's device: the room the app put the load in, when the node device itself has no area.
+    """
+    registry = dr.async_get(hub.hass)
+    areas = ar.async_get(hub.hass)
+    child_area: dict[str, str] = {}
+    for device in dr.async_entries_for_config_entry(registry, hub.entry.entry_id):
+        if device.area_id is not None and device.via_device_id is not None:
+            child_area.setdefault(device.via_device_id, device.area_id)
+    out: dict[int, str] = {}
+    for node in hub.cdb.nodes:
+        own = node_device(hub, registry, node)
+        area_id = (own.area_id or child_area.get(own.id)) if own is not None else None
+        area = areas.async_get_area(area_id) if area_id is not None else None
+        if area is not None:
+            out[node.unicast] = area.name
+    return out
 
 
 def health_nodes(hub: HubView) -> list[Node]:

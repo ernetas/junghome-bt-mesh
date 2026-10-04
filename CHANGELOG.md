@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0 (unreleased)
+
+### Added
+
+- **The mesh as a picture: the *Mesh topology* image** (review-4 U4-14). An `image` entity on the mesh network
+  device (diagnostic, on by default) draws Home Assistant with the node it is connected through, and every other node
+  in a band by the hops of its last heartbeat (the nodes whose hops are not known apart), each with its name, area and
+  address, whether it answers — reachable, unreachable (with when it was last heard), asleep, not known — as a shape,
+  a colour and a word, and its features from the export (relay, proxy, friend, low power) as lettered badges and
+  words; a legend explains them. An SVG for the stock picture-entity card, nothing to install; readable in light and
+  dark; redrawn only when what it shows changed, at most once a minute. The diagnostics carry the same snapshot as
+  `topology`. The user guide's mesh health dashboard shows the card. Unverified on air.
+
 ## 1.3.0
 
 ### Added

@@ -264,7 +264,8 @@ reach; Home Assistant keeps trying. [Details](../ha-integration.md#repair-issue-
 ## Diagnostics
 
 *Settings → Devices & services → JUNG HOME Bluetooth Mesh → ⋮ → Download diagnostics* saves a file with the
-state of the connection, the devices and the last connections — never a key, with Bluetooth addresses and file
+state of the connection, the devices, the last connections and the mesh as the *Mesh topology* picture shows it
+(`topology`) — never a key, with Bluetooth addresses and file
 paths left out.
 Each device's page has its own *Download diagnostics* too. Attach it when you report a problem.
 

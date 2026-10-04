@@ -352,6 +352,11 @@
       "wind_alarm": {
         "default": "mdi:weather-windy"
       }
+    },
+    "image": {
+      "mesh_topology": {
+        "default": "mdi:graph-outline"
+      }
     }
   },
   "services": {

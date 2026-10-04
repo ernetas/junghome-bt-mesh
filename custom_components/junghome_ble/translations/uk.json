@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Топологія mesh-мережі"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Потужність"

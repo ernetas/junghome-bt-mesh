@@ -429,14 +429,20 @@ async def test_an_existing_room_entity_keeps_its_visibility(
 # --------------------------------------------------------------------------- the user guide's card
 
 
-def documented_card() -> dict[str, Any]:
-    """The Markdown card of the user guide's *Mesh health dashboard* section."""
+def documented_cards() -> dict[str, dict[str, Any]]:
+    """The cards of the user guide's *Mesh health dashboard* section, by type (one of each)."""
     text = DOCS.read_text(encoding="utf-8")
     section = text.split("## Mesh health dashboard", 1)[1].split("\n## ", 1)[0]
     blocks = re.findall(r"^```yaml\n(.*?)^```$", section, re.MULTILINE | re.DOTALL)
     cards = [card for block in blocks if (card := yaml.safe_load(block)).get("type")]
-    assert len(cards) == 1
-    return cards[0]
+    by_type = {card["type"]: card for card in cards}
+    assert len(by_type) == len(cards)
+    return by_type
+
+
+def documented_card() -> dict[str, Any]:
+    """The Markdown card of the user guide's *Mesh health dashboard* section."""
+    return documented_cards()["markdown"]
 
 
 async def test_the_documented_card_renders_the_overview(

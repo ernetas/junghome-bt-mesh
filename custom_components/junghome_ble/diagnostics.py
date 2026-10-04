@@ -56,6 +56,7 @@ from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
 from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
 from .mesh_config import plan_history
+from .mesh_topology import topology_snapshot
 from .seq_store import iv_update_summary
 
 if TYPE_CHECKING:
@@ -154,6 +155,7 @@ class EntryDiagnostics(TypedDict):
     link: LinkDiagnostics
     link_stats: LinkStatsDiagnostics
     heartbeats: dict[str, Any]
+    topology: dict[str, Any]
     audit: dict[str, dict[str, Any]]
     plans: list[dict[str, Any]]
     carry_over_conflicts: list[str]
@@ -408,6 +410,9 @@ async def async_get_config_entry_diagnostics(
             "links": hub.link_count,
         },
         "heartbeats": _heartbeats(hub),
+        # what the *Mesh topology* image shows: Home Assistant, its link and proxy, every node with its room,
+        # features, hops, reachability and, when it does not answer, when it was last heard (`mesh_topology.py`)
+        "topology": topology_snapshot(hub).as_dict(),
         # each node's last `audit_network` result (settings and findings, no keys) since the entry loaded
         "audit": {
             f"{unicast:04X}": result.as_dict()

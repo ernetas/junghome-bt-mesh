@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Топология mesh-сети"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Мощность"

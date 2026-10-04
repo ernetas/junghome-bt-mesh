@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
+from homeassistant.components import image as image_component
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -110,10 +111,12 @@ async def test_platform_entities(
 ) -> None:
     """Every entity registry entry and state of one platform, with the disabled-by-default ones enabled.
 
-    The clock is frozen at a synthetic moment: the nodes' *Last seen* diagnostics show when they answered.
+    The clock is frozen at a synthetic moment: the nodes' *Last seen* diagnostics show when they answered. An image's
+    access token (in its state and picture URL) is random: fixed here.
     """
     freezer.move_to("2020-01-01T00:00:00+00:00")
-    entry = await init_platform(platform)
+    with patch.object(image_component._RND, "getrandbits", return_value=0xC0FFEE):
+        entry = await init_platform(platform)
     if not er.async_entries_for_config_entry(entity_registry, entry.entry_id):
         # A platform nothing on the fixture network needs (covers and thermostats: it has no blind or RTR):
         # `snapshot_platform` refuses an empty platform, so pin the emptiness itself instead.

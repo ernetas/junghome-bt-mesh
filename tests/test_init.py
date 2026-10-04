@@ -113,6 +113,7 @@ async def test_setup_and_unload(
         ["binary_sensor"] * (6 + 2 + 1)
         + ["button"] * 13  # Identify, Clear faults per node; Reset consumption
         + ["event"] * 4
+        + ["image"]  # Mesh topology
         # the loads; All lights; the lights of WC, Living room and Kitchen
         + ["light"] * (5 + 1 + 3)
         # parameters (with the DALI insert's hotel and night levels); Lock time limit per load; dimmer setup (with the

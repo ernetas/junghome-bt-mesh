@@ -119,7 +119,7 @@ installs firmware itself.
 
 ## Mesh health dashboard
 
-Three entities on the mesh network device tell how the installation is doing (**unverified on air**):
+Four entities on the mesh network device tell how the installation is doing (**unverified on air**):
 
 - **Mesh connection** is on while Home Assistant is connected to the mesh. Off means every JUNG entity is
   unavailable — see [Everything is unavailable](maintenance.md#everything-is-unavailable).
@@ -133,6 +133,15 @@ Three entities on the mesh network device tell how the installation is doing (**
   sleeps), `last_seen`, `rssi` (the signal in dBm), `scanner` (the Bluetooth adapter or proxy that hears the device
   best), `hops` (with *Node heartbeats* on), and `proxy` (the device Home Assistant is connected through). It is
   updated at most once a minute, and the list is not kept in the history.
+- **Mesh topology** (a diagnostic image) draws the mesh: Home Assistant at the top with the device it is connected
+  through (the *link proxy*, thick border), and every other device in a band by how many hops its last sign of life
+  took (*1 hop*, *2 hops*, …; with the *Node heartbeats* option on — without it, and for battery devices, under
+  *Hops not known*). Each device shows its name, area and address; whether it answers as a shape, a colour and a
+  word (a dot *reachable*, a cross *unreachable* with when it was last heard, a square *asleep* for a battery
+  device); and its roles as letters and words (**R** relay, **P** proxy, **F** friend, **L** low power). The legend
+  under the picture explains them; its words are English. It is redrawn only when something it shows changed, at
+  most once a minute. The lines between devices are not drawn: the mesh does not report which device passes on
+  whose messages.
 
 The entity ids follow the name of your mesh network device: `sensor.jung_home_mesh_mesh_overview` below stands
 for yours (*Settings → Devices & services → Entities*, search for *Mesh overview*).
@@ -153,6 +162,19 @@ content: |
   | {{ n.name }}{{ ' (proxy)' if n.proxy else '' }} | {{ n.area or '–' }} | {{ 'asleep' if n.reachable is none else ('yes' if n.reachable else '**no**') }} | {{ time_since(as_datetime(n.last_seen)) ~ ' ago' if n.last_seen else '–' }} | {{ n.rssi ~ ' dBm' if n.rssi is not none else '–' }} | {{ n.scanner or '–' }} | {{ n.hops if n.hops is not none else '–' }} |
   {% endfor %}
 ```
+
+**The picture of the mesh.** Add a **Picture entity** card (the stock one, nothing to install), switch to the code
+editor and paste (`image.jung_home_mesh_mesh_topology` stands for yours: search for *Mesh topology*):
+
+```yaml
+type: picture-entity
+entity: image.jung_home_mesh_mesh_topology
+show_name: false
+show_state: false
+```
+
+A large mesh makes a tall picture: put the card in a **Panel** view (or a wide section) so the names stay readable.
+The picture follows your browser's dark mode.
 
 **A notification when devices stop answering**, five minutes after it happens (the entity ids as above):
 

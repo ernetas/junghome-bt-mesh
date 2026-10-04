@@ -145,6 +145,7 @@ PLATFORMS: Final = [
     "cover",
     "climate",
     "event",
+    "image",
     "light",
     "number",
     "scene",

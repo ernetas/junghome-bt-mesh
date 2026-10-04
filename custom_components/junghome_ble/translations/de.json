@@ -379,6 +379,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Mesh-Topologie"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Leistung"

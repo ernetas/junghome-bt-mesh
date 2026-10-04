@@ -116,6 +116,7 @@ pass removed the markers of the checks that passed.
 | [A9](#a9--firmware-entities-f4-18-u4-11) | *Firmware* `update` entities | any node | nothing | — |
 | [A10](#a10--gateway-discovery-u4-8) | The gateway's mDNS card, the gateway form prefilled | gateway | nothing | — |
 | [A11](#a11--jung-only-discovery-and-the-mesh-uuid-as-unique-id-m10) | The entry's unique id migrated to the mesh UUID; no discovery card for the configured mesh | any | nothing | — |
+| [A12](#a12--the-mesh-topology-picture-u4-14) | The *Mesh topology* image against the installation | any; *Node heartbeats* for the bands | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -395,6 +396,23 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Markers:** `custom_components/junghome_ble/__init__.py::async_migrate_entry`,
   `custom_components/junghome_ble/config_flow.py::async_migrate_unique_id`,
   `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_bluetooth`.
+
+### A12 · The *Mesh topology* picture (U4-14)
+
+- **Checks:** review-4 brief 75 — the *Mesh topology* image draws the installation as Home Assistant hears it: the
+  node of the link next to Home Assistant, the other nodes in the band of their heartbeat hops, the right state and
+  features per node; it does not redraw for a heartbeat that changed nothing.
+- **Needs:** any proxy node; for the hop bands the *Node heartbeats* option on (otherwise every node is under *Hops
+  not known*, which is a pass too). **Safety:** read-only.
+- **Do:** put the user guide's picture-entity card on a dashboard (or open the entity); wait a few minutes after the
+  link is up; download the diagnostics. Look at it in the browser's light and dark mode.
+- **Capture:** none; the diagnostics' `topology`, `link.proxy_node` and `heartbeats`.
+- **Pass:** the node with the thick border is the *Proxy node* sensor's and `link.proxy_node`; every node sits in the
+  band of its `heartbeats.nodes.<unicast>.hops` (the same as `topology`); the names and areas are the devices'; the
+  relay / proxy letters are the export's features; the picture reads in both modes; the entity's state (when it last
+  changed) stays put over ten minutes with nothing changing on the mesh.
+- **Markers:** `custom_components/junghome_ble/image.py::JungHomeMeshTopology`,
+  `custom_components/junghome_ble/mesh_topology.py::<module>`.
 
 ## B · Momentary control
 

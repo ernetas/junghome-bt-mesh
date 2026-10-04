@@ -151,6 +151,14 @@ Explained in [Binary sensors](../ha-integration.md#binary-sensor).
 | Scheduler function | Diagnostic | No | Node device | Room thermostat |
 | Wind alarm | – | Yes | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |
 
+## Images
+
+Explained in [Images](../ha-integration.md#image).
+
+| Name | Category | On by default | Sits on | Devices |
+|---|---|---|---|---|
+| Mesh topology | Diagnostic | Yes | Mesh network device | – |
+
 ## Events (keys and inputs)
 
 Explained in [Events (keys and inputs)](../ha-integration.md#event).

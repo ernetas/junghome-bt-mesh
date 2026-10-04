@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "메시 토폴로지"
+      }
+    },
     "sensor": {
       "power": {
         "name": "전력"

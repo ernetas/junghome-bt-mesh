@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Tinklo topologija"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Galia"

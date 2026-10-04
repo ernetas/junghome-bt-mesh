@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Topológia siete mesh"
+      }
+    },
     "sensor": {
       "power": {
         "name": "Výkon"

@@ -80,7 +80,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import (
@@ -127,8 +126,9 @@ from .entity import (
     light_device_info,
     load_entity_id,
     metered_device_info,
+    node_areas,
     node_device_info,
-    node_identifier,
+    node_label,
     product_name,
     socket_device_info,
 )
@@ -1341,21 +1341,6 @@ class JungHomeLinkStateSensor(JungHomeEntity, SensorEntity):
         )
 
 
-def node_device(
-    hub: JungHomeHub, registry: dr.DeviceRegistry, node: Node
-) -> dr.DeviceEntry | None:
-    """Return the node's device registry entry; None while it is not registered."""
-    device = registry.async_get(hub.device_ids.get(node_identifier(node), ""))
-    return device if isinstance(device, dr.DeviceEntry) else None
-
-
-def node_label(hub: JungHomeHub, registry: dr.DeviceRegistry, node: Node) -> str:
-    """Return the name the node's device shows: the user's rename, else the integration's name for it."""
-    device = node_device(hub, registry, node)
-    names = (device.name_by_user, device.name) if device is not None else ()
-    return next((name for name in names if name), f"{node.name} {node.unicast:04X}")
-
-
 def unreachable_nodes(hub: JungHomeHub) -> list[Node]:
     """Return the mains nodes that left a request unanswered, or stopped beating (`JungHomeHub.node_alive`)."""
     return [node for node in health_nodes(hub) if not hub.node_alive(node.unicast)]
@@ -1380,25 +1365,18 @@ def mesh_overview(hub: JungHomeHub) -> list[dict[str, Any]]:
     """
     hass = hub.hass
     registry = dr.async_get(hass)
-    areas = ar.async_get(hass)
-    child_area: dict[str, str] = {}
-    for device in dr.async_entries_for_config_entry(registry, hub.entry.entry_id):
-        if device.area_id is not None and device.via_device_id is not None:
-            child_area.setdefault(device.via_device_id, device.area_id)
+    areas = node_areas(hub)
     link = hub.link_available
     rows: list[dict[str, Any]] = []
     for node in hub.cdb.nodes:
         if node.pid is None:
             continue
-        own = node_device(hub, registry, node)
-        area_id = (own.area_id or child_area.get(own.id)) if own is not None else None
-        area = areas.async_get_area(area_id) if area_id is not None else None
         seen = hub.last_seen.get(node.unicast)
         beat = hub.heartbeats.get(node.unicast)
         rows.append(
             {
                 "name": node_label(hub, registry, node),
-                "area": area.name if area is not None else None,
+                "area": areas.get(node.unicast),
                 "product": product_name(node.pid),
                 "reachable": None
                 if node.pid in BATTERY_PIDS

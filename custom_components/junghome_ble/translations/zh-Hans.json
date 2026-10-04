@@ -378,6 +378,11 @@
         }
       }
     },
+    "image": {
+      "mesh_topology": {
+        "name": "Mesh 拓扑"
+      }
+    },
     "sensor": {
       "power": {
         "name": "功率"
