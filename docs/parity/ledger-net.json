@@ -975,7 +975,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/configurator/wiring.py::record_scene_link",
-    "custom_components/junghome_ble/configurator/plan.py::_drop_scene_key_row"
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.drop_scene_link"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_scene_link_row_mirrors_an_ios_style_file",
@@ -1851,7 +1851,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/configurator/wiring.py::ROOM_FUNCTIONS",
-    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile._matches_function"
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.matches_function"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_room_link_functions_filter_the_members",
@@ -4379,7 +4379,7 @@
     "custom_components/junghome_ble/configurator/wiring.py::clear_steps",
     "custom_components/junghome_ble/configurator/wiring.py::unlink_room_steps",
     "custom_components/junghome_ble/configurator/wiring.py::CLEAR_KEEP_MODELS",
-    "custom_components/junghome_ble/configurator/plan.py::_drop_scene_key_row",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.drop_scene_link",
     "custom_components/junghome_ble/configurator/wiring.py::scene_key_steps"
    ],
    "tests": [
@@ -4637,7 +4637,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/configurator/wiring.py::plan_room_link",
-    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile._matches_function",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.matches_function",
     "custom_components/junghome_ble/configurator/wiring.py::record_room_link"
    ],
    "tests": [

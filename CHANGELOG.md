@@ -48,7 +48,10 @@
   tunable-white channel has not been dimmed this way yet.
 - Internal: the plan model lives in the library (review-4 brief 62, A4-10): `jhmesh.plan` holds `ConfigStep` — one
   model for the configurator's plans and a new node's commissioning (`jhmesh.commission.Step` is it) —, `ordered`,
-  `replay` and the step builders. Nothing changes in behaviour.
+  `replay` and the step builders. The export's `meta` rows the configurator edited by hand (room links, the keys'
+  scene rows, the app device covering an element) are read and written through `ProjectFile` methods
+  (`room_links`, `take_room_links`, `add_room_link`, `record_scene_link`, `device_entry`, …), and
+  `ProjectFile.matches_function` is public. Nothing changes in behaviour.
 
 ### Fixed
 

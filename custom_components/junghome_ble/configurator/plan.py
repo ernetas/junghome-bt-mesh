@@ -11,13 +11,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from custom_components.junghome_ble.jhmesh.devices import meta_list
 from custom_components.junghome_ble.jhmesh.export import (
     ModelChange,
     ProjectFile,
     hexaddr,
-    keeps_row,
-    meta_rows,
 )
 from custom_components.junghome_ble.jhmesh.plan import ConfigStep
 
@@ -30,29 +27,6 @@ class PlanError(Exception):
         super().__init__(key)
         self.key = key
         self.placeholders = placeholders
-
-
-def _drop_link_rows(pf: ProjectFile, key: int) -> None:
-    """Remove `key`'s room-link and scene rows: every step tagged `unlinks=key` was accepted, the old wiring is gone."""
-    for dev in meta_rows(meta_list(pf.meta.get("devices"))):
-        dev["cachedGroupConnectionMetadata"] = [
-            r
-            for r in meta_list(dev.get("cachedGroupConnectionMetadata"))
-            if keeps_row(r, "elementAddress", key)
-        ]
-    _drop_scene_key_row(pf, key)
-
-
-def _drop_scene_key_row(pf: ProjectFile, key: int) -> None:
-    """Remove `key`'s `keyModeSceneConfigExports` row (review-3 W2).
-
-    The row is what makes the app show a key as recalling "Scene N"; a key cleared or given another function
-    no longer does, whatever its KeyMode still says. A file without such a row is left byte-identical.
-    """
-    rows = meta_list(pf.meta.get("keyModeSceneConfigExports"))
-    kept = [r for r in rows if keeps_row(r, "elementAddress", key)]
-    if len(kept) != len(rows):
-        pf.meta["keyModeSceneConfigExports"] = kept
 
 
 # What the error of a stopped plan says about the messages before the one that failed (a placeholder: the

@@ -16,14 +16,13 @@ from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
-from custom_components.junghome_ble.jhmesh.devices import DETECTOR_PIDS, as_int
+from custom_components.junghome_ble.jhmesh.devices import DETECTOR_PIDS
 from custom_components.junghome_ble.jhmesh.export import (
     InvalidName,
     ModelChange,
     ProjectFile,
     has_model,
     hexaddr,
-    location_ids,
 )
 from custom_components.junghome_ble.jhmesh.plan import (
     ConfigStep,
@@ -88,11 +87,9 @@ class Rooms(Operations):
             pf = await self.store.load()
             element = find_element(pf, address)
             entry = device_entry(pf, element.node, element.location)
-            locations = (
-                location_ids(entry.get("deviceId", {}).get("locationIds"))
-                if entry is not None
-                else None
-            ) or [element.location]
+            locations = (pf.device_locations(entry) if entry is not None else None) or [
+                element.location
+            ]
             before = pf.snapshot()
             try:
                 written = pf.rename_device(element.node, locations, name)
@@ -139,9 +136,8 @@ class Rooms(Operations):
             pf = await self.store.load()
             address = find_room(pf, room)
             steps: list[ConfigStep] = []
-            for row in list(pf.room_connections(address)):
-                key_addr = as_int(row.get("elementAddress"))
-                key = pf.cdb.element(key_addr) if key_addr is not None else None
+            for link in pf.room_links(address):
+                key = pf.cdb.element(link.key) if link.key is not None else None
                 if key is not None:
                     steps += clear_steps(pf, key)
             steps += config_steps(pf, pf.remove_group(address))

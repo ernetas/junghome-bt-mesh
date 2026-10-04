@@ -475,6 +475,7 @@ API: dict[str, list[str]] = {
         "ProjectFile",
         "RENAME_MAX_LENGTH",
         "ROOM_MEMBER_MODELS",
+        "RoomLink",
         "SCENE_INFO_FIELDS",
         "SCENE_INFO_KELVIN",
         "SHARE_KEYS",

@@ -39,7 +39,6 @@ from custom_components.junghome_ble.keep_awake import sleepy_node
 from .plan import (
     APPLIED_KEY_WIRED,
     Note,
-    _drop_link_rows,
     _step_from_json,
     _step_json,
     applied_text,
@@ -405,7 +404,7 @@ class PlanExecutor:
         }
         finished = {s.unlinks for s in accepted if s.unlinks is not None} - pending
         for key in finished:
-            _drop_link_rows(record, key)
+            record.drop_room_links(key)
         if prepare is not None:
             self._bookkeeping(record, prepare)
         for step in accepted:

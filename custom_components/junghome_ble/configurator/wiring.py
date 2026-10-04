@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh import vendor_models as V
-from custom_components.junghome_ble.jhmesh.cdb import CDB, canonical_uuid, parse_address
+from custom_components.junghome_ble.jhmesh.cdb import CDB, parse_address
 from custom_components.junghome_ble.jhmesh.devices import (
     ALL_SCENES,
     GATEWAY_PID,
@@ -30,11 +30,9 @@ from custom_components.junghome_ble.jhmesh.devices import (
     SOCKET_PIDS,
     THERMOSTAT_PIDS,
     Metadata,
-    as_int,
     ctl_temperature_element,
     is_room,
     load_kind,
-    meta_list,
     slat_element,
 )
 from custom_components.junghome_ble.jhmesh.export import (
@@ -55,12 +53,8 @@ from custom_components.junghome_ble.jhmesh.export import (
     ProjectFile,
     cdb_element_groups,
     check_name,
-    function_code,
     has_model,
     hexaddr,
-    keeps_row,
-    location_ids,
-    meta_rows,
     raw_model,
 )
 from custom_components.junghome_ble.jhmesh.merge import MISSING, Change
@@ -71,7 +65,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
     deletable,
 )
 
-from .plan import KeyPlan, Note, PlanError, _drop_scene_key_row
+from .plan import KeyPlan, Note, PlanError
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.jhmesh.cdb import Element, Node
@@ -481,30 +475,15 @@ def room_keys(pf: ProjectFile, element: Element, group: int) -> list[int]:
         for address in element.subscriptions(raw["modelId"])
     }
     return [
-        key
-        for row in pf.room_connections(group)
-        if (key := as_int(row.get("elementAddress"))) is not None
-        and as_int(row.get("publishAddress")) in listened
+        link.key
+        for link in pf.room_links(group)
+        if link.key is not None and link.publish in listened
     ]
 
 
 def device_entry(pf: ProjectFile, node: Node, location: int) -> dict[str, Any] | None:
-    """Return the `meta.devices[]` entry covering an element location: the most specific one, as the app resolves it."""
-    best: dict[str, Any] | None = None
-    best_size = 0
-    for dev in meta_rows(meta_list(pf.meta.get("devices"))):
-        did = dev.get("deviceId")
-        if (
-            not isinstance(did, dict)
-            or canonical_uuid(str(did.get("nodeId", ""))) != node.uuid
-        ):
-            continue
-        locations = location_ids(did.get("locationIds"))
-        if locations is None:
-            continue
-        if location in locations and (best is None or len(locations) < best_size):
-            best, best_size = dev, len(locations)
-    return best
+    """Return the `meta.devices[]` entry covering an element location (`ProjectFile.device_entry`)."""
+    return pf.device_entry(node, location)
 
 
 def unlink_room_steps(
@@ -537,24 +516,12 @@ def clear_steps(pf: ProjectFile, key: Element) -> list[ConfigStep]:
 def _clear_plan(pf: ProjectFile, key: Element) -> list[ConfigStep]:
     steps: list[ConfigStep] = []
     own_group = element_groups(pf).get(key.address)
-    for dev in meta_rows(meta_list(pf.meta.get("devices"))):
-        cached = meta_list(dev.get("cachedGroupConnectionMetadata"))
-        links = [
-            r
-            for r in meta_rows(cached)
-            if as_int(r.get("elementAddress")) == key.address
-        ]
-        if not links:
-            continue
-        for row in links:
-            publish = as_int(row.get("publishAddress")) or own_group
-            key_mode = FUNCTION_KEY_MODE.get(
-                function_code(row.get("function")) or 0, KEY_MODE_LIGHT
-            )
-            if publish is not None:
-                steps += unlink_room_steps(pf, key, publish, key_mode)
-        dev["cachedGroupConnectionMetadata"] = [r for r in cached if r not in links]
-    _drop_scene_key_row(pf, key.address)
+    for link in pf.take_room_links(key.address):
+        publish = link.publish or own_group
+        key_mode = FUNCTION_KEY_MODE.get(link.function or 0, KEY_MODE_LIGHT)
+        if publish is not None:
+            steps += unlink_room_steps(pf, key, publish, key_mode)
+    pf.drop_scene_link(key.address)
     for raw in key.raw_models:
         model = raw["modelId"]
         if model.upper() in CLEAR_KEEP_MODELS:
@@ -601,34 +568,7 @@ def record_room_link(
             f"{key.node.name} {key.node.unicast:04X} buttons",
         )
         entry = pf.set_device_name(key.node, locations, name)
-    template = next(
-        (
-            r
-            for dev in meta_rows(meta_list(pf.meta.get("devices")))
-            for r in meta_rows(meta_list(dev.get("cachedGroupConnectionMetadata")))
-        ),
-        None,
-    )
-    row: dict[str, Any] = {
-        "elementAddress": key.address,
-        "groupAddress": room,
-        "publishAddress": publish,
-        "function": function,
-    }
-    if (
-        template is not None
-    ):  # mirror the file's own style: int vs hex-string addresses, enum name vs ordinal
-        if isinstance(template.get("elementAddress"), str):
-            row = {k: hexaddr(v) if isinstance(v, int) else v for k, v in row.items()}
-        if isinstance(template.get("function"), int):
-            row["function"] = GROUP_FUNCTIONS[function]
-        row = {k: row[k] for k in template if k in row} | row
-    kept = [
-        r
-        for r in meta_list(entry.get("cachedGroupConnectionMetadata"))
-        if (r != row if keep else keeps_row(r, "elementAddress", key.address))
-    ]
-    entry["cachedGroupConnectionMetadata"] = [*kept, row]
+    pf.add_room_link(entry, key.address, room, publish, function, keep=keep)
 
 
 def plan_room_link(
@@ -647,7 +587,7 @@ def plan_room_link(
         raise PlanError("service_no_element_group", address=hexaddr(key.address))
     steps = clear_steps(pf, key)
     for member in pf.group_members(room_address):
-        if member is key or not pf._matches_function(member, code):  # noqa: SLF001
+        if member is key or not pf.matches_function(member, code):
             continue
         for model in KEY_MODE_SERVERS[key_mode]:
             if has_model(member, model):
@@ -863,33 +803,10 @@ def record_scene_link(
 ) -> None:
     """Store the `keyModeSceneConfigExports` row that makes the app show the key as recalling scene `number`.
 
-    `{"sceneConfig": {transitionStepSeconds, sceneId, transitionResolution, publicationAddress?},
-    "elementAddress"}` (`MeshPropertyExport.java:153-161`), no transition as the app writes it; it replaces the
-    key's earlier row and mirrors an existing row's style (field order, int vs hex-string addresses).
+    `ProjectFile.record_scene_link`: no transition as the app writes it, the key's earlier row replaced, an
+    existing row's style mirrored.
     """
-    rows = meta_list(pf.meta.get("keyModeSceneConfigExports"))
-    template = next(
-        (r for r in meta_rows(rows) if isinstance(r.get("sceneConfig"), dict)),
-        None,
-    )
-    config: dict[str, Any] = {
-        "transitionStepSeconds": 0,
-        "sceneId": number,
-        "transitionResolution": 0,
-    }
-    if publication is not None:
-        config["publicationAddress"] = publication
-    row: dict[str, Any] = {"sceneConfig": config, "elementAddress": key}
-    if template is not None:
-        if isinstance(template.get("elementAddress"), str):
-            row["elementAddress"] = hexaddr(key)
-            if publication is not None:
-                config["publicationAddress"] = hexaddr(publication)
-        old = template["sceneConfig"]
-        row["sceneConfig"] = {k: config[k] for k in old if k in config} | config
-        row = {k: row[k] for k in template if k in row} | row
-    kept = [r for r in rows if keeps_row(r, "elementAddress", key)]
-    pf.meta["keyModeSceneConfigExports"] = [*kept, row]
+    pf.record_scene_link(key, number, publication)
 
 
 def find_scene(pf: ProjectFile, scene: str | int) -> int:
@@ -952,12 +869,7 @@ def scene_key_steps(
     publish to all nodes, the scene key's wiring — a row can outlive the link it cached (review-3 W2), and
     clearing a key wired to a load or the gateway because of it would take a working key away.
     """
-    linked = {
-        as_int(row.get("elementAddress"))
-        for row in meta_rows(meta_list(pf.meta.get("keyModeSceneConfigExports")))
-        if isinstance(config := row.get("sceneConfig"), dict)
-        and as_int(config.get("sceneId")) == number
-    }
+    linked = pf.scene_link_keys(number)
     steps: list[ConfigStep] = []
     for node in {n.unicast: n for n in nodes}.values():
         for key in node.elements:

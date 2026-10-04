@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 from custom_components.junghome_ble.const import SERVICE_LINK_WAIT
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
-from custom_components.junghome_ble.jhmesh.cdb import parse_address
 from custom_components.junghome_ble.jhmesh.devices import (
     GATEWAY_PID,
     TIME_KEEPER_ADDRESS,
@@ -77,11 +76,7 @@ class Nodes(Operations):
         """
         async with self.store.lock:
             pf = await self.store.load()
-            raw = next(
-                n
-                for n in pf.net["nodes"]
-                if parse_address(str(n.get("unicastAddress", "0"))) == template.unicast
-            )
+            raw = pf.node_entry(template.unicast)
             template_now = pf.cdb.node_by_addr(template.unicast)
             assert template_now is not None
             node = record_node(

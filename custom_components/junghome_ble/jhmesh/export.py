@@ -108,6 +108,7 @@ __all__ = [
     "ModelChange",
     "NewerExportError",
     "ProjectFile",
+    "RoomLink",
     "Style",
     "cdb_element_groups",
     "check_name",
@@ -485,6 +486,30 @@ class ModelChange:
     model: str
     address: int
     kind: Literal["subscribe", "unsubscribe", "publish"]
+
+
+@dataclass(frozen=True)
+class RoomLink:
+    """A key's room link as the app caches it (a `cachedGroupConnectionMetadata` row of `meta.devices[]`).
+
+    `key` is the key element, `room` the room's group, `publish` the group the key publishes to, `function` the
+    `GroupFunction` code (`function_code`); each is None when the row does not carry it as a number.
+    """
+
+    key: int | None
+    room: int | None
+    publish: int | None
+    function: int | None
+
+    @classmethod
+    def of(cls, row: dict[str, Any]) -> RoomLink:
+        """Read a `cachedGroupConnectionMetadata` row."""
+        return cls(
+            as_int(row.get("elementAddress")),
+            as_int(row.get("groupAddress")),
+            as_int(row.get("publishAddress")),
+            function_code(row.get("function")),
+        )
 
 
 def hexaddr(addr: int) -> str:
@@ -1277,7 +1302,81 @@ class ProjectFile:
             if as_int(c.get("groupAddress")) == group
         ]
 
-    def _matches_function(self, element: Element, function: int | None) -> bool:
+    def room_links(self, group: int) -> list[RoomLink]:
+        """Return the room links of every button linked to room `group` (`room_connections`, read)."""
+        return [RoomLink.of(row) for row in self.room_connections(group)]
+
+    def take_room_links(self, key: int) -> list[RoomLink]:
+        """Remove the room-link rows of key element `key` and return them; a device without one is left as it is."""
+        taken: list[RoomLink] = []
+        for dev in meta_rows(meta_list(self.meta.get("devices"))):
+            cached = meta_list(dev.get("cachedGroupConnectionMetadata"))
+            links = [
+                r for r in meta_rows(cached) if as_int(r.get("elementAddress")) == key
+            ]
+            if not links:
+                continue
+            taken += [RoomLink.of(r) for r in links]
+            dev["cachedGroupConnectionMetadata"] = [r for r in cached if r not in links]
+        return taken
+
+    def drop_room_links(self, key: int) -> None:
+        """Remove key element `key`'s room-link rows from every device, and its scene row (`drop_scene_link`)."""
+        for dev in meta_rows(meta_list(self.meta.get("devices"))):
+            dev["cachedGroupConnectionMetadata"] = [
+                r
+                for r in meta_list(dev.get("cachedGroupConnectionMetadata"))
+                if keeps_row(r, "elementAddress", key)
+            ]
+        self.drop_scene_link(key)
+
+    def add_room_link(
+        self,
+        entry: dict[str, Any],
+        key: int,
+        room: int,
+        publish: int,
+        function: str,
+        *,
+        keep: bool = False,
+    ) -> None:
+        """Store the `KeyModeGroupConfig` row of a room link in the `meta.devices[]` entry `entry` covering the key.
+
+        The row mirrors the file's own style (an existing row's field order, int vs hex-string addresses, enum name
+        vs ordinal). It replaces the key's earlier rows, unless `keep`: then only an identical row goes.
+        """
+        template = next(
+            (
+                r
+                for dev in meta_rows(meta_list(self.meta.get("devices")))
+                for r in meta_rows(meta_list(dev.get("cachedGroupConnectionMetadata")))
+            ),
+            None,
+        )
+        row: dict[str, Any] = {
+            "elementAddress": key,
+            "groupAddress": room,
+            "publishAddress": publish,
+            "function": function,
+        }
+        if (
+            template is not None
+        ):  # mirror the file's own style: int vs hex-string addresses, enum name vs ordinal
+            if isinstance(template.get("elementAddress"), str):
+                row = {
+                    k: hexaddr(v) if isinstance(v, int) else v for k, v in row.items()
+                }
+            if isinstance(template.get("function"), int):
+                row["function"] = GROUP_FUNCTIONS[function]
+            row = {k: row[k] for k in template if k in row} | row
+        kept = [
+            r
+            for r in meta_list(entry.get("cachedGroupConnectionMetadata"))
+            if (r != row if keep else keeps_row(r, "elementAddress", key))
+        ]
+        entry["cachedGroupConnectionMetadata"] = [*kept, row]
+
+    def matches_function(self, element: Element, function: int | None) -> bool:
         """`SetGroupFunction` keeps only loads of the function's device class (network-logic.md §2.4).
 
         Classified by `devices.load_kind` — the same rules `build_devices` uses to tell a blinds-only product or
@@ -1296,6 +1395,8 @@ class ProjectFile:
         if function in (2, 3):  # BLIND*
             return kind == "blind"
         return kind == "thermostat"  # RTR_PROPERTY_MODE
+
+    _matches_function = matches_function  # the name it had before review-4 A4-10
 
     def set_room(
         self, element: Element | int, group: int, *, member: bool = True
@@ -1330,7 +1431,7 @@ class ProjectFile:
         for link in links:
             publish = as_int(link.get("publishAddress"))
             function = function_code(link.get("function"))
-            if publish is None or (member and not self._matches_function(el, function)):
+            if publish is None or (member and not self.matches_function(el, function)):
                 continue
             key_mode = FUNCTION_KEY_MODE.get(function or 0, KEY_MODE_LIGHT)
             for model in KEY_MODE_SERVERS[key_mode]:
@@ -1503,7 +1604,83 @@ class ProjectFile:
             del rows[i]
         return True
 
+    # ------------------------------------------------------------------ scene keys (`keyModeSceneConfigExports`)
+    def scene_link_keys(self, number: int) -> set[int]:
+        """Return the key elements the app's record shows recalling scene `number` (`keyModeSceneConfigExports`)."""
+        return {
+            key
+            for row in meta_rows(meta_list(self.meta.get("keyModeSceneConfigExports")))
+            if isinstance(config := row.get("sceneConfig"), dict)
+            and as_int(config.get("sceneId")) == number
+            and (key := as_int(row.get("elementAddress"))) is not None
+        }
+
+    def record_scene_link(self, key: int, number: int, publication: int | None) -> None:
+        """Store the `keyModeSceneConfigExports` row that makes the app show key `key` as recalling scene `number`.
+
+        `{"sceneConfig": {transitionStepSeconds, sceneId, transitionResolution, publicationAddress?},
+        "elementAddress"}` (`MeshPropertyExport.java:153-161`), no transition as the app writes it; it replaces the
+        key's earlier row and mirrors an existing row's style (field order, int vs hex-string addresses).
+        """
+        rows = meta_list(self.meta.get("keyModeSceneConfigExports"))
+        template = next(
+            (r for r in meta_rows(rows) if isinstance(r.get("sceneConfig"), dict)),
+            None,
+        )
+        config: dict[str, Any] = {
+            "transitionStepSeconds": 0,
+            "sceneId": number,
+            "transitionResolution": 0,
+        }
+        if publication is not None:
+            config["publicationAddress"] = publication
+        row: dict[str, Any] = {"sceneConfig": config, "elementAddress": key}
+        if template is not None:
+            if isinstance(template.get("elementAddress"), str):
+                row["elementAddress"] = hexaddr(key)
+                if publication is not None:
+                    config["publicationAddress"] = hexaddr(publication)
+            old = template["sceneConfig"]
+            row["sceneConfig"] = {k: config[k] for k in old if k in config} | config
+            row = {k: row[k] for k in template if k in row} | row
+        kept = [r for r in rows if keeps_row(r, "elementAddress", key)]
+        self.meta["keyModeSceneConfigExports"] = [*kept, row]
+
+    def drop_scene_link(self, key: int) -> None:
+        """Remove key element `key`'s `keyModeSceneConfigExports` row (review-3 W2).
+
+        The row is what makes the app show a key as recalling "Scene N"; a key cleared or given another function
+        no longer does, whatever its KeyMode still says. A file without such a row is left byte-identical.
+        """
+        rows = meta_list(self.meta.get("keyModeSceneConfigExports"))
+        kept = [r for r in rows if keeps_row(r, "elementAddress", key)]
+        if len(kept) != len(rows):
+            self.meta["keyModeSceneConfigExports"] = kept
+
     # ------------------------------------------------------------------ device names (§8.3 row 8)
+    def device_entry(self, node: Node, location: int) -> dict[str, Any] | None:
+        """Return the `meta.devices[]` entry covering an element location: the most specific one, as the app resolves it."""
+        best: dict[str, Any] | None = None
+        best_size = 0
+        for dev in meta_rows(meta_list(self.meta.get("devices"))):
+            did = dev.get("deviceId")
+            if (
+                not isinstance(did, dict)
+                or canonical_uuid(str(did.get("nodeId", ""))) != node.uuid
+            ):
+                continue
+            locations = location_ids(did.get("locationIds"))
+            if locations is None:
+                continue
+            if location in locations and (best is None or len(locations) < best_size):
+                best, best_size = dev, len(locations)
+        return best
+
+    @staticmethod
+    def device_locations(entry: dict[str, Any]) -> list[int] | None:
+        """Return the sorted `locationIds` of a `meta.devices[]` entry; None when they are not a list of numbers."""
+        return location_ids(entry.get("deviceId", {}).get("locationIds"))
+
     def device_names(self) -> list[str]:
         """Every device name of `meta.devices[]`, in file order (what the app's duplicate check compares)."""
         return [
@@ -1705,6 +1882,14 @@ class ProjectFile:
             self.meta[key] = [
                 r for r in self._meta(key) if not (isinstance(r, dict) and drop(r))
             ]
+
+    def node_entry(self, unicast: int) -> dict[str, Any]:
+        """Return the CDB `nodes[]` entry of the node at primary unicast `unicast`; StopIteration when there is none."""
+        return next(
+            n
+            for n in self.net["nodes"]
+            if parse_address(str(n.get("unicastAddress", "0"))) == unicast
+        )
 
     def device_rows(self, node: Node) -> list[dict[str, Any]]:
         """Return the app device rows (`meta.devices`) of `node`: the app's logical devices of it."""

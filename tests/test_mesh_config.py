@@ -2563,7 +2563,7 @@ def test_config_step_describes_itself() -> None:
     )
 
 
-# `_matches_function` no longer has an HA-side copy (MOD-04): it is `ProjectFile._matches_function`, tested
+# `_matches_function` no longer has an HA-side copy (MOD-04): it is `ProjectFile.matches_function`, tested
 # directly in tests/jhmesh/test_export.py::test_matches_function_uses_the_device_kind.
 
 
@@ -3360,13 +3360,13 @@ def test_replay_applies_every_kind_of_step_idempotently() -> None:
 def test_drop_link_rows_removes_only_the_named_keys_row() -> None:
     pf = ProjectFile.load(ANDROID_PATH)
     assert [r["elementAddress"] for r in link_rows(pf)] == [DIMMER_KEY]
-    plan_mod._drop_link_rows(pf, DIMMER_KEY)
+    pf.drop_room_links(DIMMER_KEY)
     assert link_rows(pf) == []
-    plan_mod._drop_link_rows(pf, DIMMER_KEY)  # idempotent: no row left to drop
+    pf.drop_room_links(DIMMER_KEY)  # idempotent: no row left to drop
     assert link_rows(pf) == []
     # the scene row goes with its key's old wiring too, and only that key's
     assert scene_key_rows(pf) == [SWITCH_KEY]
-    plan_mod._drop_link_rows(pf, SWITCH_KEY)
+    pf.drop_room_links(SWITCH_KEY)
     assert scene_key_rows(pf) == []
 
 
