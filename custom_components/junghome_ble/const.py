@@ -64,6 +64,9 @@ HUB_DATA_KEYS: Final = (
 # Options (entry.options, set through the options flow; a change reloads the entry through the update listener).
 OPTION_CLICK_DELAY: Final = "click_delay"  # hold every `click` back for DOUBLE_CLICK_WINDOW so a double press reports no click
 DEFAULT_CLICK_DELAY: Final = False
+# the keys (`Button.unique_id`) whose clicks are held back like that, the others' reported at once (review-4 U4-19);
+# `click_delay` on still holds back every key's
+OPTION_DOUBLE_CLICK_KEYS: Final = "double_click_keys"
 # let `add_device` provision new devices (experimental: nothing of it has run on a real device yet)
 OPTION_ALLOW_PROVISIONING: Final = "allow_provisioning"
 DEFAULT_ALLOW_PROVISIONING: Final = False

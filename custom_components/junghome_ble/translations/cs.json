@@ -220,6 +220,7 @@
         "title": "Možnosti JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Hlásit kliknutí až po vyloučení dvojkliku",
+          "double_click_keys": "Tlačítka, která čekají na dvojklik",
           "heartbeats": "Heartbeat uzlů (označit tiché zařízení jako nedostupné)",
           "allow_provisioning": "Povolit Home Assistantu přidávat a odebírat zařízení (experimentální)",
           "provisioner_identity": "Zapsat Home Assistant do souboru sítě jako provisioner (experimentální, s aplikací neověřeno)",
@@ -228,7 +229,8 @@
           "sync_areas": "Přesouvat zařízení, když se změní jejich místnost JUNG"
         },
         "data_description": {
-          "click_delay": "Událost `click` se na půl sekundy zadrží a zahodí, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`. Vypnuto: každé stisknutí vyvolá `click` okamžitě a druhé stisknutí dvojitého stisknutí navíc vyvolá `double_click`.",
+          "click_delay": "Událost `click` se na půl sekundy zadrží a zahodí, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`. Vypnuto: každé stisknutí vyvolá `click` okamžitě a druhé stisknutí dvojitého stisknutí navíc vyvolá `double_click`. Platí pro všechna tlačítka; chcete-li čekat jen u některých, nechte to vypnuté a vyberte je v seznamu níže.",
+          "double_click_keys": "Pouze tato tlačítka zadrží svůj `click` na půl sekundy a zahodí ho, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`; každé jiné tlačítko vyvolá `click` okamžitě. Vyberte tlačítka, která mají automatizaci na dvojklik. Uvedena jsou jen tlačítka, která umí kliknout. Zatím neověřeno na skutečných zařízeních.",
           "heartbeats": "Každé zařízení napájené ze sítě je požádáno, aby Home Assistantu každých 64 sekund poslalo heartbeat (standardní nastavení Bluetooth Mesh, které aplikace JUNG nechává vypnuté). U zařízení, které zhruba tři a půl minuty nic nepošle, se jeho entity označí jako nedostupné, dokud se znovu neozve. Vypnutím se zařízením řekne, aby přestala (při dalším připojení znovu, pokud nešlo informovat všechna najednou); vypněte to před odebráním integrace, která jim to potom už říct nemůže.",
           "allow_provisioning": "Umožní akci `junghome_ble.add_device` provést provisioning nového zařízení JUNG a nakonfigurovat je jako aplikace, podle zařízení stejného produktu, které už v síti je, a akci `junghome_ble.remove_device` resetovat zařízení a vyjmout je ze sítě. Zatím nevyzkoušeno na skutečných zařízeních: nejprve to zkuste s náhradním zařízením. Přidání předá zařízení klíče sítě; odebrání nelze vrátit zpět.",
           "provisioner_identity": "Každý soubor, který Home Assistant zapíše nebo předá bráně, dostane záznam provisioneru pro Home Assistant s vlastními rozsahy adres oddělenými od rozsahů aplikace a s adresou Home Assistantu uvnitř nich, a zařízení, která Home Assistant přidal a která v souboru aplikace chybí, se do něj vrátí. Místnosti, scény a zařízení, které Home Assistant vytvoří, pak berou adresy z jeho vlastních rozsahů. Žádná aplikace JUNG zatím takový soubor neimportovala: vyzkoušejte to na náhradní instalaci aplikace (importujte soubor z `junghome_ble.export_network`), než jej uvidí vaše vlastní aplikace nebo brána. Vypnuto: soubory se zapisují přesně jako bez této volby.",
@@ -338,6 +340,9 @@
               "left_rocker": "Levá kolébka",
               "right_rocker": "Pravá kolébka"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Čeká na dvojklik"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Spojení ztraceno",
               "stopped": "Integrace zastavena"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Čeká na dvojklik"
           }
         }
       }

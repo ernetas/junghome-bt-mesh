@@ -5,7 +5,9 @@ A rocker in that mode is one element with two halves: its events carry a `side` 
 `const.KEY_EVENTS`), a single key's do not. Buttons wired directly to loads or scenes are seen through the SIG
 messages they send (press_on / press_off / scene / dim). Each entity also says what its key drives
 (`connection_attributes`); a key in KeyMode *property* is asked for its 0x5006 / 0x5007 once per link, so a key that
-locks a light or socket says `lock` (`devices.with_key_lock`, unverified on air).
+locks a light or socket says `lock` (`devices.with_key_lock`, unverified on air). `waits_for_double_click` says
+whether its `click` is held back until a double click is ruled out (`ButtonGestures.waits_for_double_click`: the
+options `click_delay` and `double_click_keys`; half a second later on that key, unverified on air per key).
 
 Every event of a key is also published on the Home Assistant bus as `EVENT_BUTTON_ACTION`, because a device trigger
 (`device_trigger.py`) can only attach to a bus event, not to an entity (this is how HA's own button integrations do
@@ -128,7 +130,7 @@ class JungHomeButtonEvent(JungHomeEntity, EventEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the key's address, location and connection; where it sits on its node once the key layout is known.
+        """Return the key's address, location, connection and click wait; where it sits on its node once its layout is known.
 
         The `position` (`inserts.NodeInserts.position`: `top`, `left_rocker`, `right_bottom`, ...) comes from the
         node's ButtonLayout — its export, its advertisement or its answer to a Get — so it can arrive after the
@@ -140,6 +142,9 @@ class JungHomeButtonEvent(JungHomeEntity, EventEntity):
             connection_attributes(
                 self.button, state.properties if state is not None else None
             )
+        )
+        attrs["waits_for_double_click"] = self.hub.gestures.waits_for_double_click(
+            self.address
         )
         if (position := self.hub.inserts.position(self.button)) is not None:
             attrs["position"] = position

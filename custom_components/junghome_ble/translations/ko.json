@@ -220,6 +220,7 @@
         "title": "JUNG HOME Bluetooth Mesh 옵션",
         "data": {
           "click_delay": "더블 클릭이 아닌 것이 확인된 후에만 클릭 보고",
+          "double_click_keys": "더블 클릭을 기다리는 버튼",
           "heartbeats": "노드 하트비트(응답이 없는 기기를 사용할 수 없음으로 표시)",
           "allow_provisioning": "Home Assistant가 기기를 추가하고 제거하도록 허용(실험적)",
           "provisioner_identity": "Home Assistant를 프로비저너로 네트워크 파일에 기록(실험적, 앱에서 아직 검증되지 않음)",
@@ -228,7 +229,8 @@
           "sync_areas": "JUNG 방이 바뀌면 기기도 함께 이동"
         },
         "data_description": {
-          "click_delay": "`click` 이벤트를 0.5초 동안 보류하고 두 번째 클릭이 이어지면 버리므로, 두 번 누르면 `double_click`만 발생합니다. 끄기: 누를 때마다 즉시 `click`이 발생하며, 두 번 누를 때 두 번째 누름에서 `double_click`도 발생합니다.",
+          "click_delay": "`click` 이벤트를 0.5초 동안 보류하고 두 번째 클릭이 이어지면 버리므로, 두 번 누르면 `double_click`만 발생합니다. 끄기: 누를 때마다 즉시 `click`이 발생하며, 두 번 누를 때 두 번째 누름에서 `double_click`도 발생합니다. 이 설정은 모든 버튼에 적용됩니다. 일부 버튼에서만 기다리려면 끈 상태로 두고 아래 목록에서 버튼을 선택하세요.",
+          "double_click_keys": "이 버튼들만 `click`을 0.5초 동안 보류하고 두 번째 클릭이 이어지면 버리므로, 두 번 누르면 `double_click`만 발생합니다. 다른 버튼은 즉시 `click`이 발생합니다. 더블 클릭 자동화가 있는 버튼을 선택하세요. 클릭할 수 있는 버튼만 표시됩니다. 실제 기기에서 아직 검증되지 않았습니다.",
           "heartbeats": "상시 전원으로 작동하는 모든 기기에 64초마다 Home Assistant로 하트비트를 보내도록 요청합니다(JUNG 앱이 꺼 두는 표준 Bluetooth Mesh 설정). 약 3분 30초 동안 아무것도 보내지 않은 기기는 다시 신호가 수신될 때까지 엔티티가 사용할 수 없음으로 표시됩니다. 이 옵션을 끄면 기기에 하트비트를 중지하도록 알립니다(한 번에 모든 기기에 알리지 못한 경우 다음 연결 시 다시 알림). 통합 구성 요소를 제거한 후에는 기기에 알릴 수 없으므로, 제거하기 전에 이 옵션을 끄세요.",
           "allow_provisioning": "`junghome_ble.add_device` 동작이 새 JUNG 기기를 프로비저닝하고 네트워크에 이미 있는 같은 제품의 기기를 본떠 앱처럼 구성하도록 하며, `junghome_ble.remove_device`가 기기를 초기화하고 네트워크에서 제거하도록 합니다. 아직 실제 기기에서 시도해 보지 않았으므로 먼저 여분의 기기로 시도해 보세요. 기기를 추가하면 네트워크의 키가 기기에 전달되며, 제거는 되돌릴 수 없습니다.",
           "provisioner_identity": "Home Assistant가 작성하거나 게이트웨이에 전달하는 모든 파일에 Home Assistant용 프로비저너 항목이 추가됩니다. 이 항목에는 앱의 범위와 겹치지 않는 자체 주소 범위가 있고 그 안에 Home Assistant의 주소가 들어 있으며, Home Assistant가 추가했지만 앱의 파일에 없는 기기는 다시 기록됩니다. 그러면 Home Assistant가 만드는 방, 장면 및 기기는 자체 범위에서 주소를 받습니다. 아직 이러한 파일을 가져온 JUNG 앱은 없습니다: 본인의 앱이나 게이트웨이가 이 파일을 받기 전에 여분의 앱 설치에서 먼저 시도해 보세요(`junghome_ble.export_network`의 파일을 가져오기). 끄기: 파일은 이 옵션이 없을 때와 똑같이 작성됩니다.",
@@ -338,6 +340,9 @@
               "left_rocker": "왼쪽 로커",
               "right_rocker": "오른쪽 로커"
             }
+          },
+          "waits_for_double_click": {
+            "name": "더블 클릭 대기"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "연결이 끊김",
               "stopped": "통합 구성 요소 중지됨"
             }
+          },
+          "waits_for_double_click": {
+            "name": "더블 클릭 대기"
           }
         }
       }

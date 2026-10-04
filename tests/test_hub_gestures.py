@@ -1,4 +1,4 @@
-"""The hub's button gestures (`hub/gestures.py`): key events, repeat suppression and the click delay option."""
+"""The hub's button gestures (`hub/gestures.py`): key events, repeat suppression and the click delay options."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
     OPTION_CLICK_DELAY,
+    OPTION_DOUBLE_CLICK_KEYS,
 )
 from custom_components.junghome_ble.hub.gestures import (
     BUTTON_REPEAT_WINDOW,
@@ -44,6 +45,9 @@ from .helpers import (
     BUTTON_WC,
     GROUP_DIMMER,
     ROCKER_A,
+    UID_BUTTON_WC,
+    UID_ROCKER_A,
+    entity_id,
     vendor_button_event,
 )
 from .test_coordinator import (
@@ -548,3 +552,133 @@ async def test_click_delay_pending_click_is_dropped_on_stop(
     assert await hass.config_entries.async_unload(delayed_clicks.entry_id)
     await _let_time_pass(hass, freezer, DOUBLE_CLICK_WINDOW + 1)
     assert got == []
+
+
+# ----------------------------------------------------------------------------- per key (review-4 U4-19)
+
+
+@pytest.fixture
+async def double_click_key(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+) -> MockConfigEntry:
+    """The integration with only BUTTON_WC waiting for a double click (`double_click_keys`); a key the model no
+    longer has stays in the option and matches nothing."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="JUNG HOME mesh test",
+        unique_id="1fbd2c61a4b6e5a4",
+        data={
+            CONF_CDB_PATH: CDB_PATH,
+            CONF_METADATA_DIR: META_DIR,
+            CONF_UNICAST: "0D00",
+        },
+        options={OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC, "gone-0040"]},
+    )
+    await setup_entry(hass, entry)
+    await wait_for_link(hass, entry)
+    await settle(hass)
+    return entry
+
+
+async def test_double_click_keys_wait_only_on_the_keys_listed(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    double_click_key: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """A single press of the key listed reports its click once the window passed; any other key's click comes at once."""
+    hub = hub_of(double_click_key)
+    assert hub.click_delay is False
+    assert hub.gestures.waits_for_double_click(BUTTON_WC) is True
+    assert hub.gestures.waits_for_double_click(ROCKER_A) is False
+    assert hub.gestures.waits_for_double_click(GROUP_DIMMER) is False  # no key there
+    # the key's event entity says so
+    for uid, waits in ((UID_BUTTON_WC, True), (UID_ROCKER_A, False)):
+        state = hass.states.get(entity_id(hass, "event", uid))
+        assert state is not None
+        assert state.attributes["waits_for_double_click"] is waits
+    wc, rocker = events_of(hub, BUTTON_WC), events_of(hub, ROCKER_A)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_CLICK))
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(1, ROCKER_UP_CLICK))
+    assert wc == []  # held back
+    assert rocker == [("click", {"counter": 1, "side": "up"})]  # at once
+    await _let_time_pass(hass, freezer, DOUBLE_CLICK_WINDOW - 0.1)
+    assert wc == []
+    await _let_time_pass(hass, freezer, 0.2)
+    assert wc == [("click", {"counter": 1})]
+    assert rocker == [("click", {"counter": 1, "side": "up"})]
+
+
+async def test_double_click_keys_double_press(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    double_click_key: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """A double press of the key listed reports only `double_click`; of another key `click`, then `double_click`,
+    as without the option."""
+    hub = hub_of(double_click_key)
+    wc, rocker = events_of(hub, BUTTON_WC), events_of(hub, ROCKER_A)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_CLICK))
+    freezer.tick(0.3)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(2, BUTTON_CLICK))
+    await _let_time_pass(hass, freezer, 2)
+    assert wc == [("double_click", {"counter": 2})]
+
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(1, ROCKER_UP_CLICK))
+    freezer.tick(0.3)
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(2, ROCKER_UP_CLICK))
+    await _let_time_pass(hass, freezer, 2)
+    assert rocker == [
+        ("click", {"counter": 1, "side": "up"}),
+        ("double_click", {"counter": 2, "side": "up"}),
+    ]
+
+
+async def test_double_click_keys_pressed_interleaved(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    double_click_key: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Both keys double-pressed at the same time: each keeps its own way, neither's click touches the other's wait."""
+    hub = hub_of(double_click_key)
+    wc, rocker = events_of(hub, BUTTON_WC), events_of(hub, ROCKER_A)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_CLICK))
+    freezer.tick(0.1)
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(1, ROCKER_DOWN_CLICK))
+    assert (wc, rocker) == ([], [("click", {"counter": 1, "side": "down"})])
+    freezer.tick(0.1)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(2, BUTTON_CLICK))
+    freezer.tick(0.1)
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(2, ROCKER_DOWN_CLICK))
+    await _let_time_pass(hass, freezer, 2)
+    assert wc == [("double_click", {"counter": 2})]
+    assert rocker == [
+        ("click", {"counter": 1, "side": "down"}),
+        ("double_click", {"counter": 2, "side": "down"}),
+    ]
+
+    # single presses, interleaved: the rocker's at once, the listed key's after its window
+    await _let_time_pass(hass, freezer, BUTTON_REPEAT_WINDOW)
+    fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(3, BUTTON_CLICK))
+    freezer.tick(0.2)
+    fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(3, ROCKER_UP_CLICK))
+    assert (wc[1:], rocker[2:]) == ([], [("click", {"counter": 3, "side": "up"})])
+    await _let_time_pass(hass, freezer, DOUBLE_CLICK_WINDOW)
+    assert wc[1:] == [("click", {"counter": 3})]
+    assert rocker[2:] == [("click", {"counter": 3, "side": "up"})]
+
+
+async def test_click_delay_waits_on_every_key_whatever_the_list(
+    hass: HomeAssistant,
+    delayed_clicks: MockConfigEntry,
+) -> None:
+    """The entry-wide option is "every key": a key not listed waits as well."""
+    gestures = hub_of(delayed_clicks).gestures
+    assert gestures.double_click_keys == frozenset()
+    assert gestures.waits_for_double_click(BUTTON_WC) is True
+    assert gestures.waits_for_double_click(ROCKER_A) is True

@@ -23,6 +23,7 @@ from unittest.mock import AsyncMock, patch
 
 import aiohttp
 import pytest
+import voluptuous as vol
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from habluetooth.models import BluetoothServiceInfoBleak
@@ -52,6 +53,7 @@ from custom_components.junghome_ble.config_flow import (
     GATEWAY_DEFAULT_HOST,
     SECTION_ADVANCED,
     JungHomeConfigFlow,
+    double_click_choices,
     forget_stored_export,
     pre_reconfigure_path,
     proxy_in_range,
@@ -74,6 +76,7 @@ from custom_components.junghome_ble.const import (
     OPTION_ALLOW_PROVISIONING,
     OPTION_ASSIGN_AREAS,
     OPTION_CLICK_DELAY,
+    OPTION_DOUBLE_CLICK_KEYS,
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
@@ -114,7 +117,14 @@ from .conftest import (
     wait_for_link,
     wait_until,
 )
-from .helpers import advanced, areas_prefill, through_areas
+from .helpers import (
+    UID_BUTTON_WC,
+    UID_ROCKER_A,
+    advanced,
+    areas_prefill,
+    entity_id,
+    through_areas,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -3394,6 +3404,80 @@ async def test_options_change_reloads_the_entry(
     await hass.async_block_till_done()
     assert init_integration.runtime_data is hub
     assert count_setups.call_count == 1
+
+
+async def test_options_flow_keys_that_wait_for_a_double_click(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-4 U4-19: the running entry's keys that can click are offered by their entity's name; the selection
+    round-trips, and a key no longer in the model (or no longer clicking: the rocker is wired to its light) drops out."""
+    stale = [UID_BUTTON_WC, UID_ROCKER_A, "gone-0040"]
+    hass.config_entries.async_update_entry(
+        init_integration, options={OPTION_DOUBLE_CLICK_KEYS: stale}
+    )
+    await hass.async_block_till_done()
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert double_click_choices(hass, init_integration) == [
+        {"value": UID_BUTTON_WC, "label": "WC mirror button"}
+    ]
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    assert result["data_schema"]({})[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {OPTION_DOUBLE_CLICK_KEYS: []}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert init_integration.options[OPTION_DOUBLE_CLICK_KEYS] == []
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], {OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC]}
+    )
+    await hass.async_block_till_done()
+    assert init_integration.options[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+    assert init_integration.runtime_data.gestures.double_click_keys == {UID_BUTTON_WC}
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    assert result["data_schema"]({})[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+
+    # saving without the field (it was not shown) still drops what is no longer offered
+    hass.config_entries.async_update_entry(
+        init_integration, options={OPTION_DOUBLE_CLICK_KEYS: stale}
+    )
+    await hass.async_block_till_done()
+    with patch(
+        "custom_components.junghome_ble.config_flow._options_schema",
+        return_value=vol.Schema({}, extra=vol.ALLOW_EXTRA),
+    ):
+        result = await hass.config_entries.options.async_init(init_integration.entry_id)
+        await hass.config_entries.options.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+    assert init_integration.options[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+
+
+async def test_double_click_choices_without_the_entity_state(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """A key whose event entity has no state (disabled, not added) is labelled by its gang's app name and letter."""
+    hass.states.async_remove(entity_id(hass, "event", UID_BUTTON_WC))
+    assert double_click_choices(hass, init_integration) == [
+        {"value": UID_BUTTON_WC, "label": "WC mirror button A"}
+    ]
+
+
+async def test_options_flow_keeps_the_keys_of_an_entry_not_running(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_setup_entry: AsyncMock
+) -> None:
+    """Without a running hub there are no keys to offer: the field is not shown, and what is stored stays."""
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry, options={OPTION_DOUBLE_CLICK_KEYS: ["gone-0040"]}
+    )
+    assert double_click_choices(hass, mock_config_entry) is None
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert OPTION_DOUBLE_CLICK_KEYS not in result["data_schema"]({})
+    await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert mock_config_entry.options[OPTION_DOUBLE_CLICK_KEYS] == ["gone-0040"]
 
 
 # --------------------------------------------------------------------------- the areas step (review-4 U4-2)

@@ -42,9 +42,10 @@ after it; stored in the entry's options. The reconfigure menu offers the same st
 devices still in the area the previous mapping gave them, never one the user placed.
 
 The reconfigure menu also offers the import from the JUNG HOME Gateway integration (`migration.py`): a dry run shown
-as a form, applied on confirmation. Options (`JungHomeOptionsFlow`) hold the runtime behaviour switches; a change
-reloads the entry through the update listener (`__init__._async_entry_updated`), which also reloads a loaded entry
-after a reconfiguration changed what the hub is built from.
+as a form, applied on confirmation. Options (`JungHomeOptionsFlow`) hold the runtime behaviour switches, and the
+keys that wait for a double click (`hub/gestures.py`); a change reloads the entry through the update listener
+(`__init__._async_entry_updated`), which also reloads a loaded entry after a reconfiguration changed what the hub is
+built from.
 
 The steps of a new export for an existing entry are module functions, shared with the repairs that load one
 (`repairs.NewExportFlow`): taking an upload in (`async_take_upload`), fetching from the gateway
@@ -76,6 +77,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
@@ -83,6 +85,9 @@ from homeassistant.helpers.selector import (
     BooleanSelector,
     FileSelector,
     FileSelectorConfig,
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -120,6 +125,7 @@ from .const import (
     OPTION_ALLOW_PROVISIONING,
     OPTION_ASSIGN_AREAS,
     OPTION_CLICK_DELAY,
+    OPTION_DOUBLE_CLICK_KEYS,
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
@@ -141,6 +147,7 @@ from .coordinator import (
     issue_id,
     node_macs,
 )
+from .device_trigger import key_subtypes
 from .entity import device_rooms
 from .gateway_api import (
     GatewayAuthError,
@@ -179,7 +186,6 @@ from .tls import (
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
     from homeassistant.core import HomeAssistant
-    from homeassistant.helpers import entity_registry as er
     from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
@@ -328,13 +334,55 @@ def _hex4(unicast: str) -> str:
     return f"{int(unicast, 16):04X}"
 
 
-def _options_schema(options: dict[str, Any]) -> vol.Schema:
+def double_click_choices(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> list[SelectOptionDict] | None:
+    """Return the keys the options form offers to wait for a double click, by label; None when the entry is not loaded.
+
+    A key offered is one that can click (`device_trigger.key_subtypes`: connected to the gateway, or not known to be
+    connected elsewhere); its value is its unique id, its label its event entity's name as Home Assistant shows it
+    (the user's rename included), else the gang's app name and the key letter (an entity disabled or not added).
+    """
+    if entry.state is not ConfigEntryState.LOADED:
+        return None
+    hub = entry.runtime_data
+    registry = er.async_get(hass)
+    choices = []
+    for button in hub.devices.buttons:
+        if "click" not in key_subtypes(hub, button):
+            continue
+        entity_id = registry.async_get_entity_id("event", DOMAIN, button.unique_id)
+        state = hass.states.get(entity_id) if entity_id is not None else None
+        label = state.name if state is not None else f"{button.group_name} {button.key}"
+        choices.append(SelectOptionDict(value=button.unique_id, label=label))
+    return sorted(choices, key=lambda choice: choice["label"])
+
+
+def _offered_keys(choices: list[SelectOptionDict], selected: Any) -> list[str]:
+    """Return the keys of `selected` the form offers: a key no longer in the model, or no longer clicking, drops out."""
+    offered = {choice["value"] for choice in choices}
+    return [key for key in selected or () if key in offered]
+
+
+def _options_schema(
+    options: dict[str, Any], keys: list[SelectOptionDict] | None = None
+) -> vol.Schema:
+    """Return the options form; the keys that wait for a double click only with something to choose (`keys`)."""
+    wait: dict[Any, Any] = {}
+    if keys:
+        wait[
+            vol.Optional(
+                OPTION_DOUBLE_CLICK_KEYS,
+                default=_offered_keys(keys, options.get(OPTION_DOUBLE_CLICK_KEYS)),
+            )
+        ] = SelectSelector(SelectSelectorConfig(options=keys, multiple=True))
     return vol.Schema(
         {
             vol.Required(
                 OPTION_CLICK_DELAY,
                 default=options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY),
             ): BooleanSelector(),
+            **wait,
             vol.Required(
                 OPTION_HEARTBEATS,
                 default=options.get(OPTION_HEARTBEATS, DEFAULT_HEARTBEATS),
@@ -1857,11 +1905,20 @@ class JungHomeOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show the one options form; saving stores it into the entry's options (the `areas` step's stay)."""
+        """Show the one options form; saving stores it into the entry's options (the `areas` step's stay).
+
+        The keys that wait for a double click are offered while the entry runs (`double_click_choices`); saving
+        then keeps only keys it offers. Otherwise the stored ones stay as they are.
+        """
+        options = dict(self.config_entry.options)
+        keys = double_click_choices(self.hass, self.config_entry)
         if user_input is not None:
-            return self.async_create_entry(
-                data={**self.config_entry.options, **user_input}
-            )
+            data = {**options, **user_input}
+            if keys is not None and OPTION_DOUBLE_CLICK_KEYS in data:
+                data[OPTION_DOUBLE_CLICK_KEYS] = _offered_keys(
+                    keys, data[OPTION_DOUBLE_CLICK_KEYS]
+                )
+            return self.async_create_entry(data=data)
         return self.async_show_form(
-            step_id="init", data_schema=_options_schema(dict(self.config_entry.options))
+            step_id="init", data_schema=_options_schema(options, keys)
         )

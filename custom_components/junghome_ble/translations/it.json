@@ -220,6 +220,7 @@
         "title": "Opzioni di JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Segnala i clic solo dopo aver escluso un doppio clic",
+          "double_click_keys": "Tasti che attendono un doppio clic",
           "heartbeats": "Heartbeat dei nodi (segna come non disponibile un dispositivo silenzioso)",
           "allow_provisioning": "Consenti a Home Assistant di aggiungere e rimuovere dispositivi (sperimentale)",
           "provisioner_identity": "Scrivi Home Assistant nel file della rete come provisioner (sperimentale, non verificato con l'app)",
@@ -228,7 +229,8 @@
           "sync_areas": "Sposta i dispositivi quando cambia la loro stanza JUNG"
         },
         "data_description": {
-          "click_delay": "Un evento `click` viene trattenuto per mezzo secondo e scartato se segue un secondo clic, così una doppia pressione genera solo `double_click`. Disattivato: ogni pressione genera subito `click` e la seconda pressione di una doppia pressione genera anche `double_click`.",
+          "click_delay": "Un evento `click` viene trattenuto per mezzo secondo e scartato se segue un secondo clic, così una doppia pressione genera solo `double_click`. Disattivato: ogni pressione genera subito `click` e la seconda pressione di una doppia pressione genera anche `double_click`. Vale per tutti i tasti; per attendere solo su alcuni, lascialo disattivato e sceglili nell'elenco qui sotto.",
+          "double_click_keys": "Solo questi tasti trattengono il loro `click` per mezzo secondo e lo scartano se segue un secondo clic, così una doppia pressione genera solo `double_click`; ogni altro tasto genera subito `click`. Scegli i tasti che hanno un'automazione sul doppio clic. Sono elencati solo i tasti che possono fare clic. Non verificato su dispositivi reali.",
           "heartbeats": "A ogni dispositivo alimentato da rete viene chiesto di inviare un heartbeat a Home Assistant ogni 64 secondi (un'impostazione standard di Bluetooth Mesh che l'app JUNG lascia disattivata). Un dispositivo che non invia nulla per circa tre minuti e mezzo ha le sue entità segnate come non disponibili finché non viene sentito di nuovo. Disattivando questa opzione si dice ai dispositivi di smettere (di nuovo alla connessione successiva se non è stato possibile avvisarli tutti subito); disattivala prima di rimuovere l'integrazione, che dopo non può più avvisarli.",
           "allow_provisioning": "Consente all'azione `junghome_ble.add_device` di mettere in servizio un nuovo dispositivo JUNG e configurarlo come farebbe l'app, sul modello di un dispositivo dello stesso prodotto già presente nella rete, e a `junghome_ble.remove_device` di ripristinare un dispositivo e toglierlo dalla rete. Non ancora provato su dispositivi reali: provalo prima con un dispositivo di riserva. L'aggiunta consegna al dispositivo le chiavi della rete; la rimozione non può essere annullata.",
           "provisioner_identity": "Ogni file che Home Assistant scrive o consegna al gateway riceve una voce provisioner per Home Assistant, con propri intervalli di indirizzi separati da quelli dell'app e che contengono l'indirizzo di Home Assistant, e i dispositivi aggiunti da Home Assistant che mancano nel file dell'app vengono reinseriti. Stanze, scene e dispositivi creati da Home Assistant prendono allora i loro indirizzi dai suoi intervalli. Nessuna app JUNG ha ancora importato un file del genere: provalo su un'installazione di riserva dell'app (importa il file da `junghome_ble.export_network`) prima che lo veda la tua app o il tuo gateway. Disattivato: i file vengono scritti esattamente come senza questa opzione.",
@@ -338,6 +340,9 @@
               "left_rocker": "Bilanciere sinistro",
               "right_rocker": "Bilanciere destro"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Attende un doppio clic"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Collegamento perso",
               "stopped": "Integrazione arrestata"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Attende un doppio clic"
           }
         }
       }

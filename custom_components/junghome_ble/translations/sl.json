@@ -220,6 +220,7 @@
         "title": "Možnosti JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Klike sporoči šele, ko je dvojni klik izključen",
+          "double_click_keys": "Gumbi, ki čakajo na dvojni klik",
           "heartbeats": "Srčni utripi vozlišč (tiho napravo označi kot nedosegljivo)",
           "allow_provisioning": "Home Assistantu dovoli dodajanje in odstranjevanje naprav (preizkusno)",
           "provisioner_identity": "Home Assistant zapiši v datoteko omrežja kot provisionerja (preizkusno, z aplikacijo ni preverjeno)",
@@ -228,7 +229,8 @@
           "sync_areas": "Premakni naprave, ko se spremeni njihov prostor JUNG"
         },
         "data_description": {
-          "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`.",
+          "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`. To velja za vse gumbe; če želite čakati le pri nekaterih, pustite izklopljeno in jih izberite na spodnjem seznamu.",
+          "double_click_keys": "Samo ti gumbi zadržijo svoj `click` za pol sekunde in ga zavržejo, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`; vsak drug gumb sproži `click` takoj. Izberite gumbe, ki imajo avtomatizacijo za dvojni klik. Prikazani so le gumbi, ki lahko klikajo. Še ni preverjeno na resničnih napravah.",
           "heartbeats": "Vsaka naprava z omrežnim napajanjem je pozvana, naj Home Assistantu vsakih 64 sekund pošlje srčni utrip (standardna nastavitev Bluetooth Mesh, ki jo aplikacija JUNG pusti izklopljeno). Napravi, ki približno tri minute in pol ne pošlje ničesar, se entitete označijo kot nedosegljive, dokler je spet ne zaznamo. Izklop te možnosti napravam sporoči, naj prenehajo (ob naslednji povezavi znova, če jim tega ni bilo mogoče sporočiti vsem naenkrat); izklopite jo pred odstranitvijo integracije, ki jim tega pozneje ne more več sporočiti.",
           "allow_provisioning": "Dejanju `junghome_ble.add_device` dovoli, da novo napravo JUNG pripravi (provisioning) in jo konfigurira, kot bi to storila aplikacija, po vzoru naprave istega izdelka, ki je že v omrežju, dejanju `junghome_ble.remove_device` pa, da napravo ponastavi in jo odstrani iz omrežja. Na resničnih napravah še ni preizkušeno: najprej poskusite z rezervno napravo. Dodajanje napravi preda ključe omrežja; odstranitve ni mogoče razveljaviti.",
           "provisioner_identity": "Vsaka datoteka, ki jo Home Assistant zapiše ali preda prehodu, dobi vnos provisionerja za Home Assistant z lastnimi obsegi naslovov zunaj obsegov aplikacije in z naslovom Home Assistanta znotraj njih, naprave, ki jih je dodal Home Assistant in jih datoteka aplikacije nima, pa se vrnejo vanjo. Prostori, scene in naprave, ki jih ustvari Home Assistant, nato dobijo naslove iz njegovih lastnih obsegov. Nobena aplikacija JUNG še ni uvozila take datoteke: preizkusite jo na rezervni namestitvi aplikacije (uvozite datoteko iz `junghome_ble.export_network`), preden jo vidi vaša lastna aplikacija ali prehod. Izklopljeno: datoteke se zapišejo natanko tako kot brez tega.",
@@ -338,6 +340,9 @@
               "left_rocker": "Leva zibka",
               "right_rocker": "Desna zibka"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Čaka na dvojni klik"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Povezava izgubljena",
               "stopped": "Integracija ustavljena"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Čaka na dvojni klik"
           }
         }
       }

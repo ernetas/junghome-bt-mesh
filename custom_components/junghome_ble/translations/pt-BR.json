@@ -220,6 +220,7 @@
         "title": "Opções do JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Relatar cliques somente quando um clique duplo estiver descartado",
+          "double_click_keys": "Botões que aguardam um clique duplo",
           "heartbeats": "Heartbeats dos nós (marcar um dispositivo silencioso como indisponível)",
           "allow_provisioning": "Permitir que o Home Assistant adicione e remova dispositivos (experimental)",
           "provisioner_identity": "Registrar o Home Assistant no arquivo da rede como provisionador (experimental, não verificado com o aplicativo)",
@@ -228,7 +229,8 @@
           "sync_areas": "Mover os dispositivos junto quando o cômodo JUNG deles mudar"
         },
         "data_description": {
-          "click_delay": "Um evento `click` é retido por meio segundo e descartado quando um segundo clique vem em seguida, para que um pressionamento duplo dispare somente `double_click`. Desligado: cada pressionamento dispara `click` imediatamente, e o segundo pressionamento de um pressionamento duplo também dispara `double_click`.",
+          "click_delay": "Um evento `click` é retido por meio segundo e descartado quando um segundo clique vem em seguida, para que um pressionamento duplo dispare somente `double_click`. Desligado: cada pressionamento dispara `click` imediatamente, e o segundo pressionamento de um pressionamento duplo também dispara `double_click`. Isso vale para todos os botões; para aguardar só em alguns, deixe desligado e escolha-os na lista abaixo.",
+          "double_click_keys": "Somente estes botões retêm o seu `click` por meio segundo e o descartam quando um segundo clique vem em seguida, para que um pressionamento duplo dispare somente `double_click`; qualquer outro botão dispara `click` imediatamente. Escolha os botões que têm uma automação de clique duplo. Somente os botões que podem clicar são listados. Ainda não verificado em dispositivos reais.",
           "heartbeats": "Cada dispositivo alimentado pela rede elétrica é solicitado a enviar um heartbeat ao Home Assistant a cada 64 segundos (uma configuração padrão do Bluetooth Mesh que o aplicativo JUNG deixa desligada). Um dispositivo que não envia nada por cerca de três minutos e meio tem suas entidades marcadas como indisponíveis até ser ouvido novamente. Desligar esta opção avisa os dispositivos para pararem (de novo na próxima conexão, se não foi possível avisar todos de uma vez); desligue-a antes de remover a integração, que depois não consegue mais avisá-los.",
           "allow_provisioning": "Permite que a ação `junghome_ble.add_device` provisione um novo dispositivo JUNG e o configure como o aplicativo faria, a partir de um dispositivo do mesmo produto já presente na rede, e que `junghome_ble.remove_device` redefina um dispositivo e o retire da rede. Ainda não testado em dispositivos reais: experimente primeiro com um dispositivo reserva. Adicionar entrega ao dispositivo as chaves da rede; remover não pode ser desfeito.",
           "provisioner_identity": "Todo arquivo que o Home Assistant grava ou entrega ao gateway recebe uma entrada de provisionador para o Home Assistant, com faixas de endereço próprias, separadas das do aplicativo e contendo o endereço do Home Assistant, e os dispositivos que o Home Assistant adicionou e que faltam no arquivo do aplicativo são recolocados. Cômodos, cenas e dispositivos criados pelo Home Assistant passam então a tirar seus endereços dessas faixas próprias. Nenhum aplicativo JUNG importou um arquivo assim até agora: experimente em uma instalação reserva do aplicativo (importe o arquivo de `junghome_ble.export_network`) antes que o seu próprio aplicativo ou gateway o veja. Desligado: os arquivos são gravados exatamente como sem esta opção.",
@@ -338,6 +340,9 @@
               "left_rocker": "Tecla basculante esquerda",
               "right_rocker": "Tecla basculante direita"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Aguarda um clique duplo"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Conexão perdida",
               "stopped": "Integração parada"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Aguarda um clique duplo"
           }
         }
       }

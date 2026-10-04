@@ -42,6 +42,7 @@ from .const import (
     NODE_INFO_TIME_ROLE,
     NODE_INFO_UNSUPPORTED,
     NODE_INFO_VENDOR,
+    OPTION_DOUBLE_CLICK_KEYS,
 )
 from .coordinator import issue_id, load_network
 from .entity import (
@@ -75,6 +76,9 @@ TO_REDACT_ENTRY = {
     CONF_GATEWAY_TOKEN,  # the gateway hands the export (every mesh key) to whoever holds it
     CONF_GATEWAY_FINGERPRINT,  # the pinned certificate: a stable, unique id of the user's gateway
 }
+# the keys that wait for a double click are named by unique id, whose node UUID is a MAC: an entry that is not loaded
+# has no hub to mask them with (`redact_node_uuids`)
+TO_REDACT_UNLOADED_OPTIONS = TO_REDACT_ENTRY | {OPTION_DOUBLE_CLICK_KEYS}
 TO_REDACT_LINK = {"proxy_address", "address"}  # Bluetooth MACs of the proxy nodes
 # the property of each item of a node's information (`JungHomeHub.node_info`), whose codec renders it
 NODE_INFO_SPECS = (
@@ -524,7 +528,7 @@ async def _unloaded_diagnostics(
         network = _network(loaded, loaded.net_keys[0].network_id)
     return {
         "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
-        "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
+        "options": async_redact_data(dict(entry.options), TO_REDACT_UNLOADED_OPTIONS),
         "state": entry.state.value,
         "reason": redact_paths(entry.reason),
         "reason_key": entry.error_reason_translation_key,

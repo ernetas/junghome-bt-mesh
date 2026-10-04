@@ -220,6 +220,7 @@
         "title": "Opțiuni JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Raportează clicurile doar după ce un dublu clic este exclus",
+          "double_click_keys": "Taste care așteaptă un dublu clic",
           "heartbeats": "Semnale heartbeat ale nodurilor (marchează ca indisponibil un dispozitiv care tace)",
           "allow_provisioning": "Permite Home Assistant să adauge și să elimine dispozitive (experimental)",
           "provisioner_identity": "Înscrie Home Assistant ca provizioner în fișierul rețelei (experimental, neverificat cu aplicația)",
@@ -228,7 +229,8 @@
           "sync_areas": "Mută dispozitivele odată cu schimbarea camerei JUNG"
         },
         "data_description": {
-          "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`.",
+          "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`. Se aplică tuturor tastelor; pentru a aștepta doar la unele, lasă-l dezactivat și alege-le în lista de mai jos.",
+          "double_click_keys": "Doar aceste taste își rețin `click` o jumătate de secundă și îl elimină dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`; orice altă tastă declanșează imediat `click`. Alege tastele care au o automatizare pentru dublu clic. Sunt afișate doar tastele care pot da clic. Neverificat încă pe dispozitive reale.",
           "heartbeats": "Fiecărui dispozitiv alimentat de la rețeaua electrică i se cere să trimită un semnal heartbeat către Home Assistant la fiecare 64 de secunde (o setare standard Bluetooth Mesh pe care aplicația JUNG o lasă dezactivată). Entitățile unui dispozitiv care nu trimite nimic timp de aproximativ trei minute și jumătate sunt marcate ca indisponibile până când acesta este auzit din nou. Dezactivarea opțiunii le cere dispozitivelor să se oprească (din nou la următoarea conexiune, dacă nu au putut fi anunțate toate deodată); dezactiveaz-o înainte de a elimina integrarea, care ulterior nu le mai poate anunța.",
           "allow_provisioning": "Permite acțiunii `junghome_ble.add_device` să provizioneze un dispozitiv JUNG nou și să-l configureze așa cum ar face aplicația, după modelul unui dispozitiv de același tip aflat deja în rețea, iar acțiunii `junghome_ble.remove_device` să reseteze un dispozitiv și să-l scoată din rețea. Încă neîncercat pe dispozitive reale: încearcă mai întâi cu un dispozitiv de rezervă. Adăugarea îi transmite dispozitivului cheile rețelei; eliminarea nu poate fi anulată.",
           "provisioner_identity": "Fiecare fișier pe care Home Assistant îl scrie sau îl transmite gateway-ului primește o intrare de provizioner pentru Home Assistant, cu intervale de adrese proprii, separate de cele ale aplicației și care cuprind adresa lui Home Assistant, iar dispozitivele adăugate de Home Assistant care lipsesc din fișierul aplicației sunt incluse din nou. Camerele, scenele și dispozitivele create de Home Assistant își iau apoi adresele din intervalele lui proprii. Nicio aplicație JUNG nu a importat încă un astfel de fișier: încearcă-l pe o instalare de rezervă a aplicației (importă fișierul obținut cu `junghome_ble.export_network`) înainte ca aplicația ta sau gateway-ul tău să-l vadă. Dezactivat: fișierele sunt scrise exact ca fără această opțiune.",
@@ -338,6 +340,9 @@
               "left_rocker": "Clapeta stângă",
               "right_rocker": "Clapeta dreaptă"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Așteaptă un dublu clic"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Conexiune pierdută",
               "stopped": "Integrare oprită"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Așteaptă un dublu clic"
           }
         }
       }

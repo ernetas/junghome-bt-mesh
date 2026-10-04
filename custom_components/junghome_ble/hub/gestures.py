@@ -3,10 +3,20 @@
 The hub's registered handlers for what keys send (`JungHomeHub._on_onoff_set`, `_on_level_set`, `_on_scene_recall`,
 `_on_vendor_property_set`) stay in `coordinator.py`, so they are in `STATUS_HANDLERS` before any platform chains onto
 them (`dispatch.chain_status_handler`); they hand the gestures to `ButtonGestures`, which keeps their state: the
-clicks held back for the `click_delay` option, the last click per key for double clicks, the holds in progress
+clicks held back until a double click is ruled out, the last click per key for double clicks, the holds in progress
 with their end timers, the recent copies of each message the firmware sends twice, and the event listeners. The
 hub delivers and publishes through it (`JungHomeHub.fire_button`, `add_event_listener`) and ends what is pending
 when it stops (`cancel_all`).
+
+A key that waits for a double click holds its `click` back for `DOUBLE_CLICK_WINDOW`, so a double press reports only
+`double_click`; every other key reports its `click` at once, and a double press `click` for the first press and
+`double_click` for the second (review-4 U4-19). Which keys wait is the entry's choice: every key with the `click_delay` option (as before), else
+the keys of `double_click_keys` (the options flow's *Keys that wait for a double click*, by `Button.unique_id`).
+It is not derived from what listens, because Home Assistant gives no reliable way to know: a device trigger's
+attach would be seen here, but an automation on the key's event entity (`event.received`, a state trigger), on the
+`junghome_ble_button_action` bus event (the blueprints do that) or a template reading the entity is not — and a key
+whose double-click listener were missed would report a click on the first press of every double press, the one
+thing the delay is there to prevent. Unverified on air: per key, a double press has not been tried on a real key.
 """
 
 from __future__ import annotations
@@ -33,6 +43,7 @@ from custom_components.junghome_ble.const import (
     KEY_EVENT_SIDE_UP,
     KEY_EVENTS,
     OPTION_CLICK_DELAY,
+    OPTION_DOUBLE_CLICK_KEYS,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import Button
@@ -145,9 +156,14 @@ class ButtonGestures:
     def __init__(self, hub: GesturesHub) -> None:
         """Bind to `hub` (its `hass`, devices and link-loss listeners); nothing pending, the option read from its entry."""
         self.hub = hub
-        # Option: report a `click` only once a second click can no longer turn it into a double click.
+        # Options: report a `click` only once a second click can no longer turn it into a double click — of every
+        # key (`click_delay`), or of the keys listed (`double_click_keys`, unique ids; one no longer in the model
+        # matches nothing)
         self.click_delay = bool(
             hub.entry.options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY)
+        )
+        self.double_click_keys = frozenset(
+            hub.entry.options.get(OPTION_DOUBLE_CLICK_KEYS, ())
         )
         self._delayed_clicks: dict[
             int, tuple[Callable[[], None], int, str | None]
@@ -403,7 +419,7 @@ class ButtonGestures:
                 return
             # a click of the other half of the rocker is no double click: a click held back is reported first
             self._flush_delayed_click(addr)
-            if self.click_delay:
+            if self.waits_for_double_click(addr):
                 # hold it back until a second click can no longer follow
                 cancel = async_call_later(
                     self.hub.hass,
@@ -416,6 +432,17 @@ class ButtonGestures:
             # any other gesture ends the wait: the click is reported first, then the gesture, in order
             self._flush_delayed_click(addr)
         self.fire_button(addr, name, self._event_attrs(counter, side))
+
+    def waits_for_double_click(self, addr: int) -> bool:
+        """Whether the clicks of the key at `addr` are held back until a double click is ruled out (module docstring).
+
+        The entry names keys by unique id, the messages by address: the key is looked up in the model the hub runs
+        now (a new export is followed in place, `model_update`).
+        """
+        if self.click_delay:
+            return True
+        key = self.hub.devices.by_address.get(addr)
+        return isinstance(key, Button) and key.unique_id in self.double_click_keys
 
     def _start_key_hold(self, addr: int, side: str | None) -> None:
         """Note a gateway-mode hold of `addr`, ending at DIM_HOLD_MAX unless its release comes first.

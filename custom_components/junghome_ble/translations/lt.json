@@ -220,6 +220,7 @@
         "title": "JUNG HOME Bluetooth Mesh parinktys",
         "data": {
           "click_delay": "Pranešti apie spustelėjimą tik įsitikinus, kad tai ne dvigubas spustelėjimas",
+          "double_click_keys": "Mygtukai, laukiantys dvigubo spustelėjimo",
           "heartbeats": "Mazgų gyvybingumo signalai (tylintį įrenginį žymėti kaip nepasiekiamą)",
           "allow_provisioning": "Leisti Home Assistant pridėti ir pašalinti įrenginius (eksperimentinė funkcija)",
           "provisioner_identity": "Įrašyti Home Assistant į tinklo failą kaip įtraukėją (eksperimentinė funkcija, su programėle nepatikrinta)",
@@ -228,7 +229,8 @@
           "sync_areas": "Perkelti įrenginius, kai pasikeičia jų JUNG patalpa"
         },
         "data_description": {
-          "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`.",
+          "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`. Tai taikoma visiems mygtukams; jei norite laukti tik kai kurių, palikite išjungtą ir pasirinkite juos sąraše žemiau.",
+          "double_click_keys": "Tik šie mygtukai sulaiko savo `click` pusę sekundės ir jį atmeta, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`; bet kuris kitas mygtukas `click` sukelia iš karto. Pasirinkite mygtukus, kuriems sukurta dvigubo spustelėjimo automatizacija. Rodomi tik mygtukai, galintys spustelėti. Dar nepatikrinta su tikrais įrenginiais.",
           "heartbeats": "Kiekvieno iš elektros tinklo maitinamo įrenginio prašoma kas 64 sekundes siųsti Home Assistant gyvybingumo signalą (tai standartinis Bluetooth Mesh nustatymas, kurio JUNG programėlė neįjungia). Jei įrenginys apie tris su puse minutės nieko nesiunčia, jo objektai pažymimi kaip nepasiekiami, kol jis vėl atsilieps. Išjungus šią parinktį, įrenginiams nurodoma signalų nebesiųsti (jei visiems iš karto pranešti nepavyko, tai pakartojama kito prisijungimo metu); išjunkite ją prieš šalindami integraciją, nes vėliau įrenginiams to nurodyti nebus galima.",
           "allow_provisioning": "Leidžia veiksmui `junghome_ble.add_device` įtraukti naują JUNG įrenginį į tinklą ir sukonfigūruoti jį taip, kaip tai darytų programėlė, pagal tinkle jau esantį to paties gaminio įrenginį, o veiksmui `junghome_ble.remove_device` – atkurti įrenginio gamyklinius nustatymus ir pašalinti jį iš tinklo. Su tikrais įrenginiais dar neišbandyta: pirmiausia išbandykite su atsarginiu įrenginiu. Pridedant įrenginiui perduodami tinklo raktai; pašalinimo atšaukti neįmanoma.",
           "provisioner_identity": "Į kiekvieną failą, kurį Home Assistant įrašo arba perduoda sietuvui, įtraukiamas Home Assistant įtraukėjo įrašas su atskirais, programėlės intervalų nekertančiais adresų intervalais, į kuriuos patenka ir Home Assistant adresas, o Home Assistant pridėti įrenginiai, kurių programėlės faile nėra, į jį grąžinami. Tada Home Assistant kuriamos patalpos, scenos ir įrenginiai adresus gauna iš šių intervalų. Nė viena JUNG programėlė tokio failo dar nėra importavusi: prieš jį pamatant jūsų programėlei ar sietuvui, išbandykite jį su atskirai įdiegta programėle (importuokite failą iš `junghome_ble.export_network`). Išjungus failai įrašomi lygiai taip pat kaip be šios parinkties.",
@@ -338,6 +340,9 @@
               "left_rocker": "Kairysis klavišas",
               "right_rocker": "Dešinysis klavišas"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Laukia dvigubo spustelėjimo"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Ryšys nutrūko",
               "stopped": "Integracija sustabdyta"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Laukia dvigubo spustelėjimo"
           }
         }
       }

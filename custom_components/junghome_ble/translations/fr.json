@@ -220,6 +220,7 @@
         "title": "Options de JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Ne signaler les clics qu'une fois un double clic exclu",
+          "double_click_keys": "Touches qui attendent un double clic",
           "heartbeats": "Heartbeats des nœuds (marquer un appareil muet comme indisponible)",
           "allow_provisioning": "Autoriser Home Assistant à ajouter et retirer des appareils (expérimental)",
           "provisioner_identity": "Inscrire Home Assistant comme provisionneur dans le fichier du réseau (expérimental, non vérifié avec l'application)",
@@ -228,7 +229,8 @@
           "sync_areas": "Déplacer les appareils quand leur zone JUNG change"
         },
         "data_description": {
-          "click_delay": "Un événement `click` est retenu une demi-seconde et abandonné si un second clic suit, de sorte qu'un double appui ne déclenche que `double_click`. Désactivé : chaque appui déclenche `click` immédiatement et le second appui d'un double appui déclenche en plus `double_click`.",
+          "click_delay": "Un événement `click` est retenu une demi-seconde et abandonné si un second clic suit, de sorte qu'un double appui ne déclenche que `double_click`. Désactivé : chaque appui déclenche `click` immédiatement et le second appui d'un double appui déclenche en plus `double_click`. Cela s'applique à toutes les touches ; pour n'attendre que sur certaines, laissez-le désactivé et choisissez-les dans la liste ci-dessous.",
+          "double_click_keys": "Seules ces touches retiennent leur `click` une demi-seconde et l'abandonnent si un second clic suit, de sorte qu'un double appui ne déclenche que `double_click` ; toute autre touche déclenche `click` immédiatement. Choisissez les touches qui ont une automatisation de double clic. Seules les touches capables de cliquer sont proposées. Non vérifié sur de vrais appareils.",
           "heartbeats": "Chaque appareil alimenté par le secteur est invité à envoyer un heartbeat à Home Assistant toutes les 64 secondes (un réglage Bluetooth Mesh standard que l'application JUNG laisse désactivé). Les entités d'un appareil qui n'envoie rien pendant environ trois minutes et demie sont marquées indisponibles jusqu'à ce qu'il soit de nouveau entendu. Désactiver cette option demande aux appareils d'arrêter (à nouveau à la connexion suivante si tous n'ont pas pu être prévenus d'un coup) ; désactivez-la avant de supprimer l'intégration, qui ne pourra plus les prévenir ensuite.",
           "allow_provisioning": "Permet à l'action `junghome_ble.add_device` de mettre en service un nouvel appareil JUNG et de le configurer comme le ferait l'application, d'après un appareil du même produit déjà présent dans le réseau, et à `junghome_ble.remove_device` de réinitialiser un appareil et de le retirer du réseau. Pas encore essayé sur de vrais appareils : essayez d'abord avec un appareil de réserve. L'ajout remet les clés du réseau à l'appareil ; le retrait est irréversible.",
           "provisioner_identity": "Chaque fichier que Home Assistant écrit ou remet à la passerelle reçoit une entrée de provisionneur pour Home Assistant, avec ses propres plages d'adresses, distinctes de celles de l'application et contenant l'adresse de Home Assistant, et les appareils que Home Assistant a ajoutés et qui manquent dans le fichier de l'application y sont remis. Les zones, scènes et appareils que Home Assistant crée prennent alors leurs adresses dans ses propres plages. Aucune application JUNG n'a encore importé un tel fichier : essayez-le sur une installation de réserve de l'application (importez le fichier de `junghome_ble.export_network`) avant que votre propre application ou votre passerelle ne le voie. Désactivé : les fichiers sont écrits exactement comme sans cette option.",
@@ -338,6 +340,9 @@
               "left_rocker": "Bascule gauche",
               "right_rocker": "Bascule droite"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Attend un double clic"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Liaison perdue",
               "stopped": "Intégration arrêtée"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Attend un double clic"
           }
         }
       }

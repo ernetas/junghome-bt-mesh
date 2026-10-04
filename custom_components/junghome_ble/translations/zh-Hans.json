@@ -220,6 +220,7 @@
         "title": "JUNG HOME（Bluetooth Mesh）选项",
         "data": {
           "click_delay": "排除双击后才上报点击",
+          "double_click_keys": "等待双击的按钮",
           "heartbeats": "节点心跳（将无响应的设备标记为不可用）",
           "allow_provisioning": "允许 Home Assistant 添加和移除设备（实验性）",
           "provisioner_identity": "将 Home Assistant 作为配网者写入网络文件（实验性，尚未与应用一起验证）",
@@ -228,7 +229,8 @@
           "sync_areas": "设备的 JUNG 房间更改时随之移动设备"
         },
         "data_description": {
-          "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。",
+          "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。此设置适用于所有按钮；若只想让部分按钮等待，请保持关闭，并在下方列表中选择这些按钮。",
+          "double_click_keys": "只有这些按钮会将其 `click` 延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`；其他按钮会立即触发 `click`。请选择设有双击自动化的按钮。仅列出能够点击的按钮。尚未在真实设备上验证。",
           "heartbeats": "会要求每个市电供电的设备每 64 秒向 Home Assistant 发送一次心跳（这是 JUNG 应用未开启的一项标准 Bluetooth Mesh 设置）。若某设备约三分半钟没有发送任何内容，其实体会被标记为不可用，直到再次收到它的消息。关闭此选项会通知设备停止发送（如果无法一次性通知所有设备，会在下次连接时再次通知）；请在移除集成之前将其关闭，因为移除之后就无法再通知设备。",
           "allow_provisioning": "允许 `junghome_ble.add_device` 动作对新的 JUNG 设备进行配网，并参照网络中已有的同款产品设备，像应用那样对其进行配置；也允许 `junghome_ble.remove_device` 重置设备并将其移出网络。尚未在真实设备上测试：请先用一台备用设备试用。添加会将网络密钥交给该设备；移除无法撤销。",
           "provisioner_identity": "Home Assistant 写入或交给网关的每个文件都会获得一个 Home Assistant 的配网者条目，其中包含与应用的地址范围互不重叠的独立地址范围，Home Assistant 的地址也位于其中；并且 Home Assistant 添加而应用文件中缺少的设备会被补回。之后 Home Assistant 创建的房间、场景和设备都会从其自己的范围中获取地址。目前还没有任何 JUNG 应用导入过这样的文件：在您自己的应用或网关看到它之前，请先在备用的应用安装上试用（导入由 `junghome_ble.export_network` 生成的文件）。关闭：文件的写入方式与未开启此选项时完全相同。",
@@ -338,6 +340,9 @@
               "left_rocker": "左跷板",
               "right_rocker": "右跷板"
             }
+          },
+          "waits_for_double_click": {
+            "name": "等待双击"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "连接丢失",
               "stopped": "集成已停止"
             }
+          },
+          "waits_for_double_click": {
+            "name": "等待双击"
           }
         }
       }

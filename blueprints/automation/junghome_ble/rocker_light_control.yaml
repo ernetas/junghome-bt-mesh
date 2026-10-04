@@ -54,7 +54,9 @@ blueprint:
           unit_of_measurement: "%"
     double_click_action:
       name: Double click
-      description: What a double click does (optional). By default a double press also reports a click first.
+      description: >-
+        What a double click does (optional). By default a double press also reports a click first; pick the key
+        under *Keys that wait for a double click* in the integration's options to report only the double click.
       default: []
       selector:
         action: {}

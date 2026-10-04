@@ -23,6 +23,14 @@
   Home Assistant changed, or the file be kept as a backup, without shell access to the host. A call from an automation
   of the system is refused (the link would open for nobody). The log says that a link was made and for whom, never
   the link. That the app imports the file is unverified with the app. The integration now depends on `http`.
+- Double click per key (review-4 U4-19). The new option *Keys that wait for a double click* holds back the `click`
+  of the keys picked there for half a second, so a double press of such a key fires only `double_click`; every other
+  key keeps firing its `click` at once (before, *Report clicks only once a double click is ruled out* made every key
+  half a second slower). The option lists the keys that can click while the integration runs, by their event
+  entity's name; a picked key that is removed or wired elsewhere drops out when the options are saved. The key's
+  event entity says which way it works (attribute `waits_for_double_click`). The entry-wide switch keeps meaning
+  "every key"; nothing is migrated. The diagnostics of an entry that is not running redact the picked keys (their
+  ids carry the node's MAC). Unverified on air.
 
 ## 1.3.0
 

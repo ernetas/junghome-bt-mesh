@@ -220,6 +220,7 @@
         "title": "Opcions de JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Informa dels clics només quan es descarta un doble clic",
+          "double_click_keys": "Tecles que esperen un doble clic",
           "heartbeats": "Heartbeats dels nodes (marca com a no disponible un dispositiu silenciós)",
           "allow_provisioning": "Permet que Home Assistant afegeixi i elimini dispositius (experimental)",
           "provisioner_identity": "Escriu Home Assistant al fitxer de la xarxa com a aprovisionador (experimental, no verificat amb l'aplicació)",
@@ -228,7 +229,8 @@
           "sync_areas": "Mou els dispositius quan canvia la seva habitació JUNG"
         },
         "data_description": {
-          "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`.",
+          "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`. Això s'aplica a totes les tecles; per esperar només en algunes, deixa-ho desactivat i tria-les a la llista de sota.",
+          "double_click_keys": "Només aquestes tecles retenen el seu `click` mig segon i el descarten si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`; qualsevol altra tecla genera `click` immediatament. Tria les tecles que tenen una automatització de doble clic. Només es mostren les tecles que poden fer clic. No verificat en dispositius reals.",
           "heartbeats": "A cada dispositiu alimentat per la xarxa elèctrica se li demana que enviï un heartbeat a Home Assistant cada 64 segons (un paràmetre estàndard de Bluetooth Mesh que l'aplicació JUNG deixa desactivat). Si un dispositiu no envia res durant uns tres minuts i mig, les seves entitats es marquen com a no disponibles fins que se'l torna a sentir. Desactivar-ho indica als dispositius que s'aturin (de nou a la connexió següent si no s'ha pogut avisar-los tots alhora); desactiva-ho abans d'eliminar la integració, que després ja no els ho pot indicar.",
           "allow_provisioning": "Permet que l'acció `junghome_ble.add_device` posi en servei un dispositiu JUNG nou i el configuri com ho faria l'aplicació, a partir d'un dispositiu del mateix producte que ja és a la xarxa, i que `junghome_ble.remove_device` restableixi un dispositiu i el tregui de la xarxa. Encara no s'ha provat en dispositius reals: prova-ho primer amb un dispositiu de recanvi. En afegir un dispositiu se li lliuren les claus de la xarxa; l'eliminació no es pot desfer.",
           "provisioner_identity": "Cada fitxer que Home Assistant escriu o lliura a la passarel·la rep una entrada d'aprovisionador per a Home Assistant, amb intervals d'adreces propis, separats dels de l'aplicació i que contenen l'adreça de Home Assistant, i s'hi tornen a afegir els dispositius que Home Assistant ha afegit i que falten al fitxer de l'aplicació. Les habitacions, escenes i dispositius que crea Home Assistant prenen llavors les adreces dels seus propis intervals. Cap aplicació JUNG no ha importat encara un fitxer així: prova-ho en una instal·lació de recanvi de l'aplicació (importa el fitxer de `junghome_ble.export_network`) abans que el vegin la teva pròpia aplicació o la teva passarel·la. Desactivat: els fitxers s'escriuen exactament com sense aquesta opció.",
@@ -338,6 +340,9 @@
               "left_rocker": "Balancí esquerre",
               "right_rocker": "Balancí dret"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Espera un doble clic"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Enllaç perdut",
               "stopped": "Integració aturada"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Espera un doble clic"
           }
         }
       }

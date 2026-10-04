@@ -220,6 +220,7 @@
         "title": "Indstillinger for JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Rapportér først klik, når et dobbeltklik er udelukket",
+          "double_click_keys": "Knapper, der venter på et dobbeltklik",
           "heartbeats": "Node-heartbeats (markér en tavs enhed som utilgængelig)",
           "allow_provisioning": "Tillad Home Assistant at tilføje og fjerne enheder (eksperimentelt)",
           "provisioner_identity": "Skriv Home Assistant ind i netværkets fil som provisioner (eksperimentelt, ikke afprøvet med appen)",
@@ -228,7 +229,8 @@
           "sync_areas": "Flyt enheder med, når deres JUNG-rum ændres"
         },
         "data_description": {
-          "click_delay": "En `click`-hændelse holdes tilbage i et halvt sekund og droppes, hvis et andet klik følger, så et dobbelttryk kun udløser `double_click`. Fra: hvert tryk udløser `click` med det samme, og det andet tryk i et dobbelttryk udløser også `double_click`.",
+          "click_delay": "En `click`-hændelse holdes tilbage i et halvt sekund og droppes, hvis et andet klik følger, så et dobbelttryk kun udløser `double_click`. Fra: hvert tryk udløser `click` med det samme, og det andet tryk i et dobbelttryk udløser også `double_click`. Det gælder alle knapper; for kun at vente på nogle knapper skal du lade det være slået fra og vælge dem på listen nedenfor.",
+          "double_click_keys": "Kun disse knapper holder deres `click` tilbage i et halvt sekund og dropper det, hvis et andet klik følger, så et dobbelttryk kun udløser `double_click`; alle andre knapper udløser `click` med det samme. Vælg de knapper, der har en dobbeltklik-automatisering. Kun knapper, der kan klikke, vises. Endnu ikke afprøvet på rigtige enheder.",
           "heartbeats": "Hver netdrevet enhed bliver bedt om at sende et heartbeat til Home Assistant hvert 64. sekund (en standard Bluetooth Mesh-indstilling, som JUNG-appen lader være slået fra). En enhed, der ikke sender noget i omkring tre et halvt minut, får sine entiteter markeret som utilgængelige, indtil den høres igen. Når dette slås fra, får enhederne besked på at stoppe (igen ved næste forbindelse, hvis de ikke alle kunne nås på én gang); slå det fra, før du fjerner integrationen, som ikke kan give dem besked bagefter.",
           "allow_provisioning": "Lader handlingen `junghome_ble.add_device` klargøre en ny JUNG-enhed og konfigurere den, som appen ville, efter forbillede af en enhed af samme produkt, der allerede er i netværket, og `junghome_ble.remove_device` nulstille en enhed og tage den ud af netværket. Endnu ikke afprøvet på rigtige enheder: prøv det først med en reserveenhed. Tilføjelse giver enheden netværkets nøgler; fjernelse kan ikke fortrydes.",
           "provisioner_identity": "Hver fil, som Home Assistant skriver eller giver gatewayen, får en provisioner-post for Home Assistant med egne adresseintervaller uden for appens og med Home Assistants adresse inden for dem, og de enheder, som Home Assistant har tilføjet, og som appens fil mangler, lægges tilbage. Rum, scener og enheder, som Home Assistant opretter, får så deres adresser fra dens egne intervaller. Ingen JUNG-app har importeret sådan en fil endnu: prøv det på en reserveinstallation af appen (importér filen fra `junghome_ble.export_network`), før din egen app eller gateway ser den. Fra: filerne skrives præcis som uden den.",
@@ -338,6 +340,9 @@
               "left_rocker": "Venstre vippe",
               "right_rocker": "Højre vippe"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Venter på dobbeltklik"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Forbindelse mistet",
               "stopped": "Integration stoppet"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Venter på dobbeltklik"
           }
         }
       }

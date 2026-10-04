@@ -520,9 +520,11 @@ without an app name share one device per node.
 
 - Only what the mesh carries can be reported: a rocker linked to the gateway produces the four gesture events; a rocker
   wired directly to a load produces the messages it sends to that load. A rocker cannot be both.
-- A double press produces a `click` for the first press and a `double_click` for the second — unless the
-  [option](#options) *Report clicks only once a double click is ruled out* is on, in which case only `double_click`
-  is fired.
+- A double press produces a `click` for the first press and a `double_click` for the second — unless the key waits
+  for a double click: the [option](#options) *Report clicks only once a double click is ruled out* makes every key
+  wait, *Keys that wait for a double click* only the keys picked there. A key that waits fires only `double_click`
+  for a double press, and its single `click` 0.5 s late; every other key keeps firing its `click` at once. The
+  entity attribute `waits_for_double_click` says which way a key works. Per key **unverified on air**.
 - The JUNG firmware publishes every gateway event twice; duplicates are suppressed.
 - **Every hold ends.** A hold — of either kind above — whose release or stop never arrives still gets its `hold_end`,
   with a `reason` attribute saying why: `timeout` (30 s after the hold started; nobody holds a key that long on
@@ -549,7 +551,8 @@ without an app name share one device per node.
   publishes from its LBC User Property client alone is in key mode *property*, which the export cannot tell apart
   further: its entity asks the key once per connection for `0x5006` / `0x5007` (not a battery key, which sleeps), and
   a key that locks its target says `lock` (the address and name are the locked load's) with `connection_lock_seconds`
-  (the lock's time limit, `0` = until unlocked) — **unverified on air**.
+  (the lock's time limit, `0` = until unlocked) — **unverified on air**. `waits_for_double_click`: whether the key's
+  `click` is held back until a double click is ruled out (the [options](#options)).
 - A diagnostic **Key mode** sensor per key (`0x5003`, off by default: one read per key and connection) shows the
   mode the device itself holds: `light`, `move` (blinds), `scene`, `property`, `rtr` (temperature), `switch`,
   `gateway`. It is read-only; `assign_key` changes it.
@@ -1081,7 +1084,8 @@ the integration when something changed.
 
 | Option | Default | Description |
 |---|---|---|
-| Report clicks only once a double click is ruled out | off | Off: a press fires `click` at once and the second press of a double press fires `double_click` as well, so an automation on `click` also runs on every double press. On: every `click` is held back for 0.5 s (the double-click window) and dropped when a second click arrives, so a double press fires only `double_click` — at the price of a 0.5 s delay on single clicks. A hold that follows a click within the window ends the wait early: the `click` is fired first, then `hold_start`. |
+| Report clicks only once a double click is ruled out | off | Off: a press fires `click` at once and the second press of a double press fires `double_click` as well, so an automation on `click` also runs on every double press. On: every `click` of **every key** is held back for 0.5 s (the double-click window) and dropped when a second click arrives, so a double press fires only `double_click` — at the price of a 0.5 s delay on single clicks. A hold that follows a click within the window ends the wait early: the `click` is fired first, then `hold_start`. |
+| Keys that wait for a double click | none | The same wait, for the keys picked here only: a key with a double-click automation gets the clean `click` / `double_click` distinction, every other key keeps reporting its `click` at once. Offered while the integration runs, for the keys that can click (linked to the gateway, or of unknown wiring), by their event entity's name; a key picked before and no longer offered (removed, or wired elsewhere) is dropped when the options are saved. Has no effect while the option above is on. **Unverified on air.** |
 | Allow Home Assistant to add and remove devices (experimental) | off | Enables `add_device` and `remove_device`, see [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental). |
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
 | Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
@@ -1089,8 +1093,11 @@ the integration when something changed.
 | Move devices along when their JUNG room changes | off | After a room action or an export Home Assistant took over, a device whose room changed moves to the new room's area, unless you placed it in an area yourself (see [Devices and areas](#devices-and-areas)). Unverified on air. |
 | Node heartbeats (mark a silent device unavailable) | off | On: after each connection every mains-powered device is asked (a standard Bluetooth Mesh *Heartbeat Publication* setting the JUNG app leaves off, sent with the device key once and then at most every six hours) to send a heartbeat to Home Assistant every 64 s. A device that sends neither a heartbeat nor anything else for about 3½ minutes has its entities marked **unavailable**, with a warning in the log, until it is heard again; while it is missing — or while its heartbeats have stopped although it still talks (a metering socket after a power cut keeps publishing readings) — it is asked for heartbeats again every two minutes, so a device that restarted (and lost the setting) comes back, and beats again, by itself. Off (the default): only the rule below marks a device unavailable. Switching the option off tells the devices to stop beating. |
 
-The click option only concerns rockers linked to the gateway (key mode *Gateway*), the only ones that report
-clicks. Heartbeats are small control messages (one per device per minute, relayed like everything else); battery
+The two click options only concern rockers linked to the gateway (key mode *Gateway*), the only ones that report
+clicks. Which keys wait is chosen here rather than guessed from the automations: Home Assistant cannot tell
+reliably which automations listen for a key's double click (one on the event entity or on the bus event, as the
+blueprints use, is not visible to the integration), and a key whose double-click automation were missed would fire a
+`click` on every double press. Heartbeats are small control messages (one per device per minute, relayed like everything else); battery
 devices are left out because they sleep. The **Diagnostics** download lists, per device, the age of its last
 heartbeat and how many relays it crossed (`heartbeats`). Verified on the maintainer's devices
 (`docs/hidden-features.md` §4).

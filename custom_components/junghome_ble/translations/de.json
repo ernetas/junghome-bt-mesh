@@ -221,6 +221,7 @@
         "title": "Optionen für JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Klicks erst melden, wenn ein Doppelklick ausgeschlossen ist",
+          "double_click_keys": "Tasten, die auf einen Doppelklick warten",
           "heartbeats": "Heartbeats der Knoten (ein stummes Gerät als nicht verfügbar markieren)",
           "allow_provisioning": "Home Assistant darf Geräte hinzufügen und entfernen (experimentell)",
           "provisioner_identity": "Home Assistant als Provisioner in die Datei des Netzwerks eintragen (experimentell, mit der App nicht überprüft)",
@@ -229,7 +230,8 @@
           "sync_areas": "Geräte mitverschieben, wenn sich ihr JUNG Raum ändert"
         },
         "data_description": {
-          "click_delay": "Ein `click`-Ereignis wird eine halbe Sekunde zurückgehalten und verworfen, wenn ein zweiter Klick folgt, sodass ein Doppeldruck nur `double_click` auslöst. Aus: Jeder Druck löst sofort `click` aus, und der zweite Druck eines Doppeldrucks löst zusätzlich `double_click` aus.",
+          "click_delay": "Ein `click`-Ereignis wird eine halbe Sekunde zurückgehalten und verworfen, wenn ein zweiter Klick folgt, sodass ein Doppeldruck nur `double_click` auslöst. Aus: Jeder Druck löst sofort `click` aus, und der zweite Druck eines Doppeldrucks löst zusätzlich `double_click` aus. Das gilt für jede Taste; um nur bei einigen Tasten zu warten, lass es aus und wähle sie in der Liste darunter.",
+          "double_click_keys": "Nur diese Tasten halten ihr `click` eine halbe Sekunde zurück und verwerfen es, wenn ein zweiter Klick folgt, sodass ein Doppeldruck nur `double_click` auslöst; jede andere Taste löst `click` sofort aus. Wähle die Tasten, die eine Doppelklick-Automation haben. Aufgeführt sind nur Tasten, die klicken können. Auf echten Geräten noch nicht überprüft.",
           "heartbeats": "Jedes netzbetriebene Gerät wird gebeten, alle 64 Sekunden einen Heartbeat an Home Assistant zu senden (eine Standard-Einstellung von Bluetooth Mesh, die die JUNG App ausgeschaltet lässt). Bei einem Gerät, das etwa dreieinhalb Minuten lang nichts sendet, werden die Entitäten als nicht verfügbar markiert, bis es wieder zu hören ist. Beim Ausschalten werden die Geräte angewiesen aufzuhören (bei der nächsten Verbindung erneut, falls nicht alle auf einmal erreicht wurden); schalte es aus, bevor du die Integration entfernst, denn danach kann sie es ihnen nicht mehr sagen.",
           "allow_provisioning": "Erlaubt der Aktion `junghome_ble.add_device`, ein neues JUNG Gerät in Betrieb zu nehmen und es wie die App nach dem Vorbild eines Geräts desselben Produkts im Netzwerk zu konfigurieren, und `junghome_ble.remove_device`, ein Gerät zurückzusetzen und aus dem Netzwerk zu nehmen. Auf echten Geräten noch nicht ausprobiert: Probiere es zuerst mit einem Ersatzgerät. Beim Hinzufügen bekommt das Gerät die Keys des Netzwerks; Entfernen lässt sich nicht rückgängig machen.",
           "provisioner_identity": "Jede Datei, die Home Assistant schreibt oder an das Gateway übergibt, bekommt einen Provisioner-Eintrag für Home Assistant, mit eigenen Adressbereichen abseits derer der App und mit der Adresse von Home Assistant darin, und die Geräte, die Home Assistant hinzugefügt hat und die in der Datei der App fehlen, werden wieder eingetragen. Räume, Szenen und Geräte, die Home Assistant anlegt, nehmen ihre Adressen dann aus den eigenen Adressbereichen. Noch keine JUNG App hat eine solche Datei importiert: Probiere es mit einer Ersatz-Installation der App (importiere die Datei aus `junghome_ble.export_network`), bevor deine eigene App oder dein Gateway sie sieht. Aus: Die Dateien werden genau so geschrieben wie ohne diese Option.",
@@ -339,6 +341,9 @@
               "left_rocker": "Linke Wippe",
               "right_rocker": "Rechte Wippe"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Wartet auf einen Doppelklick"
           }
         }
       },
@@ -375,6 +380,9 @@
               "link_lost": "Verbindung verloren",
               "stopped": "Integration angehalten"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Wartet auf einen Doppelklick"
           }
         }
       }

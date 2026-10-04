@@ -650,7 +650,7 @@ class JungHomeHub:
         )
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
         self._built_from = (hub_data(entry.data), dict(entry.options))
-        # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
+        # the keys' gestures: clicks held back (`click_delay`, `double_click_keys`, read from the entry here), holds, repeat
         # suppression and the event listeners (`hub/gestures.py`); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
         # element → (what its last state Set asked for, its cached values before it), for `async_wait_settled`

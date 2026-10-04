@@ -220,6 +220,7 @@
         "title": "JUNG HOME Bluetooth Mesh options",
         "data": {
           "click_delay": "Report clicks only once a double click is ruled out",
+          "double_click_keys": "Keys that wait for a double click",
           "heartbeats": "Node heartbeats (mark a silent device unavailable)",
           "allow_provisioning": "Allow Home Assistant to add and remove devices (experimental)",
           "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)",
@@ -228,7 +229,8 @@
           "sync_areas": "Move devices along when their JUNG room changes"
         },
         "data_description": {
-          "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well.",
+          "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well. This applies to every key; to wait on some keys only, leave it off and pick them in the list below.",
+          "double_click_keys": "Only these keys hold their `click` back for half a second and drop it when a second click follows, so a double press fires only `double_click`; every other key fires `click` at once. Pick the keys that have a double-click automation. Only keys that can click are listed. Unverified on air.",
           "heartbeats": "Every mains-powered device is asked to send a heartbeat to Home Assistant every 64 seconds (a standard Bluetooth Mesh setting the JUNG app leaves off). A device that sends nothing for about three and a half minutes has its entities marked unavailable until it is heard again. Switching this off tells the devices to stop (again on the next connection if they could not all be told at once); switch it off before removing the integration, which cannot tell them afterwards.",
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
           "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it.",
@@ -338,6 +340,9 @@
               "left_rocker": "Left rocker",
               "right_rocker": "Right rocker"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Waits for a double click"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Link lost",
               "stopped": "Integration stopped"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Waits for a double click"
           }
         }
       }

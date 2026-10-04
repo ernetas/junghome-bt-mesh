@@ -129,6 +129,7 @@ pass removed the markers of the checks that passed.
 | [B10](#b10--locate_node-node-identity-f4-15) | `locate_node`: Node Identity on, then off (`msg:op:8047`) | any mains node, a BLE scanner | nothing kept | — |
 | [B11](#b11--mesh-health-a-breaker-off-u4-7) | *Mesh connection*, *Unreachable devices*, *Mesh overview*, the offline blueprint | a light on its own breaker | power of one light | **yes** |
 | [B12](#b12--blueprints-with-a-person-at-the-keys-u4-3) | Key blueprints on a real key | gateway-mode key, a dimmer | load states | **yes** |
+| [B13](#b13--double-click-per-key-u4-19) | *Keys that wait for a double click*: one key waits, another does not | two gateway-mode keys | an option, set back | **yes** |
 | [C1](#c1--tunable-white-range-and-the-setup-states-msgop826b) | Colour-temperature range (`msg:op:826b`), setup states | DALI TW light, dimmer | settings, restored | — |
 | [C2](#c2--device-lock-lock-operation-f4) | Device lock *Lock operation* (F4) | push-button | setting, restored | **yes** |
 | [C3](#c3--lock-function-of-a-load-0x0009-and-locked-loads-f4-2) | Lock function of a light (`0x0009`), locked loads (F4-2) | a light + its key, a dimmer, the app | locks, undone | **yes** |
@@ -630,12 +631,36 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 - **Capture:** not needed for the pass; `--src <ha>` shows the Lightness and Generic Move Sets if a step goes wrong.
 - **Pass:** each gesture does what the blueprint's description says; no dimming step after the `hold_end` (the
   automation's trace shows the loop ended); the JUNG light starts and stops with the hold; each of the six gestures
-  runs only its own notification (a double press also runs the click's, unless the option *Report clicks only once
-  a double click is ruled out* is on).
+  runs only its own notification (a double press also runs the click's, unless the key is picked under *Keys that
+  wait for a double click* or the option *Report clicks only once a double click is ruled out* is on).
 - **Markers:** `blueprints/automation/junghome_ble/rocker_light_control.yaml::blueprint.description`,
   `blueprints/automation/junghome_ble/rocker_dim_jung_light.yaml::blueprint.description`,
   `blueprints/automation/junghome_ble/rocker_scene_selector.yaml::blueprint.description` (their sentence on a key connected to an empty room
   with D10).
+
+### B13 · Double click per key (U4-19)
+
+- **Checks:** review-4 brief 77 — a key picked under *Keys that wait for a double click* reports a single press as
+  one `click` half a second late and a double press as `double_click` only; a key not picked reports its `click` at
+  once and a double press as `click`, then `double_click`; both pressed at the same time keep their own way.
+- **Needs:** two keys linked to the gateway (`connection: gateway`), `<key1>` and `<key2>` (two halves of one rocker
+  are one key: take keys of two elements); a person at the keys.
+- **Safety:** nothing changes on the mesh; the option is set back at the end.
+- **Do:**
+  1. *Configure* the integration: *Report clicks only once a double click is ruled out* off, *Keys that wait for a
+     double click* = `<key1>` only. Check the list: it names the keys linked to the gateway by their entity names,
+     no key wired to a load. `<key1>`'s event entity shows `waits_for_double_click: true`, `<key2>`'s `false`.
+  2. Watch the events (*Developer tools → Events*, listen to `junghome_ble_button_action`). Press `<key1>` once,
+     then double-press it; the same with `<key2>`.
+  3. Double-press both keys at about the same time (one hand each).
+  4. *Configure* again and empty the list (or set back what step 1 found).
+- **Capture:** not needed; the key's vendor gesture messages (`0x5012`) if an event is missing.
+- **Pass:** `<key1>`: one `click` about half a second after the single press, `double_click` alone for the double
+  press; `<key2>`: `click` at once, then `click` + `double_click` for the double press; step 3 gives `<key1>`
+  `double_click` alone and `<key2>` `click` + `double_click`.
+- **Markers:** `custom_components/junghome_ble/hub/gestures.py::<module>`,
+  `custom_components/junghome_ble/strings.json::options.step.init.data_description.double_click_keys`; the docs'
+  per-key sentences and the CHANGELOG bullet of U4-19.
 
 ## C · Settings, changed and set back
 

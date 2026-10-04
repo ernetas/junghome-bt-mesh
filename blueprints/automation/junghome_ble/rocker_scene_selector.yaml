@@ -7,9 +7,10 @@ blueprint:
 
 
     A single key has no halves: it runs the upper half's actions. By default a double press reports a click first,
-    so both the click's and the double click's actions run; turn on *Report clicks only once a double click is
-    ruled out* in the integration's options to run only the double click's. A key wired to a JUNG load runs the
-    upper or lower click action with its `press_on` / `press_off`, and the hold actions when it starts dimming.
+    so both the click's and the double click's actions run; pick the key under *Keys that wait for a double click*
+    in the integration's options to run only the double click's (its clicks then come half a second late). A key
+    wired to a JUNG load runs the upper or lower click action with its `press_on` / `press_off`, and the hold
+    actions when it starts dimming.
 
 
     Clicks, double clicks and holds by half need a key linked to the JUNG HOME Gateway (in the app, or with the

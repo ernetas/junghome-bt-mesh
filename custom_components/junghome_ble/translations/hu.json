@@ -220,6 +220,7 @@
         "title": "JUNG HOME Bluetooth Mesh beállításai",
         "data": {
           "click_delay": "Kattintások jelentése csak akkor, ha a dupla kattintás kizárható",
+          "double_click_keys": "Dupla kattintásra váró gombok",
           "heartbeats": "Csomópontok életjele (a néma eszköz megjelölése nem elérhetőként)",
           "allow_provisioning": "Eszközök hozzáadásának és eltávolításának engedélyezése a Home Assistant számára (kísérleti)",
           "provisioner_identity": "A Home Assistant beírása a hálózat fájljába provisionerként (kísérleti, az alkalmazással nem ellenőrzött)",
@@ -228,7 +229,8 @@
           "sync_areas": "Az eszközök áthelyezése, ha megváltozik a JUNG helyiségük"
         },
         "data_description": {
-          "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is.",
+          "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is. Ez minden gombra vonatkozik; ha csak néhány gombnál szeretnél várni, hagyd kikapcsolva, és válaszd ki őket az alábbi listában.",
+          "double_click_keys": "Csak ezek a gombok tartják vissza fél másodpercig a `click` eseményüket, és vetik el, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki; minden más gomb azonnal `click` eseményt vált ki. Válaszd ki azokat a gombokat, amelyekhez dupla kattintásos automatizálás tartozik. Csak a kattintani képes gombok szerepelnek a listában. Valós eszközökön még nem ellenőrzött.",
           "heartbeats": "A rendszer minden hálózati tápellátású eszközt arra kér, hogy 64 másodpercenként küldjön életjelet (heartbeat) a Home Assistantnak (ez egy szabványos Bluetooth Mesh beállítás, amelyet a JUNG alkalmazás kikapcsolva hagy). Annak az eszköznek az entitásai, amely körülbelül három és fél percig semmit sem küld, nem elérhetőként lesznek megjelölve, amíg újra nem hallható. A kikapcsolás leállítja az eszközök életjelküldését (a következő kapcsolódáskor ismét megpróbálja, ha nem sikerült egyszerre mindegyiket elérni); kapcsolja ki az integráció eltávolítása előtt, mert utána az integráció már nem tudja értesíteni őket.",
           "allow_provisioning": "Lehetővé teszi, hogy a `junghome_ble.add_device` művelet hálózatba léptessen egy új JUNG eszközt, és az alkalmazáshoz hasonlóan konfigurálja a hálózatban már meglévő, azonos termékű eszköz mintájára, a `junghome_ble.remove_device` pedig visszaállítson egy eszközt, és eltávolítsa a hálózatból. Valós eszközön még nem próbálták ki: először egy tartalék eszközzel próbálja ki. Hozzáadáskor az eszköz megkapja a hálózat kulcsait; az eltávolítás nem vonható vissza.",
           "provisioner_identity": "Minden fájl, amelyet a Home Assistant ír vagy átad az átjárónak, provisioner-bejegyzést kap a Home Assistant számára, saját, az alkalmazásétól elkülönülő címtartományokkal, amelyekben a Home Assistant címe is benne van, és a Home Assistant által hozzáadott, az alkalmazás fájljából hiányzó eszközök visszakerülnek. A Home Assistant által létrehozott helyiségek, jelenetek és eszközök ezután a saját címtartományaiból kapják a címüket. Ilyen fájlt még egyetlen JUNG alkalmazás sem importált: próbálja ki egy tartalék alkalmazástelepítésen (importálja a `junghome_ble.export_network` által készített fájlt), mielőtt a saját alkalmazása vagy átjárója megkapná. Kikapcsolva: a fájlok pontosan úgy készülnek, mint e beállítás nélkül.",
@@ -338,6 +340,9 @@
               "left_rocker": "Bal billenő",
               "right_rocker": "Jobb billenő"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Dupla kattintásra vár"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Megszakadt a kapcsolat",
               "stopped": "Az integráció leállt"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Dupla kattintásra vár"
           }
         }
       }

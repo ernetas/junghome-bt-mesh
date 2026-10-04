@@ -106,6 +106,7 @@ async def test_entities(hass: HomeAssistant, init_integration: MockConfigEntry) 
     assert wc.attributes[ATTR_EVENT_TYPES] == EVENT_TYPES
     assert wc.attributes["mesh_address"] == "0149"
     assert wc.attributes["location"] == "0040"
+    assert wc.attributes["waits_for_double_click"] is False  # no click delay option
 
     # a rocker: one entity per key, named after the key
     rocker_a = hass.states.get(entity_id(hass, "event", UID_ROCKER_A))

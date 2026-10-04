@@ -220,6 +220,7 @@
         "title": "JUNG HOME Bluetooth Mesh seçenekleri",
         "data": {
           "click_delay": "Tıklamaları yalnızca çift tıklama olasılığı ortadan kalktığında bildir",
+          "double_click_keys": "Çift tıklamayı bekleyen düğmeler",
           "heartbeats": "Düğüm heartbeat'leri (sessiz bir cihazı kullanılamaz olarak işaretle)",
           "allow_provisioning": "Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver (deneysel)",
           "provisioner_identity": "Home Assistant'ı ağın dosyasına provisioner olarak yaz (deneysel, uygulamayla doğrulanmadı)",
@@ -228,7 +229,8 @@
           "sync_areas": "JUNG odası değiştiğinde cihazları da taşı"
         },
         "data_description": {
-          "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler.",
+          "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler. Bu, her düğme için geçerlidir; yalnızca bazı düğmelerde beklemek için kapalı bırakın ve onları aşağıdaki listeden seçin.",
+          "double_click_keys": "Yalnızca bu düğmeler `click` olaylarını yarım saniye bekletir ve ardından ikinci bir tıklama gelirse atar; böylece çift basış yalnızca `double_click` tetikler. Diğer tüm düğmeler `click` olayını hemen tetikler. Çift tıklama otomasyonu olan düğmeleri seçin. Yalnızca tıklayabilen düğmeler listelenir. Gerçek cihazlarda henüz doğrulanmadı.",
           "heartbeats": "Şebekeden beslenen her cihazdan Home Assistant'a 64 saniyede bir heartbeat göndermesi istenir (JUNG uygulamasının kapalı bıraktığı standart bir Bluetooth Mesh ayarı). Yaklaşık üç buçuk dakika boyunca hiçbir şey göndermeyen bir cihazın varlıkları, yeniden duyulana kadar kullanılamaz olarak işaretlenir. Bunu kapatmak cihazlara durmalarını söyler (hepsine bir kerede söylenemediyse bir sonraki bağlantıda yeniden); entegrasyonu kaldırmadan önce kapatın, çünkü entegrasyon bunu sonradan onlara söyleyemez.",
           "allow_provisioning": "`junghome_ble.add_device` eyleminin yeni bir JUNG cihazını ağa katmasına (provisioning) ve ağda zaten bulunan aynı ürünün bir cihazını örnek alarak uygulamanın yapacağı gibi yapılandırmasına, `junghome_ble.remove_device` eyleminin ise bir cihazı sıfırlayıp ağdan çıkarmasına izin verir. Henüz gerçek cihazlarda denenmedi: önce yedek bir cihazla deneyin. Ekleme, cihaza ağın anahtarlarını verir; kaldırma geri alınamaz.",
           "provisioner_identity": "Home Assistant'ın yazdığı veya ağ geçidine ilettiği her dosya, Home Assistant için uygulamanınkilerden ayrı kendi adres aralıklarına sahip ve Home Assistant'ın adresini bu aralıkların içinde barındıran bir provisioner kaydı alır; Home Assistant'ın eklediği ve uygulamanın dosyasında eksik olan cihazlar da geri eklenir. Home Assistant'ın oluşturduğu odalar, sahneler ve cihazlar adreslerini bundan sonra onun kendi aralıklarından alır. Hiçbir JUNG uygulaması henüz böyle bir dosyayı içe aktarmadı: kendi uygulamanız veya ağ geçidiniz görmeden önce bunu yedek bir uygulama kurulumunda deneyin (dosyayı `junghome_ble.export_network` ile alıp içe aktarın). Kapalı: dosyalar bu seçenek olmadan nasıl yazılıyorsa tam öyle yazılır.",
@@ -338,6 +340,9 @@
               "left_rocker": "Sol çift yönlü tuş",
               "right_rocker": "Sağ çift yönlü tuş"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Çift tıklamayı bekliyor"
           }
         }
       },
@@ -374,6 +379,9 @@
               "link_lost": "Bağlantı koptu",
               "stopped": "Entegrasyon durduruldu"
             }
+          },
+          "waits_for_double_click": {
+            "name": "Çift tıklamayı bekliyor"
           }
         }
       }

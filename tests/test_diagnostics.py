@@ -32,6 +32,7 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
     OPTION_CLICK_DELAY,
+    OPTION_DOUBLE_CLICK_KEYS,
     OPTION_HEARTBEATS,
 )
 from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
@@ -69,6 +70,7 @@ from .helpers import (
     SENSOR_POWER,
     SOCKET,
     SOCKET_SENSOR,
+    UID_BUTTON_WC,
     UID_LIGHT_CTL,
     UID_ROCKER_A,
     admin_property_status,
@@ -492,7 +494,8 @@ async def test_diagnostics_include_the_options_and_the_open_repairs(
     assert (result["options"], result["issues"]) == ({}, [])
     assert result["plans"] == []  # no action ran a plan yet (review-4 W I7)
     hass.config_entries.async_update_entry(
-        init_integration, options={OPTION_CLICK_DELAY: True}
+        init_integration,
+        options={OPTION_CLICK_DELAY: True, OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC]},
     )
     await hass.async_block_till_done()  # the entry reloads with them
     issue = f"unknown_nodes_{init_integration.entry_id}"
@@ -513,7 +516,12 @@ async def test_diagnostics_include_the_options_and_the_open_repairs(
         translation_key="x",
     )
     result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    # the keys that wait for a double click keep their element, their node UUID (a MAC) masked
+    masked = result["options"].pop(OPTION_DOUBLE_CLICK_KEYS)
     assert result["options"] == {OPTION_CLICK_DELAY: True}
+    assert len(masked) == 1
+    assert masked[0].startswith("xxxxxxxx-xxxx-")
+    assert masked[0].endswith("-0040")
     assert result["issues"] == [issue]
 
 
@@ -858,7 +866,12 @@ async def test_diagnostics_while_the_entry_retries(
     ]  # a proxy, but of another mesh
     mock_config_entry.add_to_hass(hass)
     hass.config_entries.async_update_entry(
-        mock_config_entry, options={OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: False}
+        mock_config_entry,
+        options={
+            OPTION_CLICK_DELAY: True,
+            OPTION_HEARTBEATS: False,
+            OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC],
+        },
     )
     assert not await hass.config_entries.async_setup(mock_config_entry.entry_id)
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
@@ -874,7 +887,11 @@ async def test_diagnostics_while_the_entry_retries(
         CONF_UNICAST: "0D00",
         CONF_SOURCE: "path",
     }
-    assert result["options"] == {OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: False}
+    assert result["options"] == {
+        OPTION_CLICK_DELAY: True,
+        OPTION_HEARTBEATS: False,
+        OPTION_DOUBLE_CLICK_KEYS: REDACTED,  # no hub to mask the node UUIDs with
+    }
     assert (result["state"], result["reason_key"]) == (
         "setup_retry",
         "no_proxy_visible",
