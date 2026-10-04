@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME のメッシュのシーケンス番号が残り少なくなっています",
-      "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、すべての送信元はその範囲の終わりで停止します。IV Update は JUNG HOME ゲートウェイが自動的に開始します。Home Assistant はそれに追従しますが、自ら開始することはありません。ゲートウェイの電源を入れたままにし、メッシュに接続した状態を保ってください。ゲートウェイがない場合、いずれかの送信元が番号を使い切った時点でメッシュは停止します。更新後、この修復は自動的に解消されます。"
+      "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、送信元はその範囲の終わりを越えて送信できません。Bluetooth Mesh では、番号が残り少なくなったデバイスが自らこの更新を開始することになっていますが、JUNG HOME デバイスがそうするかどうかはまだわかっていません。Home Assistant は IV Update に追従しますが、自ら開始することはありません。デバイスが再起動するたびに（停電、ブレーカーの遮断など）そのシーケンス番号は大きく先へ進むため、電源が頻繁に切れるデバイスほど先に番号が残り少なくなります。更新後、この修復は自動的に解消されます。"
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME のメッシュが別の IV index になっています",

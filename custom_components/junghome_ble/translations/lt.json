@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Baigiasi „JUNG HOME“ tinklo sekos numeriai",
-      "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Kiekvienas siuntėjas sustoja pasiekęs šios srities galą, kol tinklas pereis prie kito IV indekso (IV Update), kurį „JUNG HOME“ sietuvas pradeda pats; Home Assistant jį seka, bet pats nepradeda. Laikykite sietuvą įjungtą ir prisijungusį prie tinklo; be sietuvo tinklas sustoja, kai tik kuriam nors siuntėjui pritrūksta numerių. Problema išnyks savaime po atnaujinimo."
+      "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Siuntėjas negali peržengti šios srities galo, kol tinklas nepereis prie kito IV indekso (IV Update). Bluetooth Mesh numato, kad įrenginys, kuriam baigiasi numeriai, šį atnaujinimą pradėtų pats; ar „JUNG HOME“ įrenginiai taip daro, kol kas nežinoma. Home Assistant seka IV Update, bet pats jo nepradeda. Kiekvienas įrenginio paleidimas iš naujo (nutrūkus elektros tiekimui, suveikus automatiniam jungikliui) nustumia jo sekos numerius toli į priekį, todėl įrenginiui, kuris dažnai netenka maitinimo, numeriai baigiasi pirmiausia. Problema išnyks savaime po atnaujinimo."
     },
     "iv_index_mismatch": {
       "title": "„JUNG HOME“ tinklo IV indeksas kitas",

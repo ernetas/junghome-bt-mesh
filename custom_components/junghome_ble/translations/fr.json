@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Les numéros de séquence du mesh JUNG HOME s'épuisent",
-      "description": "Dans le mesh {title}, {source} a utilisé {percent} % des numéros de séquence de l'IV Index {iv_index}. Chaque émetteur s'arrête à la fin de cet espace jusqu'à ce que le mesh passe à l'IV Index suivant (un IV Update), que la passerelle JUNG HOME lance d'elle-même ; Home Assistant le suit mais n'en lance pas. Gardez la passerelle alimentée et connectée au mesh ; sans passerelle, le mesh s'arrête dès qu'un émetteur est à court. Le problème disparaît de lui-même après la mise à jour."
+      "description": "Dans le mesh {title}, {source} a utilisé {percent} % des numéros de séquence de l'IV Index {iv_index}. Un émetteur ne peut pas dépasser la fin de cet espace tant que le mesh n'est pas passé à l'IV Index suivant (un IV Update). Bluetooth Mesh prévoit qu'un appareil qui arrive à court lance lui-même cette mise à jour ; on ne sait pas encore si les appareils JUNG HOME le font. Home Assistant suit un IV Update mais n'en lance pas. Chaque redémarrage d'un appareil (une coupure de courant, un disjoncteur qui saute) fait sauter ses numéros de séquence loin en avant : un appareil souvent privé de courant est donc le premier à court. Le problème disparaît de lui-même après la mise à jour."
     },
     "iv_index_mismatch": {
       "title": "Le mesh JUNG HOME est à un autre IV Index",

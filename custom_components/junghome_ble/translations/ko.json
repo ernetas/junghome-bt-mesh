@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME 메시 시퀀스 번호가 부족해지고 있습니다",
-      "description": "메시 {title}에서 {source}이(가) IV index {iv_index}의 시퀀스 번호 중 {percent} %를 사용했습니다. 모든 송신자는 메시가 다음 IV index로 넘어갈 때(IV Update)까지 이 범위의 끝에서 멈춥니다. IV Update는 JUNG HOME 게이트웨이가 스스로 시작하며, Home Assistant는 이를 따르지만 직접 시작하지는 않습니다. 게이트웨이에 전원을 계속 공급하고 메시에 연결된 상태로 두세요. 게이트웨이가 없으면 어느 송신자든 번호가 바닥나는 즉시 메시가 멈춥니다. 업데이트 후 이 문제는 자동으로 해결됩니다."
+      "description": "메시 {title}에서 {source}이(가) IV index {iv_index}의 시퀀스 번호 중 {percent} %를 사용했습니다. 메시가 다음 IV index로 넘어갈 때(IV Update)까지 송신자는 이 범위의 끝을 넘어설 수 없습니다. Bluetooth Mesh는 번호가 부족해지는 기기가 이 업데이트를 스스로 시작하도록 기대하지만, JUNG HOME 기기가 그렇게 하는지는 아직 알려지지 않았습니다. Home Assistant는 IV Update를 따르지만 직접 시작하지는 않습니다. 기기가 재시작할 때마다(정전, 차단기 트립) 시퀀스 번호가 크게 앞으로 건너뛰므로, 전원이 자주 끊기는 기기가 가장 먼저 번호가 부족해집니다. 업데이트 후 이 문제는 자동으로 해결됩니다."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME 메시가 다른 IV index에 있습니다",

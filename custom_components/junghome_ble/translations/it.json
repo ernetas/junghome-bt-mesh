@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "I numeri di sequenza della mesh JUNG HOME stanno per esaurirsi",
-      "description": "Nella mesh {title}, {source} ha usato il {percent} % dei numeri di sequenza dell'indice IV {iv_index}. Ogni mittente si ferma alla fine di questo spazio finché la mesh non passa all'indice IV successivo (un IV Update), che il gateway JUNG HOME avvia da solo; Home Assistant lo segue ma non ne avvia uno. Mantieni il gateway alimentato e connesso alla mesh; senza un gateway, la mesh si ferma non appena un mittente esaurisce i numeri. Il problema scompare da solo dopo l'aggiornamento."
+      "description": "Nella mesh {title}, {source} ha usato il {percent} % dei numeri di sequenza dell'indice IV {iv_index}. Un mittente non può andare oltre la fine di questo spazio finché la mesh non passa all'indice IV successivo (un IV Update). Bluetooth Mesh prevede che un dispositivo che sta esaurendo i numeri avvii da sé questo aggiornamento; non è ancora noto se i dispositivi JUNG HOME lo facciano. Home Assistant segue un IV Update ma non ne avvia uno. Ogni riavvio di un dispositivo (un'interruzione di corrente, un interruttore automatico scattato) fa avanzare di molto i suoi numeri di sequenza, quindi un dispositivo che resta spesso senza corrente è il primo a esaurirli. Il problema scompare da solo dopo l'aggiornamento."
     },
     "iv_index_mismatch": {
       "title": "La mesh JUNG HOME è a un altro indice IV",

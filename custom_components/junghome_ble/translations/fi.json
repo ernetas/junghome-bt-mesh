@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME -mesh-verkon järjestysnumerot vähissä",
-      "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Jokainen lähettäjä pysähtyy tämän alueen lopussa, kunnes mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update), jonka JUNG HOME -yhdyskäytävä aloittaa itse; Home Assistant seuraa sitä mutta ei aloita sitä. Pidä yhdyskäytävä virrassa ja yhteydessä mesh-verkkoon; ilman yhdyskäytävää mesh-verkko pysähtyy, kun jokin lähettäjä käyttää numeronsa loppuun. Ongelma poistuu itsestään päivityksen jälkeen."
+      "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Lähettäjä ei pääse tämän alueen lopun yli, ennen kuin mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update). Bluetooth Mesh edellyttää, että laite, jonka numerot käyvät vähiin, aloittaa tämän päivityksen itse; vielä ei tiedetä, tekevätkö JUNG HOME -laitteet niin. Home Assistant seuraa IV Update -päivitystä mutta ei aloita sellaista. Jokainen laitteen uudelleenkäynnistys (sähkökatko, lauennut sulake) siirtää sen järjestysnumerot kauas eteenpäin, joten laite, joka menettää usein virtansa, käyttää numeronsa vähiin ensimmäisenä. Ongelma poistuu itsestään päivityksen jälkeen."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME -mesh-verkko on eri IV-indeksissä",

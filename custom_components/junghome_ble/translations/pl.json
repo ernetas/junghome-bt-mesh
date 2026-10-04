@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Kończą się numery sekwencyjne sieci mesh JUNG HOME",
-      "description": "W sieci mesh {title} {source} zużył {percent} % numerów sekwencyjnych IV index {iv_index}. Każdy nadawca zatrzymuje się na końcu tej przestrzeni, dopóki sieć mesh nie przejdzie na następny IV index (IV Update), który bramka JUNG HOME rozpoczyna sama; Home Assistant za nim podąża, ale go nie rozpoczyna. Utrzymuj bramkę zasiloną i połączoną z siecią mesh; bez bramki sieć mesh zatrzyma się, gdy któremuś nadawcy skończą się numery. Problem zniknie sam po aktualizacji."
+      "description": "W sieci mesh {title} {source} zużył {percent} % numerów sekwencyjnych IV index {iv_index}. Nadawca nie może wyjść poza koniec tej przestrzeni, dopóki sieć mesh nie przejdzie na następny IV index (IV Update). Bluetooth Mesh zakłada, że urządzenie, któremu kończą się numery, samo rozpoczyna tę aktualizację; czy urządzenia JUNG HOME to robią, jeszcze nie wiadomo. Home Assistant podąża za IV Update, ale sam go nie rozpoczyna. Każdy restart urządzenia (zanik zasilania, zadziałanie wyłącznika nadprądowego) przesuwa jego numery sekwencyjne daleko do przodu, więc numery kończą się najpierw urządzeniu, które często traci zasilanie. Problem zniknie sam po aktualizacji."
     },
     "iv_index_mismatch": {
       "title": "Sieć mesh JUNG HOME ma inny IV index",

@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
-      "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. Every sender stops at the end of that space until the mesh moves to the next IV index (an IV Update), which the JUNG HOME Gateway starts on its own; Home Assistant follows it but does not start one. Keep the gateway powered and connected to the mesh; without a gateway, the mesh stops once a sender runs out. The issue clears itself after the update."
+      "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update but does not start one. Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh is at another IV index",

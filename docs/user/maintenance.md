@@ -214,8 +214,10 @@ Free up space or repair the storage. [Details](../ha-integration.md#repair-issue
 
 #### JUNG HOME mesh sequence numbers running low
 
-A device of the installation has used most of its numbers; the JUNG HOME Gateway starts the switch to new ones by
-itself. Keep the gateway powered and connected.
+A device of the installation has used most of its numbers. The mesh moves on to new ones with an IV Update, which
+Bluetooth Mesh expects the device running low to start itself; that JUNG HOME devices do is unverified on air, and
+Home Assistant only follows the update. Every restart of a device (a power cut, a tripped breaker) skips its numbers
+far ahead, so a device that often loses power runs low first.
 [Details](../ha-integration.md#repair-issue-jung-home-mesh-sequence-numbers-running-low)
 
 #### JUNG HOME mesh is at another IV index

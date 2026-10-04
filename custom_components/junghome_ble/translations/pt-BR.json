@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Os números de sequência da mesh JUNG HOME estão se esgotando",
-      "description": "Na mesh {title}, {source} usou {percent} % dos números de sequência do IV index {iv_index}. Todo remetente para no fim desse espaço até que a mesh passe para o próximo IV index (um IV Update), que o gateway JUNG HOME inicia por conta própria; o Home Assistant o acompanha, mas não inicia nenhum. Mantenha o gateway energizado e conectado à mesh; sem um gateway, a mesh para assim que um remetente esgotar seus números. O problema desaparece sozinho após a atualização."
+      "description": "Na mesh {title}, {source} usou {percent} % dos números de sequência do IV index {iv_index}. Um remetente não pode passar do fim desse espaço até que a mesh passe para o próximo IV index (um IV Update). O Bluetooth Mesh espera que um dispositivo que esteja ficando sem números inicie ele mesmo essa atualização; ainda não se sabe se os dispositivos JUNG HOME fazem isso. O Home Assistant acompanha um IV Update, mas não inicia nenhum. Cada reinicialização de um dispositivo (uma queda de energia, um disjuntor desarmado) faz seus números de sequência avançarem muito, então um dispositivo que perde energia com frequência é o primeiro a ficar sem números. O problema desaparece sozinho após a atualização."
     },
     "iv_index_mismatch": {
       "title": "A mesh JUNG HOME está em outro IV index",

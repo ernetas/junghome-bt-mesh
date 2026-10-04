@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Sekvenčné čísla siete JUNG HOME mesh dochádzajú",
-      "description": "V sieti mesh {title} spotreboval {source} {percent} % sekvenčných čísel IV indexu {iv_index}. Každý odosielateľ sa na konci tohto priestoru zastaví, kým sa sieť mesh neposunie na ďalší IV index (IV Update), ktorý brána JUNG HOME spúšťa sama; Home Assistant ho sleduje, ale sám ho nespúšťa. Udržujte bránu napájanú a pripojenú k sieti mesh; bez brány sa sieť mesh zastaví, len čo niektorému odosielateľovi čísla dôjdu. Oprava zmizne sama po aktualizácii."
+      "description": "V sieti mesh {title} spotreboval {source} {percent} % sekvenčných čísel IV indexu {iv_index}. Odosielateľ sa za koniec tohto priestoru nedostane, kým sa sieť mesh neposunie na ďalší IV index (IV Update). Bluetooth Mesh očakáva, že zariadenie, ktorému čísla dochádzajú, spustí túto aktualizáciu samo; či to zariadenia JUNG HOME robia, zatiaľ nie je známe. Home Assistant IV Update sleduje, ale sám ho nespúšťa. Každý reštart zariadenia (výpadok prúdu, vypnutý istič) posunie jeho sekvenčné čísla ďaleko dopredu, takže zariadeniu, ktoré často stráca napájanie, dôjdu čísla ako prvému. Oprava zmizne sama po aktualizácii."
     },
     "iv_index_mismatch": {
       "title": "Sieť JUNG HOME mesh je na inom IV indexe",

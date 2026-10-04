@@ -4,8 +4,7 @@
 
 No. Home Assistant talks to the devices directly over Bluetooth. A gateway helps in two ways if you have one: Home
 Assistant can fetch the network export from it (no file to copy) and picks up devices you add in the app by itself,
-and it passes Home Assistant's changes on to it. The gateway also starts the mesh's occasional switch to fresh
-sequence numbers, which a very busy installation needs after a long time.
+and it passes Home Assistant's changes on to it.
 
 ## Does this break the JUNG HOME app?
 

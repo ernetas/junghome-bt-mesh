@@ -420,7 +420,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Switching cycles, Power-on cycles | – | – | No (diagnostic) | Lights and sockets of the products whose firmware lists the counters (`0x100F` / `0x1010`, LBC Admin; read on a socket on air, `docs/hidden-features.md` §2), on the light or socket device: how often the output has switched, and how often the device was powered up, over its lifetime; read once per connection |
 | IV index | – | – | Yes (diagnostic) | On the *mesh network* device: the mesh's current IV index (attributes `iv_update_active`, `transmit_iv_index`); known without a link |
 | Sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: how much of the sequence-number space of the current IV index Home Assistant's own address has used (attribute `source`, the address) |
-| Mesh sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: the same for the sender furthest along in the mesh (attributes `source`, `source_name`) — every sender stops at the end of the space until the mesh moves to the next IV index, which the JUNG HOME Gateway starts; the repair issue *JUNG HOME mesh sequence numbers running low* warns at three quarters |
+| Mesh sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: the same for the sender furthest along in the mesh (attributes `source`, `source_name`) — every sender stops at the end of the space until the mesh moves to the next IV index (an IV Update), which Bluetooth Mesh expects a node running low to start itself — that JUNG HOME devices do is unverified on air, and Home Assistant only follows one; the repair issue *JUNG HOME mesh sequence numbers running low* warns at three quarters |
 
 After (re)connecting the integration asks each metering socket for its measurements once — one `Sensor Get` per
 property (power `0x0081`, voltage `0x005D`, current `0x005C`): the socket's sensor server answers only
@@ -2504,10 +2504,14 @@ number sent since it was taken (see *The sequence-number store must be kept* und
 ### Repair issue "JUNG HOME mesh sequence numbers running low"
 
 A sender of the mesh — a device, the app or Home Assistant, named in the issue — has used three quarters of the
-sequence numbers of the current IV index (the *Mesh sequence numbers used* sensor, [Sensor](#sensor)). Every sender
-stops at the end of that space until the mesh moves to the next IV index, an IV Update the JUNG HOME Gateway starts
-on its own; Home Assistant follows one but never starts it. Keep the gateway powered and connected to the mesh; without
-a gateway the mesh stops once a sender runs out. The issue clears itself after the update.
+sequence numbers of the current IV index (the *Mesh sequence numbers used* sensor, [Sensor](#sensor)). A sender cannot
+go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh (Mesh Protocol
+§3.10.5) expects a node at risk of running out to start that update itself; that JUNG HOME devices do is unverified on
+air, and nothing captured so far shows the JUNG HOME Gateway starting one. Home Assistant follows an IV Update but
+never starts one. Steady traffic uses few numbers; what moves a device far ahead is a restart: after a power cut or a
+tripped breaker it continues a whole persisted block (roughly 180 000 to 260 000 numbers on the installation it was
+seen on) past where it was (the *Last restart* sensor). So the sender furthest along is usually a mains device that
+often loses power, not the gateway or the app. The issue clears itself after the update.
 
 ### Repair issue "JUNG HOME sequence numbers cannot be saved"
 

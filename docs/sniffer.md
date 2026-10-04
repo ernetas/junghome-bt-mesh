@@ -122,8 +122,8 @@ Passive, whenever the event happens:
 - `0x5012` codes 0–3 from a KeyMode-6 **rocker** element (`0293`/`0297`): press top and bottom while capturing.
 - Whether `Scene Recall` / `OnOff Set` from keys are doubled (same TID, fresh SEQ).
 - The status-LED write (`0x5013` via opcode `0x11`) when the gateway integration toggles `status_led`.
-- The IV Update and any Key Refresh when they come (the gateway's sequence forecast puts the IV update within
-  6–12 months) — the unattended capture below records them.
+- The IV Update and any Key Refresh when they come (which node starts the IV Update is not known; here the sender
+  furthest along is a mains node, pushed ahead by its restarts) — the unattended capture below records them.
 
 With the app (the user does the action, the sniffer shows the exact messages — the ground truth for every
 roadmap step 1 setting before we send it ourselves):

@@ -1758,10 +1758,10 @@ MESH_DIAGNOSTICS: tuple[MeshDiagnosticDescription, ...] = (
 class JungHomeMeshDiagnostic(JungHomeEntity, SensorEntity):
     """The mesh's IV index and how much of its sequence space is used.
 
-    Every source stops sending at the end of the 24-bit space of an IV index; only an IV Update (started by the
-    gateway) resets it. *Sequence used* is Home Assistant's own counter, *Mesh sequence used* the source furthest
-    along — whose numbers the replay protection accepted — the one that decides when the update is due
-    (`sequence_space_low` warns at three quarters).
+    Every source stops sending at the end of the 24-bit space of an IV index; only an IV Update resets it (which
+    node starts one: `Issues.check_sequence_space`). *Sequence used* is Home Assistant's own counter, *Mesh
+    sequence used* the source furthest along — whose numbers the replay protection accepted — the one that decides
+    when the update is due (`sequence_space_low` warns at three quarters).
     """
 
     _attr_should_poll = True

@@ -329,7 +329,7 @@ SEQ_SKIP_AHEAD: Final = 1 << 20
 # Diagnostics. A node's link diagnostics are signalled at most once per this many seconds
 # (last seen and signal strength change with every message and advertisement); the sequence space of every source
 # is checked this often, and a source past SEQUENCE_SPACE_WARN (3/4 of the 24-bit space) raises
-# `sequence_space_low`: the mesh needs an IV Update before it runs out, and only the gateway starts one.
+# `sequence_space_low`: the mesh needs an IV Update before that source runs out, and Home Assistant never starts one.
 NODE_DIAGNOSTICS_INTERVAL: Final = 60.0
 ISSUE_GATEWAY_IMPORT: Final = "gateway_import"  # a gateway integration entry is active next to ours: offer the import
 ISSUE_EXPORT_STALE: Final = "export_stale"

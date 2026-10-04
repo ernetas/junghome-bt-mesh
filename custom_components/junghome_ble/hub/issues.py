@@ -161,8 +161,11 @@ class Issues:
         """Raise `sequence_space_low` while a source is past SEQUENCE_SPACE_WARN; clear it after.
 
         Every source (node, app, Home Assistant) stops sending at the end of the 24-bit space of the current IV
-        index; the IV Update that resets it is started by the gateway (Home Assistant only follows one). The
-        numbers are those the replay protection accepted, so they are what the mesh really used.
+        index until an IV Update resets it. Mesh Protocol §3.10.5 expects a node at risk of running out to start
+        that update itself; that JUNG HOME nodes do is unverified on air (nothing captured shows the gateway
+        starting one either), and Home Assistant only follows one. Steady traffic uses few numbers; a node's restart
+        skips it a whole persisted block ahead, so a mains node that often loses power runs low first. The numbers
+        are those the replay protection accepted, so they are what the mesh really used.
         """
         highest = self.hub.highest_seq()
         key = issue_id(self.hub.entry, ISSUE_SEQUENCE_SPACE_LOW)

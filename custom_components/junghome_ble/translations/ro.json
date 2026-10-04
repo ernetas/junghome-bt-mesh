@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate",
-      "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Fiecare expeditor se oprește la capătul acestui spațiu până când rețeaua mesh trece la următorul index IV (un IV Update), pe care gateway-ul JUNG HOME îl pornește singur; Home Assistant îl urmează, dar nu pornește unul. Ține gateway-ul alimentat și conectat la rețeaua mesh; fără gateway, rețeaua mesh se oprește imediat ce unui expeditor i se termină numerele. Problema dispare de la sine după actualizare."
+      "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Un expeditor nu poate trece de capătul acestui spațiu până când rețeaua mesh nu trece la următorul index IV (un IV Update). Bluetooth Mesh prevede ca un dispozitiv căruia i se termină numerele să pornească singur această actualizare; nu se știe încă dacă dispozitivele JUNG HOME fac acest lucru. Home Assistant urmează un IV Update, dar nu pornește unul. Fiecare repornire a unui dispozitiv (o pană de curent, o siguranță declanșată) îi mută numerele de secvență mult înainte, așa că un dispozitiv care rămâne des fără curent este primul care rămâne fără numere. Problema dispare de la sine după actualizare."
     },
     "iv_index_mismatch": {
       "title": "Rețeaua mesh JUNG HOME are alt index IV",

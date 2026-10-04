@@ -110,6 +110,11 @@
   threshold now (`threshold_switch_on_not_applied`, `threshold_switch_off_not_applied`,
   `threshold_switch_on_send_failed`, `threshold_switch_off_send_failed`), as Home Assistant never translates a
   placeholder's value.
+- The repair issue *JUNG HOME mesh sequence numbers running low* (every language), its docs and the FAQ no longer say
+  that the JUNG HOME Gateway starts the IV Update on its own: nothing captured shows it. Bluetooth Mesh expects a node
+  that runs low to start one itself; whether JUNG HOME devices do is unverified on air, and Home Assistant only
+  follows one. The issue now says what makes a device run low first: every restart (a power cut, a tripped breaker)
+  skips its sequence numbers far ahead, while steady traffic uses few.
 
 ## 1.1.0
 

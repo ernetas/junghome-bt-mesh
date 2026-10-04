@@ -2034,7 +2034,7 @@
     },
     "sequence_space_low": {
       "title": "Die Sequenznummern des JUNG HOME Mesh werden knapp",
-      "description": "Im Mesh {title} hat {source} {percent} % der Sequenznummern des IV-Index {iv_index} verbraucht. Jeder Sender hält am Ende dieses Nummernvorrats an, bis das Mesh zum nächsten IV-Index wechselt (ein IV-Update), das das JUNG HOME Gateway von selbst startet; Home Assistant folgt ihm, startet aber selbst keines. Halte das Gateway mit Strom versorgt und mit dem Mesh verbunden; ohne Gateway hält das Mesh an, sobald einem Sender die Nummern ausgehen. Die Reparatur verschwindet nach dem Update von selbst."
+      "description": "Im Mesh {title} hat {source} {percent} % der Sequenznummern des IV-Index {iv_index} verbraucht. Ein Sender kommt nicht über das Ende dieses Nummernvorrats hinaus, bis das Mesh zum nächsten IV-Index wechselt (ein IV-Update). Bluetooth Mesh sieht vor, dass ein Gerät, dem die Nummern knapp werden, dieses Update selbst startet; ob JUNG HOME Geräte das tun, ist noch nicht bekannt. Home Assistant folgt einem IV-Update, startet aber selbst keines. Jeder Neustart eines Geräts (ein Stromausfall, ein ausgelöster Sicherungsautomat) lässt seine Sequenznummern weit vorspringen, sodass einem Gerät, das oft vom Strom getrennt wird, die Nummern zuerst knapp werden. Die Reparatur verschwindet nach dem Update von selbst."
     },
     "iv_index_mismatch": {
       "title": "Das JUNG HOME Mesh ist auf einem anderen IV-Index",

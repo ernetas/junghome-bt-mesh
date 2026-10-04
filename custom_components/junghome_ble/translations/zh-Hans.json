@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME Mesh 序列号即将用尽",
-      "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。每个发送方在用尽该空间后都会停止发送，直到 Mesh 切换到下一个 IV index（即 IV Update），这由 JUNG HOME 网关自行发起；Home Assistant 会跟随但不会主动发起。请保持网关通电并连接到 Mesh；没有网关时，一旦有发送方用尽序列号，Mesh 就会停止工作。更新完成后，此问题即会自动清除。"
+      "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。在 Mesh 切换到下一个 IV index（即 IV Update）之前，发送方无法越过该空间的末尾。Bluetooth Mesh 要求序列号即将用尽的设备自行发起此更新；JUNG HOME 设备是否会这样做目前尚不清楚。Home Assistant 会跟随 IV Update，但不会主动发起。设备每次重启（停电、断路器跳闸）都会使其序列号大幅向前跳跃，因此经常断电的设备会最先面临序列号不足。更新完成后，此问题即会自动清除。"
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME Mesh 处于另一个 IV index",

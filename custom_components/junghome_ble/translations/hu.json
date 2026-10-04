@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Fogynak a JUNG HOME mesh hálózat sorszámai",
-      "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Minden küldő megáll e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update), amelyet a JUNG HOME átjáró magától indít el; a Home Assistant követi, de maga nem indít ilyet. Tartsa az átjárót bekapcsolva és a mesh hálózathoz csatlakoztatva; átjáró nélkül a mesh hálózat leáll, amint egy küldő kifogy a sorszámokból. A probléma magától megszűnik a frissítés után."
+      "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Egy küldő nem léphet túl e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update). A Bluetooth Mesh elvárja, hogy az az eszköz, amelynek fogynak a sorszámai, maga indítsa el ezt a frissítést; hogy a JUNG HOME eszközök ezt megteszik-e, egyelőre nem ismert. A Home Assistant követi az IV Update-et, de maga nem indít ilyet. Egy eszköz minden újraindítása (áramszünet, leoldott kismegszakító) messze előre ugratja a sorszámait, így elsőként annak az eszköznek fogynak el a sorszámai, amely gyakran veszíti el a tápellátását. A probléma magától megszűnik a frissítés után."
     },
     "iv_index_mismatch": {
       "title": "A JUNG HOME mesh hálózat más IV-indexen áll",

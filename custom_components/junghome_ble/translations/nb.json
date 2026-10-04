@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnumre begynner å gå tomme",
-      "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. Hver sender stopper ved slutten av det intervallet til meshet går over til neste IV-indeks (en IV Update), som JUNG HOME Gateway starter av seg selv; Home Assistant følger den, men starter ingen selv. Hold gatewayen strømforsynt og koblet til meshet; uten en gateway stopper meshet når en sender går tom. Problemet forsvinner av seg selv etter oppdateringen."
+      "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. En sender kan ikke gå forbi slutten av det intervallet før meshet går over til neste IV-indeks (en IV Update). Bluetooth Mesh forventer at en enhet som begynner å gå tom, starter den oppdateringen selv; om JUNG HOME-enheter gjør det, er ennå ikke kjent. Home Assistant følger en IV Update, men starter ingen selv. Hver omstart av en enhet (et strømbrudd, en utløst sikring) får sekvensnumrene dens til å hoppe langt frem, så en enhet som ofte mister strømmen, går tom først. Problemet forsvinner av seg selv etter oppdateringen."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-meshet er på en annen IV-indeks",

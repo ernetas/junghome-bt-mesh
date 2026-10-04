@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME-mesh'ets sekvensnumre er ved at slippe op",
-      "description": "I mesh'et {title} har {source} brugt {percent} % af sekvensnumrene for IV-indeks {iv_index}. Hver afsender stopper ved slutningen af det interval, indtil mesh'et går over til det næste IV-indeks (en IV Update), som JUNG HOME Gateway starter af sig selv; Home Assistant følger den, men starter ikke selv en. Hold gatewayen strømforsynet og forbundet til mesh'et; uden en gateway stopper mesh'et, når en afsender løber tør. Problemet forsvinder af sig selv efter opdateringen."
+      "description": "I mesh'et {title} har {source} brugt {percent} % af sekvensnumrene for IV-indeks {iv_index}. En afsender kan ikke komme forbi slutningen af det interval, før mesh'et går over til det næste IV-indeks (en IV Update). Bluetooth Mesh forventer, at en enhed, der er ved at løbe tør, selv starter den opdatering; om JUNG HOME-enheder gør det, vides endnu ikke. Home Assistant følger en IV Update, men starter ikke selv en. Hver genstart af en enhed (en strømafbrydelse, en udløst sikring) får dens sekvensnumre til at springe langt frem, så en enhed, der ofte mister strømmen, løber tør først. Problemet forsvinder af sig selv efter opdateringen."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-mesh'et er på et andet IV-indeks",

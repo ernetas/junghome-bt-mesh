@@ -2033,7 +2033,7 @@
     },
     "sequence_space_low": {
       "title": "Volgnummers van de JUNG HOME-mesh raken op",
-      "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Elke zender stopt aan het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update), die de JUNG HOME Gateway zelf start; Home Assistant volgt die, maar start er zelf geen. Houd de gateway van stroom voorzien en verbonden met de mesh; zonder gateway stopt de mesh zodra een zender zonder nummers zit. Het probleem verdwijnt vanzelf na de update."
+      "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Een zender kan niet voorbij het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update). Bluetooth Mesh verwacht dat een apparaat waarvan de nummers opraken die update zelf start; of JUNG HOME-apparaten dat doen, is nog niet bekend. Home Assistant volgt een IV Update, maar start er zelf geen. Elke herstart van een apparaat (een stroomstoring, een uitgeschakelde automaat) laat zijn volgnummers ver vooruit springen, zodat een apparaat dat vaak zonder stroom valt als eerste zonder nummers raakt. Het probleem verdwijnt vanzelf na de update."
     },
     "iv_index_mismatch": {
       "title": "De JUNG HOME-mesh staat op een andere IV-index",
