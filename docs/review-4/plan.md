@@ -188,7 +188,7 @@ Merged across reports, ranked within each theme (value per size). Brief numbers 
 | Dry runs, structured responses, action ergonomics | W I3, I6, I7, I9, U4-13 | M–H / M | 49 |
 | Fewer config entities on by default | H I-8 | M / S | 25 (decision M9) |
 | Pre-flight reconcile before destructive plans | W I4 | H / M | 70 |
-| Topology card, signed export download, French / Spanish / Italian / Dutch, per-key double click | U4-14, U4-17, U4-18, U4-19 | L–M | — |
+| Topology card, signed export download, French / Spanish / Italian / Dutch, per-key double click | U4-14, U4-17, U4-18, U4-19 | L–M | 75, 76, 68, 77 |
 
 ### Architecture
 
@@ -602,6 +602,9 @@ Dependencies (hard unless marked *soft*):
   translated, typed `hass.data` kept by a test, Renovate's pre-commit manager, the APK-anchor "flake" (the per-test
   time budget under load) (74). A test now requires every on-air marker to be cited in the checklist (C10, D13 added).
   All unverified on air.
+
+- **Released:** 1.3.0 (wave 22). Wave 23 (briefs 75–77: topology image, export download link, per-key double
+  click) is in progress.
 
 Every finding and low item has landed. Brief 67 waits for decision M14 (custom repository first); the on-air checks
 are the maintainer's.

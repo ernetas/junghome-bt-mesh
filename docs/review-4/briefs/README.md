@@ -143,5 +143,8 @@ check on air. *human* = needs a person.
 | [72](72-lock-follow-ups-and-audit-client-subscriptions.md) | Lock follow-ups from the sweep; client subscriptions in the audit | P2 | 22 | S–M | yes | 30, 35 | `config_entities.py`, `light.py`, `jhmesh/audit.py` |
 | [73](73-firmware-only-settings-entities.md) | Firmware-only settings as entities, from the sweep's readings | P2 | 22 | M | yes | 30, 36 | `properties/targets.py`, `jhmesh/properties.py`, platforms |
 | [74](74-housekeeping-applied-hasskeys-renovate-flake.md) | Localised `{applied}`, typed `hass.data`, Renovate pre-commit, a flaky test | P5 | 22 | S–M | local | — | `strings.json`, `renovate.json`, tests |
+| [75](75-mesh-topology-image.md) | Mesh topology as an image entity | P3 | 23 | M | yes (look) | 45 | new SVG module, `image.py`, `diagnostics.py` |
+| [76](76-export-download-signed-link.md) | Download HA's export through a signed, short-lived link | P3 | 23 | S–M | download yes, app import *human* | — | new view, `actions/`, `configurator/store.py` |
+| [77](77-per-key-double-click.md) | Double click per key, without delaying every other key | P3 | 23 | S–M | yes *human* | 19 | `hub/gestures.py`, `config_flow.py`, `event.py` |
 
 Briefs 01 and 02 should be cherry-picked first in wave 1; every later brief assumes the strict fake teardown.
