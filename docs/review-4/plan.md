@@ -436,6 +436,8 @@ Dependencies (hard unless marked *soft*):
 - **M14 — HACS listing timing (briefs 66, 67).** Submit to hacs/default right after the first public release, or let
   the release run as a custom repository for a while first. A PyPI release (`dependency-transparency`) is not a HACS
   requirement and need not wait.
+  **Taken:** run as a custom repository first; the hacs/default PR (brief 67) waits until the releases have run that
+  way for a while.
 - **M15 — Display name (brief 67).** Keep "JUNG HOME (Bluetooth Mesh)" in `manifest.json` / `hacs.json`, or add
   "unofficial" wording; either way the README states near the top that the project is unofficial and not affiliated
   with JUNG (`DISCLAIMER.md`).
