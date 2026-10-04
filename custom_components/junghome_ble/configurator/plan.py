@@ -7,7 +7,7 @@ that refuses raises `PlanError`, which `MeshConfigurator` turns into the transla
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,99 +30,94 @@ class PlanError(Exception):
 
 
 # What the error of a stopped plan says about the messages before the one that failed (a placeholder: the
-# sentence differs per outcome, and the file must always tell the truth about what the mesh holds).
-APPLIED_NOTHING = "Nothing before it was applied; the mesh export is unchanged."
-APPLIED_KEY_WIRED = (
-    "Every connection of the key was configured and is recorded in the mesh export; only the key mode is "
-    "missing — run the action again with the same target to set it."
-)
-APPLIED_LOCK_WIRED = (
-    "Every connection of the key was configured and is recorded in the mesh export; its lock function and key mode "
-    "are missing — run the action again with the same target to set them."
-)
-APPLIED_SCENE_WIRED = (
-    "The key publishes its scene recalls to all devices and that is recorded in the mesh export; the scene it "
-    "recalls and its key mode are missing — run the action again with the same scene to set them."
-)
+# sentence differs per outcome, and the file must always tell the truth about what the mesh holds). Said as data —
+# `applied_<key>` messages of `exceptions` and their placeholders, worded in Home Assistant's language where the
+# error is raised (`configurator.store.applied_message`): Home Assistant translates a message, never a
+# placeholder's value. The placeholders are numbers and addresses, never words.
 
 
-def applied_text(accepted: int, total: int) -> str:
+@dataclass(frozen=True)
+class Applied:
+    """What a stop applied: `applied_<key>` messages of `exceptions` with their placeholders, said in this order."""
+
+    sentences: tuple[tuple[str, Mapping[str, str]], ...] = ()
+
+    def __add__(self, other: Applied) -> Applied:
+        """Say `other` after this."""
+        return Applied(self.sentences + other.sentences)
+
+    def __bool__(self) -> bool:
+        """Whether it says anything."""
+        return bool(self.sentences)
+
+
+def said(key: str, **placeholders: object) -> Applied:
+    """Return the one sentence `applied_<key>` with its placeholders (as text)."""
+    return Applied(((key, {name: str(value) for name, value in placeholders.items()}),))
+
+
+APPLIED_NOTHING = said("nothing")
+# a key whose Config plan took and whose vendor writes did not: its key mode is missing, and its lock function or
+# the scene it recalls with it
+APPLIED_KEY_WIRED = said("key_wired")
+APPLIED_LOCK_WIRED = said("lock_wired")
+APPLIED_SCENE_WIRED = said("scene_wired")
+
+
+def applied_text(accepted: int, total: int) -> Applied:
     """Describe the accepted steps of a plan that stopped after `accepted` of `total` messages."""
     if accepted == 0:
         return APPLIED_NOTHING
-    return (
-        f"The {accepted} of {total} messages accepted before it were applied on the mesh and are recorded in the "
-        "mesh export; run the action again with the same target to complete it."
-    )
+    return said("partly", accepted=accepted, total=total)
 
 
-def applied_removed(node: int, accepted: int, total: int) -> str:
+def applied_removed(node: int, accepted: int, total: int) -> Applied:
     """After a node's reset, when the plan taking the other nodes' wiring to it away stopped after `accepted`."""
-    return (
-        f"Device {hexaddr(node)} was reset and the mesh export records it as removed from the network; {accepted} "
-        f"of the {total} messages taking the other devices' links to it away were applied and are recorded too. "
-        "The links left on the other devices point at a device that no longer answers; the mesh export keeps them, "
-        "so nothing new reuses their groups."
-    )
+    return said("removed", device=hexaddr(node), accepted=accepted, total=total)
 
 
-def applied_scene_stored(store: int, number: int) -> str:
+def applied_scene_stored(store: int, number: int) -> Applied:
     """After a Scene Store took but the JUNG description did not."""
-    return (
-        f"Scene {number} is stored on device {hexaddr(store)} and the member is recorded in the mesh export; only "
-        "the scene description is missing — run the action again to write it."
-    )
+    return said("scene_stored", scene=number, device=hexaddr(store))
 
 
 def applied_scene_cleared(
     element: int, number: int, done: int = 0, total: int = 1
-) -> str:
+) -> Applied:
     """After a channel's JUNG scene description was cleared but the register still holds the scene.
 
     `done` of the call's `total` loads forgot the scene before this one (recorded): the error says so too.
     """
     before = (
-        f"{done} of {total} devices already forgot scene {number} and the mesh export records that. "
+        said("scene_forgotten", done=done, total=total, scene=number)
         if done
-        else ""
+        else Applied()
     )
-    return (
-        f"{before}The scene description of {hexaddr(element)} for scene {number} was cleared; the scene itself is "
-        "still stored on the device and recorded in the mesh export — run the action again to finish."
-    )
+    return before + said("scene_cleared", element=hexaddr(element), scene=number)
 
 
-def applied_scene_members(done: int, total: int, number: int) -> str:
+def applied_scene_members(done: int, total: int, number: int) -> Applied:
     """After `done` of `total` loads stored scene `number` and the next one did not."""
     if done == 0:
         return APPLIED_NOTHING
-    return (
-        f"{done} of {total} devices stored scene {number} and are recorded in the mesh export; run the action "
-        "again to finish."
-    )
+    return said("scene_members", done=done, total=total, scene=number)
 
 
 def applied_members(
     done: int, total: int, number: int, *, keys_cleared: bool = False
-) -> str:
+) -> Applied:
     """After `done` of `total` members forgot scene `number` and the next one did not.
 
     `keys_cleared`: the call first cleared the members' keys that recalled the scene (recorded).
     """
     if done == 0:
         if keys_cleared:
-            return (
-                f"The keys of these devices that recalled scene {number} were cleared and the mesh export records "
-                "that; run the action again to finish."
-            )
+            return said("keys_cleared", scene=number)
         return APPLIED_NOTHING
-    return (
-        f"{done} of {total} devices already forgot scene {number} and the mesh export records that; run the "
-        "action again to finish."
-    )
+    return said("members", done=done, total=total, scene=number)
 
 
-def applied_unused_deleted(deleted: dict[str, list[int]]) -> str:
+def applied_unused_deleted(deleted: dict[str, list[int]]) -> Applied:
     """After `delete_unused_scenes` stopped: the scenes it deleted before, by register (none of it is in the export)."""
     if not deleted:
         return APPLIED_NOTHING
@@ -130,10 +125,7 @@ def applied_unused_deleted(deleted: dict[str, list[int]]) -> str:
         f"{address}: {', '.join(str(n) for n in numbers)}"
         for address, numbers in deleted.items()
     )
-    return (
-        f"Scenes unknown to the mesh export were already deleted before it ({done}); the mesh export is unchanged, "
-        "as it never held them — run the action again to finish."
-    )
+    return said("unused_deleted", deleted=done)
 
 
 # A plan's bookkeeping that is no Config step, as data (`PlanExecutor._bookkeeping` applies it): it goes into the

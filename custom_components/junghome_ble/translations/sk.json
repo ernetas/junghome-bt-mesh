@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Neodoslané: {node} odpovedal na {message} hodnotou {found}, ale export mesh uvádza {expected} (ďalších rozdielov: {others}). Inštalácia sa po vytvorení exportu mesh zmenila (v aplikácii JUNG HOME, resetom zariadenia alebo skoršou akciou, ktorá sa zastavila v polovici) a plán by prepísal to, čo export už neopisuje. Exportujte projekt z aplikácie znova alebo nechajte Home Assistant prevziať export z brány a spustite akciu znova; s `force` prebehne bez tejto kontroly. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Predtým sa nič neprijalo; export mesh sa nezmenil."
+    },
+    "applied_partly": {
+      "message": "{accepted} z {total} správ prijatých predtým sa uplatnilo v sieti mesh a sú zaznamenané v exporte mesh; spustite akciu znova s rovnakým cieľom, aby sa dokončila."
+    },
+    "applied_key_wired": {
+      "message": "Všetky prepojenia tlačidla boli nakonfigurované a sú zaznamenané v exporte mesh; chýba len režim tlačidla — na jeho nastavenie spustite akciu znova s rovnakým cieľom."
+    },
+    "applied_lock_wired": {
+      "message": "Všetky prepojenia tlačidla boli nakonfigurované a sú zaznamenané v exporte mesh; chýba jeho funkcia blokovania a režim tlačidla — na ich nastavenie spustite akciu znova s rovnakým cieľom."
+    },
+    "applied_scene_wired": {
+      "message": "Tlačidlo posiela svoje vyvolania scén všetkým zariadeniam a to je zaznamenané v exporte mesh; chýba scéna, ktorú vyvoláva, a jeho režim tlačidla — na ich nastavenie spustite akciu znova s rovnakou scénou."
+    },
+    "applied_removed": {
+      "message": "Zariadenie {device} bolo resetované a export mesh ho zaznamenáva ako odstránené zo siete; {accepted} z {total} správ, ktoré odstraňujú prepojenia ostatných zariadení naň, sa uplatnilo a sú tiež zaznamenané. Prepojenia, ktoré zostali na ostatných zariadeniach, ukazujú na zariadenie, ktoré už neodpovedá; export mesh ich ponecháva, aby ich skupiny nič nové znova nepoužilo."
+    },
+    "applied_scene_stored": {
+      "message": "Scéna {scene} je uložená v zariadení {device} a člen je zaznamenaný v exporte mesh; chýba len popis scény — na jeho zápis spustite akciu znova."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} z {total} zariadení už scénu {scene} zabudlo a export mesh to zaznamenáva."
+    },
+    "applied_scene_cleared": {
+      "message": "Popis scény {element} pre scénu {scene} bol vymazaný; samotná scéna je stále uložená v zariadení a zaznamenaná v exporte mesh — na dokončenie spustite akciu znova."
+    },
+    "applied_scene_members": {
+      "message": "{done} z {total} zariadení uložilo scénu {scene} a sú zaznamenané v exporte mesh; na dokončenie spustite akciu znova."
+    },
+    "applied_keys_cleared": {
+      "message": "Tlačidlá týchto zariadení, ktoré vyvolávali scénu {scene}, boli vymazané a export mesh to zaznamenáva; na dokončenie spustite akciu znova."
+    },
+    "applied_members": {
+      "message": "{done} z {total} zariadení už scénu {scene} zabudlo a export mesh to zaznamenáva; na dokončenie spustite akciu znova."
+    },
+    "applied_unused_deleted": {
+      "message": "Scény, ktoré export mesh nepozná, už boli predtým odstránené ({deleted}); export mesh sa nezmenil, pretože ich nikdy neobsahoval — na dokončenie spustite akciu znova."
+    },
+    "applied_socket_set": {
+      "message": "Predtým bola zásuvka {socket} nastavená podľa požiadavky."
+    },
+    "applied_sockets_set": {
+      "message": "Predtým boli zásuvky {sockets} nastavené podľa požiadavky."
+    },
+    "applied_switch_on_written": {
+      "message": "Prahová hodnota zapnutia zásuvky {socket} bola zapísaná predtým."
+    },
+    "applied_switch_off_written": {
+      "message": "Prahová hodnota vypnutia zásuvky {socket} bola zapísaná predtým."
+    },
+    "applied_thresholds_written": {
+      "message": "Obe prahové hodnoty zásuvky {socket} boli zapísané predtým."
+    },
+    "applied_rerun": {
+      "message": "Na dokončenie spustite akciu znova s rovnakým cieľom."
     }
   },
   "issues": {

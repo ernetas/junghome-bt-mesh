@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "No enviado: {node} respondió a {message} con {found}, pero la exportación mesh dice {expected} ({others} diferencias más). La instalación cambió después de hacer la exportación mesh (en la aplicación JUNG HOME, por el restablecimiento de un dispositivo o por una acción anterior que se detuvo a medias), y el plan sobrescribiría lo que la exportación ya no describe. Vuelve a exportar el proyecto desde la aplicación, o deja que Home Assistant adopte la exportación de la pasarela, y vuelve a ejecutar la acción; con `force` se ejecuta sin esta comprobación. {applied}"
+    },
+    "applied_nothing": {
+      "message": "No se aplicó nada antes; la exportación mesh no ha cambiado."
+    },
+    "applied_partly": {
+      "message": "Los {accepted} de {total} mensajes aceptados antes se aplicaron en la mesh y están registrados en la exportación mesh; vuelve a ejecutar la acción con el mismo destino para completarla."
+    },
+    "applied_key_wired": {
+      "message": "Todas las vinculaciones de la tecla se configuraron y están registradas en la exportación mesh; solo falta el modo de tecla. Vuelve a ejecutar la acción con el mismo destino para establecerlo."
+    },
+    "applied_lock_wired": {
+      "message": "Todas las vinculaciones de la tecla se configuraron y están registradas en la exportación mesh; faltan su función de bloqueo y su modo de tecla. Vuelve a ejecutar la acción con el mismo destino para establecerlos."
+    },
+    "applied_scene_wired": {
+      "message": "La tecla envía sus llamadas de escena a todos los dispositivos y eso está registrado en la exportación mesh; faltan la escena que llama y su modo de tecla. Vuelve a ejecutar la acción con la misma escena para establecerlos."
+    },
+    "applied_removed": {
+      "message": "El dispositivo {device} se restableció y la exportación mesh lo registra como eliminado de la red; {accepted} de los {total} mensajes que retiran las vinculaciones de los demás dispositivos con él se aplicaron y también están registrados. Las vinculaciones que quedan en los demás dispositivos apuntan a un dispositivo que ya no responde; la exportación mesh las conserva, para que nada nuevo reutilice sus grupos."
+    },
+    "applied_scene_stored": {
+      "message": "La escena {scene} está guardada en el dispositivo {device} y el miembro está registrado en la exportación mesh; solo falta la descripción de la escena. Vuelve a ejecutar la acción para escribirla."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} de {total} dispositivos ya olvidaron la escena {scene} y la exportación mesh lo registra."
+    },
+    "applied_scene_cleared": {
+      "message": "La descripción de escena de {element} para la escena {scene} se borró; la escena en sí sigue guardada en el dispositivo y registrada en la exportación mesh. Vuelve a ejecutar la acción para terminar."
+    },
+    "applied_scene_members": {
+      "message": "{done} de {total} dispositivos guardaron la escena {scene} y están registrados en la exportación mesh; vuelve a ejecutar la acción para terminar."
+    },
+    "applied_keys_cleared": {
+      "message": "Las teclas de estos dispositivos que llamaban a la escena {scene} se borraron y la exportación mesh lo registra; vuelve a ejecutar la acción para terminar."
+    },
+    "applied_members": {
+      "message": "{done} de {total} dispositivos ya olvidaron la escena {scene} y la exportación mesh lo registra; vuelve a ejecutar la acción para terminar."
+    },
+    "applied_unused_deleted": {
+      "message": "Escenas desconocidas para la exportación mesh ya se eliminaron antes ({deleted}); la exportación mesh no ha cambiado, ya que nunca las contuvo. Vuelve a ejecutar la acción para terminar."
+    },
+    "applied_socket_set": {
+      "message": "Antes, el enchufe {socket} se ajustó como se pidió."
+    },
+    "applied_sockets_set": {
+      "message": "Antes, los enchufes {sockets} se ajustaron como se pidió."
+    },
+    "applied_switch_on_written": {
+      "message": "El umbral de conexión del enchufe {socket} se escribió antes."
+    },
+    "applied_switch_off_written": {
+      "message": "El umbral de desconexión del enchufe {socket} se escribió antes."
+    },
+    "applied_thresholds_written": {
+      "message": "Los dos umbrales del enchufe {socket} se escribieron antes."
+    },
+    "applied_rerun": {
+      "message": "Vuelve a ejecutar la acción con el mismo destino para terminar."
     }
   },
   "issues": {

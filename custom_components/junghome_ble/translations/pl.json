@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Nie wysłano: {node} odpowiedział na {message} wartością {found}, ale eksport mesh podaje {expected} (pozostałe różnice: {others}). Instalacja zmieniła się po wykonaniu eksportu mesh (w aplikacji JUNG HOME, przez reset urządzenia albo przez wcześniejszą akcję, która zatrzymała się w połowie), a plan nadpisałby to, czego eksport już nie opisuje. Wyeksportuj projekt z aplikacji ponownie albo pozwól Home Assistant przejąć eksport z bramki i uruchom akcję jeszcze raz; z `force` działa bez tego sprawdzenia. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Wcześniej nic nie zostało zastosowane; eksport mesh się nie zmienił."
+    },
+    "applied_partly": {
+      "message": "{accepted} z {total} wiadomości przyjętych wcześniej zostało zastosowanych w sieci mesh i zapisanych w eksporcie mesh; uruchom akcję ponownie z tym samym celem, aby ją dokończyć."
+    },
+    "applied_key_wired": {
+      "message": "Wszystkie powiązania przycisku zostały skonfigurowane i są zapisane w eksporcie mesh; brakuje tylko trybu przycisku — uruchom akcję ponownie z tym samym celem, aby go ustawić."
+    },
+    "applied_lock_wired": {
+      "message": "Wszystkie powiązania przycisku zostały skonfigurowane i są zapisane w eksporcie mesh; brakuje jego funkcji blokady i trybu przycisku — uruchom akcję ponownie z tym samym celem, aby je ustawić."
+    },
+    "applied_scene_wired": {
+      "message": "Przycisk wysyła swoje wywołania scen do wszystkich urządzeń i jest to zapisane w eksporcie mesh; brakuje sceny, którą wywołuje, i jego trybu przycisku — uruchom akcję ponownie z tą samą sceną, aby je ustawić."
+    },
+    "applied_removed": {
+      "message": "Urządzenie {device} zostało zresetowane, a eksport mesh zapisuje je jako usunięte z sieci; {accepted} z {total} wiadomości usuwających powiązania innych urządzeń z nim zostało zastosowanych i również zapisanych. Powiązania pozostałe na innych urządzeniach wskazują na urządzenie, które już nie odpowiada; eksport mesh je zachowuje, aby nic nowego nie użyło ponownie ich grup."
+    },
+    "applied_scene_stored": {
+      "message": "Scena {scene} jest zapisana na urządzeniu {device}, a członek jest zapisany w eksporcie mesh; brakuje tylko opisu sceny — uruchom akcję ponownie, aby go zapisać."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} z {total} urządzeń już zapomniało scenę {scene}, a eksport mesh to zapisuje."
+    },
+    "applied_scene_cleared": {
+      "message": "Opis sceny {element} dla sceny {scene} został wyczyszczony; sama scena jest nadal zapisana na urządzeniu i w eksporcie mesh — uruchom akcję ponownie, aby dokończyć."
+    },
+    "applied_scene_members": {
+      "message": "{done} z {total} urządzeń zapisało scenę {scene} i są one zapisane w eksporcie mesh; uruchom akcję ponownie, aby dokończyć."
+    },
+    "applied_keys_cleared": {
+      "message": "Przyciski tych urządzeń, które wywoływały scenę {scene}, zostały wyczyszczone, a eksport mesh to zapisuje; uruchom akcję ponownie, aby dokończyć."
+    },
+    "applied_members": {
+      "message": "{done} z {total} urządzeń już zapomniało scenę {scene}, a eksport mesh to zapisuje; uruchom akcję ponownie, aby dokończyć."
+    },
+    "applied_unused_deleted": {
+      "message": "Sceny nieznane eksportowi mesh zostały już wcześniej usunięte ({deleted}); eksport mesh się nie zmienił, ponieważ nigdy ich nie zawierał — uruchom akcję ponownie, aby dokończyć."
+    },
+    "applied_socket_set": {
+      "message": "Wcześniej gniazdo {socket} zostało ustawione zgodnie z żądaniem."
+    },
+    "applied_sockets_set": {
+      "message": "Wcześniej gniazda {sockets} zostały ustawione zgodnie z żądaniem."
+    },
+    "applied_switch_on_written": {
+      "message": "Próg włączenia gniazda {socket} został zapisany wcześniej."
+    },
+    "applied_switch_off_written": {
+      "message": "Próg wyłączenia gniazda {socket} został zapisany wcześniej."
+    },
+    "applied_thresholds_written": {
+      "message": "Oba progi gniazda {socket} zostały zapisane wcześniej."
+    },
+    "applied_rerun": {
+      "message": "Uruchom akcję ponownie z tym samym celem, aby dokończyć."
     }
   },
   "issues": {

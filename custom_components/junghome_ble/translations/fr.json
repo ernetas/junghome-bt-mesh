@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Non envoyé : {node} a répondu à {message} par {found}, mais l'export du mesh indique {expected} ({others} autres différences). L'installation a changé après la création de l'export du mesh (dans l'application JUNG HOME, par la réinitialisation d'un appareil ou par une action précédente interrompue à mi-chemin), et le plan écraserait ce que l'export ne décrit plus. Exportez à nouveau le projet depuis l'application, ou laissez Home Assistant reprendre l'export de la passerelle, puis relancez l'action ; avec `force`, elle s'exécute sans cette vérification. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Rien n'a été appliqué avant ; l'export du mesh est inchangé."
+    },
+    "applied_partly": {
+      "message": "Les {accepted} messages sur {total} acceptés avant ont été appliqués sur le mesh et sont enregistrés dans l'export du mesh ; exécutez à nouveau l'action avec la même cible pour la terminer."
+    },
+    "applied_key_wired": {
+      "message": "Tous les liens de la touche ont été configurés et sont enregistrés dans l'export du mesh ; seul le mode de touche manque — exécutez à nouveau l'action avec la même cible pour le définir."
+    },
+    "applied_lock_wired": {
+      "message": "Tous les liens de la touche ont été configurés et sont enregistrés dans l'export du mesh ; sa fonction de verrouillage et son mode de touche manquent — exécutez à nouveau l'action avec la même cible pour les définir."
+    },
+    "applied_scene_wired": {
+      "message": "La touche envoie ses rappels de scène à tous les appareils et c'est enregistré dans l'export du mesh ; la scène qu'elle rappelle et son mode de touche manquent — exécutez à nouveau l'action avec la même scène pour les définir."
+    },
+    "applied_removed": {
+      "message": "L'appareil {device} a été réinitialisé et l'export du mesh l'enregistre comme retiré du réseau ; {accepted} des {total} messages retirant les liens des autres appareils vers lui ont été appliqués et sont aussi enregistrés. Les liens restés sur les autres appareils pointent vers un appareil qui ne répond plus ; l'export du mesh les conserve, afin que rien de nouveau ne réutilise leurs groupes."
+    },
+    "applied_scene_stored": {
+      "message": "La scène {scene} est mémorisée sur l'appareil {device} et le membre est enregistré dans l'export du mesh ; seule la description de la scène manque — exécutez à nouveau l'action pour l'écrire."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} appareils sur {total} ont déjà oublié la scène {scene} et l'export du mesh l'enregistre."
+    },
+    "applied_scene_cleared": {
+      "message": "La description de scène de {element} pour la scène {scene} a été effacée ; la scène elle-même est toujours mémorisée sur l'appareil et enregistrée dans l'export du mesh — exécutez à nouveau l'action pour terminer."
+    },
+    "applied_scene_members": {
+      "message": "{done} appareils sur {total} ont mémorisé la scène {scene} et sont enregistrés dans l'export du mesh ; exécutez à nouveau l'action pour terminer."
+    },
+    "applied_keys_cleared": {
+      "message": "Les touches de ces appareils qui rappelaient la scène {scene} ont été effacées et l'export du mesh l'enregistre ; exécutez à nouveau l'action pour terminer."
+    },
+    "applied_members": {
+      "message": "{done} appareils sur {total} ont déjà oublié la scène {scene} et l'export du mesh l'enregistre ; exécutez à nouveau l'action pour terminer."
+    },
+    "applied_unused_deleted": {
+      "message": "Des scènes inconnues de l'export du mesh ont déjà été supprimées avant ({deleted}) ; l'export du mesh est inchangé, car il ne les a jamais contenues — exécutez à nouveau l'action pour terminer."
+    },
+    "applied_socket_set": {
+      "message": "Avant cela, la prise {socket} a été réglée comme demandé."
+    },
+    "applied_sockets_set": {
+      "message": "Avant cela, les prises {sockets} ont été réglées comme demandé."
+    },
+    "applied_switch_on_written": {
+      "message": "Le seuil d'activation de la prise {socket} a été écrit avant cela."
+    },
+    "applied_switch_off_written": {
+      "message": "Le seuil de désactivation de la prise {socket} a été écrit avant cela."
+    },
+    "applied_thresholds_written": {
+      "message": "Les deux seuils de la prise {socket} ont été écrits avant cela."
+    },
+    "applied_rerun": {
+      "message": "Exécutez à nouveau l'action avec la même cible pour terminer."
     }
   },
   "issues": {

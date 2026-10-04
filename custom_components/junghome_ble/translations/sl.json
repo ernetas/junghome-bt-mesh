@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Ni poslano: {node} je na {message} odgovoril z {found}, izvoz mesh pa navaja {expected} (drugih razlik: {others}). Namestitev se je po izdelavi izvoza mesh spremenila (v aplikaciji JUNG HOME, s ponastavitvijo naprave ali s prejšnjim dejanjem, ki se je ustavilo na pol poti), in načrt bi prepisal tisto, česar izvoz ne opisuje več. Projekt znova izvozite iz aplikacije ali pustite, da Home Assistant prevzame izvoz prehoda, in dejanje znova zaženite; z `force` se izvede brez tega preverjanja. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Pred tem ni bilo uveljavljeno nič; izvoz mesh je nespremenjen."
+    },
+    "applied_partly": {
+      "message": "{accepted} od {total} sporočil, sprejetih pred tem, je bilo uveljavljenih v omrežju mesh in so zabeležena v izvozu mesh; dejanje znova zaženite z istim ciljem, da ga dokončate."
+    },
+    "applied_key_wired": {
+      "message": "Vse vezave gumba so bile konfigurirane in so zabeležene v izvozu mesh; manjka le način gumba — dejanje znova zaženite z istim ciljem, da ga nastavite."
+    },
+    "applied_lock_wired": {
+      "message": "Vse vezave gumba so bile konfigurirane in so zabeležene v izvozu mesh; manjkata njegova funkcija zaklepa in način gumba — dejanje znova zaženite z istim ciljem, da ju nastavite."
+    },
+    "applied_scene_wired": {
+      "message": "Gumb pošilja svoje priklice scen vsem napravam in to je zabeleženo v izvozu mesh; manjkata scena, ki jo prikliče, in njegov način gumba — dejanje znova zaženite z isto sceno, da ju nastavite."
+    },
+    "applied_removed": {
+      "message": "Naprava {device} je bila ponastavljena in izvoz mesh jo beleži kot odstranjeno iz omrežja; {accepted} od {total} sporočil, ki odstranjujejo vezave drugih naprav nanjo, je bilo uveljavljenih in so tudi zabeležena. Vezave, ki so ostale na drugih napravah, kažejo na napravo, ki se ne odziva več; izvoz mesh jih ohrani, da nič novega znova ne uporabi njihovih skupin."
+    },
+    "applied_scene_stored": {
+      "message": "Scena {scene} je shranjena v napravi {device} in član je zabeležen v izvozu mesh; manjka le opis scene — dejanje znova zaženite, da ga zapišete."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} od {total} naprav je sceno {scene} že pozabilo in izvoz mesh to beleži."
+    },
+    "applied_scene_cleared": {
+      "message": "Opis scene {element} za sceno {scene} je bil izbrisan; sama scena je še vedno shranjena v napravi in zabeležena v izvozu mesh — dejanje znova zaženite, da ga dokončate."
+    },
+    "applied_scene_members": {
+      "message": "{done} od {total} naprav je shranilo sceno {scene} in so zabeležene v izvozu mesh; dejanje znova zaženite, da ga dokončate."
+    },
+    "applied_keys_cleared": {
+      "message": "Gumbi teh naprav, ki so priklicali sceno {scene}, so bili izbrisani in izvoz mesh to beleži; dejanje znova zaženite, da ga dokončate."
+    },
+    "applied_members": {
+      "message": "{done} od {total} naprav je sceno {scene} že pozabilo in izvoz mesh to beleži; dejanje znova zaženite, da ga dokončate."
+    },
+    "applied_unused_deleted": {
+      "message": "Scene, ki jih izvoz mesh ne pozna, so bile že pred tem izbrisane ({deleted}); izvoz mesh je nespremenjen, saj jih ni nikoli vseboval — dejanje znova zaženite, da ga dokončate."
+    },
+    "applied_socket_set": {
+      "message": "Pred tem je bila vtičnica {socket} nastavljena, kot je bilo zahtevano."
+    },
+    "applied_sockets_set": {
+      "message": "Pred tem so bile vtičnice {sockets} nastavljene, kot je bilo zahtevano."
+    },
+    "applied_switch_on_written": {
+      "message": "Prag vklopa vtičnice {socket} je bil zapisan pred tem."
+    },
+    "applied_switch_off_written": {
+      "message": "Prag izklopa vtičnice {socket} je bil zapisan pred tem."
+    },
+    "applied_thresholds_written": {
+      "message": "Oba praga vtičnice {socket} sta bila zapisana pred tem."
+    },
+    "applied_rerun": {
+      "message": "Dejanje znova zaženite z istim ciljem, da ga dokončate."
     }
   },
   "issues": {

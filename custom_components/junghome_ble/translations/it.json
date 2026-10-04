@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Non inviato: {node} ha risposto a {message} con {found}, ma l'esportazione mesh indica {expected} ({others} altre differenze). L'installazione è cambiata dopo l'esportazione mesh (nell'app JUNG HOME, con il ripristino di un dispositivo o per un'azione precedente interrotta a metà) e il piano sovrascriverebbe ciò che l'esportazione non descrive più. Esporta di nuovo il progetto dall'app, oppure lascia che Home Assistant rilevi l'esportazione del gateway, ed esegui di nuovo l'azione; con `force` viene eseguita senza questo controllo. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Prima non è stato applicato nulla; l'esportazione mesh è invariata."
+    },
+    "applied_partly": {
+      "message": "I {accepted} messaggi su {total} accettati prima sono stati applicati sulla mesh e sono registrati nell'esportazione mesh; esegui di nuovo l'azione con la stessa destinazione per completarla."
+    },
+    "applied_key_wired": {
+      "message": "Tutti i collegamenti del tasto sono stati configurati e sono registrati nell'esportazione mesh; manca solo la modalità del tasto — esegui di nuovo l'azione con la stessa destinazione per impostarla."
+    },
+    "applied_lock_wired": {
+      "message": "Tutti i collegamenti del tasto sono stati configurati e sono registrati nell'esportazione mesh; mancano la sua funzione di blocco e la modalità del tasto — esegui di nuovo l'azione con la stessa destinazione per impostarle."
+    },
+    "applied_scene_wired": {
+      "message": "Il tasto invia i suoi richiami di scena a tutti i dispositivi e ciò è registrato nell'esportazione mesh; mancano la scena che richiama e la modalità del tasto — esegui di nuovo l'azione con la stessa scena per impostarle."
+    },
+    "applied_removed": {
+      "message": "Il dispositivo {device} è stato ripristinato e l'esportazione mesh lo registra come rimosso dalla rete; {accepted} dei {total} messaggi che rimuovono i collegamenti degli altri dispositivi verso di esso sono stati applicati e sono anch'essi registrati. I collegamenti rimasti sugli altri dispositivi puntano a un dispositivo che non risponde più; l'esportazione mesh li conserva, così nulla di nuovo riutilizza i loro gruppi."
+    },
+    "applied_scene_stored": {
+      "message": "La scena {scene} è memorizzata sul dispositivo {device} e il membro è registrato nell'esportazione mesh; manca solo la descrizione della scena — esegui di nuovo l'azione per scriverla."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} dispositivi su {total} hanno già dimenticato la scena {scene} e l'esportazione mesh lo registra."
+    },
+    "applied_scene_cleared": {
+      "message": "La descrizione della scena di {element} per la scena {scene} è stata cancellata; la scena stessa è ancora memorizzata sul dispositivo e registrata nell'esportazione mesh — esegui di nuovo l'azione per terminare."
+    },
+    "applied_scene_members": {
+      "message": "{done} dispositivi su {total} hanno memorizzato la scena {scene} e sono registrati nell'esportazione mesh; esegui di nuovo l'azione per terminare."
+    },
+    "applied_keys_cleared": {
+      "message": "I tasti di questi dispositivi che richiamavano la scena {scene} sono stati cancellati e l'esportazione mesh lo registra; esegui di nuovo l'azione per terminare."
+    },
+    "applied_members": {
+      "message": "{done} dispositivi su {total} hanno già dimenticato la scena {scene} e l'esportazione mesh lo registra; esegui di nuovo l'azione per terminare."
+    },
+    "applied_unused_deleted": {
+      "message": "Scene sconosciute all'esportazione mesh sono già state eliminate prima ({deleted}); l'esportazione mesh è invariata, poiché non le ha mai contenute — esegui di nuovo l'azione per terminare."
+    },
+    "applied_socket_set": {
+      "message": "Prima, la presa {socket} è stata impostata come richiesto."
+    },
+    "applied_sockets_set": {
+      "message": "Prima, le prese {sockets} sono state impostate come richiesto."
+    },
+    "applied_switch_on_written": {
+      "message": "La soglia di accensione della presa {socket} è stata scritta prima."
+    },
+    "applied_switch_off_written": {
+      "message": "La soglia di spegnimento della presa {socket} è stata scritta prima."
+    },
+    "applied_thresholds_written": {
+      "message": "Entrambe le soglie della presa {socket} sono state scritte prima."
+    },
+    "applied_rerun": {
+      "message": "Esegui di nuovo l'azione con la stessa destinazione per terminare."
     }
   },
   "issues": {

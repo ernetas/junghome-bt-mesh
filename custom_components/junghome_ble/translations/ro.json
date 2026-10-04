@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Netrimis: {node} a răspuns la {message} cu {found}, dar exportul rețelei mesh indică {expected} (alte diferențe: {others}). Instalația s-a schimbat după crearea exportului rețelei mesh (în aplicația JUNG HOME, prin resetarea unui dispozitiv sau printr-o acțiune anterioară oprită la jumătate), iar planul ar suprascrie ce exportul nu mai descrie. Exportă din nou proiectul din aplicație sau lasă Home Assistant să preia exportul gateway-ului și rulează din nou acțiunea; cu `force` rulează fără această verificare. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Nimic nu a fost aplicat înainte; exportul rețelei mesh este neschimbat."
+    },
+    "applied_partly": {
+      "message": "Cele {accepted} din {total} mesaje acceptate înainte au fost aplicate în rețeaua mesh și sunt înregistrate în exportul rețelei mesh; rulează din nou acțiunea cu aceeași țintă pentru a o finaliza."
+    },
+    "applied_key_wired": {
+      "message": "Toate legăturile tastei au fost configurate și sunt înregistrate în exportul rețelei mesh; lipsește doar modul tastei — rulează din nou acțiunea cu aceeași țintă pentru a-l seta."
+    },
+    "applied_lock_wired": {
+      "message": "Toate legăturile tastei au fost configurate și sunt înregistrate în exportul rețelei mesh; lipsesc funcția ei de blocare și modul tastei — rulează din nou acțiunea cu aceeași țintă pentru a le seta."
+    },
+    "applied_scene_wired": {
+      "message": "Tasta își trimite apelurile de scenă către toate dispozitivele și acest lucru este înregistrat în exportul rețelei mesh; lipsesc scena pe care o apelează și modul tastei — rulează din nou acțiunea cu aceeași scenă pentru a le seta."
+    },
+    "applied_removed": {
+      "message": "Dispozitivul {device} a fost resetat, iar exportul rețelei mesh îl înregistrează ca eliminat din rețea; {accepted} din cele {total} mesaje care elimină legăturile celorlalte dispozitive către el au fost aplicate și sunt de asemenea înregistrate. Legăturile rămase pe celelalte dispozitive indică un dispozitiv care nu mai răspunde; exportul rețelei mesh le păstrează, astfel încât nimic nou să nu le refolosească grupurile."
+    },
+    "applied_scene_stored": {
+      "message": "Scena {scene} este salvată pe dispozitivul {device}, iar membrul este înregistrat în exportul rețelei mesh; lipsește doar descrierea scenei — rulează din nou acțiunea pentru a o scrie."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} din {total} dispozitive au uitat deja scena {scene}, iar exportul rețelei mesh înregistrează acest lucru."
+    },
+    "applied_scene_cleared": {
+      "message": "Descrierea scenei lui {element} pentru scena {scene} a fost ștearsă; scena în sine este încă salvată pe dispozitiv și înregistrată în exportul rețelei mesh — rulează din nou acțiunea pentru a termina."
+    },
+    "applied_scene_members": {
+      "message": "{done} din {total} dispozitive au salvat scena {scene} și sunt înregistrate în exportul rețelei mesh; rulează din nou acțiunea pentru a termina."
+    },
+    "applied_keys_cleared": {
+      "message": "Tastele acestor dispozitive care apelau scena {scene} au fost șterse, iar exportul rețelei mesh înregistrează acest lucru; rulează din nou acțiunea pentru a termina."
+    },
+    "applied_members": {
+      "message": "{done} din {total} dispozitive au uitat deja scena {scene}, iar exportul rețelei mesh înregistrează acest lucru; rulează din nou acțiunea pentru a termina."
+    },
+    "applied_unused_deleted": {
+      "message": "Scene necunoscute exportului rețelei mesh au fost deja șterse înainte ({deleted}); exportul rețelei mesh este neschimbat, deoarece nu le-a conținut niciodată — rulează din nou acțiunea pentru a termina."
+    },
+    "applied_socket_set": {
+      "message": "Înainte, priza {socket} a fost setată așa cum s-a cerut."
+    },
+    "applied_sockets_set": {
+      "message": "Înainte, prizele {sockets} au fost setate așa cum s-a cerut."
+    },
+    "applied_switch_on_written": {
+      "message": "Pragul de pornire al prizei {socket} a fost scris înainte."
+    },
+    "applied_switch_off_written": {
+      "message": "Pragul de oprire al prizei {socket} a fost scris înainte."
+    },
+    "applied_thresholds_written": {
+      "message": "Ambele praguri ale prizei {socket} au fost scrise înainte."
+    },
+    "applied_rerun": {
+      "message": "Rulează din nou acțiunea cu aceeași țintă pentru a termina."
     }
   },
   "issues": {

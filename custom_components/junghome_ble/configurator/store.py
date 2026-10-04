@@ -4,7 +4,8 @@
 entry points at (read fresh for every change, written atomically, `recorded` / `adopted` for `actions.common._run`),
 Home Assistant's provisioner entry merged into it, the plan journal a crash leaves, dry runs, and the gateway's copy —
 adopted when only the app changed it, uploaded after every change and retried as the app retries it. The translated
-service errors of the configurator are raised from here (`_validation`, `_failure`, `translated`).
+service errors of the configurator are raised from here (`_validation`, `_failure`, `translated`), with what a stopped
+plan applied worded (`applied_message`).
 """
 
 from __future__ import annotations
@@ -74,8 +75,9 @@ from custom_components.junghome_ble.jhmesh.merge import (
     diff_documents,
 )
 from custom_components.junghome_ble.jhmesh.vault import RangeError, Ranges
+from custom_components.junghome_ble.texts import cached_text
 
-from .plan import PlanError
+from .plan import Applied, PlanError
 from .wiring import (
     app_copy_path,
     export_digest,
@@ -110,6 +112,21 @@ def _failure(key: str, **placeholders: str) -> HomeAssistantError:
         translation_domain=DOMAIN,
         translation_key=key,
         translation_placeholders=placeholders,
+    )
+
+
+@callback
+def applied_message(hass: HomeAssistant, applied: Applied) -> str:
+    """Word what a stop applied (`Applied`, an error's `applied` placeholder) in the server's language.
+
+    The frontend translates the rest of the error into the user's language; a placeholder's value can only be
+    worded here, from the translations Home Assistant cached for the server's language (English where it has
+    none, `texts.cached_text`), as the logbook's lines are. A sentence without a text shows its key.
+    """
+    return " ".join(
+        cached_text(hass, "exceptions", f"applied_{key}.message", dict(placeholders))
+        or f"applied_{key}"
+        for key, placeholders in applied.sentences
     )
 
 

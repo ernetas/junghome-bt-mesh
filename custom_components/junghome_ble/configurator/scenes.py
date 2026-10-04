@@ -42,13 +42,14 @@ from custom_components.junghome_ble.jhmesh.plan import Check, register_check
 
 from .executor import Operations
 from .plan import (
+    Applied,
     applied_members,
     applied_scene_cleared,
     applied_scene_members,
     applied_scene_stored,
     applied_unused_deleted,
 )
-from .store import _failure, _name_error, _validation
+from .store import _failure, _name_error, _validation, applied_message
 from .wiring import (
     SCENE_ACTION_SETUP,
     SCENE_SETUP_SERVER,
@@ -141,7 +142,7 @@ class Scenes(Operations):
         )
 
     async def _sibling_uses_scene(
-        self, element: Element, number: int, applied: str
+        self, element: Element, number: int, applied: Applied
     ) -> bool:
         """Whether another channel of the node still holds a JUNG action for `number` (its register is shared).
 
@@ -161,7 +162,7 @@ class Scenes(Operations):
                     "service_no_reply",
                     node=hexaddr(other.address),
                     message=M.describe(V.scene_action_get(number)),
-                    applied=applied,
+                    applied=applied_message(self.hub.hass, applied),
                 )
             try:
                 status = V.decode_scene_action_status(reply.params)
@@ -256,7 +257,7 @@ class Scenes(Operations):
         element: Element,
         store: Element,
         action: V.Action | None,
-        applied: str,
+        applied: Applied,
     ) -> None:
         """Store one load's scene; `applied` says what the loads before it left recorded (for the error).
 
@@ -278,7 +279,7 @@ class Scenes(Operations):
                 "service_scene_state_unknown",
                 address=hexaddr(element.address),
                 scene=str(number),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
         await self._check_capacity(element, store, number, applied)
         register, read_back = await self.executor.scene_register(
@@ -294,7 +295,7 @@ class Scenes(Operations):
                     if read_back and register.ok
                     else _scene_register_status_name(register.status)
                 ),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
         # stored: the member is recorded whatever the description write does next; the values the app shows for
         # it (`meta.sceneInfo`) are the stored action's once that is in, and none before
@@ -319,7 +320,7 @@ class Scenes(Operations):
         )
 
     async def _check_capacity(
-        self, element: Element, store: Element, number: int, applied: str
+        self, element: Element, store: Element, number: int, applied: Applied
     ) -> None:
         """Refuse a Scene Store the device has no room for, before it is sent (the app's capacity check).
 
@@ -343,7 +344,7 @@ class Scenes(Operations):
                     "service_no_reply",
                     node=hexaddr(element.address),
                     message=M.describe(V.scene_action_get()),
-                    applied=applied,
+                    applied=applied_message(self.hub.hass, applied),
                 )
             try:
                 held = V.decode_scene_action_status(reply.params).scenes or ()
@@ -372,7 +373,7 @@ class Scenes(Operations):
                 address=hexaddr(where),
                 scene=str(number),
                 capacity=str(capacity),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
 
     async def remove_from_scenes(
@@ -623,7 +624,7 @@ class Scenes(Operations):
                 address=hexaddr(store.address),
                 scene=str(number),
                 status=_scene_register_status_name(register.status),
-                applied=applied_unused_deleted(deleted),
+                applied=applied_message(self.hub.hass, applied_unused_deleted(deleted)),
             )
         _LOGGER.info(
             "Deleted scene %d, unknown to the export, from %04X", number, store.address
@@ -660,7 +661,7 @@ class Scenes(Operations):
         await self._delete_from_register(pf, store, number, applied)
 
     async def _delete_from_register(
-        self, pf: ProjectFile, store: Element, number: int, applied: str
+        self, pf: ProjectFile, store: Element, number: int, applied: Applied
     ) -> None:
         """`Scene Delete` on the element holding the register, checked, then the export's member list."""
         register, _read_back = await self.executor.scene_register(
@@ -672,7 +673,7 @@ class Scenes(Operations):
                 address=hexaddr(store.address),
                 scene=str(number),
                 status=_scene_register_status_name(register.status),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
         pf.set_scene_addresses(
             number, [a for a in pf.cdb.scenes.get(number, []) if a != store.address]

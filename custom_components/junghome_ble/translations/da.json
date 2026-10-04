@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Ikke sendt: {node} svarede {found} på {message}, men mesh-eksporten siger {expected} ({others} flere forskelle). Installationen er ændret, efter mesh-eksporten blev lavet (i JUNG HOME-appen, ved en nulstilling af en enhed eller af en tidligere handling, der stoppede halvvejs), og planen ville overskrive det, eksporten ikke længere beskriver. Eksportér projektet fra appen igen, eller lad Home Assistant overtage gatewayens eksport, og kør handlingen igen; med `force` kører den uden dette tjek. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Intet blev anvendt før det; mesh-eksporten er uændret."
+    },
+    "applied_partly": {
+      "message": "De {accepted} af {total} beskeder, der blev accepteret før det, blev anvendt på mesh-netværket og er registreret i mesh-eksporten; kør handlingen igen med det samme mål for at fuldføre den."
+    },
+    "applied_key_wired": {
+      "message": "Alle knappens koblinger blev konfigureret og er registreret i mesh-eksporten; kun knaptilstanden mangler — kør handlingen igen med det samme mål for at indstille den."
+    },
+    "applied_lock_wired": {
+      "message": "Alle knappens koblinger blev konfigureret og er registreret i mesh-eksporten; dens spærrefunktion og knaptilstand mangler — kør handlingen igen med det samme mål for at indstille dem."
+    },
+    "applied_scene_wired": {
+      "message": "Knappen sender sine scenekald til alle enheder, og det er registreret i mesh-eksporten; scenen, den kalder, og dens knaptilstand mangler — kør handlingen igen med den samme scene for at indstille dem."
+    },
+    "applied_removed": {
+      "message": "Enheden {device} blev nulstillet, og mesh-eksporten registrerer den som fjernet fra netværket; {accepted} af de {total} beskeder, der fjerner de andre enheders koblinger til den, blev anvendt og er også registreret. Koblingerne, der er tilbage på de andre enheder, peger på en enhed, der ikke længere svarer; mesh-eksporten beholder dem, så intet nyt genbruger deres grupper."
+    },
+    "applied_scene_stored": {
+      "message": "Scenen {scene} er gemt på enheden {device}, og medlemmet er registreret i mesh-eksporten; kun scenebeskrivelsen mangler — kør handlingen igen for at skrive den."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} af {total} enheder har allerede glemt scenen {scene}, og mesh-eksporten registrerer det."
+    },
+    "applied_scene_cleared": {
+      "message": "Scenebeskrivelsen for {element} til scenen {scene} blev ryddet; selve scenen er stadig gemt på enheden og registreret i mesh-eksporten — kør handlingen igen for at gøre det færdigt."
+    },
+    "applied_scene_members": {
+      "message": "{done} af {total} enheder gemte scenen {scene} og er registreret i mesh-eksporten; kør handlingen igen for at gøre det færdigt."
+    },
+    "applied_keys_cleared": {
+      "message": "Knapperne på disse enheder, der kaldte scenen {scene}, blev ryddet, og mesh-eksporten registrerer det; kør handlingen igen for at gøre det færdigt."
+    },
+    "applied_members": {
+      "message": "{done} af {total} enheder har allerede glemt scenen {scene}, og mesh-eksporten registrerer det; kør handlingen igen for at gøre det færdigt."
+    },
+    "applied_unused_deleted": {
+      "message": "Scener, som mesh-eksporten ikke kender, blev allerede slettet før det ({deleted}); mesh-eksporten er uændret, da den aldrig har indeholdt dem — kør handlingen igen for at gøre det færdigt."
+    },
+    "applied_socket_set": {
+      "message": "Før det blev stikkontakten {socket} indstillet som ønsket."
+    },
+    "applied_sockets_set": {
+      "message": "Før det blev stikkontakterne {sockets} indstillet som ønsket."
+    },
+    "applied_switch_on_written": {
+      "message": "Tændingstærsklen for stikkontakten {socket} blev skrevet før det."
+    },
+    "applied_switch_off_written": {
+      "message": "Slukningstærsklen for stikkontakten {socket} blev skrevet før det."
+    },
+    "applied_thresholds_written": {
+      "message": "Begge tærskler for stikkontakten {socket} blev skrevet før det."
+    },
+    "applied_rerun": {
+      "message": "Kør handlingen igen med det samme mål for at gøre det færdigt."
     }
   },
   "issues": {

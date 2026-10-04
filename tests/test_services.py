@@ -114,6 +114,7 @@ from .helpers import (
     UID_LIGHT_SWITCH,
     UID_ROCKER_A,
     UID_SOCKET,
+    english,
     entity_id,
     export_model_status,
     is_model_get,
@@ -839,8 +840,8 @@ async def test_a_refused_config_status_is_a_translated_error_and_a_reload(
         )
     assert exc.value.translation_key == "service_config_refused"
     assert exc.value.translation_placeholders["status"] == "Not a Subscribe Model"
-    assert exc.value.translation_placeholders["applied"] == mesh_config.applied_text(
-        3, 8
+    assert exc.value.translation_placeholders["applied"] == english(
+        mesh_config.applied_text(3, 8)
     )
     assert env.config_calls[-1] == (DALI_NODE, refused)
     await settled(hass, env)

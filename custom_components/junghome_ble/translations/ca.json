@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "No s'ha enviat: {node} ha respost a {message} amb {found}, però l'exportació del mesh diu {expected} ({others} diferències més). La instal·lació ha canviat després de fer l'exportació del mesh (a l'aplicació JUNG HOME, per un restabliment d'un dispositiu o per una acció anterior que es va aturar a mitges), i el pla sobreescriuria el que l'exportació ja no descriu. Torna a exportar el projecte des de l'aplicació, o deixa que Home Assistant adopti l'exportació de la passarel·la, i torna a executar l'acció; amb `force` s'executa sense aquesta comprovació. {applied}"
+    },
+    "applied_nothing": {
+      "message": "No s'ha aplicat res abans; l'exportació del mesh no ha canviat."
+    },
+    "applied_partly": {
+      "message": "Els {accepted} de {total} missatges acceptats abans s'han aplicat al mesh i consten a l'exportació del mesh; torna a executar l'acció amb el mateix objectiu per completar-la."
+    },
+    "applied_key_wired": {
+      "message": "Totes les vinculacions de la tecla s'han configurat i consten a l'exportació del mesh; només hi falta el mode de tecla — torna a executar l'acció amb el mateix objectiu per definir-lo."
+    },
+    "applied_lock_wired": {
+      "message": "Totes les vinculacions de la tecla s'han configurat i consten a l'exportació del mesh; hi falten la seva funció de bloqueig i el seu mode de tecla — torna a executar l'acció amb el mateix objectiu per definir-los."
+    },
+    "applied_scene_wired": {
+      "message": "La tecla envia les seves crides d'escena a tots els dispositius i això consta a l'exportació del mesh; hi falten l'escena que crida i el seu mode de tecla — torna a executar l'acció amb la mateixa escena per definir-los."
+    },
+    "applied_removed": {
+      "message": "El dispositiu {device} s'ha restablert i l'exportació del mesh el registra com a eliminat de la xarxa; {accepted} dels {total} missatges que retiren les vinculacions dels altres dispositius amb ell s'han aplicat i també hi consten. Les vinculacions que queden als altres dispositius apunten a un dispositiu que ja no respon; l'exportació del mesh les conserva, perquè res de nou no reutilitzi els seus grups."
+    },
+    "applied_scene_stored": {
+      "message": "L'escena {scene} està desada al dispositiu {device} i el membre consta a l'exportació del mesh; només hi falta la descripció de l'escena — torna a executar l'acció per escriure-la."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} de {total} dispositius ja han oblidat l'escena {scene} i l'exportació del mesh ho registra."
+    },
+    "applied_scene_cleared": {
+      "message": "La descripció d'escena de {element} per a l'escena {scene} s'ha esborrat; l'escena en si encara està desada al dispositiu i consta a l'exportació del mesh — torna a executar l'acció per acabar."
+    },
+    "applied_scene_members": {
+      "message": "{done} de {total} dispositius han desat l'escena {scene} i consten a l'exportació del mesh; torna a executar l'acció per acabar."
+    },
+    "applied_keys_cleared": {
+      "message": "Les tecles d'aquests dispositius que cridaven l'escena {scene} s'han esborrat i l'exportació del mesh ho registra; torna a executar l'acció per acabar."
+    },
+    "applied_members": {
+      "message": "{done} de {total} dispositius ja han oblidat l'escena {scene} i l'exportació del mesh ho registra; torna a executar l'acció per acabar."
+    },
+    "applied_unused_deleted": {
+      "message": "Abans ja s'han suprimit escenes desconegudes per a l'exportació del mesh ({deleted}); l'exportació del mesh no ha canviat, ja que no les ha contingut mai — torna a executar l'acció per acabar."
+    },
+    "applied_socket_set": {
+      "message": "Abans, l'endoll {socket} s'ha ajustat tal com s'ha demanat."
+    },
+    "applied_sockets_set": {
+      "message": "Abans, els endolls {sockets} s'han ajustat tal com s'ha demanat."
+    },
+    "applied_switch_on_written": {
+      "message": "El llindar d'encesa de l'endoll {socket} s'ha escrit abans."
+    },
+    "applied_switch_off_written": {
+      "message": "El llindar d'apagada de l'endoll {socket} s'ha escrit abans."
+    },
+    "applied_thresholds_written": {
+      "message": "Els dos llindars de l'endoll {socket} s'han escrit abans."
+    },
+    "applied_rerun": {
+      "message": "Torna a executar l'acció amb el mateix objectiu per acabar."
     }
   },
   "issues": {

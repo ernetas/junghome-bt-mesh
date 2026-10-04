@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "전송되지 않음: {node}이(가) {message}에 {found}(으)로 응답했지만 메시 내보내기 파일에는 {expected}(으)로 되어 있습니다(기타 차이 {others}건). 메시 내보내기 파일을 만든 후 설치가 변경되었으므로(JUNG HOME 앱에서, 기기 초기화로, 또는 도중에 멈춘 이전 작업으로) 계획이 내보내기 파일에 더 이상 없는 내용을 덮어쓰게 됩니다. 앱에서 프로젝트를 다시 내보내거나 Home Assistant가 게이트웨이의 내보내기 파일을 인계받게 한 다음 작업을 다시 실행하세요. `force`를 사용하면 이 확인 없이 실행됩니다. {applied}"
+    },
+    "applied_nothing": {
+      "message": "그 전에 적용된 것은 없습니다. 메시 내보내기 파일은 변경되지 않았습니다."
+    },
+    "applied_partly": {
+      "message": "그 전에 수락된 메시지 {total}개 중 {accepted}개가 메시에 적용되었고 메시 내보내기 파일에 기록되었습니다. 완료하려면 같은 대상으로 동작을 다시 실행하세요."
+    },
+    "applied_key_wired": {
+      "message": "버튼의 모든 연동이 구성되었고 메시 내보내기 파일에 기록되었습니다. 버튼 모드만 빠져 있습니다. 설정하려면 같은 대상으로 동작을 다시 실행하세요."
+    },
+    "applied_lock_wired": {
+      "message": "버튼의 모든 연동이 구성되었고 메시 내보내기 파일에 기록되었습니다. 잠금 기능과 버튼 모드가 빠져 있습니다. 설정하려면 같은 대상으로 동작을 다시 실행하세요."
+    },
+    "applied_scene_wired": {
+      "message": "버튼이 장면 호출을 모든 기기로 보내며 이는 메시 내보내기 파일에 기록되었습니다. 호출할 장면과 버튼 모드가 빠져 있습니다. 설정하려면 같은 장면으로 동작을 다시 실행하세요."
+    },
+    "applied_removed": {
+      "message": "기기 {device}이(가) 초기화되었고 메시 내보내기 파일에 네트워크에서 제거된 것으로 기록되었습니다. 다른 기기에서 이 기기로의 연동을 없애는 메시지 {total}개 중 {accepted}개가 적용되었고 이것도 기록되었습니다. 다른 기기에 남은 연동은 더 이상 응답하지 않는 기기를 가리킵니다. 메시 내보내기 파일은 이를 유지하므로 새로운 것이 그 그룹을 다시 사용하지 않습니다."
+    },
+    "applied_scene_stored": {
+      "message": "장면 {scene}이(가) 기기 {device}에 저장되었고 구성원이 메시 내보내기 파일에 기록되었습니다. 장면 설명만 빠져 있습니다. 쓰려면 동작을 다시 실행하세요."
+    },
+    "applied_scene_forgotten": {
+      "message": "기기 {total}개 중 {done}개가 이미 장면 {scene}을(를) 잊었고 메시 내보내기 파일에 이것이 기록되었습니다."
+    },
+    "applied_scene_cleared": {
+      "message": "장면 {scene}에 대한 {element}의 장면 설명이 지워졌습니다. 장면 자체는 아직 기기에 저장되어 있고 메시 내보내기 파일에 기록되어 있습니다. 완료하려면 동작을 다시 실행하세요."
+    },
+    "applied_scene_members": {
+      "message": "기기 {total}개 중 {done}개가 장면 {scene}을(를) 저장했고 메시 내보내기 파일에 기록되었습니다. 완료하려면 동작을 다시 실행하세요."
+    },
+    "applied_keys_cleared": {
+      "message": "장면 {scene}을(를) 호출하던 이 기기들의 버튼이 지워졌고 메시 내보내기 파일에 이것이 기록되었습니다. 완료하려면 동작을 다시 실행하세요."
+    },
+    "applied_members": {
+      "message": "기기 {total}개 중 {done}개가 이미 장면 {scene}을(를) 잊었고 메시 내보내기 파일에 이것이 기록되었습니다. 완료하려면 동작을 다시 실행하세요."
+    },
+    "applied_unused_deleted": {
+      "message": "메시 내보내기 파일에 없는 장면은 그 전에 이미 삭제되었습니다({deleted}). 메시 내보내기 파일은 이를 포함한 적이 없으므로 변경되지 않았습니다. 완료하려면 동작을 다시 실행하세요."
+    },
+    "applied_socket_set": {
+      "message": "그 전에 콘센트 {socket}이(가) 요청대로 설정되었습니다."
+    },
+    "applied_sockets_set": {
+      "message": "그 전에 콘센트 {sockets}이(가) 요청대로 설정되었습니다."
+    },
+    "applied_switch_on_written": {
+      "message": "콘센트 {socket}의 켜짐 임계값이 그 전에 기록되었습니다."
+    },
+    "applied_switch_off_written": {
+      "message": "콘센트 {socket}의 꺼짐 임계값이 그 전에 기록되었습니다."
+    },
+    "applied_thresholds_written": {
+      "message": "콘센트 {socket}의 두 임계값이 모두 그 전에 기록되었습니다."
+    },
+    "applied_rerun": {
+      "message": "완료하려면 같은 대상으로 동작을 다시 실행하세요."
     }
   },
   "issues": {

@@ -30,7 +30,10 @@ from .jhmesh import properties as P
 from .jhmesh.export import cdb_element_groups
 from .mesh_config import (
     APPLIED_NOTHING,
+    Applied,
+    applied_message,
     applied_text,
+    said,
     threshold_client,
     threshold_devices,
 )
@@ -137,51 +140,47 @@ class ThresholdProgress:
 
     A call writes socket after socket, each its threshold(s) and then its wiring: the error of a later one used
     to say that nothing before it was applied, though thresholds and whole sockets were. `written` are the
-    thresholds of the socket under way, `finished` the sockets done.
+    thresholds of the socket under way, `finished` the sockets done. Said as data (`Applied`): one sentence per
+    threshold or pair of a socket, so no `{which}` word is a placeholder's value.
     """
 
-    written: list[str] = field(default_factory=list)
+    written: dict[int, list[Which]] = field(default_factory=dict)
     finished: list[int] = field(default_factory=list)
 
     def wrote(self, address: int, which: Which) -> None:
         """Note that the socket at `address` took its `which` threshold."""
-        self.written.append(
-            f"the {which.replace('_', '-')} threshold of socket {address:04X}"
-        )
+        self.written.setdefault(address, []).append(which)
 
     def finish(self, address: int) -> None:
         """Note that the socket at `address` holds everything the call asked of it."""
         self.finished.append(address)
         self.written.clear()
 
-    def done(self) -> str:
-        """Return the sentence naming what was written; empty when nothing was."""
-        parts = []
-        if self.finished:
+    def done(self) -> Applied:
+        """Return the sentences naming what was written; empty when nothing was."""
+        done = Applied()
+        if len(self.finished) == 1:
+            done += said("socket_set", socket=f"{self.finished[0]:04X}")
+        elif self.finished:
             sockets = ", ".join(f"{a:04X}" for a in self.finished)
-            plural = len(self.finished) > 1
-            parts.append(
-                f"socket{'s' if plural else ''} {sockets} {'were' if plural else 'was'} set as asked"
-            )
-        if self.written:
-            plural = len(self.written) > 1
-            parts.append(
-                f"{' and '.join(self.written)} {'were' if plural else 'was'} written"
-            )
-        return f"Before it, {' and '.join(parts)}." if parts else ""
+            done += said("sockets_set", sockets=sockets)
+        for address, which in self.written.items():
+            key = "thresholds" if len(set(which)) > 1 else which[0]
+            done += said(f"{key}_written", socket=f"{address:04X}")
+        return done
 
-    def text(self) -> str:
+    def text(self) -> Applied:
         """Return the `applied` of a threshold write that failed."""
         done = self.done()
         if not done:
             return APPLIED_NOTHING
-        return f"{done} Run the action again with the same target to finish."
+        return done + said("rerun")
 
-    def applied(self, accepted: int, total: int) -> str:
+    def applied(self, accepted: int, total: int) -> Applied:
         """Return the `applied` of a socket's wiring plan that stopped after `accepted` of `total` messages."""
         if accepted == 0:
             return self.text()
-        return f"{self.done()} {applied_text(accepted, total)}".lstrip()
+        return self.done() + applied_text(accepted, total)
 
 
 def _error(key: str, **placeholders: str) -> HomeAssistantError:
@@ -252,7 +251,9 @@ async def write_threshold(
         await reader.write(socket.address, spec, value)
     except OSError as err:  # a lost link (ConnectionError)
         raise _error(
-            SEND_FAILED[which], address=address, applied=progress.text()
+            SEND_FAILED[which],
+            address=address,
+            applied=applied_message(hass, progress.text()),
         ) from err
     raw = reader.cached(socket.address, spec)
     try:
@@ -260,5 +261,9 @@ async def write_threshold(
     except ValueError:
         held = None
     if held != value:
-        raise _error(NOT_APPLIED[which], address=address, applied=progress.text())
+        raise _error(
+            NOT_APPLIED[which],
+            address=address,
+            applied=applied_message(hass, progress.text()),
+        )
     progress.wrote(socket.address, which)

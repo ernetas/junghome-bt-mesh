@@ -28,6 +28,7 @@ from homeassistant.helpers import issue_registry as ir
 
 from custom_components.junghome_ble import keep_awake as keep_awake_mod
 from custom_components.junghome_ble import mesh_config as mc
+from custom_components.junghome_ble import texts as texts_mod
 from custom_components.junghome_ble.configurator import executor as executor_mod
 from custom_components.junghome_ble.configurator import nodes as nodes_mod
 from custom_components.junghome_ble.configurator import plan as plan_mod
@@ -89,7 +90,13 @@ from custom_components.junghome_ble.mesh_config import (
 )
 
 from .conftest import CDB_PATH, META_DIR
-from .helpers import NODE_LIGHT_CTL, export_model_status, is_model_get
+from .helpers import (
+    NODE_LIGHT_CTL,
+    cached_english,
+    english,
+    export_model_status,
+    is_model_get,
+)
 from .jhmesh.conftest import FakeBleak, FastAsyncio
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -360,6 +367,9 @@ class FakeHass:
         self.config_entries = FakeConfigEntries()
         self.data: dict[Any, Any] = {}
         self.is_stopping = False  # `ExportStore.save` skips the gateway upload while Home Assistant stops
+        self.config = SimpleNamespace(
+            language="en"
+        )  # an error's `applied` (`applied_message`)
 
     def verify_event_loop_thread(self, what: str) -> None:
         """`async_dispatcher_send` checks the thread; the bench runs in the loop."""
@@ -537,6 +547,14 @@ async def make_bench(
     return Bench(
         path, hub, link, config, keys, MeshConfigurator(hub), path.read_bytes()
     )  # type: ignore[arg-type]
+
+
+@pytest.fixture(autouse=True)
+def english_cached() -> Iterator[None]:
+    """The stub hass has no translation cache: an error's `applied` is worded from en.json, as Home Assistant's
+    English would word it."""
+    with patch.object(texts_mod, "async_get_cached_translations", cached_english):
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -1042,7 +1060,9 @@ async def test_a_lock_function_the_key_stays_silent_on_says_what_was_applied(
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.assign_key(ROCKER_A, element=SWITCH_LOAD, mode="lock")
     assert exc.value.translation_key == "service_no_reply"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_LOCK_WIRED
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.APPLIED_LOCK_WIRED
+    )
 
 
 async def test_a_lost_link_before_the_lock_read_still_wires_the_key(
@@ -1341,7 +1361,9 @@ async def test_scene_config_silence_says_what_was_applied(bench: Bench) -> None:
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.assign_key(ROCKER_A, scene="1")
     assert exc.value.translation_key == "service_no_reply"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_SCENE_WIRED
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.APPLIED_SCENE_WIRED
+    )
     assert pub(bench.reload(), ROCKER_A, "1205") == 0xFFFF
 
 
@@ -2132,7 +2154,7 @@ async def test_a_refused_config_status_stops_the_plan_and_records_what_was_appli
         "node": "0232 (Push-button 2-gang)",
         "message": "Config Model Subscription Add elem=0234 address=C070 model=1003",
         "status": "Not a Subscribe Model",
-        "applied": mc.applied_text(3, 8),
+        "applied": english(mc.applied_text(3, 8)),
     }
     assert bench.config_pdus() == [
         *READ_ROCKER_A,
@@ -2179,7 +2201,7 @@ async def test_a_silent_node_stops_the_plan_and_records_what_was_applied(
     assert exc.value.translation_placeholders == {
         "node": "0300 (Push-button 1-gang)",
         "message": "Config Model Subscription Add elem=0300 address=C04F model=1000",
-        "applied": mc.applied_text(1, 11),
+        "applied": english(mc.applied_text(1, 11)),
     }
     sent = [a for _n, a in bench.config_pdus()]
     assert sent.count(silent) == executor_mod.CONFIG_RETRIES
@@ -2263,7 +2285,7 @@ async def test_a_silent_first_message_leaves_the_file_alone(bench: Bench) -> Non
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.assign_key(ROCKER_A, room="WC")
     assert exc.value.translation_key == "service_no_reply"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_NOTHING
+    assert exc.value.translation_placeholders["applied"] == english(mc.APPLIED_NOTHING)
     assert bench.file_unchanged()
     assert bench.hub.hass.jobs == ["load_project"]
 
@@ -2278,7 +2300,9 @@ async def test_a_stopped_clear_keeps_the_room_link_until_every_load_is_unwired(
     bench.config.refuse[refused] = 0x05  # Insufficient Resources
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.clear_key(DIMMER_KEY)
-    assert exc.value.translation_placeholders["applied"] == mc.applied_text(1, 7)
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.applied_text(1, 7)
+    )
     pf = bench.reload()
     assert [r["elementAddress"] for r in link_rows(pf)] == [DIMMER_KEY]
     assert subs(pf, SWITCH_LOAD, "1000") == [0xC061, LAMPS, WC]
@@ -2356,7 +2380,9 @@ async def test_a_duplicated_status_of_the_previous_step_cannot_mask_a_refusal(
     assert exc.value.translation_placeholders["message"] == (
         "Config Model Subscription Delete elem=0232 address=C010 model=1002"
     )
-    assert exc.value.translation_placeholders["applied"] == mc.applied_text(5, 12)
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.applied_text(5, 12)
+    )
     pf = bench.reload()
     assert subs(pf, DALI_LOAD, "1000") == [DALI_GROUP, LAMPS, WC, DIMMER_KEY_GROUP]
     assert subs(pf, DALI_LOAD, "1002") == [
@@ -2438,7 +2464,9 @@ async def test_key_silent_on_key_mode_aborts(tmp_path: Path, fast: FastAsyncio) 
         await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
     assert exc.value.translation_key == "service_no_reply"
     assert exc.value.translation_placeholders["node"] == "0234"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_KEY_WIRED
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.APPLIED_KEY_WIRED
+    )
     assert not bench.file_unchanged()
     assert pub(bench.reload(), ROCKER_A, "05271015") == DIMMER_GROUP
 
@@ -2488,7 +2516,7 @@ async def test_a_lost_link_surfaces_as_send_failed(bench: Bench) -> None:
         assert exc.value.translation_placeholders == {
             "node": "0232 (Push-button 2-gang)",
             "message": message,
-            "applied": mc.APPLIED_NOTHING,
+            "applied": english(mc.APPLIED_NOTHING),
         }
     assert bench.file_unchanged()
 
@@ -2516,7 +2544,7 @@ async def test_a_lost_link_during_the_key_mode_write(bench: Bench) -> None:
     assert exc.value.translation_placeholders == {
         "node": "0234",
         "message": "LBC Admin Property Set prop 0x5003 access=3 value=00 key_mode=light",
-        "applied": mc.APPLIED_KEY_WIRED,
+        "applied": english(mc.APPLIED_KEY_WIRED),
     }
     assert bench.app_pdus() == [
         (ROCKER_A, p) for p in RESET_PROPERTY_MODE
@@ -2537,7 +2565,9 @@ async def test_a_lost_link_during_the_property_mode_reset(bench: Bench) -> None:
     with pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD)
     assert exc.value.translation_key == "service_send_failed"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_KEY_WIRED
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.APPLIED_KEY_WIRED
+    )
     assert exc.value.translation_placeholders["message"].startswith(
         "LBC Admin Property Set Unack prop 0x5006"
     )
@@ -2982,7 +3012,7 @@ async def test_store_scene_failures_record_only_what_the_device_took(
         "address": "0232",
         "scene": "2",
         "status": "Scene Register Full",
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.file_unchanged()
     scenes.full.clear()
@@ -2993,7 +3023,7 @@ async def test_store_scene_failures_record_only_what_the_device_took(
     assert err2.value.translation_placeholders == {
         "address": "0232",
         "scene": "2",
-        "applied": mc.applied_scene_stored(DALI_LOAD, 2),
+        "applied": english(mc.applied_scene_stored(DALI_LOAD, 2)),
     }
     assert scenes.registers[DALI_LOAD] == [2]
     assert bench.reload().cdb.scenes[2] == [DALI_LOAD]  # stored on the device: recorded
@@ -3074,8 +3104,8 @@ async def test_store_scene_action_set_silent_after_the_store(
     with pytest.raises(HomeAssistantError) as err:
         await bench.configurator.store_scene(2, DALI_LOAD, ON)
     assert err.value.translation_key == "service_no_reply"
-    assert err.value.translation_placeholders["applied"] == mc.applied_scene_stored(
-        DALI_LOAD, 2
+    assert err.value.translation_placeholders["applied"] == english(
+        mc.applied_scene_stored(DALI_LOAD, 2)
     )
     assert bench.reload().cdb.scenes[2] == [DALI_LOAD]  # the Store took: recorded
 
@@ -3491,16 +3521,18 @@ def test_drop_link_rows_removes_only_the_named_keys_row() -> None:
 
 def test_applied_texts() -> None:
     assert mc.applied_text(0, 5) == mc.APPLIED_NOTHING
-    assert mc.applied_text(2, 5).startswith("The 2 of 5 messages accepted before it")
+    assert english(mc.applied_text(2, 5)).startswith(
+        "The 2 of 5 messages accepted before it"
+    )
     assert mc.applied_members(0, 3, 2) == mc.APPLIED_NOTHING
-    assert mc.applied_members(1, 3, 2).startswith(
+    assert english(mc.applied_members(1, 3, 2)).startswith(
         "1 of 3 devices already forgot scene 2"
     )
-    assert "0232" in mc.applied_scene_stored(DALI_LOAD, 2)
-    assert mc.applied_scene_cleared(DALI_LOAD, 2).startswith(
+    assert "0232" in english(mc.applied_scene_stored(DALI_LOAD, 2))
+    assert english(mc.applied_scene_cleared(DALI_LOAD, 2)).startswith(
         "The scene description of 0232"
     )
-    assert mc.applied_scene_cleared(DALI_LOAD, 2, 2, 3).startswith(
+    assert english(mc.applied_scene_cleared(DALI_LOAD, 2, 2, 3)).startswith(
         "2 of 3 devices already forgot scene 2"
     )
 
@@ -3522,7 +3554,7 @@ async def test_a_node_the_hub_does_not_know_is_a_translated_error(bench: Bench) 
     assert exc.value.translation_placeholders == {
         "node": "0310",
         "path": str(bench.path),
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     # ... and at the plan's first message, read or not
     with bench.configurator.forcing(True), pytest.raises(HomeAssistantError) as exc:
@@ -3531,7 +3563,7 @@ async def test_a_node_the_hub_does_not_know_is_a_translated_error(bench: Bench) 
     assert exc.value.translation_placeholders == {
         "node": "0310",
         "path": str(bench.path),
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.config_pdus() == []
 
@@ -3588,7 +3620,7 @@ async def test_store_scenes_failure_after_stored_loads_says_they_were_recorded(
         await bench.configurator.store_scene(2, DALI_LOAD, ON)
     assert lost.value.translation_key == "service_send_failed"
     assert lost.value.translation_placeholders["node"] == "0232"
-    assert lost.value.translation_placeholders["applied"] == mc.APPLIED_NOTHING
+    assert lost.value.translation_placeholders["applied"] == english(mc.APPLIED_NOTHING)
 
 
 async def test_a_null_device_row_does_not_crash_the_key_services(
@@ -3730,7 +3762,7 @@ async def test_remove_from_scenes_records_the_loads_removed_before_the_one_that_
     # review-3 W14: the error said only that the socket's description was cleared, not that the DALI load
     # before it had left the scene and was recorded so
     applied = err.value.translation_placeholders["applied"]
-    assert applied == mc.applied_scene_cleared(SOCKET_NODE, 2, 1, 2)
+    assert applied == english(mc.applied_scene_cleared(SOCKET_NODE, 2, 1, 2))
     assert applied.startswith(
         "1 of 2 devices already forgot scene 2 and the mesh export records that. "
         "The scene description of 0172 for scene 2 was cleared"
@@ -3766,7 +3798,7 @@ async def test_a_stop_before_any_description_was_cleared_does_not_claim_one_was(
     with pytest.raises(HomeAssistantError) as err:
         await bench.configurator.remove_from_scene(2, SOCKET_NODE)
     assert err.value.translation_key == "service_scene_not_deleted"
-    assert err.value.translation_placeholders["applied"] == mc.APPLIED_NOTHING
+    assert err.value.translation_placeholders["applied"] == english(mc.APPLIED_NOTHING)
 
 
 async def test_a_channel_of_unknown_state_is_not_stored_beside_a_sibling_channel(
@@ -3784,7 +3816,7 @@ async def test_a_channel_of_unknown_state_is_not_stored_beside_a_sibling_channel
     assert err.value.translation_placeholders == {
         "address": "0401",
         "scene": "2",
-        "applied": mc.applied_scene_members(1, 2, 2),
+        "applied": english(mc.applied_scene_members(1, 2, 2)),
     }
     assert ACTUATOR_OUT1 not in scenes.registers
     assert bench.reload().cdb.scenes[2] == [DALI_LOAD]
@@ -3807,7 +3839,9 @@ async def test_delete_scene_records_the_members_that_forgot_it_before_the_one_th
     with pytest.raises(HomeAssistantError) as err:
         await bench.configurator.delete_scene(2)
     assert err.value.translation_key == "service_scene_not_deleted"
-    assert err.value.translation_placeholders["applied"] == mc.applied_members(1, 2, 2)
+    assert err.value.translation_placeholders["applied"] == english(
+        mc.applied_members(1, 2, 2)
+    )
     pf = bench.reload()
     assert pf.cdb.scenes[2] == [SOCKET_NODE]
     assert 2 in pf.scene_names()  # the scene itself stays until every member forgot it
@@ -4857,7 +4891,7 @@ async def test_a_sleeping_battery_key_stops_the_plan_at_its_first_message(
     assert exc.value.translation_placeholders == {
         "node": "0520 (Wall transmitter 1-gang)",
         "message": M.describe(first),
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert set(battery_bench.config_writes()) == {(TRANSMITTER, first)}
     assert battery_bench.file_unchanged()
@@ -4875,7 +4909,9 @@ async def test_a_battery_key_asleep_at_its_key_mode_says_so(
         await bench.configurator.assign_key(TRANSMITTER_KEY, room="WC")
     assert exc.value.translation_key == "service_node_asleep"
     assert exc.value.translation_placeholders["node"] == "0521"
-    assert exc.value.translation_placeholders["applied"] == mc.APPLIED_KEY_WIRED
+    assert exc.value.translation_placeholders["applied"] == english(
+        mc.APPLIED_KEY_WIRED
+    )
     assert bench.hub.keep_awake._tasks == {}
 
 
@@ -4915,7 +4951,7 @@ async def test_a_full_register_refuses_a_new_scene_before_the_store(
         "address": "0232",
         "scene": "2",
         "capacity": "16",
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert scenes.seen == []  # no Store went out
     assert bench.file_unchanged()
@@ -5175,10 +5211,10 @@ async def test_delete_unused_scenes_stops_at_a_refused_delete(
     assert err.value.translation_key == "service_scene_not_deleted"
     assert err.value.translation_placeholders["scene"] == "7"
     assert scenes.registers[SWITCH_LOAD] == [1, 7]
-    assert err.value.translation_placeholders["applied"] == applied_unused_deleted(
-        {"0148": [5]}
+    assert err.value.translation_placeholders["applied"] == english(
+        applied_unused_deleted({"0148": [5]})
     )
-    assert "(0148: 5)" in applied_unused_deleted({"0148": [5]})
+    assert "(0148: 5)" in english(applied_unused_deleted({"0148": [5]}))
     assert applied_unused_deleted({}) == APPLIED_NOTHING
     assert bench.file_unchanged()
 
@@ -5607,7 +5643,7 @@ async def test_a_plan_to_an_unreachable_node_is_refused_before_it_is_sent(
     assert exc.value.translation_key == "service_nodes_unreachable"
     assert exc.value.translation_placeholders == {
         "nodes": f"{DALI_NODE:04X} (Push-button 2-gang)",
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.config_pdus() == []
     assert bench.file_unchanged()
@@ -6241,7 +6277,7 @@ async def test_a_node_that_differs_from_the_export_stops_the_plan_before_its_fir
         "expected": expected,
         "found": found,
         "others": "0",
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert (DALI_NODE, get) in bench.config_pdus()
     assert bench.config_writes() == []
@@ -6293,7 +6329,7 @@ async def test_a_node_silent_at_the_preflight_read_stops_the_plan(bench: Bench) 
     assert exc.value.translation_placeholders == {
         "node": DALI_NAME,
         "message": M.describe(sub_get(ROCKER_A, "1001")),
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.config_writes() == []
     assert bench.file_unchanged()
@@ -6311,7 +6347,7 @@ async def test_a_battery_node_asleep_at_the_preflight_read_says_so(
     assert exc.value.translation_placeholders == {
         "node": "0520 (Wall transmitter 1-gang)",
         "message": M.describe(get),
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert battery_bench.config_writes() == []
     assert battery_bench.hub.keep_awake._tasks == {}
@@ -6460,6 +6496,6 @@ async def test_a_lost_link_at_a_scene_register_read_is_a_send_failure(
     assert exc.value.translation_placeholders == {
         "node": "0148 (Push-button 1-gang)",
         "message": "Scene Register Get",
-        "applied": mc.APPLIED_NOTHING,
+        "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.file_unchanged()

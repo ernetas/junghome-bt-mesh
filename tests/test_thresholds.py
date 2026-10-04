@@ -38,6 +38,7 @@ from .helpers import (
     UID_LIGHT_DIMMER,
     UID_LIGHT_SWITCH,
     UID_SOCKET,
+    english,
     entity_id,
     export_model_status,
     is_model_get,
@@ -476,10 +477,10 @@ async def test_threshold_not_taken(
     assert err.value.translation_key == f"threshold_{which}_not_applied"
     assert err.value.translation_placeholders == {
         "address": "0172",
-        "applied": mesh_config.APPLIED_NOTHING,
+        "applied": english(mesh_config.APPLIED_NOTHING),
     }
     assert str(err.value) == (
-        f"The JUNG socket 0172 did not take its {words} threshold. {mesh_config.APPLIED_NOTHING}"
+        f"The JUNG socket 0172 did not take its {words} threshold. {english(mesh_config.APPLIED_NOTHING)}"
     )
 
 
@@ -506,11 +507,11 @@ async def test_threshold_lost_link(
     assert err.value.translation_key == f"threshold_{which}_send_failed"
     assert err.value.translation_placeholders == {
         "address": "0172",
-        "applied": mesh_config.APPLIED_NOTHING,
+        "applied": english(mesh_config.APPLIED_NOTHING),
     }
     assert str(err.value) == (
         f"The {words} threshold could not be sent to the JUNG socket 0172; no proxy node is connected. "
-        f"{mesh_config.APPLIED_NOTHING}"
+        f"{english(mesh_config.APPLIED_NOTHING)}"
     )
 
 
@@ -557,7 +558,7 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
         2: (
             "threshold_switch_off_send_failed",
             (
-                "Before it, the switch-on threshold of socket 0172 was written. Run the action again with the "
+                "The switch-on threshold of socket 0172 was written before it. Run the action again with the "
                 "same target to finish."
             ),
         ),
@@ -568,8 +569,8 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
         4: (
             "threshold_switch_off_send_failed",
             (
-                "Before it, socket 0172 was set as asked and the switch-on threshold of socket 0172 was written. "
-                "Run the action again with the same target to finish."
+                "Before it, socket 0172 was set as asked. The switch-on threshold of socket 0172 was written "
+                "before it. Run the action again with the same target to finish."
             ),
         ),
     }
@@ -592,18 +593,27 @@ def test_threshold_progress_words_a_stopped_wiring_plan() -> None:
     assert progress.applied(0, 4) == mesh_config.APPLIED_NOTHING
     assert progress.applied(1, 4) == mesh_config.applied_text(1, 4)
     progress.wrote(SOCKET, "switch_on")
-    progress.wrote(SOCKET, "switch_off")
-    done = (
-        "Before it, the switch-on threshold of socket 0172 and the switch-off threshold of socket 0172 were "
-        "written."
+    assert english(progress.done()) == (
+        "The switch-on threshold of socket 0172 was written before it."
     )
-    assert progress.applied(0, 4) == (
+    progress.wrote(SOCKET, "switch_off")
+    done = "Both thresholds of socket 0172 were written before it."
+    assert english(progress.applied(0, 4)) == (
         f"{done} Run the action again with the same target to finish."
     )
-    assert progress.applied(3, 4) == f"{done} {mesh_config.applied_text(3, 4)}"
+    assert english(progress.applied(3, 4)) == (
+        f"{done} {english(mesh_config.applied_text(3, 4))}"
+    )
     progress.finish(SOCKET)
+    progress.wrote(SOCKET + 1, "switch_off")
+    assert english(progress.done()) == (
+        "Before it, socket 0172 was set as asked. "
+        "The switch-off threshold of socket 0173 was written before it."
+    )
     progress.finish(SOCKET + 1)
-    assert progress.done() == "Before it, sockets 0172, 0173 were set as asked."
+    assert english(progress.done()) == (
+        "Before it, sockets 0172, 0173 were set as asked."
+    )
 
 
 async def test_set_threshold_disabled_unwires_like_the_app(
@@ -731,8 +741,8 @@ async def test_publication_reset_is_sent_as_planned(
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
     # both thresholds were cleared before the plan (W4-13)
     assert err.value.translation_placeholders["applied"] == (
-        "Before it, the switch-on threshold of socket 0172 and the switch-off threshold of socket 0172 were "
-        f"written. {mesh_config.applied_text(3, 4)}"
+        "Both thresholds of socket 0172 were written before it. "
+        f"{english(mesh_config.applied_text(3, 4))}"
     )
     await settled(hass, env)
     assert [pdu for _n, pdu in env.config_calls[-2:]] == PUBLICATION_RESET
@@ -997,7 +1007,9 @@ async def test_a_meter_the_app_rewired_stops_the_unwiring_and_force_runs_it(
     assert err.value.translation_key == "service_preflight_differs"
     placeholders = err.value.translation_placeholders or {}
     assert (placeholders["expected"], placeholders["found"]) == ("C001", "C0FE")
-    assert placeholders["applied"].startswith("Before it, the switch-on threshold")
+    assert placeholders["applied"].startswith(
+        "Both thresholds of socket 0172 were written"
+    )
     assert not any(not is_model_get(pdu) for _n, pdu in env.config_calls)
     await call(hass, "delete_threshold", {"entity_id": socket(hass), "force": True})
     await settled(hass, env)

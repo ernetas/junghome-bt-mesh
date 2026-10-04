@@ -1637,6 +1637,63 @@
     },
     "start_iv_update_not_stored": {
       "message": "Home Assistant could not write the new IV index to its sequence-number store, so it did not start the IV Update; see the log."
+    },
+    "applied_nothing": {
+      "message": "Nothing before it was applied; the mesh export is unchanged."
+    },
+    "applied_partly": {
+      "message": "The {accepted} of {total} messages accepted before it were applied on the mesh and are recorded in the mesh export; run the action again with the same target to complete it."
+    },
+    "applied_key_wired": {
+      "message": "Every connection of the key was configured and is recorded in the mesh export; only the key mode is missing — run the action again with the same target to set it."
+    },
+    "applied_lock_wired": {
+      "message": "Every connection of the key was configured and is recorded in the mesh export; its lock function and key mode are missing — run the action again with the same target to set them."
+    },
+    "applied_scene_wired": {
+      "message": "The key publishes its scene recalls to all devices and that is recorded in the mesh export; the scene it recalls and its key mode are missing — run the action again with the same scene to set them."
+    },
+    "applied_removed": {
+      "message": "Device {device} was reset and the mesh export records it as removed from the network; {accepted} of the {total} messages taking the other devices' links to it away were applied and are recorded too. The links left on the other devices point at a device that no longer answers; the mesh export keeps them, so nothing new reuses their groups."
+    },
+    "applied_scene_stored": {
+      "message": "Scene {scene} is stored on device {device} and the member is recorded in the mesh export; only the scene description is missing — run the action again to write it."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} of {total} devices already forgot scene {scene} and the mesh export records that."
+    },
+    "applied_scene_cleared": {
+      "message": "The scene description of {element} for scene {scene} was cleared; the scene itself is still stored on the device and recorded in the mesh export — run the action again to finish."
+    },
+    "applied_scene_members": {
+      "message": "{done} of {total} devices stored scene {scene} and are recorded in the mesh export; run the action again to finish."
+    },
+    "applied_keys_cleared": {
+      "message": "The keys of these devices that recalled scene {scene} were cleared and the mesh export records that; run the action again to finish."
+    },
+    "applied_members": {
+      "message": "{done} of {total} devices already forgot scene {scene} and the mesh export records that; run the action again to finish."
+    },
+    "applied_unused_deleted": {
+      "message": "Scenes unknown to the mesh export were already deleted before it ({deleted}); the mesh export is unchanged, as it never held them — run the action again to finish."
+    },
+    "applied_socket_set": {
+      "message": "Before it, socket {socket} was set as asked."
+    },
+    "applied_sockets_set": {
+      "message": "Before it, sockets {sockets} were set as asked."
+    },
+    "applied_switch_on_written": {
+      "message": "The switch-on threshold of socket {socket} was written before it."
+    },
+    "applied_switch_off_written": {
+      "message": "The switch-off threshold of socket {socket} was written before it."
+    },
+    "applied_thresholds_written": {
+      "message": "Both thresholds of socket {socket} were written before it."
+    },
+    "applied_rerun": {
+      "message": "Run the action again with the same target to finish."
     }
   },
   "issues": {

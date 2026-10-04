@@ -64,7 +64,7 @@ element's own group, and the loads it should switch subscribe their JUNG User Pr
 
 No key material is logged or put into error messages.
 
-The code is split into the `configurator` package: `plan` (the texts of what a stop applied; the
+The code is split into the `configurator` package: `plan` (what a stop applied, as data; the
 plan model — `ConfigStep`, `ordered`, `replay` — is the library's `jhmesh.plan`) and `wiring` (the modes and models, the wiring read from an export and the
 planners) are pure — a `ProjectFile` in, steps out, a `PlanError` for a refusal —; `store` reads and writes the export
 and the gateway's copy (`ExportStore`), `executor` sends the plans and records a stop (`PlanExecutor`), and `rooms`,
@@ -86,6 +86,7 @@ from .configurator.plan import (
     APPLIED_LOCK_WIRED,
     APPLIED_NOTHING,
     APPLIED_SCENE_WIRED,
+    Applied,
     applied_members,
     applied_removed,
     applied_scene_cleared,
@@ -93,6 +94,7 @@ from .configurator.plan import (
     applied_scene_stored,
     applied_text,
     applied_unused_deleted,
+    said,
 )
 from .configurator.rooms import Keys, Rooms
 from .configurator.scenes import Scenes, held_scenes, scene_action_for
@@ -103,6 +105,7 @@ from .configurator.store import (
     ExportStore,
     GatewaySync,
     PlanOutcome,
+    applied_message,
     async_remove_gateway_sync,
     cancel_upload_retry,
     gateway_sync,
@@ -159,12 +162,14 @@ __all__ = [
     "SENSOR_SERVER",
     "TARGET_ELEMENTS",
     "UPLOAD_RETRIES",
+    "Applied",
     "ConfigStep",
     "GatewaySync",
     "MeshConfigurator",
     "PlanOutcome",
     "app_copy_path",
     "applied_members",
+    "applied_message",
     "applied_removed",
     "applied_scene_cleared",
     "applied_scene_members",
@@ -184,6 +189,7 @@ __all__ = [
     "pre_adopt_path",
     "replay",
     "run_to_end",
+    "said",
     "scene_action_for",
     "sensor_elements",
     "sensor_publication",
@@ -498,7 +504,7 @@ class MeshConfigurator:
         socket_address: int,
         devices: Iterable[int],
         *,
-        applied: Callable[[int, int], str] = applied_text,
+        applied: Callable[[int, int], Applied] = applied_text,
     ) -> bool:
         """Make the socket's thresholds switch exactly `devices` (`Thresholds.set_threshold_devices`)."""
         return await self.thresholds.set_threshold_devices(
@@ -510,7 +516,7 @@ class MeshConfigurator:
         self,
         socket_address: int,
         *,
-        applied: Callable[[int, int], str] = applied_text,
+        applied: Callable[[int, int], Applied] = applied_text,
     ) -> bool:
         """Stop the socket's thresholds switching anything (`Thresholds.unwire_threshold`)."""
         return await self.thresholds.unwire_threshold(socket_address, applied=applied)

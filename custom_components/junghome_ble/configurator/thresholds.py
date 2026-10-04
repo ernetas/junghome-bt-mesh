@@ -22,7 +22,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
 )
 
 from .executor import Operations
-from .plan import applied_text
+from .plan import Applied, applied_text
 from .store import _validation
 from .wiring import (
     ONOFF_CLIENT,
@@ -79,7 +79,7 @@ class Thresholds(Operations):
         socket_address: int,
         devices: Iterable[int],
         *,
-        applied: Callable[[int, int], str] = applied_text,
+        applied: Callable[[int, int], Applied] = applied_text,
     ) -> bool:
         """Make the socket's thresholds switch exactly `devices` (load elements), the wiring of `CreateThreshold`.
 
@@ -135,7 +135,7 @@ class Thresholds(Operations):
         self,
         socket_address: int,
         *,
-        applied: Callable[[int, int], str] = applied_text,
+        applied: Callable[[int, int], Applied] = applied_text,
     ) -> bool:
         """Stop the socket's thresholds switching anything, as the app does when it disables or deletes one.
 

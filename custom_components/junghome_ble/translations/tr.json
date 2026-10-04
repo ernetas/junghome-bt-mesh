@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Gönderilmedi: {node}, {message} iletisine {found} yanıtını verdi, ancak mesh dışa aktarımı {expected} diyor ({others} fark daha). Kurulum, mesh dışa aktarımı yapıldıktan sonra değişti (JUNG HOME uygulamasında, bir cihazın sıfırlanmasıyla veya yarıda kalan önceki bir eylemle) ve plan, dışa aktarımın artık tanımlamadığı şeylerin üzerine yazardı. Projeyi uygulamadan yeniden dışa aktarın veya Home Assistant'ın ağ geçidinin dışa aktarımını devralmasına izin verin ve eylemi yeniden çalıştırın; `force` ile bu denetim yapılmadan çalışır. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Öncesinde hiçbir şey uygulanmadı; mesh dışa aktarımı değişmedi."
+    },
+    "applied_partly": {
+      "message": "Öncesinde kabul edilen {total} mesajın {accepted} tanesi mesh ağında uygulandı ve mesh dışa aktarımına kaydedildi; tamamlamak için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "applied_key_wired": {
+      "message": "Düğmenin tüm bağlantıları yapılandırıldı ve mesh dışa aktarımına kaydedildi; yalnızca düğme modu eksik — ayarlamak için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "applied_lock_wired": {
+      "message": "Düğmenin tüm bağlantıları yapılandırıldı ve mesh dışa aktarımına kaydedildi; kilit işlevi ve düğme modu eksik — ayarlamak için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "applied_scene_wired": {
+      "message": "Düğme sahne çağrılarını tüm cihazlara gönderiyor ve bu mesh dışa aktarımına kaydedildi; çağırdığı sahne ve düğme modu eksik — ayarlamak için eylemi aynı sahneyle yeniden çalıştırın."
+    },
+    "applied_removed": {
+      "message": "{device} cihazı sıfırlandı ve mesh dışa aktarımı onu ağdan kaldırılmış olarak kaydediyor; diğer cihazların ona olan bağlantılarını kaldıran {total} mesajın {accepted} tanesi uygulandı ve onlar da kaydedildi. Diğer cihazlarda kalan bağlantılar artık yanıt vermeyen bir cihazı gösteriyor; mesh dışa aktarımı onları tutuyor, böylece hiçbir yeni şey gruplarını yeniden kullanmıyor."
+    },
+    "applied_scene_stored": {
+      "message": "{scene} sahnesi {device} cihazında kayıtlı ve üye mesh dışa aktarımına kaydedildi; yalnızca sahne tanımı eksik — yazmak için eylemi yeniden çalıştırın."
+    },
+    "applied_scene_forgotten": {
+      "message": "{total} cihazın {done} tanesi {scene} sahnesini zaten unuttu ve mesh dışa aktarımı bunu kaydediyor."
+    },
+    "applied_scene_cleared": {
+      "message": "{element} öğesinin {scene} sahnesi için sahne tanımı temizlendi; sahnenin kendisi hâlâ cihazda kayıtlı ve mesh dışa aktarımına kaydedilmiş durumda — bitirmek için eylemi yeniden çalıştırın."
+    },
+    "applied_scene_members": {
+      "message": "{total} cihazın {done} tanesi {scene} sahnesini kaydetti ve mesh dışa aktarımına kaydedildi; bitirmek için eylemi yeniden çalıştırın."
+    },
+    "applied_keys_cleared": {
+      "message": "Bu cihazların {scene} sahnesini çağıran düğmeleri temizlendi ve mesh dışa aktarımı bunu kaydediyor; bitirmek için eylemi yeniden çalıştırın."
+    },
+    "applied_members": {
+      "message": "{total} cihazın {done} tanesi {scene} sahnesini zaten unuttu ve mesh dışa aktarımı bunu kaydediyor; bitirmek için eylemi yeniden çalıştırın."
+    },
+    "applied_unused_deleted": {
+      "message": "Mesh dışa aktarımının bilmediği sahneler öncesinde zaten silindi ({deleted}); mesh dışa aktarımı onları hiç içermediği için değişmedi — bitirmek için eylemi yeniden çalıştırın."
+    },
+    "applied_socket_set": {
+      "message": "Öncesinde {socket} prizi istendiği gibi ayarlandı."
+    },
+    "applied_sockets_set": {
+      "message": "Öncesinde {sockets} prizleri istendiği gibi ayarlandı."
+    },
+    "applied_switch_on_written": {
+      "message": "{socket} prizinin açma eşiği öncesinde yazıldı."
+    },
+    "applied_switch_off_written": {
+      "message": "{socket} prizinin kapatma eşiği öncesinde yazıldı."
+    },
+    "applied_thresholds_written": {
+      "message": "{socket} prizinin her iki eşiği de öncesinde yazıldı."
+    },
+    "applied_rerun": {
+      "message": "Bitirmek için eylemi aynı hedefle yeniden çalıştırın."
     }
   },
   "issues": {

@@ -39,7 +39,7 @@ from .plan import (
     Note,
     PlanError,
 )
-from .store import _failure, _name_error, _validation
+from .store import _failure, _name_error, _validation, applied_message
 from .wiring import (
     DETECTOR_MODES,
     KEY_MODE_CLIENTS,
@@ -499,7 +499,7 @@ class Keys(Operations):
                     "service_send_failed",
                     node=hexaddr(key),
                     message=M.describe(pdu),
-                    applied=APPLIED_KEY_WIRED,
+                    applied=applied_message(self.hub.hass, APPLIED_KEY_WIRED),
                 ) from err
 
     async def _write_key_mode(self, key: int, key_mode: int) -> None:

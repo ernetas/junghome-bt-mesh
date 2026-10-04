@@ -3,7 +3,7 @@
 The logbook API has no translation hook: a describer is a sync callback returning literal strings, and it runs in the
 server's language rather than the viewing user's. Every line is still the integration's own text,
 rendered from the translations Home Assistant cached for the server's language when it set the integration up,
-English where that language has none (`cached_text`):
+English where that language has none (`texts.cached_text`):
 
 - what happened to a key is the device trigger's wording (`device_automation.trigger_subtype`, "clicked"), the key
   the event entity's name (`entity.event.button.name`, "Button A"), the rest `logbook_*` messages of `exceptions`
@@ -26,7 +26,6 @@ from homeassistant.components.logbook.const import (
 from homeassistant.const import ATTR_DEVICE_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_TYPE
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.translation import async_get_cached_translations
 
 from .const import (
     ATTR_KEY,
@@ -37,29 +36,10 @@ from .const import (
     EVENT_PLAN,
     EVENT_SCENE_RECALLED,
 )
+from .texts import cached_text
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-
-@callback
-def cached_text(
-    hass: HomeAssistant,
-    category: str,
-    key: str,
-    placeholders: dict[str, str] | None = None,
-) -> str | None:
-    """Return the integration's text `<category>.<key>` in the server's language (English without), filled in.
-
-    None when neither has it: the integration's translations are cached when Home Assistant sets it up, so only a
-    key no version wrote lacks one.
-    """
-    path = f"component.{DOMAIN}.{category}.{key}"
-    for language in (hass.config.language, "en"):
-        text = async_get_cached_translations(hass, language, category, DOMAIN)
-        if path in text:
-            return text[path].format_map(placeholders or {})
-    return None
 
 
 @callback

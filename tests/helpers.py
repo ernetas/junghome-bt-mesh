@@ -23,6 +23,8 @@ from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opco
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
+    from custom_components.junghome_ble.configurator.plan import Applied
+
 OUR_ADDRESS = 0x0D00
 MESH_UUID = "1baf3ade-0000-4000-8000-000000000001"
 SEQ_STORE_KEY = f"{DOMAIN}.seq.{MESH_UUID}"  # the mesh's sequence-number store (`seq_store.seq_store`)
@@ -345,3 +347,39 @@ async def through_areas(
     )
     await hass.async_block_till_done()
     return result
+
+
+EN_JSON = (
+    Path(__file__).parent.parent
+    / "custom_components"
+    / DOMAIN
+    / "translations"
+    / "en.json"
+)
+
+
+def english_exceptions() -> dict[str, str]:
+    """The `exceptions` messages of en.json, flattened as Home Assistant's translation cache holds them."""
+    exceptions = json.loads(EN_JSON.read_text(encoding="utf-8"))["exceptions"]
+    return {
+        f"component.{DOMAIN}.exceptions.{key}.message": value["message"]
+        for key, value in exceptions.items()
+    }
+
+
+def english(applied: Applied) -> str:
+    """What a stop applied (`Applied`) in English, from en.json: what `applied_message` words with English cached."""
+    messages = english_exceptions()
+    return " ".join(
+        messages[f"component.{DOMAIN}.exceptions.applied_{key}.message"].format_map(
+            placeholders
+        )
+        for key, placeholders in applied.sentences
+    )
+
+
+def cached_english(
+    _hass: Any, language: str, category: str, _integration: str | None = None
+) -> dict[str, str]:
+    """`async_get_cached_translations` of a stub hass (no translation cache): English exceptions, nothing else."""
+    return english_exceptions() if (language, category) == ("en", "exceptions") else {}

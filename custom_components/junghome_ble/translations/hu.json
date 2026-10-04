@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Nincs elküldve: {node} a(z) {message} üzenetre ezt válaszolta: {found}, de a mesh-export szerint {expected} (további eltérések: {others}). A telepítés a mesh-export elkészülte után megváltozott (a JUNG HOME alkalmazásban, egy eszköz visszaállításával vagy egy korábbi, félúton leállt művelet miatt), és a terv felülírná azt, amit az export már nem ír le. Exportálja újra a projektet az alkalmazásból, vagy hagyja, hogy a Home Assistant átvegye az átjáró exportját, majd futtassa újra a műveletet; a `force` beállítással ellenőrzés nélkül fut. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Előtte semmi sem lett alkalmazva; a mesh-export változatlan."
+    },
+    "applied_partly": {
+      "message": "Az előtte elfogadott {accepted}/{total} üzenet alkalmazva lett a mesh-hálózaton, és szerepel a mesh-exportban; a befejezéshez futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "applied_key_wired": {
+      "message": "A gomb minden kapcsolata be lett állítva, és szerepel a mesh-exportban; csak a gombmód hiányzik – a beállításához futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "applied_lock_wired": {
+      "message": "A gomb minden kapcsolata be lett állítva, és szerepel a mesh-exportban; a tiltási funkciója és a gombmódja hiányzik – a beállításukhoz futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "applied_scene_wired": {
+      "message": "A gomb minden eszköznek elküldi a jelenethívásait, és ez szerepel a mesh-exportban; a jelenet, amelyet hív, és a gombmódja hiányzik – a beállításukhoz futtassa újra a műveletet ugyanazzal a jelenettel."
+    },
+    "applied_removed": {
+      "message": "A(z) {device} eszköz vissza lett állítva, és a mesh-export a hálózatból eltávolítottként rögzíti; a többi eszköz hozzá vezető kapcsolatait eltávolító {total} üzenetből {accepted} alkalmazva lett, és szintén rögzítve van. A többi eszközön maradt kapcsolatok egy már nem válaszoló eszközre mutatnak; a mesh-export megtartja őket, hogy semmi új ne használja újra a csoportjaikat."
+    },
+    "applied_scene_stored": {
+      "message": "A(z) {scene} jelenet tárolva van a(z) {device} eszközön, és a tag szerepel a mesh-exportban; csak a jelenetleírás hiányzik – a megírásához futtassa újra a műveletet."
+    },
+    "applied_scene_forgotten": {
+      "message": "{total} eszközből {done} már elfelejtette a(z) {scene} jelenetet, és a mesh-export ezt rögzíti."
+    },
+    "applied_scene_cleared": {
+      "message": "A(z) {element} jelenetleírása a(z) {scene} jelenethez törölve lett; maga a jelenet még tárolva van az eszközön, és szerepel a mesh-exportban – a befejezéshez futtassa újra a műveletet."
+    },
+    "applied_scene_members": {
+      "message": "{total} eszközből {done} tárolta a(z) {scene} jelenetet, és szerepel a mesh-exportban; a befejezéshez futtassa újra a műveletet."
+    },
+    "applied_keys_cleared": {
+      "message": "Ezen eszközök gombjai, amelyek a(z) {scene} jelenetet hívták, törölve lettek, és a mesh-export ezt rögzíti; a befejezéshez futtassa újra a műveletet."
+    },
+    "applied_members": {
+      "message": "{total} eszközből {done} már elfelejtette a(z) {scene} jelenetet, és a mesh-export ezt rögzíti; a befejezéshez futtassa újra a műveletet."
+    },
+    "applied_unused_deleted": {
+      "message": "A mesh-export számára ismeretlen jelenetek már előtte törölve lettek ({deleted}); a mesh-export változatlan, mivel soha nem tartalmazta őket – a befejezéshez futtassa újra a műveletet."
+    },
+    "applied_socket_set": {
+      "message": "Előtte a(z) {socket} aljzat a kérés szerint lett beállítva."
+    },
+    "applied_sockets_set": {
+      "message": "Előtte a(z) {sockets} aljzatok a kérés szerint lettek beállítva."
+    },
+    "applied_switch_on_written": {
+      "message": "A(z) {socket} aljzat bekapcsolási küszöbe előtte lett kiírva."
+    },
+    "applied_switch_off_written": {
+      "message": "A(z) {socket} aljzat kikapcsolási küszöbe előtte lett kiírva."
+    },
+    "applied_thresholds_written": {
+      "message": "A(z) {socket} aljzat mindkét küszöbe előtte lett kiírva."
+    },
+    "applied_rerun": {
+      "message": "A befejezéshez futtassa újra a műveletet ugyanazzal a céllal."
     }
   },
   "issues": {

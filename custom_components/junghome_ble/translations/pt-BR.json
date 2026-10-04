@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Não enviado: {node} respondeu a {message} com {found}, mas a exportação da mesh diz {expected} ({others} outras diferenças). A instalação mudou depois que a exportação da mesh foi feita (no aplicativo JUNG HOME, pela redefinição de um dispositivo ou por uma ação anterior que parou no meio), e o plano sobrescreveria o que a exportação não descreve mais. Exporte o projeto novamente pelo aplicativo, ou deixe o Home Assistant assumir a exportação do gateway, e execute a ação de novo; com `force` ela é executada sem esta verificação. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Nada foi aplicado antes; a exportação da mesh não mudou."
+    },
+    "applied_partly": {
+      "message": "As {accepted} de {total} mensagens aceitas antes foram aplicadas na mesh e estão registradas na exportação da mesh; execute a ação novamente com o mesmo alvo para concluí-la."
+    },
+    "applied_key_wired": {
+      "message": "Todos os vínculos do botão foram configurados e estão registrados na exportação da mesh; falta apenas o modo do botão — execute a ação novamente com o mesmo alvo para defini-lo."
+    },
+    "applied_lock_wired": {
+      "message": "Todos os vínculos do botão foram configurados e estão registrados na exportação da mesh; faltam a função de bloqueio e o modo do botão — execute a ação novamente com o mesmo alvo para defini-los."
+    },
+    "applied_scene_wired": {
+      "message": "O botão envia suas chamadas de cena a todos os dispositivos e isso está registrado na exportação da mesh; faltam a cena que ele chama e o modo do botão — execute a ação novamente com a mesma cena para defini-los."
+    },
+    "applied_removed": {
+      "message": "O dispositivo {device} foi redefinido e a exportação da mesh o registra como removido da rede; {accepted} das {total} mensagens que retiram os vínculos dos outros dispositivos com ele foram aplicadas e também estão registradas. Os vínculos que ficaram nos outros dispositivos apontam para um dispositivo que não responde mais; a exportação da mesh os mantém, para que nada novo reutilize seus grupos."
+    },
+    "applied_scene_stored": {
+      "message": "A cena {scene} está salva no dispositivo {device} e o membro está registrado na exportação da mesh; falta apenas a descrição da cena — execute a ação novamente para gravá-la."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} de {total} dispositivos já esqueceram a cena {scene} e a exportação da mesh registra isso."
+    },
+    "applied_scene_cleared": {
+      "message": "A descrição de cena de {element} para a cena {scene} foi apagada; a cena em si ainda está salva no dispositivo e registrada na exportação da mesh — execute a ação novamente para concluir."
+    },
+    "applied_scene_members": {
+      "message": "{done} de {total} dispositivos salvaram a cena {scene} e estão registrados na exportação da mesh; execute a ação novamente para concluir."
+    },
+    "applied_keys_cleared": {
+      "message": "Os botões destes dispositivos que chamavam a cena {scene} foram apagados e a exportação da mesh registra isso; execute a ação novamente para concluir."
+    },
+    "applied_members": {
+      "message": "{done} de {total} dispositivos já esqueceram a cena {scene} e a exportação da mesh registra isso; execute a ação novamente para concluir."
+    },
+    "applied_unused_deleted": {
+      "message": "Cenas desconhecidas pela exportação da mesh já foram excluídas antes ({deleted}); a exportação da mesh não mudou, pois nunca as conteve — execute a ação novamente para concluir."
+    },
+    "applied_socket_set": {
+      "message": "Antes disso, a tomada {socket} foi ajustada como pedido."
+    },
+    "applied_sockets_set": {
+      "message": "Antes disso, as tomadas {sockets} foram ajustadas como pedido."
+    },
+    "applied_switch_on_written": {
+      "message": "O limite de ligamento da tomada {socket} foi gravado antes disso."
+    },
+    "applied_switch_off_written": {
+      "message": "O limite de desligamento da tomada {socket} foi gravado antes disso."
+    },
+    "applied_thresholds_written": {
+      "message": "Os dois limites da tomada {socket} foram gravados antes disso."
+    },
+    "applied_rerun": {
+      "message": "Execute a ação novamente com o mesmo alvo para concluir."
     }
   },
   "issues": {

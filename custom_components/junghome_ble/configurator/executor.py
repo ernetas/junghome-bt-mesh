@@ -43,12 +43,13 @@ from custom_components.junghome_ble.keep_awake import sleepy_node
 from .plan import (
     APPLIED_KEY_WIRED,
     APPLIED_NOTHING,
+    Applied,
     Note,
     _step_from_json,
     _step_json,
     applied_text,
 )
-from .store import ExportStore, PlanOutcome, _failure, run_to_end
+from .store import ExportStore, PlanOutcome, _failure, applied_message, run_to_end
 from .wiring import _confirms_property, _confirms_scene_action, record_room_link
 
 if TYPE_CHECKING:
@@ -184,7 +185,7 @@ class PlanExecutor:
         action: str,
         prepare: Note | None = None,
         happened: Note | None = None,
-        applied: Callable[[int, int], str] = applied_text,
+        applied: Callable[[int, int], Applied] = applied_text,
         as_planned: bool = False,
         check: bool = True,
         registers: Iterable[Check] = (),
@@ -270,7 +271,11 @@ class PlanExecutor:
         if problem is None:
             return
         key, placeholders = problem
-        err = _failure(key, **placeholders, applied=applied(len(accepted), len(plan)))
+        err = _failure(
+            key,
+            **placeholders,
+            applied=applied_message(self.hub.hass, applied(len(accepted), len(plan))),
+        )
         if (
             record_err := await self._record_stopped(accepted, plan, prepare, happened)
         ) is not None:
@@ -334,7 +339,7 @@ class PlanExecutor:
         plan: Iterable[ConfigStep],
         *,
         registers: Iterable[Check] = (),
-        applied: str = APPLIED_NOTHING,
+        applied: Applied = APPLIED_NOTHING,
     ) -> None:
         """Before a plan's first write, read from the nodes what it removes or overwrites and compare with the export.
 
@@ -375,7 +380,7 @@ class PlanExecutor:
                                 self._silence(item.node),
                                 node=self.store.node_name(item.node),
                                 message=item.what,
-                                applied=applied,
+                                applied=applied_message(self.hub.hass, applied),
                             )
                         silent.append(item.node)
                     elif (found := item.compare(base, reply)) is not None:
@@ -398,10 +403,10 @@ class PlanExecutor:
                 expected=", ".join(first.expected) or "-",
                 found=", ".join(first.found) or "-",
                 others=str(len(differences) - 1),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
 
-    async def _read(self, item: Check, applied: str) -> AccessMessage | None:
+    async def _read(self, item: Check, applied: Applied) -> AccessMessage | None:
         """Send one pre-flight Get and return its answer; None when the node stays silent (or, dry, out of reach).
 
         A lost link, or a node the running hub has no device key for, stops a real run as it stops a plan step.
@@ -432,7 +437,7 @@ class PlanExecutor:
                 "service_export_unknown_node",
                 node=self.store.node_name(item.node),
                 path=self.store.path,
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             ) from err
         except (ConnectionError, OSError) as err:
             if self.store.dry:
@@ -441,7 +446,7 @@ class PlanExecutor:
                 "service_send_failed",
                 node=self.store.node_name(item.node),
                 message=item.what,
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             ) from err
 
     def _silence(self, node: int) -> str:
@@ -556,7 +561,7 @@ class PlanExecutor:
         prop: int,
         timeout: float,
         retries: int,
-        applied: str = APPLIED_KEY_WIRED,
+        applied: Applied = APPLIED_KEY_WIRED,
     ) -> AccessMessage | None:
         """Send an LBC Admin request to the key element and wait for its Admin Status; None when it stays silent.
 
@@ -580,11 +585,11 @@ class PlanExecutor:
                 "service_send_failed",
                 node=hexaddr(key),
                 message=M.describe(pdu),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             ) from err
 
     async def write_key_property(
-        self, key: int, prop: int, value: bytes, applied: str
+        self, key: int, prop: int, value: bytes, applied: Applied
     ) -> bool:
         """LBC Admin Property Set of `prop` on the key, then confirm: the Set's status, or a Get when none arrives.
 
@@ -611,7 +616,7 @@ class PlanExecutor:
                     self._silence(key),
                     node=hexaddr(key),
                     message=M.describe(pdu),
-                    applied=applied,
+                    applied=applied_message(self.hub.hass, applied),
                 )
         return _confirms_property(reply.params, prop, value)
 
@@ -622,7 +627,7 @@ class PlanExecutor:
         expect: int,
         timeout: float,
         retries: int,
-        applied: str,
+        applied: Applied,
         scene: int | None = None,
     ) -> AccessMessage | None:
         """Send an AppKey request to `element` and wait for its status; None when it stays silent.
@@ -654,11 +659,11 @@ class PlanExecutor:
                 "service_send_failed",
                 node=hexaddr(element),
                 message=M.describe(pdu),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             ) from err
 
     async def scene_register(
-        self, element: int, pdu: bytes, applied: str
+        self, element: int, pdu: bytes, applied: Applied
     ) -> tuple[M.SceneRegister, bool]:
         """Send a Scene Store / Delete and return the element's Scene Register afterwards, and whether it was read back.
 
@@ -688,7 +693,7 @@ class PlanExecutor:
                 "service_no_reply",
                 node=hexaddr(element),
                 message=M.describe(pdu),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
         try:
             return M.decode_scene_register_status(reply.params), read_back
@@ -698,11 +703,11 @@ class PlanExecutor:
                 node=hexaddr(element),
                 message=M.describe(pdu),
                 status="malformed status",
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             ) from err
 
     async def scene_action(
-        self, element: int, scene: int, action: V.Action | None, applied: str
+        self, element: int, scene: int, action: V.Action | None, applied: Applied
     ) -> None:
         """Scene Action Setup Set (`action` None removes) and confirm it — from the Set's status or a Get."""
         pdu = V.scene_action_set(scene, action or V.NO_ACTION)
@@ -727,14 +732,14 @@ class PlanExecutor:
                     "service_no_reply",
                     node=hexaddr(element),
                     message=M.describe(pdu),
-                    applied=applied,
+                    applied=applied_message(self.hub.hass, applied),
                 )
         if not _confirms_scene_action(reply.params, scene, action):
             raise _failure(
                 "service_scene_action_not_applied",
                 address=hexaddr(element),
                 scene=str(scene),
-                applied=applied,
+                applied=applied_message(self.hub.hass, applied),
             )
 
     async def read_reply(
@@ -742,7 +747,7 @@ class PlanExecutor:
         element: int,
         pdu: bytes,
         expect: int,
-        applied: str,
+        applied: Applied,
         scene: int | None = None,
     ) -> AccessMessage | None:
         """`reply` with a read's budget (CONFIG_TIMEOUT, CONFIG_RETRIES): a Get, or the read-back of a Set."""

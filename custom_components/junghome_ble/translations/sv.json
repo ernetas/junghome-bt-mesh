@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Inte skickat: {node} svarade {found} på {message}, men mesh-exporten säger {expected} ({others} skillnader till). Installationen har ändrats efter att mesh-exporten gjordes (i JUNG HOME-appen, genom en återställning av en enhet eller av en tidigare åtgärd som stannade halvvägs), och planen skulle skriva över det som exporten inte längre beskriver. Exportera projektet från appen igen, eller låt Home Assistant ta över gatewayens export, och kör åtgärden igen; med `force` körs den utan den här kontrollen. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Ingenting tillämpades före det; mesh-exporten är oförändrad."
+    },
+    "applied_partly": {
+      "message": "De {accepted} av {total} meddelanden som godtogs före det tillämpades i meshnätet och finns registrerade i mesh-exporten; kör åtgärden igen med samma mål för att slutföra den."
+    },
+    "applied_key_wired": {
+      "message": "Alla knappens kopplingar konfigurerades och finns registrerade i mesh-exporten; bara knappläget saknas — kör åtgärden igen med samma mål för att ställa in det."
+    },
+    "applied_lock_wired": {
+      "message": "Alla knappens kopplingar konfigurerades och finns registrerade i mesh-exporten; dess spärrfunktion och knappläge saknas — kör åtgärden igen med samma mål för att ställa in dem."
+    },
+    "applied_scene_wired": {
+      "message": "Knappen skickar sina scenanrop till alla enheter och det finns registrerat i mesh-exporten; scenen den anropar och dess knappläge saknas — kör åtgärden igen med samma scen för att ställa in dem."
+    },
+    "applied_removed": {
+      "message": "Enheten {device} återställdes och mesh-exporten registrerar den som borttagen från nätverket; {accepted} av de {total} meddelanden som tar bort de andra enheternas kopplingar till den tillämpades och finns också registrerade. Kopplingarna som finns kvar på de andra enheterna pekar på en enhet som inte längre svarar; mesh-exporten behåller dem, så att inget nytt återanvänder deras grupper."
+    },
+    "applied_scene_stored": {
+      "message": "Scenen {scene} är sparad på enheten {device} och medlemmen finns registrerad i mesh-exporten; bara scenbeskrivningen saknas — kör åtgärden igen för att skriva den."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} av {total} enheter har redan glömt scenen {scene} och mesh-exporten registrerar det."
+    },
+    "applied_scene_cleared": {
+      "message": "Scenbeskrivningen för {element} för scenen {scene} rensades; själva scenen är fortfarande sparad på enheten och registrerad i mesh-exporten — kör åtgärden igen för att slutföra."
+    },
+    "applied_scene_members": {
+      "message": "{done} av {total} enheter sparade scenen {scene} och finns registrerade i mesh-exporten; kör åtgärden igen för att slutföra."
+    },
+    "applied_keys_cleared": {
+      "message": "Knapparna på dessa enheter som anropade scenen {scene} rensades och mesh-exporten registrerar det; kör åtgärden igen för att slutföra."
+    },
+    "applied_members": {
+      "message": "{done} av {total} enheter har redan glömt scenen {scene} och mesh-exporten registrerar det; kör åtgärden igen för att slutföra."
+    },
+    "applied_unused_deleted": {
+      "message": "Scener som mesh-exporten inte känner till raderades redan före det ({deleted}); mesh-exporten är oförändrad, eftersom den aldrig innehöll dem — kör åtgärden igen för att slutföra."
+    },
+    "applied_socket_set": {
+      "message": "Före det ställdes uttaget {socket} in som önskat."
+    },
+    "applied_sockets_set": {
+      "message": "Före det ställdes uttagen {sockets} in som önskat."
+    },
+    "applied_switch_on_written": {
+      "message": "Tillslagströskeln för uttaget {socket} skrevs före det."
+    },
+    "applied_switch_off_written": {
+      "message": "Frånslagströskeln för uttaget {socket} skrevs före det."
+    },
+    "applied_thresholds_written": {
+      "message": "Båda trösklarna för uttaget {socket} skrevs före det."
+    },
+    "applied_rerun": {
+      "message": "Kör åtgärden igen med samma mål för att slutföra."
     }
   },
   "issues": {

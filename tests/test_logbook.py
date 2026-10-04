@@ -11,7 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.translation import async_load_integrations
 from pytest_homeassistant_custom_component.common import async_capture_events
 
-from custom_components.junghome_ble import logbook
+from custom_components.junghome_ble import texts
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_BUTTON_ACTION,
@@ -313,7 +313,7 @@ def test_without_cached_translations_the_line_shows_what_it_has(
     """Not reachable in Home Assistant (it caches the translations before the logbook asks): the bare values."""
     button = describers(hass)[EVENT_BUTTON_ACTION]
     scene = describers(hass)[EVENT_SCENE_RECALLED]
-    with patch(f"{logbook.__name__}.async_get_cached_translations", return_value={}):
+    with patch(f"{texts.__name__}.async_get_cached_translations", return_value={}):
         assert button(
             Event(EVENT_BUTTON_ACTION, {"key": "A", "type": "scene", "scene": 2})
         ) == {"name": "A", "message": "2"}

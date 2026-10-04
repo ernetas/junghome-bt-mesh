@@ -36,7 +36,7 @@ from custom_components.junghome_ble.onboard import advertises_unprovisioned
 
 from .executor import Operations
 from .plan import APPLIED_NOTHING, applied_removed
-from .store import _failure, _validation, run_to_end
+from .store import _failure, _validation, applied_message, run_to_end
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.jhmesh.audit import NodeAudit
@@ -154,7 +154,7 @@ class Nodes(Operations):
                         "service_send_failed",
                         node=hexaddr(unicast),
                         message="Config Node Reset",
-                        applied=APPLIED_NOTHING,
+                        applied=applied_message(self.hub.hass, APPLIED_NOTHING),
                     ) from err
                 _LOGGER.warning(
                     "%s carried the link, which ended with its reset; removing it from the network all the same",

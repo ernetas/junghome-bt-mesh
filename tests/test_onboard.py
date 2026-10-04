@@ -80,7 +80,7 @@ from .conftest import (
     setup_entry,
     wait_for_link,
 )
-from .helpers import export_model_status, find_issue
+from .helpers import english, export_model_status, find_issue
 from .jhmesh.conftest import FakeConfigServers, composition_params
 from .jhmesh.test_provisioning import FakeDevice
 from .test_services import GATEWAY_DATA
@@ -909,7 +909,9 @@ async def test_a_removal_whose_unwiring_stops_still_records_the_reset_node(
         )
     assert unwired == [0x0148, 0x0300][: accepted + 1]
     placeholders = caught.value.translation_placeholders
-    assert placeholders["applied"] == mesh_config.applied_removed(ACTUATOR, accepted, 2)
+    assert placeholders["applied"] == english(
+        mesh_config.applied_removed(ACTUATOR, accepted, 2)
+    )
     pf = ProjectFile.load(path)
     assert pf.cdb.node_by_addr(ACTUATOR) is None
     assert {ACTUATOR, ACTUATOR + 1} <= pf.cdb.excluded_addresses
@@ -943,7 +945,7 @@ async def test_a_lost_link_during_the_reset_is_a_translated_error(
     assert caught.value.translation_placeholders == {
         "node": "0300",
         "message": "Config Node Reset",
-        "applied": mesh_config.APPLIED_NOTHING,
+        "applied": english(mesh_config.APPLIED_NOTHING),
     }
     assert ProjectFile.load(
         Path(provisioning_entry.data[CONF_CDB_PATH])

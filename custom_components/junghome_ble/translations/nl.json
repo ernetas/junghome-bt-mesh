@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Niet verzonden: {node} antwoordde op {message} met {found}, maar de mesh-export zegt {expected} ({others} andere verschillen). De installatie is gewijzigd nadat de mesh-export is gemaakt (in de JUNG HOME-app, door een reset van een apparaat of door een eerdere actie die halverwege stopte), en het plan zou overschrijven wat de export niet meer beschrijft. Exporteer het project opnieuw vanuit de app, of laat Home Assistant de export van de gateway overnemen, en voer de actie opnieuw uit; met `force` loopt ze zonder deze controle. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Daarvoor is niets toegepast; de mesh-export is ongewijzigd."
+    },
+    "applied_partly": {
+      "message": "De {accepted} van {total} berichten die daarvoor zijn geaccepteerd, zijn op de mesh toegepast en in de mesh-export vastgelegd; voer de actie opnieuw uit met hetzelfde doel om haar te voltooien."
+    },
+    "applied_key_wired": {
+      "message": "Alle koppelingen van de knop zijn geconfigureerd en in de mesh-export vastgelegd; alleen de knopmodus ontbreekt — voer de actie opnieuw uit met hetzelfde doel om hem in te stellen."
+    },
+    "applied_lock_wired": {
+      "message": "Alle koppelingen van de knop zijn geconfigureerd en in de mesh-export vastgelegd; zijn vergrendelfunctie en knopmodus ontbreken — voer de actie opnieuw uit met hetzelfde doel om ze in te stellen."
+    },
+    "applied_scene_wired": {
+      "message": "De knop stuurt zijn scèneoproepen naar alle apparaten en dat is in de mesh-export vastgelegd; de scène die hij oproept en zijn knopmodus ontbreken — voer de actie opnieuw uit met dezelfde scène om ze in te stellen."
+    },
+    "applied_removed": {
+      "message": "Apparaat {device} is gereset en de mesh-export legt het vast als verwijderd uit het netwerk; {accepted} van de {total} berichten die de koppelingen van de andere apparaten ermee weghalen, zijn toegepast en ook vastgelegd. De koppelingen die op de andere apparaten achterblijven, wijzen naar een apparaat dat niet meer antwoordt; de mesh-export houdt ze bij, zodat niets nieuws hun groepen hergebruikt."
+    },
+    "applied_scene_stored": {
+      "message": "Scène {scene} is opgeslagen op apparaat {device} en het lid is in de mesh-export vastgelegd; alleen de scènebeschrijving ontbreekt — voer de actie opnieuw uit om haar te schrijven."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} van {total} apparaten zijn scène {scene} al vergeten en de mesh-export legt dat vast."
+    },
+    "applied_scene_cleared": {
+      "message": "De scènebeschrijving van {element} voor scène {scene} is gewist; de scène zelf is nog op het apparaat opgeslagen en in de mesh-export vastgelegd — voer de actie opnieuw uit om af te ronden."
+    },
+    "applied_scene_members": {
+      "message": "{done} van {total} apparaten hebben scène {scene} opgeslagen en zijn in de mesh-export vastgelegd; voer de actie opnieuw uit om af te ronden."
+    },
+    "applied_keys_cleared": {
+      "message": "De knoppen van deze apparaten die scène {scene} opriepen, zijn gewist en de mesh-export legt dat vast; voer de actie opnieuw uit om af te ronden."
+    },
+    "applied_members": {
+      "message": "{done} van {total} apparaten zijn scène {scene} al vergeten en de mesh-export legt dat vast; voer de actie opnieuw uit om af te ronden."
+    },
+    "applied_unused_deleted": {
+      "message": "Scènes die de mesh-export niet kent, zijn daarvoor al verwijderd ({deleted}); de mesh-export is ongewijzigd, omdat hij ze nooit bevatte — voer de actie opnieuw uit om af te ronden."
+    },
+    "applied_socket_set": {
+      "message": "Daarvoor is stopcontact {socket} ingesteld zoals gevraagd."
+    },
+    "applied_sockets_set": {
+      "message": "Daarvoor zijn de stopcontacten {sockets} ingesteld zoals gevraagd."
+    },
+    "applied_switch_on_written": {
+      "message": "De inschakeldrempel van stopcontact {socket} is daarvoor geschreven."
+    },
+    "applied_switch_off_written": {
+      "message": "De uitschakeldrempel van stopcontact {socket} is daarvoor geschreven."
+    },
+    "applied_thresholds_written": {
+      "message": "Beide drempels van stopcontact {socket} zijn daarvoor geschreven."
+    },
+    "applied_rerun": {
+      "message": "Voer de actie opnieuw uit met hetzelfde doel om af te ronden."
     }
   },
   "issues": {

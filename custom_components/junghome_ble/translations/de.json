@@ -1614,6 +1614,63 @@
     },
     "service_preflight_differs": {
       "message": "Nicht gesendet: {node} hat auf {message} mit {found} geantwortet, der Mesh-Export sagt aber {expected} ({others} weitere Abweichungen). Die Installation wurde nach dem Mesh-Export geändert (in der JUNG HOME App, durch das Zurücksetzen eines Geräts oder durch eine frühere Aktion, die mittendrin stehen blieb), und der Plan würde überschreiben, was der Export nicht mehr beschreibt. Exportiere das Projekt erneut aus der App oder lass Home Assistant den Export des Gateways übernehmen und führe die Aktion noch einmal aus; mit `force` läuft sie ohne diese Prüfung. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Davor wurde nichts übernommen; der Mesh-Export ist unverändert."
+    },
+    "applied_partly": {
+      "message": "Die {accepted} von {total} Nachrichten, die davor angenommen wurden, sind im Mesh übernommen und im Mesh-Export festgehalten. Führe die Aktion mit demselben Ziel erneut aus, um sie abzuschließen."
+    },
+    "applied_key_wired": {
+      "message": "Alle Verknüpfungen der Taste wurden eingerichtet und sind im Mesh-Export festgehalten; nur der Tastenmodus fehlt. Führe die Aktion mit demselben Ziel erneut aus, um ihn zu setzen."
+    },
+    "applied_lock_wired": {
+      "message": "Alle Verknüpfungen der Taste wurden eingerichtet und sind im Mesh-Export festgehalten; ihre Sperrfunktion und ihr Tastenmodus fehlen. Führe die Aktion mit demselben Ziel erneut aus, um sie zu setzen."
+    },
+    "applied_scene_wired": {
+      "message": "Die Taste sendet ihre Szenenabrufe an alle Geräte, und das ist im Mesh-Export festgehalten; die Szene, die sie abruft, und ihr Tastenmodus fehlen. Führe die Aktion mit derselben Szene erneut aus, um sie zu setzen."
+    },
+    "applied_removed": {
+      "message": "Gerät {device} wurde zurückgesetzt, und der Mesh-Export hält es als aus dem Netzwerk entfernt fest; {accepted} von {total} Nachrichten, die die Verknüpfungen der anderen Geräte zu ihm entfernen, wurden übernommen und sind ebenfalls festgehalten. Die auf den anderen Geräten verbliebenen Verknüpfungen zeigen auf ein Gerät, das nicht mehr antwortet; der Mesh-Export behält sie, damit nichts Neues ihre Gruppen wiederverwendet."
+    },
+    "applied_scene_stored": {
+      "message": "Szene {scene} ist auf Gerät {device} gespeichert, und das Mitglied ist im Mesh-Export festgehalten; nur die Szenenbeschreibung fehlt. Führe die Aktion erneut aus, um sie zu schreiben."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} von {total} Geräten haben Szene {scene} bereits vergessen, und der Mesh-Export hält das fest."
+    },
+    "applied_scene_cleared": {
+      "message": "Die Szenenbeschreibung von {element} für Szene {scene} wurde gelöscht; die Szene selbst ist noch auf dem Gerät gespeichert und im Mesh-Export festgehalten. Führe die Aktion erneut aus, um abzuschließen."
+    },
+    "applied_scene_members": {
+      "message": "{done} von {total} Geräten haben Szene {scene} gespeichert und sind im Mesh-Export festgehalten; führe die Aktion erneut aus, um abzuschließen."
+    },
+    "applied_keys_cleared": {
+      "message": "Die Tasten dieser Geräte, die Szene {scene} abriefen, wurden geleert, und der Mesh-Export hält das fest; führe die Aktion erneut aus, um abzuschließen."
+    },
+    "applied_members": {
+      "message": "{done} von {total} Geräten haben Szene {scene} bereits vergessen, und der Mesh-Export hält das fest; führe die Aktion erneut aus, um abzuschließen."
+    },
+    "applied_unused_deleted": {
+      "message": "Szenen, die der Mesh-Export nicht kennt, wurden davor bereits gelöscht ({deleted}); der Mesh-Export ist unverändert, da er sie nie enthielt. Führe die Aktion erneut aus, um abzuschließen."
+    },
+    "applied_socket_set": {
+      "message": "Davor wurde Steckdose {socket} wie gewünscht eingestellt."
+    },
+    "applied_sockets_set": {
+      "message": "Davor wurden die Steckdosen {sockets} wie gewünscht eingestellt."
+    },
+    "applied_switch_on_written": {
+      "message": "Die Einschaltschwelle der Steckdose {socket} wurde davor geschrieben."
+    },
+    "applied_switch_off_written": {
+      "message": "Die Ausschaltschwelle der Steckdose {socket} wurde davor geschrieben."
+    },
+    "applied_thresholds_written": {
+      "message": "Beide Schwellen der Steckdose {socket} wurden davor geschrieben."
+    },
+    "applied_rerun": {
+      "message": "Führe die Aktion mit demselben Ziel erneut aus, um abzuschließen."
     }
   },
   "issues": {

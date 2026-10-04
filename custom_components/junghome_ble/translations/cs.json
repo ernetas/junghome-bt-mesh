@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Neodesláno: {node} odpověděl na {message} hodnotou {found}, ale export mesh uvádí {expected} (dalších rozdílů: {others}). Instalace se po vytvoření exportu mesh změnila (v aplikaci JUNG HOME, resetem zařízení nebo dřívější akcí, která se zastavila v polovině) a plán by přepsal to, co export už nepopisuje. Exportujte projekt z aplikace znovu, nebo nechte Home Assistant převzít export z brány, a spusťte akci znovu; s `force` proběhne bez této kontroly. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Předtím nebylo nic provedeno; export mesh se nezměnil."
+    },
+    "applied_partly": {
+      "message": "{accepted} z {total} zpráv přijatých předtím bylo provedeno v síti mesh a je zaznamenáno v exportu mesh; spusťte akci znovu se stejným cílem, aby se dokončila."
+    },
+    "applied_key_wired": {
+      "message": "Všechna propojení tlačítka byla nakonfigurována a jsou zaznamenána v exportu mesh; chybí jen režim tlačítka — spusťte akci znovu se stejným cílem, aby se nastavil."
+    },
+    "applied_lock_wired": {
+      "message": "Všechna propojení tlačítka byla nakonfigurována a jsou zaznamenána v exportu mesh; chybí jeho funkce blokování a režim tlačítka — spusťte akci znovu se stejným cílem, aby se nastavily."
+    },
+    "applied_scene_wired": {
+      "message": "Tlačítko posílá svá vyvolání scén všem zařízením a to je zaznamenáno v exportu mesh; chybí scéna, kterou vyvolává, a jeho režim tlačítka — spusťte akci znovu se stejnou scénou, aby se nastavily."
+    },
+    "applied_removed": {
+      "message": "Zařízení {device} bylo resetováno a export mesh ho zaznamenává jako odebrané ze sítě; {accepted} z {total} zpráv, které odebírají propojení ostatních zařízení k němu, bylo provedeno a je také zaznamenáno. Propojení, která zůstala na ostatních zařízeních, ukazují na zařízení, které už neodpovídá; export mesh je ponechává, aby jejich skupiny nic nového znovu nepoužilo."
+    },
+    "applied_scene_stored": {
+      "message": "Scéna {scene} je uložena na zařízení {device} a člen je zaznamenán v exportu mesh; chybí jen popis scény — spusťte akci znovu, aby se zapsal."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} z {total} zařízení už scénu {scene} zapomněla a export mesh to zaznamenává."
+    },
+    "applied_scene_cleared": {
+      "message": "Popis scény {element} pro scénu {scene} byl vymazán; samotná scéna je stále uložena na zařízení a zaznamenána v exportu mesh — spusťte akci znovu, aby se dokončila."
+    },
+    "applied_scene_members": {
+      "message": "{done} z {total} zařízení uložila scénu {scene} a jsou zaznamenána v exportu mesh; spusťte akci znovu, aby se dokončila."
+    },
+    "applied_keys_cleared": {
+      "message": "Tlačítka těchto zařízení, která vyvolávala scénu {scene}, byla vymazána a export mesh to zaznamenává; spusťte akci znovu, aby se dokončila."
+    },
+    "applied_members": {
+      "message": "{done} z {total} zařízení už scénu {scene} zapomněla a export mesh to zaznamenává; spusťte akci znovu, aby se dokončila."
+    },
+    "applied_unused_deleted": {
+      "message": "Scény, které export mesh nezná, už byly předtím smazány ({deleted}); export mesh se nezměnil, protože je nikdy neobsahoval — spusťte akci znovu, aby se dokončila."
+    },
+    "applied_socket_set": {
+      "message": "Předtím byla zásuvka {socket} nastavena podle požadavku."
+    },
+    "applied_sockets_set": {
+      "message": "Předtím byly zásuvky {sockets} nastaveny podle požadavku."
+    },
+    "applied_switch_on_written": {
+      "message": "Práh zapnutí zásuvky {socket} byl zapsán předtím."
+    },
+    "applied_switch_off_written": {
+      "message": "Práh vypnutí zásuvky {socket} byl zapsán předtím."
+    },
+    "applied_thresholds_written": {
+      "message": "Oba prahy zásuvky {socket} byly zapsány předtím."
+    },
+    "applied_rerun": {
+      "message": "Spusťte akci znovu se stejným cílem, aby se dokončila."
     }
   },
   "issues": {

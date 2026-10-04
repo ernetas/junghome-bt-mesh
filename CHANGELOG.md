@@ -64,6 +64,18 @@
   as complete (at most every 150 ms, also once its reassembly has expired) rather than dropped as a replay, and a
   reassembly discarded after 10 s without a new segment takes its timer with it. Messages to a group or another node
   are still never acknowledged. Regression only on air: a segmented status from a node exercises the receive path.
+- The errors of a plan that stopped part-way (a node refused, did not answer, was unreachable or asleep, a pre-flight
+  read found something else than the export, a scene or
+  threshold write failed) are translated to the end. Their last sentence, what was applied before the stop and how to
+  finish, was English in every language; it now comes from the integration's translations in Home Assistant's
+  language (the server's, like the logbook's lines), with the counts, addresses and scene numbers filled in. A
+  threshold call's account of what it wrote reads a little differently in English too: one sentence per socket.
+
+### Internal
+
+- What a stop applied is data (`configurator.plan.Applied`: `applied_*` messages of `exceptions` and their
+  placeholders), worded where the error is raised (`configurator.store.applied_message`); `texts.cached_text` reads
+  the translation cache for it and for the logbook.
 
 ## 1.2.0
 

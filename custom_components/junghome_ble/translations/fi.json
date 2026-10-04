@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Ei lähetetty: {node} vastasi viestiin {message} arvolla {found}, mutta mesh-verkon viennissä on {expected} (muita eroja: {others}). Asennusta on muutettu mesh-verkon viennin jälkeen (JUNG HOME -sovelluksessa, laitteen nollauksella tai aiemmalla toiminnolla, joka pysähtyi kesken), ja suunnitelma korvaisi sen, mitä vienti ei enää kuvaa. Vie projekti sovelluksesta uudelleen tai anna Home Assistantin ottaa yhdyskäytävän vienti käyttöön ja suorita toiminto uudelleen; asetuksella `force` se suoritetaan ilman tätä tarkistusta. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Ennen sitä mitään ei otettu käyttöön; mesh-verkon vienti on ennallaan."
+    },
+    "applied_partly": {
+      "message": "Ennen sitä hyväksytyt {accepted}/{total} viestiä otettiin käyttöön mesh-verkossa ja ne on kirjattu mesh-verkon vientiin; suorita toiminto uudelleen samalla kohteella viedäksesi sen loppuun."
+    },
+    "applied_key_wired": {
+      "message": "Kaikki painikkeen kytkennät määritettiin ja ne on kirjattu mesh-verkon vientiin; vain painiketila puuttuu — suorita toiminto uudelleen samalla kohteella asettaaksesi sen."
+    },
+    "applied_lock_wired": {
+      "message": "Kaikki painikkeen kytkennät määritettiin ja ne on kirjattu mesh-verkon vientiin; sen lukitustoiminto ja painiketila puuttuvat — suorita toiminto uudelleen samalla kohteella asettaaksesi ne."
+    },
+    "applied_scene_wired": {
+      "message": "Painike lähettää tilannekutsunsa kaikille laitteille, ja se on kirjattu mesh-verkon vientiin; sen kutsuma tilanne ja sen painiketila puuttuvat — suorita toiminto uudelleen samalla tilanteella asettaaksesi ne."
+    },
+    "applied_removed": {
+      "message": "Laite {device} palautettiin, ja mesh-verkon vienti kirjaa sen poistetuksi verkosta; {accepted}/{total} viestistä, jotka poistavat muiden laitteiden kytkennät siihen, otettiin käyttöön ja ne on myös kirjattu. Muihin laitteisiin jääneet kytkennät osoittavat laitteeseen, joka ei enää vastaa; mesh-verkon vienti säilyttää ne, jottei mikään uusi käytä niiden ryhmiä uudelleen."
+    },
+    "applied_scene_stored": {
+      "message": "Tilanne {scene} on tallennettu laitteeseen {device}, ja jäsen on kirjattu mesh-verkon vientiin; vain tilanteen kuvaus puuttuu — suorita toiminto uudelleen kirjoittaaksesi sen."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done}/{total} laitetta on jo unohtanut tilanteen {scene}, ja mesh-verkon vienti kirjaa sen."
+    },
+    "applied_scene_cleared": {
+      "message": "Kohteen {element} tilanteen kuvaus tilanteelle {scene} tyhjennettiin; itse tilanne on yhä tallennettu laitteeseen ja kirjattu mesh-verkon vientiin — suorita toiminto uudelleen viedäksesi sen loppuun."
+    },
+    "applied_scene_members": {
+      "message": "{done}/{total} laitetta tallensi tilanteen {scene}, ja ne on kirjattu mesh-verkon vientiin; suorita toiminto uudelleen viedäksesi sen loppuun."
+    },
+    "applied_keys_cleared": {
+      "message": "Näiden laitteiden painikkeet, jotka kutsuivat tilannetta {scene}, tyhjennettiin, ja mesh-verkon vienti kirjaa sen; suorita toiminto uudelleen viedäksesi sen loppuun."
+    },
+    "applied_members": {
+      "message": "{done}/{total} laitetta on jo unohtanut tilanteen {scene}, ja mesh-verkon vienti kirjaa sen; suorita toiminto uudelleen viedäksesi sen loppuun."
+    },
+    "applied_unused_deleted": {
+      "message": "Mesh-verkon viennille tuntemattomia tilanteita poistettiin jo ennen sitä ({deleted}); mesh-verkon vienti on ennallaan, koska se ei koskaan sisältänyt niitä — suorita toiminto uudelleen viedäksesi sen loppuun."
+    },
+    "applied_socket_set": {
+      "message": "Ennen sitä pistorasia {socket} asetettiin pyydetysti."
+    },
+    "applied_sockets_set": {
+      "message": "Ennen sitä pistorasiat {sockets} asetettiin pyydetysti."
+    },
+    "applied_switch_on_written": {
+      "message": "Pistorasian {socket} kytkentäkynnys kirjoitettiin ennen sitä."
+    },
+    "applied_switch_off_written": {
+      "message": "Pistorasian {socket} katkaisukynnys kirjoitettiin ennen sitä."
+    },
+    "applied_thresholds_written": {
+      "message": "Pistorasian {socket} molemmat kynnykset kirjoitettiin ennen sitä."
+    },
+    "applied_rerun": {
+      "message": "Suorita toiminto uudelleen samalla kohteella viedäksesi sen loppuun."
     }
   },
   "issues": {

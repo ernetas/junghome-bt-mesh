@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "未发送：{node} 对 {message} 的应答为 {found}，但 Mesh 导出文件中为 {expected}（另有 {others} 处差异）。Mesh 导出文件生成后，安装已发生更改（在 JUNG HOME 应用中、因设备重置，或因之前中途停止的操作），该计划将覆盖导出文件已不再描述的内容。请从应用重新导出项目，或让 Home Assistant 接管网关的导出文件，然后再次运行该操作；使用 `force` 时将不进行此检查。{applied}"
+    },
+    "applied_nothing": {
+      "message": "在此之前没有应用任何内容；Mesh 导出文件未改变。"
+    },
+    "applied_partly": {
+      "message": "在此之前被接受的 {total} 条消息中的 {accepted} 条已应用到 Mesh 并记录在 Mesh 导出文件中；请以相同目标再次运行该动作以完成。"
+    },
+    "applied_key_wired": {
+      "message": "按钮的所有关联均已配置并记录在 Mesh 导出文件中；只缺少按钮模式——请以相同目标再次运行该动作以设置它。"
+    },
+    "applied_lock_wired": {
+      "message": "按钮的所有关联均已配置并记录在 Mesh 导出文件中；缺少其锁定功能和按钮模式——请以相同目标再次运行该动作以设置它们。"
+    },
+    "applied_scene_wired": {
+      "message": "按钮会将其场景调用发送到所有设备，这已记录在 Mesh 导出文件中；缺少它调用的场景和其按钮模式——请以相同场景再次运行该动作以设置它们。"
+    },
+    "applied_removed": {
+      "message": "设备 {device} 已重置，Mesh 导出文件将其记录为已从网络中移除；移除其他设备与它之间关联的 {total} 条消息中的 {accepted} 条已应用，并且也已记录。留在其他设备上的关联指向一个不再应答的设备；Mesh 导出文件会保留它们，以免新的内容重复使用其组。"
+    },
+    "applied_scene_stored": {
+      "message": "场景 {scene} 已保存在设备 {device} 上，该成员已记录在 Mesh 导出文件中；只缺少场景描述——请再次运行该动作以写入它。"
+    },
+    "applied_scene_forgotten": {
+      "message": "{total} 个设备中已有 {done} 个删除了场景 {scene}，Mesh 导出文件已记录这一点。"
+    },
+    "applied_scene_cleared": {
+      "message": "{element} 针对场景 {scene} 的场景描述已清除；场景本身仍保存在设备上并记录在 Mesh 导出文件中——请再次运行该动作以完成。"
+    },
+    "applied_scene_members": {
+      "message": "{total} 个设备中有 {done} 个已保存场景 {scene} 并记录在 Mesh 导出文件中；请再次运行该动作以完成。"
+    },
+    "applied_keys_cleared": {
+      "message": "这些设备中调用场景 {scene} 的按钮已被清除，Mesh 导出文件已记录这一点；请再次运行该动作以完成。"
+    },
+    "applied_members": {
+      "message": "{total} 个设备中已有 {done} 个删除了场景 {scene}，Mesh 导出文件已记录这一点；请再次运行该动作以完成。"
+    },
+    "applied_unused_deleted": {
+      "message": "Mesh 导出文件中没有的场景在此之前已被删除（{deleted}）；Mesh 导出文件从未包含它们，因此未改变——请再次运行该动作以完成。"
+    },
+    "applied_socket_set": {
+      "message": "在此之前，插座 {socket} 已按要求设置。"
+    },
+    "applied_sockets_set": {
+      "message": "在此之前，插座 {sockets} 已按要求设置。"
+    },
+    "applied_switch_on_written": {
+      "message": "插座 {socket} 的开启阈值已在此之前写入。"
+    },
+    "applied_switch_off_written": {
+      "message": "插座 {socket} 的关闭阈值已在此之前写入。"
+    },
+    "applied_thresholds_written": {
+      "message": "插座 {socket} 的两个阈值均已在此之前写入。"
+    },
+    "applied_rerun": {
+      "message": "请以相同目标再次运行该动作以完成。"
     }
   },
   "issues": {

@@ -1613,6 +1613,63 @@
     },
     "service_preflight_differs": {
       "message": "Neišsiųsta: {node} į {message} atsakė {found}, bet tinklo eksporte nurodyta {expected} (kitų skirtumų: {others}). Po tinklo eksporto sukūrimo instaliacija pasikeitė („JUNG HOME“ programėlėje, atkūrus įrenginį arba dėl ankstesnio veiksmo, kuris sustojo pusiaukelėje), ir planas perrašytų tai, ko eksportas nebeaprašo. Iš naujo eksportuokite projektą programėlėje arba leiskite Home Assistant perimti sietuvo eksportą ir paleiskite veiksmą dar kartą; su `force` jis vykdomas be šio patikrinimo. {applied}"
+    },
+    "applied_nothing": {
+      "message": "Prieš tai niekas nebuvo pritaikyta; tinklo eksportas nepakito."
+    },
+    "applied_partly": {
+      "message": "{accepted} iš {total} prieš tai priimtų pranešimų pritaikyti tinkle ir įrašyti į tinklo eksportą; paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad jį užbaigtumėte."
+    },
+    "applied_key_wired": {
+      "message": "Visi mygtuko susiejimai sukonfigūruoti ir įrašyti į tinklo eksportą; trūksta tik mygtuko režimo – paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad jis būtų nustatytas."
+    },
+    "applied_lock_wired": {
+      "message": "Visi mygtuko susiejimai sukonfigūruoti ir įrašyti į tinklo eksportą; trūksta jo blokavimo funkcijos ir mygtuko režimo – paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad jie būtų nustatyti."
+    },
+    "applied_scene_wired": {
+      "message": "Mygtukas siunčia savo scenų iškvietimus visiems įrenginiams ir tai įrašyta į tinklo eksportą; trūksta scenos, kurią jis iškviečia, ir jo mygtuko režimo – paleiskite veiksmą dar kartą su ta pačia scena, kad jie būtų nustatyti."
+    },
+    "applied_removed": {
+      "message": "Įrenginys {device} atkurtas, o tinklo eksportas jį įrašo kaip pašalintą iš tinklo; {accepted} iš {total} pranešimų, šalinančių kitų įrenginių susiejimus su juo, pritaikyti ir taip pat įrašyti. Kituose įrenginiuose likę susiejimai rodo į įrenginį, kuris nebeatsako; tinklo eksportas juos išlaiko, kad niekas naujas nepanaudotų jų grupių iš naujo."
+    },
+    "applied_scene_stored": {
+      "message": "Scena {scene} išsaugota įrenginyje {device}, o narys įrašytas į tinklo eksportą; trūksta tik scenos aprašo – paleiskite veiksmą dar kartą, kad jis būtų įrašytas."
+    },
+    "applied_scene_forgotten": {
+      "message": "{done} iš {total} įrenginių jau pamiršo sceną {scene}, ir tinklo eksportas tai įrašo."
+    },
+    "applied_scene_cleared": {
+      "message": "{element} scenos aprašas scenai {scene} išvalytas; pati scena vis dar išsaugota įrenginyje ir įrašyta į tinklo eksportą – paleiskite veiksmą dar kartą, kad jį užbaigtumėte."
+    },
+    "applied_scene_members": {
+      "message": "{done} iš {total} įrenginių išsaugojo sceną {scene} ir yra įrašyti į tinklo eksportą; paleiskite veiksmą dar kartą, kad jį užbaigtumėte."
+    },
+    "applied_keys_cleared": {
+      "message": "Šių įrenginių mygtukai, kurie iškviesdavo sceną {scene}, išvalyti, ir tinklo eksportas tai įrašo; paleiskite veiksmą dar kartą, kad jį užbaigtumėte."
+    },
+    "applied_members": {
+      "message": "{done} iš {total} įrenginių jau pamiršo sceną {scene}, ir tinklo eksportas tai įrašo; paleiskite veiksmą dar kartą, kad jį užbaigtumėte."
+    },
+    "applied_unused_deleted": {
+      "message": "Tinklo eksportui nežinomos scenos jau buvo ištrintos prieš tai ({deleted}); tinklo eksportas nepakito, nes jų niekada neturėjo – paleiskite veiksmą dar kartą, kad jį užbaigtumėte."
+    },
+    "applied_socket_set": {
+      "message": "Prieš tai elektros lizdas {socket} buvo nustatytas, kaip prašyta."
+    },
+    "applied_sockets_set": {
+      "message": "Prieš tai elektros lizdai {sockets} buvo nustatyti, kaip prašyta."
+    },
+    "applied_switch_on_written": {
+      "message": "Elektros lizdo {socket} įjungimo slenkstis buvo įrašytas prieš tai."
+    },
+    "applied_switch_off_written": {
+      "message": "Elektros lizdo {socket} išjungimo slenkstis buvo įrašytas prieš tai."
+    },
+    "applied_thresholds_written": {
+      "message": "Abu elektros lizdo {socket} slenksčiai buvo įrašyti prieš tai."
+    },
+    "applied_rerun": {
+      "message": "Paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad jį užbaigtumėte."
     }
   },
   "issues": {
