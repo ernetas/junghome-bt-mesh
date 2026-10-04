@@ -421,6 +421,8 @@ Dependencies (hard unless marked *soft*):
   new registrations only?
 - **M10 — Discovery (brief 24).** JUNG-only matcher after the on-air check; move the entry unique id to the mesh UUID
   (entry migration)?
+  **Taken:** yes to both (brief 69). The on-air probe: 28 of 29 JUNG proxies in Home Assistant's stored adverts carry
+  manufacturer data 0x0527.
 - **M11 — Hold end on link loss (R4-7, brief 19).** Fire `hold_end` with `reason: link_lost`, or drop the hold
   silently?
 - **M12 — Follow the app (brief 48).** A periodic gateway GET (every few hours) plus activity-triggered adoption: OK?

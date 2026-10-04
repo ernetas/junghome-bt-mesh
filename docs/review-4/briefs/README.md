@@ -135,5 +135,6 @@ check on air. *human* = needs a person.
 | [66](66-hacs-first-release.md) | First full release and a green HACS run (HACS-2) | P6 | 23 | S–M | local *human* | 06, 65, M14 | `ci.yml`, `release.yml`, `CHANGELOG.md` |
 | [67](67-hacs-default-submission.md) | hacs/default submission (HACS-3) | P6 | 24 | S | local *human* | 66, M14, M15 | `README.md`, `hacs.json` |
 | [68](68-more-languages.md) | The languages of the JUNG HOME gateway integration (24 beyond en, de) | P3 | 14b | L | local | 51 | `translations/<lang>.json` |
+| [69](69-jung-only-discovery-and-mesh-uuid-id.md) | JUNG-only discovery, the mesh UUID as the entry's unique id (M10) | P3 | 18 | M | local | 24, 60 | `manifest.json`, `config_flow.py`, `__init__.py` |
 
 Briefs 01 and 02 should be cherry-picked first in wave 1; every later brief assumes the strict fake teardown.
