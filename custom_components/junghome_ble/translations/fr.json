@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Température de protection contre le gel"
       },
+      "hotel_dimm_value": {
+        "name": "Luminosité de la fonction hôtel"
+      },
       "lightness_max": {
         "name": "Luminosité maximale"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Durée minimale du changement de sens moteur"
+      },
+      "night_dimm_value": {
+        "name": "Luminosité de la veilleuse"
       },
       "off_delay": {
         "name": "Temporisation de désactivation"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Éteindre automatiquement l'écran"
+      },
+      "basic_light_function_enable": {
+        "name": "Fonction hôtel"
       },
       "blinds_invert_output": {
         "name": "Fonctionnement inversé"

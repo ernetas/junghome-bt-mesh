@@ -82,26 +82,46 @@ UNSAFE_PROPERTIES: frozenset[int] = frozenset(
     }
 )
 # Firmware-only ids (`PropertySpec.source == "firmware"`) whose layout and effect a supervised probe settled on air:
-# only these become config entities, and always disabled by default (`config_targets`). None has been yet — 0x0F00,
-# 0x500C and the hotel / night / presentation ids 0x1008-0x1013 wait for the probe of `docs/on-air-sweep.md` C6,
-# and an id without a codec stays Raw and unmapped here even when listed.
-FIRMWARE_ENTITIES: frozenset[int] = frozenset()
+# only these become config entities, and always disabled by default (`config_targets`); an id without a codec
+# stays Raw and unmapped here even when listed. The on-air sweep (`docs/on-air-sweep.md` A7 / C6,
+# `docs/hidden-features.md` §13) settled the DALI insert's hotel function: its enable (0x1009), the level an off
+# leaves the light at (0x1008) and the night level beside it (0x1011, effect unseen). Left out: 0x0F00 (no effect
+# seen and no meaning in the app), 0x500C (the app has no such setting, its effect needs a person at the key) and
+# the presentation records 0x1012 / 0x1013 (layout unknown).
+PROPERTY_HOTEL_VALUE, PROPERTY_HOTEL_FUNCTION, PROPERTY_NIGHT_VALUE = (
+    0x1008,
+    0x1009,
+    0x1011,
+)
+DALI_INSERT_PROPERTIES = frozenset(
+    {PROPERTY_HOTEL_VALUE, PROPERTY_HOTEL_FUNCTION, PROPERTY_NIGHT_VALUE}
+)
+FIRMWARE_ENTITIES: frozenset[int] = DALI_INSERT_PROPERTIES
 PROPERTY_WALKING_TEST, PROPERTY_PRESENCE_CONTROL = 0x6001, 0x6003
 PIR_SENSOR_C = P.PROPERTIES[0x600A]  # a presence detector's only (`retired_unique_ids`)
 # Load-element properties that only apply to some load kinds (`Light.kind`); the rest apply to every load.
 LAMP_KINDS = frozenset({"switch", "dimmer", "ctl"})
 # The dim mode only on a dimmer: the app's `DimLampDevice` is `DimModeCompatible`, its `TunableWhiteLampDevice`
 # (a DALI tunable-white load, kind "ctl") is not (`Y7/f0.java`, `Y7/t0.java`).
+# The hotel function only on a tunable-white (DALI) load: the sweep saw a switch insert answer 0x1008 with the id
+# alone, and has no dimmer insert to try.
 LOAD_KINDS: dict[int, frozenset[str]] = {
     PROPERTY_DIM_MODE: frozenset({"dimmer"}),
     PROPERTY_DIM_TO_WARM: frozenset({"ctl"}),
     PROPERTY_LOCK: LAMP_KINDS | {"socket", "blind"},
+    **dict.fromkeys(DALI_INSERT_PROPERTIES, frozenset({"ctl"})),
 }
 BLIND_PROPERTIES = range(0x1100, 0x1200)  # a blind load: no such device is derived yet
 # Keys with an LED: mini-actuator inputs publish key events too, but have nothing to light. Mains push-buttons only:
 # a battery wall transmitter sleeps between key presses, so an unacknowledged write to it is lost, yet the switch
 # would show the written value as applied for good.
 STATUS_LED_PRODUCTS = P.PB_MAINS
+# The products an entity is offered on where they are narrower than the catalogue's: the status LED's above, and the
+# hotel function on the push-button's DALI insert, the only one seen serving it (a DALI mini actuator is untried).
+ENTITY_PRODUCTS: dict[int, frozenset[int]] = {
+    PROPERTY_STATUS_LED: STATUS_LED_PRODUCTS,
+    **dict.fromkeys(DALI_INSERT_PROPERTIES, P.PB_MAINS),
+}
 
 # The parameters on the first (non-expert) Parameters page per device type, `device-settings.md` §1.1 / §2-§9.
 # The status LED is not an app setting; it is enabled like the gateway integration's `status_led` switch.
@@ -631,9 +651,7 @@ def _candidates(hub: JungHomeHub, node: Node) -> Iterator[PropertyEntityDescript
     version = node_version(hub, node)
     for description in descriptions():
         spec = description.spec
-        products = (
-            STATUS_LED_PRODUCTS if spec.id == PROPERTY_STATUS_LED else spec.products
-        )
+        products = ENTITY_PRODUCTS.get(spec.id, spec.products)
         if pid in products and P.supported(spec, version):
             yield description
 

@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Frost protection temperature"
       },
+      "hotel_dimm_value": {
+        "name": "Hotel function brightness"
+      },
       "lightness_max": {
         "name": "Maximum brightness"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimum motor reversal time"
+      },
+      "night_dimm_value": {
+        "name": "Night-light brightness"
       },
       "off_delay": {
         "name": "Switch-off delay"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Automatically switch off display"
+      },
+      "basic_light_function_enable": {
+        "name": "Hotel function"
       },
       "blinds_invert_output": {
         "name": "Inverse operation"

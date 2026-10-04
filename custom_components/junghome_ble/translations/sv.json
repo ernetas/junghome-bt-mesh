@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Frostskyddstemperatur"
       },
+      "hotel_dimm_value": {
+        "name": "Ljusstyrka för hotellfunktion"
+      },
       "lightness_max": {
         "name": "Maximal ljusstyrka"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimal reverseringstid för motor"
+      },
+      "night_dimm_value": {
+        "name": "Ljusstyrka för nattljus"
       },
       "off_delay": {
         "name": "Frånslagsfördröjning"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Stäng av displayen automatiskt"
+      },
+      "basic_light_function_enable": {
+        "name": "Hotellfunktion"
       },
       "blinds_invert_output": {
         "name": "Omvänd drift"

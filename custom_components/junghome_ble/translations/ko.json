@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "결빙 방지 온도"
       },
+      "hotel_dimm_value": {
+        "name": "호텔 기능 밝기"
+      },
       "lightness_max": {
         "name": "최대 밝기"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "최소 모터 반전 시간"
+      },
+      "night_dimm_value": {
+        "name": "야간등 밝기"
       },
       "off_delay": {
         "name": "끄기 지연"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "디스플레이 자동 끄기"
+      },
+      "basic_light_function_enable": {
+        "name": "호텔 기능"
       },
       "blinds_invert_output": {
         "name": "반전 작동"

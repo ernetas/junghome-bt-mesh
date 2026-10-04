@@ -29,6 +29,15 @@
   before the beacon goes. Unverified on air. In the library: `LocalState.start_iv_update` (with `IVUpdateRefused`,
   `iv_update_due`, `complete_iv_update`, `persist_durably`), `ProxyClient.start_iv_update` and
   `pdu.secure_network_beacon`.
+- **The DALI insert's hotel function as configuration entities** (review-4 brief 73; F4-3, F4-9, F4-10, F4-11): on
+  the light of a push-button with a DALI (tunable-white) insert, three firmware-only properties the on-air sweep
+  settled, all disabled by default and named after the strings the app declares for them but does not show —
+  *Hotel function* (switch, `0x1009`: switching the light off leaves it on at the hotel brightness, seen on air),
+  *Hotel function brightness* (number, `0x1008`, 0–100 %, one byte in 1/255 on the wire) and *Night-light
+  brightness* (number, `0x1011`, same layout; when the device applies it is unverified on air). Writing them through
+  Home Assistant is unverified on air (the sweep wrote them from the command line). Left out, with the reasons in the
+  documentation: *transmission settings* (`0x0F00`), *key toggle enable* (`0x500C`), the presentation mode
+  (`0x1012` / `0x1013`) and a free LED colour outside the app's palette.
 
 ### Changed
 

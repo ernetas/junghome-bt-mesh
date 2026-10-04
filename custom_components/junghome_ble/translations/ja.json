@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "凍結防止温度"
       },
+      "hotel_dimm_value": {
+        "name": "ホテル機能の明るさ"
+      },
       "lightness_max": {
         "name": "最大の明るさ"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "モーター反転の最小時間"
+      },
+      "night_dimm_value": {
+        "name": "常夜灯の明るさ"
       },
       "off_delay": {
         "name": "オフ遅延"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "ディスプレイを自動的にオフ"
+      },
+      "basic_light_function_enable": {
+        "name": "ホテル機能"
       },
       "blinds_invert_output": {
         "name": "反転動作"

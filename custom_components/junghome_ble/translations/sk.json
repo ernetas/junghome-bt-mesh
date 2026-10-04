@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Teplota ochrany proti mrazu"
       },
+      "hotel_dimm_value": {
+        "name": "Jas hotelovej funkcie"
+      },
       "lightness_max": {
         "name": "Maximálny jas"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimálny čas reverzácie motora"
+      },
+      "night_dimm_value": {
+        "name": "Jas nočného svetla"
       },
       "off_delay": {
         "name": "Oneskorenie vypnutia"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Automaticky vypnúť displej"
+      },
+      "basic_light_function_enable": {
+        "name": "Hotelová funkcia"
       },
       "blinds_invert_output": {
         "name": "Inverzná prevádzka"

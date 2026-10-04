@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Temperatură de protecție împotriva înghețului"
       },
+      "hotel_dimm_value": {
+        "name": "Luminozitatea funcției hotel"
+      },
       "lightness_max": {
         "name": "Luminozitate maximă"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Timp minim de inversare a motorului"
+      },
+      "night_dimm_value": {
+        "name": "Luminozitatea luminii de noapte"
       },
       "off_delay": {
         "name": "Întârziere la oprire"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Oprește automat afișajul"
+      },
+      "basic_light_function_enable": {
+        "name": "Funcție hotel"
       },
       "blinds_invert_output": {
         "name": "Funcționare inversată"

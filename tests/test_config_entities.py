@@ -44,6 +44,7 @@ from custom_components.junghome_ble import const
 from custom_components.junghome_ble import keep_awake as keep_awake_mod
 from custom_components.junghome_ble.binary_sensor import JungHomeDetectorOccupancy
 from custom_components.junghome_ble.const import (
+    DOMAIN,
     NODE_INFO_VENDOR,
     SIGNAL_UPDATE,
 )
@@ -159,6 +160,7 @@ def test_mapping_table() -> None:
         0x1101, 0x1102, 0x1103, 0x1106, 0x1107, 0x110A, 0x110B,  # blinds
         0x1203, 0x1204, 0x1205, 0x1224,  # RTR temperatures / offset
         0x6008, 0x6009, 0x600A, 0x600F, 0x6021,  # detector PIR areas, brightness threshold, repetition
+        0x1008, 0x1011,  # firmware-only, settled on air: the hotel and night levels
     }  # fmt: skip
     assert by_platform["select"] == {
         0x0013, 0x1104, 0x1105, 0x1201, 0x120A, 0x120B, 0x1221, 0x1240, 0x6006, 0x6017,
@@ -167,10 +169,11 @@ def test_mapping_table() -> None:
     assert by_platform["switch"] == {
         0x0009,  # lock function, a switch class of its own
         0x000F, 0x0012, 0x100A, 0x100B, 0x100C, 0x100E, 0x1108, 0x120D, 0x1246, 0x1247, 0x6015, 0x5013,
+        0x1009,  # firmware-only, settled on air: the hotel function
     }  # fmt: skip
     assert by_platform["button"] == {0x110D}
     assert set(by_platform) == {"number", "select", "switch", "button"}
-    assert len(C.descriptions()) == 56
+    assert len(C.descriptions()) == 59
 
 
 @pytest.mark.parametrize(
@@ -184,7 +187,7 @@ def test_mapping_table() -> None:
         0x5010, 0x5011, 0x5012,  # read-only charts and events
         0x1014, 0x1208, 0x6001, 0x6003,  # unsafe / no UI / paired
         0x6016,  # set on the detector: a read-only sensor (review-3 P3)
-        0x000E, 0x1008, 0xA000, 0xA003,  # firmware-only ids
+        0x000E, 0x0F00, 0x1012, 0x500C, 0xA000, 0xA003,  # firmware-only ids not settled
         0xC001,  # gateway credentials
     ],
 )  # fmt: skip
@@ -243,16 +246,19 @@ def targets_of(hub: Any, node_uuid: str, pid: int) -> list[C.PropertyTarget]:
 
 def test_fixture_network_counts() -> None:
     targets = C.config_targets(fake_hub())
-    assert Counter(t.description.platform for t in targets) == {
-        "number": 24,
-        "select": 11,
-        "switch": 32,  # 26 + a lock on each of the 6 loads
-    }
-    assert len(targets) == 67
+    assert (
+        Counter(t.description.platform for t in targets)
+        == {
+            "number": 26,  # 24 + the DALI load's hotel and night levels
+            "select": 11,
+            "switch": 33,  # 26 + a lock on each of the 6 loads + the DALI load's hotel function
+        }
+    )
+    assert len(targets) == 70
     assert len(C.night_mode_targets(fake_hub())) == 4
     assert sum(t.enabled_default for t in targets) == 32
     assert (
-        len({t.unique_id for t in targets}) == 67
+        len({t.unique_id for t in targets}) == 70
     )  # one entity per (device, element, property)
     for platform in ("number", "select", "switch", "button"):
         assert all(
@@ -577,26 +583,36 @@ def test_pages_of_other_device_types() -> None:
 def test_firmware_ids_become_entities_only_when_settled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A firmware-only id is a config entity only once a probe settled it (`FIRMWARE_ENTITIES`, review-4 brief 36).
+    """A firmware-only id is a config entity only once a probe settled it (`FIRMWARE_ENTITIES`, review-4 briefs 36, 73).
 
-    None is yet. Listed, an id with a codec maps by its codec like an app parameter and starts disabled even where
-    the first Parameters page would enable it; an id still Raw stays unmapped. Nothing is ever written to an id
-    that is not listed.
+    The on-air sweep settled the DALI insert's hotel function; the rest stay unmapped. Listed, an id with a codec
+    maps by its codec like an app parameter and starts disabled even where the first Parameters page would enable
+    it; an id still Raw stays unmapped. Nothing is ever written to an id that is not listed.
     """
-    assert not C.FIRMWARE_ENTITIES
-    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1008, 0x1009, 0x1011, 0x1012, 0x1013, 0x500C):
+    assert {0x1008, 0x1009, 0x1011} == C.FIRMWARE_ENTITIES
+    described_ids = {
+        pid: (d.platform, d.translation_key)
+        for pid in C.FIRMWARE_ENTITIES
+        if (d := C.describe(spec(pid)))
+    }
+    assert described_ids == {
+        0x1008: ("number", "hotel_dimm_value"),
+        0x1009: ("switch", "basic_light_function_enable"),
+        0x1011: ("number", "night_dimm_value"),
+    }
+    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1012, 0x1013, 0x500C):
         assert spec(pid).source == "firmware"
         assert C.describe(spec(pid)) is None
     cooling = spec(0x1206)  # firmware-only, °C like the RTR's app temperatures
     assert C.describe(cooling) is None
-    monkeypatch.setattr(T, "FIRMWARE_ENTITIES", frozenset({0x1206, 0x1008}))
+    monkeypatch.setattr(T, "FIRMWARE_ENTITIES", frozenset({0x1206, 0x1012}))
     described = C.describe(cooling)
     assert described is not None
     assert (described.platform, described.translation_key) == (
         "number",
         "rtr_cooling_temperature",
     )
-    assert C.describe(spec(0x1008)) is None  # Raw: no platform to give it
+    assert C.describe(spec(0x1012)) is None  # Raw: no platform to give it
     monkeypatch.setitem(C.FIRST_PAGE, "rtr", C.FIRST_PAGE["rtr"] | {0x1206})
     hub = fake_hub()
     rtr = _synthetic_node(0x0A, [0x0001, 0x0040])
@@ -607,6 +623,100 @@ def test_firmware_ids_become_entities_only_when_settled(
         "rtr",
         False,
     )
+
+
+HOTEL_VALUE, HOTEL_FUNCTION, NIGHT_VALUE = 0x1008, 0x1009, 0x1011
+
+
+def test_hotel_function_only_on_the_dali_insert_disabled_by_default() -> None:
+    """The sweep saw the DALI insert's load serve the hotel ids, a switch insert answer with the id alone.
+
+    So the entities sit on a push-button's tunable-white load only: not on a switch or dimmer insert, a socket or a
+    mini actuator, and off by default like every firmware-only entity.
+    """
+    hub = fake_hub()
+    for pid in (HOTEL_VALUE, HOTEL_FUNCTION, NIGHT_VALUE):
+        targets = [t for t in C.config_targets(hub) if t.spec.id == pid]
+        assert [(t.address, t.page, t.enabled_default) for t in targets] == [
+            (LIGHT_CTL, "lamp", False)
+        ]
+        assert targets[0].unique_id == f"{UID_LIGHT_CTL}-{spec(pid).name}"
+        assert T.ENTITY_PRODUCTS[pid] == P.PB_MAINS
+    for node in (NODE_0148, NODE_LIGHT_DIMMER, NODE_0172, NODE_0400):
+        assert targets_of(hub, node, HOTEL_FUNCTION) == []
+
+
+async def test_hotel_function_entities_read_and_write(
+    hass: HomeAssistant,
+    mesh: PropertyMesh,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fast_sleep: list[float],
+) -> None:
+    """Enabled, the levels read the sweep's `33` as 20 % and write a percentage back in 1/255; the switch its byte."""
+    registry = er.async_get(hass)
+    hotel_uid, function_uid, night_uid = (
+        f"{UID_LIGHT_CTL}-{spec(pid).name}"
+        for pid in (HOTEL_VALUE, HOTEL_FUNCTION, NIGHT_VALUE)
+    )
+    for platform, uid in (
+        ("number", hotel_uid),
+        ("switch", function_uid),
+        ("number", night_uid),
+    ):
+        registry.async_get_or_create(platform, DOMAIN, uid, disabled_by=None)
+    mesh.values[LIGHT_CTL, HOTEL_VALUE] = b"\x33"
+    mesh.values[LIGHT_CTL, NIGHT_VALUE] = b"\x33"
+    mesh.values[LIGHT_CTL, HOTEL_FUNCTION] = b"\x00"
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass, 200)
+    hotel = entity_id(hass, "number", hotel_uid)
+    function = entity_id(hass, "switch", function_uid)
+    night = entity_id(hass, "number", night_uid)
+    assert hass.states.get(hotel).state == "20"
+    assert hass.states.get(night).state == "20"
+    assert hass.states.get(function).state == STATE_OFF
+    assert hass.states.get(function).name == "Living room DALI Hotel function"
+    assert registry.async_get(hotel).entity_category is EntityCategory.CONFIG
+
+    await hass.services.async_call(
+        "number",
+        "set_value",
+        {ATTR_ENTITY_ID: hotel, "value": 40},
+        blocking=True,
+    )
+    assert mesh.sets[-1] == (LIGHT_CTL, HOTEL_VALUE, b"\x66")  # 40 % of 255
+    assert mesh.link.sent[-1] == (
+        OUR_ADDRESS,
+        LIGHT_CTL,
+        M.vendor_property_set("admin", HOTEL_VALUE, b"\x66"),
+    )
+    assert hass.states.get(hotel).state == "40"
+
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: function}, blocking=True
+    )
+    assert mesh.sets[-1] == (LIGHT_CTL, HOTEL_FUNCTION, b"\x01")
+    assert hass.states.get(function).state == STATE_ON
+
+
+async def test_hotel_function_entities_start_disabled(
+    hass: HomeAssistant, init_with_mesh: MockConfigEntry, mesh: PropertyMesh
+) -> None:
+    """Registered on the DALI light, disabled, and never asked for while disabled."""
+    registry = er.async_get(hass)
+    for platform, pid in (
+        ("number", HOTEL_VALUE),
+        ("switch", HOTEL_FUNCTION),
+        ("number", NIGHT_VALUE),
+    ):
+        entry = registry.async_get(
+            entity_id(hass, platform, f"{UID_LIGHT_CTL}-{spec(pid).name}")
+        )
+        assert entry is not None
+        assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert (LIGHT_CTL, pid) not in mesh.gets
 
 
 def test_enabled_by_default_is_the_first_parameters_page() -> None:
@@ -651,6 +761,9 @@ def test_enabled_by_default_is_the_first_parameters_page() -> None:
         0x100A,
         0x100C,
         C.PROPERTY_LOCK,
+        0x1008,
+        0x1009,
+        0x1011,  # the hotel function: firmware-only, off by default
     }  # no dim mode: the DALI load is tunable white
 
 

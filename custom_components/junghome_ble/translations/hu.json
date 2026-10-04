@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Fagyvédelmi hőmérséklet"
       },
+      "hotel_dimm_value": {
+        "name": "Hotel funkció fényereje"
+      },
       "lightness_max": {
         "name": "Maximális fényerő"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimális motorirányváltási idő"
+      },
+      "night_dimm_value": {
+        "name": "Éjszakai fény fényereje"
       },
       "off_delay": {
         "name": "Kikapcsolási késleltetés"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Kijelző automatikus kikapcsolása"
+      },
+      "basic_light_function_enable": {
+        "name": "Hotel funkció"
       },
       "blinds_invert_output": {
         "name": "Fordított működés"

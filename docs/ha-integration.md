@@ -686,15 +686,34 @@ two is written as the nearer one), and its *Brightness threshold* the app's 5 lx
 on the presence detector only — the motion detectors have two areas, and an *Activation area C* an earlier version
 created on one is removed at start.
 
-The JUNG firmware lists more properties than the app uses (`docs/hidden-features.md` §2): *transmission settings*
-(`0x0F00`, on keys and the socket's meter), the runtime statistics (`0x0F01` / `0x0F02`), *key toggle enable*
-(`0x500C`) and, on the DALI insert, the hotel / basic-light / night dim values and the presentation mode (`0x1008`,
-`0x1009`, `0x1011`–`0x1013`). What they do is not known, so none of them is an entity and Home Assistant never
-writes them; a firmware-only property becomes a configuration entity (disabled by default) only once a supervised
-probe on the devices has settled its layout and effect (`config_entities.FIRMWARE_ENTITIES`, empty today; the probe
-is item C6 of `docs/on-air-sweep.md`). The one firmware-only trigger whose effect is known, `0x000E` (a dimmer
-publishes all its light states at once), is not needed: Home Assistant reads the states itself. A key or socket LED
-colour outside the app's palette, which the device may hold, shows as `unknown` in the colour selects.
+The JUNG firmware lists more properties than the app uses (`docs/hidden-features.md` §2). A firmware-only property
+becomes a configuration entity, disabled by default, only once a supervised probe on the devices has settled its
+layout and effect (`properties/targets.py` `FIRMWARE_ENTITIES`; the probe was items A7 and C6 of
+`docs/on-air-sweep.md`). Three have, the DALI insert's **hotel function**, and they sit on the light of a push-button
+with a DALI (tunable-white) insert only — a switch insert answers them with the property id alone, and a dimmer
+insert or a DALI mini actuator has not been tried. Their names are the ones the app declares for them but does not
+show:
+
+- **Hotel function** (`switch`, `0x1009`): on, switching the light off leaves it on at the *Hotel function
+  brightness* instead; seen on air (an off with the function on left the light at 20 % and moved its last
+  brightness there and its colour temperature to 2700 K). Writing it through Home Assistant is **unverified on air**
+  (the probe wrote it from the command line).
+- **Hotel function brightness** (`number`, `0x1008`, 0–100 %, one byte in 1/255 of full on the wire): the level the
+  hotel function leaves the light at; read 20 % on the device here.
+- **Night-light brightness** (`number`, `0x1011`, same layout): a second level beside it, read 20 % here. When the
+  device applies it is **unverified on air** (it needs the dark and a person); nothing in the firmware's list
+  switches a night light on.
+
+Left out, with the reason: *transmission settings* (`0x0F00`, on keys, inputs and the socket's meter — of the
+values tried only `0100` and `0200` are kept, neither changed anything seen in four minutes, and the app names no
+meaning for it); *key toggle enable* (`0x500C`, on keys and inputs — the app has no such setting and its effect needs
+a person at the key); the presentation mode (`0x1012` / `0x1013`, two 8-byte records whose layout is unknown); the
+runtime statistics (`0x0F01` / `0x0F02`, answered with the id alone: nothing counts). The one firmware-only trigger
+whose effect is known, `0x000E` (a dimmer publishes all its light states at once), is not needed: Home Assistant
+reads the states itself. A key or socket LED colour outside the app's palette, which the device accepts and reads
+back (whether the LED shows it is unverified), shows as `unknown` in the colour selects; there is no free-colour
+entity, because the LED colour is a setting the select keeps in the app's palette (with LED 2 following LED 1 while
+synchronised), and a second entity writing the same property in RGB would fight it.
 
 The **device lock** (`0x0001`, one 16-bit word per node) is a switch per flag the app offers: **Lock operation**
 (no operation on the device itself) and **Lock factory reset** on every device, **Key lock** and **Lock

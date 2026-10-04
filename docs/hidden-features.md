@@ -487,11 +487,18 @@ only) and C6 (set and restored, CLI only, nobody at the keys):
 | OnOff Status `[present][target][remaining]` | run-on time `0x1007` | a switch insert, run-on 20 s | the short form | **yes**: the On Set's Status and a Get during the run-on carry no target or remaining time, and the light publishes off by itself at the end; this firmware does not report the time left |
 | `0xA0xx` | LED mode `[r][g][b][mode]`, 0..100 | push-buttons, sockets | on `04640000`, off `641b0000` | in part: `32143c00`, outside the app's palette, is accepted and read back unchanged; whether the LED shows it needs a person |
 
-So Home Assistant exposes none of these ids and writes none of them yet. What it has meanwhile: an allow-list,
-`config_entities.FIRMWARE_ENTITIES` (empty), of firmware-only ids a probe settled — only those become config
-entities, disabled by default, and only with a codec (the ids above stay `Raw`); the runtime statistics sit on the
-Manufacturer server in the catalogue, where every node lists them; and every light and socket has a *Switches off
-at* sensor (disabled by default, read-only) from the remaining time of an OnOff Status heading off. A run-on time
+What Home Assistant does with them (review-4 brief 73): an allow-list, `properties/targets.py` `FIRMWARE_ENTITIES`,
+of firmware-only ids a probe settled — only those become config entities, disabled by default, and only with a
+codec. It holds the DALI insert's hotel function, on a push-button's tunable-white load only, named after the
+app's declared but unshown strings: `0x1009` the switch *Hotel function* (`Bool`), `0x1008` the number *Hotel
+function brightness* and `0x1011` the number *Night-light brightness* (`Percent`: one byte in 1/255, shown 0–100 %;
+the night value's effect unverified on air). The rest stay `Raw` and unexposed: `0x0F00` (no effect seen and no
+meaning in the app's notes), `0x500C` (no such setting in the app; its effect needs a person at the key), `0x1012` /
+`0x1013` (layout unknown). The LED colour outside the palette gets no free-colour entity: the colour select keeps
+the app's palette (and LED 2 following LED 1 while synchronised), and a second entity writing the same property
+would fight it; such a colour shows as `unknown` there. The runtime statistics sit on the Manufacturer server in
+the catalogue, where every node lists them; and every light and socket has a *Switches off at* sensor (disabled by
+default, read-only) from the remaining time of an OnOff Status heading off. A run-on time
 is not reported that way (above), so the sensor stays unknown through one; a transition to off is (a switch insert
 switched off with a 3 s transition answers *on, target off, remaining 2.8 s*, §11). The sensor is kept for now.
 
@@ -500,6 +507,5 @@ and the OnOff Status of a light whose run-on time is set, right after its key sw
 **C6** sets and restores them with someone at home (the meter's rhythm under `0000` / `0200` / `0101`, a key with
 `500C = 00`, the basic-light enable and night value on the DALI insert, the presentation time field, a 20 s run-on
 time, an LED colour outside the palette). What is still open: the key toggling, the night value, the presentation
-ids, whether the LED shows a colour outside the palette, and the dimmer insert (none here). The outcomes go here and
-into `android/properties.md` §1.10; then codecs for the settled ids, their entries in `FIRMWARE_ENTITIES` (a number
-for a percentage, a switch for an enable), and the RGB LED light if the colour step works.
+ids, whether the LED shows a colour outside the palette, and the dimmer insert (none here). The outcomes are here and
+in `android/properties.md` §1.10; the settled ids are entities (above).

@@ -512,7 +512,7 @@ def test_catalogue_covers_every_id_the_app_reads_or_writes():
 def test_firmware_ids_waiting_for_the_probe_stay_raw():
     """Review-4 brief 36: no codec before a supervised probe settles an id; the runtime statistics are where the
     devices list them, on the Manufacturer server (`docs/hidden-features.md` §2)."""
-    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1008, 0x1009, 0x1011, 0x1012, 0x1013, 0x500C):
+    for pid in (0x0F00, 0x0F01, 0x0F02, 0x1012, 0x1013, 0x500C):
         spec = P.PROPERTIES[pid]
         assert spec.source == "firmware", f"0x{pid:04X}"
         assert spec.codec is P.RAW, f"0x{pid:04X}"
@@ -520,6 +520,32 @@ def test_firmware_ids_waiting_for_the_probe_stay_raw():
     assert P.PROPERTIES[0x0F00].server == "admin"
     assert P.PROPERTIES[0x0F01].server == "manufacturer"
     assert P.PROPERTIES[0x0F02].server == "manufacturer"
+
+
+def test_hotel_function_codecs_round_trip_the_sweeps_bytes():
+    """Review-4 brief 73: the DALI insert's hotel ids the on-air sweep settled (`sweep-cli`, A7 / C6).
+
+    A7 read hotel `33`, basic light `00`, night `33` on the load element; C6 set the basic light `01` and an off
+    left the light at 13107 / 65535 = 20 %: the levels are one byte in 1/255 of full, the enable a flag.
+    """
+    for pid in (0x1008, 0x1011):
+        spec = P.PROPERTIES[pid]
+        assert (spec.source, spec.access, spec.element, spec.unit) == (
+            "firmware",
+            "rw",
+            "load",
+            "%",
+        )
+        assert P.decode(pid, b"\x33") == 20
+        assert P.encode(pid, 20) == b"\x33"
+        assert P.decode(pid, b"\xff") == 100
+        assert P.encode(pid, 0) == b"\x00"
+    basic = P.PROPERTIES[0x1009]
+    assert (basic.source, basic.access, basic.element) == ("firmware", "rw", "load")
+    assert P.decode(0x1009, b"\x00") is False
+    assert P.decode(0x1009, b"\x01") is True
+    assert P.encode(0x1009, True) == b"\x01"
+    assert P.encode(0x1009, False) == b"\x00"
 
 
 def test_led_specs_cover_16_triples():

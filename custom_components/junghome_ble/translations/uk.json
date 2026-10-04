@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Температура захисту від замерзання"
       },
+      "hotel_dimm_value": {
+        "name": "Яскравість готельної функції"
+      },
       "lightness_max": {
         "name": "Максимальна яскравість"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Мінімальний час реверсу двигуна"
+      },
+      "night_dimm_value": {
+        "name": "Яскравість нічного світла"
       },
       "off_delay": {
         "name": "Затримка вимкнення"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Автоматично вимикати дисплей"
+      },
+      "basic_light_function_enable": {
+        "name": "Готельна функція"
       },
       "blinds_invert_output": {
         "name": "Інверсна робота"

@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Vorstbeveiligingstemperatuur"
       },
+      "hotel_dimm_value": {
+        "name": "Helderheid hotelfunctie"
+      },
       "lightness_max": {
         "name": "Maximale helderheid"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimale omkeertijd motor"
+      },
+      "night_dimm_value": {
+        "name": "Helderheid nachtlicht"
       },
       "off_delay": {
         "name": "Uitschakelvertraging"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Display automatisch uitschakelen"
+      },
+      "basic_light_function_enable": {
+        "name": "Hotelfunctie"
       },
       "blinds_invert_output": {
         "name": "Omgekeerde werking"

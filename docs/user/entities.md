@@ -41,6 +41,7 @@ Explained in [Switches](../ha-integration.md#switch).
 | Boost | Configuration | No | Node device | Room thermostat |
 | Daytime operation | Configuration | Yes | Node device | Motion detector 1 m, Presence detector |
 | Edge evaluation<br>Edge evaluation ‹key› | Configuration | No | Push-buttons device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Switch actuator 1-gang 2-input energy |
+| Hotel function | Configuration | No | Light device | Push-button 2-gang |
 | Inverse operation | Configuration | No | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |
 | Invert switching output | Configuration | No | Light device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Switch actuator 1-gang 2-input energy |
 | Key lock | Configuration | No | Node device | Room thermostat |
@@ -193,6 +194,7 @@ Explained in [Numbers](../ha-integration.md#device-parameters-number-select-swit
 | Comfort temperature | Configuration | No | Node device | Room thermostat |
 | ECO temperature | Configuration | No | Node device | Room thermostat |
 | Frost protection temperature | Configuration | No | Node device | Room thermostat |
+| Hotel function brightness | Configuration | No | Light device | Push-button 2-gang |
 | Lock time limit | Configuration | No | Blind device, Light device, Socket device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy |
 | Maximum brightness | Configuration | Yes | Light device | Push-button 1-gang, Push-button 2-gang |
 | Maximum colour temperature | Configuration | No | Light device | Push-button 2-gang |
@@ -200,6 +202,7 @@ Explained in [Numbers](../ha-integration.md#device-parameters-number-select-swit
 | Minimum colour temperature | Configuration | No | Light device | Push-button 2-gang |
 | Minimum motor reversal time | Configuration | No | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |
 | Minimum switching repeat time | Configuration | No | Light device, Socket device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy |
+| Night-light brightness | Configuration | No | Light device | Push-button 2-gang |
 | Repetition time | Configuration | No | Node device | Motion detector 1 m, Presence detector |
 | Run-on time | Configuration | Yes | Light device, Socket device | Motion detector 1 m, Presence detector, Push-button 1-gang, Push-button 2-gang, Socket (metering), Switch actuator 1-gang 2-input energy |
 | Running time | Configuration | No | Blind device | Blinds PP2 actuator 1-gang 2-input, Blinds actuator 1-gang mini, Push-button 2-gang |

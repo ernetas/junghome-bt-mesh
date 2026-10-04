@@ -115,8 +115,9 @@ async def test_setup_and_unload(
         + ["event"] * 4
         # the loads; All lights; the lights of WC, Living room and Kitchen
         + ["light"] * (5 + 1 + 3)
-        # parameters; Lock time limit per load; dimmer setup (with the DALI insert's white area)
-        + ["number"] * (24 + 6 + 7 + 2)
+        # parameters (with the DALI insert's hotel and night levels); Lock time limit per load; dimmer setup (with the
+        # DALI insert's white area)
+        + ["number"] * (24 + 2 + 6 + 7 + 2)
         + ["scene"] * 2
         # parameters, LED colours; behaviour after mains return
         + ["select"] * (11 + 6)
@@ -127,8 +128,8 @@ async def test_setup_and_unload(
         + ["sensor"] * (10 + 4 + 6 * 2 + 2 + 6 * 4 + 3 + 6 * 2 + 1 + 5 + 6 + 2)
         # socket, All sockets, the Kitchen's sockets, parameters, Lock, Lock operation and Lock factory reset per
         # device node, night mode, LED colour synchronisation of the 2-gang, previous brightness, sensor values for IoT;
-        # Time keeper on the five nodes with a Time Server (the export has a PP2 puck)
-        + ["switch"] * (1 + 1 + 1 + 26 + 6 + 5 * 2 + 4 + 1 + 2 + 1 + 5)
+        # Time keeper on the five nodes with a Time Server (the export has a PP2 puck); the DALI insert's hotel function
+        + ["switch"] * (1 + 1 + 1 + 26 + 6 + 5 * 2 + 4 + 1 + 2 + 1 + 5 + 1)
         + ["update"] * 5  # Firmware per node but the gateway
     )
 

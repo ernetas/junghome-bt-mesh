@@ -1381,9 +1381,10 @@ _VENDOR_SPECS: list[PropertySpec] = [
     _fw(0x000E, "server_state_publish_request", ALL_PRODUCTS, U8, access="wo"),
     _fw(0x0010, "lpn_state_timeout", PB_BATTERY | MINI_INPUT),  # vendor id; SIG 0x0010 lives in SIG_PROPERTIES
     _fw(0x0011, "battery_test_raw_data", PB_BATTERY | MINI_INPUT),
-    # Raw until the supervised probe settles them (`docs/on-air-sweep.md` A7 / C6): 0x0F00 reads
-    # `0100` on key elements and the socket's meter element, meaning unknown; the two runtime statistics sit on the
-    # Manufacturer server of every node (`hidden-features.md` §2), empty on the socket
+    # Raw: 0x0F00 reads `0100` on key elements, inputs and the socket's meter element; the sweep's C6 found `0000`
+    # and `0101` answered `0100` and `0200` kept, none with an effect on the meter's rhythm, and the app names no
+    # meaning for it, so it stays unexposed. The two runtime statistics sit on the Manufacturer server of every
+    # node (`hidden-features.md` §2) and answer with the id alone: nothing counts
     _fw(0x0F00, "transmission_settings", ALL_PRODUCTS),
     _fw(0x0F01, "current_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
     _fw(0x0F02, "all_time_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
@@ -1398,15 +1399,18 @@ _VENDOR_SPECS: list[PropertySpec] = [
     PropertySpec(0x100E, "dim_to_warm", "admin", "rw", BOOL, element="load", products=PB_MAINS | MINI_DALI),
     # unsupported on FW 2.0.0.4 ("Lbc Property doesn't exist"); the exact minimum is unknown, 2.2.0.x works
     PropertySpec(0x1014, "rtr_operation_mode", "admin", "rw", BOOL, element="load", products=PB_MAINS | SOCKETS | MINI_SWITCH | RTR, firmware_min=(2, 0, 0, 5)),
-    # hotel / basic light / night / presentation: listed by the DALI insert only (0x1008 = 51, 0x1009 = 0, 0x1011 =
-    # 51, two 8-byte presentation records; `hidden-features.md` §2); names from the gateway firmware, semantics
-    # and units unknown — Raw until the supervised probe settles them (on-air sweep C6)
-    _fw(0x1008, "hotel_dimm_value", LOAD_HOSTS, access="rw"),
-    _fw(0x1009, "basic_light_function_enable", LOAD_HOSTS, access="rw"),
+    # hotel / basic light / night / presentation: listed by the DALI insert's load (its primary element) only, names
+    # from the gateway firmware (`hidden-features.md` §2, §13). The on-air sweep (`sweep-cli`) settled three: A7
+    # read 0x1008 = 33, 0x1009 = 00, 0x1011 = 33; C6 set 0x1009 to 01 (seq 00ED6D) and an OnOff Set off (00F171)
+    # left the light on at lightness 13107 (CTL Status 190466) — the hotel value 0x33 in 1/255 of full, 20 %. The
+    # night value is the same one byte in 1/255, its effect unseen (it needs the dark). The two presentation
+    # records' 8-byte layouts are unknown: Raw.
+    _fw(0x1008, "hotel_dimm_value", LOAD_HOSTS, PERCENT, "rw", element="load", unit="%"),
+    _fw(0x1009, "basic_light_function_enable", LOAD_HOSTS, BOOL, "rw", element="load"),
     # u32 wear counters, read on the socket's load element (118 / 79, `docs/hidden-features.md` §2)
     _fw(0x100F, "total_off_on_cycles", LOAD_HOSTS, U32),
     _fw(0x1010, "power_on_cycles", LOAD_HOSTS, U32),
-    _fw(0x1011, "night_dimm_value", LOAD_HOSTS, access="rw"),
+    _fw(0x1011, "night_dimm_value", LOAD_HOSTS, PERCENT, "rw", element="load", unit="%"),
     _fw(0x1012, "presentation_mode_enable", LOAD_HOSTS, access="rw"),
     _fw(0x1013, "presentation_mode_time", LOAD_HOSTS, access="rw"),
     # --- §1.4 blinds (element = the blind load)
@@ -1472,7 +1476,7 @@ _VENDOR_SPECS: list[PropertySpec] = [
     PropertySpec(0x5013, "key_status_led", "manufacturer", "rw", BOOL, element="key", products=KEY_HOSTS, source="firmware"),
     PropertySpec(0x5014, "meter_timestamp", "manufacturer", "ro", Timestamp7(), element="meter", products=ENERGY_HOSTS, source="firmware"),  # also on the User server
     _fw(0x500A, "key_rtr_temp_step_size", KEY_HOSTS, access="rw", element="key"),
-    _fw(0x500C, "key_toggle_enable", KEY_HOSTS, access="rw", element="key"),  # reads 1; effect unknown (sweep C6)
+    _fw(0x500C, "key_toggle_enable", KEY_HOSTS, access="rw", element="key"),  # reads 1; effect unseen, no app setting (sweep C6)
     # --- §1.7 detectors (element = the sensor element, the node's highest)
     PropertySpec(0x6001, "walking_test", "admin", "rw", BOOL, element="detector", products=DETECTORS),
     PropertySpec(0x6003, "presence_control", "admin", "rw", BOOL, element="detector", products=DETECTORS),

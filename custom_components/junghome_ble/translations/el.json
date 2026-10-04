@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Θερμοκρασία αντιπαγετικής προστασίας"
       },
+      "hotel_dimm_value": {
+        "name": "Φωτεινότητα λειτουργίας ξενοδοχείου"
+      },
       "lightness_max": {
         "name": "Μέγιστη φωτεινότητα"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Ελάχιστος χρόνος αναστροφής κινητήρα"
+      },
+      "night_dimm_value": {
+        "name": "Φωτεινότητα νυχτερινού φωτός"
       },
       "off_delay": {
         "name": "Καθυστέρηση απενεργοποίησης"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Αυτόματη απενεργοποίηση οθόνης"
+      },
+      "basic_light_function_enable": {
+        "name": "Λειτουργία ξενοδοχείου"
       },
       "blinds_invert_output": {
         "name": "Αντίστροφη λειτουργία"

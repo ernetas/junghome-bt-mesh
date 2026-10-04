@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Apsaugos nuo užšalimo temperatūra"
       },
+      "hotel_dimm_value": {
+        "name": "Viešbučio funkcijos šviesumas"
+      },
       "lightness_max": {
         "name": "Didžiausias šviesumas"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Mažiausias variklio reversavimo laikas"
+      },
+      "night_dimm_value": {
+        "name": "Naktinės šviesos šviesumas"
       },
       "off_delay": {
         "name": "Išjungimo delsa"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Automatiškai išjungti ekraną"
+      },
+      "basic_light_function_enable": {
+        "name": "Viešbučio funkcija"
       },
       "blinds_invert_output": {
         "name": "Atvirkštinis valdymas"

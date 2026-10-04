@@ -165,7 +165,8 @@ Reading the nodes' own property lists and the SIG / Config states the app never 
 ~~**socket energy sensor**~~ (done, step 8 above), ~~**heartbeat-based availability**~~ (done: the *Node heartbeats*
 option), ~~a **default transition time** per load~~ (not worth it: the DALI insert ignores it, `hidden-features.md`
 §7.3), ~~**Health** identify / fault diagnostics~~ (done: *Identify*, *Fault*, *Clear faults* per mains node), the
-DALI inserts' **hotel / night / presentation dimming** properties, `key_toggle_enable`, ~~writing HA's **home
+DALI inserts' ~~**hotel / night dimming** properties~~ (done: the *Hotel function* entities, `hidden-features.md`
+§13) and **presentation** records, `key_toggle_enable`, ~~writing HA's **home
 location** to every node for astro schedules~~ (broadcast after Time Set on every connection,
 `coordinator._send_location`), and — separately — firmware updates over the Silabs OTA GATT service.
 

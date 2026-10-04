@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "防冻保护温度"
       },
+      "hotel_dimm_value": {
+        "name": "酒店功能亮度"
+      },
       "lightness_max": {
         "name": "最高亮度"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "最短电机换向时间"
+      },
+      "night_dimm_value": {
+        "name": "夜灯亮度"
       },
       "off_delay": {
         "name": "关闭延迟"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "自动关闭显示屏"
+      },
+      "basic_light_function_enable": {
+        "name": "酒店功能"
       },
       "blinds_invert_output": {
         "name": "反向运行"

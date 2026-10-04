@@ -609,6 +609,9 @@
       "frost_protection_temperature": {
         "name": "Temperatura ochrony przed zamarzaniem"
       },
+      "hotel_dimm_value": {
+        "name": "Jasność funkcji hotelowej"
+      },
       "lightness_max": {
         "name": "Maksymalna jasność"
       },
@@ -620,6 +623,9 @@
       },
       "motor_reversal_time": {
         "name": "Minimalny czas zmiany kierunku silnika"
+      },
+      "night_dimm_value": {
+        "name": "Jasność światła nocnego"
       },
       "off_delay": {
         "name": "Opóźnienie wyłączenia"
@@ -866,6 +872,9 @@
       },
       "backlight_auto_off": {
         "name": "Automatyczne wyłączanie wyświetlacza"
+      },
+      "basic_light_function_enable": {
+        "name": "Funkcja hotelowa"
       },
       "blinds_invert_output": {
         "name": "Praca odwrócona"

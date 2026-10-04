@@ -67,6 +67,9 @@
       "frost_protection_temperature": {
         "default": "mdi:snowflake-thermometer"
       },
+      "hotel_dimm_value": {
+        "default": "mdi:brightness-percent"
+      },
       "lightness_max": {
         "default": "mdi:brightness-7"
       },
@@ -78,6 +81,9 @@
       },
       "motor_reversal_time": {
         "default": "mdi:timer-refresh-outline"
+      },
+      "night_dimm_value": {
+        "default": "mdi:weather-night"
       },
       "off_delay": {
         "default": "mdi:timer-stop-outline"
@@ -277,6 +283,9 @@
       },
       "backlight_auto_off": {
         "default": "mdi:monitor-off"
+      },
+      "basic_light_function_enable": {
+        "default": "mdi:bed-outline"
       },
       "blinds_invert_output": {
         "default": "mdi:swap-vertical"
