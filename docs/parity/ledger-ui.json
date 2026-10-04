@@ -663,7 +663,7 @@
    ],
    "tests": [
     "tests/test_init.py::test_not_ready_without_visible_proxy",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ]
   },
   {
@@ -958,7 +958,7 @@
     "custom_components/junghome_ble/actions/scenes.py::_create_scene"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
     "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it",
     "tests/test_services.py::test_create_rename_and_delete_scene"
    ],
@@ -1425,7 +1425,7 @@
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.heard_from",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._watch_link",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._watch_link",
     "custom_components/junghome_ble/const.py::UNREACHABLE_RECHECK"
    ],
    "tests": [
@@ -1446,7 +1446,7 @@
    ],
    "tests": [
     "tests/test_sensor.py::test_proxy_node_sensor",
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ]
   },
   {
@@ -2023,11 +2023,11 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "class": "dup",
    "reason": "the same app interactor as net:uc:connecttoproxy (identical class, same behaviour); coverage is recorded there",
@@ -2277,7 +2277,7 @@
    ],
    "tests": [
     "tests/test_init.py::test_not_ready_without_visible_proxy",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ],
    "class": "dup",
    "reason": "the same app interactor as mgmt:flow:observebluetoothstate (identical class, same behaviour); coverage is recorded there",
@@ -3084,7 +3084,7 @@
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ]
   },
   {
@@ -3759,7 +3759,7 @@
    ],
    "tests": [
     "tests/test_init.py::test_not_ready_without_visible_proxy",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ]
   },
   {
@@ -3799,11 +3799,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ]
   },
   {
@@ -4407,7 +4407,7 @@
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_refresh_of_a_lost_link_is_cancelled"
+    "tests/test_hub_link.py::test_refresh_of_a_lost_link_is_cancelled"
    ]
   },
   {

@@ -814,7 +814,7 @@ async def test_a_blind_that_does_not_answer_its_movements_still_runs(
     ]  # one of each: no retries
     assert levels.gets == [SHUTTER]  # where it stopped
     assert not hub.unreachable
-    assert not hub._unanswered
+    assert not hub.link.unanswered
     assert hass.states.get(eid).state != STATE_UNAVAILABLE
 
 

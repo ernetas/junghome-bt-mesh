@@ -32,7 +32,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from custom_components.junghome_ble import const, coordinator
+from custom_components.junghome_ble import const
 from custom_components.junghome_ble import services as S
 from custom_components.junghome_ble.const import (
     DOMAIN,
@@ -42,8 +42,9 @@ from custom_components.junghome_ble.const import (
     UNREACHABLE_RECHECK,
     UNREACHABLE_REPROBE,
 )
-from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.hub import link as link_mod
 from custom_components.junghome_ble.hub import liveness
+from custom_components.junghome_ble.hub.link import LinkManager
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import ProxyClient
@@ -75,6 +76,8 @@ from .helpers import (
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 UID_LINK_STATE = f"{MESH_UUID}-link-state"
 FAST_TIMEOUT = 0.01  # real seconds a request waits per attempt here, instead of `ProxyClient.request`'s 3 s
@@ -176,7 +179,7 @@ async def test_an_unanswered_command_marks_the_node_unreachable_and_fails_the_ac
     keep_alive = AsyncMock(
         return_value=True
     )  # the proxy still forwards: the link stays
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
+    with patch.object(LinkManager, "_keep_alive", keep_alive):
         with pytest.raises(HomeAssistantError) as exc:
             await switch_on(hass, eid)
         await wait_until(hass, lambda: bool(hub.unreachable), what="the verdict")
@@ -223,7 +226,7 @@ async def test_commands_a_silent_proxy_leaves_unanswered_mark_no_node(
         return False
 
     keep_alive = AsyncMock(side_effect=silent_proxy)
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
+    with patch.object(LinkManager, "_keep_alive", keep_alive):
         results = await asyncio.gather(
             *(
                 hass.services.async_call(
@@ -243,7 +246,7 @@ async def test_commands_a_silent_proxy_leaves_unanswered_mark_no_node(
         assert result.translation_key == "device_not_reachable"
     assert "to a command nor to a keep-alive Get; dropping the link" in caplog.text
     assert not hub.unreachable
-    assert not hub._unanswered
+    assert not hub.link.unanswered
     assert "did not answer a request" not in caplog.text
 
 
@@ -266,7 +269,7 @@ async def test_a_link_lost_during_the_probe_charges_no_node(
         return False
 
     keep_alive = AsyncMock(side_effect=lost)
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
+    with patch.object(LinkManager, "_keep_alive", keep_alive):
         with pytest.raises(HomeAssistantError):
             await switch_on(hass, entity_id(hass, "switch", UID_SOCKET))
         await wait_until(hass, lambda: keep_alive.await_count > 0, what="the probe")
@@ -309,7 +312,7 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
     keep_alive = AsyncMock(return_value=True)
     sent = len(fake_link.sent)
     with (
-        patch.object(JungHomeHub, "_keep_alive", keep_alive),
+        patch.object(LinkManager, "_keep_alive", keep_alive),
         patch.object(const, "PROPERTY_READ_TIMEOUT", FAST_TIMEOUT),
     ):
         with pytest.raises(HomeAssistantError) as exc:
@@ -348,7 +351,7 @@ async def test_a_locked_load_that_leaves_a_command_unanswered_stays_reachable(
     hub.element_state(SOCKET).note_lock(bytes.fromhex("02010000"))
     fake_link.sets_silent.add(SOCKET)
     with (
-        patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)),
+        patch.object(LinkManager, "_keep_alive", AsyncMock(return_value=True)),
         patch.object(hub.liveness, "_schedule_recheck") as recheck,
     ):
         with pytest.raises(TimeoutError):
@@ -382,7 +385,7 @@ async def test_a_command_a_load_answers_with_its_old_state_is_reported_as_locked
         return None
 
     fake_link.app_reply = reply
-    with patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)):
+    with patch.object(LinkManager, "_keep_alive", AsyncMock(return_value=True)):
         with pytest.raises(ServiceValidationError) as exc:
             await switch_on(hass, eid)
         await settle(hass)
@@ -409,7 +412,7 @@ async def test_a_colour_temperature_command_is_accounted_to_the_light(
     await settle(hass)
     fake_link.sets_silent.add(LIGHT_CTL_TEMPERATURE)
     with (
-        patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)),
+        patch.object(LinkManager, "_keep_alive", AsyncMock(return_value=True)),
         patch.object(hub.liveness, "_schedule_recheck") as recheck,
     ):
         with pytest.raises(HomeAssistantError):
@@ -488,7 +491,7 @@ async def test_link_state_follows_the_link_and_bluetooth(
 
     # no connectable scanner at all: the app's "Bluetooth is off", a repair issue
     mock_bluetooth_env["scanners"] = 0
-    hub._link_lost.set()  # wakes the search at once
+    hub.link._link_lost.set()  # wakes the search at once
     await wait_until(
         hass, lambda: hub.link_state == "bluetooth_off", what="no Bluetooth"
     )
@@ -498,7 +501,7 @@ async def test_link_state_follows_the_link_and_bluetooth(
     assert issue.translation_placeholders == {"title": mock_config_entry.title}
     assert hass.states.get(eid).state == "bluetooth_off"
     assert "No connectable Bluetooth adapter or proxy is available" in caplog.text
-    hub._link_lost.set()  # still none: raised once
+    hub.link._link_lost.set()  # still none: raised once
     await settle(hass)
     assert caplog.text.count("No connectable Bluetooth adapter") == 1
 
@@ -534,11 +537,11 @@ async def test_the_wait_for_a_connection_is_bleak_retry_connectors(
     info = hub.visible_proxies()[0]
     with (
         patch.object(
-            coordinator, "establish_connection", AsyncMock(side_effect=BleakError("x"))
+            link_mod, "establish_connection", AsyncMock(side_effect=BleakError("x"))
         ) as establish,
         pytest.raises(BleakError),
     ):
-        await hub._connect_to(info)
+        await hub.link._connect_to(info)
     assert establish.call_args.kwargs["max_attempts"] == 2
     assert "timeout" not in establish.call_args.kwargs
 

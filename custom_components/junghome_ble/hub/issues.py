@@ -366,7 +366,9 @@ class Issues:
         )
         if self.hub.proxy.connected:
             # not the proxy's fault: no verdict on it, and the entities keep the grace (review-4 R4-3)
-            await self.hub.drop_link("sequence numbers skipped ahead", penalise=False)
+            await self.hub.link.drop_link(
+                "sequence numbers skipped ahead", penalise=False
+            )
 
     def report_pdus_dropped(self, dropped: bool) -> None:
         """Raise (or clear) the repair issue for a mesh that ignores us although the link works (the caller logs why).
@@ -465,6 +467,6 @@ class Issues:
             seq,
         )
         if self.hub.proxy.connected and self.hub.proxy.proxy_addr is None:
-            await self.hub.drop_link(
+            await self.hub.link.drop_link(
                 "sequence numbers skipped past another client's", penalise=False
             )

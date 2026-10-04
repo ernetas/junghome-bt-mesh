@@ -1104,7 +1104,7 @@ def fake_link(cdb: CDB) -> Generator[FakeProxyLink]:
         return link
 
     with patch(
-        "custom_components.junghome_ble.coordinator.establish_connection",
+        "custom_components.junghome_ble.hub.link.establish_connection",
         side_effect=establish,
     ):
         yield link
@@ -1215,7 +1215,7 @@ def sim_link(
     """
     links = SimLinks(sim_mesh, cdb)
     with patch(
-        "custom_components.junghome_ble.coordinator.establish_connection",
+        "custom_components.junghome_ble.hub.link.establish_connection",
         side_effect=links.establish,
     ):
         yield links
@@ -1251,7 +1251,7 @@ def no_link_loss_grace(request: pytest.FixtureRequest) -> Generator[None]:
     if "link_loss_grace" in request.keywords:
         yield
         return
-    with patch("custom_components.junghome_ble.coordinator.LINK_LOSS_GRACE", 0.0):
+    with patch("custom_components.junghome_ble.hub.link.LINK_LOSS_GRACE", 0.0):
         yield
 
 
@@ -1266,7 +1266,7 @@ def no_connect_beacon(
     """
     fake_link.beacon_on_subscribe = False
     monkeypatch.setattr(
-        "custom_components.junghome_ble.coordinator.CONNECT_BEACON_WAIT", 0.0
+        "custom_components.junghome_ble.hub.link.CONNECT_BEACON_WAIT", 0.0
     )
 
 

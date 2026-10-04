@@ -119,7 +119,7 @@ class ExportWatch:
             return
         if len(address) != 17 or address.count(":") != 5:
             return
-        if not self.hub.ours(info):
+        if not self.hub.link.ours(info):
             return
         self.unknown_nodes[address] = parse_manufacturer_data(info.manufacturer_data)
         _LOGGER.warning(
@@ -138,7 +138,7 @@ class ExportWatch:
 
         Nothing to do without unknown nodes or a gateway the export may come from, while a fetch runs, before the
         configurator exists, or without a link — the fetch vouches for the gateway over the mesh
-        (`_gateway_state`), so the next link asks instead (`JungHomeHub._connect_to`). A pending back-off timer is replaced.
+        (`_gateway_state`), so the next link asks instead (`LinkManager._connect_to`). A pending back-off timer is replaced.
         """
         if (
             not self.unknown_nodes

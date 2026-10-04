@@ -78,8 +78,8 @@ class Refresh:
         if not await self._refresh_all():
             return
         # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
-        self.hub.link_refresh = time.monotonic() - self.hub.link_since
-        self.hub.set_link_state(LINK_CONNECTED)
+        self.hub.link.link_refresh = time.monotonic() - self.hub.link.link_since
+        self.hub.link.set_link_state(LINK_CONNECTED)
         await self.hub.energy.poll()
         await self.hub.energy.backfill_history()
         await self.hub.liveness.configure_heartbeats()
@@ -99,14 +99,14 @@ class Refresh:
         A link that lasted SHORT_LINK kept the hub hearing the nodes' publications (a Scene Status after every
         recall); a round within CONNECT_STEP_FRESH of this link is current enough, and repeating it on every link
         is what made a link that comes and goes keep the mesh busy (review-4 R I-5). After a short link — a failed
-        connection to `JungHomeHub._judge_link` — the round runs again: what the hub heard through that link proves little.
+        connection to `LinkManager._judge_link` — the round runs again: what the hub heard through that link proves little.
         `step` returns True when it got through. Unverified on air.
         """
         done = self.connect_steps_done.get(name)
         if (
             done is not None
             and time.monotonic() - done < CONNECT_STEP_FRESH
-            and self.hub.previous_link.lasted >= SHORT_LINK
+            and self.hub.link.previous_link.lasted >= SHORT_LINK
         ):
             _LOGGER.debug(
                 "%s read %.0f s ago: not asked again on this link",

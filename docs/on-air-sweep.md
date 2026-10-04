@@ -464,9 +464,9 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
   node, and the first node is used again after two minutes (or at once when it is the only one in range). A link
   Home Assistant drops itself (the watchdog, the *devices ignore Home Assistant* repair) cannot be provoked; if the
   link history shows one during the sitting, check the grace held there too.
-- **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub.drop_link`,
+- **Markers:** `custom_components/junghome_ble/hub/link.py::LinkManager.drop_link`,
   `custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub._judge_link`.
+  `custom_components/junghome_ble/hub/link.py::LinkManager._judge_link`.
 
 ### B7 · A plan to an unreachable device is refused
 

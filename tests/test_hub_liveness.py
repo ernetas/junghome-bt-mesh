@@ -232,7 +232,7 @@ async def test_unanswered_state_get_and_keep_alive_count(
         await hub.async_refresh_element(LIGHT_DIMMER, "dimmer", quiet=True)
         missed.assert_called_once_with(LIGHT_DIMMER, "dimmer", ANY, full=False)
         missed.reset_mock()
-        await hub._keep_alive()
+        await hub.link._keep_alive()
     assert missed.call_args_list[0].args[1] == "switch"
     assert missed.call_args_list[0].kwargs == {"full": False}
 
@@ -333,9 +333,7 @@ async def test_heartbeats_are_configured_once_per_reconfigure_interval(
     # a link that stays up renews the publications when the interval is over (the periodic check does it); the
     # fake nodes never beat, so the dead-node probing (its own test below) is kept out of the way here
     with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
-        ),
+        patch("custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0),
         patch.object(hub.liveness, "_reprobe_dead", AsyncMock()),
     ):
         await tick(hass, freezer, HEARTBEAT_RECONFIGURE_INTERVAL - 60)
@@ -377,9 +375,7 @@ async def test_silent_node_goes_unavailable_until_heard_again(
     # a few beats from the dimmer's node keep it alive; the switch's node says nothing (the fake mesh would answer
     # the dead-node probe for it, which is the probe's own test, so that is kept out of the way here)
     with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
-        ),
+        patch("custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0),
         patch.object(hub.liveness, "_reprobe_dead", AsyncMock()),
     ):
         for _ in range(3):
@@ -464,7 +460,7 @@ async def test_dead_node_is_asked_for_heartbeats_again_and_a_rebooted_one_comes_
             await settle(hass)
 
     with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
+        "custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0
     ):
         assert sets_to(LIGHT_SWITCH) == 1  # the connect-time configuration
         fake_link.answer_config = False  # the node is really gone: silence
@@ -538,7 +534,7 @@ async def test_node_whose_beats_stopped_is_reconfigured_while_its_traffic_keeps_
         )
 
     with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
+        "custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0
     ):
         assert sets_to(LIGHT_SWITCH) == 1
         fake_link.inject_heartbeat(
@@ -593,9 +589,7 @@ async def test_nodes_are_not_marked_dead_while_the_link_is_down(
     await settle(hass)
     assert not hub.connected
     with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
-        ),
+        patch("custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0),
         patch.object(hub.liveness, "_reprobe_dead", AsyncMock()),
     ):
         await tick(hass, freezer, 2 * HEARTBEAT_TIMEOUT)
@@ -630,7 +624,7 @@ async def test_heartbeat_configuration_tolerates_refusals_and_silence(
     assert "Gateway refused the heartbeat configure" in caplog.text
     assert hub.liveness._alive_deadline == {}
     with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
+        "custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0
     ):
         await tick(hass, freezer, HEARTBEAT_TIMEOUT + 60)
     assert hub.node_alive(LIGHT_SWITCH)  # nothing was promised, nothing is missed
@@ -656,9 +650,7 @@ async def test_heartbeat_configuration_tolerates_refusals_and_silence(
     assert hub.node_alive(LIGHT_SWITCH)
     quiet_mesh(hub)  # the energy poll's answers would keep the socket's node alive
     with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
-        ),
+        patch("custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0),
         patch.object(hub.liveness, "_reprobe_dead", AsyncMock()) as reprobe,
     ):
         await tick(hass, freezer, HEARTBEAT_TIMEOUT + 60)

@@ -21,7 +21,7 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import HomeAssistantError
 
-from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.hub.link import LinkManager
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.devices import (
@@ -180,7 +180,7 @@ async def test_a_central_entity_keeps_the_grace_and_its_command_waits(
     skipped it in an action meanwhile; like the loads' entities it now waits for the next proxy."""
     hub = init_integration.runtime_data
     eid = entity_id(hass, "light", UID_ALL_LIGHTS)
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         fake_link.drop_link()
         await settle(hass)
         assert not hub.connected
@@ -194,7 +194,7 @@ async def test_a_central_entity_keeps_the_grace_and_its_command_waits(
         for _ in range(10):  # not `settle`: it would wait out the grace
             await asyncio.sleep(0)
         assert not call.done()  # waiting for the link, not skipped
-    hub._link_lost.set()  # a proxy advertises again: the loop wakes
+    hub.link._link_lost.set()  # a proxy advertises again: the loop wakes
     await call
     assert hub.connected
     assert [op for op, _ in group_sends(fake_link, ALL_LIGHTS)] == [

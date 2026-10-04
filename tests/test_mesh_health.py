@@ -39,8 +39,8 @@ from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.junghome_ble.const import DOMAIN, NODE_DIAGNOSTICS_INTERVAL
-from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.entity import node_identifier
+from custom_components.junghome_ble.hub.link import LinkManager
 from custom_components.junghome_ble.sensor import best_scanner, node_label
 
 from .conftest import (
@@ -69,6 +69,8 @@ if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 UID_CONNECTION = f"{MESH_UUID}-mesh-connection"
 UID_UNREACHABLE = f"{MESH_UUID}-unreachable-devices"
@@ -156,14 +158,14 @@ async def test_mesh_connection_follows_the_link(
     device = dr.async_get(hass).async_get(entry.device_id)
     assert (DOMAIN, f"mesh:{MESH_UUID}") in device.identifiers
 
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         fake_link.drop_link()
         await settle(hass)
         assert not hub.link_available
         assert hass.states.get(connection).state == STATE_OFF
         assert hass.states.get(unreachable).state == STATE_UNAVAILABLE
         assert hass.states.get(overview).state == "0"
-    hub._link_lost.set()  # a proxy advertises again
+    hub.link._link_lost.set()  # a proxy advertises again
     await wait_for_link(hass, init_integration)
     await settle(hass)
     assert hass.states.get(connection).state == STATE_ON
@@ -244,9 +246,7 @@ async def test_dead_nodes_count_with_heartbeats(
     unreachable = entity_id(hass, "sensor", UID_UNREACHABLE)
     assert hass.states.get(unreachable).state == "0"
     with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
-        ),
+        patch("custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT", 10 * 3600.0),
         patch.object(hub.liveness, "_reprobe_dead", AsyncMock()),
     ):
         await tick(
@@ -334,7 +334,7 @@ async def test_overview_rows(
     assert entry.entity_category is er.EntityCategory.DIAGNOSTIC
 
     # without a link the overview stays, with no node reachable and none the proxy
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         fake_link.drop_link()
         await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
         state = hass.states.get(entity_id(hass, "sensor", UID_OVERVIEW))
@@ -343,7 +343,7 @@ async def test_overview_rows(
         assert {row["reachable"] for row in rows.values()} == {False}
         assert {row["proxy"] for row in rows.values()} == {False}
         assert rows["WC mirror - Push-button 1-gang"]["last_seen"] is not None
-    hub._link_lost.set()
+    hub.link._link_lost.set()
     await wait_for_link(hass, init_integration)
 
 

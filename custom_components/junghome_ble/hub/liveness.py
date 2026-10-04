@@ -84,7 +84,7 @@ class Liveness:
         self.heartbeat_task: asyncio.Task[None] | None = None
 
     def link_up(self) -> None:
-        """Give every node a full timeout and drop the pending re-asks: a new link is up (`JungHomeHub._connect_to`)."""
+        """Give every node a full timeout and drop the pending re-asks: a new link is up (`LinkManager._connect_to`)."""
         # silence while the link was down was the link's fault, not the nodes': every node gets a full timeout
         # from here (a dead node stays dead until heard from — `mark_alive` revives it)
         now = time.monotonic()
@@ -434,7 +434,7 @@ class Liveness:
                 self.hub.hass, self.configure_heartbeats(), f"{DOMAIN} heartbeats"
             )
         for node in self.heartbeat_nodes if self.hub.connected else ():
-            # while the link is down nobody can be heard: the silence is the link's (`_connect_to` renews the
+            # while the link is down nobody can be heard: the silence is the link's (`LinkManager._connect_to` renews the
             # deadlines when it is back), and the entities are unavailable anyway
             deadline = self._alive_deadline.get(node.unicast)
             if deadline is None or now < deadline or node.unicast in self._dead_nodes:

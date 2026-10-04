@@ -816,13 +816,13 @@
    "id": "mgmt:ble:clearcache",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy"
    ],
    "class": "ha-native",
-   "reason": "Android's GATT cache refresh (BluetoothGatt.refresh) has no counterpart in Home Assistant's Bluetooth stack: bleak-retry-connector's BleakClientWithServiceCache (JungHomeHub._connect_to) keeps the services and clears them itself when they fail to resolve"
+   "reason": "Android's GATT cache refresh (BluetoothGatt.refresh) has no counterpart in Home Assistant's Bluetooth stack: bleak-retry-connector's BleakClientWithServiceCache (LinkManager._connect_to) keeps the services and clears them itself when they fail to resolve"
   },
   {
    "id": "mgmt:ble:connectionpriority",
@@ -836,11 +836,11 @@
    "id": "mgmt:ble:connectretry",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
     "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it"
    ],
    "note": "establish_connection(max_attempts=2) with its own back-off instead of retry(3, 200 ms); failed proxies rotate"
@@ -864,7 +864,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::MESH_PROXY_SERVICE",
     "custom_components/junghome_ble/jhmesh/provisioning.py::MESH_PROVISIONING_SERVICE",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies",
     "custom_components/junghome_ble/onboard.py::unprovisioned_devices"
    ],
    "tests": [
@@ -877,11 +877,11 @@
    "id": "mgmt:blestate:communicationerror",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
    ],
    "class": "dup",
@@ -892,23 +892,23 @@
    "id": "mgmt:blestate:connected",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor._attr_translation_key"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ]
   },
   {
    "id": "mgmt:blestate:connecting",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
    ],
    "class": "dup",
@@ -919,23 +919,23 @@
    "id": "mgmt:blestate:disconnected",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_disconnect",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._start_grace"
+    "custom_components/junghome_ble/hub/link.py::LinkManager.on_disconnect",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._start_grace"
    ],
    "tests": [
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ]
   },
   {
    "id": "mgmt:blestate:disconnecting",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
    ],
    "class": "dup",
@@ -946,11 +946,11 @@
    "id": "mgmt:blestate:failedtoconnect",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
    ],
    "class": "dup",
@@ -3380,7 +3380,7 @@
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor._attr_translation_key"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ],
    "class": "dup",
    "reason": "State / label of the connection states HA handles internally but does not surface.",
@@ -3435,7 +3435,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._resend_filter",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._cancel_filter_watch"
+    "custom_components/junghome_ble/hub/link.py::LinkManager.cancel_filter_watch"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_an_unanswered_filter_request_is_sent_again",
@@ -4412,11 +4412,11 @@
    "id": "mgmt:err:setproxysettings.wrongproxysettings",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._cancel_filter_watch",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.cancel_filter_watch",
     "custom_components/junghome_ble/jhmesh/client.py::FILTER_SET_TRIES"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_missing_filter_status_raises_the_pdus_dropped_repair",
+    "tests/test_hub_link.py::test_missing_filter_status_raises_the_pdus_dropped_repair",
     "tests/jhmesh/test_client.py::test_an_unanswered_filter_request_is_sent_again"
    ]
   },
@@ -4511,7 +4511,7 @@
    "id": "mgmt:flow:bluetoothmessagingserviceimpl",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.mtu",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.attach",
     "custom_components/junghome_ble/onboard.py::async_add_device"
@@ -4519,7 +4519,7 @@
    "tests": [
     "tests/jhmesh/test_client.py::test_attach_without_filter_and_mtu_fallback",
     "tests/jhmesh/test_client.py::test_mtu_is_read_from_the_client_on_every_write",
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "class": "dup",
    "reason": "Link, notifications and SAR-framed writes are done; of the missing GATT work the storage-schema / STM32 reads and OTA control / data writes belong to the declined OTA (review-3 N9) and the remaining one is the DIS 0x2A28 read.",
@@ -4529,12 +4529,12 @@
    "id": "mgmt:flow:bluetoothscanserviceimpl",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies",
     "custom_components/junghome_ble/onboard.py::unprovisioned_devices",
     "custom_components/junghome_ble/jhmesh/standalone.py::scan_for_proxies"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
     "tests/test_onboard.py::test_find_new_devices_lists_the_jung_devices_not_in_a_mesh",
     "tests/jhmesh/test_standalone.py::test_scan_for_proxies"
    ],
@@ -4710,11 +4710,11 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/onboard.py::async_add_device",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to"
    ],
    "tests": [
     "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it",
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy"
    ],
    "missing": "HA connects to \"a proxy\" or to an unprovisioned device by address; there is no connect-to-this-provisioned-node-by-MAC (Params.Specific, 180 s; Params.Any 15 s scan with a MAC blacklist) as configuration of battery nodes and OTA need. To build: visible_proxies already maps MACs to nodes (node_for_address); a targeted connect is testable with fake BLE devices.",
    "class": "build",
@@ -4746,14 +4746,14 @@
    "id": "mgmt:flow:connecttoproxy",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.classify_service_data"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies",
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ],
    "note": "better than the app: strongest fresh advert first, failed proxies cooled down, exponential back-off; the app's extra \"advertiser MAC must be a known device MAC\" condition is not applied (Network ID / Node Identity must still match)"
   },
@@ -5104,7 +5104,7 @@
    "id": "mgmt:flow:observebluetoothstate",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_bluetooth",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._check_bluetooth",
     "custom_components/junghome_ble/hub/issues.py::Issues.report_bluetooth_unavailable",
     "custom_components/junghome_ble/__init__.py::async_setup_entry",
     "custom_components/junghome_ble/strings.json::issues.bluetooth_unavailable"
@@ -5120,7 +5120,7 @@
    "id": "mgmt:flow:observedeviceconnectionstate",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_link_state",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.set_link_state",
     "custom_components/junghome_ble/sensor.py::JungHomeLinkStateSensor",
     "custom_components/junghome_ble/const.py::LINK_STATES"
    ],
@@ -5329,12 +5329,12 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.set_filter",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._resend_filter",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._cancel_filter_watch"
+    "custom_components/junghome_ble/hub/link.py::LinkManager.cancel_filter_watch"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_an_unanswered_filter_request_is_sent_again",
     "tests/jhmesh/test_client.py::test_a_filter_answered_on_the_second_try_stops_the_retries",
-    "tests/test_coordinator.py::test_missing_filter_status_raises_the_pdus_dropped_repair"
+    "tests/test_hub_link.py::test_missing_filter_status_raises_the_pdus_dropped_repair"
    ]
   },
   {
@@ -6935,7 +6935,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.classify_service_data",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies"
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_classify_service_data",
@@ -7026,12 +7026,12 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_notify",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_filter_status"
+    "custom_components/junghome_ble/hub/link.py::LinkManager.on_filter_status"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_filter_status_reports_the_proxy_node_and_a_new_link_forgets_it",
     "tests/jhmesh/test_client.py::test_truncated_filter_status_is_dropped_quietly",
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ],
    "class": "dup",
    "reason": "Same opcode as msg:proxy:03, implemented there (same builder / decoder).",
@@ -7147,11 +7147,11 @@
    "id": "mgmt:scan:settings",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies",
     "custom_components/junghome_ble/jhmesh/standalone.py::scan_for_proxies"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
     "tests/jhmesh/test_standalone.py::test_scan_for_proxies"
    ],
    "note": "scanning is HA's shared scanner (active/passive per adapter); no hardware filter, software filter on the service data as the app"
@@ -7319,7 +7319,7 @@
    "id": "mgmt:setup:reconnecttodevice",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_wait_connected",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.async_wait_connected",
     "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
@@ -8302,10 +8302,10 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor._attr_translation_key",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status",
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status",
     "tests/test_coordinator.py::test_initial_connection_and_refresh"
    ]
   },
@@ -8321,7 +8321,7 @@
    "id": "mgmt:str:proxy_loading_new_connection_description",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/strings.json::entity.sensor.link_state"
    ],
@@ -8350,7 +8350,7 @@
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor._attr_translation_key"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ],
    "class": "dup",
    "reason": "State / label of the connection states HA handles internally but does not surface.",
@@ -8361,20 +8361,20 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor._attr_translation_key",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_proxy_node_is_learned_from_the_filter_status"
+    "tests/test_hub_link.py::test_proxy_node_is_learned_from_the_filter_status"
    ]
   },
   {
    "id": "mgmt:str:settings_connection_status_connecting",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "class": "dup",
    "reason": "State / label of the connection states HA handles internally but does not surface.",
@@ -8384,7 +8384,7 @@
    "id": "mgmt:str:settings_connection_status_disconnected",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_available"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._set_available"
    ],
    "tests": [
     "tests/test_link_loss.py::test_entities_stay_available_through_a_short_link_loss"
@@ -8407,10 +8407,10 @@
    "id": "mgmt:str:settings_connection_status_error",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "class": "dup",
    "reason": "State / label of the connection states HA handles internally but does not surface.",
@@ -9083,10 +9083,10 @@
    "id": "mgmt:timing:bluetoothmessagingserviceimpl:1000",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ],
    "note": "1 s pause after a link ends before the next connect"
   },
@@ -9175,12 +9175,12 @@
    "id": "mgmt:timing:connecttodevice:5000",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/onboard.py::async_add_device"
    ],
    "tests": [
     "tests/test_reachability.py::test_the_wait_for_a_connection_is_bleak_retry_connectors",
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "note": "deliberately not the app's 5 s: the wait for Connected is bleak-retry-connector's (establish_connection, max_attempts=2, its own per-attempt timeout; Home Assistant's required way to connect). The app's phone radio connects at once or not at all; an ESPHome proxy first waits for a free connection slot and gives up only after its establishment timeout (at least 10 s), so 5 s would turn a slow proxy into a failed one and rotate away from the only node in range. A failed attempt is retried with a back-off either way"
   },
@@ -9197,11 +9197,11 @@
    "id": "mgmt:timing:connecttoproxy:5000",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connection_pass",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
     "custom_components/junghome_ble/const.py::CONNECT_BACKOFF_MAX"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_connect_failures_back_off_and_rotate_proxies"
+    "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
    ],
    "note": "better than the app: back-off 2 s doubling to 60 s and a 120 s cool-down per failed proxy instead of a flat 5 s"
   },

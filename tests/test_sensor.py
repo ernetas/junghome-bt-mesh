@@ -554,7 +554,7 @@ async def test_proxy_node_sensor(
     # a proxy that never answered the filter status (node unknown) is shown by its Bluetooth address
     hub = init_integration.runtime_data
     hub.proxy_node = None
-    hub._set_available(True)
+    hub.link._set_available(True)
     await hass.async_block_till_done()
     assert hass.states.get(eid).state == PROXY_ADDRESS
 

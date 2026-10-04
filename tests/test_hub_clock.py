@@ -60,7 +60,7 @@ async def test_time_set_repeats_daily_while_connected(
     # clock reads that follow the daily Time Set have their own tests (test_node_clocks.py)
     with (
         patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
+            "custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT",
             10 * TIME_SET_INTERVAL,
         ),
         patch.object(hub.clocks, "read_all", AsyncMock(return_value=True)) as reads,

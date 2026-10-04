@@ -23,7 +23,6 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import SOURCE_IGNORE
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
@@ -42,13 +41,8 @@ from .const import (
     AUDIT_RETRIES,
     AUDIT_TIMEOUT,
     COMMAND_ECHO_TIMEOUT,
-    CONNECT_BACKOFF_MAX,
-    CONNECT_BACKOFF_MIN,
-    CONNECT_BEACON_WAIT,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    FAILED_PROXY_COOLDOWN,
-    FILTER_STATUS_TIMEOUT,
     HEARTBEAT_CHECK_INTERVAL,
     HUB_DATA_KEYS,
     IDENTIFY_SECONDS,
@@ -58,21 +52,11 @@ from .const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_UNKNOWN_NODES,
     ISSUE_VAULT_KEY_REFRESH,
-    KEEP_ALIVE_ATTEMPTS,
-    KEEP_ALIVE_TIMEOUT,
-    LINK_BLUETOOTH_OFF,
-    LINK_CONNECTING,
-    LINK_DISCONNECTED,
-    LINK_FAILED,
-    LINK_IDLE_TIMEOUT,
-    LINK_LOSS_GRACE,
     LINK_SEARCHING,
-    LINK_UPDATING,
     NODE_DIAGNOSTICS_INTERVAL,
     NODE_INFO,
     NODE_INFO_TIME_ROLE,
     OPTION_HEARTBEATS,
-    PROXY_ADVERT_MAX_AGE,
     REFRESH_CHUNK,
     REQUEST_ATTEMPTS,
     RESTART_BLOCK,
@@ -80,11 +64,7 @@ from .const import (
     SCENE_RECALL_WINDOW,
     SEQ_SKIP_AHEAD,
     SEQUENCE_CHECK_INTERVAL,
-    SHORT_LINK,
-    SHORT_LINK_STREAK,
     SIG_SOFTWARE_VERSION,
-    SIGNAL_CONNECTION,
-    SIGNAL_LINK_STATE,
     SIGNAL_NODE,
     SIGNAL_SCENES,
     SIGNAL_UPDATE,
@@ -109,6 +89,7 @@ from .hub.export_watch import (
     is_gateway_host,
 )
 from .hub.issues import SEQ_STALL_ISSUE_AFTER, Issues
+from .hub.link import LINK_HISTORY, LinkEnd, LinkManager, LinkRecord
 from .hub.liveness import Liveness
 from .hub.refresh import ONOFF_GET, STATE_GETS, Refresh
 from .hub_gestures import ButtonGestures, EventListener
@@ -117,7 +98,7 @@ from .inserts import NodeInserts
 from .jhmesh import config_messages as C
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
-from .jhmesh.advert import JungAdvertisement, mac_from_uuid, parse_manufacturer_data
+from .jhmesh.advert import JungAdvertisement, mac_from_uuid
 from .jhmesh.audit import NodeAudit, audit_node, client_exchange
 from .jhmesh.cdb import CDB, Node
 from .jhmesh.client import (
@@ -209,6 +190,7 @@ _LOGGER = logging.getLogger(__name__)
 __all__ = [
     "GATEWAY_CERTIFICATE_CHANGED",
     "GATEWAY_UNVERIFIED",
+    "LINK_HISTORY",
     "NODE_VERSIONS",
     "NODE_VERSIONS_SAVE_DELAY",
     "NODE_VERSIONS_STORAGE_VERSION",
@@ -230,6 +212,7 @@ __all__ = [
     "AddressShared",
     "CounterNotReset",
     "HAState",
+    "LinkEnd",
     "NodeInfoStore",
     "SeqStore",
     "async_apply_followed_key_refresh",
@@ -280,9 +263,6 @@ SCENE_ACTION_SETUP = (
 SCENE_SETUP_SERVER = (
     "1204"  # SIG Scene Setup Server: the element holding a node's scene register
 )
-# SIG model id of a Generic OnOff Server, as the export lists it: every element that hosts one answers an OnOff Get
-# (loads, sockets, actuator channels, detectors, thermostats), which makes it a keep-alive target for the watchdog.
-GENERIC_ONOFF_SERVER = "1000"
 # the range of a colour temperature (Mesh Model §6.1.3.1)
 CTL_KELVIN_MIN, CTL_KELVIN_MAX = 800, 20000
 
@@ -588,44 +568,6 @@ def hub_data(data: Mapping[str, Any]) -> dict[str, Any]:
     return {key: data.get(key) for key in HUB_DATA_KEYS}
 
 
-@dataclass(frozen=True)
-class LinkEnd:
-    """How a proxy link ended (`JungHomeHub._link_ended`): why, what it says about the proxy, how long it lasted.
-
-    `penalise` True counts the end against the proxy (it went silent), False not at all (we ended a working link
-    ourselves: the repair's skip-ahead, an error of our own), None by how long the link lasted (`SHORT_LINK`).
-    """
-
-    reason: str
-    penalise: bool | None
-    lasted: float  # seconds the link was up
-
-
-# what `JungHomeHub._link_end` holds while no link is up: before the first, and while one is being set up
-NO_LINK = LinkEnd("no link yet", False, 0.0)
-LINK_HISTORY = 20  # links the diagnostics describe (`JungHomeHub.link_history`)
-
-
-@dataclass(frozen=True)
-class LinkRecord:
-    """One past link, for the diagnostics (review-4 R I-9: nothing told why the links of the last hours ended).
-
-    The proxy is named by its mesh address only, never by its Bluetooth MAC.
-    """
-
-    proxy_node: (
-        int | None
-    )  # the proxy's unicast address, None when it never named itself
-    ended: float  # monotonic time the link ended
-    lasted: float  # seconds the link was up
-    reason: str
-    penalise: bool | None  # as in `LinkEnd`
-    refresh: (
-        float | None
-    )  # seconds from link-up to the end of its state refresh, None when it never got through
-    held_back: float  # seconds sends were held back for the sequence-number store during the link
-
-
 class JungHomeHub:
     """One mesh network: connection loop, state cache, commands, button gestures."""
 
@@ -653,13 +595,15 @@ class JungHomeHub:
         state.stall_listener = self.issues.seq_stall_started
         # the nodes' reachability and heartbeats (`hub/liveness.py`, review-4 A4-3)
         self.liveness = Liveness(self)
+        # the proxy link: its loop, watchdog and grace (`hub/link.py`)
+        self.link = LinkManager(self)
         self.proxy = ProxyClient(
             cdb,
             state,
             on_message=self._on_message,
-            on_disconnect=self._on_disconnect,
+            on_disconnect=self.link.on_disconnect,
             on_beacon=self._on_beacon,
-            on_filter_status=self._on_filter_status,
+            on_filter_status=self.link.on_filter_status,
             on_undecryptable=self._on_undecryptable,
             on_heartbeat=self.liveness.on_heartbeat,
             on_key_refresh=self._on_key_refresh,
@@ -677,30 +621,20 @@ class JungHomeHub:
         self.proxy_address: str | None = None
         self.proxy_node: int | None = None
         self.connected_since: float | None = None
-        # set with `connected_since`, cleared when the link goes down
-        self._link_up = asyncio.Event()
         self.link_count = 0  # links made so far: entities tell "asked on this link already" from "ask again" by it
-        self._connect_failure_logged = False  # the first failure of a link-down period is a WARNING, the rest DEBUG
-        self.link_state = LINK_SEARCHING  # one of LINK_STATES (`set_link_state`), for the link state sensor
-        self._task: asyncio.Task[None] | None = None
+        self.link_state = LINK_SEARCHING  # one of LINK_STATES (`LinkManager.set_link_state`), for the link state sensor
         # the connect-time reads of every link (`hub/refresh.py`)
         self.refresh = Refresh(self)
         # the metered loads' polls and reads, and the time and location broadcasts (`hub/energy.py`, `hub/clock.py`)
         self.energy = Energy(self)
         self.clock = Clock(self)
-        self._link_lost = asyncio.Event()
         self.stopping = False  # `async_stop` began: nothing new is scheduled
-        self._unsub_adv: Callable[[], None] | None = None
-        self._was_available = False
-        self._last_rx = time.monotonic()  # when the proxy last forwarded anything we could decode, or named itself (link watchdog)
         self.rx_messages = 0  # decoded access messages, any destination
         self.rx_to_us = (
             0  # ... of which unicast to our address: proof that nodes accept our PDUs
         )
-        # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe),
-        # and the watchdog waiting for its Filter Status (`_filter_status_overdue`)
+        # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe)
         self.beacon_authenticated = False
-        self._unsub_filter_watch: Callable[[], None] | None = None
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
         self.audits: dict[int, NodeAudit] = {}
         # scene number → {member element → its JUNG scene action (None: stored without a description)}, read from
@@ -735,29 +669,8 @@ class JungHomeHub:
         self.inserts = NodeInserts(self, issue_id(entry, ISSUE_INSERT_MISMATCH))
         # each node's clock, zone offset and stored location as it answers them (`node_clocks.py`, review-4 F4-8)
         self.clocks = NodeClocks(self, issue_id(entry, ISSUE_NODE_CLOCK_WRONG))
-        self._lost_at: float | None = (
-            None  # monotonic time the last link was lost, while no new one is up
-        )
-        self._unsub_grace: CALLBACK_TYPE | None = None  # the end of the link-loss grace
-        # how the last link ended, None while one is up (`_link_ended`); when the current one came up (monotonic)
-        self._link_end: LinkEnd | None = NO_LINK
-        self._link_since = 0.0
-        # how the link before the current one ended, for the connect-time steps (`Refresh.connect_step`)
-        self.previous_link = NO_LINK
-        # proxy MAC → its links in a row that ended within SHORT_LINK (`_judge_link`)
-        self._short_links: dict[str, int] = {}
-        self._link_loss_listeners: list[Callable[[LinkEnd], None]] = []
-        # the last LINK_HISTORY links, oldest first (`_link_ended`); for the current one: how long its state refresh
-        # took (None until it is through) and the store's `held_back_total` when it came up
+        # the last LINK_HISTORY links, oldest first (`LinkManager._link_ended`)
         self.link_history: deque[LinkRecord] = deque(maxlen=LINK_HISTORY)
-        self.link_refresh: float | None = None
-        self._held_back_at_link = 0.0
-        self._probe_link = (
-            asyncio.Event()
-        )  # a command went unanswered: the watchdog asks the proxy now
-        # load commands that went unanswered, waiting for the probe's verdict on the link (`_load_command`):
-        # (element the miss is accounted to, its state Get's kind, when it was asked)
-        self._unanswered: list[tuple[int, str, float]] = []
         self._unsub_ha_stop: CALLBACK_TYPE | None = None
         self._unsub_echo: CALLBACK_TYPE | None = (
             None  # the check that a command was answered (`_command`)
@@ -924,14 +837,14 @@ class JungHomeHub:
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
             self.issues.report_address_shared()
-        self._unsub_adv = bluetooth.async_register_callback(
+        self.link.unsub_adv = bluetooth.async_register_callback(
             self.hass,
-            self._adv_seen,
+            self.link.adv_seen,
             {"service_uuid": MESH_PROXY_SERVICE, "connectable": True},
             bluetooth.BluetoothScanningMode.PASSIVE,
         )
-        self._task = self.entry.async_create_background_task(
-            self.hass, self._connection_loop(), f"{DOMAIN} link"
+        self.link.task = self.entry.async_create_background_task(
+            self.hass, self.link.connection_loop(), f"{DOMAIN} link"
         )
         self.clock.unsub_time = async_track_time_interval(
             self.hass, self.clock.send_time_daily, timedelta(seconds=TIME_SET_INTERVAL)
@@ -963,12 +876,12 @@ class JungHomeHub:
         """Stop the connection loop and background work, then drop the link."""
         self.stopping = True
         for unsub in (
-            self._unsub_adv,
+            self.link.unsub_adv,
             self.clock.unsub_time,
             self.energy.unsub_energy,
             self.liveness.unsub_heartbeats,
             self.issues.unsub_seq_check,
-            self._unsub_grace,
+            self.link.unsub_grace,
             self._unsub_ha_stop,
             self._unsub_echo,
             self.clock.unsub_offset_change,
@@ -976,12 +889,12 @@ class JungHomeHub:
         ):
             if unsub:
                 unsub()
-        self._unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
+        self.link.unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
         self.clock.unsub_offset_change = self.issues.unsub_seq_stall = None
-        self._unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
+        self.link.unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
         self.liveness.unsub_heartbeats = self.issues.unsub_seq_check = None
         self.export_watch.cancel_timer()
-        self._cancel_filter_watch()
+        self.link.cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
         # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
         for cancel in (
@@ -995,8 +908,8 @@ class JungHomeHub:
         self._locating.clear()
         self.gestures.cancel_all()
         try:
-            await self._cancel(self._task)
-            self._task = None
+            await self._cancel(self.link.task)
+            self.link.task = None
             await self._cancel(self.refresh.task)
             self.refresh.task = None
             await self._cancel(self.energy.task)
@@ -1051,43 +964,29 @@ class JungHomeHub:
         """Whether a proxy link is up."""
         return self.proxy.connected
 
+    # ------------------------------------------------------------------ the link (`hub/link.py`)
     @property
     def link_since(self) -> float:
-        """When the current (or last) link came up, a `time.monotonic()`: a read made since is this link's."""
-        return self._link_since
+        """When the current (or last) link came up, a `time.monotonic()` (`LinkManager.link_since`)."""
+        return self.link.link_since
 
     @property
     def link_available(self) -> bool:
-        """Whether the entities count as reachable: a link is up, or one was lost less than LINK_LOSS_GRACE ago.
-
-        A lost link is usually replaced within seconds by the next proxy node; flapping every entity to unavailable
-        and back for that (and failing a command sent meanwhile) is worse than a short wait (`_command`). A link
-        counts once `_connect_to` took it: `connected` turns True inside `attach()` already, and a link lost before
-        that is a failed connection, not one to show as up for a moment (review-4 R4-3).
-        """
-        if self.connected and self._link_end is None:
-            return True
-        return (
-            self._lost_at is not None
-            and not self.stopping
-            and time.monotonic() - self._lost_at < LINK_LOSS_GRACE
-        )
+        """Whether the entities count as reachable: a link, or its grace (`LinkManager.link_available`)."""
+        return self.link.link_available
 
     async def async_wait_connected(self, timeout: float) -> bool:
-        """Wait up to `timeout` seconds for a proxy link; whether one is up.
+        """Wait up to `timeout` seconds for a proxy link; whether one is up (`LinkManager.async_wait_connected`)."""
+        return await self.link.async_wait_connected(timeout)
 
-        The event is re-cleared before each wait rather than trusted: the proxy client drops `connected` in its
-        disconnect callback a moment before `_set_available(False)` clears the event, so a still-set event
-        must not end the wait while there is no link.
-        """
-        try:
-            async with asyncio.timeout(timeout):
-                while not self.connected:
-                    self._link_up.clear()
-                    await self._link_up.wait()
-        except TimeoutError:
-            return False
-        return True
+    def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
+        """Proxy nodes of this network currently advertising, strongest first (`LinkManager.visible_proxies`)."""
+        return self.link.visible_proxies()
+
+    @callback
+    def async_on_link_loss(self, listener: Callable[[LinkEnd], None]) -> CALLBACK_TYPE:
+        """Call `listener` with every link's end; returns the unsubscribe (`LinkManager.async_on_link_loss`)."""
+        return self.link.async_on_link_loss(listener)
 
     @property
     def metadata(self) -> Metadata:
@@ -1114,7 +1013,7 @@ class JungHomeHub:
         if self.heartbeats_enabled and not self.entry.options.get(
             OPTION_HEARTBEATS, DEFAULT_HEARTBEATS
         ):
-            self._cancel_refresh()
+            self.link.cancel_refresh()
             assert (
                 self.liveness.unsub_heartbeats is not None
             )  # armed by `async_start` with the option on
@@ -1240,51 +1139,6 @@ class JungHomeHub:
             await self.liveness.configure_heartbeats()
 
     # ------------------------------------------------------------------ connection loop
-    def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
-        """Proxy nodes of *this* network currently advertising, strongest first.
-
-        Those heard within PROXY_ADVERT_MAX_AGE come first (review-3 C5): a node switched off keeps its last,
-        possibly strongest, advertisement in the history for a long time, and connecting to it costs a timeout.
-        """
-        out = [
-            info
-            for info in bluetooth.async_discovered_service_info(
-                self.hass, connectable=True
-            )
-            if self.ours(info)
-        ]
-        now = bluetooth.MONOTONIC_TIME()
-        return sorted(
-            out,
-            key=lambda i: (now - i.time > PROXY_ADVERT_MAX_AGE, -(i.rssi or -127)),
-        )
-
-    @callback
-    def _adv_seen(
-        self,
-        info: bluetooth.BluetoothServiceInfoBleak,
-        change: bluetooth.BluetoothChange,
-    ) -> None:
-        if not self.proxy.connected and self.ours(info):
-            self._link_lost.set()  # wake the loop: a candidate appeared
-        if (node := self.node_for_address(info.address)) is not None:
-            self.node_rssi[node.unicast] = info.rssi
-            self.signal_node(node.unicast)
-            # its JUNG record, merged into the proxy advert's data: insert and key layout (`inserts.py`)
-            self.inserts.note_advert(
-                node, parse_manufacturer_data(info.manufacturer_data)
-            )
-        self.export_watch.check_unknown_node(info)
-
-    def ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
-        """Whether a proxy advert is of *this* network (Network ID or one of our nodes' Node Identity).
-
-        Only such an advert wakes the connection loop while unlinked (review-4 R4-8): every other network's proxies
-        in range woke it before, each wake-up a `visible_proxies` pass over every advert HA holds, to find nothing.
-        """
-        if not (sd := info.service_data.get(MESH_PROXY_SERVICE)):
-            return False
-        return self.proxy.classify_service_data(bytes(sd)) is not None
 
     def node_for_address(self, address: str) -> Node | None:
         """Return the node advertising from Bluetooth `address` (its public MAC); None when the export has no such node."""
@@ -1323,523 +1177,6 @@ class JungHomeHub:
     def follow_adopted_export(self) -> None:
         """Have the device model follow an export adopted from the gateway (`ExportWatch.follow_adopted_export`)."""
         self.export_watch.follow_adopted_export()
-
-    async def _connection_loop(self) -> None:
-        """Keep a link: connect to the best proxy node in range, watch it, and connect again when it goes.
-
-        An unexpected error in one pass is logged and the loop goes on after a pause (review-3 C6: it used to end
-        the task, and with it every link until a reload).
-        """
-        failed: dict[str, float] = {}
-        # shared with `_connection_pass`, which doubles it on a failure or a short link and resets it after a long one
-        backoff = [CONNECT_BACKOFF_MIN]
-        while not self.stopping:
-            try:
-                await self._connection_pass(failed, backoff)
-            except Exception:
-                _LOGGER.exception(
-                    "Unexpected error in the JUNG mesh connection loop; trying again in %.0f s",
-                    CONNECT_BACKOFF_MAX,
-                )
-                await self.drop_link(
-                    "an unexpected error in the connection loop", penalise=False
-                )
-                self._set_available(False)
-                self.set_link_state(LINK_FAILED)
-                await asyncio.sleep(CONNECT_BACKOFF_MAX)
-
-    async def _connection_pass(
-        self, failed: dict[str, float], backoff: list[float]
-    ) -> None:
-        """One pass of `_connection_loop`: wait for a candidate, connect, watch the link until it goes."""
-        cands = self.visible_proxies()
-        now = time.monotonic()
-        cands = [
-            c
-            for c in cands
-            if now - failed.get(c.address, -FAILED_PROXY_COOLDOWN)
-            > FAILED_PROXY_COOLDOWN
-        ] or cands
-        if not cands:
-            self._set_available(False)
-            self._check_bluetooth()
-            self._link_lost.clear()
-            try:
-                await asyncio.wait_for(self._link_lost.wait(), 30)
-            except TimeoutError:
-                pass
-            return
-        info = cands[0]
-        self.issues.report_bluetooth_unavailable(
-            False
-        )  # a proxy node was seen: something hears the mesh
-        self.set_link_state(LINK_CONNECTING)
-        try:
-            await self._connect_to(info)
-        except Exception as err:  # any BLE failure: try the next node
-            failed[info.address] = time.monotonic()
-            # the first failure of a down period is what the user gets to see (a link that never comes up —
-            # no free connection slot on the ESPHome proxy, an adapter gone — would otherwise leave every
-            # entity unavailable with nothing in the log); the retries are DEBUG
-            _LOGGER.log(
-                logging.DEBUG if self._connect_failure_logged else logging.WARNING,
-                "connecting to %s failed: %s; retry in %.0fs",
-                info.address,
-                err,
-                backoff[0],
-            )
-            self._connect_failure_logged = True
-            self._set_available(False)
-            self.set_link_state(LINK_FAILED)
-            await asyncio.sleep(backoff[0])
-            backoff[0] = min(backoff[0] * 2, CONNECT_BACKOFF_MAX)
-            return
-        self._link_lost.clear()
-        await self._watch_link()
-        if self._link_end is None:
-            # gone without the disconnected callback (a transport that only turned `is_connected` False): the
-            # client is still attached and nothing ended the link yet
-            await self.drop_link("the transport reported it closed", penalise=None)
-        self._set_available(False)
-        await asyncio.sleep(self._judge_link(info.address, failed, backoff))
-
-    def _judge_link(
-        self, address: str, failed: dict[str, float], backoff: list[float]
-    ) -> float:
-        """Weigh the link to `address` that just ended (`_link_end`) against its proxy; the pause before the next pass.
-
-        A link lost within SHORT_LINK is a failed connection that only took longer to show (review-4 R4-1): the
-        back-off doubles, and after SHORT_LINK_STREAK of them in a row the node is set aside like one that cannot be
-        connected to (`failed`), so the next pass prefers another node — the strongest one was otherwise picked
-        again and again, each new link restarting the connect-time refresh. Only a long link resets the back-off.
-        A silent proxy is set aside at once, as before; a link we ended for reasons of our own counts for nothing.
-        A node that reached the streak is set aside again by its next short link, until it holds one for SHORT_LINK.
-        Unverified on air.
-        """
-        end = self._link_end
-        assert end is not None  # `_connection_pass` ended it
-        if end.penalise is False:
-            return 1.0
-        now = time.monotonic()
-        if end.penalise:  # a proxy that went silent: prefer another node for a while
-            failed[address] = now
-        if end.lasted >= SHORT_LINK:
-            self._short_links.pop(address, None)
-            backoff[0] = CONNECT_BACKOFF_MIN
-            return 1.0
-        streak = self._short_links[address] = self._short_links.get(address, 0) + 1
-        if streak >= SHORT_LINK_STREAK:
-            failed[address] = now
-            if streak == SHORT_LINK_STREAK:
-                _LOGGER.warning(
-                    "Proxy node %s lost %d links in a row within %.0f s of connecting; preferring another node "
-                    "for a while",
-                    address,
-                    streak,
-                    SHORT_LINK,
-                )
-        pause = backoff[0]
-        backoff[0] = min(pause * 2, CONNECT_BACKOFF_MAX)
-        return pause
-
-    async def _watch_link(self) -> None:
-        """Block while the link is up; drop it (`drop_link`) when the proxy went silent.
-
-        A GATT proxy that stops forwarding (stuck filter, half-dead relay) never disconnects by itself. A mesh with a
-        gateway is never quiet (it polls every load every 15 s), but one without can be silent for hours at night, so
-        LINK_IDLE_TIMEOUT of silence only triggers a keep-alive Get (`_keep_alive`); the link is dropped when that
-        goes unanswered as well. A link that went away while the keep-alive was out was lost, not silent.
-
-        A probe a load command asked for (`_load_command`) also settles whether the nodes that left their commands
-        unanswered are unreachable: only when the proxy answered it is the silence theirs.
-        """
-        self._unanswered.clear()  # misses of an earlier link: the new link's refresh asks those nodes again
-        while self.proxy.connected and not self._link_lost.is_set():
-            idle = time.monotonic() - self._last_rx
-            if idle >= LINK_IDLE_TIMEOUT:
-                if await self._keep_alive():
-                    continue
-                if self._link_lost.is_set():
-                    break
-                _LOGGER.warning(
-                    "Nothing received from the JUNG mesh through proxy node %s for %.0f s and no answer to a "
-                    "keep-alive Get; dropping the link",
-                    self.proxy_address,
-                    time.monotonic() - self._last_rx,
-                )
-                await self.drop_link("the proxy went silent", penalise=True)
-                return
-            if self._probe_link.is_set():
-                self._probe_link.clear()
-                unanswered, self._unanswered = self._unanswered, []
-                # a command went unanswered: ask the proxy now rather than after LINK_IDLE_TIMEOUT of silence
-                if await self._keep_alive():
-                    for address, kind, asked in unanswered:
-                        self.liveness.missed_answer(address, kind, asked, command=True)
-                    continue
-                if not self._link_lost.is_set():
-                    _LOGGER.warning(
-                        "No answer from the JUNG mesh through proxy node %s to a command nor to a keep-alive "
-                        "Get; dropping the link",
-                        self.proxy_address,
-                    )
-                    await self.drop_link(
-                        "the proxy answered neither a command nor a keep-alive Get",
-                        penalise=True,
-                    )
-                    return
-                continue
-            lost = asyncio.ensure_future(self._link_lost.wait())
-            probe = asyncio.ensure_future(self._probe_link.wait())
-            try:
-                await asyncio.wait(
-                    (lost, probe),
-                    timeout=LINK_IDLE_TIMEOUT - idle,
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
-            finally:
-                lost.cancel()
-                probe.cancel()
-
-    def _keep_alive_targets(self) -> list[int]:
-        """One Generic OnOff Server element per node, nodes heard from before those never heard, the proxy's last.
-
-        An answer from another node travels the mesh through the proxy, which proves it still forwards in both
-        directions; the proxy node's own element only proves the GATT link (better than nothing on a mesh where
-        it is the only load). Nodes that cannot answer are left out (review-3 C4: a healthy quiet link was dropped
-        for asking an unplugged node, a dead one or a sleeping battery transmitter three times) — unless nothing
-        else is left, when any element is better than none.
-        """
-        others: list[tuple[bool, int]] = []
-        own: list[int] = []
-        fallback: list[int] = []
-        for node in self.cdb.nodes:
-            if node.pid is None:
-                continue  # the phone / another client: not a device
-            element = next(
-                (e for e in node.elements if GENERIC_ONOFF_SERVER in e.models), None
-            )
-            if element is None:
-                continue
-            fallback.append(element.address)
-            if node.pid in BATTERY_PIDS or not self.node_alive(node.unicast):
-                continue
-            if node.unicast == self.proxy_node:
-                own.append(element.address)
-            else:
-                others.append((node.unicast not in self.last_heard, element.address))
-        others.sort(
-            key=lambda target: target[0]
-        )  # stable: export order within each group
-        return [address for _, address in others] + own or fallback
-
-    async def _keep_alive(self) -> bool:
-        """Ask a node for its state to tell a quiet mesh from a dead link; True when the proxy delivered anything.
-
-        A Get is the one message JUNG firmware always answers (`Refresh._refresh_all`), so an unanswered keep-alive means
-        the proxy no longer forwards (or the element is gone: up to KEEP_ALIVE_ATTEMPTS distinct elements are
-        tried). Traffic of any kind arriving meanwhile counts as well. A send the sequence-number store holds
-        back is waited for (`while_seq_stalls`), not taken for a dead link; one that cannot go out at all (the
-        store refused past SEQ_STALL_DEADLINE, the sequence space is used up) is no verdict either way, so what
-        arrived since decides alone — with nothing, the watchdog drops a silent proxy as after any unanswered
-        keep-alive.
-        """
-        before = self._last_rx
-        for addr in self._keep_alive_targets()[:KEEP_ALIVE_ATTEMPTS]:
-            asked = time.monotonic()
-            try:
-                await self.while_seq_stalls(
-                    partial(
-                        self.proxy.request,
-                        addr,
-                        M.generic_onoff_get(),
-                        M.GEN_ONOFF_STATUS,
-                        timeout=KEEP_ALIVE_TIMEOUT,
-                        retries=1,
-                    )
-                )
-            except TimeoutError:
-                _LOGGER.debug("%04X did not answer the keep-alive Get", addr)
-                # an OnOff Get, like the refresh of a switch; one attempt is no verdict on the node
-                self.liveness.missed_answer(addr, "switch", asked, full=False)
-                if self._last_rx != before:
-                    return True  # not that element, but the proxy forwarded something else meanwhile
-                continue
-            except ConnectionError as err:
-                _LOGGER.debug("keep-alive not sent: %s", err)
-                break
-            return True
-        return self._last_rx != before
-
-    def set_link_state(self, state: str) -> None:
-        """Record the link's state (one of `LINK_STATES`) and tell the link state sensor when it changed."""
-        if state == self.link_state:
-            return
-        self.link_state = state
-        async_dispatcher_send(self.hass, SIGNAL_LINK_STATE.format(self.entry.entry_id))
-
-    def _check_bluetooth(self) -> None:
-        """No proxy node in range: tell a mesh out of range from a Home Assistant that has no Bluetooth left.
-
-        The app locks its screen while the phone's Bluetooth is off (`ObserveBluetoothState`); here the equivalent
-        is no connectable scanner at all — the adapter is off, unplugged or failed, every ESPHome proxy is gone —
-        which raises `bluetooth_unavailable` (`Issues.report_bluetooth_unavailable`).
-        """
-        off = bluetooth.async_scanner_count(self.hass, connectable=True) == 0
-        self.issues.report_bluetooth_unavailable(off)
-        self.set_link_state(LINK_BLUETOOTH_OFF if off else LINK_SEARCHING)
-
-    async def _connect_to(self, info: bluetooth.BluetoothServiceInfoBleak) -> None:
-        """Connect to the proxy node `info` advertised from and start the link's work.
-
-        The wait for the connection is bleak-retry-connector's (up to `max_attempts` attempts of its own timeout),
-        not the app's 5 s (`ConnectToDevice`): the app's phone radio connects at once or not at all, while an ESPHome
-        proxy first waits for a free connection slot and gives up only after its own establishment timeout (at least
-        10 s); cutting that short would turn a slow proxy into a failed one and rotate away from the only node in
-        range. A failed attempt is retried by the connection loop with a back-off either way.
-        """
-        ble_device = (
-            bluetooth.async_ble_device_from_address(
-                self.hass, info.address, connectable=True
-            )
-            or info.device
-        )
-        client = await establish_connection(
-            BleakClientWithServiceCache,
-            ble_device,
-            f"JUNG proxy {info.address}",
-            disconnected_callback=self.proxy.handle_disconnected,
-            max_attempts=2,
-            use_services_cache=True,
-        )
-        self.rx_decoded_link = self.rx_undecodable_link = 0
-        self.beacon_authenticated = False
-        # counted before the attach: `proxy.connected` turns True inside it, and an entity added right then must
-        # already see the new link's number (`config_entities.PropertyEntity._maybe_read`)
-        self.link_count += 1
-        await self.proxy.attach(client, beacon_wait=CONNECT_BEACON_WAIT)
-        if not self.proxy.connected:
-            # lost while attach() settled after the filter request (review-4 R4-3): a failed connection, not a link
-            # to report as up for a moment and then as lost — the entities would flap
-            raise ConnectionError("the link was lost while it was set up")
-        self.previous_link = self._link_end or NO_LINK
-        self._link_end = None
-        self._link_since = time.monotonic()
-        self.link_refresh = None
-        self._held_back_at_link = self.state.held_back_total
-        self._connect_failure_logged = False
-        self.proxy_address = info.address
-        # every node gets a full timeout from here, and no re-ask stays pending
-        self.liveness.link_up()
-        # the proxy's Filter Status names the node a little after the filter request (`_on_filter_status`); its
-        # Bluetooth address usually names it already (JUNG nodes advertise from their MAC, `node_for_address`)
-        node = self.node_for_address(info.address)
-        self.proxy_node = self.proxy.proxy_addr or (
-            node.unicast if node is not None else None
-        )
-        self.connected_since = time.time()
-        self._lost_at = None
-        self._cancel_grace()
-        self._link_up.set()
-        self._last_rx = time.monotonic()
-        self._set_available(True)
-        self.set_link_state(
-            LINK_UPDATING
-        )  # until the connect-time state refresh is through (`Refresh.after_connect`)
-        self._cancel_refresh()  # a refresh still running from the previous link would keep polling through this one
-        if (
-            self.proxy.proxy_addr is None
-        ):  # the Filter Status itself is still due, whatever the address told us
-            self._unsub_filter_watch = async_call_later(
-                self.hass, FILTER_STATUS_TIMEOUT, self._filter_status_overdue
-            )
-        self.energy.arm_poll()
-        self.refresh.task = self.entry.async_create_background_task(
-            self.hass, self.refresh.after_connect(), f"{DOMAIN} refresh"
-        )
-        self.export_watch.check_pin()
-        self.export_watch.request_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
-        self.vault_refresh.schedule()  # a device Home Assistant added that missed a key refresh step: again now
-
-    def _cancel_refresh(self) -> None:
-        """Cancel the per-link background work: the connect-time refresh, a running energy poll, the Filter Status watchdog."""
-        for task in (self.refresh.task, self.energy.task):
-            if task is not None:
-                task.cancel()
-        self.refresh.task = self.energy.task = None
-        self._cancel_filter_watch()
-
-    def _cancel_filter_watch(self) -> None:
-        if self._unsub_filter_watch is not None:
-            self._unsub_filter_watch()
-            self._unsub_filter_watch = None
-
-    @callback
-    def _filter_status_overdue(self, _now: datetime) -> None:
-        """FILTER_STATUS_TIMEOUT after attaching, no Filter Status yet: the proxy discards our PDUs.
-
-        The filter request is the first PDU of every link and the one the proxy answers by itself. When its
-        beacon authenticated (so the keys fit) but the status never came, the proxy dropped the request as a
-        replay — a stale sequence number, or another client using our address — and the link stays on the default
-        whitelist: nothing at all is forwarded, so the refresh-based detection (which needs other traffic) never
-        fires. Seen on air with an address whose sequence numbers the nodes already knew higher.
-
-        Nothing to report when the request never went out — no filter request written on this link (the store held
-        every attempt back) — or while the store holds sends back: the proxy was not asked, and the repair's
-        skip-ahead could not be written either (`seq_store_unwritable` reports that).
-        """
-        self._unsub_filter_watch = None
-        if (
-            not self.connected
-            or self.proxy.proxy_addr is not None  # the status did arrive
-            or not self.beacon_authenticated
-            or self.proxy.filter_writes == 0
-            or self.state.stalled_for is not None
-        ):
-            return
-        _LOGGER.warning(
-            "Proxy node %s authenticated the mesh beacon but did not answer the proxy filter request within "
-            "%.0f s: it discards our messages (stale sequence number, or address %04X is used by another client)",
-            self.proxy_address,
-            FILTER_STATUS_TIMEOUT,
-            self.proxy.state.src,
-        )
-        self.issues.report_pdus_dropped(True)
-
-    def _set_available(self, available: bool) -> None:
-        """Record the link state and tell the entities, unless it is "still unavailable" with nothing to clear.
-
-        The no-proxy branch of the connection loop passes every 30 s for as long as the mesh is out of range: a
-        signal each time would make every entity write its state twice a minute, for hours. A (re)connect always
-        signals: the proxy the entities show may have changed.
-        """
-        changed = (
-            available
-            or available != self._was_available
-            or self.proxy_address is not None
-            or self.proxy_node is not None
-        )
-        if available != self._was_available:
-            if available:
-                _LOGGER.info(
-                    "Connected to the JUNG mesh through proxy node %s",
-                    self.proxy_address,
-                )
-            else:
-                _LOGGER.warning(
-                    "Lost the connection to the JUNG mesh; reconnecting to another proxy node"
-                )
-            self._was_available = available
-        if not available:
-            self.proxy_address = None
-            self.proxy_node = None
-            self.connected_since = None
-            self._link_up.clear()
-        if changed:
-            async_dispatcher_send(
-                self.hass, SIGNAL_CONNECTION.format(self.entry.entry_id)
-            )
-
-    def _on_disconnect(self) -> None:
-        """Handle the link the proxy client lost (its transport's disconnected callback)."""
-        self._link_ended("the proxy disconnected", None)
-        self._link_lost.set()
-
-    async def drop_link(self, reason: str, *, penalise: bool | None) -> None:
-        """End the current link ourselves, for `reason`; `penalise` as in `LinkEnd`.
-
-        Every path that detaches a link it still had goes through here (review-4 R4-3: only a transport's
-        disconnect used to start the link-loss grace, so a link the watchdog or the `pdus_dropped` repair dropped
-        made every entity unavailable at once, and Home Assistant skipped them in a command meanwhile). The end is
-        recorded — and the grace started — before the detach: `detach` clears `connected` at once and then waits
-        for the transport, and a command arriving in that wait must find the grace and wait for the next link
-        (`_wait_for_link`) rather than fail. The detach is bounded like the one of `async_stop`. Unverified on air.
-        """
-        self._link_ended(reason, penalise)
-        try:
-            await asyncio.wait_for(self.proxy.detach(), STOP_TIMEOUT)
-        except TimeoutError:
-            _LOGGER.warning(
-                "The Bluetooth link did not close within %.0f s; leaving it",
-                STOP_TIMEOUT,
-            )
-        except Exception:  # pragma: no cover - detach logs and swallows its own errors
-            _LOGGER.debug("detach failed", exc_info=True)
-        self._link_lost.set()  # the watchdog, when another task dropped the link
-
-    def _link_ended(self, reason: str, penalise: bool | None) -> None:
-        """Handle the end of a link, whoever ended it: record why (`link_history`), start the grace, tell the listeners.
-
-        Nothing to do when no link is up: one lost while `attach()` was still settling is a failed connection
-        (`_connect_to`), and a link ends once however many paths notice.
-        """
-        if self._link_end is not None:
-            return
-        now = time.monotonic()
-        end = self._link_end = LinkEnd(reason, penalise, now - self._link_since)
-        self.link_history.append(
-            LinkRecord(
-                self.proxy_node,
-                now,
-                end.lasted,
-                reason,
-                penalise,
-                self.link_refresh,
-                self.state.held_back_total - self._held_back_at_link,
-            )
-        )
-        self._cancel_refresh()
-        self._start_grace()
-        self.set_link_state(LINK_DISCONNECTED)
-        _LOGGER.info(
-            "The link through proxy node %s ended after %.0f s: %s",
-            self.proxy_address,
-            end.lasted,
-            reason,
-        )
-        for listener in list(self._link_loss_listeners):
-            listener(end)
-
-    @callback
-    def async_on_link_loss(self, listener: Callable[[LinkEnd], None]) -> CALLBACK_TYPE:
-        """Call `listener` with every link's `LinkEnd` the moment it ends, before the grace runs; returns the unsubscribe."""
-        self._link_loss_listeners.append(listener)
-        return partial(self._link_loss_listeners.remove, listener)
-
-    def _cancel_grace(self) -> None:
-        if self._unsub_grace is not None:
-            self._unsub_grace()
-            self._unsub_grace = None
-
-    def _start_grace(self) -> None:
-        """Keep the entities available for LINK_LOSS_GRACE after a link loss; tell them when it ends."""
-        self._lost_at = time.monotonic()
-        self._cancel_grace()
-
-        @callback
-        def ended(_now: datetime) -> None:
-            self._unsub_grace = None
-            async_dispatcher_send(
-                self.hass, SIGNAL_CONNECTION.format(self.entry.entry_id)
-            )
-
-        self._unsub_grace = async_call_later(self.hass, LINK_LOSS_GRACE, ended)
-
-    def _on_filter_status(self, proxy_unicast: int) -> None:
-        """Record which node of the mesh we talk through, now that the proxy's Filter Status named it.
-
-        The status is the proxy talking to us, so it feeds the link watchdog like any decoded PDU; and the proxy
-        accepted the request it answers, so our PDUs are not being discarded (any more).
-        """
-        self._last_rx = time.monotonic()
-        self._cancel_filter_watch()
-        if self.issues.pdus_dropped:
-            self.issues.report_pdus_dropped(False)
-        if self.proxy_node == proxy_unicast:
-            return
-        self.proxy_node = proxy_unicast
-        _LOGGER.debug("Proxy %s is mesh node %04X", self.proxy_address, proxy_unicast)
-        async_dispatcher_send(self.hass, SIGNAL_CONNECTION.format(self.entry.entry_id))
 
     def scenes_of(self, addr: int) -> list[int]:
         """Return the scenes the load element at `addr` is a member of (the app's `GetScenesForDevice`).
@@ -2211,7 +1548,7 @@ class JungHomeHub:
 
     def _on_message(self, m: AccessMessage) -> None:
         """Account for the traffic (link watchdog, drop detection, stale-export detection, the app), then hand the message to its handler."""
-        self._last_rx = time.monotonic()
+        self.link.last_rx = time.monotonic()
         self.rx_messages += 1
         self.rx_decoded_link += 1
         self._note_seq(m.src, m.seq)
@@ -2642,7 +1979,7 @@ class JungHomeHub:
         which never happens). On a GATT link only the proxy node talks, so it is a strong hint, not proof: the
         flag itself is not authenticated.
         """
-        self._last_rx = time.monotonic()
+        self.link.last_rx = time.monotonic()
         if not beacon.authenticated:
             self.issues.count_undecodable()
             if beacon.key_refresh:
@@ -2690,12 +2027,6 @@ class JungHomeHub:
             )
 
     # ------------------------------------------------------------------ commands
-    async def _wait_for_link(self) -> None:
-        """During the link-loss grace, wait for the new link: a command then goes out on it instead of failing."""
-        if not self.connected and self._lost_at is not None and not self.stopping:
-            remaining = LINK_LOSS_GRACE - (time.monotonic() - self._lost_at)
-            if remaining > 0:
-                await self.async_wait_connected(remaining)
 
     async def _command(self, dst: int, access_pdu: bytes) -> None:
         """Send a command without waiting for its status, then expect an echo from the mesh.
@@ -2708,20 +2039,20 @@ class JungHomeHub:
         COMMAND_ECHO_TIMEOUT, the link watchdog probes the proxy at once (a proxy that stopped forwarding is
         otherwise only noticed after LINK_IDLE_TIMEOUT of silence, and every command until then is lost).
         """
-        await self._wait_for_link()
+        await self.link.wait_for_link()
         await self.proxy.send_access(dst, access_pdu)
         if self._unsub_echo is not None:
             return  # the first command of a burst is watched: anything the mesh sends answers them all
-        sent_at = self._last_rx
+        sent_at = self.link.last_rx
 
         @callback
         def check(_now: datetime) -> None:
             self._unsub_echo = None
-            if self.connected and self._last_rx == sent_at:
+            if self.connected and self.link.last_rx == sent_at:
                 _LOGGER.debug(
                     "No answer to a command within %.0f s", COMMAND_ECHO_TIMEOUT
                 )
-                self._probe_link.set()
+                self.link.probe_link.set()
 
         self._unsub_echo = async_call_later(self.hass, COMMAND_ECHO_TIMEOUT, check)
 
@@ -2748,12 +2079,12 @@ class JungHomeHub:
         is raised for the caller to report either way.
 
         A link that ended or changed while the command was out (review-4 R I-11) says nothing about the load: the
-        command is sent once more, on the next link (`_wait_for_link`) — same PDU, same TID, so a load that did
+        command is sent once more, on the next link (`LinkManager.wait_for_link`) — same PDU, same TID, so a load that did
         apply it only answers. Unverified on air. Returns the status that confirmed the Set.
         """
         retry = False
         while True:
-            await self._wait_for_link()
+            await self.link.wait_for_link()
             link = self.link_count if self.connected else None
             asked = time.monotonic()
             try:
@@ -2774,10 +2105,10 @@ class JungHomeHub:
                     continue
                 if isinstance(err, TimeoutError) and same_link:
                     # else the link went meanwhile: the new link's refresh asks the node again
-                    self._unanswered.append(
+                    self.link.unanswered.append(
                         (dst if load is None else load, kind, asked)
                     )
-                    self._probe_link.set()
+                    self.link.probe_link.set()
                 raise
 
     @staticmethod

@@ -15,11 +15,12 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_UNAVAILABLE
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.junghome_ble import coordinator
-from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.junghome_ble.hub import clock
+from custom_components.junghome_ble.hub import link as link_mod
+from custom_components.junghome_ble.hub.link import LinkManager
 from custom_components.junghome_ble.hub.refresh import Refresh
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 
 def hub_of(entry: MockConfigEntry) -> JungHomeHub:
@@ -54,14 +57,14 @@ async def test_entities_stay_available_through_a_short_link_loss(
     hub = hub_of(init_integration)
     light = entity_id(hass, "light", UID_LIGHT_DIMMER)
     with patch.object(
-        JungHomeHub, "visible_proxies", return_value=[]
+        LinkManager, "visible_proxies", return_value=[]
     ):  # no proxy in range for now
         fake_link.drop_link()
         await settle(hass)
         assert not hub.connected
         assert hub.link_available
         assert hass.states.get(light).state != STATE_UNAVAILABLE
-        freezer.tick(coordinator.LINK_LOSS_GRACE + 1)
+        freezer.tick(link_mod.LINK_LOSS_GRACE + 1)
         async_fire_time_changed(hass)
         await settle(hass)
         assert not hub.link_available
@@ -75,7 +78,7 @@ async def test_a_command_in_the_grace_waits_for_the_next_link(
     fake_link: FakeProxyLink,
 ) -> None:
     hub = hub_of(init_integration)
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         fake_link.drop_link()
         await settle(hass)
         assert not hub.connected
@@ -84,8 +87,8 @@ async def test_a_command_in_the_grace_waits_for_the_next_link(
         for _ in range(5):  # not `settle`: it would wait out the command's grace
             await asyncio.sleep(0)
         assert not command.done()  # waiting for the link, not failing
-        hub._on_disconnect()  # another loss in the grace starts it over
-    hub._link_lost.set()  # a proxy advertises again: the loop wakes
+        hub.link.on_disconnect()  # another loss in the grace starts it over
+    hub.link._link_lost.set()  # a proxy advertises again: the loop wakes
     await command
     assert hub.connected
     assert sent_onoff(fake_link, LIGHT_DIMMER, True)
@@ -103,7 +106,7 @@ async def test_an_unanswered_command_makes_the_watchdog_probe_the_link(
     at once; no answer to the probe drops it. (A load's own command waits for its status: `test_reachability.py`.)"""
     hub = hub_of(init_integration)
     keep_alive = AsyncMock(return_value=False)
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
+    with patch.object(LinkManager, "_keep_alive", keep_alive):
         await hub.central_command(ALL_LIGHTS, True)
         await hub.central_command(ALL_LIGHTS, False)  # a burst: one watch
         freezer.tick(coordinator.COMMAND_ECHO_TIMEOUT + 1)
@@ -114,18 +117,18 @@ async def test_an_unanswered_command_makes_the_watchdog_probe_the_link(
     await wait_for_link(hass, init_integration)
     # an answered probe keeps the link
     keep_alive = AsyncMock(return_value=True)
-    with patch.object(JungHomeHub, "_keep_alive", keep_alive):
-        hub._probe_link.set()
+    with patch.object(LinkManager, "_keep_alive", keep_alive):
+        hub.link.probe_link.set()
         await wait_until(hass, lambda: keep_alive.await_count == 1, what="the probe")
         await settle(hass)
     assert hub.connected
     # an echo within the time: no probe
     await hub.central_command(ALL_LIGHTS, True)
-    hub._last_rx += 1
+    hub.link.last_rx += 1
     freezer.tick(coordinator.COMMAND_ECHO_TIMEOUT + 1)
     async_fire_time_changed(hass)
     await settle(hass)
-    assert not hub._probe_link.is_set()
+    assert not hub.link.probe_link.is_set()
 
 
 async def test_home_assistant_stopping_closes_the_link_and_the_counter(
@@ -221,7 +224,7 @@ async def spin(cycles: int = 5) -> None:
 
 async def reconnect(hass: HomeAssistant, hub: JungHomeHub) -> None:
     """A proxy advertises again (the patch hiding them is gone): the loop wakes and connects."""
-    hub._link_lost.set()
+    hub.link._link_lost.set()
     await wait_until(hass, lambda: hub.connected, what="the next link")
 
 
@@ -235,10 +238,10 @@ async def test_a_watchdog_drop_keeps_the_grace_and_a_command_waits(
     finding the proxy silent — made every entity unavailable at once, and an action skipped them."""
     hub = hub_of(init_integration)
     with (
-        patch.object(JungHomeHub, "visible_proxies", return_value=[]),
-        patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=False)),
+        patch.object(LinkManager, "visible_proxies", return_value=[]),
+        patch.object(LinkManager, "_keep_alive", AsyncMock(return_value=False)),
     ):
-        hub._probe_link.set()  # a command went unanswered, and so does the probe
+        hub.link.probe_link.set()  # a command went unanswered, and so does the probe
         await wait_until(hass, lambda: not hub.connected, what="the drop")
         await spin()
         assert hub.link_available
@@ -260,7 +263,7 @@ async def test_the_skip_ahead_repair_keeps_the_grace_and_a_command_waits(
 ) -> None:
     """The reviewer's repro: right after `async_skip_ahead` every entity was unavailable."""
     hub = hub_of(init_integration)
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         await hub.async_skip_ahead()
         await spin()
         assert not hub.connected
@@ -274,7 +277,7 @@ async def test_the_skip_ahead_repair_keeps_the_grace_and_a_command_waits(
     await command
     assert sent_onoff(fake_link, LIGHT_DIMMER, True)
     # our own reconnect says nothing about the proxy
-    assert hub._short_links == {}
+    assert hub.link._short_links == {}
 
 
 @pytest.mark.link_loss_grace
@@ -286,7 +289,7 @@ async def test_a_link_the_transport_closed_without_telling_gets_the_grace(
 ) -> None:
     """A transport that only turns `is_connected` False (no disconnected callback) still ends the link properly."""
     hub = hub_of(init_integration)
-    with patch.object(JungHomeHub, "visible_proxies", return_value=[]):
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
         fake_link.is_connected = False
         info = mock_bluetooth_env["infos"][0]
         mock_bluetooth_env["callbacks"][0](info, BluetoothChange.ADVERTISEMENT)
@@ -295,9 +298,9 @@ async def test_a_link_the_transport_closed_without_telling_gets_the_grace(
         assert hub.link_available
         assert light_available(hass)
         assert hub.proxy.client is None  # released, not left attached
-    assert hub._link_end is not None
-    assert hub._link_end.reason == "the transport reported it closed"
-    assert hub._link_end.penalise is None
+    assert hub.link._link_end is not None
+    assert hub.link._link_end.reason == "the transport reported it closed"
+    assert hub.link._link_end.penalise is None
     await reconnect(hass, hub)
 
 
@@ -310,7 +313,7 @@ async def test_link_loss_listeners_hear_every_end_once(
     ends: list[coordinator.LinkEnd] = []
     unsub = hub.async_on_link_loss(ends.append)
     fake_link.drop_link()
-    hub._on_disconnect()  # a second notice of the same end changes nothing
+    hub.link.on_disconnect()  # a second notice of the same end changes nothing
     await wait_for_link(hass, init_integration)
     assert [(end.reason, end.penalise) for end in ends] == [
         ("the proxy disconnected", None)
@@ -369,7 +372,7 @@ async def test_a_detach_that_never_returns_does_not_hold_up_the_drop(
         await detach(*args, **kwargs)
         await asyncio.Event().wait()
 
-    monkeypatch.setattr(coordinator, "STOP_TIMEOUT", 0.01)
+    monkeypatch.setattr(link_mod, "STOP_TIMEOUT", 0.01)
     monkeypatch.setattr(hub.proxy, "detach", detach_then_hang)
     await hub.async_skip_ahead()
     assert "did not close within" in caplog.text
@@ -393,7 +396,7 @@ async def test_the_link_history_tells_why_the_last_links_ended(
         await wait_for_link(hass, init_integration, connected=False)
         await wait_for_link(hass, init_integration)
         await wait_until(
-            hass, lambda: hub.link_refresh is not None, what="the second refresh"
+            hass, lambda: hub.link.link_refresh is not None, what="the second refresh"
         )
         await hub.async_skip_ahead()  # we end the second link ourselves
         await wait_for_link(hass, init_integration)

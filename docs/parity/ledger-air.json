@@ -1683,11 +1683,11 @@
     "custom_components/junghome_ble/hub/refresh.py::Refresh._refresh_all",
     "custom_components/junghome_ble/hub/refresh.py::Refresh._get_state",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_onoff_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._keep_alive"
+    "custom_components/junghome_ble/hub/link.py::LinkManager._keep_alive"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_quiet_mesh_is_kept_by_the_keep_alive"
+    "tests/test_hub_link.py::test_quiet_mesh_is_kept_by_the_keep_alive"
    ]
   },
   {
@@ -2322,14 +2322,14 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.classify_service_data",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
+    "custom_components/junghome_ble/hub/link.py::LinkManager.visible_proxies",
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_unknown_node",
     "custom_components/junghome_ble/config_flow.py::proxy_in_range"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_classify_service_data",
     "tests/test_config_flow.py::test_proxy_in_range_ignores_other_adverts",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement",
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement",
     "tests/test_hub_export_watch.py::test_unknown_node_of_our_network_raises_a_repair"
    ]
   },

@@ -72,6 +72,10 @@ from custom_components.junghome_ble.const import (
     PROPERTY_READ_CHUNK,
     REFRESH_CHUNK,
 )
+from custom_components.junghome_ble.hub import energy as energy_mod
+from custom_components.junghome_ble.hub import link as link_mod
+from custom_components.junghome_ble.hub import liveness as liveness_mod
+from custom_components.junghome_ble.hub import refresh as refresh_mod
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import state as state_mod
 from custom_components.junghome_ble.properties import reader as reader_mod
@@ -111,9 +115,13 @@ TIMED = (
     config_entities,
     coordinator,
     cover,
+    energy_mod,
     integration,
     keep_awake,
+    link_mod,
+    liveness_mod,
     reader_mod,
+    refresh_mod,
     sensor,
     state_mod,
     switch,
@@ -305,7 +313,7 @@ def check_bounds(hass: HomeAssistant, hub: Any, record: Record) -> None:
         assert size <= bound, f"{name} holds {size} entries (bound {bound})"
     # one connection loop, at most one connect-time sequence and one reader worker; reads in chunks
     for counts in record.tasks:
-        assert counts["JungHomeHub._connection_loop"] == 1
+        assert counts["LinkManager.connection_loop"] == 1
         assert counts["Refresh.after_connect"] <= 1
         assert counts["PropertyReader._run"] <= 1
         busiest = counts.most_common(1)[0]
@@ -346,8 +354,8 @@ async def test_flapping_links_keep_the_invariants(
             record.samples.append(
                 Sample(
                     loop.time(),
-                    hub.connected and hub._link_end is None,
-                    hub._lost_at,
+                    hub.connected and hub.link._link_end is None,
+                    hub.link._lost_at,
                     state is not None and state.state != STATE_UNAVAILABLE,
                 )
             )

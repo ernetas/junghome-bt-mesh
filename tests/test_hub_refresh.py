@@ -17,6 +17,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble import coordinator
 from custom_components.junghome_ble.const import ISSUE_PDUS_DROPPED
+from custom_components.junghome_ble.hub import link as link_mod
 from custom_components.junghome_ble.hub import refresh
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
@@ -260,28 +261,30 @@ async def test_connect_reads_are_not_repeated_soon_after_a_link_that_held(
     tail = SCENE_GETS_PDUS + FAULT_GETS_PDUS + CURRENT_SCENE_PDUS
 
     async def link_after(lasted: float) -> list[tuple[int, int, bytes]]:
-        hub.previous_link = coordinator.LinkEnd("the proxy disconnected", None, lasted)
+        hub.link.previous_link = coordinator.LinkEnd(
+            "the proxy disconnected", None, lasted
+        )
         fake_link.sent.clear()
         await hub.refresh.after_connect()
         return fake_link.sent
 
     with caplog.at_level(logging.DEBUG, logger="custom_components.junghome_ble"):
-        sent = await link_after(coordinator.SHORT_LINK)
+        sent = await link_after(link_mod.SHORT_LINK)
     assert len(sent) == BROADCASTS + REFRESH_GETS + ENERGY_GETS
     assert sent[-ENERGY_GETS:] == COUNTER_GETS
     assert "faults read 0 s ago: not asked again on this link" in caplog.text
     # after a short link: everything again
-    assert (await link_after(coordinator.SHORT_LINK - 1))[-CONNECT_TAIL:] == tail
+    assert (await link_after(link_mod.SHORT_LINK - 1))[-CONNECT_TAIL:] == tail
     # past the window: again
     for name in hub.refresh.connect_steps_done:
         hub.refresh.connect_steps_done[name] -= refresh.CONNECT_STEP_FRESH
-    assert (await link_after(coordinator.SHORT_LINK))[-CONNECT_TAIL:] == tail
+    assert (await link_after(link_mod.SHORT_LINK))[-CONNECT_TAIL:] == tail
     # a round the link cut short does not count: the next link reads again
     for name in hub.refresh.connect_steps_done:
         hub.refresh.connect_steps_done[name] -= refresh.CONNECT_STEP_FRESH
     with patch.object(hub.refresh, "_get_faults", AsyncMock(return_value=False)):
-        await link_after(coordinator.SHORT_LINK)
-    assert (await link_after(coordinator.SHORT_LINK))[-FAULT_GETS:] == FAULT_GETS_PDUS
+        await link_after(link_mod.SHORT_LINK)
+    assert (await link_after(link_mod.SHORT_LINK))[-FAULT_GETS:] == FAULT_GETS_PDUS
 
 
 async def test_a_stalled_store_delays_the_connect_sequence_without_ending_it(

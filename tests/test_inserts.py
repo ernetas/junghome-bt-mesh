@@ -359,7 +359,7 @@ async def test_the_reads_are_a_connect_step(
     """The Gets run after the link's other reads, once per link (`Refresh.connect_step`)."""
     answer_gets(fake_link)
     hub = await set_up(hass, mock_config_entry)
-    hub.previous_link = coordinator.LinkEnd("the proxy disconnected", None, 0.0)
+    hub.link.previous_link = coordinator.LinkEnd("the proxy disconnected", None, 0.0)
     with patch.object(
         hub.inserts, "read_unknown", AsyncMock(return_value=True)
     ) as step:

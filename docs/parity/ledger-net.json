@@ -3353,13 +3353,13 @@
    "id": "net:uc:connecttoproxy",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to",
+    "custom_components/junghome_ble/hub/link.py::LinkManager._connect_to",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.set_filter"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_reconnects_to_the_strongest_visible_proxy",
-    "tests/test_coordinator.py::test_hub_works_through_a_proxy_whose_node_is_not_0148",
-    "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
+    "tests/test_hub_link.py::test_reconnects_to_the_strongest_visible_proxy",
+    "tests/test_hub_link.py::test_hub_works_through_a_proxy_whose_node_is_not_0148",
+    "tests/test_hub_link.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:flow:connecttoproxy",

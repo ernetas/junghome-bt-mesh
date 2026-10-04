@@ -73,7 +73,7 @@ async def test_energy_poll_repeats_while_connected(
 
     # the poll interval is as long as the link watchdog's patience (a silent proxy is another test); keep it out of the way
     with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
+        "custom_components.junghome_ble.hub.link.LINK_IDLE_TIMEOUT",
         10 * ENERGY_POLL_INTERVAL,
     ):
         freezer.tick(ENERGY_POLL_INTERVAL - 60)

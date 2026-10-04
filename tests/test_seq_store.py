@@ -1522,14 +1522,14 @@ async def test_no_filter_request_written_is_no_dropped_pdus(
     hub.proxy.proxy_addr = None  # the status "never came"
     hub.beacon_authenticated = True
     hub.proxy.filter_writes = 0
-    hub._filter_status_overdue(dt_util.utcnow())
+    hub.link._filter_status_overdue(dt_util.utcnow())
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
     hub.proxy.filter_writes = 1
     hub.state._stalled_since = 0.0
-    hub._filter_status_overdue(dt_util.utcnow())
+    hub.link._filter_status_overdue(dt_util.utcnow())
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
     hub.state._stalled_since = None
-    hub._filter_status_overdue(dt_util.utcnow())
+    hub.link._filter_status_overdue(dt_util.utcnow())
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is not None
 
 
