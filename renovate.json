@@ -3,11 +3,12 @@
   "extends": [
     "config:recommended",
     "helpers:pinGitHubActionDigests",
-    "docker:pinDigests"
+    "docker:pinDigests",
+    ":enablePreCommit"
   ],
   "packageRules": [
     {
-      "description": "A release is proposed only once it is three days old: a compromised or broken release of a tool that runs in CI with the repository token (or that builds what is published: setuptools, build, twine) is usually yanked or fixed within that time. Every pin is a release with a date: requirements-lint.txt / requirements-test.txt / requirements-build.txt, the build back end in pyproject.toml, the actions' version tags. Digest-only updates are left out: the hassfest action and the HACS validation image follow a branch or a moving tag, where there is no release to age, and holding them would only keep the validators stale.",
+      "description": "A release is proposed only once it is three days old: a compromised or broken release of a tool that runs in CI with the repository token (or that builds what is published: setuptools, build, twine) is usually yanked or fixed within that time. Every pin is a release with a date: requirements-lint.txt / requirements-test.txt / requirements-build.txt, the build back end in pyproject.toml, the actions' version tags, the hook repositories' revisions in .pre-commit-config.yaml (github-tags, see the pre-commit rule below). Digest-only updates are left out: the hassfest action and the HACS validation image follow a branch or a moving tag, where there is no release to age, and holding them would only keep the validators stale.",
       "matchDatasources": [
         "pypi",
         "github-tags",
@@ -50,6 +51,21 @@
         "ghcr.io/zizmorcore/zizmor"
       ],
       "groupName": "workflow linters"
+    },
+    {
+      "description": "The hooks of .pre-commit-config.yaml (ruff-pre-commit, pre-commit-hooks) are pinned to a commit with the tag it carries (`rev: <sha>  # frozen: vX`, as `pre-commit autoupdate --freeze` writes them). Renovate's pre-commit manager is off by default; `:enablePreCommit` above turns it on, and it moves both the commit and the tag in the comment. The tags come from the github-tags datasource, so the three-day rule above holds them like every other pin. The `local` hooks (the privacy scan, mypy) run the repository's own code and have no revision. This rule only names the update so it is recognisable in the PR list.",
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "groupName": "pre-commit hooks"
+    },
+    {
+      "description": "ruff is pinned twice: in requirements-lint.txt (CI's `lint` job, `nox -s lint`) and as the ruff-pre-commit hook revision, which carries the same version. One PR moves both, so a commit hook never checks with another ruff than CI. The group takes precedence over the pre-commit hooks group above for ruff (a later rule wins).",
+      "matchPackageNames": [
+        "ruff",
+        "astral-sh/ruff-pre-commit"
+      ],
+      "groupName": "ruff"
     }
   ]
 }

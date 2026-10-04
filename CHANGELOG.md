@@ -79,6 +79,10 @@
 - Typed `hass.data`: the integration keeps nothing there under a raw key — every access is through a `HassKey`
   constant, and `tests/test_hass_keys.py` keeps it so; the tests read the entity components through Home Assistant's
   own `DATA_COMPONENT` keys.
+- Renovate moves the pre-commit hooks too (`:enablePreCommit`, off by default): the frozen revisions of
+  `.pre-commit-config.yaml` (commit and tag), under the same three-day minimum release age as every other pin, and
+  ruff's hook in one PR with `requirements-lint.txt`. `tests/test_renovate.py` checks the configuration offline
+  (every rule described, the manager on and aged, every hook a frozen GitHub tag, ruff in step).
 
 ## 1.2.0
 

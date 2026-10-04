@@ -2,7 +2,8 @@
 # (`pre-commit install --hook-type pre-push`). The same checks CI's `lint` job and the `tests` job's typing step run,
 # on the files of the commit; `nox -s lint` and `nox -s types` run them on the whole tree (noxfile.py).
 # The hook repositories are pinned to a commit, with the tag it carries: ruff at the version requirements-lint.txt
-# pins. `pre-commit autoupdate --freeze` moves them; keep ruff in step with requirements-lint.txt.
+# pins. Renovate moves them (its pre-commit manager, renovate.json), ruff in one PR with requirements-lint.txt;
+# `pre-commit autoupdate --freeze` does the same by hand. tests/test_renovate.py checks ruff is in step.
 minimum_pre_commit_version: "4.4.0"  # `language: unsupported` (formerly `system`)
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit

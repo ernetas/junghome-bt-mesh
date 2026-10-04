@@ -26,6 +26,7 @@ extract such an asset straight into `custom_components/junghome_ble/`; HACS inst
 Dependency pins are kept current by Renovate (`renovate.json`; a new release is proposed once it is three days old,
 a digest that follows a branch or a moving tag at once): the action SHAs (each at a release tag; hassfest, which has none, along its default branch), the digest of the HACS
 validation image, the tags and digests of the actionlint and zizmor images, `requirements-lint.txt` (ruff),
-`requirements-test.txt` (the Home Assistant test stack, mypy), `requirements-build.txt` (build, twine) and the
+`requirements-test.txt` (the Home Assistant test stack, mypy), `requirements-build.txt` (build, twine), the hook
+revisions of `.pre-commit-config.yaml` (commit and frozen tag; ruff's in one PR with `requirements-lint.txt`) and the
 setuptools that `pyproject.toml` builds with. The library job's Python is read from `pyproject.toml`
 `requires-python`, so there is no version there for Renovate to move.
