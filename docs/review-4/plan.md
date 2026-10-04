@@ -555,6 +555,11 @@ Dependencies (hard unless marked *soft*):
   energy, clock, export watch, connect-time reads, repair issues, the link manager, gestures, and one registry that
   cancels the hub's timers and tasks in the old stop order, with a `Backoff` helper. The state cache, the status
   handlers, the commands, scenes and sequence accounting stay in `coordinator.py` (not in the brief's steps).
+- **Wave 18, brief 61: done.** A4-14 `jhmesh.stats.LinkStats` per link and in total on `ProxyClient`, the hub's
+  traffic counters folded into it, diagnostics `link_stats`, per-PDU lines on `jhmesh.trace`, one `link_state` debug
+  line per change (decision M1). Follow-ups merged with it: a *device offline* blueprint, the dimming actions no
+  longer called untried (review 3 saw them on air), the threshold errors one key per threshold in every language.
+- **Decisions M14, M15:** custom repository first; the integration is called *JUNG HOME Bluetooth Mesh*.
 - **Wave 18, brief 69: done.** H I-7 the Bluetooth matcher needs JUNG's manufacturer data next to the Mesh Proxy
   service (`not_jung` in the flow); H I-9 the entry's unique id is the mesh UUID (lower case, with dashes), entry
   version 1.3 migrates it at the first start and leaves an unreadable export's entry for the next one; discovery
