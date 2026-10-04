@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
@@ -27,14 +27,8 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later
 
 from custom_components.junghome_ble.const import (
-    CONNECT_BACKOFF_MAX,
-    CONNECT_BACKOFF_MIN,
     CONNECT_BEACON_WAIT,
     DOMAIN,
-    FAILED_PROXY_COOLDOWN,
-    FILTER_STATUS_TIMEOUT,
-    KEEP_ALIVE_ATTEMPTS,
-    KEEP_ALIVE_TIMEOUT,
     LINK_BLUETOOTH_OFF,
     LINK_CONNECTING,
     LINK_DISCONNECTED,
@@ -43,9 +37,7 @@ from custom_components.junghome_ble.const import (
     LINK_LOSS_GRACE,
     LINK_SEARCHING,
     LINK_UPDATING,
-    PROXY_ADVERT_MAX_AGE,
     SHORT_LINK,
-    SHORT_LINK_STREAK,
     SIGNAL_CONNECTION,
     SIGNAL_LINK_STATE,
     STOP_TIMEOUT,
@@ -108,6 +100,25 @@ class LinkHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# The proxy answers the filter request every link starts with by a Filter Status within a few hundred ms. A link
+# whose beacon authenticated but whose Filter Status never came within this many seconds is a proxy that discards our
+# PDUs (stale sequence number, address collision): it keeps its default empty whitelist and forwards nothing, so
+# the refresh-based drop detection (which needs other traffic) would never fire. Raises `pdus_dropped`.
+FILTER_STATUS_TIMEOUT: Final = 10.0
+KEEP_ALIVE_TIMEOUT: Final = 3.0  # seconds to wait for the status answering one keep-alive Get (the app's read timeout)
+KEEP_ALIVE_ATTEMPTS: Final = 3  # distinct elements asked before the proxy counts as silent (one may be unplugged)
+# The connection loop's pause after a failed connection doubles from CONNECT_BACKOFF_MIN up to CONNECT_BACKOFF_MAX; a
+# link that lasted SHORT_LINK counts as a working one and starts it over.
+CONNECT_BACKOFF_MIN: Final = 2.0
+CONNECT_BACKOFF_MAX: Final = 60.0
+FAILED_PROXY_COOLDOWN: Final = 120.0
+SHORT_LINK_STREAK: Final = 3
+# a proxy advertisement older than this ranks behind every fresher one: its node may be off (JUNG nodes advertise
+# several times a second)
+PROXY_ADVERT_MAX_AGE: Final = 60.0
+
 
 # SIG model id of a Generic OnOff Server, as the export lists it: every element that hosts one answers an OnOff Get
 # (loads, sockets, actuator channels, detectors, thermostats), which makes it a keep-alive target for the watchdog.

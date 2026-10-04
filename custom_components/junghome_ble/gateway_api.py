@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 import aiohttp
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -29,10 +29,6 @@ from .const import (
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_TOKEN,
     CONF_SOURCE,
-    GATEWAY_PROBE_TIMEOUT,
-    GATEWAY_REGISTER_TIMEOUT,
-    GATEWAY_REQUEST_TIMEOUT,
-    GATEWAY_UPLOAD_TIMEOUT,
     GATEWAY_USER_NAME,
 )
 from .tls import fingerprint_ssl
@@ -42,6 +38,17 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+
+
+GATEWAY_REGISTER_TIMEOUT: Final = 190.0  # the gateway holds the request for 180 s while the user approves it in the app
+GATEWAY_PROBE_TIMEOUT: Final = (
+    10.0  # reachability check before the long registration wait
+)
+GATEWAY_REQUEST_TIMEOUT: Final = 30.0
+GATEWAY_UPLOAD_TIMEOUT: Final = (
+    90.0  # the gateway self-configures from the CDB before it answers a project upload
+)
+
 
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400

@@ -49,6 +49,7 @@ from custom_components import junghome_ble
 from custom_components.junghome_ble import config_flow
 from custom_components.junghome_ble.config_flow import (
     CONF_MESH_UUID,
+    GATEWAY_DEFAULT_HOST,
     SECTION_ADVANCED,
     JungHomeConfigFlow,
     forget_stored_export,
@@ -68,7 +69,6 @@ from custom_components.junghome_ble.const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
-    GATEWAY_DEFAULT_HOST,
     GATEWAY_DOMAIN,
     GATEWAY_USER_NAME,
     OPTION_ALLOW_PROVISIONING,

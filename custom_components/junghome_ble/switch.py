@@ -27,7 +27,7 @@ import asyncio
 import logging
 import time
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.const import STATE_ON, EntityCategory
@@ -66,8 +66,6 @@ from .config_entities import (
     u16,
 )
 from .const import (
-    DETECTOR_WALKING_TEST_DURATION,
-    DETECTOR_WALKING_TEST_POLL,
     DOMAIN,
     NODE_INFO_TIME_ROLE,
     PROPERTY_READ_RETRIES,
@@ -110,6 +108,13 @@ if TYPE_CHECKING:
     from .jhmesh.properties import PropertySpec
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# The app's walking test (`control-and-state.md` §2.8): it stops the test itself after five minutes and asks for the
+# PIR zones (0x6005) every second while it runs.
+DETECTOR_WALKING_TEST_DURATION: Final = 300.0
+DETECTOR_WALKING_TEST_POLL: Final = 1.0
+
 
 PARALLEL_UPDATES = 0  # push-based; commands are serialised by the mesh client itself
 PRESENCE_CONTROL_SPEC = P.PROPERTIES[PROPERTY_PRESENCE_CONTROL]

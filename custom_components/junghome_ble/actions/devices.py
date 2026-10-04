@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
@@ -12,8 +12,6 @@ from custom_components.junghome_ble import onboard
 from custom_components.junghome_ble.const import (
     DEFAULT_ALLOW_PROVISIONING,
     DOMAIN,
-    LOCATE_MIN_SECONDS,
-    LOCATE_SECONDS,
     OPTION_ALLOW_PROVISIONING,
 )
 from custom_components.junghome_ble.errors import mesh_errors
@@ -40,6 +38,12 @@ if TYPE_CHECKING:
 
     from custom_components.junghome_ble.identity import VaultKeeper
     from custom_components.junghome_ble.mesh_config import MeshConfigurator
+
+
+# The `locate_node` action (review-4 F4-15): seconds of Node Identity advertising. A node stops by itself after 60 s
+# (Mesh Profile §7.2.2.2.3), so longer would not hold; the Set off follows after the time asked for.
+LOCATE_SECONDS: Final = 60
+LOCATE_MIN_SECONDS: Final = 5
 
 
 ATTR_ADDRESS = "address"

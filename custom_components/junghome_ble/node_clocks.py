@@ -26,7 +26,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -34,13 +34,9 @@ from homeassistant.util import dt as dt_util
 
 from . import const
 from .const import (
-    CLOCK_OFFSET_MAX,
-    CLOCK_READ_PAUSE,
     DOMAIN,
     ISSUE_NODE_CLOCK_WRONG,
-    LOCATION_TOLERANCE,
     REFRESH_CHUNK,
-    SCHEDULER_MODEL,
     SIGNAL_NODE,
     learn_more_url,
 )
@@ -48,6 +44,9 @@ from .data import jung_data
 from .device_info import health_nodes
 from .jhmesh import messages as M
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
+from .jhmesh.vendor_models import (
+    SCHEDULER_MODEL,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -56,6 +55,16 @@ if TYPE_CHECKING:
     from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# The nodes' clocks (`node_clocks.py`, review-4 F4-8): a node that may run schedules and whose clock is more than
+# CLOCK_OFFSET_MAX seconds off Home Assistant's (or has no time, or another zone offset than the one Time Set carries)
+# raises `node_clock_wrong`. A clock read is a Get per item: CLOCK_READ_PAUSE seconds between two chunks of
+# REFRESH_CHUNK nodes. A stored location within LOCATION_TOLERANCE degrees of the home's counts as the home's
+# (0.01 degree is about a kilometre: sunrise and sunset move by seconds).
+CLOCK_OFFSET_MAX: Final = 60.0
+CLOCK_READ_PAUSE: Final = 0.5
+LOCATION_TOLERANCE: Final = 0.01
 
 
 TIME_SERVER = "1200"

@@ -57,7 +57,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components import bluetooth
 from homeassistant.components.sensor import (
@@ -103,10 +103,6 @@ from .config_entities import (
     property_reader,
 )
 from .const import (
-    BATTERY_READ_INTERVAL,
-    BATTERY_READ_TIMEOUT,
-    DETECTOR_BRIGHTNESS_POLL,
-    DETECTOR_ILLUMINANCE_RAW_LUX_MAX_VERSION,
     DETECTOR_PROPERTY_ILLUMINANCE,
     DOMAIN,
     KEEP_AWAKE_INTERVAL,
@@ -169,6 +165,24 @@ if TYPE_CHECKING:
     from .jhmesh.properties import PropertySpec
 
 _LOGGER = logging.getLogger(__name__)
+
+
+DETECTOR_ILLUMINANCE_RAW_LUX_MAX_VERSION: Final = (
+    1,
+    4,
+    0,
+    0,
+)  # up to this device software version the value is whole lux
+# seconds between reads of a detector's own brightness (0x6004) while it has delivered no Present Illuminance (the app
+# reads it every 5 s while its parameter page is open; nothing reads it otherwise)
+DETECTOR_BRIGHTNESS_POLL: Final = 60.0
+# Battery products (sensor.py; `control-and-state.md` §2.9). They sleep: a Generic Battery Get is only sent right after
+# a key event (the node is awake for a moment), never polled.
+BATTERY_READ_INTERVAL: Final = (
+    21600.0  # seconds after an answered read before a key event triggers the next one
+)
+BATTERY_READ_TIMEOUT: Final = 3.0  # seconds to wait for the Battery Status (the app's property-read timeout); one attempt
+
 
 PARALLEL_UPDATES = 0  # push-based
 

@@ -20,7 +20,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NoReturn, Protocol
+from typing import TYPE_CHECKING, Any, Final, Literal, NoReturn, Protocol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
@@ -38,7 +38,6 @@ from custom_components.junghome_ble.const import (
     DEFAULT_PROVISIONER_IDENTITY,
     DOMAIN,
     GATEWAY_UPLOAD_RETRIES,
-    GATEWAY_UPLOAD_RETRY_DELAY,
     ISSUE_CARRY_OVER_CONFLICT,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_SYNC,
@@ -93,6 +92,9 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.protocols import GatewayHost
 
 _LOGGER = logging.getLogger(__name__)
+
+
+GATEWAY_UPLOAD_RETRY_DELAY: Final = 15.0
 
 
 def _validation(key: str, **placeholders: str) -> ServiceValidationError:

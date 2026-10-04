@@ -68,7 +68,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -98,12 +98,8 @@ from .config_entities import (
     property_reader,
 )
 from .const import (
-    DETECTOR_MOTION_HOLD,
     DETECTOR_PROPERTY_ILLUMINANCE,
-    DETECTOR_PROPERTY_PRESENCE,
     DOMAIN,
-    REFERENCE_RUN_LONGEST,
-    REFERENCE_RUN_MARGIN,
     REFRESH_RETRIES,
     SIGNAL_CONNECTION,
     SIGNAL_DETECTOR,
@@ -137,6 +133,16 @@ if TYPE_CHECKING:
     from .jhmesh.client import AccessMessage
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Detectors (binary_sensor.py / sensor.py; `docs/gap-analysis/control-and-state.md` §2.8, unverified on hardware).
+DETECTOR_PROPERTY_PRESENCE: Final = 0x004D  # SIG Presence Detected: 1 byte, 0 / 1
+DETECTOR_MOTION_HOLD: Final = 120.0  # seconds a motion signalled by an OnOff Set publication is kept on when no Presence Detected status follows and the relay's run-on time (0x1007) is unknown (the app's default run-on time for detector loads)
+# A reference run is read back after the blind's running time plus this, as the app waits for it
+# (`ReferenceRunLoadingViewModel`); while the running time (0x1102) is not known, the longest the app accepts.
+REFERENCE_RUN_MARGIN: Final = 10.0
+REFERENCE_RUN_LONGEST: Final = 600.0
+
 
 # re-exported: the chaining helper lived here before `dispatch.py` (its tests reach the table through this module)
 __all__ = ["STATUS_HANDLERS", "chain_status_handler"]

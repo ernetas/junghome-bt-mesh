@@ -24,7 +24,7 @@ from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
@@ -41,14 +41,8 @@ from custom_components.junghome_ble.const import (
     NODE_INFO_UNSUPPORTED,
     NODE_INFO_VENDOR,
     PROPERTY_READ_CHUNK,
-    PROPERTY_READ_DELAY,
     PROPERTY_READ_FRESH,
-    PROPERTY_READ_PAUSE,
     PROPERTY_READ_RETRIES,
-    PROPERTY_REREAD_DELAY,
-    SIG_HARDWARE_REVISION,
-    SIG_MANUFACTURER_NAME,
-    SIG_SOFTWARE_VERSION,
 )
 from custom_components.junghome_ble.coordinator import (
     JungHomeHub,
@@ -57,6 +51,11 @@ from custom_components.junghome_ble.coordinator import (
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode
+from custom_components.junghome_ble.jhmesh.properties import (
+    SIG_HARDWARE_REVISION,
+    SIG_MANUFACTURER_NAME,
+    SIG_SOFTWARE_VERSION,
+)
 
 from .targets import (
     CTL_DEFAULT,
@@ -78,6 +77,15 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.jhmesh.properties import PropertySpec
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Config entities (device parameters read/written as JUNG vendor properties, see config_entities.py).
+PROPERTY_READ_DELAY: Final = 3.0  # seconds after the link is up (or an entity was enabled) before the initial property reads start: the state refresh goes first
+PROPERTY_READ_PAUSE: Final = 0.5  # seconds between two chunks of initial reads
+PROPERTY_REREAD_DELAY: Final = (
+    0.5  # seconds before re-reading a property whose Set was not answered
+)
+
 
 # how a write ended: confirmed (the Status answering the Set, or the read-back), the read-back reporting another
 # value, neither the Set nor the read-back answered, or the Set answered by a Status without a value (the element

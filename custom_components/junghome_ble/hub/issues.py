@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
@@ -22,7 +22,6 @@ from homeassistant.helpers.event import async_call_later
 
 from custom_components.junghome_ble.const import (
     DOMAIN,
-    EXPORT_STALE_THRESHOLD,
     ISSUE_ADDRESS_SHARED,
     ISSUE_ADDRESS_SHARED_AGAIN,
     ISSUE_BLUETOOTH_UNAVAILABLE,
@@ -41,7 +40,6 @@ from custom_components.junghome_ble.const import (
     ISSUE_VAULT_KEY_REFRESH,
     NODE_INFO_TIME_ROLE,
     SEQ_SKIP_AHEAD,
-    SEQUENCE_SPACE_WARN,
     issue_id,
     learn_more_url,
 )
@@ -65,6 +63,11 @@ class IssuesHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+SEQUENCE_SPACE_WARN: Final = 0xC00000
+EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beacons on one link, with nothing decodable, before the export counts as stale
+
 
 # the time roles a node keeping the PP2 pucks' time answers (Time Role Status): authority, relay
 TIME_KEEPER_ROLES = frozenset({1, 2})

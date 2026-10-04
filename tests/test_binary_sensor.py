@@ -37,6 +37,8 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble import binary_sensor
 from custom_components.junghome_ble.binary_sensor import (
+    DETECTOR_MOTION_HOLD,
+    DETECTOR_PROPERTY_PRESENCE,
     JungHomeDetectorOccupancy,
     chain_status_handler,
     detector_at,
@@ -44,9 +46,7 @@ from custom_components.junghome_ble.binary_sensor import (
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_UNICAST,
-    DETECTOR_MOTION_HOLD,
     DETECTOR_PROPERTY_ILLUMINANCE,
-    DETECTOR_PROPERTY_PRESENCE,
     DOMAIN,
 )
 from custom_components.junghome_ble.jhmesh import messages as M

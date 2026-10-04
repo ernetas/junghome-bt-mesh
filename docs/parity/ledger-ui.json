@@ -1100,7 +1100,7 @@
    "code": [
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun",
     "custom_components/junghome_ble/button.py::JungHomePropertyButton",
-    "custom_components/junghome_ble/const.py::REFERENCE_RUN_MARGIN"
+    "custom_components/junghome_ble/binary_sensor.py::REFERENCE_RUN_MARGIN"
    ],
    "tests": [
     "tests/test_cover.py::test_reference_run_is_followed_until_it_ends",
@@ -1426,7 +1426,7 @@
     "custom_components/junghome_ble/hub/liveness.py::Liveness.heard_from",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command",
     "custom_components/junghome_ble/hub/link.py::LinkManager._watch_link",
-    "custom_components/junghome_ble/const.py::UNREACHABLE_RECHECK"
+    "custom_components/junghome_ble/hub/liveness.py::UNREACHABLE_RECHECK"
    ],
    "tests": [
     "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
@@ -1620,7 +1620,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance",
-    "custom_components/junghome_ble/const.py::DETECTOR_BRIGHTNESS_POLL",
+    "custom_components/junghome_ble/sensor.py::DETECTOR_BRIGHTNESS_POLL",
     "custom_components/junghome_ble/sensor.py::JungHomeDetectorIlluminance._read_now"
    ],
    "tests": [
@@ -1647,7 +1647,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest",
-    "custom_components/junghome_ble/const.py::DETECTOR_WALKING_TEST_POLL"
+    "custom_components/junghome_ble/switch.py::DETECTOR_WALKING_TEST_POLL"
    ],
    "tests": [
     "tests/test_config_entities.py::test_walking_test_runs_like_the_apps",
@@ -2114,7 +2114,7 @@
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest._end",
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest._time_up",
-    "custom_components/junghome_ble/const.py::DETECTOR_WALKING_TEST_DURATION"
+    "custom_components/junghome_ble/switch.py::DETECTOR_WALKING_TEST_DURATION"
    ],
    "tests": [
     "tests/test_config_entities.py::test_walking_test_runs_like_the_apps",
@@ -2202,7 +2202,7 @@
    "code": [
     "custom_components/junghome_ble/keep_awake.py::KeepAwake",
     "custom_components/junghome_ble/const.py::KEEP_AWAKE_INTERVAL",
-    "custom_components/junghome_ble/const.py::KEEP_AWAKE_RETRY"
+    "custom_components/junghome_ble/keep_awake.py::KEEP_AWAKE_RETRY"
    ],
    "tests": [
     "tests/test_keep_awake.py::test_the_keep_alive_follows_the_apps_cadence",
@@ -2952,7 +2952,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeClimate",
-    "custom_components/junghome_ble/const.py::CLIMATE_TEMP_STEP"
+    "custom_components/junghome_ble/climate.py::CLIMATE_TEMP_STEP"
    ],
    "tests": [
     "tests/test_climate.py::test_set_temperature_sends_a_level_set",
@@ -2991,7 +2991,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/cover.py::JungHomeCover.async_close_cover",
-    "custom_components/junghome_ble/const.py::COVER_MOVE_DOWN",
+    "custom_components/junghome_ble/cover.py::COVER_MOVE_DOWN",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.move_level",
     "custom_components/junghome_ble/cover.py::JungHomeCover._at_end"
    ],
@@ -3008,7 +3008,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/cover.py::JungHomeCover.async_open_cover",
-    "custom_components/junghome_ble/const.py::COVER_MOVE_UP",
+    "custom_components/junghome_ble/cover.py::COVER_MOVE_UP",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.move_level",
     "custom_components/junghome_ble/cover.py::JungHomeCover._at_end"
    ],
@@ -3026,7 +3026,7 @@
    "code": [
     "custom_components/junghome_ble/cover.py::JungHomeCover._read_mode",
     "custom_components/junghome_ble/cover.py::JungHomeCover._request_level",
-    "custom_components/junghome_ble/const.py::COVER_MODE_PROPERTY"
+    "custom_components/junghome_ble/cover.py::COVER_MODE_PROPERTY"
    ],
    "tests": [
     "tests/test_cover.py::test_unknown_mode_is_a_shutter_until_the_device_answers",
@@ -3151,7 +3151,7 @@
    "code": [
     "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS",
     "custom_components/junghome_ble/hub/energy.py::COUNTER_FIELDS",
-    "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL"
+    "custom_components/junghome_ble/hub/energy.py::ENERGY_POLL_INTERVAL"
    ],
    "tests": [
     "tests/test_sensor.py::test_socket_sensor_set",
@@ -3269,7 +3269,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor",
-    "custom_components/junghome_ble/const.py::BATTERY_READ_TIMEOUT"
+    "custom_components/junghome_ble/sensor.py::BATTERY_READ_TIMEOUT"
    ],
    "tests": [
     "tests/test_sensor.py::test_battery_sensor_is_read_after_a_key_event_only",
@@ -3314,7 +3314,7 @@
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest",
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest._follow",
-    "custom_components/junghome_ble/const.py::DETECTOR_WALKING_TEST_POLL"
+    "custom_components/junghome_ble/switch.py::DETECTOR_WALKING_TEST_POLL"
    ],
    "tests": [
     "tests/test_config_entities.py::test_a_walking_test_found_running_is_ended_and_a_silent_detector_logged",
@@ -3997,7 +3997,7 @@
    "id": "ui:vm:powerconsumptionviewmodel.observedevice",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL",
+    "custom_components/junghome_ble/hub/energy.py::ENERGY_POLL_INTERVAL",
     "custom_components/junghome_ble/energy_history.py::async_backfill"
    ],
    "tests": [
@@ -4058,7 +4058,7 @@
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor._update_read",
     "custom_components/junghome_ble/entity.py::JungHomeEntity.async_update",
     "custom_components/junghome_ble/hub/energy.py::Energy.poll",
-    "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL"
+    "custom_components/junghome_ble/hub/energy.py::ENERGY_POLL_INTERVAL"
    ],
    "tests": [
     "tests/test_hub_energy.py::test_update_entity_reads_the_meter_now",
@@ -4083,8 +4083,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun",
-    "custom_components/junghome_ble/const.py::REFERENCE_RUN_MARGIN",
-    "custom_components/junghome_ble/const.py::REFERENCE_RUN_LONGEST"
+    "custom_components/junghome_ble/binary_sensor.py::REFERENCE_RUN_MARGIN",
+    "custom_components/junghome_ble/binary_sensor.py::REFERENCE_RUN_LONGEST"
    ],
    "tests": [
     "tests/test_cover.py::test_reference_run_is_followed_until_it_ends"
@@ -4117,7 +4117,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeClimate._attr_target_temperature_step",
-    "custom_components/junghome_ble/const.py::CLIMATE_TEMP_STEP"
+    "custom_components/junghome_ble/climate.py::CLIMATE_TEMP_STEP"
    ],
    "tests": [
     "tests/test_climate.py::test_set_temperature_sends_a_level_set",
@@ -4138,7 +4138,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeClimate._attr_target_temperature_step",
-    "custom_components/junghome_ble/const.py::CLIMATE_TEMP_STEP"
+    "custom_components/junghome_ble/climate.py::CLIMATE_TEMP_STEP"
    ],
    "tests": [
     "tests/test_climate.py::test_set_temperature_sends_a_level_set",
@@ -4188,7 +4188,7 @@
     "custom_components/junghome_ble/climate.py::JungHomeClimate._boost_over",
     "custom_components/junghome_ble/climate.py::JungHomeClimate._update_read",
     "custom_components/junghome_ble/climate.py::JungHomeClimate._poll_boost",
-    "custom_components/junghome_ble/const.py::RTR_BOOST_POLL_INTERVAL"
+    "custom_components/junghome_ble/climate.py::RTR_BOOST_POLL_INTERVAL"
    ],
    "tests": [
     "tests/test_climate.py::test_boost_is_a_preset_read_back_until_the_thermostat_ends_it",
@@ -4249,7 +4249,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::JungHomeClimate.async_set_preset_mode",
-    "custom_components/junghome_ble/const.py::RTR_BOOST_DURATION",
+    "custom_components/junghome_ble/climate.py::RTR_BOOST_DURATION",
     "custom_components/junghome_ble/climate.py::JungHomeClimate.async_set_temperature"
    ],
    "tests": [
@@ -4390,7 +4390,7 @@
     "custom_components/junghome_ble/number.py::JungHomeLockTimeLimit",
     "custom_components/junghome_ble/number.py::JungHomeLockTimeLimit.async_added_to_hass",
     "custom_components/junghome_ble/number.py::JungHomeLockTimeLimit._publish",
-    "custom_components/junghome_ble/const.py::LOCK_TIME_LIMIT_MAX"
+    "custom_components/junghome_ble/number.py::LOCK_TIME_LIMIT_MAX"
    ],
    "tests": [
     "tests/test_switch.py::test_lock_time_limit_takes_seconds_like_the_app_picker",

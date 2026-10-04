@@ -31,14 +31,16 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble import coordinator
 from custom_components.junghome_ble.const import (
-    FILTER_STATUS_TIMEOUT,
     ISSUE_PDUS_DROPPED,
-    KEEP_ALIVE_TIMEOUT,
     LINK_IDLE_TIMEOUT,
     SIGNAL_CONNECTION,
 )
 from custom_components.junghome_ble.hub import link as link_mod
-from custom_components.junghome_ble.hub.link import LinkManager
+from custom_components.junghome_ble.hub.link import (
+    FILTER_STATUS_TIMEOUT,
+    KEEP_ALIVE_TIMEOUT,
+    LinkManager,
+)
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.client import ProxyClient

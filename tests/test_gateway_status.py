@@ -46,8 +46,6 @@ from custom_components.junghome_ble.const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
-    GATEWAY_HEALTH_INTERVAL,
-    GATEWAY_STATUS_INTERVAL,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
     PIN_FROM_MESH,
@@ -63,7 +61,11 @@ from custom_components.junghome_ble.gateway_api import (
     GatewayUnreachable,
     JungHomeGatewayApi,
 )
-from custom_components.junghome_ble.gateway_status import gateway_polls
+from custom_components.junghome_ble.gateway_status import (
+    GATEWAY_HEALTH_INTERVAL,
+    GATEWAY_STATUS_INTERVAL,
+    gateway_polls,
+)
 from custom_components.junghome_ble.mesh_config import export_digest, gateway_sync
 
 from .conftest import SHARE_EXPORT_PATH, settle, setup_entry, wait_for_link

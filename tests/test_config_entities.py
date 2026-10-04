@@ -44,9 +44,7 @@ from custom_components.junghome_ble import const
 from custom_components.junghome_ble import keep_awake as keep_awake_mod
 from custom_components.junghome_ble.binary_sensor import JungHomeDetectorOccupancy
 from custom_components.junghome_ble.const import (
-    DETECTOR_WALKING_TEST_DURATION,
     NODE_INFO_VENDOR,
-    SIG_SOFTWARE_VERSION,
     SIGNAL_UPDATE,
 )
 from custom_components.junghome_ble.entity import update_reads
@@ -55,9 +53,15 @@ from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh.cdb import CDB, Element, Node
 from custom_components.junghome_ble.jhmesh.devices import Metadata, build_devices
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
-from custom_components.junghome_ble.jhmesh.properties import PropertySpec
+from custom_components.junghome_ble.jhmesh.properties import (
+    SIG_SOFTWARE_VERSION,
+    PropertySpec,
+)
 from custom_components.junghome_ble.properties import targets as T
 from custom_components.junghome_ble.sensor import PROPERTY_INSTALLED
+from custom_components.junghome_ble.switch import (
+    DETECTOR_WALKING_TEST_DURATION,
+)
 
 from . import property_helpers as ph
 from .conftest import (

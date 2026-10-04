@@ -43,6 +43,7 @@ __all__ = [
     "SCENE_ACTION_SETUP_STATUS",
     "SCENE_LIST",
     "SCENE_NONE",
+    "SCHEDULER_MODEL",
     "SCHEDULE_TYPES",
     "SLOTS",
     "SLOT_STATUS",
@@ -70,6 +71,9 @@ __all__ = [
     "scheduler_list_get",
     "scheduler_type_set",
 ]
+
+# the JUNG vendor model of the JH Scheduler a load hosts (its messages: JH_SCHEDULER_GET / _SET / _STATUS)
+SCHEDULER_MODEL = "05271016"
 
 JUNG_CID = JUNG_COMPANY_ID
 

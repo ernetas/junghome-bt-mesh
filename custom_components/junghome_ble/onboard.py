@@ -51,7 +51,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Final, Protocol
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
@@ -63,7 +63,6 @@ from .const import (
     DOMAIN,
     ISSUE_PENDING_DEVICE,
     ISSUE_VAULT_UNWRITABLE,
-    NODE_BOOT_DELAY,
     learn_more_url,
 )
 from .coordinator import issue_id
@@ -151,6 +150,11 @@ class NodeRecorder(Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# seconds a freshly provisioned node is given to restart as a mesh node before its configuration starts
+NODE_BOOT_DELAY: Final = 5.0
+
 
 # seconds to wait for a pending node's Node Reset Status, per attempt (three attempts), as `remove_device` does
 NODE_RESET_TIMEOUT = 3.0

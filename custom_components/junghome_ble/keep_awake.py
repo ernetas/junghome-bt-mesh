@@ -28,13 +28,11 @@ import time
 from collections import Counter
 from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from .const import (
     DOMAIN,
     KEEP_AWAKE_INTERVAL,
-    KEEP_AWAKE_RETRY,
-    KEEP_AWAKE_TIMEOUT,
     LINK_WAIT_STEP,
 )
 from .jhmesh import messages as M
@@ -46,6 +44,11 @@ if TYPE_CHECKING:
     from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
+
+
+KEEP_AWAKE_RETRY: Final = 1.0  # ... asked again this many seconds after one went unanswered, as the app does ...
+KEEP_AWAKE_TIMEOUT: Final = 3.0  # ... each waiting this long (the app's property-read timeout; the notes give the keep-alive none of its own)
+
 
 PROPERTY_BUTTON_LAYOUT = (
     0x5001  # the app's keep-alive property: every battery product hosts it

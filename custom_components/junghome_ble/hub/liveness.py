@@ -16,7 +16,7 @@ import logging
 import time
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -27,17 +27,11 @@ from custom_components.junghome_ble.const import (
     CONF_HEARTBEATS_PUBLISHING,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    HEARTBEAT_MISSED_BEATS,
-    HEARTBEAT_PERIOD_LOG,
-    HEARTBEAT_RECONFIGURE_INTERVAL,
-    HEARTBEAT_REPROBE_INTERVAL,
     OPTION_HEARTBEATS,
     REQUEST_ATTEMPTS,
     REQUEST_TIMEOUT,
     SIGNAL_REACHABILITY,
     SIGNAL_UPDATE,
-    UNREACHABLE_RECHECK,
-    UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
@@ -48,6 +42,25 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Heartbeats (`OPTION_HEARTBEATS`, `docs/hidden-features.md` §4): Config Heartbeat Publication with this PeriodLog
+# (2^(n-1) s) to our own address; a node is dead after HEARTBEAT_MISSED_BEATS periods (plus half a period of slack)
+# without a beat or any other message; the check runs every HEARTBEAT_CHECK_INTERVAL and the publications are
+# (re)configured at most every HEARTBEAT_RECONFIGURE_INTERVAL — they persist in the nodes (CountLog 0xFF).
+HEARTBEAT_PERIOD_LOG: Final = 7  # 64 s
+HEARTBEAT_MISSED_BEATS: Final = 3
+HEARTBEAT_RECONFIGURE_INTERVAL: Final = 6 * 3600.0
+HEARTBEAT_REPROBE_INTERVAL: Final = 120.0  # a node marked dead is asked again for heartbeats this often: a rebooted node lost its publication
+# Per-node reachability, the app's rule (`MeshMessengerImpl$handleError$1`, `docs/gap-analysis/control-and-state.md`
+# §1.2): a node is unreachable as soon as a request it was asked with the full budget (REQUEST_ATTEMPTS x
+# REQUEST_TIMEOUT) goes unanswered — a state Get or a command — unless it was heard from meanwhile, and reachable
+# again with any message from it. A shorter probe it missed (the link watchdog's one-attempt keep-alive) is no verdict:
+# the element is asked again with a full-budget Get after UNREACHABLE_RECHECK seconds.
+UNREACHABLE_RECHECK: Final = 60.0
+# ... and an unreachable node is asked again this often while the link lasts: a breaker that was off for a few minutes
+# must not leave its entities unavailable until the next link (review-3 C3)
+UNREACHABLE_REPROBE: Final = 300.0
 
 
 class Liveness:

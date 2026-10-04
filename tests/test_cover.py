@@ -66,18 +66,22 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
+from custom_components.junghome_ble.binary_sensor import (
+    REFERENCE_RUN_LONGEST,
+    REFERENCE_RUN_MARGIN,
+)
+from custom_components.junghome_ble.config_entities import (
+    LOCK_EXPIRY_MARGIN,
+)
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_UNICAST,
-    COVER_MODE_PROPERTY,
     COVER_MOVE_TRANSITION,
     DOMAIN,
-    LOCK_EXPIRY_MARGIN,
-    REFERENCE_RUN_LONGEST,
-    REFERENCE_RUN_MARGIN,
     SIGNAL_UPDATE,
 )
 from custom_components.junghome_ble.cover import (
+    COVER_MODE_PROPERTY,
     JungHomeAllBlinds,
     JungHomeCover,
     _to_ha,

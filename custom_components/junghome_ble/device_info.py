@@ -37,9 +37,6 @@ from .areas import area_name_for
 from .const import (
     DOMAIN,
     NODE_INFO,
-    SIG_HARDWARE_REVISION,
-    SIG_MANUFACTURER_NAME,
-    SIG_SOFTWARE_VERSION,
 )
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
@@ -50,6 +47,11 @@ from .jhmesh.devices import (
     Light,
     Socket,
     Thermostat,
+)
+from .jhmesh.properties import (
+    SIG_HARDWARE_REVISION,
+    SIG_MANUFACTURER_NAME,
+    SIG_SOFTWARE_VERSION,
 )
 
 if TYPE_CHECKING:

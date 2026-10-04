@@ -31,7 +31,6 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
-    SIG_SOFTWARE_VERSION,
     STORAGE_DIR,
 )
 from custom_components.junghome_ble.jhmesh import config_messages as C
@@ -68,6 +67,9 @@ from custom_components.junghome_ble.jhmesh.pdu import (
     upper_decrypt,
     upper_encrypt_app,
     upper_encrypt_dev,
+)
+from custom_components.junghome_ble.jhmesh.properties import (
+    SIG_SOFTWARE_VERSION,
 )
 
 from .jhmesh.hypothesis_profiles import load as load_hypothesis_profile

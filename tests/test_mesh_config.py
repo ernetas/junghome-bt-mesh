@@ -35,10 +35,12 @@ from custom_components.junghome_ble.configurator import rooms as rooms_mod
 from custom_components.junghome_ble.configurator import scenes as scenes_mod
 from custom_components.junghome_ble.configurator import store as store_mod
 from custom_components.junghome_ble.configurator import wiring as wiring_mod
+from custom_components.junghome_ble.configurator.store import (
+    GATEWAY_UPLOAD_RETRY_DELAY,
+)
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
-    GATEWAY_UPLOAD_RETRY_DELAY,
     OPTION_PROVISIONER_IDENTITY,
 )
 from custom_components.junghome_ble.data import jung_data

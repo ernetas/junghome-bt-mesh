@@ -30,15 +30,13 @@ import asyncio
 import logging
 import time
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
 
 from .const import (
-    APP_QUIET_AFTER,
-    APP_SYNC_MIN_INTERVAL,
     DEFAULT_FOLLOW_APP,
     DEFAULT_GATEWAY_CHECK,
     DOMAIN,
@@ -60,6 +58,14 @@ if TYPE_CHECKING:
     from .jhmesh.client import AccessMessage
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Following the app (`app_follow.py`): the gateway's export is fetched APP_QUIET_AFTER seconds after the phone was last
+# heard (the app uploads its project after each change; a burst of edits is one fetch), at most once per
+# APP_SYNC_MIN_INTERVAL for the phone's activity, and every GATEWAY_SYNC_PERIOD seconds whatever was heard
+APP_QUIET_AFTER: Final = 180.0
+APP_SYNC_MIN_INTERVAL: Final = 900.0
+
 
 # Config messages that change what the export records about a node (sent with its device key); the key refresh's
 # own (NetKey / AppKey Update, Key Refresh Phase Set) are left to the key-refresh following

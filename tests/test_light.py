@@ -39,13 +39,18 @@ from voluptuous import Invalid
 
 from custom_components.junghome_ble import light as light_platform
 from custom_components.junghome_ble.const import (
-    DIM_MOVE_TRANSITION,
     DOMAIN,
-    UPDATE_READ_INTERVAL,
 )
-from custom_components.junghome_ble.entity import UPDATE_READS, update_reads
+from custom_components.junghome_ble.entity import (
+    UPDATE_READ_INTERVAL,
+    UPDATE_READS,
+    update_reads,
+)
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS, Light
+from custom_components.junghome_ble.light import (
+    DIM_MOVE_TRANSITION,
+)
 
 from . import property_helpers as ph
 from .conftest import FakeProxyLink, load_sets, settle, setup_entry, wait_for_link

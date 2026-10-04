@@ -18,7 +18,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import replace
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import EntityCategory
 from homeassistant.core import CALLBACK_TYPE, callback
@@ -29,15 +29,16 @@ from homeassistant.helpers.event import async_call_later
 from .const import (
     CONFIG_REREAD_INTERVAL,
     DOMAIN,
-    LOCK_EXPIRY_MARGIN,
     PROPERTY_READ_CHUNK,
-    SIG_SOFTWARE_VERSION,
     SIGNAL_UPDATE,
 )
 from .entity import JungHomeEntity
 from .errors import mesh_errors
 from .jhmesh import properties as P
 from .jhmesh.devices import BATTERY_PIDS
+from .jhmesh.properties import (
+    SIG_SOFTWARE_VERSION,
+)
 from .properties.reader import (
     PROPERTY_SCHEDULER_STATUS,
     READERS,
@@ -102,6 +103,12 @@ if TYPE_CHECKING:
     from .entity import UpdateRead
     from .jhmesh.devices import Thermostat
     from .jhmesh.properties import PropertySpec
+
+
+LOCK_EXPIRY_MARGIN: Final = (
+    5.0  # seconds after a timed lock should have ended before its switch reads it back
+)
+
 
 # What the platforms, `__init__.py`, `keep_awake.py`, `thresholds.py`, `schedules.py` and the tests import from here:
 # the entity bases below, and the names that moved to `properties/` (review-4 A4-4), so none of those changed.

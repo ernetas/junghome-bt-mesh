@@ -39,7 +39,7 @@ import logging
 import time
 from datetime import timedelta
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
@@ -66,12 +66,8 @@ from .config_entities import (
 from .const import (
     CLIMATE_MAX_TEMP,
     CLIMATE_MIN_TEMP,
-    CLIMATE_TEMP_STEP,
     DOMAIN,
     REFRESH_RETRIES,
-    RTR_BOOST_DURATION,
-    RTR_BOOST_POLL_INTERVAL,
-    RTR_BOOST_READBACK_MARGIN,
     SIGNAL_UPDATE,
 )
 from .conversions import level_to_temperature, temperature_to_level
@@ -102,6 +98,18 @@ if TYPE_CHECKING:
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+
+CLIMATE_TEMP_STEP: Final = 0.5
+# Boost heats at full power for five minutes and the thermostat ends it itself, telling no one (control-and-state.md
+# §2.7: the app polls 0x120D while its page is open); the climate entity reads it back this long after it started.
+RTR_BOOST_DURATION: Final = 300.0
+RTR_BOOST_READBACK_MARGIN: Final = 10.0
+# A boost started on the thermostat itself is seen only if it publishes the Status (unverified): the climate entity
+# also asks for 0x120D this often while the link is up — the app every 5 s, but only while its page is open
+# (`RoomTemperatureViewModel.requestBoostFunction`); a minute shows such a boost within a fifth of its run.
+RTR_BOOST_POLL_INTERVAL: Final = 60.0
+
 
 # re-exported: the conversions lived here before `conversions.py`
 __all__ = ["level_to_temperature", "temperature_to_level"]

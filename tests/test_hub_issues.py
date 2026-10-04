@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.helpers import issue_registry as ir
 
 from custom_components.junghome_ble.const import (
-    EXPORT_STALE_THRESHOLD,
     ISSUE_EXPORT_STALE,
     ISSUE_KEY_REFRESH,
+)
+from custom_components.junghome_ble.hub.issues import (
+    EXPORT_STALE_THRESHOLD,
 )
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial, aes_cmac
 from custom_components.junghome_ble.jhmesh.pdu import (

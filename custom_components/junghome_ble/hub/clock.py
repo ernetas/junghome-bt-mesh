@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 from functools import partial
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_point_in_utc_time
@@ -18,8 +18,6 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.junghome_ble.const import (
     DOMAIN,
-    OFFSET_CHANGE_DELAY,
-    OFFSET_SEARCH_DAYS,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES
@@ -38,6 +36,12 @@ class ClockHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# a daylight-saving change sends Time Set again this many seconds after it (review-3 F17); the change is looked for up to
+# a year ahead
+OFFSET_CHANGE_DELAY: Final = 5.0
+OFFSET_SEARCH_DAYS: Final = 400
 
 
 def next_utc_offset_change(now: datetime) -> datetime | None:

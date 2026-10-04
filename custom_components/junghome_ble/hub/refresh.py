@@ -12,12 +12,11 @@ import logging
 import time
 from collections.abc import Awaitable, Callable, Container
 from functools import partial
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from custom_components.junghome_ble.const import (
-    CONNECT_STEP_FRESH,
     LINK_CONNECTED,
     REFRESH_RETRIES,
     SHORT_LINK,
@@ -78,6 +77,14 @@ class RefreshHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Connect-time steps that read what changes rarely or is published anyway (the scene actions, the fault registers,
+# the current scenes; review-4 R I-5) are not repeated by a link that comes within CONNECT_STEP_FRESH seconds of
+# their last complete round when the link before it held for SHORT_LINK: the hub heard the nodes' publications
+# meanwhile. The state refresh, the energy poll, Time Set and the location go out on every link. Unverified on air.
+CONNECT_STEP_FRESH: Final = 900.0
+
 
 # State Get and the status opcode that answers it, per load kind (`Light.kind` / "switch" / a blind's "level"), plus
 # the colour-temperature range a CTL light supports ("ctl_range": read once per connection, it is a device property)

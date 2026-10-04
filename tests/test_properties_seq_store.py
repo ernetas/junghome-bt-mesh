@@ -52,7 +52,6 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
-    SEQ_SKIP_UNKNOWN,
 )
 from custom_components.junghome_ble.coordinator import (
     SEQ_BACKUP_STORES,
@@ -77,6 +76,9 @@ from custom_components.junghome_ble.jhmesh.client import (
     SequenceExhausted,
 )
 from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
+from custom_components.junghome_ble.seq_store import (
+    SEQ_SKIP_UNKNOWN,
+)
 
 from .conftest import CDB_PATH, META_DIR
 

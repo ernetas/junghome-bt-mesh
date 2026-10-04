@@ -60,6 +60,8 @@
   a sequence-number record (`seq_store.SeqRecord`) and the diagnostics (`diagnostics.EntryDiagnostics`, …).
   `data.JungHomeData` holds six of the registries `hass.data` kept under keys of their own (the entries' locks,
   plan journals and histories, held scenes, rooms before an export change, schedulers), with the same accessors.
+  `const.py` keeps the Home Assistant-facing keys and what several modules share (A4-12): the 84 constants one
+  module used moved to it, and the SIG identity property ids and the JH Scheduler model to `jhmesh`.
   Nothing changes in behaviour.
 
 ### Fixed

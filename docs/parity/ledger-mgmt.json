@@ -7286,7 +7286,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/onboard.py::async_add_device",
-    "custom_components/junghome_ble/const.py::NODE_BOOT_DELAY"
+    "custom_components/junghome_ble/onboard.py::NODE_BOOT_DELAY"
    ],
    "tests": [
     "tests/test_onboard.py::test_add_device_provisions_commissions_and_records_it"
@@ -9198,7 +9198,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/hub/link.py::LinkManager._connection_pass",
-    "custom_components/junghome_ble/const.py::CONNECT_BACKOFF_MAX"
+    "custom_components/junghome_ble/hub/link.py::CONNECT_BACKOFF_MAX"
    ],
    "tests": [
     "tests/test_hub_link.py::test_connect_failures_back_off_and_rotate_proxies"
@@ -9237,7 +9237,7 @@
    "id": "mgmt:timing:keeplowpowerdeviceawake:1000",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/const.py::KEEP_AWAKE_RETRY",
+    "custom_components/junghome_ble/keep_awake.py::KEEP_AWAKE_RETRY",
     "custom_components/junghome_ble/keep_awake.py::KeepAwake._keep_alive"
    ],
    "tests": [

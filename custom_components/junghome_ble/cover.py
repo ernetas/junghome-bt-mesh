@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
@@ -59,11 +59,7 @@ from .config_entities import PROPERTY_LOCK, property_reader
 from .const import (
     COVER_LEVEL_CLOSED,
     COVER_LEVEL_OPEN,
-    COVER_MODE_PROPERTY,
-    COVER_MOVE_DOWN,
-    COVER_MOVE_STOP,
     COVER_MOVE_TRANSITION,
-    COVER_MOVE_UP,
     DOMAIN,
     REFRESH_RETRIES,
     SIGNAL_UPDATE,
@@ -90,6 +86,15 @@ if TYPE_CHECKING:
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# Generic Move Set deltas the gateway sends: 0x8000 up (open), 0x7FFF down (close), 0 stop.
+COVER_MOVE_UP: Final = -32768
+COVER_MOVE_DOWN: Final = 32767
+COVER_MOVE_STOP: Final = 0
+# MOVE_OPERATION_MODE: 0 blinds (with slats), 1 shutter, 3 awning; decides the cover's device class.
+COVER_MODE_PROPERTY: Final = 0x1104
+
 
 # re-exported: the conversions lived here before `conversions.py`
 __all__ = ["closedness_to_level", "level_to_closedness"]

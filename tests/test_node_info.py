@@ -19,9 +19,6 @@ from homeassistant.util import dt as dt_util
 from custom_components.junghome_ble.config_entities import PropertyReader
 from custom_components.junghome_ble.const import (
     NODE_INFO_TIME_ROLE,
-    SIG_HARDWARE_REVISION,
-    SIG_MANUFACTURER_NAME,
-    SIG_SOFTWARE_VERSION,
 )
 from custom_components.junghome_ble.coordinator import (
     NODE_VERSIONS_STORAGE_VERSION,
@@ -31,6 +28,11 @@ from custom_components.junghome_ble.entity import node_identifier, update_node_d
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import Element, Node
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
+from custom_components.junghome_ble.jhmesh.properties import (
+    SIG_HARDWARE_REVISION,
+    SIG_MANUFACTURER_NAME,
+    SIG_SOFTWARE_VERSION,
+)
 
 from . import property_helpers as ph
 from .conftest import settle, wait_for_link, wait_until

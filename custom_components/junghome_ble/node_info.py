@@ -13,7 +13,13 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN, NODE_INFO, SIG_SOFTWARE_VERSION
+from .const import (
+    DOMAIN,
+    NODE_INFO,
+)
+from .jhmesh.properties import (
+    SIG_SOFTWARE_VERSION,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

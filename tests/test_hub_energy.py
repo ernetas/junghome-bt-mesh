@@ -11,8 +11,10 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.junghome_ble.const import ENERGY_POLL_INTERVAL
 from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.hub.energy import (
+    ENERGY_POLL_INTERVAL,
+)
 from custom_components.junghome_ble.jhmesh import messages as M
 
 from .conftest import (

@@ -17,12 +17,14 @@ import pytest
 from custom_components.junghome_ble import keep_awake as ka
 from custom_components.junghome_ble.const import (
     KEEP_AWAKE_INTERVAL,
-    KEEP_AWAKE_RETRY,
-    KEEP_AWAKE_TIMEOUT,
     LINK_WAIT_STEP,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
+from custom_components.junghome_ble.keep_awake import (
+    KEEP_AWAKE_RETRY,
+    KEEP_AWAKE_TIMEOUT,
+)
 
 DETECTORS = Path(__file__).parent / "fixtures" / "MeshNetwork-detectors.json"
 TRANSMITTER_1G, KEY_1G = 0x0520, 0x0521  # battery wall transmitters

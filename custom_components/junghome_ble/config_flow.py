@@ -59,7 +59,7 @@ import json
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 import aiohttp
 import voluptuous as vol
@@ -112,7 +112,6 @@ from .const import (
     DEFAULT_SYNC_AREAS,
     DEFAULT_UNICAST,
     DOMAIN,
-    GATEWAY_DEFAULT_HOST,
     GATEWAY_DOMAIN,
     GATEWAY_USER_NAME,
     ISSUE_APP_CHANGED,
@@ -184,6 +183,12 @@ if TYPE_CHECKING:
     from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
+
+
+GATEWAY_DEFAULT_HOST: Final = (
+    "junghome.local"  # the gateway's generic mDNS name (and TLS certificate CN)
+)
+
 
 SOURCE_GATEWAY = "gateway"
 SOURCE_UPLOAD = "upload"

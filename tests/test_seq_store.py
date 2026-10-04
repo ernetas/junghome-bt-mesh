@@ -36,7 +36,6 @@ from custom_components.junghome_ble.const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQ_STORE_UNWRITABLE,
     SEQ_SKIP_AHEAD,
-    SEQ_SKIP_UNKNOWN,
 )
 from custom_components.junghome_ble.coordinator import (
     SEQ_FLOOR_EVERY,
@@ -64,6 +63,9 @@ from custom_components.junghome_ble.jhmesh.client import (
 from custom_components.junghome_ble.jhmesh.export import ProjectFile
 from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
 from custom_components.junghome_ble.jhmesh.vault import Vault
+from custom_components.junghome_ble.seq_store import (
+    SEQ_SKIP_UNKNOWN,
+)
 
 from .conftest import (
     CDB_PATH,

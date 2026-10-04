@@ -11,13 +11,15 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble.const import (
-    BUTTON_REPEAT_WINDOW,
     CONF_CDB_PATH,
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
-    DOUBLE_CLICK_WINDOW,
     OPTION_CLICK_DELAY,
+)
+from custom_components.junghome_ble.hub.gestures import (
+    BUTTON_REPEAT_WINDOW,
+    DOUBLE_CLICK_WINDOW,
     TID_REPEAT_WINDOW,
 )
 from custom_components.junghome_ble.jhmesh import messages as M

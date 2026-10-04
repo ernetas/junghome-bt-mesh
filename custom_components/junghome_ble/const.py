@@ -6,6 +6,12 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
+from .jhmesh.properties import (
+    SIG_HARDWARE_REVISION,
+    SIG_MANUFACTURER_NAME,
+    SIG_SOFTWARE_VERSION,
+)
+
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
@@ -68,8 +74,6 @@ DEFAULT_PROVISIONER_IDENTITY: Final = False
 # `delete_unused_scenes` lists what it would delete unless told `dry_run: false` (review-4 W4-3, decision M3): a call
 # without fields, as an automation made it before, must not delete the app's scenes from a stale export
 DEFAULT_UNUSED_SCENES_DRY_RUN: Final = True
-# seconds a freshly provisioned node is given to restart as a mesh node before its configuration starts
-NODE_BOOT_DELAY: Final = 5.0
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
 DEFAULT_HEARTBEATS: Final = False
 # Follow the app (review-4 U4-6, decision M12, `app_follow.py`): the phone heard on the mesh makes an entry set up from
@@ -90,23 +94,7 @@ DEFAULT_ASSIGN_AREAS: Final = True
 OPTION_SYNC_AREAS: Final = "sync_areas"
 DEFAULT_SYNC_AREAS: Final = False
 
-# Heartbeats (`OPTION_HEARTBEATS`, `docs/hidden-features.md` §4): Config Heartbeat Publication with this PeriodLog
-# (2^(n-1) s) to our own address; a node is dead after HEARTBEAT_MISSED_BEATS periods (plus half a period of slack)
-# without a beat or any other message; the check runs every HEARTBEAT_CHECK_INTERVAL and the publications are
-# (re)configured at most every HEARTBEAT_RECONFIGURE_INTERVAL — they persist in the nodes (CountLog 0xFF).
-HEARTBEAT_PERIOD_LOG: Final = 7  # 64 s
-HEARTBEAT_MISSED_BEATS: Final = 3
-HEARTBEAT_CHECK_INTERVAL: Final = 30.0
-HEARTBEAT_RECONFIGURE_INTERVAL: Final = 6 * 3600.0
-HEARTBEAT_REPROBE_INTERVAL: Final = 120.0  # a node marked dead is asked again for heartbeats this often: a rebooted node lost its publication
 
-# SIG Device Software Revision (Generic Manufacturer Property 0x001A, ASCII digit pairs): the firmware gates
-# (`properties.targets.node_version`) read it from the node's primary element in the state cache.
-SIG_SOFTWARE_VERSION: Final = 0x001A
-SIG_HARDWARE_REVISION: Final = 0x0010  # ASCII, NUL-padded: b"10000000" on air
-SIG_MANUFACTURER_NAME: Final = (
-    0x0011  # UTF-8, NUL-padded: "Albrecht Jung GmbH & Co.KG" on air
-)
 # What a node tells about itself and the hub keeps (`node_info.NODE_VERSIONS`), under the property catalogue's
 # names: the SIG identity block (read on each opening of a device page in the app, `RequestManufacturerInfos`), the
 # LBC version blocks of its node details (Manufacturer server; the STM32 one on a room thermostat only) and the role
@@ -137,37 +125,16 @@ SERVICE_LINK_WAIT: Final = 30.0
 # The "Identify" button: Health Attention Set for this many seconds (the node's LED blinks; the app uses 5 s while
 # provisioning). Accepted by every node, `docs/hidden-features.md` §3.
 IDENTIFY_SECONDS: Final = 10
-# The `locate_node` action (review-4 F4-15): seconds of Node Identity advertising. A node stops by itself after 60 s
-# (Mesh Profile §7.2.2.2.3), so longer would not hold; the Set off follows after the time asked for.
-LOCATE_SECONDS: Final = 60
-LOCATE_MIN_SECONDS: Final = 5
 
 # The JUNG HOME Gateway integration (github.com/ernetas/junghome) whose entities `migration.py` takes over.
 GATEWAY_DOMAIN: Final = "junghome"
 
-GATEWAY_DEFAULT_HOST: Final = (
-    "junghome.local"  # the gateway's generic mDNS name (and TLS certificate CN)
-)
 GATEWAY_USER_NAME: Final = (
     "Home Assistant (Bluetooth Mesh)"  # how the access request shows up in the app
-)
-GATEWAY_REGISTER_TIMEOUT: Final = 190.0  # the gateway holds the request for 180 s while the user approves it in the app
-GATEWAY_PROBE_TIMEOUT: Final = (
-    10.0  # reachability check before the long registration wait
-)
-GATEWAY_REQUEST_TIMEOUT: Final = 30.0
-GATEWAY_UPLOAD_TIMEOUT: Final = (
-    90.0  # the gateway self-configures from the CDB before it answers a project upload
 )
 # a failed automatic upload is tried again twice, 15 s apart, as the app does (`ProjectFileSyncServiceImpl`: flow
 # `retry(2)` with a 15 000 ms delay)
 GATEWAY_UPLOAD_RETRIES: Final = 2
-GATEWAY_UPLOAD_RETRY_DELAY: Final = 15.0
-# the gateway's status (`GET config`) is polled every 30 s while one of its entities is enabled; the app polls every
-# 5 s (10 s after an error), but only while it is open — Home Assistant runs all day. Its error log (`GET
-# healthstatus`, read by the app only while its log page is open) every 5 minutes.
-GATEWAY_STATUS_INTERVAL: Final = 30.0
-GATEWAY_HEALTH_INTERVAL: Final = 300.0
 
 STORAGE_DIR: Final = "junghome_ble"  # under the configuration directory: exports fetched from the gateway or uploaded
 
@@ -207,68 +174,15 @@ SIGNAL_BATTERY: Final = f"{DOMAIN}_battery_{{}}_{{}}"  # per entry id and primar
 # upload* sensor
 SIGNAL_GATEWAY_SYNCED: Final = f"{DOMAIN}_gateway_synced_{{}}"
 
-# Detectors (binary_sensor.py / sensor.py; `docs/gap-analysis/control-and-state.md` §2.8, unverified on hardware).
-DETECTOR_PROPERTY_PRESENCE: Final = 0x004D  # SIG Presence Detected: 1 byte, 0 / 1
 DETECTOR_PROPERTY_ILLUMINANCE: Final = 0x0055  # SIG Present Illuminance: LE 0.01 lx (firmware > 1.4.0.0), all ones = unknown
-DETECTOR_ILLUMINANCE_RAW_LUX_MAX_VERSION: Final = (
-    1,
-    4,
-    0,
-    0,
-)  # up to this device software version the value is whole lux
-DETECTOR_MOTION_HOLD: Final = 120.0  # seconds a motion signalled by an OnOff Set publication is kept on when no Presence Detected status follows and the relay's run-on time (0x1007) is unknown (the app's default run-on time for detector loads)
-# The app's walking test (`control-and-state.md` §2.8): it stops the test itself after five minutes and asks for the
-# PIR zones (0x6005) every second while it runs.
-DETECTOR_WALKING_TEST_DURATION: Final = 300.0
-DETECTOR_WALKING_TEST_POLL: Final = 1.0
-# seconds between reads of a detector's own brightness (0x6004) while it has delivered no Present Illuminance (the app
-# reads it every 5 s while its parameter page is open; nothing reads it otherwise)
-DETECTOR_BRIGHTNESS_POLL: Final = 60.0
 
-# Battery products (sensor.py; `control-and-state.md` §2.9). They sleep: a Generic Battery Get is only sent right after
-# a key event (the node is awake for a moment), never polled.
-BATTERY_READ_INTERVAL: Final = (
-    21600.0  # seconds after an answered read before a key event triggers the next one
-)
-BATTERY_READ_TIMEOUT: Final = 3.0  # seconds to wait for the Battery Status (the app's property-read timeout); one attempt
 # While Home Assistant configures a battery node it keeps it awake the app's way (`keep_awake.py`, review-3 W4 / F24):
 # an Admin Get of its ButtonLayout once the node was quiet this long (`KeepLowPowerDeviceAwake`, every 6 s) ...
 KEEP_AWAKE_INTERVAL: Final = 6.0
-KEEP_AWAKE_RETRY: Final = 1.0  # ... asked again this many seconds after one went unanswered, as the app does ...
-KEEP_AWAKE_TIMEOUT: Final = 3.0  # ... each waiting this long (the app's property-read timeout; the notes give the keep-alive none of its own)
 
-MIN_KELVIN: Final = 2000
-MAX_KELVIN: Final = 6000
-# The colour temperatures the app lets a tunable-white light's range ("White area") span, and clamps both ends of the
-# range it writes to (`p097i9/c.java`: TunableWhiteValueCapable, 2000..10000 K).
-WHITE_RANGE_MIN_KELVIN: Final = 2000
-WHITE_RANGE_MAX_KELVIN: Final = 10000
 # Room thermostat set-point range and step, as the app's slider (docs/gap-analysis/control-and-state.md §2.7).
 CLIMATE_MIN_TEMP: Final = 5.0
 CLIMATE_MAX_TEMP: Final = 30.0
-CLIMATE_TEMP_STEP: Final = 0.5
-# Boost heats at full power for five minutes and the thermostat ends it itself, telling no one (control-and-state.md
-# §2.7: the app polls 0x120D while its page is open); the climate entity reads it back this long after it started.
-RTR_BOOST_DURATION: Final = 300.0
-RTR_BOOST_READBACK_MARGIN: Final = 10.0
-# A boost started on the thermostat itself is seen only if it publishes the Status (unverified): the climate entity
-# also asks for 0x120D this often while the link is up — the app every 5 s, but only while its page is open
-# (`RoomTemperatureViewModel.requestBoostFunction`); a minute shows such a boost within a fifth of its run.
-RTR_BOOST_POLL_INTERVAL: Final = 60.0
-DOUBLE_CLICK_WINDOW: Final = 0.5  # seconds between two clicks to report a double click
-BUTTON_REPEAT_WINDOW: Final = 3.0  # a vendor button event with a counter seen this recently is the firmware's second copy
-# (the sniffer measured the copy spacing of status publications at 0.9-2.3 s, docs/sniffer.md; the counter is per press,
-# so a real second press is never mistaken for a copy whatever the window)
-# Hold-to-dim (review-3 F12). What a rocker wired straight to a dimmer sends while it is held is not captured on air;
-# the SIG ways are a Generic Move Set (a delta to start, 0 to stop) or a Generic Delta Set transaction (one TID,
-# growing deltas while held, `TID_REPEAT_WINDOW`). A Delta transaction has no stop message: its hold is taken to end
-# this many seconds after its last Set (the key's cadence is a guess; the firmware's second copies are dropped first).
-DIM_HOLD_QUIET: Final = 1.5
-# Every hold — a Move or Delta one above, or a gateway-mode key's vendor `hold_start` — ends at the latest this many
-# seconds after it started (review-4 R4-7): a lost stop (a Move 0, a release) used to leave it open, and a
-# dim-while-held automation dimming for ever. Fading through the whole range takes a few seconds; nobody holds a key
-# this long on purpose. A hold ended without its stop carries `reason` (HOLD_END_REASONS) in its `hold_end`.
-DIM_HOLD_MAX: Final = 30.0
 HOLD_END_TIMEOUT: Final = "timeout"  # DIM_HOLD_MAX passed
 HOLD_END_LINK_LOST: Final = (
     "link_lost"  # the link ended: the stop could not be heard (decision M11)
@@ -277,11 +191,6 @@ HOLD_END_STOPPED: Final = (
     "stopped"  # the entry stopped (unload, reload, Home Assistant shutting down)
 )
 HOLD_END_REASONS: Final = (HOLD_END_TIMEOUT, HOLD_END_LINK_LOST, HOLD_END_STOPPED)
-# `junghome_ble.start_dim`: Generic Move Set with a transition time of one 100 ms step (Mesh Model §3.1.3: 0b00
-# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air (review 3).
-DIM_MOVE_TRANSITION: Final = 0x01
-DIM_STEPS_PER_SECOND: Final = 10
-DIM_DEFAULT_SPEED: Final = 20  # % of the range per second: from off to full in 5 s
 # KEY_EVT (vendor property 0x5012 `[counter][code]`) codes, per the gateway firmware's decoder
 # (`docs/cross-repo-analysis.md` §1.2). A rocker in key mode *Gateway* is one element with two halves and reports
 # which half with codes 0-3; a single key reports 4-6 without a side. Code -> (event type, side): the side becomes
@@ -298,11 +207,6 @@ KEY_EVENTS: Final[dict[int, tuple[str, str | None]]] = {
     0x05: ("click", None),  # pushed: a single key
     0x06: ("hold_start", None),  # held: a single key
 }
-TID_REPEAT_WINDOW: Final = 6.0  # same for SIG client messages: one transaction (TID) lives 6 s (Mesh Model §3.3.1.2)
-# A Scene Status a node publishes this soon after a recall of the same scene that fired EVENT_SCENE_RECALLED (a
-# key's, the app's, ours) is that recall's echo; later, it is a recall Home Assistant did not hear (captured on air:
-# the members' Scene Status follow the app's Scene Recall within 50 ms in the app settings capture).
-SCENE_RECALL_WINDOW: Final = 5.0
 REFRESH_CHUNK: Final = (
     5  # state Gets in flight at once before a short pause (same as the app)
 )
@@ -313,20 +217,9 @@ REQUEST_TIMEOUT: Final = 3.0  # what `ProxyClient.request` waits per attempt by 
 REFRESH_RETRIES: Final = (
     REQUEST_ATTEMPTS  # attempts per state Get before the element counts as unanswered
 )
-# The Configuration Server audit (`junghome_ble.audit_network`): per Get, the wait for its status and the attempts
-# before it counts as unanswered — the budget of a configuration change's messages
-# (`configurator.executor.CONFIG_TIMEOUT`)
-AUDIT_TIMEOUT: Final = 3.0
-AUDIT_RETRIES: Final = 2
-ENERGY_POLL_INTERVAL: Final = 300.0  # seconds between reads of the metered loads' counters, which nothing publishes
 # seconds between two imports of the metered loads' energy charts into the statistics (`energy_history.py`): one per
 # link, and a link that came back sooner than this after the last import missed no whole hour
 ENERGY_HISTORY_INTERVAL: Final = 3600.0
-# The proxy answers the filter request every link starts with by a Filter Status within a few hundred ms. A link
-# whose beacon authenticated but whose Filter Status never came within this many seconds is a proxy that discards our
-# PDUs (stale sequence number, address collision): it keeps its default empty whitelist and forwards nothing, so
-# the refresh-based drop detection (which needs other traffic) would never fire. Raises `pdus_dropped`.
-FILTER_STATUS_TIMEOUT: Final = 10.0
 # a JUNG proxy sends its Secure Network Beacon right after the subscription: the first filter request waits that long
 # for it, so it goes out under the network's current IV index instead of a stale stored one the proxy would drop
 CONNECT_BEACON_WAIT: Final = 1.0
@@ -343,51 +236,11 @@ LINK_IDLE_TIMEOUT: Final = 660.0  # seconds >= 2 * ENERGY_POLL_INTERVAL + margin
 # the link watchdog probe the proxy at once instead of after LINK_IDLE_TIMEOUT of silence; a load's own Set waits for
 # its status (REQUEST_ATTEMPTS).
 LINK_LOSS_GRACE: Final = 20.0
-COMMAND_ECHO_TIMEOUT: Final = 5.0
 # `async_stop` gives the link this long to close (a transport whose disconnect never returns must not hold up an
 # unload or Home Assistant's shutdown)
 STOP_TIMEOUT: Final = 10.0
-KEEP_ALIVE_TIMEOUT: Final = 3.0  # seconds to wait for the status answering one keep-alive Get (the app's read timeout)
-KEEP_ALIVE_ATTEMPTS: Final = 3  # distinct elements asked before the proxy counts as silent (one may be unplugged)
-# Per-node reachability, the app's rule (`MeshMessengerImpl$handleError$1`, `docs/gap-analysis/control-and-state.md`
-# §1.2): a node is unreachable as soon as a request it was asked with the full budget (REQUEST_ATTEMPTS x
-# REQUEST_TIMEOUT) goes unanswered — a state Get or a command — unless it was heard from meanwhile, and reachable
-# again with any message from it. A shorter probe it missed (the link watchdog's one-attempt keep-alive) is no verdict:
-# the element is asked again with a full-budget Get after UNREACHABLE_RECHECK seconds.
-UNREACHABLE_RECHECK: Final = 60.0
-# ... and an unreachable node is asked again this often while the link lasts: a breaker that was off for a few minutes
-# must not leave its entities unavailable until the next link (review-3 C3)
-UNREACHABLE_REPROBE: Final = 300.0
-# A node the export does not know (`unknown_nodes`) makes the hub ask the gateway for its export; the app uploads
-# its project there after a change, but not always before the new node first advertises. Unanswered, the question is
-# asked again after each of these delays (the last one repeating) and on every new link, until the export has them.
-EXPORT_REFRESH_BACKOFF: Final = (60.0, 300.0, 900.0, 3600.0)
-# Following the app (`app_follow.py`): the gateway's export is fetched APP_QUIET_AFTER seconds after the phone was last
-# heard (the app uploads its project after each change; a burst of edits is one fetch), at most once per
-# APP_SYNC_MIN_INTERVAL for the phone's activity, and every GATEWAY_SYNC_PERIOD seconds whatever was heard
-APP_QUIET_AFTER: Final = 180.0
-APP_SYNC_MIN_INTERVAL: Final = 900.0
 GATEWAY_SYNC_PERIOD: Final = 6 * 3600.0
 TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the first one follows every connection
-# a daylight-saving change sends Time Set again this many seconds after it (review-3 F17); the change is looked for up to
-# a year ahead
-OFFSET_CHANGE_DELAY: Final = 5.0
-OFFSET_SEARCH_DAYS: Final = 400
-# The nodes' clocks (`node_clocks.py`, review-4 F4-8): a node that may run schedules and whose clock is more than
-# CLOCK_OFFSET_MAX seconds off Home Assistant's (or has no time, or another zone offset than the one Time Set carries)
-# raises `node_clock_wrong`. A clock read is a Get per item: CLOCK_READ_PAUSE seconds between two chunks of
-# REFRESH_CHUNK nodes. A stored location within LOCATION_TOLERANCE degrees of the home's counts as the home's
-# (0.01 degree is about a kilometre: sunrise and sunset move by seconds).
-CLOCK_OFFSET_MAX: Final = 60.0
-CLOCK_READ_PAUSE: Final = 0.5
-LOCATION_TOLERANCE: Final = 0.01
-# the JH Scheduler model (`schedules.py`); the entry's schedulers are `data.JungHomeData.schedulers`
-SCHEDULER_MODEL: Final = "05271016"
-# The connection loop's pause after a failed connection doubles from CONNECT_BACKOFF_MIN up to CONNECT_BACKOFF_MAX; a
-# link that lasted SHORT_LINK counts as a working one and starts it over.
-CONNECT_BACKOFF_MIN: Final = 2.0
-CONNECT_BACKOFF_MAX: Final = 60.0
-FAILED_PROXY_COOLDOWN: Final = 120.0
 # Short-link penalty (review-4 R4-1). A proxy whose link comes up and is lost again within SHORT_LINK seconds failed
 # the connection just as much as one that never connected, only later: the pause before the next attempt doubles
 # (CONNECT_BACKOFF_MIN ..), and after SHORT_LINK_STREAK such links in a row the node is set aside for
@@ -395,22 +248,10 @@ FAILED_PROXY_COOLDOWN: Final = 120.0
 # again, each link restarting the connect-time refresh. A node that is the only one in range is still used, and one
 # short link alone sets no node aside (a node restarting right after we connected is no flapping proxy).
 SHORT_LINK: Final = 60.0
-SHORT_LINK_STREAK: Final = 3
-# Connect-time steps that read what changes rarely or is published anyway (the scene actions, the fault registers,
-# the current scenes; review-4 R I-5) are not repeated by a link that comes within CONNECT_STEP_FRESH seconds of
-# their last complete round when the link before it held for SHORT_LINK: the hub heard the nodes' publications
-# meanwhile. The state refresh, the energy poll, Time Set and the location go out on every link. Unverified on air.
-CONNECT_STEP_FRESH: Final = 900.0
-# a proxy advertisement older than this ranks behind every fresher one: its node may be off (JUNG nodes advertise
-# several times a second)
-PROXY_ADVERT_MAX_AGE: Final = 60.0
 
-# Config entities (device parameters read/written as JUNG vendor properties, see config_entities.py).
-PROPERTY_READ_DELAY: Final = 3.0  # seconds after the link is up (or an entity was enabled) before the initial property reads start: the state refresh goes first
 PROPERTY_READ_CHUNK: Final = (
     5  # initial property reads in flight at once before a pause (like REFRESH_CHUNK)
 )
-PROPERTY_READ_PAUSE: Final = 0.5  # seconds between two chunks of initial reads
 # A background sender with no link (the property reads, a battery node's keep-alive) waits for one instead of sending
 # into "not connected"; this long per wait (`JungHomeHub.async_wait_connected`) before it looks again.
 LINK_WAIT_STEP: Final = 60.0
@@ -425,22 +266,8 @@ PROPERTY_READ_FRESH: Final = 10.0  # seconds within which a property answered on
 # (`ConfigEntity._maybe_read`): a value changed in the app is answered to the app's address, so nothing else tells
 # Home Assistant (review-4 H4-10). Once per link at most, through the reader's queue.
 CONFIG_REREAD_INTERVAL: Final = 3 * 3600.0
-# `homeassistant.update_entity` asks an element for the same thing at most once per this many seconds
-# (`JungHomeEntity.async_update`); a call within it keeps the cached state.
-UPDATE_READ_INTERVAL: Final = 2.0
 PROPERTY_WRITE_TIMEOUT: Final = (
     3.0  # seconds to wait for the Status answering an acknowledged property Set
-)
-PROPERTY_REREAD_DELAY: Final = (
-    0.5  # seconds before re-reading a property whose Set was not answered
-)
-LOCK_EXPIRY_MARGIN: Final = (
-    5.0  # seconds after a timed lock should have ended before its switch reads it back
-)
-LOCK_TIME_LIMIT_MAX: Final = (
-    4 * 3600
-    + 59 * 60
-    + 59  # seconds: the app's H:MM:SS time-limit picker ends at 4:59:59
 )
 
 # Covers (blinds / shutters / awnings on Generic Level elements, see cover.py). UNVERIFIED ON HARDWARE: derived from
@@ -448,20 +275,10 @@ LOCK_TIME_LIMIT_MAX: Final = (
 # Generic Level ends: JUNG closedness 0 % (open, slats open) and 100 % (closed).
 COVER_LEVEL_OPEN: Final = -32768
 COVER_LEVEL_CLOSED: Final = 32767
-# Generic Move Set deltas the gateway sends: 0x8000 up (open), 0x7FFF down (close), 0 stop.
-COVER_MOVE_UP: Final = -32768
-COVER_MOVE_DOWN: Final = 32767
-COVER_MOVE_STOP: Final = 0
 # Transition-time byte of those Move Sets. The gateway asks its Silicon Labs NCP for 0xFFFE ms ("max duration for
 # movement", `PositionState.js`); mesh stacks encode 65.5 s in 10-second steps rounded up: 0b10 << 6 | 7 = 70 s.
 # The byte the NCP really puts on air is not captured yet.
 COVER_MOVE_TRANSITION: Final = 0x87
-# MOVE_OPERATION_MODE: 0 blinds (with slats), 1 shutter, 3 awning; decides the cover's device class.
-COVER_MODE_PROPERTY: Final = 0x1104
-# A reference run is read back after the blind's running time plus this, as the app waits for it
-# (`ReferenceRunLoadingViewModel`); while the running time (0x1102) is not known, the longest the app accepts.
-REFERENCE_RUN_MARGIN: Final = 10.0
-REFERENCE_RUN_LONGEST: Final = 600.0
 
 ISSUE_KEY_REFRESH: Final = "key_refresh"
 # no connectable Bluetooth adapter or proxy is left (the app's "Bluetooth is off" screen, `ObserveBluetoothState`)
@@ -516,14 +333,6 @@ SEQ_SKIP_AHEAD: Final = 1 << 20
 # is checked this often, and a source past SEQUENCE_SPACE_WARN (3/4 of the 24-bit space) raises
 # `sequence_space_low`: the mesh needs an IV Update before it runs out, and only the gateway starts one.
 NODE_DIAGNOSTICS_INTERVAL: Final = 60.0
-SEQUENCE_CHECK_INTERVAL: Final = 600.0
-SEQUENCE_SPACE_WARN: Final = 0xC00000
-# JUNG firmware stores its sequence number in blocks of 0x10000 and continues from the next block after a restart
-# (seen on two nodes): a jump into a new block that lands near its start, from a number not near the end of the
-# previous one, is a restart (a mains blip, a breaker), not the counter running on.
-RESTART_BLOCK: Final = 0x10000
-RESTART_SLACK: Final = 0x0400
-SEQ_SKIP_UNKNOWN: Final = 1 << 22
 ISSUE_GATEWAY_IMPORT: Final = "gateway_import"  # a gateway integration entry is active next to ours: offer the import
 ISSUE_EXPORT_STALE: Final = "export_stale"
 ISSUE_GATEWAY_SYNC: Final = (
@@ -615,8 +424,6 @@ def issue_id(entry: ConfigEntry, key: str) -> str:
     """Return the repair-issue id of `key` (an `ISSUE_*` translation key) for `entry`: one issue per mesh, not per domain."""
     return f"{key}_{entry.entry_id}"
 
-
-EXPORT_STALE_THRESHOLD: Final = 20  # undecryptable PDUs / unauthenticated beacons on one link, with nothing decodable, before the export counts as stale
 
 # Bus events. Device triggers can only attach to something on the Home Assistant bus, so the hub publishes every
 # event of a key as EVENT_BUTTON_ACTION (`device_trigger.py` matches on it) — whether or not the key's event entity

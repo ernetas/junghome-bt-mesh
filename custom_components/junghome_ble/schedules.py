@@ -33,7 +33,6 @@ from .config_entities import EntityTarget
 from .const import (
     DOMAIN,
     PROPERTY_READ_RETRIES,
-    SCHEDULER_MODEL,
 )
 from .conversions import closedness_to_level, level_to_closedness
 from .data import jung_data
@@ -47,6 +46,9 @@ from .errors import mesh_errors
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
+from .jhmesh.vendor_models import (
+    SCHEDULER_MODEL,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

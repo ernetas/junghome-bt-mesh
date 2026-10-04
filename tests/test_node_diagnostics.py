@@ -14,11 +14,15 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from custom_components.junghome_ble.const import (
     ISSUE_SEQUENCE_SPACE_LOW,
     NODE_DIAGNOSTICS_INTERVAL,
-    SEQUENCE_CHECK_INTERVAL,
-    SEQUENCE_SPACE_WARN,
     SIGNAL_CONNECTION,
 )
-from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.coordinator import (
+    SEQUENCE_CHECK_INTERVAL,
+    JungHomeHub,
+)
+from custom_components.junghome_ble.hub.issues import (
+    SEQUENCE_SPACE_WARN,
+)
 from custom_components.junghome_ble.sensor import MESH_DIAGNOSTICS
 
 from .conftest import PROXY_ADDRESS, FakeProxyLink, make_service_info, settle

@@ -31,7 +31,7 @@ This module is the registration table; the handlers and their schemas live in `a
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
-from typing import Any
+from typing import Any, Final
 
 import voluptuous as vol
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
@@ -150,8 +150,13 @@ from .actions.thresholds import (
     _delete_threshold,
     _set_threshold,
 )
-from .const import DIM_DEFAULT_SPEED, DOMAIN
+from .const import (
+    DOMAIN,
+)
 from .thresholds import THRESHOLD_PROPERTIES
+
+DIM_DEFAULT_SPEED: Final = 20  # % of the range per second: from off to full in 5 s
+
 
 # what other modules (and the tests) import from here, now defined in `actions/`
 __all__ = [

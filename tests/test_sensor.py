@@ -49,8 +49,6 @@ from custom_components.junghome_ble.config_entities import (
     retired_unique_ids,
 )
 from custom_components.junghome_ble.const import (
-    BATTERY_READ_INTERVAL,
-    DETECTOR_BRIGHTNESS_POLL,
     DETECTOR_PROPERTY_ILLUMINANCE,
     DOMAIN,
     KEEP_AWAKE_INTERVAL,
@@ -68,6 +66,8 @@ from custom_components.junghome_ble.entity import (
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 from custom_components.junghome_ble.sensor import (
+    BATTERY_READ_INTERVAL,
+    DETECTOR_BRIGHTNESS_POLL,
     PROPERTY_INSTALLED,
     battery_nodes,
     illuminance_lux,

@@ -25,7 +25,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import EntityCategory
 from homeassistant.helpers import issue_registry as ir
@@ -37,8 +37,6 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     DOMAIN,
-    GATEWAY_HEALTH_INTERVAL,
-    GATEWAY_STATUS_INTERVAL,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
     issue_id,
@@ -64,6 +62,13 @@ if TYPE_CHECKING:
     from .jhmesh.cdb import Node
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# the gateway's status (`GET config`) is polled every 30 s while one of its entities is enabled; the app polls every
+# 5 s (10 s after an error), but only while it is open — Home Assistant runs all day. Its error log (`GET
+# healthstatus`, read by the app only while its log page is open) every 5 minutes.
+GATEWAY_STATUS_INTERVAL: Final = 30.0
+GATEWAY_HEALTH_INTERVAL: Final = 300.0
 
 
 class GatewayPoll[T](DataUpdateCoordinator[T]):

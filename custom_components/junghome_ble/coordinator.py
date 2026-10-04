@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import SOURCE_IGNORE
@@ -39,12 +39,8 @@ from homeassistant.util.hass_dict import HassKey
 
 from .bus_events import fire_scene_recalled, publish_button_event
 from .const import (
-    AUDIT_RETRIES,
-    AUDIT_TIMEOUT,
-    COMMAND_ECHO_TIMEOUT,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    HEARTBEAT_CHECK_INTERVAL,
     HUB_DATA_KEYS,
     IDENTIFY_SECONDS,
     ISSUE_INSERT_MISMATCH,
@@ -60,12 +56,7 @@ from .const import (
     OPTION_HEARTBEATS,
     REFRESH_CHUNK,
     REQUEST_ATTEMPTS,
-    RESTART_BLOCK,
-    RESTART_SLACK,
-    SCENE_RECALL_WINDOW,
     SEQ_SKIP_AHEAD,
-    SEQUENCE_CHECK_INTERVAL,
-    SIG_SOFTWARE_VERSION,
     SIGNAL_NODE,
     SIGNAL_SCENES,
     SIGNAL_UPDATE,
@@ -128,7 +119,11 @@ from .jhmesh.devices import (
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
-from .jhmesh.properties import SIG_PROPERTIES, Scaled
+from .jhmesh.properties import (
+    SIG_PROPERTIES,
+    SIG_SOFTWARE_VERSION,
+    Scaled,
+)
 from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
 from .node_clocks import NodeClocks
@@ -191,6 +186,31 @@ if TYPE_CHECKING:
     )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# The hub's timings (review-4 A4-12: they lived in `const.py`). How often the heartbeat deadlines are checked
+# (`OPTION_HEARTBEATS`, `Liveness.check_heartbeats`).
+HEARTBEAT_CHECK_INTERVAL: Final = 30.0
+# A Scene Status a node publishes this soon after a recall of the same scene that fired EVENT_SCENE_RECALLED (a
+# key's, the app's, ours) is that recall's echo; later, it is a recall Home Assistant did not hear (captured on air:
+# the members' Scene Status follow the app's Scene Recall within 50 ms in the app settings capture).
+SCENE_RECALL_WINDOW: Final = 5.0
+# The Configuration Server audit (`junghome_ble.audit_network`): per Get, the wait for its status and the attempts
+# before it counts as unanswered — the budget of a configuration change's messages
+# (`configurator.executor.CONFIG_TIMEOUT`)
+AUDIT_TIMEOUT: Final = 3.0
+AUDIT_RETRIES: Final = 2
+# a group command or a movement the mesh does not answer within this has the link watchdog probe the proxy at once
+# (`const.LINK_LOSS_GRACE`)
+COMMAND_ECHO_TIMEOUT: Final = 5.0
+# how often the sequence space of every source is checked (`sequence_space_low`, `Issues.check_sequence_space`)
+SEQUENCE_CHECK_INTERVAL: Final = 600.0
+# JUNG firmware stores its sequence number in blocks of 0x10000 and continues from the next block after a restart
+# (seen on two nodes): a jump into a new block that lands near its start, from a number not near the end of the
+# previous one, is a restart (a mains blip, a breaker), not the counter running on.
+RESTART_BLOCK: Final = 0x10000
+RESTART_SLACK: Final = 0x0400
+
 
 # Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
 # `const.py`; A4-3: the hub's components into `hub/`; A4-11: `ElementState` into `element_state.py`, `entry_lock`

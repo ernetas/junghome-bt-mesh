@@ -93,7 +93,10 @@ __all__ = [
     "RTR",
     "S16",
     "SENSOR_SELECTION",
+    "SIG_HARDWARE_REVISION",
+    "SIG_MANUFACTURER_NAME",
     "SIG_PROPERTIES",
+    "SIG_SOFTWARE_VERSION",
     "SOCKETS",
     "SOCKET_METERING",
     "TEMP_001C",
@@ -167,6 +170,13 @@ __all__ = [
     "spec_for",
     "supported",
 ]
+
+# The SIG identity block a node's primary element serves (Generic Manufacturer Properties, `SIG_PROPERTIES`): the
+# Device Software Revision (ASCII digit pairs, what the firmware gates of `supported` compare), the hardware revision
+# and the manufacturer's name.
+SIG_SOFTWARE_VERSION = 0x001A
+SIG_HARDWARE_REVISION = 0x0010  # ASCII, NUL-padded: b"10000000" on air
+SIG_MANUFACTURER_NAME = 0x0011  # UTF-8, NUL-padded: "Albrecht Jung GmbH & Co.KG" on air
 
 Server = Literal[
     "admin", "manufacturer", "user", "sig_admin", "sig_manufacturer", "sensor"

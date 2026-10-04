@@ -53,6 +53,11 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble import climate as CL
+from custom_components.junghome_ble.climate import (
+    RTR_BOOST_DURATION,
+    RTR_BOOST_POLL_INTERVAL,
+    RTR_BOOST_READBACK_MARGIN,
+)
 from custom_components.junghome_ble.config_entities import (
     SIG_SOFTWARE_VERSION,
     property_reader,
@@ -62,9 +67,6 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
-    RTR_BOOST_DURATION,
-    RTR_BOOST_POLL_INTERVAL,
-    RTR_BOOST_READBACK_MARGIN,
 )
 from custom_components.junghome_ble.coordinator import STATUS_HANDLERS, JungHomeHub
 from custom_components.junghome_ble.entity import node_device_info

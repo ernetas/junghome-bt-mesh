@@ -17,18 +17,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Final, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_call_later
 
 from custom_components.junghome_ble.const import (
     ATTR_REASON,
-    BUTTON_REPEAT_WINDOW,
     DEFAULT_CLICK_DELAY,
-    DIM_HOLD_MAX,
-    DIM_HOLD_QUIET,
-    DOUBLE_CLICK_WINDOW,
     HOLD_END_LINK_LOST,
     HOLD_END_STOPPED,
     HOLD_END_TIMEOUT,
@@ -37,7 +33,6 @@ from custom_components.junghome_ble.const import (
     KEY_EVENT_SIDE_UP,
     KEY_EVENTS,
     OPTION_CLICK_DELAY,
-    TID_REPEAT_WINDOW,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import Button
@@ -59,6 +54,24 @@ class GesturesHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+DOUBLE_CLICK_WINDOW: Final = 0.5  # seconds between two clicks to report a double click
+BUTTON_REPEAT_WINDOW: Final = 3.0  # a vendor button event with a counter seen this recently is the firmware's second copy
+# (the sniffer measured the copy spacing of status publications at 0.9-2.3 s, docs/sniffer.md; the counter is per press,
+# so a real second press is never mistaken for a copy whatever the window)
+# Hold-to-dim (review-3 F12). What a rocker wired straight to a dimmer sends while it is held is not captured on air;
+# the SIG ways are a Generic Move Set (a delta to start, 0 to stop) or a Generic Delta Set transaction (one TID,
+# growing deltas while held, `TID_REPEAT_WINDOW`). A Delta transaction has no stop message: its hold is taken to end
+# this many seconds after its last Set (the key's cadence is a guess; the firmware's second copies are dropped first).
+DIM_HOLD_QUIET: Final = 1.5
+# Every hold — a Move or Delta one above, or a gateway-mode key's vendor `hold_start` — ends at the latest this many
+# seconds after it started (review-4 R4-7): a lost stop (a Move 0, a release) used to leave it open, and a
+# dim-while-held automation dimming for ever. Fading through the whole range takes a few seconds; nobody holds a key
+# this long on purpose. A hold ended without its stop carries `reason` (HOLD_END_REASONS) in its `hold_end`.
+DIM_HOLD_MAX: Final = 30.0
+TID_REPEAT_WINDOW: Final = 6.0  # repeats of a SIG client message: one transaction (TID) lives 6 s (Mesh Model §3.3.1.2)
+
 
 # Offset of the TID in the parameters of the client messages a rocker sends (OnOff Set, Scene Recall, Level/Delta/Move Set).
 TID_OFFSET = {

@@ -27,8 +27,13 @@ from homeassistant.const import (
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
-from custom_components.junghome_ble.const import DOMAIN, SIG_SOFTWARE_VERSION
+from custom_components.junghome_ble.const import (
+    DOMAIN,
+)
 from custom_components.junghome_ble.jhmesh import properties as P
+from custom_components.junghome_ble.jhmesh.properties import (
+    SIG_SOFTWARE_VERSION,
+)
 from custom_components.junghome_ble.update import (
     BUNDLED_FIRMWARE,
     JungHomeFirmware,

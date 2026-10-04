@@ -38,13 +38,17 @@ from pytest_homeassistant_custom_component.common import (
     mock_restore_cache_with_extra_data,
 )
 
+from custom_components.junghome_ble.config_entities import (
+    LOCK_EXPIRY_MARGIN,
+)
 from custom_components.junghome_ble.const import (
     DOMAIN,
-    LOCK_EXPIRY_MARGIN,
-    LOCK_TIME_LIMIT_MAX,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import properties as P
+from custom_components.junghome_ble.number import (
+    LOCK_TIME_LIMIT_MAX,
+)
 from custom_components.junghome_ble.switch import lock_mode
 
 from . import property_helpers as ph

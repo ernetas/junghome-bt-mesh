@@ -8,7 +8,7 @@ and, on a DALI insert, switch-on colour temperature and colour-temperature range
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -36,11 +36,6 @@ from .config_entities import (
     setup_targets,
     u16,
 )
-from .const import (
-    LOCK_TIME_LIMIT_MAX,
-    WHITE_RANGE_MAX_KELVIN,
-    WHITE_RANGE_MIN_KELVIN,
-)
 from .entity import JungHomeEntity, async_setup_platform
 from .jhmesh import messages as M
 from .jhmesh import properties as P
@@ -52,6 +47,18 @@ if TYPE_CHECKING:
     from . import JungHomeConfigEntry
     from .coordinator import JungHomeHub
     from .jhmesh.properties import Codec
+
+
+# The colour temperatures the app lets a tunable-white light's range ("White area") span, and clamps both ends of the
+# range it writes to (`p097i9/c.java`: TunableWhiteValueCapable, 2000..10000 K).
+WHITE_RANGE_MIN_KELVIN: Final = 2000
+WHITE_RANGE_MAX_KELVIN: Final = 10000
+LOCK_TIME_LIMIT_MAX: Final = (
+    4 * 3600
+    + 59 * 60
+    + 59  # seconds: the app's H:MM:SS time-limit picker ends at 4:59:59
+)
+
 
 # The app's switch-on colour temperature slider (*Switch-on white value*, `PROV/z.java`, `device-settings.md` §4.3):
 # until the light reported its own range.

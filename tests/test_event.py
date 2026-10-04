@@ -23,8 +23,6 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble.const import (
-    DIM_HOLD_MAX,
-    DIM_HOLD_QUIET,
     DOMAIN,
     EVENT_BUTTON_ACTION,
     EVENT_SCENE_RECALLED,
@@ -42,6 +40,10 @@ from custom_components.junghome_ble.event import (
     fire_scene_recalled,
     publish_button_event,
     scene_name,
+)
+from custom_components.junghome_ble.hub.gestures import (
+    DIM_HOLD_MAX,
+    DIM_HOLD_QUIET,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import (

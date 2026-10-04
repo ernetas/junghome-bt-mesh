@@ -21,7 +21,7 @@ always had. Unverified on air.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -34,11 +34,7 @@ from homeassistant.components.light.const import ColorMode, LightEntityFeature
 from .actions.dim import DIM_DIRECTIONS
 from .config_entities import LoadLock
 from .const import (
-    DIM_MOVE_TRANSITION,
-    DIM_STEPS_PER_SECOND,
     DOMAIN,
-    MAX_KELVIN,
-    MIN_KELVIN,
 )
 from .entity import (
     JungHomeCentralEntity,
@@ -55,6 +51,15 @@ if TYPE_CHECKING:
     from . import JungHomeConfigEntry
     from .coordinator import JungHomeHub
     from .jhmesh.devices import Device
+
+
+MIN_KELVIN: Final = 2000
+MAX_KELVIN: Final = 6000
+# `junghome_ble.start_dim`: Generic Move Set with a transition time of one 100 ms step (Mesh Model §3.1.3: 0b00
+# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air (review 3).
+DIM_MOVE_TRANSITION: Final = 0x01
+DIM_STEPS_PER_SECOND: Final = 10
+
 
 # re-exported: the dimming actions' schema lived here before `actions/dim.py`
 __all__ = ["DIM_DIRECTIONS"]

@@ -18,17 +18,19 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble.const import (
     CONF_HEARTBEATS_PUBLISHING,
-    HEARTBEAT_PERIOD_LOG,
-    HEARTBEAT_RECONFIGURE_INTERVAL,
-    HEARTBEAT_REPROBE_INTERVAL,
     OPTION_CLICK_DELAY,
     OPTION_HEARTBEATS,
     REQUEST_ATTEMPTS,
-    UNREACHABLE_RECHECK,
-    UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
+)
+from custom_components.junghome_ble.hub.liveness import (
+    HEARTBEAT_PERIOD_LOG,
+    HEARTBEAT_RECONFIGURE_INTERVAL,
+    HEARTBEAT_REPROBE_INTERVAL,
+    UNREACHABLE_RECHECK,
+    UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M

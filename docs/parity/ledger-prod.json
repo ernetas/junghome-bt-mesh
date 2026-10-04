@@ -2507,7 +2507,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/number.py::JungHomePropertyNumber",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun",
-    "custom_components/junghome_ble/const.py::REFERENCE_RUN_MARGIN"
+    "custom_components/junghome_ble/binary_sensor.py::REFERENCE_RUN_MARGIN"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_duration_codec_ms_and_s",
@@ -3753,7 +3753,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/binary_sensor.py::JungHomeReferenceRun",
-    "custom_components/junghome_ble/const.py::REFERENCE_RUN_MARGIN"
+    "custom_components/junghome_ble/binary_sensor.py::REFERENCE_RUN_MARGIN"
    ],
    "tests": [
     "tests/test_cover.py::test_reference_run_is_followed_until_it_ends"

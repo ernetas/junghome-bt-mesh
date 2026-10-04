@@ -14,7 +14,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable, Iterable
 from functools import partial
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Final, Self
 
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -26,7 +26,6 @@ from .const import (
     DOMAIN,
     SIGNAL_CONNECTION,
     SIGNAL_UPDATE,
-    UPDATE_READ_INTERVAL,
 )
 from .device_info import (
     LOAD_DOMAINS,
@@ -88,6 +87,12 @@ if TYPE_CHECKING:
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# `homeassistant.update_entity` asks an element for the same thing at most once per this many seconds
+# (`JungHomeEntity.async_update`); a call within it keeps the cached state.
+UPDATE_READ_INTERVAL: Final = 2.0
+
 
 # re-exported: the device-registry model lived here before `device_info.py`
 __all__ = [

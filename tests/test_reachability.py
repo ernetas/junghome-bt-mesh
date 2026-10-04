@@ -39,12 +39,14 @@ from custom_components.junghome_ble.const import (
     ISSUE_BLUETOOTH_UNAVAILABLE,
     REQUEST_ATTEMPTS,
     SIGNAL_LINK_STATE,
-    UNREACHABLE_RECHECK,
-    UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.hub import link as link_mod
 from custom_components.junghome_ble.hub import liveness
 from custom_components.junghome_ble.hub.link import LinkManager
+from custom_components.junghome_ble.hub.liveness import (
+    UNREACHABLE_RECHECK,
+    UNREACHABLE_REPROBE,
+)
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import ProxyClient

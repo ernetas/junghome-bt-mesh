@@ -3693,8 +3693,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeWalkingTest",
-    "custom_components/junghome_ble/const.py::DETECTOR_WALKING_TEST_DURATION",
-    "custom_components/junghome_ble/const.py::DETECTOR_WALKING_TEST_POLL"
+    "custom_components/junghome_ble/switch.py::DETECTOR_WALKING_TEST_DURATION",
+    "custom_components/junghome_ble/switch.py::DETECTOR_WALKING_TEST_POLL"
    ],
    "tests": [
     "tests/test_config_entities.py::test_walking_test_runs_like_the_apps",
@@ -4343,7 +4343,7 @@
     "custom_components/junghome_ble/gateway_status.py::GatewayPoll._async_update_data",
     "custom_components/junghome_ble/configurator/store.py::ExportStore.report_token_rejected",
     "custom_components/junghome_ble/gateway_status.py::gateway_polls",
-    "custom_components/junghome_ble/const.py::GATEWAY_STATUS_INTERVAL",
+    "custom_components/junghome_ble/gateway_status.py::GATEWAY_STATUS_INTERVAL",
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.gateway_vouched",
     "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],

@@ -35,9 +35,11 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.junghome_ble import app_follow, coordinator
-from custom_components.junghome_ble.const import (
+from custom_components.junghome_ble.app_follow import (
     APP_QUIET_AFTER,
     APP_SYNC_MIN_INTERVAL,
+)
+from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
     CONF_GATEWAY_HOST,

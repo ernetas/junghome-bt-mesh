@@ -15,7 +15,7 @@ import logging
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NoReturn, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Final, NoReturn, TypedDict, cast
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
@@ -30,7 +30,6 @@ from .const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQ_STORE_UNWRITABLE,
     SEQ_SKIP_AHEAD,
-    SEQ_SKIP_UNKNOWN,
     issue_id,
     learn_more_url,
 )
@@ -55,6 +54,10 @@ if TYPE_CHECKING:
     from .jhmesh.cdb import CDB
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# how far from 0 the counter jumps when nothing at all is left of an address's numbers (`const.SEQ_SKIP_AHEAD`)
+SEQ_SKIP_UNKNOWN: Final = 1 << 22
 
 
 STORAGE_VERSION = 1

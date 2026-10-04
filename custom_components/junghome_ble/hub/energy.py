@@ -16,7 +16,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
@@ -24,7 +24,6 @@ from homeassistant.helpers.event import async_track_time_interval
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ENERGY_HISTORY_INTERVAL,
-    ENERGY_POLL_INTERVAL,
 )
 from custom_components.junghome_ble.energy_history import async_backfill, floor_hour
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -37,6 +36,10 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
+
+
+ENERGY_POLL_INTERVAL: Final = 300.0  # seconds between reads of the metered loads' counters, which nothing publishes
+
 
 SENSOR_POWER, SENSOR_VOLTAGE, SENSOR_CURRENT = 0x0081, 0x005D, 0x005C
 # What the connect-time refresh asks a socket's meter element for, one property-qualified `Sensor Get` each: on air

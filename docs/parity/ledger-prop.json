@@ -1683,7 +1683,7 @@
    "code": [
     "custom_components/junghome_ble/binary_sensor.py::JungHomeDetectorOccupancy",
     "custom_components/junghome_ble/binary_sensor.py::JungHomeDetectorOccupancy._get",
-    "custom_components/junghome_ble/const.py::DETECTOR_PROPERTY_PRESENCE"
+    "custom_components/junghome_ble/binary_sensor.py::DETECTOR_PROPERTY_PRESENCE"
    ],
    "tests": [
     "tests/test_binary_sensor.py::test_presence_status_drives_the_state",

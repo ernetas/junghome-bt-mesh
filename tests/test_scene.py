@@ -23,8 +23,10 @@ from custom_components.junghome_ble import scene as scene_platform
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_SCENE_RECALLED,
-    SCENE_RECALL_WINDOW,
     SIGNAL_SCENES,
+)
+from custom_components.junghome_ble.coordinator import (
+    SCENE_RECALL_WINDOW,
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V

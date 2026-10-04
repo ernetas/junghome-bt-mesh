@@ -15,7 +15,7 @@ import ipaddress
 import logging
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
@@ -28,7 +28,6 @@ from custom_components.junghome_ble.const import (
     CONF_GATEWAY_PIN_SOURCE,
     CONF_SOURCE,
     DOMAIN,
-    EXPORT_REFRESH_BACKOFF,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_UNKNOWN_NODES,
     ISSUE_UNKNOWN_NODES_GATEWAY,
@@ -79,6 +78,13 @@ class ExportWatchHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# A node the export does not know (`unknown_nodes`) makes the hub ask the gateway for its export; the app uploads
+# its project there after a change, but not always before the new node first advertises. Unanswered, the question is
+# asked again after each of these delays (the last one repeating) and on every new link, until the export has them.
+EXPORT_REFRESH_BACKOFF: Final = (60.0, 300.0, 900.0, 3600.0)
+
 
 # the gateway node's own LBC Manufacturer properties
 GATEWAY_IP, GATEWAY_FINGERPRINT = 0xC002, 0xC003
