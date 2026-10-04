@@ -581,9 +581,13 @@ Dependencies (hard unless marked *soft*):
   the no-reply author address, and `--history` finds nothing); D1 `.pre-commit-config.yaml`; D3 `noxfile.py` mirroring the CI jobs.
 - **On-air sweep, groups A–D remote with the CLI only:** results in `docs/on-air-sweep.md`; no product failure; C1
   took outcome (b); C3 three new facts about locked loads; C6 the run-on time is never reported (a decision on
-  *Switches off at*). The second pass (ledger rows, markers) waits for the maintainer's review.
+  *Switches off at*, kept for now). Second pass done: the settled ledger rows flipped and markers narrowed; one bug
+  (an unlock with priority 0, which a load refuses) fixed with a regression test.
+- **Sequence space:** the sender furthest along is a mains node, not the gateway or the app; restarts (power cuts)
+  make a node skip far ahead, steady traffic hardly moves it. Who starts the IV Update is unverified on air; the
+  repair no longer says the gateway does.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
-  private `junghome-bt-mesh-private`. 1.1.0: waves 3–17.
+  private `junghome-bt-mesh-private`. 1.1.0: waves 3–17. 1.2.0: waves 18–21, the sweep's second pass.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
   `custom_components/junghome_ble/brand/`, `brands` removed from the `ci.yml` ignore list, `quality_scale.yaml`,
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
