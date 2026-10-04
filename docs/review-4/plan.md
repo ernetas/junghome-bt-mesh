@@ -570,6 +570,10 @@ Dependencies (hard unless marked *soft*):
   graph has no cycle, `tools/import_graph.py --check` and an AST layer test keep it so), TypedDicts for the meta rows,
   a sequence-number record and the diagnostics, `data.py` for six of the `HassKey`s (the rest are read by test
   assertions or would bring the cycle back); A4-12 `const.py` keeps the Home Assistant-facing keys (236 → 147 names).
+- **Wave 20 (brief 63): done.** A4-16 the one dead function (`_confirms_key_mode`) removed; A4-17 review ids out of
+  the integration's and the tools' comments and docstrings, docstrings that restated the code trimmed; A4-18
+  `describe` / `describe_config` and the tools' parsers built from tables, pinned by golden files. The `jhmesh`
+  imports stay relative until the library is published on PyPI (`docs/roadmap.md`).
 - **On-air sweep, groups A–D remote with the CLI only:** results in `docs/on-air-sweep.md`; no product failure; C1
   took outcome (b); C3 three new facts about locked loads; C6 the run-on time is never reported (a decision on
   *Switches off at*). The second pass (ledger rows, markers) waits for the maintainer's review.
@@ -580,4 +584,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 63, 64 and 67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 64 and 67 are TODO; the on-air sweep is the maintainer's.
