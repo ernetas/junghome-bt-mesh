@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Pradėti šviesumo reguliavimą",
-      "description": "Pradeda didinti arba mažinti „JUNG HOME“ šviesos reguliatoriaus šviesumą, kaip laikant nuspaustą klavišą, kol iškviečiamas veiksmas „Sustabdyti šviesumo reguliavimą“ (arba pasiekiama diapazono riba). Su tikru įrenginiu dar neišbandyta.",
+      "description": "Pradeda didinti arba mažinti „JUNG HOME“ šviesos reguliatoriaus šviesumą, kaip laikant nuspaustą klavišą, kol iškviečiamas veiksmas „Sustabdyti šviesumo reguliavimą“ (arba pasiekiama diapazono riba).",
       "fields": {
         "direction": {
           "name": "Kryptis",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Sustabdyti šviesumo reguliavimą",
-      "description": "Sustabdo „JUNG HOME“ šviesos reguliatorių, kurio šviesumą keisti pradėjo veiksmas „Pradėti šviesumo reguliavimą“, ties dabartiniu šviesumu. Su tikru įrenginiu dar neišbandyta."
+      "description": "Sustabdo „JUNG HOME“ šviesos reguliatorių, kurio šviesumą keisti pradėjo veiksmas „Pradėti šviesumo reguliavimą“, ties dabartiniu šviesumu."
     },
     "step_dim": {
       "name": "Pakeisti šviesumą žingsniu",
-      "description": "Padidina arba sumažina „JUNG HOME“ šviesos reguliatoriaus šviesumą vienu žingsniu. Su tikru įrenginiu dar neišbandyta.",
+      "description": "Padidina arba sumažina „JUNG HOME“ šviesos reguliatoriaus šviesumą vienu žingsniu.",
       "fields": {
         "step": {
           "name": "Žingsnis",

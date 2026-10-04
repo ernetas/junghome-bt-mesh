@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "디밍 시작",
-      "description": "로커를 길게 누를 때처럼 JUNG HOME 디머를 '디밍 정지'(또는 범위의 끝)까지 위나 아래로 디밍하기 시작합니다. 아직 실제 기기에서 시도해 보지 않았습니다.",
+      "description": "로커를 길게 누를 때처럼 JUNG HOME 디머를 '디밍 정지'(또는 범위의 끝)까지 위나 아래로 디밍하기 시작합니다.",
       "fields": {
         "direction": {
           "name": "방향",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "디밍 정지",
-      "description": "'디밍 시작'으로 움직이기 시작한 JUNG HOME 디머를 현재 위치에서 멈춥니다. 아직 실제 기기에서 시도해 보지 않았습니다."
+      "description": "'디밍 시작'으로 움직이기 시작한 JUNG HOME 디머를 현재 위치에서 멈춥니다."
     },
     "step_dim": {
       "name": "단계별 디밍",
-      "description": "JUNG HOME 디머를 한 단계 더 밝게 또는 더 어둡게 합니다. 아직 실제 기기에서 시도해 보지 않았습니다.",
+      "description": "JUNG HOME 디머를 한 단계 더 밝게 또는 더 어둡게 합니다.",
       "fields": {
         "step": {
           "name": "단계",

@@ -5,8 +5,9 @@ a dimmer, from Home Assistant. A dimmer's (and a DALI channel's) first element h
 its lightness (Mesh Model: level = lightness - 32768), so a Generic Move Set starts it moving up or down
 at a speed until a Move Set 0 stops it, and a Generic Delta Set moves it by a step — the messages the coordinator
 already sends a blind (`JungHomeHub.move_level` / `delta_level`). The app itself never dims this way (it sends
-Lightness Sets); unverified on air. The light's state is asked for after a stop or a step, as its Level Status
-does not carry the lightness the entity shows.
+Lightness Sets); review 3 saw the three actions dim, stop and step a dimmer on air (a -40 % step exact, the gateway
+agreeing to ±1), a tunable-white channel was not tried. The light's state is asked for after a stop or a step, as
+its Level Status does not carry the lightness the entity shows.
 
 **Transitions** (review-4 F4-1): HA's `transition` goes into the Set (`JungHomeHub.set_lightness` and the other
 setters) only for a kind in `TRANSITION_KINDS`, the only lights that declare the feature. Neither the app nor the
@@ -230,7 +231,7 @@ class JungHomeLight(LoadLock, LightEntity):
         return element is not None and LEVEL_SERVER in element.models
 
     async def async_start_dim(self, direction: str, speed: int) -> None:
-        """Start dimming `up` or `down` at `speed` % of the range per second: Generic Move Set. Unverified on air."""
+        """Start dimming `up` or `down` at `speed` % of the range per second: Generic Move Set."""
         await self._check_unlocked()
         delta = round(speed / 100 * LIGHTNESS_RANGE / DIM_STEPS_PER_SECOND)
         await self._send(
@@ -242,12 +243,12 @@ class JungHomeLight(LoadLock, LightEntity):
         )
 
     async def async_stop_dim(self) -> None:
-        """Stop dimming: Generic Move Set 0, then ask where the light stopped. Unverified on air."""
+        """Stop dimming: Generic Move Set 0, then ask where the light stopped."""
         await self._send(self.hub.move_level(self.address, 0, DIM_MOVE_TRANSITION))
         self._refresh()
 
     async def async_step_dim(self, step: int) -> None:
-        """Dim by `step` % of the range (negative: darker): Generic Delta Set, then read back. Unverified on air."""
+        """Dim by `step` % of the range (negative: darker): Generic Delta Set, then read back."""
         await self._check_unlocked()
         await self._send(
             self.hub.delta_level(self.address, round(step / 100 * LIGHTNESS_RANGE))

@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Inicia la regulació",
-      "description": "Comença a regular un regulador JUNG HOME cap amunt o cap avall, com quan es manté premut un balancí, fins a Atura la regulació (o el final de l'interval). Encara no s'ha provat en un dispositiu real.",
+      "description": "Comença a regular un regulador JUNG HOME cap amunt o cap avall, com quan es manté premut un balancí, fins a Atura la regulació (o el final de l'interval).",
       "fields": {
         "direction": {
           "name": "Direcció",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Atura la regulació",
-      "description": "Atura on és ara un regulador JUNG HOME que Inicia la regulació ha posat en moviment. Encara no s'ha provat en un dispositiu real."
+      "description": "Atura on és ara un regulador JUNG HOME que Inicia la regulació ha posat en moviment."
     },
     "step_dim": {
       "name": "Regula un pas",
-      "description": "Fa un regulador JUNG HOME més clar o més fosc en un pas. Encara no s'ha provat en un dispositiu real.",
+      "description": "Fa un regulador JUNG HOME més clar o més fosc en un pas.",
       "fields": {
         "step": {
           "name": "Pas",

@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Parlaklık ayarını başlat",
-      "description": "Bir JUNG HOME dimmerinin parlaklığını, çift yönlü bir tuşu basılı tutmak gibi, “Parlaklık ayarını durdur” çağrılana (veya aralığın sonuna ulaşılana) kadar artırmaya veya azaltmaya başlar. Henüz gerçek bir cihazda denenmedi.",
+      "description": "Bir JUNG HOME dimmerinin parlaklığını, çift yönlü bir tuşu basılı tutmak gibi, “Parlaklık ayarını durdur” çağrılana (veya aralığın sonuna ulaşılana) kadar artırmaya veya azaltmaya başlar.",
       "fields": {
         "direction": {
           "name": "Yön",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Parlaklık ayarını durdur",
-      "description": "“Parlaklık ayarını başlat” ile harekete geçirilen bir JUNG HOME dimmerini o anki seviyesinde durdurur. Henüz gerçek bir cihazda denenmedi."
+      "description": "“Parlaklık ayarını başlat” ile harekete geçirilen bir JUNG HOME dimmerini o anki seviyesinde durdurur."
     },
     "step_dim": {
       "name": "Parlaklığı bir adım değiştir",
-      "description": "Bir JUNG HOME dimmerini bir adım daha parlak veya daha koyu yapar. Henüz gerçek bir cihazda denenmedi.",
+      "description": "Bir JUNG HOME dimmerini bir adım daha parlak veya daha koyu yapar.",
       "fields": {
         "step": {
           "name": "Adım",

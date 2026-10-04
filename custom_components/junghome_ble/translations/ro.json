@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Pornește reglarea intensității",
-      "description": "Începe reglarea în sus sau în jos a intensității unui variator JUNG HOME, ca la ținerea apăsată a unei clapete, până la „Oprește reglarea intensității” (sau până la capătul intervalului). Încă neîncercat pe un dispozitiv real.",
+      "description": "Începe reglarea în sus sau în jos a intensității unui variator JUNG HOME, ca la ținerea apăsată a unei clapete, până la „Oprește reglarea intensității” (sau până la capătul intervalului).",
       "fields": {
         "direction": {
           "name": "Direcție",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Oprește reglarea intensității",
-      "description": "Oprește, acolo unde a ajuns, un variator JUNG HOME pus în mișcare de „Pornește reglarea intensității”. Încă neîncercat pe un dispozitiv real."
+      "description": "Oprește, acolo unde a ajuns, un variator JUNG HOME pus în mișcare de „Pornește reglarea intensității”."
     },
     "step_dim": {
       "name": "Reglează intensitatea cu un pas",
-      "description": "Mărește sau micșorează cu un pas luminozitatea unui variator JUNG HOME. Încă neîncercat pe un dispozitiv real.",
+      "description": "Mărește sau micșorează cu un pas luminozitatea unui variator JUNG HOME.",
       "fields": {
         "step": {
           "name": "Pas",

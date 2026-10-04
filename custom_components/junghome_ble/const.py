@@ -282,7 +282,7 @@ HOLD_END_STOPPED: Final = (
 )
 HOLD_END_REASONS: Final = (HOLD_END_TIMEOUT, HOLD_END_LINK_LOST, HOLD_END_STOPPED)
 # `junghome_ble.start_dim`: Generic Move Set with a transition time of one 100 ms step (Mesh Model §3.1.3: 0b00
-# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Unverified on air.
+# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air (review 3).
 DIM_MOVE_TRANSITION: Final = 0x01
 DIM_STEPS_PER_SECOND: Final = 10
 DIM_DEFAULT_SPEED: Final = 20  # % of the range per second: from off to full in 5 s

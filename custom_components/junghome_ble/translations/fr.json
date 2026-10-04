@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Démarrer la variation",
-      "description": "Démarre la variation d'un variateur JUNG HOME vers le haut ou vers le bas, comme le maintien d'une bascule, jusqu'à Arrêter la variation (ou la fin de la plage). Pas encore essayé sur un vrai appareil.",
+      "description": "Démarre la variation d'un variateur JUNG HOME vers le haut ou vers le bas, comme le maintien d'une bascule, jusqu'à Arrêter la variation (ou la fin de la plage).",
       "fields": {
         "direction": {
           "name": "Sens",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Arrêter la variation",
-      "description": "Arrête, là où il se trouve, un variateur JUNG HOME que Démarrer la variation a mis en mouvement. Pas encore essayé sur un vrai appareil."
+      "description": "Arrête, là où il se trouve, un variateur JUNG HOME que Démarrer la variation a mis en mouvement."
     },
     "step_dim": {
       "name": "Varier d'un pas",
-      "description": "Rend un variateur JUNG HOME plus clair ou plus sombre d'un pas. Pas encore essayé sur un vrai appareil.",
+      "description": "Rend un variateur JUNG HOME plus clair ou plus sombre d'un pas.",
       "fields": {
         "step": {
           "name": "Pas",

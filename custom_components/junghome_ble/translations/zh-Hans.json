@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "开始调光",
-      "description": "开始将 JUNG HOME 调光器调亮或调暗，就像按住跷板一样，直到“停止调光”（或到达范围的尽头）。尚未在真实设备上尝试。",
+      "description": "开始将 JUNG HOME 调光器调亮或调暗，就像按住跷板一样，直到“停止调光”（或到达范围的尽头）。",
       "fields": {
         "direction": {
           "name": "方向",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "停止调光",
-      "description": "让由“开始调光”启动的 JUNG HOME 调光器停在当前位置。尚未在真实设备上尝试。"
+      "description": "让由“开始调光”启动的 JUNG HOME 调光器停在当前位置。"
     },
     "step_dim": {
       "name": "单步调光",
-      "description": "将 JUNG HOME 调光器调亮或调暗一个步长。尚未在真实设备上尝试。",
+      "description": "将 JUNG HOME 调光器调亮或调暗一个步长。",
       "fields": {
         "step": {
           "name": "步长",

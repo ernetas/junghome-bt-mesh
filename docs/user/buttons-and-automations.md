@@ -65,7 +65,8 @@ HOME Bluetooth Mesh → Configure*. Clicks are then reported half a second late,
 
 `hold_start` comes when the key is held down, `hold_end` when it is released. To dim another (non-JUNG) light while
 a key is held, start a dimming loop on `hold_start` and stop it on `hold_end`. A JUNG dimmer can be dimmed the
-same way with *Start dimming* on `hold_start` and *Stop dimming* on `hold_end` (**unverified on air**):
+same way with *Start dimming* on `hold_start` and *Stop dimming* on `hold_end` (the two actions have dimmed and
+stopped a real dimmer; this automation is **unverified on air** with a real key):
 
 ```yaml
 alias: Key B dims the desk lamp

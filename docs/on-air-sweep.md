@@ -1249,17 +1249,17 @@ spend.
 ## G · Already seen on air
 
 Review 3's on-air round (its plan's Status, *Phase 3*) saw `start_dim`, `stop_dim` and `step_dim` dim, stop and step
-a dimmer (a −40 % step exact, the gateway agreeing to ±1), yet the code, the action descriptions and the docs still
-call them untried. After B2 re-confirms them on the current build, the second pass can drop these markers:
-`custom_components/junghome_ble/light.py::<module>`,
+a dimmer (a −40 % step exact, the gateway agreeing to ±1). Their markers were dropped after review 4's wave 12:
+`custom_components/junghome_ble/light.py::<module>` (its hold-to-dim paragraph),
 `custom_components/junghome_ble/light.py::JungHomeLight.async_start_dim`,
 `custom_components/junghome_ble/light.py::JungHomeLight.async_stop_dim`,
 `custom_components/junghome_ble/light.py::JungHomeLight.async_step_dim`,
 `custom_components/junghome_ble/const.py::DIM_MOVE_TRANSITION`,
 `custom_components/junghome_ble/strings.json::services.start_dim.description`,
 `custom_components/junghome_ble/strings.json::services.stop_dim.description`,
-`custom_components/junghome_ble/strings.json::services.step_dim.description` (and `translations/en.json`), and the
-docs' *Hold-to-dim* sentence.
+`custom_components/junghome_ble/strings.json::services.step_dim.description` (and every translation), and the
+docs' *Hold-to-dim* sentence. B2 still runs them on the current build, where the commands are sent without waiting
+for an answer (D32, `ui:uc:communicatewithdevice`); a tunable-white channel has not been dimmed this way.
 
 ## Results
 

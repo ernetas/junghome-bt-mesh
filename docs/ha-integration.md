@@ -151,7 +151,8 @@ One `light` entity per output. The entity is the device, so its name is the name
   default 20) sends a *Generic Move Set* to the light's level server — it keeps dimming until
   **`junghome_ble.stop_dim`** (*Generic Move Set* 0) or the end of the range; **`junghome_ble.step_dim`** (`step`,
   −100…100 % of the range) sends a *Generic Delta Set*. After a stop or a step the light is asked for its brightness.
-  The app never dims this way (it sends brightness values); **not yet tried on a real device**.
+  The app never dims this way (it sends brightness values). Review 3 saw the three dim, stop and step a dimmer on the
+  installation (a −40 % step exact, the gateway agreeing to ±1); a tunable-white channel was not tried.
 
 ### Switch
 

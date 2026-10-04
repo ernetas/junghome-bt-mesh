@@ -2756,7 +2756,7 @@
     },
     "start_dim": {
       "name": "Dimmen starten",
-      "description": "Startet das Auf- oder Abdimmen eines JUNG HOME Dimmers, wie das Halten einer Wippe, bis „Dimmen stoppen“ (oder bis zum Ende des Helligkeitsbereichs). Auf echten Geräten noch nicht ausprobiert.",
+      "description": "Startet das Auf- oder Abdimmen eines JUNG HOME Dimmers, wie das Halten einer Wippe, bis „Dimmen stoppen“ (oder bis zum Ende des Helligkeitsbereichs).",
       "fields": {
         "direction": {
           "name": "Richtung",
@@ -2770,11 +2770,11 @@
     },
     "stop_dim": {
       "name": "Dimmen stoppen",
-      "description": "Hält einen JUNG HOME Dimmer, den „Dimmen starten“ in Bewegung gesetzt hat, an seiner aktuellen Stelle an. Auf echten Geräten noch nicht ausprobiert."
+      "description": "Hält einen JUNG HOME Dimmer, den „Dimmen starten“ in Bewegung gesetzt hat, an seiner aktuellen Stelle an."
     },
     "step_dim": {
       "name": "Schrittweise dimmen",
-      "description": "Macht einen JUNG HOME Dimmer um einen Schritt heller oder dunkler. Auf echten Geräten noch nicht ausprobiert.",
+      "description": "Macht einen JUNG HOME Dimmer um einen Schritt heller oder dunkler.",
       "fields": {
         "step": {
           "name": "Schritt",

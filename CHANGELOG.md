@@ -43,6 +43,9 @@
 - The integration is called *JUNG HOME Bluetooth Mesh* (was *JUNG HOME (Bluetooth Mesh)*) in Home Assistant's
   integration list, HACS and the docs (decision M15). Nothing else changes: the domain, entries, devices and entities
   stay as they are, and the gateway still shows Home Assistant's access request as *Home Assistant (Bluetooth Mesh)*.
+- *Start dimming*, *Stop dimming* and *Dim by a step* are no longer called untried, in the action descriptions (every
+  language), the reference and the user guide: review 3 saw them dim, stop and step a dimmer on the installation. A
+  tunable-white channel has not been dimmed this way yet.
 
 ## 1.1.0
 

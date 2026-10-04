@@ -27,7 +27,6 @@ Voice assistants → Expose*. An installation set up before version 1.1.0 keeps 
 **Dimming like a held key:** the actions *Start dimming*, *Stop dimming* and *Dim by a step*
 (`junghome_ble.start_dim`, `stop_dim`, `step_dim`) dim a dimmer up or down the way a held rocker does — useful with
 a button that should dim while it is held (see [Buttons and automations](buttons-and-automations.md#dim-a-light-while-a-key-is-held)).
-**Unverified on air.**
 
 ## Sockets
 

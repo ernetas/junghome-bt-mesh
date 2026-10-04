@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Fényerő-szabályozás indítása",
-      "description": "Elindítja egy JUNG HOME fényerő-szabályozó felfelé vagy lefelé szabályozását, mint egy billenő nyomva tartása, a „Fényerő-szabályozás leállítása” műveletig (vagy a tartomány végéig). Valós eszközön még nem próbálták ki.",
+      "description": "Elindítja egy JUNG HOME fényerő-szabályozó felfelé vagy lefelé szabályozását, mint egy billenő nyomva tartása, a „Fényerő-szabályozás leállítása” műveletig (vagy a tartomány végéig).",
       "fields": {
         "direction": {
           "name": "Irány",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Fényerő-szabályozás leállítása",
-      "description": "Megállítja a „Fényerő-szabályozás indítása” művelettel elindított JUNG HOME fényerő-szabályozót a pillanatnyi szinten. Valós eszközön még nem próbálták ki."
+      "description": "Megállítja a „Fényerő-szabályozás indítása” művelettel elindított JUNG HOME fényerő-szabályozót a pillanatnyi szinten."
     },
     "step_dim": {
       "name": "Fényerő léptetése",
-      "description": "Egy lépéssel világosabbra vagy sötétebbre állít egy JUNG HOME fényerő-szabályozót. Valós eszközön még nem próbálták ki.",
+      "description": "Egy lépéssel világosabbra vagy sötétebbre állít egy JUNG HOME fényerő-szabályozót.",
       "fields": {
         "step": {
           "name": "Lépés",

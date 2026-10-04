@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Iniciar regulación",
-      "description": "Empieza a regular un dimmer JUNG HOME hacia arriba o hacia abajo, como al mantener pulsado un balancín, hasta «Detener regulación» (o el final del rango). Todavía no se ha probado en un dispositivo real.",
+      "description": "Empieza a regular un dimmer JUNG HOME hacia arriba o hacia abajo, como al mantener pulsado un balancín, hasta «Detener regulación» (o el final del rango).",
       "fields": {
         "direction": {
           "name": "Dirección",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Detener regulación",
-      "description": "Detiene donde está ahora un dimmer JUNG HOME que «Iniciar regulación» puso en marcha. Todavía no se ha probado en un dispositivo real."
+      "description": "Detiene donde está ahora un dimmer JUNG HOME que «Iniciar regulación» puso en marcha."
     },
     "step_dim": {
       "name": "Regular un paso",
-      "description": "Hace un dimmer JUNG HOME más claro o más oscuro en un paso. Todavía no se ha probado en un dispositivo real.",
+      "description": "Hace un dimmer JUNG HOME más claro o más oscuro en un paso.",
       "fields": {
         "step": {
           "name": "Paso",

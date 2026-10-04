@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Spustit stmívání",
-      "description": "Spustí stmívání stmívače JUNG HOME nahoru nebo dolů, jako podržení kolébky, až do akce „Zastavit stmívání“ (nebo do konce rozsahu). Zatím nevyzkoušeno na skutečném zařízení.",
+      "description": "Spustí stmívání stmívače JUNG HOME nahoru nebo dolů, jako podržení kolébky, až do akce „Zastavit stmívání“ (nebo do konce rozsahu).",
       "fields": {
         "direction": {
           "name": "Směr",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Zastavit stmívání",
-      "description": "Zastaví stmívač JUNG HOME, který akce „Spustit stmívání“ uvedla do pohybu, tam, kde právě je. Zatím nevyzkoušeno na skutečném zařízení."
+      "description": "Zastaví stmívač JUNG HOME, který akce „Spustit stmívání“ uvedla do pohybu, tam, kde právě je."
     },
     "step_dim": {
       "name": "Stmívat o krok",
-      "description": "Zvýší nebo sníží jas stmívače JUNG HOME o jeden krok. Zatím nevyzkoušeno na skutečném zařízení.",
+      "description": "Zvýší nebo sníží jas stmívače JUNG HOME o jeden krok.",
       "fields": {
         "step": {
           "name": "Krok",

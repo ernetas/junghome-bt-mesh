@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Dimmen starten",
-      "description": "Start het omhoog of omlaag dimmen van een JUNG HOME-dimmer, zoals het vasthouden van een wip, tot “Dimmen stoppen” (of het einde van het bereik). Nog niet op een echt apparaat geprobeerd.",
+      "description": "Start het omhoog of omlaag dimmen van een JUNG HOME-dimmer, zoals het vasthouden van een wip, tot “Dimmen stoppen” (of het einde van het bereik).",
       "fields": {
         "direction": {
           "name": "Richting",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Dimmen stoppen",
-      "description": "Stopt een JUNG HOME-dimmer die met “Dimmen starten” in beweging is gezet, op de plek waar hij nu is. Nog niet op een echt apparaat geprobeerd."
+      "description": "Stopt een JUNG HOME-dimmer die met “Dimmen starten” in beweging is gezet, op de plek waar hij nu is."
     },
     "step_dim": {
       "name": "Met een stap dimmen",
-      "description": "Maakt een JUNG HOME-dimmer een stap helderder of donkerder. Nog niet op een echt apparaat geprobeerd.",
+      "description": "Maakt een JUNG HOME-dimmer een stap helderder of donkerder.",
       "fields": {
         "step": {
           "name": "Stap",

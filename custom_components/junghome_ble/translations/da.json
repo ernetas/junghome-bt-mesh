@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Start dæmpning",
-      "description": "Starter op- eller neddæmpning af en JUNG HOME-lysdæmper, som når en vippe holdes nede, indtil “Stop dæmpning” (eller enden af intervallet). Endnu ikke afprøvet på en rigtig enhed.",
+      "description": "Starter op- eller neddæmpning af en JUNG HOME-lysdæmper, som når en vippe holdes nede, indtil “Stop dæmpning” (eller enden af intervallet).",
       "fields": {
         "direction": {
           "name": "Retning",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Stop dæmpning",
-      "description": "Stopper en JUNG HOME-lysdæmper, som “Start dæmpning” har sat i gang, der hvor den er nu. Endnu ikke afprøvet på en rigtig enhed."
+      "description": "Stopper en JUNG HOME-lysdæmper, som “Start dæmpning” har sat i gang, der hvor den er nu."
     },
     "step_dim": {
       "name": "Dæmp et trin",
-      "description": "Gør en JUNG HOME-lysdæmper et trin lysere eller mørkere. Endnu ikke afprøvet på en rigtig enhed.",
+      "description": "Gør en JUNG HOME-lysdæmper et trin lysere eller mørkere.",
       "fields": {
         "step": {
           "name": "Trin",

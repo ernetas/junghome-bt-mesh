@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Začni zatemnjevanje",
-      "description": "Začne zatemnilnik JUNG HOME posvetljevati ali zatemnjevati, kot pri držanju zibke, dokler ne sledi „Ustavi zatemnjevanje“ (ali konec obsega). Na resnični napravi še ni preizkušeno.",
+      "description": "Začne zatemnilnik JUNG HOME posvetljevati ali zatemnjevati, kot pri držanju zibke, dokler ne sledi „Ustavi zatemnjevanje“ (ali konec obsega).",
       "fields": {
         "direction": {
           "name": "Smer",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Ustavi zatemnjevanje",
-      "description": "Zatemnilnik JUNG HOME, ki ga je zagnalo „Začni zatemnjevanje“, ustavi tam, kjer je zdaj. Na resnični napravi še ni preizkušeno."
+      "description": "Zatemnilnik JUNG HOME, ki ga je zagnalo „Začni zatemnjevanje“, ustavi tam, kjer je zdaj."
     },
     "step_dim": {
       "name": "Zatemni za korak",
-      "description": "Zatemnilnik JUNG HOME za en korak posvetli ali zatemni. Na resnični napravi še ni preizkušeno.",
+      "description": "Zatemnilnik JUNG HOME za en korak posvetli ali zatemni.",
       "fields": {
         "step": {
           "name": "Korak",

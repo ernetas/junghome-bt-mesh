@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Rozpocznij ściemnianie",
-      "description": "Rozpoczyna rozjaśnianie lub ściemnianie ściemniacza JUNG HOME, jak przytrzymanie klawisza, aż do „Zatrzymaj ściemnianie” (lub do końca zakresu). Jeszcze nie wypróbowane na prawdziwym urządzeniu.",
+      "description": "Rozpoczyna rozjaśnianie lub ściemnianie ściemniacza JUNG HOME, jak przytrzymanie klawisza, aż do „Zatrzymaj ściemnianie” (lub do końca zakresu).",
       "fields": {
         "direction": {
           "name": "Kierunek",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Zatrzymaj ściemnianie",
-      "description": "Zatrzymuje ściemniacz JUNG HOME, który akcja „Rozpocznij ściemnianie” wprawiła w ruch, w jego obecnym położeniu. Jeszcze nie wypróbowane na prawdziwym urządzeniu."
+      "description": "Zatrzymuje ściemniacz JUNG HOME, który akcja „Rozpocznij ściemnianie” wprawiła w ruch, w jego obecnym położeniu."
     },
     "step_dim": {
       "name": "Ściemnij o krok",
-      "description": "Rozjaśnia lub ściemnia ściemniacz JUNG HOME o jeden krok. Jeszcze nie wypróbowane na prawdziwym urządzeniu.",
+      "description": "Rozjaśnia lub ściemnia ściemniacz JUNG HOME o jeden krok.",
       "fields": {
         "step": {
           "name": "Krok",

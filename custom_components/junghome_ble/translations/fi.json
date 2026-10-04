@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Aloita himmennys",
-      "description": "Aloittaa JUNG HOME -himmentimen himmennyksen ylös- tai alaspäin, kuten keinun pohjassa pitäminen, kunnes Lopeta himmennys kutsutaan (tai alueen loppuun asti). Ei vielä kokeiltu oikealla laitteella.",
+      "description": "Aloittaa JUNG HOME -himmentimen himmennyksen ylös- tai alaspäin, kuten keinun pohjassa pitäminen, kunnes Lopeta himmennys kutsutaan (tai alueen loppuun asti).",
       "fields": {
         "direction": {
           "name": "Suunta",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Lopeta himmennys",
-      "description": "Pysäyttää JUNG HOME -himmentimen, jonka Aloita himmennys pani liikkeelle, nykyiseen kohtaan. Ei vielä kokeiltu oikealla laitteella."
+      "description": "Pysäyttää JUNG HOME -himmentimen, jonka Aloita himmennys pani liikkeelle, nykyiseen kohtaan."
     },
     "step_dim": {
       "name": "Himmennä askeleella",
-      "description": "Tekee JUNG HOME -himmentimestä askeleen kirkkaamman tai himmeämmän. Ei vielä kokeiltu oikealla laitteella.",
+      "description": "Tekee JUNG HOME -himmentimestä askeleen kirkkaamman tai himmeämmän.",
       "fields": {
         "step": {
           "name": "Askel",

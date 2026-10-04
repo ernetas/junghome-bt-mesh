@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Iniciar dimerização",
-      "description": "Inicia a dimerização de um dimmer JUNG HOME para cima ou para baixo, como ao manter pressionada uma tecla basculante, até Parar dimerização (ou o fim da faixa). Ainda não testado em um dispositivo real.",
+      "description": "Inicia a dimerização de um dimmer JUNG HOME para cima ou para baixo, como ao manter pressionada uma tecla basculante, até Parar dimerização (ou o fim da faixa).",
       "fields": {
         "direction": {
           "name": "Direção",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Parar dimerização",
-      "description": "Para, onde está agora, um dimmer JUNG HOME que Iniciar dimerização pôs em movimento. Ainda não testado em um dispositivo real."
+      "description": "Para, onde está agora, um dimmer JUNG HOME que Iniciar dimerização pôs em movimento."
     },
     "step_dim": {
       "name": "Dimerizar um passo",
-      "description": "Deixa um dimmer JUNG HOME mais claro ou mais escuro em um passo. Ainda não testado em um dispositivo real.",
+      "description": "Deixa um dimmer JUNG HOME mais claro ou mais escuro em um passo.",
       "fields": {
         "step": {
           "name": "Passo",

@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Start dimming",
-      "description": "Starter opp- eller neddimming av en JUNG HOME-dimmer, slik det å holde inne en vippe gjør, til “Stopp dimming” (eller slutten av intervallet). Ennå ikke prøvd på en ekte enhet.",
+      "description": "Starter opp- eller neddimming av en JUNG HOME-dimmer, slik det å holde inne en vippe gjør, til “Stopp dimming” (eller slutten av intervallet).",
       "fields": {
         "direction": {
           "name": "Retning",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Stopp dimming",
-      "description": "Stopper en JUNG HOME-dimmer som “Start dimming” har satt i gang, der den er nå. Ennå ikke prøvd på en ekte enhet."
+      "description": "Stopper en JUNG HOME-dimmer som “Start dimming” har satt i gang, der den er nå."
     },
     "step_dim": {
       "name": "Dim ett trinn",
-      "description": "Gjør en JUNG HOME-dimmer ett trinn lysere eller mørkere. Ennå ikke prøvd på en ekte enhet.",
+      "description": "Gjør en JUNG HOME-dimmer ett trinn lysere eller mørkere.",
       "fields": {
         "step": {
           "name": "Trinn",

@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Start dimming",
-      "description": "Starts dimming a JUNG HOME dimmer up or down, as holding a rocker does, until Stop dimming (or the end of the range). Not yet tried on a real device.",
+      "description": "Starts dimming a JUNG HOME dimmer up or down, as holding a rocker does, until Stop dimming (or the end of the range).",
       "fields": {
         "direction": {
           "name": "Direction",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Stop dimming",
-      "description": "Stops a JUNG HOME dimmer that Start dimming set moving, where it is now. Not yet tried on a real device."
+      "description": "Stops a JUNG HOME dimmer that Start dimming set moving, where it is now."
     },
     "step_dim": {
       "name": "Dim by a step",
-      "description": "Makes a JUNG HOME dimmer brighter or darker by a step. Not yet tried on a real device.",
+      "description": "Makes a JUNG HOME dimmer brighter or darker by a step.",
       "fields": {
         "step": {
           "name": "Step",

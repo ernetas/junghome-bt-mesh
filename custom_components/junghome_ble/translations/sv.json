@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Starta dimring",
-      "description": "Startar upp- eller neddimring av en JUNG HOME-dimmer, som när en vippa hålls nedtryckt, tills “Stoppa dimring” (eller slutet av intervallet). Ännu inte provat på en riktig enhet.",
+      "description": "Startar upp- eller neddimring av en JUNG HOME-dimmer, som när en vippa hålls nedtryckt, tills “Stoppa dimring” (eller slutet av intervallet).",
       "fields": {
         "direction": {
           "name": "Riktning",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Stoppa dimring",
-      "description": "Stoppar en JUNG HOME-dimmer som “Starta dimring” satte i rörelse, där den är nu. Ännu inte provat på en riktig enhet."
+      "description": "Stoppar en JUNG HOME-dimmer som “Starta dimring” satte i rörelse, där den är nu."
     },
     "step_dim": {
       "name": "Dimra ett steg",
-      "description": "Gör en JUNG HOME-dimmer ett steg ljusare eller mörkare. Ännu inte provat på en riktig enhet.",
+      "description": "Gör en JUNG HOME-dimmer ett steg ljusare eller mörkare.",
       "fields": {
         "step": {
           "name": "Steg",

@@ -2755,7 +2755,7 @@
     },
     "start_dim": {
       "name": "Avvia regolazione luminosità",
-      "description": "Avvia la regolazione verso l'alto o verso il basso di un dimmer JUNG HOME, come quando si tiene premuto un bilanciere, fino a Ferma regolazione luminosità (o alla fine dell'intervallo). Non ancora provato su un dispositivo reale.",
+      "description": "Avvia la regolazione verso l'alto o verso il basso di un dimmer JUNG HOME, come quando si tiene premuto un bilanciere, fino a Ferma regolazione luminosità (o alla fine dell'intervallo).",
       "fields": {
         "direction": {
           "name": "Direzione",
@@ -2769,11 +2769,11 @@
     },
     "stop_dim": {
       "name": "Ferma regolazione luminosità",
-      "description": "Ferma nel punto in cui si trova un dimmer JUNG HOME messo in movimento da Avvia regolazione luminosità. Non ancora provato su un dispositivo reale."
+      "description": "Ferma nel punto in cui si trova un dimmer JUNG HOME messo in movimento da Avvia regolazione luminosità."
     },
     "step_dim": {
       "name": "Regola la luminosità di un passo",
-      "description": "Rende un dimmer JUNG HOME più luminoso o più scuro di un passo. Non ancora provato su un dispositivo reale.",
+      "description": "Rende un dimmer JUNG HOME più luminoso o più scuro di un passo.",
       "fields": {
         "step": {
           "name": "Passo",
