@@ -1,7 +1,7 @@
 """Follow a rewritten export without reloading the entry (review-4 D23): the running hub takes the new model over.
 
 The room, key, scene, threshold and sensor-publication actions, a device rename and the unknown-node export adoption
-end here once the export changed (`actions.common._run`, `JungHomeHub._reload_for_export`). A reload replaced the hub —
+end here once the export changed (`actions.common._run`, `ExportWatch._reload_for_export`). A reload replaced the hub —
 its states cache, the property reader, the link — and removed every entity first, which wrote `unavailable`: every
 `state` trigger without `from:` fired again, and every config entity read its value over the mesh once more.
 `async_follow_export` instead:

@@ -4096,11 +4096,11 @@
    "id": "mgmt:err:configuregatewayerror",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_gateway_that_cannot_be_followed_stays_unreachable",
-    "tests/test_coordinator.py::test_gateway_follow_without_news"
+    "tests/test_hub_export_watch.py::test_gateway_that_cannot_be_followed_stays_unreachable",
+    "tests/test_hub_export_watch.py::test_gateway_follow_without_news"
    ],
    "note": "an unanswered gateway property read leaves the gateway where it was (no error to the user)"
   },
@@ -4108,11 +4108,11 @@
    "id": "mgmt:err:configuregatewayerror.couldnotreceivedata",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_gateway_that_cannot_be_followed_stays_unreachable",
-    "tests/test_coordinator.py::test_gateway_follow_without_news"
+    "tests/test_hub_export_watch.py::test_gateway_that_cannot_be_followed_stays_unreachable",
+    "tests/test_hub_export_watch.py::test_gateway_follow_without_news"
    ],
    "note": "an unanswered gateway property read leaves the gateway where it was (no error to the user)"
   },
@@ -4497,13 +4497,13 @@
    "code": [
     "custom_components/junghome_ble/__init__.py::async_setup_entry",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_start",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],
    "tests": [
     "tests/test_init.py::test_setup_and_unload",
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_gateway_is_followed_to_its_new_address"
+    "tests/test_hub_export_watch.py::test_gateway_is_followed_to_its_new_address"
    ],
    "note": "export validated at setup, proxy loop, connection state, gateway follow and sync; app-store update checks, cloud sync and the lock screens have no HA counterpart (see mgmt:flow:observebluetoothstate, mgmt:pref:shown_proxy_screen_for_network_id)"
   },
@@ -4664,14 +4664,14 @@
    "id": "mgmt:flow:configuregateway",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_gateway_pin"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._gateway_text",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_pin"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_gateway_is_followed_to_its_new_address",
-    "tests/test_coordinator.py::test_the_first_link_vouches_for_a_pin_the_gateway_node_confirms",
-    "tests/test_coordinator.py::test_gateway_that_cannot_be_followed_stays_unreachable"
+    "tests/test_hub_export_watch.py::test_gateway_is_followed_to_its_new_address",
+    "tests/test_hub_export_watch.py::test_the_first_link_vouches_for_a_pin_the_gateway_node_confirms",
+    "tests/test_hub_export_watch.py::test_gateway_that_cannot_be_followed_stays_unreachable"
    ],
    "note": "0xC002 IP and 0xC003 fingerprint are read over the mesh; the app's token 0xC001 is deliberately not used (HA registers its own)"
   },
@@ -4976,7 +4976,7 @@
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
     "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_gateway_pin"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_pin"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
@@ -9146,11 +9146,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/const.py::PROPERTY_READ_TIMEOUT",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._gateway_text"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_gateway_is_followed_to_its_new_address",
-    "tests/test_coordinator.py::test_gateway_that_cannot_be_followed_stays_unreachable"
+    "tests/test_hub_export_watch.py::test_gateway_is_followed_to_its_new_address",
+    "tests/test_hub_export_watch.py::test_gateway_that_cannot_be_followed_stays_unreachable"
    ]
   },
   {

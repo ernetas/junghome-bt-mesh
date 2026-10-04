@@ -658,7 +658,7 @@
    "id": "ui:screen:bluetoothoffactivity",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/__init__.py::async_setup_entry"
    ],
    "tests": [
@@ -952,7 +952,7 @@
    "id": "ui:screen:mainactivity",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/actions/devices.py::_add_device",
     "custom_components/junghome_ble/actions/rooms.py::_create_room",
     "custom_components/junghome_ble/actions/scenes.py::_create_scene"
@@ -1442,7 +1442,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeProxySensor",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown"
    ],
    "tests": [
     "tests/test_sensor.py::test_proxy_node_sensor",
@@ -2022,7 +2022,7 @@
    "id": "ui:uc:connecttoproxy",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
    ],
    "tests": [
@@ -2217,7 +2217,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
@@ -2272,7 +2272,7 @@
    "id": "ui:uc:observebluetoothstate",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/__init__.py::async_setup_entry"
    ],
    "tests": [
@@ -3081,7 +3081,7 @@
    "id": "ui:vm:bluetoothoffviewmodel.observeconnection",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown"
    ],
    "tests": [
     "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement"
@@ -3754,7 +3754,7 @@
    "id": "ui:vm:mainviewmodel.observebluetoothstate",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/__init__.py::async_setup_entry"
    ],
    "tests": [
@@ -3798,7 +3798,7 @@
    "id": "ui:vm:mainviewmodel.startconnectingtoproxy",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._describe_unknown",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._describe_unknown",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._connect_to"
    ],
    "tests": [

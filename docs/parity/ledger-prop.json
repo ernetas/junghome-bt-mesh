@@ -1432,8 +1432,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._gateway_text",
     "custom_components/junghome_ble/sensor.py::JungHomeGatewayIp"
    ],
    "tests": [
@@ -1447,12 +1447,12 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/tls.py::PROPERTY_GATEWAY_FINGERPRINT",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],
    "tests": [
     "tests/test_tls.py::test_mesh_provided_fingerprint_wins_over_the_stored_one",
     "tests/test_tls.py::test_mesh_provided_fingerprint_refuses_an_impostor",
-    "tests/test_coordinator.py::test_the_first_link_vouches_for_a_pin_the_gateway_node_confirms"
+    "tests/test_hub_export_watch.py::test_the_first_link_vouches_for_a_pin_the_gateway_node_confirms"
    ]
   },
   {
@@ -1569,7 +1569,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._gateway_text"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_vendor_property_get_builders",

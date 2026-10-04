@@ -1256,7 +1256,7 @@ class ExportStore:
     async def adopt_for_unknown_nodes(self, macs: Sequence[str]) -> list[str]:
         """Adopt the gateway's export when it lists nodes of `macs` (this mesh's unknown nodes); return those.
 
-        The unknown-node refresh (`JungHomeHub._refresh_export_from_gateway`), on the path of every gateway
+        The unknown-node refresh (`ExportWatch._refresh_export_from_gateway`), on the path of every gateway
         write here: under the lock, fetched by `_gateway_state` (this mesh's export, from a gateway whose pin is
         vouched for) and written by `_adopt` — only when the gateway alone changed since HA last synced, never a
         bare `/project/cdb` database over a share export, with the `.bak` and the synced digest recorded (a later

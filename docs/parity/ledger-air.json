@@ -2323,14 +2323,14 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.classify_service_data",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.visible_proxies",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_unknown_node",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_unknown_node",
     "custom_components/junghome_ble/config_flow.py::proxy_in_range"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_classify_service_data",
     "tests/test_config_flow.py::test_proxy_in_range_ignores_other_adverts",
     "tests/test_coordinator.py::test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement",
-    "tests/test_coordinator.py::test_unknown_node_of_our_network_raises_a_repair"
+    "tests/test_hub_export_watch.py::test_unknown_node_of_our_network_raises_a_repair"
    ]
   },
   {
@@ -2347,13 +2347,13 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/advert.py::parse_jung_advertisement",
     "custom_components/junghome_ble/jhmesh/advert.py::parse_manufacturer_data",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_unknown_node",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.check_unknown_node",
     "custom_components/junghome_ble/onboard.py::unprovisioned_devices"
    ],
    "tests": [
     "tests/jhmesh/test_advert.py::test_type_3_record_as_seen_on_air",
     "tests/jhmesh/test_advert.py::test_parse_manufacturer_data_map",
-    "tests/test_coordinator.py::test_unknown_node_of_our_network_raises_a_repair"
+    "tests/test_hub_export_watch.py::test_unknown_node_of_our_network_raises_a_repair"
    ],
    "note": "The stray JUNG device advertising the record without 0x1827/0x1828 is not surfaced (the manifest matcher is 0x1828); the app ignores it too (its discovery needs 0x1827 service data, DeviceDiscoveringImpl$startDiscovering$2.java:80)."
   },

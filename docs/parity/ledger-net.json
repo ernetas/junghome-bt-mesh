@@ -3236,8 +3236,8 @@
    "id": "net:uc:configuregateway",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
-    "custom_components/junghome_ble/coordinator.py::GATEWAY_FINGERPRINT",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway",
+    "custom_components/junghome_ble/hub/export_watch.py::GATEWAY_FINGERPRINT",
     "custom_components/junghome_ble/tls.py::PROPERTY_GATEWAY_FINGERPRINT"
    ],
    "tests": [
@@ -4344,8 +4344,8 @@
     "custom_components/junghome_ble/configurator/store.py::ExportStore.report_token_rejected",
     "custom_components/junghome_ble/gateway_status.py::gateway_polls",
     "custom_components/junghome_ble/const.py::GATEWAY_STATUS_INTERVAL",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.gateway_vouched",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway"
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.gateway_vouched",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway"
    ],
    "tests": [
     "tests/test_gateway_status.py::test_the_gateway_pages_as_diagnostics",
@@ -4855,7 +4855,7 @@
    "id": "net:uc:updategatewaydevice",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch.async_follow_gateway",
     "custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_reconfigure"
    ],
    "tests": [

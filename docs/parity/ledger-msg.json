@@ -2289,7 +2289,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::vendor_property_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._gateway_text",
+    "custom_components/junghome_ble/hub/export_watch.py::ExportWatch._gateway_text",
     "custom_components/junghome_ble/tls.py::async_read_mesh_fingerprint"
    ],
    "tests": [

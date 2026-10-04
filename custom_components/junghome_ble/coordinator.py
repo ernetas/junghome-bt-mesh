@@ -13,9 +13,7 @@ is one more registered handler, in this module or in another one.
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import logging
-import re
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Container, Mapping, Sequence
@@ -27,7 +25,7 @@ from typing import TYPE_CHECKING, Any
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
-from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntryState
+from homeassistant.config_entries import SOURCE_IGNORE
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -44,17 +42,12 @@ from .const import (
     AUDIT_RETRIES,
     AUDIT_TIMEOUT,
     COMMAND_ECHO_TIMEOUT,
-    CONF_GATEWAY_FINGERPRINT,
-    CONF_GATEWAY_HOST,
-    CONF_GATEWAY_PIN_SOURCE,
-    CONF_SOURCE,
     CONNECT_BACKOFF_MAX,
     CONNECT_BACKOFF_MIN,
     CONNECT_BEACON_WAIT,
     CONNECT_STEP_FRESH,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    EXPORT_REFRESH_BACKOFF,
     EXPORT_STALE_THRESHOLD,
     FAILED_PROXY_COOLDOWN,
     FILTER_STATUS_TIMEOUT,
@@ -66,7 +59,6 @@ from .const import (
     ISSUE_BLUETOOTH_UNAVAILABLE,
     ISSUE_DUPLICATE_MESH,
     ISSUE_EXPORT_STALE,
-    ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_INSERT_MISMATCH,
     ISSUE_IV_INDEX_AHEAD,
     ISSUE_IV_INDEX_MISMATCH,
@@ -78,7 +70,6 @@ from .const import (
     ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_TIME_KEEPER_MISSING,
     ISSUE_UNKNOWN_NODES,
-    ISSUE_UNKNOWN_NODES_GATEWAY,
     ISSUE_VAULT_KEY_REFRESH,
     KEEP_ALIVE_ATTEMPTS,
     KEEP_ALIVE_TIMEOUT,
@@ -95,7 +86,6 @@ from .const import (
     NODE_INFO,
     NODE_INFO_TIME_ROLE,
     OPTION_HEARTBEATS,
-    PIN_FROM_MESH,
     PROXY_ADVERT_MAX_AGE,
     REFRESH_CHUNK,
     REFRESH_RETRIES,
@@ -119,8 +109,7 @@ from .const import (
     issue_id,
     learn_more_url,
 )
-from .entity import PRODUCT_NAMES, update_node_device
-from .gateway_api import JungHomeGatewayApi, api_for_entry
+from .entity import update_node_device
 from .hub.clock import Clock, next_utc_offset_change
 from .hub.energy import (
     COUNTER_FIELDS,
@@ -129,6 +118,12 @@ from .hub.energy import (
     CounterNotReset,
     Energy,
     lacks_precise_energy,
+)
+from .hub.export_watch import (
+    GATEWAY_CERTIFICATE_CHANGED,
+    GATEWAY_UNVERIFIED,
+    ExportWatch,
+    is_gateway_host,
 )
 from .hub.liveness import Liveness
 from .hub_gestures import ButtonGestures, EventListener
@@ -153,7 +148,6 @@ from .jhmesh.client import (
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
     BATTERY_PIDS,
-    GATEWAY_PID,
     PP2_PIDS,
     Devices,
     Light,
@@ -215,7 +209,6 @@ from .seq_store import (
     seq_store,
     seq_store_for_uuid,
 )
-from .tls import normalize_fingerprint
 from .vault_refresh import VaultKeyRefresh
 
 if TYPE_CHECKING:
@@ -232,6 +225,8 @@ _LOGGER = logging.getLogger(__name__)
 # Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
 # `const.py`; A4-3: the hub's components into `hub/`); re-exported for the modules and tests that import them from here.
 __all__ = [
+    "GATEWAY_CERTIFICATE_CHANGED",
+    "GATEWAY_UNVERIFIED",
     "NODE_VERSIONS",
     "NODE_VERSIONS_SAVE_DELAY",
     "NODE_VERSIONS_STORAGE_VERSION",
@@ -258,6 +253,7 @@ __all__ = [
     "async_migrate_legacy_seq_store",
     "async_remove_node_versions",
     "async_skip_seq_store_ahead",
+    "is_gateway_host",
     "issue_id",
     "lacks_precise_energy",
     "merge_legacy_seq_store",
@@ -271,16 +267,6 @@ __all__ = [
 # the time roles a node keeping the PP2 pucks' time answers (Time Role Status): authority, relay
 TIME_KEEPER_ROLES = frozenset({1, 2})
 
-# the gateway node's own LBC Manufacturer properties
-GATEWAY_IP, GATEWAY_FINGERPRINT = 0xC002, 0xC003
-# why the gateway is not used (`JungHomeHub.async_gateway_distrust`), for the logs and the sync repair
-GATEWAY_UNVERIFIED = (
-    "the gateway node has not confirmed its certificate over the mesh yet"
-)
-GATEWAY_CERTIFICATE_CHANGED = (
-    "the gateway no longer matches the certificate pinned for it"
-)
-_HOST_LABEL = re.compile(r"(?!-)[a-z0-9-]{1,63}(?<!-)", re.IGNORECASE)
 # `async_wait_settled`: state Gets while a load ramps to a new state, the pause between them (JUNG dimmers fade
 # with their own ramps, a few seconds at most), and how long it asks at most, however many Gets go unanswered
 SETTLE_ATTEMPTS = 20
@@ -363,29 +349,13 @@ def register_status_handler[H: StatusHandler](
 
 
 # One lock per entry, kept across reloads, around everything that works on a hub and may replace it: the service
-# calls (`actions.common._run`) and the unknown-node refresh's reload (`JungHomeHub._reload_for_export`).
+# calls (`actions.common._run`) and the unknown-node refresh's reload (`ExportWatch._reload_for_export`).
 ENTRY_LOCKS: HassKey[dict[str, asyncio.Lock]] = HassKey(f"{DOMAIN}_service_locks")
 
 
 def entry_lock(hass: HomeAssistant, entry_id: str) -> asyncio.Lock:
     """Return the entry's lock (`ENTRY_LOCKS`), created on first use."""
     return hass.data.setdefault(ENTRY_LOCKS, {}).setdefault(entry_id, asyncio.Lock())
-
-
-def is_gateway_host(text: str) -> bool:
-    """Whether `text` is an IPv4 address or a DNS host name: all a gateway address read off the mesh may be.
-
-    It ends up in `https://{host}/...`, so nothing else (no port, path, user part or IPv6 literal) is taken.
-    """
-    if re.fullmatch(r"[0-9.]+", text):
-        try:
-            ipaddress.IPv4Address(text)
-        except ValueError:
-            return False
-        return True
-    return len(text) <= 253 and all(
-        _HOST_LABEL.fullmatch(label) for label in text.split(".")
-    )
 
 
 @dataclass
@@ -784,15 +754,6 @@ class JungHomeHub:
         # answer, even if the firmware publishes it to its group instead of sending it to us
         self._scene_gets: set[int] = set()
         self.node_by_mac = nodes_by_mac(cdb)  # the node behind a Bluetooth address
-        self._export_refresh: asyncio.Task[None] | None = (
-            None  # the gateway export fetch in flight, if any
-        )
-        self._export_refresh_failures = (
-            0  # unanswered fetches in a row: index into EXPORT_REFRESH_BACKOFF
-        )
-        self._unsub_export_refresh: CALLBACK_TYPE | None = (
-            None  # the next fetch, when one is scheduled
-        )
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
         self.configurator: MeshConfigurator | None = None
         # what follows the changes made in the JUNG HOME app (`app_follow.py`, review-4 U4-6), set by the setup
@@ -803,12 +764,8 @@ class JungHomeHub:
         self.follow_export: Callable[[], Awaitable[None]] | None = None
         # the gateway's REST status polls (`gateway_status.gateway_polls`), made by the first platform that asks
         self.gateway_polls: GatewayPolls | None = None
-        # one mesh read of the gateway's certificate at a time, and a pin the gateway node contradicted (not used)
-        self._gateway_check = asyncio.Lock()
-        self._distrusted_pin: str | None = None
-        self.unknown_nodes: dict[
-            str, JungAdvertisement | None
-        ] = {}  # MAC → what it advertises; nodes of our network the export does not know
+        # the unknown nodes, the export refresh and the gateway's trust (`hub/export_watch.py`)
+        self.export_watch = ExportWatch(self)
         # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`, review-3 W4 / F24)
         self.keep_awake = KeepAwake(self)
         # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`, review-4 D11)
@@ -1068,7 +1025,7 @@ class JungHomeHub:
         self.clock.unsub_offset_change = self._unsub_seq_stall = None
         self._unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
         self.liveness.unsub_heartbeats = self._unsub_seq_check = None
-        self._cancel_export_refresh_timer()
+        self.export_watch.cancel_timer()
         self._cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
         # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
@@ -1292,13 +1249,14 @@ class JungHomeHub:
             self.proxy.add_node(node)
         self.node_by_mac = nodes_by_mac(cdb)
         self.audits.clear()
-        if adopted := [mac for mac in self.unknown_nodes if mac in self.node_by_mac]:
+        unknown = self.export_watch.unknown_nodes
+        if adopted := [mac for mac in unknown if mac in self.node_by_mac]:
             for mac in adopted:
-                del self.unknown_nodes[mac]
-            if self.unknown_nodes:
-                self._report_unknown_nodes()
+                del unknown[mac]
+            if unknown:
+                self.export_watch.report_unknown_nodes()
             else:
-                self._cancel_export_refresh_timer()
+                self.export_watch.cancel_timer()
                 ir.async_delete_issue(
                     self.hass, DOMAIN, issue_id(self.entry, ISSUE_UNKNOWN_NODES)
                 )
@@ -1355,7 +1313,7 @@ class JungHomeHub:
             for info in bluetooth.async_discovered_service_info(
                 self.hass, connectable=True
             )
-            if self._ours(info)
+            if self.ours(info)
         ]
         now = bluetooth.MONOTONIC_TIME()
         return sorted(
@@ -1369,7 +1327,7 @@ class JungHomeHub:
         info: bluetooth.BluetoothServiceInfoBleak,
         change: bluetooth.BluetoothChange,
     ) -> None:
-        if not self.proxy.connected and self._ours(info):
+        if not self.proxy.connected and self.ours(info):
             self._link_lost.set()  # wake the loop: a candidate appeared
         if (node := self.node_for_address(info.address)) is not None:
             self.node_rssi[node.unicast] = info.rssi
@@ -1378,9 +1336,9 @@ class JungHomeHub:
             self.inserts.note_advert(
                 node, parse_manufacturer_data(info.manufacturer_data)
             )
-        self._check_unknown_node(info)
+        self.export_watch.check_unknown_node(info)
 
-    def _ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
+    def ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
         """Whether a proxy advert is of *this* network (Network ID or one of our nodes' Node Identity).
 
         Only such an advert wakes the connection loop while unlinked (review-4 R4-8): every other network's proxies
@@ -1394,334 +1352,39 @@ class JungHomeHub:
         """Return the node advertising from Bluetooth `address` (its public MAC); None when the export has no such node."""
         return self.node_by_mac.get(address.upper())
 
-    def _check_unknown_node(self, info: bluetooth.BluetoothServiceInfoBleak) -> None:
-        """Notice a node of *our* network advertising from a MAC the export does not know: the export is behind.
-
-        The proxy advertisement carries our Network ID, so the node is provisioned into this mesh, and its address is
-        the MAC the export would hold in the node UUID — a node added or re-provisioned after the export. Raised
-        once as a repair issue listing the devices (product from the JUNG manufacturer record when the advert
-        carries one); cleared when the export is reloaded with them in it (a new hub starts with an empty list).
-        Addresses that are not MACs (macOS hands out UUIDs) cannot be checked.
-        """
-        address = info.address.upper()
-        if address in self.unknown_nodes or address in self.node_by_mac:
-            return
-        if len(address) != 17 or address.count(":") != 5:
-            return
-        if not self._ours(info):
-            return
-        self.unknown_nodes[address] = parse_manufacturer_data(info.manufacturer_data)
-        _LOGGER.warning(
-            "JUNG node %s belongs to this mesh but is not in the export (%s): export the network again",
-            address,
-            self._describe_unknown(address),
-        )
-        # the app uploads its project to the gateway after a change: fetch it before bothering the user (a new
-        # node restarts the back-off; the issue below stands until the reload that follows a successful fetch)
-        self._export_refresh_failures = 0
-        self._request_export_refresh()
-        self._report_unknown_nodes()
-
-    def _request_export_refresh(self) -> None:
-        """Ask the gateway for its export now, for the unknown nodes (review-3 C1: once per MAC was not enough).
-
-        Nothing to do without unknown nodes or a gateway the export may come from, while a fetch runs, before the
-        configurator exists, or without a link — the fetch vouches for the gateway over the mesh
-        (`_gateway_state`), so the next link asks instead (`_connect_to`). A pending back-off timer is replaced.
-        """
-        if (
-            not self.unknown_nodes
-            or self.stopping
-            or self._gateway_for_refresh() is None
-            or (self._export_refresh is not None and not self._export_refresh.done())
-            or self.configurator is None
-            or not self.connected
-        ):
-            return
-        self._cancel_export_refresh_timer()
-        self._export_refresh = self.entry.async_create_background_task(
-            self.hass, self._refresh_export_from_gateway(), f"{DOMAIN} export refresh"
-        )
-
-    def _cancel_export_refresh_timer(self) -> None:
-        if self._unsub_export_refresh is not None:
-            self._unsub_export_refresh()
-            self._unsub_export_refresh = None
-
-    def _schedule_export_refresh(self) -> None:
-        """Ask again after the next EXPORT_REFRESH_BACKOFF delay: the app may not have uploaded yet."""
-        delay = EXPORT_REFRESH_BACKOFF[
-            min(self._export_refresh_failures, len(EXPORT_REFRESH_BACKOFF) - 1)
-        ]
-        self._export_refresh_failures += 1
-        self._cancel_export_refresh_timer()
-
-        @callback
-        def again(_now: datetime) -> None:
-            self._unsub_export_refresh = None
-            self._request_export_refresh()
-
-        self._unsub_export_refresh = async_call_later(self.hass, delay, again)
+    # ------------------------------------------------------------------ the export and the gateway (`hub/export_watch.py`)
+    @property
+    def unknown_nodes(self) -> dict[str, JungAdvertisement | None]:
+        """The nodes of the mesh the export does not know, by MAC (`ExportWatch.unknown_nodes`)."""
+        return self.export_watch.unknown_nodes
 
     @property
     def follows_gateway(self) -> bool:
-        """Whether the entry was set up from the gateway, whose export may replace ours (`_gateway_for_refresh`)."""
-        return self._gateway_for_refresh() is not None
-
-    def _gateway_for_refresh(self) -> JungHomeGatewayApi | None:
-        """Return the gateway API when its export may replace ours: only for an entry set up *from* the gateway.
-
-        An entry reconfigured to a file of the user's own (source `path` or `upload`) keeps the gateway host and
-        token for the flow's re-fetch, but its file is not ours to overwrite — the fetched export would replace a
-        hand-maintained `MeshNetwork.json` (with `metadata_dir` names the share format cannot carry) in place.
-        """
-        if self.entry.data.get(CONF_SOURCE) != "gateway":
-            return None
-        return api_for_entry(self.hass, self.entry)
-
-    def _report_unknown_nodes(self) -> None:
-        """Raise (or update) the `unknown_nodes` repair; an entry from the gateway gets the wording that names it.
-
-        Two translation keys rather than a sentence in a placeholder (review-4 H4-8): translators get the whole
-        text, and the gateway variant's only extra placeholder is its `host`.
-        """
-        gateway = self._gateway_for_refresh()
-        placeholders = {
-            "title": self.entry.title,
-            "count": str(len(self.unknown_nodes)),
-            "devices": ", ".join(
-                self._describe_unknown(mac) for mac in sorted(self.unknown_nodes)
-            ),
-        }
-        key = ISSUE_UNKNOWN_NODES
-        if gateway is not None:
-            key = ISSUE_UNKNOWN_NODES_GATEWAY
-            placeholders["host"] = gateway.host
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_UNKNOWN_NODES),
-            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
-            data={"entry_id": self.entry.entry_id},
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=key,
-            learn_more_url=learn_more_url(key),
-            translation_placeholders=placeholders,
-        )
-
-    async def async_follow_gateway(self) -> bool:
-        """Read the gateway's address off the mesh; store it when it moved. True when the entry now names another host.
-
-        The gateway node serves its address and certificate fingerprint as LBC Manufacturer properties (`0xC002`
-        IP, `0xC003` SHA-256 of its certificate, `docs/android/transport-provisioning.md` §5.1), which is how the
-        app finds a gateway whose DHCP address changed or whose certificate was renewed: it re-reads them whenever
-        the gateway stops answering. The address is followed (when it is one, `is_gateway_host`); the certificate
-        is not: anyone holding the NetKey and AppKey — any one node's keys — can answer on the mesh, and the pin
-        is what keeps the token and the export (every DevKey) from a host that is not the gateway. A certificate
-        other than the pinned one stops the gateway's use and raises the `gateway_certificate_changed` repair
-        instead; the reconfigure flow reads it again and asks. The token (`0xC001`) is the app's, not the one Home
-        Assistant registered for itself, and is never taken.
-        """
-        if self.entry.data.get(CONF_SOURCE) != "gateway" or not self.connected:
-            return False
-        node = self._gateway_node()
-        if node is None:
-            return False
-        host = await self._gateway_text(node.unicast, GATEWAY_IP)
-        fingerprint = normalize_fingerprint(
-            await self._gateway_text(node.unicast, GATEWAY_FINGERPRINT)
-        )
-        data = self.entry.data
-        moved = bool(host) and host != data.get(CONF_GATEWAY_HOST)
-        if moved and not is_gateway_host(str(host)):
-            _LOGGER.warning(
-                "The gateway node reports an address that is no IP address or host name (%r); not followed",
-                host,
-            )
-            moved = False
-        if moved:
-            _LOGGER.info("The gateway node says it is at %s; following it", host)
-            # not hub data (`HUB_DATA_KEYS`): the update listener does not reload for it
-            self.hass.config_entries.async_update_entry(
-                self.entry, data={**data, CONF_GATEWAY_HOST: host}
-            )
-        pin = normalize_fingerprint(data.get(CONF_GATEWAY_FINGERPRINT))
-        if fingerprint is not None and fingerprint != pin:
-            self._gateway_contradicted(pin)
-            return False
-        return moved
-
-    async def async_gateway_distrust(self) -> str | None:
-        """Why the entry's gateway must not be used now, or None when it may be (fetched from, uploaded to).
-
-        The pin of an entry set up at first contact is whatever answered at the address then: a LAN impostor at
-        setup would stay pinned and receive every later upload — the full export with every key. So before the
-        first exchange a pin the gateway node has not vouched for is compared with the certificate the node
-        reports over the mesh (`0xC003`, where the app takes its pin from): equal, it counts as vouched for from
-        then on (`PIN_FROM_MESH` in the entry); different, the gateway is not used and the
-        `gateway_certificate_changed` repair points to Reconfigure; unanswered, nothing is exchanged with the
-        gateway yet (logged) and the next use asks again. The mesh changes nothing else: devices work as ever.
-        """
-        pin = normalize_fingerprint(self.entry.data.get(CONF_GATEWAY_FINGERPRINT))
-        async with self._gateway_check:
-            if pin is not None and pin == self._distrusted_pin:
-                return GATEWAY_CERTIFICATE_CHANGED
-            if self.entry.data.get(CONF_GATEWAY_PIN_SOURCE) == PIN_FROM_MESH:
-                return None
-            node = self._gateway_node()
-            reported = (
-                normalize_fingerprint(
-                    await self._gateway_text(node.unicast, GATEWAY_FINGERPRINT)
-                )
-                if node is not None and self.connected
-                else None
-            )
-            host = self.entry.data.get(CONF_GATEWAY_HOST)
-            if reported is None:
-                _LOGGER.warning(
-                    "The gateway node has not confirmed the certificate pinned for the gateway %s over the mesh "
-                    "yet: nothing is fetched from or handed to the gateway until it does",
-                    host,
-                )
-                return GATEWAY_UNVERIFIED
-            if reported != pin:
-                self._gateway_contradicted(pin)
-                return GATEWAY_CERTIFICATE_CHANGED
-            _LOGGER.info(
-                "The gateway node confirmed the certificate pinned for the gateway %s over the mesh",
-                host,
-            )
-            self.hass.config_entries.async_update_entry(
-                self.entry,
-                data={**self.entry.data, CONF_GATEWAY_PIN_SOURCE: PIN_FROM_MESH},
-            )
-            return None
+        """Whether the entry was set up from the gateway, whose export may replace ours (`ExportWatch.follows_gateway`)."""
+        return self.export_watch.follows_gateway
 
     @property
     def gateway_vouched(self) -> bool:
-        """Whether the gateway node vouched for the entry's pin and nothing contradicted it since.
+        """Whether the gateway node vouched for the entry's pin (`ExportWatch.gateway_vouched`)."""
+        return self.export_watch.gateway_vouched
 
-        `async_gateway_distrust` without its mesh read: a poll of the gateway's status uses the gateway only when
-        this holds, and leaves the vouching to the check every link runs (`_check_gateway_pin`).
-        """
-        pin = normalize_fingerprint(self.entry.data.get(CONF_GATEWAY_FINGERPRINT))
-        return self.entry.data.get(CONF_GATEWAY_PIN_SOURCE) == PIN_FROM_MESH and (
-            pin is None or pin != self._distrusted_pin
-        )
+    async def async_follow_gateway(self) -> bool:
+        """Read the gateway's address off the mesh and follow it (`ExportWatch.async_follow_gateway`)."""
+        return await self.export_watch.async_follow_gateway()
 
-    def _check_gateway_pin(self) -> None:
-        """On every link while the pin is not vouched for: compare it with the gateway node's report, in the background."""
-        if (
-            self._gateway_for_refresh() is not None
-            and self.entry.data.get(CONF_GATEWAY_PIN_SOURCE) != PIN_FROM_MESH
-            and self._distrusted_pin is None
-        ):
-            self.entry.async_create_background_task(
-                self.hass,
-                self.async_gateway_distrust(),
-                f"{DOMAIN} gateway certificate check",
-            )
-
-    def _gateway_contradicted(self, pin: str | None) -> None:
-        """Stop using the gateway: its node reports another certificate than `pin`. Raises the repair."""
-        self._distrusted_pin = pin
-        _LOGGER.warning(
-            "The gateway node reports another certificate over the mesh than the one pinned for the gateway %s: "
-            "the gateway is not used until the entry is reconfigured",
-            self.entry.data.get(CONF_GATEWAY_HOST),
-        )
-        self.async_raise_certificate_issue()
+    async def async_gateway_distrust(self) -> str | None:
+        """Why the entry's gateway must not be used now, or None (`ExportWatch.async_gateway_distrust`)."""
+        return await self.export_watch.async_gateway_distrust()
 
     @callback
     def async_raise_certificate_issue(self) -> None:
-        """Raise the repair pointing to Reconfigure: the gateway, or its node over the mesh, contradicts the pin."""
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_GATEWAY_CERTIFICATE),
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_GATEWAY_CERTIFICATE,
-            learn_more_url=learn_more_url(ISSUE_GATEWAY_CERTIFICATE),
-            translation_placeholders={
-                "host": str(self.entry.data.get(CONF_GATEWAY_HOST) or "")
-            },
-        )
-
-    def _gateway_node(self) -> Node | None:
-        return next((n for n in self.cdb.nodes if n.pid == GATEWAY_PID), None)
-
-    async def _gateway_text(self, unicast: int, pid: int) -> str | None:
-        """Return one of the gateway node's text properties (LBC Manufacturer Get); None when it does not say."""
-        key = pid.to_bytes(2, "little")
-        try:
-            reply = await self.proxy.request(
-                unicast,
-                M.vendor_property_get("manufacturer", pid),
-                M.VENDOR_PROPERTY_STATUS_OPCODES["manufacturer"],
-                expect_cid=M.JUNG_CID,
-                retries=1,
-                match=lambda m: m.params[:2] == key,
-            )
-        except (TimeoutError, ConnectionError):
-            _LOGGER.debug("The gateway node %04X did not say %04X", unicast, pid)
-            return None
-        return PROPERTIES[pid].codec.decode(reply.params[3:]) or None
-
-    async def _refresh_export_from_gateway(self) -> None:
-        """Adopt the gateway's export when it knows the unknown nodes, then reload the entry with it.
-
-        The dynamic-devices path for an entry set up from a gateway: the app uploads its project to the gateway
-        after every change, so a node it just provisioned is usually there already. The adoption is the
-        configurator's (`MeshConfigurator.adopt_for_unknown_nodes`), under its lock and with every guard of its
-        gateway writes; otherwise the repair issue stays (its text then says the gateway was asked) and the fetch
-        is repeated with back-off (`_schedule_export_refresh`) and on every new link.
-        """
-        configurator = self.configurator
-        assert configurator is not None  # `_request_export_refresh` checked
-        found = await configurator.adopt_for_unknown_nodes(sorted(self.unknown_nodes))
-        if not found:
-            self._schedule_export_refresh()
-            return
-        _LOGGER.info(
-            "Fetched the export from the gateway %s: it lists %s; following it",
-            self.entry.data.get(CONF_GATEWAY_HOST),
-            ", ".join(found),
-        )
-        self.follow_adopted_export()
+        """Raise the repair pointing to Reconfigure (`ExportWatch.async_raise_certificate_issue`)."""
+        self.export_watch.async_raise_certificate_issue()
 
     @callback
     def follow_adopted_export(self) -> None:
-        """Have the device model follow an export adopted from the gateway, in a task of its own (`_reload_for_export`).
-
-        Not one of the entry's background tasks: a reload in its place unloads the entry, which cancels those.
-        """
-        self.hass.async_create_task(
-            self._reload_for_export(), f"{DOMAIN} follow the gateway's export"
-        )
-
-    async def _reload_for_export(self) -> None:
-        """Follow the adopted export, under the entry's lock (`ENTRY_LOCKS`, review-3 W11): in place, else by a reload.
-
-        A service call holds that lock while it works on this hub — waiting for its link, planning, sending — and
-        has the entry follow the export itself afterwards; a reload in between would tear the hub down under it.
-        Once the lock is ours, a hub that is no longer the entry's (a reload read the adopted export already) or an
-        entry that is no longer loaded needs nothing more. The new nodes' devices show up without a reload
-        (`model_update.async_follow_export`, review-4 D23).
-        """
-        async with entry_lock(self.hass, self.entry.entry_id):
-            if (
-                self.entry.state is ConfigEntryState.LOADED
-                and self.entry.runtime_data is self
-            ):
-                assert self.follow_export is not None  # set by the setup
-                await self.follow_export()
-
-    def _describe_unknown(self, mac: str) -> str:
-        advert = self.unknown_nodes.get(mac)
-        if advert is None:
-            return mac
-        return f"{PRODUCT_NAMES.get(advert.product_id, f'product {advert.product_id}')} {mac}"
+        """Have the device model follow an export adopted from the gateway (`ExportWatch.follow_adopted_export`)."""
+        self.export_watch.follow_adopted_export()
 
     async def _connection_loop(self) -> None:
         """Keep a link: connect to the best proxy node in range, watch it, and connect again when it goes.
@@ -2082,8 +1745,8 @@ class JungHomeHub:
         self.refresh_task = self.entry.async_create_background_task(
             self.hass, self._after_connect(), f"{DOMAIN} refresh"
         )
-        self._check_gateway_pin()
-        self._request_export_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
+        self.export_watch.check_pin()
+        self.export_watch.request_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
         self.vault_refresh.schedule()  # a device Home Assistant added that missed a key refresh step: again now
 
     def _cancel_refresh(self) -> None:
