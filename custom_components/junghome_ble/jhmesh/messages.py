@@ -1093,7 +1093,7 @@ def set_shown_by(access_pdu: bytes) -> Callable[[bytes], bool] | None:
     A Status answering an acknowledged Set reports the present state, and the target with the remaining time
     while a transition runs: the Set took effect when either is the requested one, within the load's own step
     (`STATE_STEP`, `KELVIN_STEP`). A Status reporting another state at rest did not come from the Set: a Get to
-    the same element answered with the old state while the Set was lost on the air (review-4 D32) — or the load
+    the same element answered with the old state while the Set was lost on the air — or the load
     clamped the value (a lightness under its range minimum), which only the caller can tell. None for any other
     message (an Unacknowledged Set, a Get, a scene or property Set): there is no state to compare.
     """

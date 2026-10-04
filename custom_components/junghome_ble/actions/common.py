@@ -49,15 +49,13 @@ if TYPE_CHECKING:
 
 
 ATTR_ROOM = "room"
-ATTR_ROOM_AREA = (
-    "room_area"  # the room named like this area, instead of `room` (review-4 U4-13)
-)
+ATTR_ROOM_AREA = "room_area"  # the room named like this area, instead of `room`
 ATTR_SCENE_ENTITY = (
     "scene_entity"  # the scene behind this scene entity, instead of `scene`
 )
 ATTR_FORCE = "force"
 ATTR_DRY_RUN = "dry_run"
-# what cannot be undone asks for it explicitly (decision as M3 / M8): `remove_device`, `delete_scene` with `force`
+# what cannot be undone asks for it explicitly: `remove_device`, `delete_scene` with `force`
 ATTR_CONFIRM = "confirm"
 ATTR_NAME = "name"
 ATTR_NEW_NAME = "new_name"
@@ -205,7 +203,7 @@ async def _run(
 ) -> dict[str, Any]:
     """Run `operation` on the entry's configurator, then have the hub follow the export when the device model changed.
 
-    The hub takes the new export over in place (`model_update`, review-4 D23): no entity goes `unavailable`, the
+    The hub takes the new export over in place (`model_update`): no entity goes `unavailable`, the
     link stays up. `reload`: set the entry up again instead, for what changes the nodes the hub was built with
     (adding or removing a node with Home Assistant). `scenes`: the operation stored or deleted scenes on the
     devices, so their actions are read again (the export does not hold them). An operation that goes on air (`needs_link`) first waits for
@@ -226,7 +224,7 @@ async def _run(
             changed = await operation(configurator)
         except BaseException as err:
             _report_plan(hass, entry_id, configurator, err)
-            # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one (D12): the
+            # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one: the
             # device model must follow the export all the same (CFG-15), still under the lock — the cancellation
             # (or the error) goes on once the model followed
             if configurator.recorded:
@@ -406,7 +404,7 @@ async def _wait_for_link(
         if connected and current is configurator:
             return current
         if loop.time() >= deadline:
-            # the mesh out of reach is no fault of the call's data: not a validation error (review-3 W13)
+            # the mesh out of reach is no fault of the call's data: not a validation error
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="service_not_connected"
             )

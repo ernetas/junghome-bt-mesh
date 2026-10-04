@@ -73,8 +73,8 @@ SEQ_STORAGE_MINOR_VERSION = 5
 # pass between two forced store writes — see the class docstring for the arithmetic.
 SEQ_RESTART_MARGIN = 512
 SEQ_SAVE_EVERY = 64
-# how far the counter may run past the floor entry the `.floor` file durably holds before `HAState` writes a new one
-# (review-4 S4-8): a quarter of what a repair with nothing else left continues past it (SEQ_SKIP_UNKNOWN), so a
+# how far the counter may run past the floor entry the `.floor` file durably holds before `HAState` writes a new one:
+# a quarter of what a repair with nothing else left continues past it (SEQ_SKIP_UNKNOWN), so a
 # floor write that fails has three more chances before sends are held back for it
 SEQ_FLOOR_EVERY = 1 << 20
 SEQ_STALL_RETRY = 5.0  # seconds between forced-save retries while reserve_seq() is refusing to hand out numbers
@@ -232,7 +232,7 @@ def seq_floor_store_for_uuid(hass: HomeAssistant, mesh_uuid: str) -> SeqStore:
 
     Per address, an (IV index, sequence number) the address is known to have reached: where the `seq_store_lost`
     repair continued from (`async_skip_seq_store_ahead`), where a restored record or an `iv_index_mismatch` rewind
-    continued from, and — so it keeps up with the counter (review-4 S4-8) — where `HAState` was whenever its
+    continued from, and — so it keeps up with the counter — where `HAState` was whenever its
     transmit index changed and every SEQ_FLOOR_EVERY numbers. The two copies of the store are what the repair
     replaces when they are lost; this file is not, so a second loss of both still knows where the address got to —
     without it, "nothing readable" meant SEQ_SKIP_UNKNOWN from 0 every time, the very numbers the address had sent
@@ -318,7 +318,7 @@ def _store_with(data: Any, addresses: dict[str, Any]) -> dict[str, Any]:
 def _stored_key_refresh(data: Any, key: str) -> Any:
     """Return the key refresh a loaded store records for a hub at address `key` (stored form; None: there is none).
 
-    The mesh-level one (review-4 S4-9: a key refresh belongs to the mesh, not to an address, so a new address after
+    The mesh-level one (a key refresh belongs to the mesh, not to an address, so a new address after
     a followed refresh keeps its key), whatever it says, None included; a store an older version wrote has none and
     the address's own record holds it. A mesh-level one that does not parse falls back to the record's too.
     """
@@ -350,7 +350,7 @@ def _landed(store: SeqStore, loaded: Any) -> Any:
 def _furthest(records: Sequence[Any]) -> tuple[int, int] | None:
     """Return the furthest (transmit IV index, seq) of the `records` that still read as numbers in range, if any.
 
-    Out of range is not a number a record can hold (review-4 S4-7): an IV index past 2^32 - 1 made the repair write
+    Out of range is not a number a record can hold: an IV index past 2^32 - 1 made the repair write
     a record no start could use, and a floor no later repair got past; a negative counter put the target at 0 under
     its index, over the numbers sent there.
     """
@@ -402,7 +402,7 @@ def _carried_seq_guard(records: Sequence[Any]) -> int:
 async def async_rewind_seq_floor(
     hass: HomeAssistant, mesh_uuid: str, key: str, iv_index: int, seq: int, guard: int
 ) -> bool:
-    """Record in the repair floor where the `iv_index_mismatch` repair continues address `key` from (review-4 D10).
+    """Record in the repair floor where the `iv_index_mismatch` repair continues address `key` from.
 
     Written before the address goes back to the mesh's `iv_index` (`JungHomeHub.async_rewind_iv_index`), like the
     `seq_store_lost` repair's own floor: should both copies of the store be lost later, that repair continues from
@@ -499,7 +499,7 @@ async def _async_skip_restored_record(
     backup_data: dict[str, Any] | None,
     floor_data: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
-    """Continue past a record restored from a Home Assistant backup (review-4 D5); return the store to start from.
+    """Continue past a record restored from a Home Assistant backup; return the store to start from.
 
     A backup restores the whole configuration directory, so the store, its `.backup` copy and the floor come back
     together, readable, `clean` or not, and nothing else could tell that every number sent since the backup was
@@ -578,14 +578,14 @@ async def _async_skip_restored_record(
 async def async_apply_followed_key_refresh(
     hass: HomeAssistant, cdb: CDB, unicast: int
 ) -> None:
-    """Put the NetKey of a key refresh the hub followed to its end in place of the export's stale one (review-3 N2b).
+    """Put the NetKey of a key refresh the hub followed to its end in place of the export's stale one.
 
     The client stores the new key with the sequence numbers (`LocalState.key_refresh`, phase 3; at mesh level, so
     whichever address the hub uses: `_stored_key_refresh`) until the export holds it. Without this a setup would
     look for proxies of the old Network ID (none left) and talk with the revoked key. Only the in-memory `cdb` changes; the file is the gateway's or the user's. An export
     written mid key refresh (`CDB.net_key_refresh`) whose old key is the followed one is newer: it is left alone.
 
-    Only a completion the client proved (review-4 D4: the proxy's beacon under the new key, or the nodes' own
+    Only a completion the client proved (the proxy's beacon under the new key, or the nodes' own
     statuses) is put in: one without proof was recorded before proofs were kept or forged by a node, and the client
     takes its key up as a candidate only (`KeyRefreshFollower.resume`).
     """
@@ -758,16 +758,16 @@ class HAState(LocalState):
     that mesh to what `LocalState.to_stored` holds for it (without the address: the counter, the IV state and the
     replay list): `{"addresses": {"0D00": {"seq": …, "iv_index": …, "iv_update_active": …, "rpl": …, "clean": …}}}`.
     What belongs to the mesh rather than to an address sits next to it, `{"mesh": {"key_refresh": …}}`: the key
-    refresh followed (review-4 S4-9) — a new address after one keeps its key, and a copy in our own record keeps
+    refresh followed — a new address after one keeps its key, and a copy in our own record keeps
     it for an older reader. An address the store does not know starts where `JungHomeHub.async_create` decides
     (`_evidence_of_use`): 0, or SEQ_SKIP_AHEAD when it may have sent before.
 
-    Another client seen sending from the address (`address_shared`, review-4 S I2) is stored with its record, so a
+    Another client seen sending from the address (`address_shared`) is stored with its record, so a
     restart does not resume sending into that client's numbers: every send is refused (`AddressShared`) until the
     `address_shared` repair skips past them (`skip_past_shared`).
 
-    With a `floor` (the mesh's `.floor` file) the floor entry of our address keeps up with the counter (review-4
-    S4-8): a new one whenever the transmit index moved past the entry's and every SEQ_FLOOR_EVERY numbers, and
+    With a `floor` (the mesh's `.floor` file) the floor entry of our address keeps up with the counter:
+    a new one whenever the transmit index moved past the entry's and every SEQ_FLOOR_EVERY numbers, and
     sends wait for the file to durably hold our transmit index and never run SEQ_SKIP_UNKNOWN past its number
     (`_limit`) — the index and the distance the `seq_store_lost` repair continues from when both copies of the store
     are lost. Without that, the floor was only the last repair's, and the repair after a second loss reused every
@@ -959,8 +959,8 @@ class HAState(LocalState):
     def _limit(self) -> tuple[int, int]:
         """Return the (tx IV index, seq) every restart could continue from, given what both copies *durably* hold.
 
-        A restart resumes from the store, or from the `.backup` copy when the store is lost or damaged (review-3
-        S1), so both bound what may be sent: each copy's restart point is taken (`_restart_point`) and the lower
+        A restart resumes from the store, or from the `.backup` copy when the store is lost or damaged,
+        so both bound what may be sent: each copy's restart point is taken (`_restart_point`) and the lower
         one wins — a copy on another transmit index than ours is no bound at all, and holds sends back like a
         store that has written nothing. The backup's writes fail on their own (EIO on its file, a full disk
         between the two writes): bounding by the store alone let sends run on while the copy stayed behind, and
@@ -979,7 +979,7 @@ class HAState(LocalState):
             floor_tx, floor_seq = self._floor_point()
             if floor_tx < tx:
                 # a repair after both copies are lost continues under the floor's index, and its guard keeps the
-                # counter going only up to one past the first beacon's — which may lie below ours (S4-8)
+                # counter going only up to one past the first beacon's — which may lie below ours
                 return tx, 0
             if floor_tx == tx:
                 # ... and this far past the floor's number; a floor ahead of us bounds nothing here
@@ -995,7 +995,7 @@ class HAState(LocalState):
         written with `clean: False`, `_snapshot`). Any other record gets `SEQ_RESTART_MARGIN`, exactly as a real
         restart's `LocalState.load()` would add.
 
-        Read once per written content (review-4 R4-9): checking the record parses the whole replay list, and
+        Read once per written content: checking the record parses the whole replay list, and
         `reserve_seq` asks for every PDU sent — a quarter of a millisecond with 600 sources, twice. A write never
         edits what landed before, it replaces `written` (`SeqStore._async_write_data`, the setup's own
         `store.written = data`), so the object it is read from tells whether the point still holds.

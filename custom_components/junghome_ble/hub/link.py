@@ -1,4 +1,4 @@
-"""The proxy link of one hub: proxy choice, connection, watchdog, keep-alive, Filter Status watch, grace (A4-3).
+"""The proxy link of one hub: proxy choice, connection, watchdog, keep-alive, Filter Status watch, grace.
 
 `connection_loop` keeps a link: it picks the strongest proxy node of this mesh in range (`visible_proxies`,
 `ours`), connects (`_connect_to`, through bleak-retry-connector), watches the link (`_watch_link`: a silent proxy
@@ -145,7 +145,7 @@ LINK_HISTORY = 20  # links the diagnostics describe (`JungHomeHub.link_history`)
 
 @dataclass(frozen=True)
 class LinkRecord:
-    """One past link, for the diagnostics (review-4 R I-9: nothing told why the links of the last hours ended).
+    """One past link, for the diagnostics (nothing told why the links of the last hours ended).
 
     The proxy is named by its mesh address only, never by its Bluetooth MAC.
     """
@@ -212,7 +212,7 @@ class LinkManager:
         A lost link is usually replaced within seconds by the next proxy node; flapping every entity to unavailable
         and back for that (and failing a command sent meanwhile) is worse than a short wait (`JungHomeHub._command`). A link
         counts once `_connect_to` took it: `connected` turns True inside `attach()` already, and a link lost before
-        that is a failed connection, not one to show as up for a moment (review-4 R4-3).
+        that is a failed connection, not one to show as up for a moment.
         """
         if self.hub.connected and self._link_end is None:
             return True
@@ -241,7 +241,7 @@ class LinkManager:
     def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
         """Proxy nodes of *this* network currently advertising, strongest first.
 
-        Those heard within PROXY_ADVERT_MAX_AGE come first (review-3 C5): a node switched off keeps its last,
+        Those heard within PROXY_ADVERT_MAX_AGE come first: a node switched off keeps its last,
         possibly strongest, advertisement in the history for a long time, and connecting to it costs a timeout.
         """
         out = [
@@ -278,7 +278,7 @@ class LinkManager:
     def ours(self, info: bluetooth.BluetoothServiceInfoBleak) -> bool:
         """Whether a proxy advert is of *this* network (Network ID or one of our nodes' Node Identity).
 
-        Only such an advert wakes the connection loop while unlinked (review-4 R4-8): every other network's proxies
+        Only such an advert wakes the connection loop while unlinked: every other network's proxies
         in range woke it before, each wake-up a `visible_proxies` pass over every advert HA holds, to find nothing.
         """
         if not (sd := info.service_data.get(MESH_PROXY_SERVICE)):
@@ -288,7 +288,7 @@ class LinkManager:
     async def connection_loop(self) -> None:
         """Keep a link: connect to the best proxy node in range, watch it, and connect again when it goes.
 
-        An unexpected error in one pass is logged and the loop goes on after a pause (review-3 C6: it used to end
+        An unexpected error in one pass is logged and the loop goes on after a pause (it used to end
         the task, and with it every link until a reload).
         """
         failed: dict[str, float] = {}
@@ -369,7 +369,7 @@ class LinkManager:
     ) -> float:
         """Weigh the link to `address` that just ended (`_link_end`) against its proxy; the pause before the next pass.
 
-        A link lost within SHORT_LINK is a failed connection that only took longer to show (review-4 R4-1): the
+        A link lost within SHORT_LINK is a failed connection that only took longer to show: the
         back-off doubles, and after SHORT_LINK_STREAK of them in a row the node is set aside like one that cannot be
         connected to (`failed`), so the next pass prefers another node — the strongest one was otherwise picked
         again and again, each new link restarting the connect-time refresh. Only a long link resets the back-off.
@@ -467,7 +467,7 @@ class LinkManager:
 
         An answer from another node travels the mesh through the proxy, which proves it still forwards in both
         directions; the proxy node's own element only proves the GATT link (better than nothing on a mesh where
-        it is the only load). Nodes that cannot answer are left out (review-3 C4: a healthy quiet link was dropped
+        it is the only load). Nodes that cannot answer are left out (a healthy quiet link was dropped
         for asking an unplugged node, a dead one or a sleeping battery transmitter three times) — unless nothing
         else is left, when any element is better than none.
         """
@@ -537,7 +537,7 @@ class LinkManager:
     def set_link_state(self, state: str) -> None:
         """Record the link's state (one of `LINK_STATES`) and tell the link state sensor when it changed.
 
-        Every change is one DEBUG line of `key=value` fields (review-4 A4-14), so a log can be searched by them.
+        Every change is one DEBUG line of `key=value` fields, so a log can be searched by them.
         """
         if state == self.hub.link_state:
             return
@@ -594,7 +594,7 @@ class LinkManager:
         self.hub.link_count += 1
         await self.hub.proxy.attach(client, beacon_wait=CONNECT_BEACON_WAIT)
         if not self.hub.proxy.connected:
-            # lost while attach() settled after the filter request (review-4 R4-3): a failed connection, not a link
+            # lost while attach() settled after the filter request: a failed connection, not a link
             # to report as up for a moment and then as lost — the entities would flap
             raise ConnectionError("the link was lost while it was set up")
         self.previous_link = self._link_end or NO_LINK
@@ -728,7 +728,7 @@ class LinkManager:
     async def drop_link(self, reason: str, *, penalise: bool | None) -> None:
         """End the current link ourselves, for `reason`; `penalise` as in `LinkEnd`.
 
-        Every path that detaches a link it still had goes through here (review-4 R4-3: only a transport's
+        Every path that detaches a link it still had goes through here (only a transport's
         disconnect used to start the link-loss grace, so a link the watchdog or the `pdus_dropped` repair dropped
         made every entity unavailable at once, and Home Assistant skipped them in a command meanwhile). The end is
         recorded — and the grace started — before the detach: `detach` clears `connected` at once and then waits

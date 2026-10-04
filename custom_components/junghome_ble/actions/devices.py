@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 
-# The `locate_node` action (review-4 F4-15): seconds of Node Identity advertising. A node stops by itself after 60 s
+# The `locate_node` action: seconds of Node Identity advertising. A node stops by itself after 60 s
 # (Mesh Profile §7.2.2.2.3), so longer would not hold; the Set off follows after the time asked for.
 LOCATE_SECONDS: Final = 60
 LOCATE_MIN_SECONDS: Final = 5
@@ -62,7 +62,7 @@ ATTR_STATIC_OOB = "static_oob"
 def _static_oob(value: Any) -> bytes:
     """Return the Static OOB value hexadecimal text gives (16 or 32 bytes; spaces, `-` and `:` ignored).
 
-    The error never repeats the value: it authenticates the device's provisioning (review-4 P4-8).
+    The error never repeats the value: it authenticates the device's provisioning.
     """
     text = "".join(c for c in cv.string(value) if c not in " -:")
     try:
@@ -125,7 +125,7 @@ async def _find_new_devices(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
 
 
 async def _add_device(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Provision and commission a new JUNG device, record it, reload the entry (review-3 N3, experimental).
+    """Provision and commission a new JUNG device, record it, reload the entry (experimental).
 
     Refused unless the entry's *Allow Home Assistant to add devices* option is on. Admin only: it hands the
     device the mesh's keys.
@@ -175,7 +175,7 @@ def _update_pending_issue(
 async def _reset_pending_device(
     hass: HomeAssistant, call: ServiceCall
 ) -> ServiceResponse:
-    """Reset a device `add_device` provisioned but did not record, and forget it (review-4 D2, unverified on air).
+    """Reset a device `add_device` provisioned but did not record, and forget it (unverified on air).
 
     Refused unless the entry's *Allow Home Assistant to add devices* option is on. Admin only: it sends a Config
     Node Reset with a device key only the vault holds. `force` forgets a device that does not confirm its reset.
@@ -208,7 +208,7 @@ async def _reset_pending_device(
 
 
 async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Reset a node and take it out of the network, then reload (review-3 N4, experimental; irreversible).
+    """Reset a node and take it out of the network, then reload (experimental; irreversible).
 
     Refused unless the entry's *Allow Home Assistant to add devices* option is on, and without `confirm` (it
     cannot be undone; a dry run needs none); `force` records the removal of a node that does not confirm its
@@ -236,7 +236,7 @@ async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
 
 
 async def _locate_node(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Have a node advertise its Node Identity for `duration` seconds (review-4 F4-15; unverified on air).
+    """Have a node advertise its Node Identity for `duration` seconds (unverified on air).
 
     Admin only: a Config Node Identity Set, sealed with the node's device key, then the same Set off
     (`JungHomeHub.async_locate`). It changes nothing but what the node advertises, and the node stops by itself

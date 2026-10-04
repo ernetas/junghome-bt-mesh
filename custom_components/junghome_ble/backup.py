@@ -1,4 +1,4 @@
-"""Backup platform: mark the sequence-number records while Home Assistant takes a backup (review-4 D5).
+"""Backup platform: mark the sequence-number records while Home Assistant takes a backup.
 
 A restored backup brings `.storage/junghome_ble.seq.<mesh uuid>`, its `.backup` copy and the repair's `.floor` back
 together, readable, and nothing in them could tell that numbers were sent since: the next start resumed below them

@@ -1,6 +1,6 @@
 """Nodes: recording one Home Assistant provisioned, removing one from the network, the time keeper's publication.
 
-`Nodes` (review-4 brief 55): the configurator's operations on a node as a whole — the new node's entry in the export
+`Nodes`: the configurator's operations on a node as a whole — the new node's entry in the export
 (`record_node`), Config Node Reset and the unwiring of every link to the node (`remove_node`), and a PP2 puck's Time
 Server publication (`set_time_keeper`).
 """
@@ -47,7 +47,7 @@ _LOGGER = logging.getLogger(__name__)
 NODE_RESET_TIMEOUT = (
     3.0  # seconds to wait for a Node Reset Status, per attempt (three attempts)
 )
-# an unconfirmed reset: how long to look for the node advertising as a new device, and how often (review-4 W4-7)
+# an unconfirmed reset: how long to look for the node advertising as a new device, and how often
 RESET_ADVERT_WAIT = 5.0
 RESET_ADVERT_POLL = 0.5
 
@@ -65,7 +65,7 @@ class Nodes(Operations):
         function: int | None = None,
         layout: int | None = None,
     ) -> DeviceCount | None:
-        """Record a node Home Assistant just provisioned and commissioned (review-3 N3; `onboard.async_add_device`).
+        """Record a node Home Assistant just provisioned and commissioned (`onboard.async_add_device`).
 
         On the export as it is now (the gateway's, when the app changed it meanwhile): the template's entry is
         turned into the new node's (`entry_for`), then `onboarding.record` adds it with what the node answered, its
@@ -87,7 +87,7 @@ class Nodes(Operations):
                 node,
                 function if function is not None else template_now.insert_function,
             )
-            # the vault keeps what the file got for it (review-3 N1): the app's next upload lacks the node
+            # the vault keeps what the file got for it: the app's next upload lacks the node
             self.hub.vault.identity().remember_recorded(pf, node.uuid)
             await self.store.save(pf)
             await self.hub.vault.async_save()
@@ -95,17 +95,17 @@ class Nodes(Operations):
             return count
 
     async def remove_node(self, unicast: int, *, force: bool = False) -> bool:
-        """Remove the node whose primary element is `unicast` from the network (review-3 N4, experimental).
+        """Remove the node whose primary element is `unicast` from the network (experimental).
 
         The app's order, with the reset first: Config Node Reset to the node (it forgets its keys and becomes an
         unprovisioned device again); only once it confirmed — or with `force`, for a node that is gone for good —
         every other node's wiring to it is removed (`ProjectFile.remove_node`: its element groups, publications to
         it) and the file records it as excluded. The reset cannot be taken back, so a stop of that unwiring — a
-        cancellation too (D12) — still records the removal itself (`ProjectFile.exclude_node`) with what the
+        cancellation too — still records the removal itself (`ProjectFile.exclude_node`) with what the
         others accepted, and the vault forgets the node either way. The gateway node is refused: taking it out is
         a takeover of its own (plan N11).
 
-        A node can take the reset and lose its status (review-4 W4-7): an unconfirmed reset is looked into
+        A node can take the reset and lose its status: an unconfirmed reset is looked into
         (`_reset_unconfirmed`) rather than reported as nothing changed. The node carrying Home Assistant's link
         (`hub.proxy_node`) is refused without `force`: its reset ends the link its confirmation would come back
         on. With `force` the link lost on its reset is that silence, and the unwiring waits for the next link.
@@ -230,7 +230,7 @@ class Nodes(Operations):
         return True
 
     async def set_time_keeper(self, node_unicast: int, on: bool) -> bool:
-        """Point the node's Time Server at the PP2 pucks' time keeper group, or stop: the app's time keeper (F4-14).
+        """Point the node's Time Server at the PP2 pucks' time keeper group, or stop: the app's time keeper.
 
         `TimeKeeperConfiguration` (network-logic.md §6.2): on, the node's Time Server (`1200`) publishes to `FEFF`
         — the CDB's `#time_keeper_group#`, added when the export lacks it — bound to AppKey 0 first where the export

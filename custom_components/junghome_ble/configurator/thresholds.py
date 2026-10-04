@@ -1,6 +1,6 @@
 """A metering socket's threshold wiring and a node's sensor publication, as Config plans.
 
-`Thresholds` (review-4 brief 55): the loads a socket's thresholds switch subscribe to its meter element's group, as
+`Thresholds`: the loads a socket's thresholds switch subscribe to its meter element's group, as
 the app's `CreateThreshold` wires them (the thresholds' values are `thresholds.py`'s), and the *Sensor values for
 IoT systems* publications of a node's Sensor Servers.
 """
@@ -87,7 +87,7 @@ class Thresholds(Operations):
         and publishes there, then each load subscribes its JUNG User Property Server (`0x0527:1013`, where it has
         one) and its OnOff server to that group; a load no longer wanted leaves it (`threshold_wiring`). Both
         thresholds of the socket share the list: the app wires one client for both. The caller writes the
-        threshold first, as the app does; `applied` words a stop, with what the call wrote before (W4-13).
+        threshold first, as the app does; `applied` words a stop, with what the call wrote before.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -145,7 +145,7 @@ class Thresholds(Operations):
         again — even when no load was left to unwire. The steps go out in that order
         (`PlanExecutor.send(as_planned=True)`). A publication the client does not have to its group is left alone. The
         app also writes KeyMode 5 to the meter element around it, which that element does not hold
-        (`air:access:03-0527:0x5003`): not sent. `applied` words a stop, with what the call wrote before (W4-13).
+        (`air:access:03-0527:0x5003`): not sent. `applied` words a stop, with what the call wrote before.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -209,7 +209,7 @@ class Thresholds(Operations):
         publishes on change) are inferred, not captured.
 
         `live` is what the node last answered (the switch's read, None when it has not): a node that differs from
-        `on` gets its Publication Sets even where the export already agrees (review-4 W4-6) — the app changed it
+        `on` gets its Publication Sets even where the export already agrees — the app changed it
         since, or never recorded it, and the switch shows the node's state, so a skip would leave it unchangeable.
         Unverified on air.
         """

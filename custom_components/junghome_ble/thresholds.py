@@ -133,7 +133,7 @@ def switched_devices(hub: JungHomeHub, socket: Socket) -> list[int]:
 
 @dataclass
 class ThresholdProgress:
-    """What a threshold action wrote so far, for the error of the write or wiring plan that stops it (W4-13).
+    """What a threshold action wrote so far, for the error of the write or wiring plan that stops it.
 
     A call writes socket after socket, each its threshold(s) and then its wiring: the error of a later one used
     to say that nothing before it was applied, though thresholds and whole sockets were. `written` are the

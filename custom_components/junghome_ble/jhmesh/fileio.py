@@ -80,7 +80,7 @@ def copy_private(src: Path, dst: Path, mode: int) -> None:
 
 
 def keep_backup(real: Path, mode: int) -> None:
-    """Copy `real` to `<name>.bak`, the older generations moved one down and the oldest dropped (review-3 W7).
+    """Copy `real` to `<name>.bak`, the older generations moved one down and the oldest dropped.
 
     One generation was not enough: every write replaced it, so a bad change noticed one change later — or a
     gateway export adopted and saved over right away — left nothing to go back to.

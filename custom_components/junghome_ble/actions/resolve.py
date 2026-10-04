@@ -218,7 +218,7 @@ async def _resolve_loads(
 
 
 def _room_of(hass: HomeAssistant, data: Mapping[str, Any]) -> str:
-    """Return the room a call names: `room`, or the area `room_area` — the room called like it (review-4 U4-13)."""
+    """Return the room a call names: `room`, or the area `room_area` — the room called like it."""
     if (area_id := data.get(ATTR_ROOM_AREA)) is None:
         return str(data[ATTR_ROOM])
     area = ar.async_get(hass).async_get_area(area_id)

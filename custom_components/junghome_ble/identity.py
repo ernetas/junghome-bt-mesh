@@ -1,4 +1,4 @@
-"""Home Assistant's provisioner identity and key vault in `.storage` (review-3 N1; `jhmesh.vault`).
+"""Home Assistant's provisioner identity and key vault in `.storage` (`jhmesh.vault`).
 
 One vault per mesh, `.storage/junghome_ble.vault.<mesh uuid>` (owner-only, written atomically), kept like the
 mesh's sequence-number store when an entry is removed: it holds the device keys of the nodes Home Assistant
@@ -12,7 +12,7 @@ ever logged.
 
 Every write is checked (`TrackedStore`, as the sequence store's): Home Assistant's `Store.async_save` only logs a
 failed write (a full disk, a filesystem remounted read-only) and returns as if it had landed, so `async_save` says
-whether it did, and one that did not is retried by the next save, changed or not (review-4 D15). A `.backup` copy
+whether it did, and one that did not is retried by the next save, changed or not. A `.backup` copy
 (`….vault.<mesh uuid>.backup`) is written after every write that landed; it is read when the vault is missing (Home
 Assistant renames a file that is no JSON aside) or does not read back.
 

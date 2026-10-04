@@ -10,7 +10,7 @@ locks a light or socket says `lock` (`devices.with_key_lock`, unverified on air)
 Every event of a key is also published on the Home Assistant bus as `EVENT_BUTTON_ACTION`, because a device trigger
 (`device_trigger.py`) can only attach to a bus event, not to an entity (this is how HA's own button integrations do
 it). The hub publishes it (`publish_button_event`, from `JungHomeHub.fire_button`), not the entity: a key whose event
-entity is disabled keeps its device triggers and logbook lines (review-4 H4-2), the event then without `entity_id`.
+entity is disabled keeps its device triggers and logbook lines, the event then without `entity_id`.
 A `scene` event additionally publishes `EVENT_SCENE_RECALLED`, named after the scene, so automations and the logbook
 can follow scene recalls without knowing which key is wired to which scene. The hub publishes the same event for the
 app's and the gateway's recalls, for our own, and — from the Scene Status the members publish after a recall — for

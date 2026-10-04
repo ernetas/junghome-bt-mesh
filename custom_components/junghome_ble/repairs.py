@@ -11,9 +11,9 @@ configuration change cut off by a stop or crash, recorded at the next setup) is 
 `node_clock_wrong` (a node that may run schedules has a wrong clock or zone offset, `node_clocks.py`) sends Time Set
 now and asks those nodes again; their answers clear it. Unverified on air.
 
-Review-4 U4-5 added the fixes a user would otherwise look up the way to: `gateway_sync_failed` runs the action
+The fixes a user would otherwise look up the way to: `gateway_sync_failed` runs the action
 *Sync gateway* (`GatewaySyncFlow`); `address_in_use` moves Home Assistant to the free address it suggests
-(`FreeAddressFlow`); `unknown_nodes`, `export_stale`, `key_refresh` and `app_changed` (review-4 U4-6, raised for an
+(`FreeAddressFlow`); `unknown_nodes`, `export_stale`, `key_refresh` and `app_changed` (raised for an
 entry set up from a file only) load a new export — fetched again from the gateway with the access the entry holds, or
 uploaded for an entry set up from a file (`NewExportFlow`, with the config flow's own steps:
 `config_flow.async_fetch_to_store`, `async_take_upload`, `async_replace_export`);
@@ -165,7 +165,7 @@ class SkipAheadFlow(RepairsFlow):
     async def _async_skip_lost_record(self, entry: ConfigEntry) -> RepairsFlowResult:
         """`seq_store_lost`: write the record past every number sent, then set the entry up again.
 
-        Aborted when the floor's write did not land (review-4 S4-7): nothing else was written, the setup stays
+        Aborted when the floor's write did not land: nothing else was written, the setup stays
         refused, and so the issue stays too — it used to be deleted all the same, leaving nothing to repair from.
         """
         if (

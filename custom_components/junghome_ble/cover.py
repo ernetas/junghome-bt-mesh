@@ -28,7 +28,7 @@ the state changes when the element publishes (or answers) its Generic Level Stat
 position's stop sent to the slat element: no JUNG client does it (the app has a slat slider only), it is the
 plain Generic Level server semantics of the SIG spec (class c).
 
-End positions (review-4 F4-16). As the app's arrows, open does nothing at all while the blind reports itself fully
+End positions. As the app's arrows, open does nothing at all while the blind reports itself fully
 open and close nothing while fully closed; the slats are refused while the blind is fully open, where the app
 disables its slat slider. Unverified on air.
 

@@ -78,7 +78,7 @@ async def _sync_gateway(hass: HomeAssistant, call: ServiceCall) -> ServiceRespon
 
 
 async def _export_network(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Answer the export the entry uses, as the app's share file (default) or the CDB flavour (review-3 N12).
+    """Answer the export the entry uses, as the app's share file (default) or the CDB flavour.
 
     For a backup, or to hand the installation to the app ("import from file") with what Home Assistant changed.
     Admin only: the answer carries every key of the mesh (NetKey, AppKey, each node's device key).
@@ -139,7 +139,7 @@ def _gateway_failure(key: str, **placeholders: str) -> HomeAssistantError:
 async def _approve_gateway_client(
     hass: HomeAssistant, call: ServiceCall
 ) -> ServiceResponse:
-    """List the API clients waiting for approval at the gateway; approve the one `client` names (review-4 F4-17).
+    """List the API clients waiting for approval at the gateway; approve the one `client` names.
 
     Admin only, and only explicit: nothing is approved without a name, and only a name the gateway lists as waiting
     right now (`GET config`, `api_client_name_asking`) — an approved client gets the gateway's whole API, the

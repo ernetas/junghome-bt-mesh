@@ -72,7 +72,7 @@ __all__ = [
     "upper_encrypt_dev",
 ]
 
-# the proxy reassembly logs per frame it drops: traffic, on the `jhmesh.trace` logger (`client.trace`, review-4 A4-14)
+# the proxy reassembly logs per frame it drops: traffic, on the `jhmesh.trace` logger (`client.trace`)
 trace = logging.getLogger("jhmesh.trace")
 
 UNASSIGNED = 0x0000

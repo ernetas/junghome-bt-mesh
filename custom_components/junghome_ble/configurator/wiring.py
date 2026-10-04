@@ -1,8 +1,8 @@
 """What the mesh's models are, what is wired to what, and the plans that rewire it — pure.
 
 The modes and model ids of the configurator, the wiring read from an export (element groups, sensor publication,
-threshold wiring), the export's paths and digest, and the planners of rooms, key links and scenes as plain functions
-(review-4 brief 55): a `ProjectFile` and its CDB in, steps out. A refusal is a `PlanError`; no Home Assistant import.
+threshold wiring), the export's paths and digest, and the planners of rooms, key links and scenes as plain functions:
+a `ProjectFile` and its CDB in, steps out. A refusal is a `PlanError`; no Home Assistant import.
 """
 
 from __future__ import annotations
@@ -112,9 +112,8 @@ ROOM_MODES = frozenset(ROOM_FUNCTIONS)
 DETECTOR_MODES = frozenset({MODE_LIGHT, MODE_SWITCH, MODE_MOVE})
 # a scene link's key mode: never a `mode` of the action, which names the scene instead (`assign_key(scene=…)`)
 MODE_SCENE = "scene"
-# blinds and room thermostats: no such device was ever wired from here; scene links: never tried on a real device
-# (review-3 F15); lock links: written from the app's code alone, no capture of the app making one yet (review-4
-# brief 38)
+# blinds and room thermostats: no such device was ever wired from here; scene links: never tried on a real device;
+# lock links: written from the app's code alone, no capture of the app making one yet
 UNTESTED_MODES = frozenset({MODE_MOVE, MODE_SCENE, MODE_LOCK, MODE_TEMPERATURE})
 MODES = tuple(KEY_MODES)
 # `DeviceConnection.Element` beyond the target's own element (network-logic.md §2.1), with the mode the target's kind
@@ -347,7 +346,7 @@ def pre_adopt_path(cdb_path: str | Path) -> Path:
 def load_project(cdb_path: str, metadata_dir: str | None) -> ProjectFile:
     """Blocking: read the export (either flavour) with the optional iOS app-container names overlaid.
 
-    New rooms and scenes of the file are allocated from the top of the app's ranges (review-4 W4-2): the app never
+    New rooms and scenes of the file are allocated from the top of the app's ranges: the app never
     downloads the project, so it does not know them until it imports a file, and gives its own next room or scene
     the lowest number it believes free. With the provisioner identity on they go into Home Assistant's own ranges.
     """
@@ -526,7 +525,7 @@ def _clear_plan(pf: ProjectFile, key: Element) -> list[ConfigStep]:
             steps += config_steps(pf, pf.set_publication(key.node, key, model, None))
         for group in key.subscriptions(model):
             if not deletable(group):
-                # review-3 W12: no Subscription Delete can carry it; the key keeps it, the rest is cleared
+                # no Subscription Delete can carry it; the key keeps it, the rest is cleared
                 _LOGGER.warning(
                     "Key %04X keeps its subscription to %04X (model %s): a virtual or fixed group address "
                     "cannot be removed from here",
@@ -596,7 +595,7 @@ def plan_room_link(
             pf.path,
             key.address,
         )
-    # review-3 W5: loads the stopped plan did subscribe need the row, or no later clear unwires them
+    # loads the stopped plan did subscribe need the row, or no later clear unwires them
     prepare: Note = {
         "kind": "room_link",
         "key": key.address,
@@ -728,7 +727,7 @@ def property_user_steps(
         if group is None or not has_model(element, USER_PROPERTY_SERVER):
             continue
         if pf.publication(element, USER_PROPERTY_SERVER) != group:
-            # a model publishes with the AppKey it is bound to: bind first, as the app does (review-3 W10)
+            # a model publishes with the AppKey it is bound to: bind first, as the app does
             bind = bind_step(element, USER_PROPERTY_SERVER)
             if bind is not None:
                 steps.append(bind)
@@ -862,7 +861,7 @@ def scene_key_steps(
     key of that device whose cached scene link (`keyModeSceneConfigExports`, the app's `KeyModeSceneConfig`
     cache) names the scene loses its connections, as `clear_key` clears a key. Keys of other devices keep
     their link, as in the app. Unlike the app, the row alone is not enough: the key's Scene Client must still
-    publish to all nodes, the scene key's wiring — a row can outlive the link it cached (review-3 W2), and
+    publish to all nodes, the scene key's wiring — a row can outlive the link it cached, and
     clearing a key wired to a load or the gateway because of it would take a working key away.
     """
     linked = pf.scene_link_keys(number)

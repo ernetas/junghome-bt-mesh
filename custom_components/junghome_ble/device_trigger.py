@@ -111,7 +111,7 @@ TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
 
 
 def key_subtypes(hub: JungHomeHub, button: Button) -> tuple[str, ...]:
-    """Return the trigger subtypes `button` can produce, in `TRIGGER_SUBTYPES` order (review-4 H I-3, U4-9).
+    """Return the trigger subtypes `button` can produce, in `TRIGGER_SUBTYPES` order.
 
     The key's mode as the node reported it (0x5003, read once its *Key mode* sensor is enabled) comes first: it is
     what the key sends now, whatever the export says. Otherwise the connection the export shows (`KeyConnection`).

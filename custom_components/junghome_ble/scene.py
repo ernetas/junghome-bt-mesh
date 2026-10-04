@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from .jhmesh.devices import SceneDef
 
 PARALLEL_UPDATES = 0  # push-based
-# Whether a Scene Recall carries HA's `transition` (review-4 F4-1). Neither the app nor the gateway sends one, and
+# Whether a Scene Recall carries HA's `transition`. Neither the app nor the gateway sends one, and
 # whether JUNG firmware fades a recall — or ignores a Recall that carries a transition — is up to the on-air probe
 # (`docs/hidden-features.md` §11): off until it ran (unverified on air), and a `transition` is ignored, the Recall
 # keeping the bytes it always had.

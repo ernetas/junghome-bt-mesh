@@ -1,6 +1,6 @@
 """Scenes: creating, storing on the loads, removing from them, deleting — and the scene numbers a device still holds.
 
-`Scenes` (review-4 brief 55) runs the app's scene sequences on the loads' Scene Setup and Scene Action Setup servers
+`Scenes` runs the app's scene sequences on the loads' Scene Setup and Scene Action Setup servers
 through the `PlanExecutor`'s requests (a stop records the members done before it), clears the keys recalling a scene
 with a Config plan first, and keeps the held numbers a forced deletion skipped (`held_scenes`).
 """
@@ -78,7 +78,7 @@ def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
     """Return the entry's held scene numbers (`.storage/junghome_ble.<entry id>.held_scenes`), one instance per entry.
 
     `{"held": [[number, element], ...]}`: the scene registers a forced `delete_scene` skipped, which still hold a
-    number the export no longer names (review-4 W4-8). `create_scene` does not hand such a number out again — the
+    number the export no longer names. `create_scene` does not hand such a number out again — the
     skipped device would join every recall of the new scene — and `delete_unused_scenes` lets go of a pair once the
     register no longer holds it. Numbers and addresses, no key material.
     """
@@ -144,7 +144,7 @@ class Scenes(Operations):
     ) -> bool:
         """Whether another channel of the node still holds a JUNG action for `number` (its register is shared).
 
-        `applied` is what an error says was done before the check (review-3 W14: the caller knows whether this
+        `applied` is what an error says was done before the check (the caller knows whether this
         channel's description was cleared at all, and which loads of the call were removed before it).
         """
         for other in _sibling_channels(element):
@@ -174,7 +174,7 @@ class Scenes(Operations):
         """Create an empty scene (CDB `scenes[]` + `meta.scenes[]`); nothing goes on air. Returns its number.
 
         Not a number a device still holds after a forced deletion skipped it (`held_scenes`): that device would
-        join every recall of the new scene (review-4 W4-8).
+        join every recall of the new scene.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -260,7 +260,7 @@ class Scenes(Operations):
         """Store one load's scene; `applied` says what the loads before it left recorded (for the error).
 
         A channel whose state is unknown (`action` None) is not stored beside another light or socket channel of
-        its node with a Scene Action Setup server (review-3 W6): the app — and `_forget_scene` after it — tells
+        its node with a Scene Action Setup server: the app — and `_forget_scene` after it — tells
         the members of such a node by their JUNG action, so removing the other channel from the scene would
         delete the shared register and drop this one without a word. (A blind's slat element is no channel a
         scene is stored on by itself.)
@@ -296,7 +296,7 @@ class Scenes(Operations):
                 applied=applied,
             )
         # stored: the member is recorded whatever the description write does next; the values the app shows for
-        # it (`meta.sceneInfo`, review-4 F4-6) are the stored action's once that is in, and none before
+        # it (`meta.sceneInfo`) are the stored action's once that is in, and none before
         pf.set_scene_addresses(number, [*pf.cdb.scenes.get(number, []), store.address])
         pf.remove_scene_info(number, element.node, element.location)
         if action is not None and has_model(element, SCENE_ACTION_SETUP):
@@ -408,7 +408,7 @@ class Scenes(Operations):
         (`removeScene(scene, force)`): then that member is skipped, keeps the scene in its register, and the scene
         leaves the export all the same. A skipped member's number is held (`held_scenes`, the `scene_held` repair
         names it) until `delete_unused_scenes` deletes it there: a new scene with that number would also recall
-        the skipped member (review-4 W4-8). Returns the skipped members (`["0232"]`); the device model always
+        the skipped member. Returns the skipped members (`["0232"]`); the device model always
         changes.
         """
         async with self.store.lock:
@@ -512,9 +512,9 @@ class Scenes(Operations):
         and the error names the numbers deleted before it (`applied_unused_deleted`); nothing of this is in the
         export, so nothing is written.
 
-        Judged by what the export *lacks*, so only on an export known to be current (review-4 W4-3): the app's
+        Judged by what the export *lacks*, so only on an export known to be current: the app's
         scenes made since a file was exported are no scene of that file, and the call deleted them from every
-        device while the app still listed them. A `dry_run` (the default, decision M3) sends the Gets only and
+        device while the app still listed them. A `dry_run` (the default) sends the Gets only and
         answers what it would delete. A gateway entry plans on the gateway's export or not at all
         (`service_gateway_export_unavailable`, dry run included); an entry set up from a file deletes only with
         `confirm_stale_export` (the user vouches for the file) or the `numbers` to delete, which restrict the

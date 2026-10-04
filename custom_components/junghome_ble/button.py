@@ -15,7 +15,7 @@ keeps no power-on hours (unverified on air). Like the counters it zeroes (`senso
 off by default.
 
 *Fetch export from gateway*, on the gateway node's device of an entry set up from the gateway, asks the gateway for its
-export now and takes it over when the app changed something since (`app_follow.AppFollower`, review-4 U4-6): what the
+export now and takes it over when the app changed something since (`app_follow.AppFollower`): what the
 entry otherwise does a few minutes after the phone was heard on the mesh, and every six hours. Unverified on air.
 """
 

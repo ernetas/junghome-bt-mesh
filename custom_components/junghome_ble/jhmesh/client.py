@@ -56,7 +56,7 @@ from .pdu import (
     upper_encrypt,
 )
 
-# `LocalState`, its exceptions and constants moved to `state` (review-4 A4-9); re-exported below. `_check_range` keeps
+# `LocalState`, its exceptions and constants moved to `state`; re-exported below. `_check_range` keeps
 # an explicit alias instead: it is private, so not in `__all__`, and the integration checks its stored records with it.
 from .state import (
     IV_INDEX_MAX,
@@ -118,7 +118,7 @@ __all__ += [
 ]
 
 log = logging.getLogger("jhmesh")
-# per-PDU lines — what was sent and received, what was dropped and why — go to a child logger (review-4 A4-14): traffic
+# per-PDU lines — what was sent and received, what was dropped and why — go to a child logger: traffic
 # can be logged at DEBUG alone, or left out of a `jhmesh` DEBUG log; link lifecycle and anomalies stay on `jhmesh`
 trace = logging.getLogger("jhmesh.trace")
 
@@ -242,7 +242,7 @@ def _log_orphaned_write(task: asyncio.Task[None]) -> None:
 
 
 class _Lazy:
-    """A log argument rendered only when the record is (review-3 T9: `describe` ran for every send at any level)."""
+    """A log argument rendered only when the record is (`describe` ran for every send at any level)."""
 
     __slots__ = ("render",)
 
@@ -383,7 +383,7 @@ class ProxyClient:
         # another client sends from it (`_on_own_source`) — and when it was last reported (monotonic)
         self.foreign_own_source: tuple[int, int] | None = None
         self._foreign_reported_at: float | None = None
-        # on the current link: the (IV index, SEQ) of the last proxy configuration PDU taken (review-4 P4-7)
+        # on the current link: the (IV index, SEQ) of the last proxy configuration PDU taken
         self._proxy_config_last: tuple[int, int] | None = None
         self._reasm = ProxyReassembler()
         self._segments: dict[tuple[int, int], dict[str, Any]] = {}
@@ -391,7 +391,7 @@ class ProxyClient:
         # sequence numbers, the sender missed our ack) after its reassembly expired is not delivered twice
         self._seq_auth_done: dict[int, tuple[int, int]] = {}
         # (match, future, shows): `shows` tests whether a status shows an acknowledged Set's requested state
-        # (`set_shown_by`), None for any other request (`_deliver`, review-4 D32)
+        # (`set_shown_by`), None for any other request (`_deliver`)
         self._waiters: list[
             tuple[
                 Callable[[AccessMessage], bool],
@@ -486,7 +486,7 @@ class ProxyClient:
     def key_refresh_target(self) -> tuple[int, bytes] | None:
         """The phase (1, 2 or 3) of the followed key refresh that is proven, with its new key; None when none is.
 
-        What Home Assistant may take the nodes only it knows to (`KeyRefreshFollower.distribution`, review-4 D11):
+        What Home Assistant may take the nodes only it knows to (`KeyRefreshFollower.distribution`):
         never a key one node's word alone gave.
         """
         return self._kr.distribution
@@ -574,7 +574,7 @@ class ProxyClient:
     def classify_service_data(self, sd: bytes) -> tuple[str, int | None] | None:
         """Interpret Mesh Proxy service data (0x1828). Returns (kind, node_addr) if it belongs to our network.
 
-        The verdict is kept by the bytes (`CLASSIFY_CACHE_SIZE`, review-4 R4-8): every advert of every proxy in
+        The verdict is kept by the bytes (`CLASSIFY_CACHE_SIZE`): every advert of every proxy in
         range comes here, a Node Identity costs one AES per node per key, and another network's — the one no node
         matches, so the whole scan — repeats for as long as its proxy advertises. The kept verdicts are for the
         keys accepted when they were made: a key refresh moving on (`_kr.rx_keys`) drops them all, and so does a
@@ -678,7 +678,7 @@ class ProxyClient:
 
         self._link_notify = on_notify
         try:
-            # bounded like every GATT call (review-4 R4-11): a subscription that never completes would hold the
+            # bounded like every GATT call: a subscription that never completes would hold the
             # caller's connection loop — and the connection slot — for good
             await asyncio.wait_for(
                 client.start_notify(MESH_PROXY_DATA_OUT, on_notify), GATT_TIMEOUT
@@ -696,7 +696,7 @@ class ProxyClient:
                 except SequenceStalled as err:
                     # back-pressure (HAState: the store's last save has not landed — a connect-time beacon that
                     # moved the IV index forces one), not exhaustion: without a filter the proxy stays on its
-                    # default whitelist and every group publication is lost for the whole link (review-3 T2)
+                    # default whitelist and every group publication is lost for the whole link
                     log.info("proxy filter held back (%s): sending it shortly", err)
                     self._filter_type = FILTER_BLACKLIST
                     self._start_filter_task(
@@ -765,7 +765,7 @@ class ProxyClient:
 
     @staticmethod
     async def _disconnect(client: Any) -> None:
-        """Disconnect `client`, best effort and bounded by `GATT_TIMEOUT` (review-4 R4-11).
+        """Disconnect `client`, best effort and bounded by `GATT_TIMEOUT`.
 
         A transport whose disconnect never returns (a stuck BlueZ or ESPHome proxy call) must not hold up the
         caller: the link is released already, and the transport's own timeout ends the connection eventually.
@@ -950,7 +950,7 @@ class ProxyClient:
     async def _write(self, msg_type: int, payload: bytes) -> None:
         """Write one proxy PDU, all of its SAR frames on the one link that was current when the write lock came.
 
-        Shielded from the caller's cancellation (review-3 T8): a PDU cut off between its SAR frames leaves the
+        Shielded from the caller's cancellation: a PDU cut off between its SAR frames leaves the
         proxy reassembling it, and it takes the next PDU's frames for the rest — both lost, the next one to a
         different message. A cancelled caller stops waiting; the frames still go out, and what their write
         raises then is only logged.
@@ -1074,7 +1074,7 @@ class ProxyClient:
         number lower than one they already accepted from us, so what is reserved first must reach the air
         first; segment acks (`_send_ack`) and proxy filter requests (`set_filter`) take it too. A segmented message
         holds it only while one round of segments is reserved and written, not while it waits for the
-        acknowledgement (up to seconds per round from an absent node — review-3 T4: every light command queued
+        acknowledgement (up to seconds per round from an absent node, with every light command queued
         behind it); segmented messages to one destination go one at a time (`_sar_lock`).
         """
         ttl = self.ttl if ttl is None else ttl
@@ -1323,7 +1323,7 @@ class ProxyClient:
         """Send and wait for a status from dst (any source if dst is a group).
 
         Each unanswered attempt is logged at DEBUG only; the `TimeoutError` after the last one is the caller's to
-        report (review-4 H4-7: a WARNING per attempt made every dead element log several lines on each link-up,
+        report (a WARNING per attempt made every dead element log several lines on each link-up,
         where the HA hub logs one line per node that goes unreachable).
 
         `timeout` is the wait for the reply of each of the `retries` attempts, counted from when its send is
@@ -1340,7 +1340,7 @@ class ProxyClient:
         satisfy this one. Only the oldest waiter a status fits is resolved by it — except that an acknowledged
         load Set's waiter passes over a status that does not show the state it asks for while a later request
         takes it (`set_shown_by`, `_deliver`): a Get out to the same element answered with the old state while the
-        Set was lost on the air does not confirm the Set (review-4 D32), which is sent again on its next attempt.
+        Set was lost on the air does not confirm the Set, which is sent again on its next attempt.
         """
         extra = match
 
@@ -1382,7 +1382,7 @@ class ProxyClient:
 
         `old_net_key` seals the network layer with the key every node holds until a key refresh completes (the
         export's, `KeyRefreshFollower.current`) rather than the one we transmit with — they differ in a proven
-        Phase 2 only: a node still waiting for its NetKey Update accepts nothing else (review-4 D11; relayed in
+        Phase 2 only: a node still waiting for its NetKey Update accepts nothing else (relayed in
         Phase 2 under the key it came with, §3.10.4.1 — unverified on air).
         """
         key = self._dev_key(node_unicast)
@@ -1473,7 +1473,7 @@ class ProxyClient:
         return got
 
     def _drop_waiter(self, fut: asyncio.Future[AccessMessage]) -> None:
-        """Remove a request's waiter *in place* (review-3 T1).
+        """Remove a request's waiter *in place*.
 
         A request still queued for the send lock holds a bound `self._waiters.append`, so the list object must
         never be replaced.
@@ -1543,7 +1543,7 @@ class ProxyClient:
     def _on_proxy_config(self, payload: bytes) -> None:
         """Take a proxy configuration PDU (§6.5): the Filter Status that names the proxy node and acknowledges our filter.
 
-        It gets the checks every other PDU gets (review-4 P4-7): CTL=1 and DST unassigned, as §6.5 requires of
+        It gets the checks every other PDU gets: CTL=1 and DST unassigned, as §6.5 requires of
         these and only these, and no replay — an (IV index, SEQ) at or below the last one taken on this link is
         dropped. Without them a recorded Filter Status could be played back to set `proxy_addr` and stand in for
         the acknowledgement of a filter the proxy never took. What is dropped is counted
@@ -1633,15 +1633,15 @@ class ProxyClient:
         return first
 
     def _follow_key_refresh(self, msg: AccessMessage) -> None:
-        """Learn a key refresh from the provisioner's own messages (review-3 N2b; §3.10.4, §4.3.2.8, §4.3.2.46).
+        """Learn a key refresh from the provisioner's own messages (§3.10.4, §4.3.2.8, §4.3.2.46).
 
         The app refreshes the NetKey by sending every node a Config NetKey Update with the new key, then Config Key
         Refresh Phase Set 2 and 3 (`docs/android/transport-provisioning.md` §4.2). They are sealed with each node's
         device key, which the export gives us, and the blacklist filter forwards them: without following them the
         link goes deaf at Phase 2 and dead at Phase 3, until the entry is set up again from a new export.
 
-        A node can seal the same messages with its own device key, so they are followed only as evidence (review-4
-        D4, `keyrefresh`): a NetKey Update or Phase Set counts when it is addressed to a JUNG device's primary
+        A node can seal the same messages with its own device key, so they are followed only as evidence
+        (`keyrefresh`): a NetKey Update or Phase Set counts when it is addressed to a JUNG device's primary
         element, opened with *that* device's key and not sent from a device's element; a NetKey Status or Key
         Refresh Phase Status when a device's primary element sealed it with its own key. Only proof moves the
         refresh past Phase 1, never a request.
@@ -1801,7 +1801,7 @@ class ProxyClient:
             self._on_segment(n, kind[1])
 
     def _on_own_source(self, n: NetworkPDU) -> None:
-        """Take a PDU from our own address: ours echoed back by a relay or the proxy, or another client's (review-4 S I2).
+        """Take a PDU from our own address: ours echoed back by a relay or the proxy, or another client's.
 
         An echo carries a number we handed out (`_handed_out`) and is dropped silently, as always. Anything else
         proves a second client on our address — a second Home Assistant, the CLI on its address, a restored store —
@@ -2080,7 +2080,7 @@ class ProxyClient:
         # every pending predicate sees it (collect() gathers through its own, never resolving), but one status
         # answers one request: the oldest waiter it fits, skipping an acknowledged Set's when the status does not
         # show the state the Set asks for and a later waiter takes it — a Get to the same element answered with the
-        # old state while the Set was lost on the air (review-4 D32). With no other waiter it still answers the
+        # old state while the Set was lost on the air. With no other waiter it still answers the
         # oldest: a load that clamped the value answers its Set with a state the Set did not ask for.
         fits = [
             (fut, shows)

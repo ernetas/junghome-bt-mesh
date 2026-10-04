@@ -197,7 +197,7 @@ def refuse_unconfirmed_write(args: argparse.Namespace, cdb: CDB) -> None:
 
 
 def ha_sources(storage: Path, mesh_uuid: str) -> set[int]:
-    """The source addresses Home Assistant keeps a sequence counter for in this mesh (`--ha-storage`, review-4 S4-11).
+    """The source addresses Home Assistant keeps a sequence counter for in this mesh (`--ha-storage`).
 
     Read from `<storage>/junghome_ble.seq.<mesh uuid>`, its `.backup` copy and its `.floor`: every address the
     integration sent from, the one configured now included — not only its default 0D00. A missing file names no
@@ -230,7 +230,7 @@ def source_problem(
 ) -> str | None:
     """Why `src` cannot be our source address; None when it can.
 
-    What Home Assistant refuses or warns about for its own (review-3 W3, `CDB.unicast_is_free`): a node's element
+    What Home Assistant refuses or warns about for its own (`CDB.unicast_is_free`): a node's element
     (the nodes drop whichever of us lags as a replay, and replies go astray), an address in `networkExclusions` (a
     removed node's: the nodes' replay lists still hold its sequence numbers until the IV index moved on twice), and
     one inside a provisioner's allocated range (the app provisions its next node there, or takes it for a phone).

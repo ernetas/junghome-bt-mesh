@@ -1,14 +1,14 @@
 """Describe the JUNG HOME bus events in the logbook.
 
 The logbook API has no translation hook: a describer is a sync callback returning literal strings, and it runs in the
-server's language rather than the viewing user's. Every line is still the integration's own text (review-4 U4-16),
+server's language rather than the viewing user's. Every line is still the integration's own text,
 rendered from the translations Home Assistant cached for the server's language when it set the integration up,
 English where that language has none (`cached_text`):
 
 - what happened to a key is the device trigger's wording (`device_automation.trigger_subtype`, "clicked"), the key
   the event entity's name (`entity.event.button.name`, "Button A"), the rest `logbook_*` messages of `exceptions`
   (the category hassfest accepts for a sentence with placeholders);
-- a plan's line (`EVENT_PLAN`, review-4 W I7: "Key 0151 (…) now drives room Kitchen; 6 messages") is worded by the
+- a plan's line (`EVENT_PLAN`: "Key 0151 (…) now drives room Kitchen; 6 messages") is worded by the
   action, a `plan_*` message of `exceptions`.
 
 An event type, hold-end reason or plan line nobody wrote a text for (a newer version's) shows as it is.

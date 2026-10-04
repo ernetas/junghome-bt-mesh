@@ -1,4 +1,4 @@
-"""What a proxy link carried and dropped, counted (review-4 A4-14).
+"""What a proxy link carried and dropped, counted.
 
 `ProxyClient` keeps one `LinkStats` per link (`ProxyClient.link_stats`, started over by every `attach`) and their sum
 since it was made (`ProxyClient.total_stats`). The counts are for the application to show — the HA integration's

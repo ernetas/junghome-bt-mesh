@@ -1,4 +1,4 @@
-"""Follow a rewritten export without reloading the entry (review-4 D23): the running hub takes the new model over.
+"""Follow a rewritten export without reloading the entry: the running hub takes the new model over.
 
 The room, key, scene, threshold and sensor-publication actions, a device rename and the unknown-node export adoption
 end here once the export changed (`actions.common._run`, `ExportWatch._reload_for_export`). A reload replaced the hub —
@@ -366,13 +366,13 @@ def check_our_address(
     unicast: int,
     own: str | None = None,
 ) -> None:
-    """Refuse an address a node of the export occupies; warn about one the app may hand out (review-3 W3).
+    """Refuse an address a node of the export occupies; warn about one the app may hand out.
 
     The config flow checks the address once, but the export changes under it: the app provisions nodes and a
     second app user gets a provisioner range of their own, which may cover Home Assistant's default address. A
     node sending from our address makes every node drop one of us as a replay and our replies go astray, so that
     stops the setup; an address that is merely reserved keeps working until the app uses it. `own` is Home
-    Assistant's provisioner UUID (review-3 N1): the node and the range the file records for it are ours.
+    Assistant's provisioner UUID: the node and the range the file records for it are ours.
     """
     key = f"{unicast:04X}"
     placeholders = {"title": entry.title, "unicast": key}

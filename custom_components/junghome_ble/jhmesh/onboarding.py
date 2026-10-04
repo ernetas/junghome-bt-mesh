@@ -1,4 +1,4 @@
-"""Adding a node end to end (review-3 N3): address it, commission it, read it back, record it in the export.
+"""Adding a node end to end: address it, commission it, read it back, record it in the export.
 
 `provisioning` gives a device its keys and address over PB-GATT; `commission.plan` lists the Config messages the
 JUNG app sends a new node, after a node of the same product. What is left to make the node part of the
@@ -83,7 +83,7 @@ def free_unicast_block(
     provisioned — `vault.Vault.reserved_unicasts`: one that was never recorded is in no file but still sends from
     them). Searching from the top keeps clear of where the apps allocate (from the bottom of their ranges).
 
-    `within`: Home Assistant's own provisioner range (review-3 N1, `vault.Ranges.unicast`) — the block is taken
+    `within`: Home Assistant's own provisioner range (`vault.Ranges.unicast`) — the block is taken
     inside it instead, where no other provisioner's range may reach (the range was chosen clear of them), and is
     still refused an address another provisioner's range covers, should the file say so. `own`: Home Assistant's
     provisioner UUID — its own entry's ranges (once merged into the file) do not block it; every other entry's do.
@@ -236,7 +236,7 @@ def record(
     the node disagree. A model whose Get went unanswered keeps the empty value `node_entry` gave it. `function`:
     the actuator function the device advertised, for its device rows (`ProjectFile.clone_device_rows`); with
     `layout`, the button layout it advertised, also for the app's per-element InsertId and ButtonLayout rows
-    (`ProjectFile.clone_property_rows`, review-4 F4-6).
+    (`ProjectFile.clone_property_rows`).
     """
     node = pf.add_node_entry(entry, [(g.address, g.name) for g in plan.groups])
     for row in audit.models:

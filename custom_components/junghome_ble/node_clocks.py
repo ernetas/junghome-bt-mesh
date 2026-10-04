@@ -1,4 +1,4 @@
-"""Each node's clock, zone offset and stored location, as the nodes answer them (review-4 F4-8).
+"""Each node's clock, zone offset and stored location, as the nodes answer them.
 
 The nodes run their schedules (JH Scheduler slots, astro times) on their own clock, with the zone offset and the
 location Home Assistant last broadcast (`Clock.send_time`, `_send_location`); nothing confirmed that they
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-# The nodes' clocks (`node_clocks.py`, review-4 F4-8): a node that may run schedules and whose clock is more than
+# The nodes' clocks (`node_clocks.py`): a node that may run schedules and whose clock is more than
 # CLOCK_OFFSET_MAX seconds off Home Assistant's (or has no time, or another zone offset than the one Time Set carries)
 # raises `node_clock_wrong`. A clock read is a Get per item: CLOCK_READ_PAUSE seconds between two chunks of
 # REFRESH_CHUNK nodes. A stored location within LOCATION_TOLERANCE degrees of the home's counts as the home's

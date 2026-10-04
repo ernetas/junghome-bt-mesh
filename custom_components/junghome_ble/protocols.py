@@ -1,4 +1,4 @@
-"""The hub's typed surface, as the modules it is made of see it (review-4 A4-11).
+"""The hub's typed surface, as the modules it is made of see it.
 
 `coordinator.JungHomeHub` builds its parts (`hub/`, `keep_awake`, `inserts`, `node_clocks`, `vault_refresh`, …) and
 the device model (`device_info`) uses it; each of them annotated its `hub` with `JungHomeHub` itself, which made every

@@ -1,4 +1,4 @@
-"""The time and location one hub broadcasts to the nodes (review-4 A4-3).
+"""The time and location one hub broadcasts to the nodes.
 
 Time Set and the home location go to all nodes at the start of every link (`Refresh.after_connect`), Time Set
 again once a day with a read of the nodes' clocks (`send_time_daily`) and right after each change of the local UTC
@@ -38,7 +38,7 @@ class ClockHub(HubPort, Protocol):
 _LOGGER = logging.getLogger(__name__)
 
 
-# a daylight-saving change sends Time Set again this many seconds after it (review-3 F17); the change is looked for up to
+# a daylight-saving change sends Time Set again this many seconds after it; the change is looked for up to
 # a year ahead
 OFFSET_CHANGE_DELAY: Final = 5.0
 OFFSET_SEARCH_DAYS: Final = 400
@@ -152,7 +152,7 @@ class Clock:
         await self.hub.clocks.read_all()
 
     def arm_offset_change(self) -> None:
-        """Send Time Set again right after the next change of the local UTC offset (review-3 F17).
+        """Send Time Set again right after the next change of the local UTC offset.
 
         A Time Set carries the zone offset in force when it is sent; the nodes' timers and astro schedules run on it
         until the next one — up to TIME_SET_INTERVAL after a daylight-saving change, an hour off meanwhile.

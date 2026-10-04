@@ -1,4 +1,4 @@
-"""What the integration keeps in `hass.data` beside its entries' hubs, in one typed place (review-4 A4-11).
+"""What the integration keeps in `hass.data` beside its entries' hubs, in one typed place.
 
 `jung_data(hass)` returns the run's `JungHomeData` (under `DATA`), made on first use. Each registry keeps its
 accessor where it is used — `coordinator.entry_lock`, `configurator.store.plan_journal` and `plan_history`,

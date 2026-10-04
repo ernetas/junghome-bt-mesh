@@ -7,7 +7,7 @@ Publication Get/Set, Model Subscription Add/Delete/Delete All/Get, GATT Proxy, D
 Transmit, Beacon, Node Reset, and the SIG / Vendor Model App Get the read-only audit adds (`audit.py`) — plus the key management messages of a key refresh (NetKey / AppKey Add, Update
 and Delete, Key Refresh Phase; the app's KeyRenewal sends NetKey Update and Key Refresh Phase Set, network-logic.md
 §6), which `describe_config` shows without their key bytes. Heartbeat Publication / Subscription serve the liveness
-option and the hop matrix. Review-4 F4-15 adds what the app never sends: the audit's NetKey Get, AppKey Get and
+option and the hop matrix. What the app never sends is here too: the audit's NetKey Get, AppKey Get and
 Friend Get (the lists carry key *indexes*, never a key), and Node Identity Get / Set for the locator
 (`locate_node`). Virtual-address forms and Friend Set are out of scope.
 

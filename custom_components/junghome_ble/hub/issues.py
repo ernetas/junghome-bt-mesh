@@ -1,4 +1,4 @@
-"""The repair issues one hub raises and clears, and the fixes it applies for them (review-4 A4-3).
+"""The repair issues one hub raises and clears, and the fixes it applies for them.
 
 From what the link and the store show: no Bluetooth left (`report_bluetooth_unavailable`), a store that holds
 sends back for SEQ_STALL_ISSUE_AFTER (`seq_stall_started`), a source near the end of its sequence space
@@ -158,7 +158,7 @@ class Issues:
 
     @callback
     def check_sequence_space(self, _now: datetime | None = None) -> None:
-        """Raise `sequence_space_low` while a source is past SEQUENCE_SPACE_WARN (review-3 N2); clear it after.
+        """Raise `sequence_space_low` while a source is past SEQUENCE_SPACE_WARN; clear it after.
 
         Every source (node, app, Home Assistant) stops sending at the end of the 24-bit space of the current IV
         index; the IV Update that resets it is started by the gateway (Home Assistant only follows one). The
@@ -191,7 +191,7 @@ class Issues:
 
     @callback
     def report_time_keeper(self) -> None:
-        """Raise the `time_keeper_missing` repair while the project has PP2 pucks and no node keeps their time (F4-14).
+        """Raise the `time_keeper_missing` repair while the project has PP2 pucks and no node keeps their time.
 
         The app elects a time keeper itself whenever a PP2 puck is in the project (`EnsureTimeKeeper`,
         network-logic.md §6.2); Home Assistant leaves the choice to the user (`switch.JungHomeTimeKeeper`). Raised
@@ -224,7 +224,7 @@ class Issues:
         )
 
     def check_iv_index(self, network: int) -> None:
-        """Raise `iv_index_mismatch` when the mesh's IV index is one Home Assistant cannot follow (review-3 T5).
+        """Raise `iv_index_mismatch` when the mesh's IV index is one Home Assistant cannot follow.
 
         `LocalState.apply_beacon` follows an index up to 42 ahead (IV Index Recovery) and ignores an older one (a
         lagging node, one behind for up to 96 hours during an update). Further ahead — Home Assistant was away
@@ -384,7 +384,7 @@ class Issues:
             seq,
         )
         if self.hub.proxy.connected:
-            # not the proxy's fault: no verdict on it, and the entities keep the grace (review-4 R4-3)
+            # not the proxy's fault: no verdict on it, and the entities keep the grace
             await self.hub.link.drop_link(
                 "sequence numbers skipped ahead", penalise=False
             )
@@ -420,7 +420,7 @@ class Issues:
         )
 
     def on_foreign_own_source(self, iv_index: int, seq: int) -> None:
-        """Another client sends from our address: the proxy delivered a PDU from it with a number we never sent (S I2).
+        """Another client sends from our address: the proxy delivered a PDU from it with a number we never sent.
 
         Its numbers and ours run into each other — every one both send is a reused nonce, and the nodes drop ours as
         replays below its last — so from here on nothing is sent (`HAState.note_address_shared`, `AddressShared`)

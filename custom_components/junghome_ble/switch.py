@@ -18,7 +18,7 @@ A 2-gang node's *Synchronise LED colours* (`JungHomeLedColourSync`) copies LED 1
 Assistant's own, as it is the app's.
 
 In a project with PP2 pucks, every mains node with a Time Server has a *Time keeper* switch (`JungHomeTimeKeeper`,
-off by default): the node relays the time to the pucks (review-4 F4-14).
+off by default): the node relays the time to the pucks.
 """
 
 from __future__ import annotations
@@ -712,7 +712,7 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
         await self._set(False)
 
     async def _set(self, on: bool) -> None:
-        # planned against what the node answered, which the switch shows, not only against the export (W4-6)
+        # planned against what the node answered, which the switch shows, not only against the export
         unicast, live = self.node.unicast, self._published
         try:
             await async_configure(
@@ -723,15 +723,15 @@ class JungHomeSensorPublication(JungHomeEntity, SwitchEntity):
                 ),
             )
         finally:
-            # the node's answer was about its publications before the change, and the entity stays (no reload,
-            # review-4 D23): the export, which recorded what the node took, shows until the node is asked again
+            # the node's answer was about its publications before the change, and the entity stays (no reload):
+            # the export, which recorded what the node took, shows until the node is asked again
             self._published = self._read_link = None
             if self.platform is not None:
                 self._handle_update()
 
 
 class JungHomeTimeKeeper(JungHomeEntity, SwitchEntity):
-    """*Time keeper*: the node relays the time to the PP2 pucks (review-4 F4-14; off by default, unverified on air).
+    """*Time keeper*: the node relays the time to the PP2 pucks (off by default, unverified on air).
 
     The app's `TimeKeeperConfiguration` (network-logic.md §6.2), by hand: the app elects one mains node itself
     whenever the project has a PP2 puck (`EnsureTimeKeeper`), Home Assistant lets the user pick one, and raises

@@ -1,4 +1,4 @@
-"""The parts of a hub (`coordinator.JungHomeHub`), one component each with its own state (review-4 A4-3).
+"""The parts of a hub (`coordinator.JungHomeHub`), one component each with its own state.
 
 - `liveness`: the nodes' reachability and heartbeats (`Liveness`, `hub.liveness`).
 - `energy`: the metered loads' readings, counters and polls (`Energy`, `hub.energy`).

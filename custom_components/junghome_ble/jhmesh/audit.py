@@ -7,7 +7,7 @@ so. The audit asks each node, with Gets only (it never sends a Set), and compare
 - the node-wide states, one Get each: Relay (with its retransmit), Network Transmit, Default TTL, Secure Network
   Beacon, GATT Proxy, Friend — against the export's `features`, `relayRetransmit`, `networkTransmit`, `defaultTTL`
   and `secureNetworkBeacon` (a state the export does not record is reported, not compared);
-- the keys the node holds (review-4 F4-15): NetKey Get, and AppKey Get for every NetKey the export gives the node —
+- the keys the node holds: NetKey Get, and AppKey Get for every NetKey the export gives the node —
   against its `netKeys` and `appKeys`. Indexes only: a key list carries no key, and no key is ever compared. These
   and the Friend Get are unverified on air;
 - for every model of every element except the Configuration Server / Client (device-key models: no

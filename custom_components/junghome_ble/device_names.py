@@ -12,7 +12,7 @@ running it). The name the export then holds becomes the device's own name and `n
 Assistant shows what the app shows (a suffixed name included), and a later rename in the app reaches Home
 Assistant with the next export it loads.
 
-No proxy link is needed, and the hub's device model follows the new name in place (`model_update`, review-4 D23:
+No proxy link is needed, and the hub's device model follows the new name in place (`model_update`:
 the names a room entity lists, a key's connection), as after every action — an export the configurator adopted
 from the gateway first included. A name the app would refuse leaves the export alone and raises the
 `device_name_rejected` repair issue, which the next accepted rename clears; any other failure is logged. Renaming
@@ -99,7 +99,7 @@ def async_track_device_names(
         if target is None:
             return
         # not an entry task: a rename the hub cannot follow in place reloads the entry, and an unload waits
-        # for the entry's own tasks — this one among them, which would only end after that wait (review-4 W4-10)
+        # for the entry's own tasks — this one among them, which would only end after that wait
         hass.async_create_background_task(
             async_write_name(hass, entry, device, target.address, device.name_by_user),
             f"{DOMAIN} device rename",
@@ -122,7 +122,7 @@ async def async_write_name(
 
     async def operation(configurator: MeshConfigurator) -> bool:
         written.append(await configurator.rename_device(address, name))
-        # the model follows a name written, or an export adopted (review-4 D23)
+        # the model follows a name written, or an export adopted
         return configurator.recorded or configurator.adopted
 
     issue = issue_id(entry, ISSUE_DEVICE_NAME)

@@ -1,4 +1,4 @@
-"""The plan model: Config steps, their order on air, their replay into the export (review-4 A4-10).
+"""The plan model: Config steps, their order on air, their replay into the export.
 
 One model for every plan of Config messages: the configurator's plans (a room, a key connection, a scene, a node's
 removal: `ConfigStep` with the CDB edit it mirrors) and the commissioning of a new node (`commission.plan`: the same
@@ -132,7 +132,7 @@ def ordered(
     half-way leaves the old link working. A `Subscription Delete` the plan re-adds later, or a
     `Publication Set 0x0000` followed by a `Publication Set` of the same model, is not sent at all — sent after
     the addition it would undo it. Within each half the steps to the battery nodes in `sleepy` go first, in plan
-    order (review-3 W4 / F24): such a node is awake for a moment after a key press, so its steps must not wait
+    order: such a node is awake for a moment after a key press, so its steps must not wait
     behind the mains nodes', and a node found asleep stops the plan at its first message — in every plan here
     with one such node the plan's first message, so nothing is applied — rather than half-way through.
     """

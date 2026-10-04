@@ -164,9 +164,9 @@ class LocalState:
         # `admits` warns once, when the full list first refuses a source
         self._rpl_full_warned = False
         self._last_parse_error: Exception | None = None
-        # a key refresh the mesh went through (review-3 N2b): the new NetKey and the phase (1 or 2 while it runs,
-        # 3 once the old key is revoked but the export still holds it) with the proof that moved it there (review-4
-        # D4), learnt from the provisioner's messages (`ProxyClient._follow_key_refresh`); None when there is none
+        # a key refresh the mesh went through: the new NetKey and the phase (1 or 2 while it runs,
+        # 3 once the old key is revoked but the export still holds it) with the proof that moved it there,
+        # learnt from the provisioner's messages (`ProxyClient._follow_key_refresh`); None when there is none
         self.key_refresh: KeyRefreshRecord | None = None
         # the counter was moved past numbers sent under an IV index nobody remembers (a sequence-number record
         # lost and skipped past, `seq_guard` in `apply_beacon`): the highest index it still covers, or
@@ -507,7 +507,7 @@ class LocalState:
     def set_key_refresh(self, refresh: KeyRefreshRecord | None) -> None:
         """Record a key refresh in progress, or its end, and persist it at once (`persist_now`).
 
-        A debounced write lost the new key to a crash right after it was learnt (review-4 S4-9): the mesh had moved
+        A debounced write lost the new key to a crash right after it was learnt: the mesh had moved
         on with it, and nothing else could tell it again.
         """
         if refresh != self.key_refresh:
@@ -595,7 +595,7 @@ class LocalState:
         client being provisioned) adopts the first authenticated beacon unconditionally instead, or it could
         never join a network whose index has already moved past 42.
 
-        Timing (review-4 D10): a state that knows its index keeps the spec's minimum times, on the wall clock (`now`,
+        Timing: a state that knows its index keeps the spec's minimum times, on the wall clock (`now`,
         default `_wall_now()`) from the stored `iv_changed_at` / `iv_recovered_at` — a step between Normal Operation
         and IV Update in Progress waits `IV_UPDATE_MIN_STATE` (96 h) after the last change of the IV state, an IV
         Index Recovery `IV_RECOVERY_MIN_INTERVAL` (192 h) after the last recovery. Without them any NetKey holder

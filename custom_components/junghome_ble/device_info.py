@@ -16,7 +16,7 @@ Device identifiers (all under the integration domain, node UUIDs lower-case):
   node), so a node has one buttons device as before.
 
 It reads the hub through `protocols.HubView` only, so the hub keeps its devices up to date without this module
-importing it (review-4 A4-11); `entity.py`, the entity base, re-exports every name for the platforms.
+importing it; `entity.py`, the entity base, re-exports every name for the platforms.
 """
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ PRODUCT_NAMES = {
     0x15: "Mini sensor 2-input mains",
     0x16: "Mini sensor 2-input battery",
 }
-# The translation key of each product name, `selector.product.options.<key>` of `strings.json` (review-4 U4-16):
+# The translation key of each product name, `selector.product.options.<key>` of `strings.json`:
 # a device's model shows the name in Home Assistant's language, PRODUCT_NAMES (English) where no translation is at
 # hand (diagnostics, a hub without labels). `tests/test_translations.py` keeps the two in step.
 PRODUCT_KEYS = {
@@ -221,7 +221,7 @@ def _suggest_area(info: DeviceInfo, hub: HubView, room: str | None) -> None:
 
 
 def first_room(device: Device | None) -> str | None:
-    """Return the room a device's own device goes to: its first (a load may be in several, review-4 F4-5), else None."""
+    """Return the room a device's own device goes to: its first (a load may be in several), else None."""
     return device.rooms[0] if device is not None and device.rooms else None
 
 
@@ -335,7 +335,7 @@ def node_device_info(hub: HubView, node: Node) -> DeviceInfo:
     """Return the device info of a node device, hanging off the mesh device.
 
     The model is the product and a push-button's insert once known (`inserts.NodeInserts.node_model`), the model id
-    the JUNG product id; the software version (review-3 F1), hardware revision and manufacturer
+    the JUNG product id; the software version, hardware revision and manufacturer
     are the node's SIG 0x001A / 0x0010 / 0x0011 once read (`node_registry_fields`; `update_node_device` fills them
     in when they arrive later). A room thermostat's or detector's entities live on the node device itself, so it
     carries that device's app name, as a load's own device does. Its name is `node_device_name`'s, its area that

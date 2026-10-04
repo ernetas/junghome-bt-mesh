@@ -106,7 +106,7 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
     (`enabled: false`) while the socket's other one is not active either unwires the loads as the app's disable
     (`ToggleThreshold`) does (`MeshConfigurator.unwire_threshold`); an other threshold the socket does not tell
     about keeps them wired. Editing the level or duration of a disabled threshold is no disable: the loads stay.
-    A failure names the thresholds and sockets already written (`ThresholdProgress`, W4-13).
+    A failure names the thresholds and sockets already written (`ThresholdProgress`).
     """
     which: Which = call.data[ATTR_THRESHOLD]
     needs_current = not {"power", "duration", "enabled"} <= set(call.data)
@@ -177,9 +177,7 @@ async def _delete_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
             configurator: MeshConfigurator, sockets: list[int] = sockets
         ) -> bool:
             hub = configurator.hub
-            progress = (
-                ThresholdProgress()
-            )  # a failure names what was cleared before it (W4-13)
+            progress = ThresholdProgress()  # a failure names what was cleared before it
             changed = False
             for address in sockets:
                 for which in THRESHOLD_PROPERTIES:

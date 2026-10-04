@@ -1,4 +1,4 @@
-"""The devices Home Assistant added, carried through the app's key refresh (review-4 D11; `jhmesh.vaultrefresh`).
+"""The devices Home Assistant added, carried through the app's key refresh (`jhmesh.vaultrefresh`).
 
 The app hands a new NetKey only to the devices of its own database; one Home Assistant added (`onboard.py`) is not
 in it and would be cut off when the refresh completes. `VaultKeyRefresh` (`hub.vault_refresh`) takes every device

@@ -4,7 +4,7 @@ Entry points: manual (user), Bluetooth discovery of a JUNG node's Mesh Proxy adv
 JUNG HOME Gateway, reconfigure, and reauth. All but reauth and zeroconf lead to the same menu: fetch the export from the
 JUNG HOME Gateway, upload the app's export file, or name a file that is already on the Home Assistant host; zeroconf goes
 straight to the gateway form with the address the gateway announced. Our unicast address sits in a collapsed
-*Advanced* section of every source form (review-4 U4-8): the default suits every installation with one Home
+*Advanced* section of every source form: the default suits every installation with one Home
 Assistant. Fetched and uploaded exports are kept under `<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold
 every mesh key).
 
@@ -15,10 +15,10 @@ another Network ID mean a stale export (`export_keys_stale`), not a mesh out of 
 lives as `.incoming-<flow id>.json` until it passes; every failure path, and the flow's removal, deletes it.
 
 Discovery offers a Mesh Proxy that also carries JUNG's manufacturer data (company id 0x0527: the manifest's matcher
-needs both, and the step aborts `not_jung` without it; review-4 H I-7) and never a configured mesh: an advertisement
+needs both, and the step aborts `not_jung` without it) and never a configured mesh: an advertisement
 whose Network ID or Node Identity any configured entry's keys derive (the export's, and a followed key refresh's),
-or from a node MAC of its export, is that mesh (`coordinator.KnownMesh`). An entry's unique id is its mesh UUID
-(decision M10, H I-9), which no advertisement carries and no key refresh changes; a discovery flow holds the
+or from a node MAC of its export, is that mesh (`coordinator.KnownMesh`). An entry's unique id is its mesh UUID,
+which no advertisement carries and no key refresh changes; a discovery flow holds the
 advertised Network ID as its unique id only until the export is given. The gateway's mDNS announcement
 (`_junghome._tcp`, TXT `serial`, `manufacturer=JUNG`) is offered once per gateway serial, and never for a gateway an
 entry already names by that address; the address is only prefilled, and the certificate is pinned exactly as for a
@@ -37,7 +37,7 @@ starts it): by the gateway's password, or by approving a new access request in t
 running hub are left alone; the new token is used from the next request on.
 
 Once an export is loaded (setup, discovery, reconfigure), the `areas` step maps each JUNG room to a Home Assistant
-area (`areas.py`, review-4 U4-2): prefilled with the area named or aliased like the room, left empty for an area named
+area (`areas.py`): prefilled with the area named or aliased like the room, left empty for an area named
 after it; stored in the entry's options. The reconfigure menu offers the same step on its own, which also moves the
 devices still in the area the previous mapping gave them, never one the user placed.
 
@@ -47,7 +47,7 @@ reloads the entry through the update listener (`__init__._async_entry_updated`),
 after a reconfiguration changed what the hub is built from.
 
 The steps of a new export for an existing entry are module functions, shared with the repairs that load one
-(`repairs.NewExportFlow`, review-4 U4-5): taking an upload in (`async_take_upload`), fetching from the gateway
+(`repairs.NewExportFlow`): taking an upload in (`async_take_upload`), fetching from the gateway
 (`async_fetch_to_store`, pinned by `async_known_pin`), checking it (`async_validate_stored`) and the reconfigure's end
 (`async_replace_export`).
 """
@@ -518,7 +518,7 @@ def pre_reconfigure_path(path: Path) -> Path:
 def _replace_keeping(incoming: Path, final: Path) -> None:
     """Blocking: move `incoming` to `final`, the export there kept as `pre_reconfigure_path`, the directory fsynced.
 
-    Review-4 S4-6: fetching the gateway's export again was the way out of a gateway and a file that had both
+    Fetching the gateway's export again was the way out of a gateway and a file that had both
     changed, and it replaced the file without a copy — with the rooms, scenes and connections Home Assistant had
     made that the devices still use. The copy is owner-only like the export (it holds every mesh key).
     """
@@ -548,7 +548,7 @@ def proxy_in_range(hass: HomeAssistant, cdb: CDB) -> bool:
 
 
 def mesh_proxies_without_match(hass: HomeAssistant, cdb: CDB) -> bool:
-    """Whether a node of `cdb` advertises as a proxy under a Network ID none of the export's keys derive (H I-6).
+    """Whether a node of `cdb` advertises as a proxy under a Network ID none of the export's keys derive.
 
     JUNG nodes advertise from their public MAC, which the export holds in the node UUID (`node_macs`): a node of
     the export advertising another Network ID is this mesh after a key refresh the export does not have — the
@@ -577,7 +577,7 @@ async def async_known_mesh_of(
     """Return what discovery knows `entry`'s mesh by (`coordinator.KNOWN_MESHES`); None when its export is unreadable.
 
     Every setup records it; an entry that never got that far (disabled, or its export failed to load) has its
-    export loaded here once and kept (H4-4: discovery runs once per proxy, there are dozens). An unreadable export
+    export loaded here once and kept (discovery runs once per proxy, there are dozens). An unreadable export
     is not kept, so a file fixed on disk counts at the next discovery.
     """
     cache = hass.data.setdefault(KNOWN_MESHES, {})
@@ -650,7 +650,7 @@ async def validate_input(
 
 
 def mesh_unique_id(mesh_uuid: str) -> str:
-    """Return the unique id of an entry of the mesh `mesh_uuid`: the UUID in lower case with its dashes (M10, H I-9).
+    """Return the unique id of an entry of the mesh `mesh_uuid`: the UUID in lower case with its dashes.
 
     The export's own form but for the case (`meshUUID`, which the app writes in upper case); the entities' unique
     ids use the same. A key refresh does not change it, unlike the Network ID the entries used before.
@@ -819,7 +819,7 @@ async def _mesh_uuid_taken(
 ) -> bool:
     """Return True when another entry already belongs to this mesh (by mesh UUID, which survives a key refresh).
 
-    The unique id is the mesh UUID too (decision M10), but an entry whose export could not be read at its migration
+    The unique id is the mesh UUID too, but an entry whose export could not be read at its migration
     still holds the Network ID it had before: without this check, fetching or uploading the same mesh's export
     through "Add integration" instead of the existing entry's Reconfigure would create a second entry for it. Two
     entries sharing a mesh would then also share its sequence-number store (`seq_store.seq_store`, keyed on the
@@ -941,7 +941,7 @@ async def async_replace_export(
         if (refusal := await async_export_refusal(hass, entry, cdb)) is not None:
             return refusal
         # after a key refresh the proxies already advertise the new Network ID: drop the discovery flow it
-        # started, and an ignored entry holding it (H4-4)
+        # started, and an ignored entry holding it
         await async_release_network_id(
             hass, entry, network_id.hex(), keep_flow=keep_flow
         )
@@ -1031,11 +1031,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle an advertising JUNG Mesh Proxy: nothing for a configured mesh, else ask for the export.
 
-        Review-4 H I-7: the manifest matches a Mesh Proxy with JUNG's manufacturer data (0x0527) only; an
+        The manifest matches a Mesh Proxy with JUNG's manufacturer data (0x0527) only; an
         advertisement without it that gets here anyway aborts `not_jung`. A configured mesh is recognised by its keys
         and nodes (`coordinator.KnownMesh`: the Network ID or a Node Identity of any configured entry's keys, the
         followed key refresh's included, or a node MAC of its export), never by the entry's unique id — the mesh
-        UUID, which no advertisement carries (H I-9). Such a discovery aborts, and an entry waiting for a proxy
+        UUID, which no advertisement carries. Such a discovery aborts, and an entry waiting for a proxy
         (`SETUP_RETRY`) is retried at once, as Home Assistant does for a unique-id match. Another mesh's Network ID
         is the flow's unique id until the export is given: one card per mesh, and an ignored one stays ignored.
         Unverified on air (no card for the configured mesh).
@@ -1134,8 +1134,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Replace the entry's export with a new one of the same mesh and/or change our address.
 
         The mesh is identified by its `meshUUID`, not by the Network ID: a NetKey refresh changes the Network
-        ID, and re-exporting is exactly how one recovers from a refresh. The entry's unique id is the mesh UUID
-        (decision M10); discovery recognises the mesh by the new export's keys from its next setup on.
+        ID, and re-exporting is exactly how one recovers from a refresh. The entry's unique id is the mesh UUID;
+        discovery recognises the mesh by the new export's keys from its next setup on.
         """
         entry = self._get_reconfigure_entry()
         options = [SOURCE_GATEWAY, SOURCE_UPLOAD, SOURCE_PATH]
@@ -1827,7 +1827,7 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason=reason)
         if self._discovered_network_id and network_id != self._discovered_network_id:
             raise _FormError({"base": "network_mismatch"})
-        # the mesh UUID from here on (decision M10); not `raise_on_progress`: another flow of this mesh at the same
+        # the mesh UUID from here on; not `raise_on_progress`: another flow of this mesh at the same
         # step must not abort this one at its last step
         await self.async_set_unique_id(
             mesh_unique_id(cdb.mesh_uuid), raise_on_progress=False

@@ -8,7 +8,7 @@ and re-exports what the platforms import from the other two. `number.py`, `selec
 `button.py` only wrap the targets in the platform's entity class.
 
 The status handlers register when `properties/reader.py` is imported, which this module does at its top: the
-moment they registered at before the split (review-4 A4-4).
+moment they registered at before the split.
 """
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ LOCK_EXPIRY_MARGIN: Final = (
 
 
 # What the platforms, `__init__.py`, `keep_awake.py`, `thresholds.py`, `schedules.py` and the tests import from here:
-# the entity bases below, and the names that moved to `properties/` (review-4 A4-4), so none of those changed.
+# the entity bases below, and the names that moved to `properties/`, so none of those changed.
 __all__ = [
     "ATTR_CONTINUOUS_ON_OFF",
     "ATTR_CONTROLLED_BY",
@@ -232,12 +232,12 @@ THERMOSTAT_GATED = frozenset({0x1001, 0x1002, 0x1007, 0x100A, 0x100B, 0x100D})
 class ConfigEntity(JungHomeEntity):
     """A config entity of one element, read through the hub's reader (`_read`) until it answers, then again later.
 
-    A value changed in the app is answered to the app's address, so Home Assistant hears nothing of it (review-4
-    H4-10): once read, the entity is read again on a later link when CONFIG_REREAD_INTERVAL has passed, and
+    A value changed in the app is answered to the app's address, so Home Assistant hears nothing of it: once
+    read, the entity is read again on a later link when CONFIG_REREAD_INTERVAL has passed, and
     `homeassistant.update_entity` reads it at once (`_reread`). A battery node's (`BATTERY_PIDS`) sleeps at link-up
     and would not answer: it is read when one of the node's keys reports an event instead (`_on_key_event`). A
     change to it runs under `changing` and a silent node is reported as asleep (`asleep`): the user wakes it with a
-    key press and tries again (review-3 W4 / F24).
+    key press and tries again.
     """
 
     _attr_entity_category: EntityCategory | None = EntityCategory.CONFIG
@@ -656,7 +656,7 @@ class LockFunctionEntity(PropertyEntity):
 
 
 class LoadLock(JungHomeEntity):
-    """Lock awareness of a light or socket (review-4 F4-2): what the app does with a locked load's controls.
+    """Lock awareness of a light or socket: what the app does with a locked load's controls.
 
     A load locked in the app, by a key or by its *Lock* switch keeps its state against every command. Nothing
     publishes the lock (`docs/gap-analysis/control-and-state.md` §5 q. 1), and the app reads 0x0009 of every load
@@ -668,8 +668,8 @@ class LoadLock(JungHomeEntity):
     the controls. The lock is read again first, as it may have ended unseen: lifted in the app (a Get unless the
     load answered within PROPERTY_READ_FRESH), or run out — a lock past its time limit is asked anew, and a load
     that stays silent then is taken as unlocked. A command the load did not confirm although the node answered
-    something meanwhile, or an on / off it answered with the other state (a Status with the old state: review-4
-    D32), makes the entity read the lock too, and report it as locked when it is: the command failed for the lock,
+    something meanwhile, or an on / off it answered with the other state (a Status with the old state),
+    makes the entity read the lock too, and report it as locked when it is: the command failed for the lock,
     not for the reachability. Unverified on air: what a locked load answers to a Set (`docs/hidden-features.md`
     §12).
 
@@ -679,7 +679,7 @@ class LoadLock(JungHomeEntity):
     out unacknowledged to every member and are not refused: a locked member ignores them, as in the app.
 
     The app disables a load's controls in two more cases (`LampDetailActivity`: `RtrConnectionMode`,
-    `ForcedOffMode`), and so does this (review-4 F4-16, unverified on air: no room thermostat or detector here). A
+    `ForcedOffMode`), and so does this (unverified on air: no room thermostat or detector here). A
     load a room thermostat switches (`Devices.thermostats_of`, the app's RTR link) shows the thermostats' names as
     `controlled_by` and refuses commands: the thermostat would switch it back. A detector's relay shows the
     detector's continuous on / off (0x6016, read once per link with the lock) as `continuous_on_off` and refuses
@@ -846,7 +846,7 @@ class LoadLock(JungHomeEntity):
     async def _send_switch(self, command: Awaitable[None], on: bool | None) -> None:
         """`_send` an on / off command; one the load answered with the other state is reported as locked if it is.
 
-        With no other request out to the load, such a Status counts for the Set (review-4 D32). `on` is the state
+        With no other request out to the load, such a Status counts for the Set. `on` is the state
         asked for; None: nothing to compare — a Set with a transition is answered with where the load is now, not
         where it is going.
         """

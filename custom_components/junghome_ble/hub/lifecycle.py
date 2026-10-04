@@ -1,4 +1,4 @@
-"""The timers and tasks one hub runs, in one registry that stops them all, and the back-off its retries use (A4-13).
+"""The timers and tasks one hub runs, in one registry that stops them all, and the back-off its retries use.
 
 Every timer handle and background task the hub cancels when it stops lives here under a fixed name (`TIMERS`,
 `KEYED`, `TASKS`), wherever the component that arms it is: `JungHomeHub.async_stop` cancels them through the

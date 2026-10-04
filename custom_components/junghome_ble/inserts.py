@@ -1,4 +1,4 @@
-"""A node's insert and key layout, as the export, the node's advertisement or the node itself tells them (F4-12).
+"""A node's insert and key layout, as the export, the node's advertisement or the node itself tells them.
 
 A JUNG push-button takes any insert (switch, dimmer, DALI, blinds, extension), and its composition does not say
 which; the app reads the node's InsertId (LBC User `0x0002`) when it adds it, caches it in its export

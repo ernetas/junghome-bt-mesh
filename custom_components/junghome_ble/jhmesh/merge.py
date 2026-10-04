@@ -10,7 +10,7 @@ Documents are `{"network": <CDB tree>, "meta": <app meta block>}` (`ProjectFile.
 by what identifies their entries — a node by its UUID, an element by its index, a model by its id, a room by its
 address, an app device by (node, locations), a key's or load's `*Exports` row by its element address, a network
 exclusion by its IV index — so an entry the app added or removed elsewhere does not shift ours, and a row both
-sides changed stays one row (review-4 S4-4: matched by content, HA's and the app's version of a key's mode both
+sides changed stays one row (matched by content, HA's and the app's version of a key's mode both
 survived); an array of plain values (subscriptions, bound keys) is merged as a set; any other array of objects is
 treated as a set of whole rows. A change whose old value the app has changed since is a conflict: the app's value
 is kept (its Config messages went out later) and the change is reported, not applied. Unverified on air against
@@ -101,7 +101,7 @@ IDENTITY: dict[str, Callable[[dict[str, Any]], Any]] = {
     "userGroups": lambda r: r.get("address"),
     "elementConnectionGroups": lambda r: r.get("groupAddress"),
     "devices": _device_identity,
-    # one row per scene and app device (`SceneInfoRepositoryImpl.saveInfoFor`, review-4 F4-6)
+    # one row per scene and app device (`SceneInfoRepositoryImpl.saveInfoFor`)
     "sceneInfo": _scene_info_identity,
     # one row per element in the app's tables (`docs/android/network-logic.md`: `address` + one value)
     "keyModeSceneConfigExports": lambda r: _address(r.get("elementAddress")),

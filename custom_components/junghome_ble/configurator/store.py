@@ -1,6 +1,6 @@
 """The export a configurator plans on: its file, the provisioner identity, the plan journal, the gateway's copy.
 
-`ExportStore` (review-4 brief 55) is the part of `MeshConfigurator` that reads and writes: the export the config
+`ExportStore` is the part of `MeshConfigurator` that reads and writes: the export the config
 entry points at (read fresh for every change, written atomically, `recorded` / `adopted` for `actions.common._run`),
 Home Assistant's provisioner entry merged into it, the plan journal a crash leaves, dry runs, and the gateway's copy —
 adopted when only the app changed it, uploaded after every change and retried as the app retries it. The translated
@@ -198,7 +198,7 @@ class GatewaySync:
 
     `synced`: the content digest (`export_digest`) the gateway and the file last both held; `last_sync`: when Home
     Assistant last uploaded its export (ISO 8601, UTC; the app's `gateway_last_sync`, the *Last export upload*
-    sensor, told through `SIGNAL_GATEWAY_SYNCED`). Review-4 H I-10: both lived in `entry.data` up to 1.0.0, so
+    sensor, told through `SIGNAL_GATEWAY_SYNCED`). Both lived in `entry.data` up to 1.0.0, so
     every sync rewrote the config entries file and woke every listener of the entry. The first load takes them over
     from there (a new gateway entry's flow seeds `CONF_GATEWAY_SYNCED` the same way); the keys stay in `entry.data`,
     so a downgrade reads the value they had then. A digest, a time, no key material.
@@ -271,7 +271,7 @@ async def async_remove_gateway_sync(hass: HomeAssistant, entry_id: str) -> None:
 
 
 async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
-    """Await `work` to its end even when the caller is cancelled meanwhile, then pass the cancellation on (D12).
+    """Await `work` to its end even when the caller is cancelled meanwhile, then pass the cancellation on.
 
     For what must not stop half-way once the mesh holds a change: the write that records it, the update (or
     reload) that makes the device model follow it. `asyncio.shield` returns at the first cancellation and leaves the work
@@ -293,7 +293,7 @@ async def run_to_end[T](work: Coroutine[Any, Any, T]) -> T:
     raise cancelled
 
 
-# ------------------------------------------------------------------ outcomes and dry runs (review-4 W I3, W I6, W I7)
+# ------------------------------------------------------------------ outcomes and dry runs
 
 
 @dataclass
@@ -471,7 +471,7 @@ class ExportStore:
         (`actions.common._run`): one call can run several mutations (`set_threshold` wires socket by socket), and a
         later one that fails must not hide the export an earlier one wrote. `fresh`: a gateway entry whose gateway
         did not answer is refused instead of planning on the copy on disk, which may lack what the app made since
-        (review-4 W4-3: what judges by what the export *lacks* must not fall back silently). A dry run reads the
+        (what judges by what the export *lacks* must not fall back silently). A dry run reads the
         disk alone and writes nothing (`_load_read_only`).
         """
         if (dry := _DRY_RUN.get()) is not None:
@@ -513,7 +513,7 @@ class ExportStore:
     async def save(self, pf: ProjectFile, *, upload: bool = True) -> None:
         """Write `pf`, then hand it to the gateway; once started, the write runs to its end whatever cancels the call.
 
-        The file is what the mesh holds (D12): a call cancelled half-way through writing it would leave the nodes
+        The file is what the mesh holds: a call cancelled half-way through writing it would leave the nodes
         ahead of it; once written, the plan journal is done with. The upload is not held to its end: cancelled,
         skipped while Home Assistant stops (it would hold the shutdown up for a gateway that may not answer) or
         not asked for (`upload=False`), it is left to `sync_gateway` or the next change, which uploads the export
@@ -1005,7 +1005,7 @@ class ExportStore:
         self._sync.record(digest, uploaded=uploaded)
 
     def _identical(self, digest: str) -> None:
-        """Record the export both the gateway and the file hold as synced, whatever the record says (review-4 S4-6).
+        """Record the export both the gateway and the file hold as synced, whatever the record says.
 
         An upload whose record was lost (Home Assistant stopped between the POST and the record's delayed save)
         left the record behind both copies: judged by it, every later change was refused as "both changed".
@@ -1133,7 +1133,7 @@ class ExportStore:
 
         Only when the gateway changed since HA last synced, and not into what the file holds already (identical
         content is recorded as synced). When the file changed too — an upload that never reached the gateway —
-        HA's changes are carried over all the same, as when only the gateway changed (review-4 S4-6: refusing
+        HA's changes are carried over all the same, as when only the gateway changed (refusing
         left fetching again as the only way out, which dropped them): the app's previous upload (`app_copy_path`)
         tells them apart, and a change the app overrode is reported (`_report_conflicts`); without that copy the
         change is refused (`service_gateway_export_newer`). A gateway export without `meta` (the bare
@@ -1219,7 +1219,7 @@ class ExportStore:
     def _report_conflicts(self, conflicts: list[Change]) -> None:
         """Raise the `carry_over_conflict` repair for an adopt that kept the app's version over Home Assistant's.
 
-        Review-4 W4-5: such an adopt used to be a log line only, while the file lost what the nodes still hold (a
+        Such an adopt used to be a log line only, while the file lost what the nodes still hold (a
         room Home Assistant created is gone from the export, its members still subscribed to it). An adopt
         without conflicts clears the repair. The paths also go into the issue's data, for diagnostics.
         """
@@ -1314,7 +1314,7 @@ class ExportStore:
     async def adopt_if_gateway_changed(self, *, raise_errors: bool = False) -> bool:
         """Adopt the gateway's export when it changed since Home Assistant last synced; True when the file was written.
 
-        Following the app (`app_follow.AppFollower`, review-4 U4-6): after the phone went quiet on the mesh, every
+        Following the app (`app_follow.AppFollower`): after the phone went quiet on the mesh, every
         `GATEWAY_SYNC_PERIOD`, and from the *Fetch export from gateway* button. One GET under the lock, with every
         guard of `adopt_for_unknown_nodes`: nothing while the `gateway_token_rejected` repair is open, nothing from a
         gateway whose pin is not vouched for or that presents another certificate (`_gateway_state`; its repair points

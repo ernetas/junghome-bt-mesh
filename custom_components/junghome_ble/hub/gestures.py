@@ -60,13 +60,13 @@ DOUBLE_CLICK_WINDOW: Final = 0.5  # seconds between two clicks to report a doubl
 BUTTON_REPEAT_WINDOW: Final = 3.0  # a vendor button event with a counter seen this recently is the firmware's second copy
 # (the sniffer measured the copy spacing of status publications at 0.9-2.3 s, docs/sniffer.md; the counter is per press,
 # so a real second press is never mistaken for a copy whatever the window)
-# Hold-to-dim (review-3 F12). What a rocker wired straight to a dimmer sends while it is held is not captured on air;
+# Hold-to-dim. What a rocker wired straight to a dimmer sends while it is held is not captured on air;
 # the SIG ways are a Generic Move Set (a delta to start, 0 to stop) or a Generic Delta Set transaction (one TID,
 # growing deltas while held, `TID_REPEAT_WINDOW`). A Delta transaction has no stop message: its hold is taken to end
 # this many seconds after its last Set (the key's cadence is a guess; the firmware's second copies are dropped first).
 DIM_HOLD_QUIET: Final = 1.5
 # Every hold — a Move or Delta one above, or a gateway-mode key's vendor `hold_start` — ends at the latest this many
-# seconds after it started (review-4 R4-7): a lost stop (a Move 0, a release) used to leave it open, and a
+# seconds after it started: a lost stop (a Move 0, a release) used to leave it open, and a
 # dim-while-held automation dimming for ever. Fading through the whole range takes a few seconds; nobody holds a key
 # this long on purpose. A hold ended without its stop carries `reason` (HOLD_END_REASONS) in its `hold_end`.
 DIM_HOLD_MAX: Final = 30.0
@@ -179,7 +179,7 @@ class ButtonGestures:
         self._key_holds.clear()
 
     def dim_hold(self, m: AccessMessage, p: bytes) -> None:
-        """Derive `hold_start` / `hold_end` with a `direction` from a key's Move / Delta Sets (review-3 F12).
+        """Derive `hold_start` / `hold_end` with a `direction` from a key's Move / Delta Sets.
 
         The vendor gestures of a gateway-mode key say when a hold starts and ends; a key wired straight to a dimmer
         only sends its Level client's messages. Unverified on air (`DIM_HOLD_QUIET`), from the SIG semantics: a Move
@@ -187,7 +187,7 @@ class ButtonGestures:
         ends it; the first Delta Set of a transaction (TID) starts one, the next ones of the same transaction
         continue it, and it ends `DIM_HOLD_QUIET` seconds after the last — or at a Delta Set 0. A new start while a
         hold runs (its stop was lost) ends that hold first. A Level Set moves to a level: no hold. Whatever its kind,
-        a hold ends `DIM_HOLD_MAX` seconds after it started, with `reason: timeout` (review-4 R4-7: a lost Move 0
+        a hold ends `DIM_HOLD_MAX` seconds after it started, with `reason: timeout` (a lost Move 0
         used to leave it open for good); a Move 0 that still comes then ends nothing.
         """
         if m.opcode in (M.GEN_MOVE_SET, M.GEN_MOVE_SET_UNACK) and len(p) >= 3:
@@ -276,7 +276,7 @@ class ButtonGestures:
         self._end_key_hold(addr, HOLD_END_TIMEOUT)
 
     def _end_holds(self, reason: str) -> None:
-        """End every hold in progress, its `hold_end` saying why (decision M11: a `reason`, not a silent drop).
+        """End every hold in progress, its `hold_end` saying why (a `reason`, not a silent drop).
 
         Without a link the stop cannot be heard, and a stopping hub hears nothing more, so a dim-while-held
         automation would otherwise never be told to stop. The `reason` lets it tell this from a real release: the
@@ -312,7 +312,7 @@ class ButtonGestures:
 
         The bus event (`event.publish_button_event`, through `JungHomeHub.publish_button_event`: this module imports no
         platform) comes from here rather than from the key's event entity, so a disabled entity no longer silences
-        the key's device triggers and logbook lines (review-4 H4-2); it follows the listeners, so an automation it
+        the key's device triggers and logbook lines; it follows the listeners, so an automation it
         starts sees the entity's new state.
         """
         for cb in self._event_listeners.get(addr, []):

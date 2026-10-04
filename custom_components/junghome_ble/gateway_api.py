@@ -9,8 +9,8 @@ token (`register()` waits until the user approves the request in the app, `regis
 `fetch_project()` for the app's export the gateway holds and `upload_project()` to hand a changed export back (the
 app's `POST config {"data": {"project_file": …}}`); `config()` and `health_status()` read what the app's gateway
 pages show (its status and its error log, `gateway_status.py`); `approve_client()` approves an API client's access
-request as the app's *Access permissions* page does (`POST config {"data": {"api_client_accept": …}}`, review-4
-F4-17). The app's *revoke all* (`api_client_reset`, which would revoke Home Assistant's own token too) and the
+request as the app's *Access permissions* page does (`POST config {"data": {"api_client_accept": …}}`).
+The app's *revoke all* (`api_client_reset`, which would revoke Home Assistant's own token too) and the
 gateway's network settings are left out on purpose. Response bodies are never logged: the export carries every mesh
 key and the register replies carry the token.
 """
@@ -292,7 +292,7 @@ class JungHomeGatewayApi:
                 headers=headers,
                 timeout=aiohttp.ClientTimeout(total=timeout),
                 ssl=self._ssl,
-                # a redirect would carry the token header to wherever the gateway points (review-3 S2): the
+                # a redirect would carry the token header to wherever the gateway points: the
                 # gateway's API never redirects, so a 3xx is an answer like any other non-200
                 allow_redirects=False,
             ) as response:

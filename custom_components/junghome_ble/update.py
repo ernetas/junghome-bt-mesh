@@ -1,8 +1,8 @@
-"""Firmware: one read-only `update` entity per node, its software version against the JUNG HOME app's (F4-18, U4-11).
+"""Firmware: one read-only `update` entity per node, its software version against the JUNG HOME app's.
 
 The JUNG HOME app bundles one firmware image per device family and offers it when a device runs an older version
 (`CheckForDeviceUpdate`); it then streams the image to the device over the Silicon Labs OTA GATT service, not over
-the mesh (`docs/android/transport-provisioning.md` §5.2). Home Assistant does not update firmware (review-3 N9: a
+the mesh (`docs/android/transport-provisioning.md` §5.2). Home Assistant does not update firmware (a
 failed update leaves a device out of the network), but it can say what the app would: each node's *Firmware* entity
 compares the software version the node reports (SIG 0x001A, the device page's version, `entity.software_version`)
 with `BUNDLED_FIRMWARE`, the versions the app bundles per product id (`docs/android/firmware-products.md`, JUNG HOME
@@ -13,7 +13,7 @@ Only the application image is compared, by product id: the hardware revisions an
 secure-element sub-images and the room thermostat's STM32 co-processor image are not (the node reports none of
 them). A product the table does not list (one newer than the app's table) has no latest version: the entity shows
 unknown, and so does a node that has not reported its version yet. The gateway gets none: no image exists for it in
-the app, it updates itself. Diagnostic and disabled by default, as decision M9 keeps what is not everyday.
+the app, it updates itself. Diagnostic and disabled by default, as is everything that is not everyday.
 """
 
 from __future__ import annotations

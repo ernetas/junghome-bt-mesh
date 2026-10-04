@@ -363,7 +363,7 @@ class CDB:
     )  # allocatedSceneRange, likewise
     provisioners: list[Provisioner] = field(
         default_factory=list
-    )  # the same ranges per provisioner, with its UUID and name (review-3 N1 tells its own entry apart)
+    )  # the same ranges per provisioner, with its UUID and name (Home Assistant's own entry told apart)
     excluded_addresses: set[int] = field(
         default_factory=set
     )  # networkExclusions: dead until the IV index moved on twice
@@ -565,7 +565,7 @@ class CDB:
     def element(self, addr: int) -> Element | None:
         """Return the element at unicast `addr`, if a node has one.
 
-        A dictionary lookup (review-4 R4-9): it runs for every message heard, every entity's availability and
+        A dictionary lookup: it runs for every message heard, every entity's availability and
         every keep-alive target, and a scan of every node cost tens of microseconds on a mesh of hundreds. Whoever
         adds a node to `nodes`, takes one out or moves an element calls `reindex` (`ProxyClient.add_node` /
         `remove_node`; the export's own edits build a new `CDB`). A list that grew or shrank without it is
@@ -623,7 +623,7 @@ class CDB:
     def used_unicasts(self, own: str | None = None) -> set[int]:
         """Return every element address a node occupies, an excluded node's included (it may still be on air).
 
-        `own`: the UUID of Home Assistant's own provisioner (review-3 N1); the node recording its address is left
+        `own`: the UUID of Home Assistant's own provisioner; the node recording its address is left
         out, as that address is ours.
         """
         mine = None if own is None else canonical_uuid(own)
@@ -653,7 +653,7 @@ class CDB:
         )
 
     def own_provisioner(self, own: str | None) -> Provisioner | None:
-        """Return the `provisioners[]` entry whose UUID is `own` (Home Assistant's, review-3 N1), if the file has it."""
+        """Return the `provisioners[]` entry whose UUID is `own` (Home Assistant's), if the file has it."""
         mine = None if own is None else canonical_uuid(own)
         return next((p for p in self.provisioners if p.uuid == mine), None)
 

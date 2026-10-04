@@ -1,7 +1,7 @@
 """The last known state of one mesh element, as the hub caches it (`JungHomeHub.states`, `element_state`).
 
 It lived in `coordinator.py`, which re-exports it; here a module the hub is made of can name it without importing
-the hub (review-4 A4-11).
+the hub.
 """
 
 from __future__ import annotations

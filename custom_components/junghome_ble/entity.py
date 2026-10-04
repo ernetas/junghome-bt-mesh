@@ -1,7 +1,7 @@
 """The entity base (`JungHomeEntity`) and the platforms' bookkeeping with the hub.
 
 The device-registry model — the registry layout, the device identifiers, the devices' names, rooms and areas — is
-`device_info.py` (review-4 A4-11), re-exported here for the platforms.
+`device_info.py`, re-exported here for the platforms.
 
 Every platform builds its entities from the hub's device model (`build_entities`) and keeps them with the hub
 (`async_setup_platform`, `TrackedPlatform`): an action that rewrote the export then has `model_update` build them
@@ -264,7 +264,7 @@ class JungHomeEntity(Entity):
         """Write the state, unless what the entity shows is what Home Assistant already holds for it.
 
         One element's status reaches every entity bound to it (a busy one has over twenty), and most show nothing
-        that changed (review-4 R I-10). The comparison is with the state machine itself, not with this entity's
+        that changed. The comparison is with the state machine itself, not with this entity's
         last write — a command's own write (an assumed state) counts too — and covers the state string, so a change
         of availability (`unavailable`) is always written; so is every attribute.
         """
@@ -288,7 +288,7 @@ class JungHomeEntity(Entity):
 
         The entity is push-updated (`should_poll` is off), so Home Assistant calls this for the action alone: an
         automation that wants a value fresh rather than as last heard (an LED colour or a run-on time changed in the
-        app, answered to the app's address only; review-4 H4-10). The answers update the state cache as every
+        app, answered to the app's address only). The answers update the state cache as every
         status does. What is read is the entity's `_update_read`; the same thing of an element is asked at most once
         per UPDATE_READ_INTERVAL, so an automation updating a whole device, or a loop, does not flood the mesh. A
         battery node sleeps and would not answer (its values are read when a key wakes it), and without a link
@@ -360,7 +360,7 @@ class JungHomeCentralEntity(JungHomeEntity):
     state derived from the members' (`watched` are the elements it follows). Available while the link is up, or in its
     loss grace — the messages reach whoever is there.
 
-    A room's entity starts hidden (decision M9): outside every area it landed among the unassigned entities of the
+    A room's entity starts hidden: outside every area it landed among the unassigned entities of the
     auto-generated dashboards, one per room and kind, and was exposed to Assist next to the loads it duplicates.
     Home Assistant applies the flag when it first registers the entity only, so an installation that registered it
     before keeps it as it was; the home-wide *All …* entities stay visible.
@@ -402,7 +402,7 @@ class JungHomeCentralEntity(JungHomeEntity):
         """Available while the hub has a proxy link, or lost one less than LINK_LOSS_GRACE ago, as the loads' entities.
 
         A command in the grace waits for the next link (`JungHomeHub._command`); unavailable, Home Assistant would
-        skip the entity in an action and drop the command (review-4 R4-6).
+        skip the entity in an action and drop the command.
         """
         return self.hub.link_available
 

@@ -1,4 +1,4 @@
-"""Liveness of the nodes for one hub: reachability (the app's rule) and heartbeats (review-4 A4-3).
+"""Liveness of the nodes for one hub: reachability (the app's rule) and heartbeats.
 
 A node is unreachable once a request asked with the app's full budget went unanswered (`missed_answer`), re-asked
 after UNREACHABLE_RECHECK (a short probe, a node heard from meanwhile, a locked load) and every UNREACHABLE_REPROBE
@@ -59,7 +59,7 @@ HEARTBEAT_REPROBE_INTERVAL: Final = 120.0  # a node marked dead is asked again f
 # the element is asked again with a full-budget Get after UNREACHABLE_RECHECK seconds.
 UNREACHABLE_RECHECK: Final = 60.0
 # ... and an unreachable node is asked again this often while the link lasts: a breaker that was off for a few minutes
-# must not leave its entities unavailable until the next link (review-3 C3)
+# must not leave its entities unavailable until the next link
 UNREACHABLE_REPROBE: Final = 300.0
 
 
@@ -162,7 +162,7 @@ class Liveness:
         connection" either).
 
         Nor is a load known to be locked (`load_locked`) for a `command` it left unanswered: a locked load may well
-        ignore the Set, and is not gone for it (review-4 F4-2) — it is asked again with a state Get after
+        ignore the Set, and is not gone for it — it is asked again with a state Get after
         UNREACHABLE_RECHECK, whose silence counts as any other. Whether a locked load answers a Set at all is
         unverified on air (`docs/hidden-features.md` §12).
         """

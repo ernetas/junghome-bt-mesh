@@ -7,7 +7,7 @@ Assistant sends it (`coordinator._send_time`); nothing about them is in the expo
 
 `Scheduler` (one per hub, `scheduler`) reads and changes an element's slots and keeps what it last read; the
 *Schedules* sensor shows that (read once per link) and the `get_schedules` … `delete_schedule` actions
-(`actions/schedules.py`; `update_schedule` rewrites a slot in place, review-4 F4-6) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
+(`actions/schedules.py`; `update_schedule` rewrites a slot in place) go through it. An astro schedule is preceded by Home Assistant's home location, the way the app
 sends the phone's: a `Generic Location Global Set Unacknowledged` to the node's Location Setup Server (the hub
 also broadcasts it after every connection, `coordinator._send_location`).
 

@@ -194,7 +194,7 @@ async def _create_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
         if not created:
             raise
         # a load that fails after others took the schedule (it went silent since the check): the error names
-        # those slots, which the response never gets to (review-3 W9) — a retry as it is would add them twice
+        # those slots, which the response never gets to — a retry as it is would add them twice
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="schedule_partly_created",
@@ -209,7 +209,7 @@ async def _create_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
 
 
 async def _update_schedule(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Rewrite slot `slot` of each load in place (review-4 F4-6), the action checked for every load first.
+    """Rewrite slot `slot` of each load in place, the action checked for every load first.
 
     A load failing after others took the change leaves nothing to warn about, unlike a create: calling again
     writes the same slots with the same contents. Unverified on air.

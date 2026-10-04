@@ -1,4 +1,4 @@
-"""Carrying the nodes only Home Assistant knows through the provisioner's key refresh (review-4 D11).
+"""Carrying the nodes only Home Assistant knows through the provisioner's key refresh.
 
 The app refreshes the NetKey by sending Config NetKey Update, then Key Refresh Phase Set 2 and 3, to every
 non-excluded node of *its own* database (`docs/android/transport-provisioning.md` §4.2). A node Home Assistant

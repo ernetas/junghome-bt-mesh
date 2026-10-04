@@ -1,21 +1,21 @@
 """Lights: switched loads, dimmers and tunable-white (DALI) channels, and the app's *all lights* central function.
 
-**Hold-to-dim** (review-3 F12, the `junghome_ble.start_dim` / `stop_dim` / `step_dim` actions): what a rocker does to
+**Hold-to-dim** (the `junghome_ble.start_dim` / `stop_dim` / `step_dim` actions): what a rocker does to
 a dimmer, from Home Assistant. A dimmer's (and a DALI channel's) first element hosts a Generic Level server bound to
 its lightness (Mesh Model: level = lightness - 32768), so a Generic Move Set starts it moving up or down
 at a speed until a Move Set 0 stops it, and a Generic Delta Set moves it by a step — the messages the coordinator
 already sends a blind (`JungHomeHub.move_level` / `delta_level`). The app itself never dims this way (it sends
-Lightness Sets); review 3 saw the three actions dim, stop and step a dimmer on air (a -40 % step exact, the gateway
+Lightness Sets); the three actions were seen to dim, stop and step a dimmer on air (a -40 % step exact, the gateway
 agreeing to ±1), a tunable-white channel was not tried. The light's state is asked for after a stop or a step, as
 its Level Status does not carry the lightness the entity shows.
 
-**Transitions** (review-4 F4-1): HA's `transition` goes into the Set (`JungHomeHub.set_lightness` and the other
+**Transitions**: HA's `transition` goes into the Set (`JungHomeHub.set_lightness` and the other
 setters) only for a kind in `TRANSITION_KINDS`, the only lights that declare the feature. Neither the app nor the
 gateway ever sends a transition, so which JUNG loads fade is up to the on-air probe (`docs/hidden-features.md` §11);
 until it ran the table is empty, HA drops a `transition` before it reaches a light, and every Set keeps the bytes it
 always had. Unverified on air.
 
-**Locks** (review-4 F4-2): a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
+**Locks**: a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
 `lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`).
 """
 
@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 MIN_KELVIN: Final = 2000
 MAX_KELVIN: Final = 6000
 # `junghome_ble.start_dim`: Generic Move Set with a transition time of one 100 ms step (Mesh Model §3.1.3: 0b00
-# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air (review 3).
+# resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air.
 DIM_MOVE_TRANSITION: Final = 0x01
 DIM_STEPS_PER_SECOND: Final = 10
 

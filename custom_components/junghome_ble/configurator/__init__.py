@@ -1,4 +1,4 @@
-"""The mesh configurator's parts behind `mesh_config.MeshConfigurator` (review-4 brief 55).
+"""The mesh configurator's parts behind `mesh_config.MeshConfigurator`.
 
 `plan` — the plan model (`ConfigStep`, `ordered`, `replay`, what a stop applied, `KeyPlan`, `PlanError`); `wiring` —
 the modes and models, the wiring read from an export, the export's paths and digest, and the planners; both pure, no

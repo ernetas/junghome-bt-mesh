@@ -1,4 +1,4 @@
-"""The metered loads of one hub: their readings and counters, the energy poll, the reset, the history import (A4-3).
+"""The metered loads of one hub: their readings and counters, the energy poll, the reset, the history import.
 
 A load's meter publishes its readings, but nothing publishes its counters: the hub reads them at link-up and every
 ENERGY_POLL_INTERVAL (`poll`, a timer `arm_poll` anchors on each link), on demand (`async_refresh_meter`), and

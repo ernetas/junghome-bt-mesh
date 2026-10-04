@@ -1,4 +1,4 @@
-"""The JUNG app's post-provisioning configuration of a new node, as data — nothing here sends anything (review-3 N3).
+"""The JUNG app's post-provisioning configuration of a new node, as data — nothing here sends anything.
 
 After *Complete* (`provisioning.py`) the app reconnects to the new node as its proxy and walks the `ConfigureDevice`
 step machine (`docs/android/network-logic.md` §3.2, `docs/android/transport-provisioning.md` §3.3). `plan()` turns
@@ -17,7 +17,7 @@ node's primary unicast under its device key, with the status opcode that answers
 | `FinishConfiguration` | Model Subscription Add to the device-type group(s) of the node's class `FEF5`..`FEF9`, and a PP2 puck's Time Server to the time keeper's `FEFF` | §1.3, §3.4 steps 1 and 9 |
 | `DisableProxy` | GATT Proxy Set 0 for battery devices | §3.2 step 9 |
 
-**The composition** (review-4 F4-13). The app plans from the node's Composition Data Status and its InsertId; a
+**The composition**. The app plans from the node's Composition Data Status and its InsertId; a
 plan made before the node answered cannot know them, but the addresses and element groups must be decided before
 the device gets its Provisioning Data (the vault reserves them, `vault.Vault.remember_provisioned`). So `plan()`
 plans first from a *template* — a node of the same product (and the same insert) already in the export, whose
@@ -306,7 +306,7 @@ class CompositionMismatch(ValueError):
 
 
 # One Config message of the plan, for the new node's primary unicast under its device key: the plan model's step
-# (`plan.ConfigStep`, review-4 A4-10) with its `phase` and `evidence`; `destination` is its `node`.
+# (`plan.ConfigStep`) with its `phase` and `evidence`; `destination` is its `node`.
 Step = ConfigStep
 
 

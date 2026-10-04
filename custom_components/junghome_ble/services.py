@@ -5,19 +5,18 @@ registered and answer "not loaded" while no entry is loaded. A call resolves the
 Home Assistant ids it was given — device ids, entity ids, areas — to mesh elements through the registries and the
 device-identifier scheme documented in `device_info.py` (`{uuid}-{location:04x}` loads, `{uuid}-{location:04x}-buttons`
 gangs of keys, `node:{uuid}` nodes), hands the operation to the hub's `MeshConfigurator`, and finally has the
-running hub take the rewritten export over in place (`model_update`, review-4 D23: no entity goes `unavailable`, the
+running hub take the rewritten export over in place (`model_update`: no entity goes `unavailable`, the
 link stays up; adding or removing a node still reloads the entry). The schedule actions write no export: they go to
 the loads' own JH Scheduler (`schedules.py`) and change no model; a socket threshold is a property plus wiring
 (`thresholds.py`), and the model follows only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
 what the nodes' Configuration Servers hold against the export and changes nothing. `locate_node` has a node advertise
 its Node Identity for a minute at most; `approve_gateway_client` lists the access requests waiting at the gateway and
-approves the one named (review-4 F4-15, F4-17). The dimming actions
+approves the one named. The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`actions/dim.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
-for administrators only (review-4 W4-9). The rewiring actions answer what their plans applied, or with `dry_run` only
+for administrators only. The rewiring actions answer what their plans applied, or with `dry_run` only
 what they would send and change (`actions.common._execute`, `MeshConfigurator.dry_run`); every call that ran a plan is
-logged in the logbook and the diagnostics (`actions.common._report_plan`); what cannot be undone needs `confirm`
-(review-4 W I3, W I6, W I7, W I9).
+logged in the logbook and the diagnostics (`actions.common._report_plan`); what cannot be undone needs `confirm`.
 
 Calls for one entry are serialised (`coordinator.entry_lock`, kept across reloads, taken by the unknown-node
 refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options
@@ -25,7 +24,7 @@ change, a call that could not follow in place); a call that goes on air then wai
 reloaded hub's link, which connects in the background.
 
 This module is the registration table; the handlers and their schemas live in `actions/`, one module per domain
-(`actions.common` runs an operation, `actions.resolve` resolves the ids; review-4 A4-8).
+(`actions.common` runs an operation, `actions.resolve` resolves the ids).
 """
 
 from __future__ import annotations
@@ -210,7 +209,7 @@ SERVICE_REMOVE_DEVICE = "remove_device"  # admin only, with OPTION_ALLOW_PROVISI
 SERVICE_ADD_DEVICE = (
     "add_device"  # admin only, and only with OPTION_ALLOW_PROVISIONING (experimental)
 )
-# admin only, with OPTION_ALLOW_PROVISIONING: a device add_device provisioned but did not record (review-4 D2)
+# admin only, with OPTION_ALLOW_PROVISIONING: a device add_device provisioned but did not record
 SERVICE_RESET_PENDING_DEVICE = "reset_pending_device"
 SERVICE_LOCATE_NODE = (
     "locate_node"  # admin only: it changes what a node advertises, for a minute
@@ -221,7 +220,7 @@ SERVICE_START_DIM = "start_dim"
 SERVICE_STOP_DIM = "stop_dim"
 SERVICE_STEP_DIM = "step_dim"
 # the services that answer, and whether they must be asked to; every rewiring action answers what its plans applied
-# (`MeshConfigurator.plan_response`) or, as a dry run, what they would send (review-4 W I3, W I6)
+# (`MeshConfigurator.plan_response`) or, as a dry run, what they would send
 RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_SET_ROOM: SupportsResponse.OPTIONAL,
     SERVICE_ADD_TO_ROOM: SupportsResponse.OPTIONAL,
@@ -246,7 +245,7 @@ RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_LOCATE_NODE: SupportsResponse.OPTIONAL,
     SERVICE_APPROVE_GATEWAY_CLIENT: SupportsResponse.OPTIONAL,
 }
-# Review-4 W4-9 (decision M8): every other action rewires, deletes or writes the export and the devices, and is for
+# every other action rewires, deletes or writes the export and the devices, and is for
 # administrators only (`async_register_admin_service`); these only read. Moving a name here opens it to every user.
 USER_SERVICES = frozenset(
     {SERVICE_GET_SCHEDULES, SERVICE_AUDIT_NETWORK, SERVICE_FIND_NEW_DEVICES}

@@ -1381,7 +1381,7 @@ _VENDOR_SPECS: list[PropertySpec] = [
     _fw(0x000E, "server_state_publish_request", ALL_PRODUCTS, U8, access="wo"),
     _fw(0x0010, "lpn_state_timeout", PB_BATTERY | MINI_INPUT),  # vendor id; SIG 0x0010 lives in SIG_PROPERTIES
     _fw(0x0011, "battery_test_raw_data", PB_BATTERY | MINI_INPUT),
-    # Raw until the supervised probe settles them (review-4 brief 36, `docs/on-air-sweep.md` A7 / C6): 0x0F00 reads
+    # Raw until the supervised probe settles them (`docs/on-air-sweep.md` A7 / C6): 0x0F00 reads
     # `0100` on key elements and the socket's meter element, meaning unknown; the two runtime statistics sit on the
     # Manufacturer server of every node (`hidden-features.md` §2), empty on the socket
     _fw(0x0F00, "transmission_settings", ALL_PRODUCTS),

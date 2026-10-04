@@ -1,4 +1,4 @@
-"""What one hub watches the export and the gateway for: unknown nodes, the export refresh, the gateway's trust (A4-3).
+"""What one hub watches the export and the gateway for: unknown nodes, the export refresh, the gateway's trust.
 
 A node of the mesh advertising from a MAC the export lacks is reported (`check_unknown_node`, the `unknown_nodes`
 repair); for an entry set up from the gateway its export is fetched and adopted with back-off
@@ -163,7 +163,7 @@ class ExportWatch:
         self.report_unknown_nodes()
 
     def request_refresh(self) -> None:
-        """Ask the gateway for its export now, for the unknown nodes (review-3 C1: once per MAC was not enough).
+        """Ask the gateway for its export now, for the unknown nodes (once per MAC was not enough).
 
         Nothing to do without unknown nodes or a gateway the export may come from, while a fetch runs, before the
         configurator exists, or without a link — the fetch vouches for the gateway over the mesh
@@ -222,7 +222,7 @@ class ExportWatch:
     def report_unknown_nodes(self) -> None:
         """Raise (or update) the `unknown_nodes` repair; an entry from the gateway gets the wording that names it.
 
-        Two translation keys rather than a sentence in a placeholder (review-4 H4-8): translators get the whole
+        Two translation keys rather than a sentence in a placeholder: translators get the whole
         text, and the gateway variant's only extra placeholder is its `host`.
         """
         gateway = self._gateway_for_refresh()
@@ -441,13 +441,13 @@ class ExportWatch:
         )
 
     async def _reload_for_export(self) -> None:
-        """Follow the adopted export, under the entry's lock (`entry_lock`, review-3 W11): in place, else by a reload.
+        """Follow the adopted export, under the entry's lock (`entry_lock`): in place, else by a reload.
 
         A service call holds that lock while it works on this hub — waiting for its link, planning, sending — and
         has the entry follow the export itself afterwards; a reload in between would tear the hub down under it.
         Once the lock is ours, a hub that is no longer the entry's (a reload read the adopted export already) or an
         entry that is no longer loaded needs nothing more. The new nodes' devices show up without a reload
-        (`model_update.async_follow_export`, review-4 D23).
+        (`model_update.async_follow_export`).
         """
         async with entry_lock(self.hub.hass, self.hub.entry.entry_id):
             if (

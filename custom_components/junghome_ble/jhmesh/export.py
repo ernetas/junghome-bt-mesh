@@ -229,7 +229,7 @@ class ExportError(Exception):
     """A project-file operation was refused; the message never carries key material."""
 
 
-# How Home Assistant picks a new room, scene or element group (review-4 W4-2). "app": the lowest free number of the
+# How Home Assistant picks a new room, scene or element group. "app": the lowest free number of the
 # provisioner's range, the app's own rule (the parity tests, and the CLI where it mirrors the app). "top": the
 # highest free one. The app never downloads the project (`docs/android/network-logic.md` §6.1): without a provisioner
 # of Home Assistant's own, its database does not know what Home Assistant added, and its next allocation is the
@@ -825,7 +825,7 @@ class ProjectFile:
         self.style = style or Style()
         self.loaded_timestamp = str(self.net.get("timestamp", ""))
         self.digest = digest
-        # UUID of Home Assistant's own provisioner (review-3 N1, `vault.Vault.merge_into` sets it): groups and
+        # UUID of Home Assistant's own provisioner (`vault.Vault.merge_into` sets it): groups and
         # scenes are then allocated in its ranges. None (the default): in the first provisioner's, as the app does
         self.own_provisioner: str | None = None
         # where a new room or scene goes in the first provisioner's range (`Allocation`); in Home Assistant's own
@@ -1056,7 +1056,7 @@ class ProjectFile:
 
         Read from the CDB's validated ranges (in file order), not the raw tree: a malformed range is an
         `InvalidExport` at load time, never a `KeyError` from a service call. With `own_provisioner` set and in the
-        file, its first range of the kind instead (review-3 N1: Home Assistant allocates in a range of its own).
+        file, its first range of the kind instead (Home Assistant allocates in a range of its own).
         """
         mine = self.cdb.own_provisioner(self.own_provisioner)
         own = None if mine is None else (mine.group if kind == "Group" else mine.scene)
@@ -1116,7 +1116,7 @@ class ProjectFile:
         """Scene numbers keys recall by the app's record (`keyModeSceneConfigExports`), listed as scenes or not.
 
         A removed scene leaves its key rows behind (the keys still send its number): a new scene there would be
-        recalled by an old key (review-4 W4-8).
+        recalled by an old key.
         """
         out: set[int] = set()
         for row in meta_rows(self._meta("keyModeSceneConfigExports")):
@@ -1453,7 +1453,7 @@ class ProjectFile:
             return kind == "blind"
         return kind == "thermostat"  # RTR_PROPERTY_MODE
 
-    _matches_function = matches_function  # the name it had before review-4 A4-10
+    _matches_function = matches_function  # the name it had before `matches_function`
 
     def set_room(
         self, element: Element | int, group: int, *, member: bool = True
@@ -1500,7 +1500,7 @@ class ProjectFile:
                     )
         if not member:
             # the room itself last: until it goes the element is still in the room, so a plan that stops
-            # part-way is taken up by the next run — the buttons' groups included (D12)
+            # part-way is taken up by the next run — the buttons' groups included
             for m in el.raw_models:
                 changes += self.unsubscribe(el, m["modelId"], group)
         return changes
@@ -1526,7 +1526,7 @@ class ProjectFile:
         """Create a scene: CDB `scenes[]` + `meta.scenes[]`; the number from `free_scene_number` unless given.
 
         `avoid`: numbers `free_scene_number` must not pick either — those a device still holds after a forced
-        deletion skipped it (review-4 W4-8), which the export no longer names.
+        deletion skipped it, which the export no longer names.
         """
         check_name(name)
         if any(n.lower() == name.lower() for n in self.scene_names().values()):
@@ -1704,7 +1704,7 @@ class ProjectFile:
         self.meta["keyModeSceneConfigExports"] = [*kept, row]
 
     def drop_scene_link(self, key: int) -> None:
-        """Remove key element `key`'s `keyModeSceneConfigExports` row (review-3 W2).
+        """Remove key element `key`'s `keyModeSceneConfigExports` row.
 
         The row is what makes the app show a key as recalling "Scene N"; a key cleared or given another function
         no longer does, whatever its KeyMode still says. A file without such a row is left byte-identical.
@@ -1809,7 +1809,7 @@ class ProjectFile:
         devices.append(entry)
         return cast("DeviceRow", entry)
 
-    # ------------------------------------------------------------------ nodes (review-3 N3)
+    # ------------------------------------------------------------------ nodes
     def add_node_entry(
         self, entry: dict[str, Any], groups: Iterable[tuple[int, str]] = ()
     ) -> Node:
@@ -1847,7 +1847,7 @@ class ProjectFile:
         return node
 
     def remove_node(self, node: Node, iv_index: int) -> list[ModelChange]:
-        """Take a node out of the network's file as the app does (review-3 N4); return the Config edits for the others.
+        """Take a node out of the network's file as the app does; return the Config edits for the others.
 
         Its element groups go (`remove_group`: whoever subscribed or published to them is unwired), and so does any
         other node's publication to one of its elements; its elements leave every scene, its app device rows, room
@@ -1859,7 +1859,7 @@ class ProjectFile:
         """
         own = {e.address for e in node.elements}
         changes: list[ModelChange] = []
-        # by name, and by the app's `elementConnectionGroups` rows (review-4 W4-14): what the rest of the
+        # by name, and by the app's `elementConnectionGroups` rows: what the rest of the
         # integration counts as the node's element groups (`cdb_element_groups`)
         listed = {
             g for e, g in cdb_element_groups(self.cdb, self.meta).items() if e in own
@@ -1882,7 +1882,7 @@ class ProjectFile:
 
         The part of `remove_node` that holds once the node confirmed its reset, whatever the others still hold:
         its elements leave every scene, its app device rows, room link rows and key scene rows go, and so do the
-        rows the app keeps per device or element of it (review-4 F4-6: `sceneInfo`, `schedulerMetaInfo`, `timer`,
+        rows the app keeps per device or element of it (`sceneInfo`, `schedulerMetaInfo`, `timer`,
         `actuatorExports`, `buttonLayoutExports`; a list the file lacks stays absent); the entry is marked
         `excluded` and its addresses join `networkExclusions` under `iv_index`. That a re-import of such a file
         leaves the app no row of the node is unverified with the app. The record of a removal
@@ -1993,9 +1993,8 @@ class ProjectFile:
 
         The app reads a node's InsertId (`0x0002`: actuator function, insert type) and, for keys, its ButtonLayout
         (`0x5001`) when it adds it, keeps them per element and exports them (`MeshPropertyExport`). A node Home
-        Assistant adds gets the rows the file holds for its template, the same product, at the same element offsets
-        (review-4 F4-6), with what the node advertised (`function`, `layout`: brief 33's advert data) in place of
-        the template's values. A template without such rows gives none: the app keeps none for it, or the file is
+        Assistant adds gets the rows the file holds for its template, the same product, at the same element offsets,
+        with what the node advertised (`function`, `layout`) in place of the template's values. A template without such rows gives none: the app keeps none for it, or the file is
         one that leaves the list out. Returns how many rows were added. The shapes come from the Android app's
         decompile; unverified with the app: no app has been seen importing a row Home Assistant wrote.
         """

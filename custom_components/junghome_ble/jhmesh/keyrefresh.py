@@ -1,4 +1,4 @@
-"""Following the provisioner's NetKey refresh only on proof that the mesh moved (review-4 D4).
+"""Following the provisioner's NetKey refresh only on proof that the mesh moved.
 
 The JUNG app refreshes the NetKey by sending every node a Config NetKey Update with the new key, then Config Key
 Refresh Phase Set 2 and 3 (`docs/android/transport-provisioning.md` §4.2), each sealed with the node's device key.
@@ -22,7 +22,7 @@ decoded and persists `record()`):
   Mesh Private beacon it opens (`PROOF_BEACON`; Key Refresh flag set = Phase 2, clear = Phase 3, §3.10.4.1), Phase Status confirmations from at
   least two distinct nodes (`PROOF_STATUSES`) or from the proxy node itself (`PROOF_PROXY`). An export written mid
   key refresh is its own proof (`PROOF_EXPORT`).
-- Phase 1 is **proven** the same way (review-4 D11): the candidate confirmed held — a NetKey Status or a Phase Status
+- Phase 1 is **proven** the same way: the candidate confirmed held — a NetKey Status or a Phase Status
   reporting phase 1 — by two distinct nodes or by the proxy node, the export's own refresh, or a proven Phase 2. It
   moves nothing here (the key was accepted already); it is what `distribution` waits for before Home Assistant hands
   the key to the nodes only it knows (`vaultrefresh`): a key one node made up is never sent anywhere.
@@ -113,7 +113,7 @@ class KeyRefreshRecord:
         return self.proof is not None
 
     def to_stored(self) -> dict[str, Any]:
-        """Return the JSON form: `{"key", "phase"}` as before review 4, plus the proof fields when there are any."""
+        """Return the JSON form: `{"key", "phase"}` as before the proof, plus the proof fields when there are any."""
         stored: dict[str, Any] = {"key": self.key.hex(), "phase": self.phase}
         if self.proof is not None:
             stored["proof"] = self.proof
@@ -251,7 +251,7 @@ class KeyRefreshFollower:
 
     @property
     def distribution(self) -> tuple[int, bytes] | None:
-        """The phase the nodes only Home Assistant knows may be taken to, and the new key: proven only (review-4 D11).
+        """The phase the nodes only Home Assistant knows may be taken to, and the new key: proven only.
 
         2 with the proven Phase 2 key; 1 with a candidate proven the provisioner's (`held`; the one most nodes vouch
         for, should there be several); 3 with the key of a proven completion the export does not hold yet; None when

@@ -1,7 +1,7 @@
 """What a stop applied, a planner's refusal, a key connection's plan and the plan journal's step rows.
 
-The step model itself (`ConfigStep`, `ordered`, `replay`, the step builders) is the library's `jhmesh.plan` (review-4
-A4-10). Pure (review-4 brief 55): a `ProjectFile` and its CDB in, steps out — no Home Assistant import. A planner
+The step model itself (`ConfigStep`, `ordered`, `replay`, the step builders) is the library's `jhmesh.plan`.
+Pure: a `ProjectFile` and its CDB in, steps out — no Home Assistant import. A planner
 that refuses raises `PlanError`, which `MeshConfigurator` turns into the translated service error it names.
 """
 

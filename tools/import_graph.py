@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the integration's import cycles, with and without the imports made for type checking only (review-4 A4-11).
+"""Print the integration's import cycles, with and without the imports made for type checking only.
 
     tools/import_graph.py              # the cycles of the static graph (module-level + `TYPE_CHECKING` imports)
     tools/import_graph.py --lazy       # also count the imports made inside a function

@@ -1,4 +1,4 @@
-"""Rooms to areas (review-4 U4-2): which Home Assistant area a JUNG room's devices go to, and moving them.
+"""Rooms to areas: which Home Assistant area a JUNG room's devices go to, and moving them.
 
 Home Assistant puts a new device in the area its `suggested_area` names, created when no area has that *name*:
 aliases are ignored, so a German room next to an English area with that alias became a second area. The flow's

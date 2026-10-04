@@ -656,7 +656,7 @@ class Devices:
     # load element -> the room thermostats that switch it (`thermostat_links`); a load no thermostat drives is absent
     thermostats_of: dict[int, list[Thermostat]] = field(default_factory=dict)
     # meter element → its load (`by_meter`), and temperature element → its CTL light (`by_temperature`): both looked
-    # up per status (review-4 R4-9), so kept up by `add` rather than searched
+    # up per status, so kept up by `add` rather than searched
     _by_meter: dict[int, MeteredLoad] = field(default_factory=dict, repr=False)
     _by_temperature: dict[int, Light] = field(default_factory=dict, repr=False)
 

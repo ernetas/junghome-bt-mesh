@@ -167,7 +167,7 @@ async def _store_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     first set to that state and waited for — but a blind, which takes too long to move: its JUNG scene action
     carries the `position` / `tilt_position` given (the app, too, carries a JUNG device's state in the action
     and sets only legacy devices first, network-features.md §3). A field that does not fit a load is refused
-    by the schedule's rules (`schedule_action`), in the scene's words (review-3 W8).
+    by the schedule's rules (`schedule_action`), in the scene's words.
     """
     owner, scene = _scene_of(hass, call.data)
     loads = await _resolve_loads(hass, call)

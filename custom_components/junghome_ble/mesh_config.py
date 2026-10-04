@@ -15,7 +15,7 @@ one at a time per hub:
    *apply-and-record*: the steps accepted before it are what the mesh now holds, so they are replayed into a
    fresh copy of the export and that copy is written (and handed to the gateway) before the error is raised —
    the file never disagrees with the nodes, and the error says what was applied and what was not. A plan
-   cancelled from outside (an automation restarted, a script turned off, Home Assistant stopping — D12) is
+   cancelled from outside (an automation restarted, a script turned off, Home Assistant stopping) is
    recorded the same way before the cancellation goes on, and a write once started runs to its end
    (`run_to_end`); one a crash cuts off is in the plan journal (`plan_journal`), which the next setup records
    (`async_replay_journal`). Every message is idempotent (Add / Delete / Publication Set / App Bind), so running the
@@ -25,18 +25,18 @@ one at a time per hub:
 6. when the entry knows a gateway (host, token, pinned certificate), hand the export to it the way the app does
    after every change (`POST config {"data": {"project_file": …}}`, roadmap step 14) so the gateway sees the same
    installation (the app never downloads it: its next upload lacks HA's changes, which `ExportStore._carry_over` puts
-   back before that upload is adopted — review-3 W1); a failed upload raises the `gateway_sync_failed` repair issue
+   back before that upload is adopted); a failed upload raises the `gateway_sync_failed` repair issue
    and is retried like the app retries it (twice, 15 s apart, `GATEWAY_UPLOAD_RETRIES`), and `sync_gateway()`
    retries it on demand — each time after checking, by content digest against what HA last synced, that the
    gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
    kept in the entry's `GatewaySync` record (the time is the app's `gateway_last_sync`).
 
-A dry run (`MeshConfigurator.dry_run`, review-4 W I3) goes through step 2 on the export on disk only and ends where
+A dry run (`MeshConfigurator.dry_run`) goes through step 2 on the export on disk only and ends where
 step 3 or 5 would begin, answering the plan's messages and how the export would change; nothing is sent, written or
 adopted. What a call's plans did is counted per call (`PlanOutcome`) for its answer, its error and the logbook.
 
-The caller (`actions.common._run`) then has the running hub take the new export over in place (`model_update`, review-4
-D23), which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
+The caller (`actions.common._run`) then has the running hub take the new export over in place (`model_update`),
+which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
 devices — follows it; a change it cannot follow in place reloads the config entry, as every change did before.
 
 The message sets mirror the JUNG HOME app (`docs/android/network-logic.md` §1.5, §2.3, §2.4;
@@ -60,7 +60,7 @@ element's own group, and the loads it should switch subscribe their JUNG User Pr
 
 No key material is logged or put into error messages.
 
-The code is split (review-4 brief 55) into the `configurator` package: `plan` (the texts of what a stop applied; the
+The code is split into the `configurator` package: `plan` (the texts of what a stop applied; the
 plan model — `ConfigStep`, `ordered`, `replay` — is the library's `jhmesh.plan`) and `wiring` (the modes and models, the wiring read from an export and the
 planners) are pure — a `ProjectFile` in, steps out, a `PlanError` for a refusal —; `store` reads and writes the export
 and the gateway's copy (`ExportStore`), `executor` sends the plans and records a stop (`PlanExecutor`), and `rooms`,

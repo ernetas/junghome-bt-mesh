@@ -83,8 +83,8 @@ UNSAFE_PROPERTIES: frozenset[int] = frozenset(
 )
 # Firmware-only ids (`PropertySpec.source == "firmware"`) whose layout and effect a supervised probe settled on air:
 # only these become config entities, and always disabled by default (`config_targets`). None has been yet — 0x0F00,
-# 0x500C and the hotel / night / presentation ids 0x1008-0x1013 wait for the probe of `docs/on-air-sweep.md` C6
-# (review-4 brief 36), and an id without a codec stays Raw and unmapped here even when listed.
+# 0x500C and the hotel / night / presentation ids 0x1008-0x1013 wait for the probe of `docs/on-air-sweep.md` C6,
+# and an id without a codec stays Raw and unmapped here even when listed.
 FIRMWARE_ENTITIES: frozenset[int] = frozenset()
 PROPERTY_WALKING_TEST, PROPERTY_PRESENCE_CONTROL = 0x6001, 0x6003
 PIR_SENSOR_C = P.PROPERTIES[0x600A]  # a presence detector's only (`retired_unique_ids`)
@@ -100,7 +100,7 @@ LOAD_KINDS: dict[int, frozenset[str]] = {
 BLIND_PROPERTIES = range(0x1100, 0x1200)  # a blind load: no such device is derived yet
 # Keys with an LED: mini-actuator inputs publish key events too, but have nothing to light. Mains push-buttons only:
 # a battery wall transmitter sleeps between key presses, so an unacknowledged write to it is lost, yet the switch
-# would show the written value as applied for good (review-3 P1).
+# would show the written value as applied for good.
 STATUS_LED_PRODUCTS = P.PB_MAINS
 
 # The parameters on the first (non-expert) Parameters page per device type, `device-settings.md` §1.1 / §2-§9.

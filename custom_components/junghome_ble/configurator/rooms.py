@@ -1,6 +1,6 @@
 """Rooms, device names and key connections: the operations behind the room and key actions.
 
-`Rooms` and `Keys` (review-4 brief 55) plan with the pure planners of `wiring`, send through the `PlanExecutor` and
+`Rooms` and `Keys` plan with the pure planners of `wiring`, send through the `PlanExecutor` and
 write through the `ExportStore`; a key link's LBC Admin writes (KeyMode, the property mode, a scene, a lock) follow
 its Config plan here.
 """
@@ -158,8 +158,7 @@ class Rooms(Operations):
         to the publish group of every key already linked to the room (`reconnectSwitchesWithGroup`); leaving a room
         is the mirror image (`DeleteGroupFromDevices`). One plan, one file rewrite and one gateway upload for
         all the loads of a service call — the gateway reconfigures itself on every upload. A room the export does
-        not have is created only with `create`: a typo used to make a new room and move the loads into it
-        (review-4 W4-12).
+        not have is created only with `create`: a typo used to make a new room and move the loads into it.
         """
         return await self._change_rooms(
             addresses, room, action="junghome_ble.set_room", create=create, only=True
@@ -168,7 +167,7 @@ class Rooms(Operations):
     async def add_to_rooms(
         self, addresses: Iterable[int], room: str, *, create: bool = False
     ) -> bool:
-        """Put every load element in `addresses` into `room` as well, keeping the rooms it is in (review-4 F4-5).
+        """Put every load element in `addresses` into `room` as well, keeping the rooms it is in.
 
         The app's `AddDeviceToGroups`: a device can be in several rooms at once. The same `AddGroupToDevices`
         messages as `set_rooms` (the room's Subscription Adds, then each key linked to the room), without leaving
@@ -181,7 +180,7 @@ class Rooms(Operations):
     async def remove_from_rooms(
         self, addresses: Iterable[int], room: str, *, force: bool = False
     ) -> bool:
-        """Take every load element in `addresses` out of `room`, keeping the other rooms it is in (review-4 F4-5).
+        """Take every load element in `addresses` out of `room`, keeping the other rooms it is in.
 
         The app's `DeleteDeviceFromGroups` (`DeleteGroupFromDevices`): the load stops listening to every key linked
         to the room, then every model carrying the room drops it (`ProjectFile.set_room(member=False)`). A load a
@@ -392,7 +391,7 @@ class Keys(Operations):
                         for pdu in _key_link_writes(plan, detector=detector)
                     ],
                 )
-            # a battery key stays held from its first Config step to its KeyMode write (review-3 W4 / F24)
+            # a battery key stays held from its first Config step to its KeyMode write
             async with self.hub.keep_awake.hold([key.address]):
                 await self.executor.send(
                     steps, action="junghome_ble.assign_key", prepare=plan.prepare
@@ -541,7 +540,7 @@ class Keys(Operations):
         """Write KeyModeSceneConfig 0x5002 = (scene, no transition), as the app does, and confirm it.
 
         `[scene u16 LE][transition u32 LE ms]` (network-logic.md §2.2); the app waits for its status. Unverified on
-        air (review-3 F15).
+        air.
         """
         value = P.encode(PROPERTY_KEY_SCENE_CONFIG, P.SceneConfig(scene))
         if not await self.executor.write_key_property(

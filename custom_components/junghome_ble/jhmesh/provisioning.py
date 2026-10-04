@@ -25,7 +25,7 @@ each PDU from the device and returns what to send next, `result` holds the devic
 SAR framing (§6.3.1; `pdu.proxy_frame` / `ProxyReassembler`) on Mesh Provisioning Data In (0x2ADB, write without
 response) / Data Out (0x2ADC, notify).
 
-**The method** (review-4 P4-8). With No OOB the AuthValue is all zeros: whoever sits between the two ends in radio
+**The method**. With No OOB the AuthValue is all zeros: whoever sits between the two ends in radio
 range during the exchange can run ECDH with each of them and nothing notices. So the Start is not the app's fixed
 one but `choose_method`'s pick from the device's Capabilities (Mesh Protocol 1.1 §5.4.1.2, §5.4.1.3):
 
@@ -56,7 +56,7 @@ closes; nothing reaches the device's storage before *Complete*.
 The device key is known one step before the device learns anything: it is derived from the device's Random, before
 the Data PDU goes out. `provision(on_device_key=…)` hands it over right there, so a caller can put it somewhere safe
 first (Home Assistant's vault) and abort, by raising, before the device gets an address and the network's keys
-(review-4 D15; unverified on air). Once the Data PDU went out, a failure no longer proves the device has nothing: a
+(unverified on air). Once the Data PDU went out, a failure no longer proves the device has nothing: a
 lost *Complete* looks like any other timeout.
 
 Key material (the ECDH secret, the session key, the NetKey inside `ProvisioningData`, the device key) and the Static

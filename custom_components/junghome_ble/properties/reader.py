@@ -12,7 +12,7 @@ unsolicited Status publications (`C5 / CB / D1 27 05`) are applied as they arriv
 platform-level scheduler, `PROPERTY_READ_CHUNK` at a time, so a large installation does not flood the mesh when
 the link comes up. A battery node sleeps then: its entities are read right after one of its keys reported. A change
 to one keeps it awake the app's way while it runs (`keep_awake.py`), and one it does not answer fails as *asleep*,
-asking for a key press first (review-3 W4 / F24).
+asking for a key press first.
 """
 
 from __future__ import annotations
@@ -274,7 +274,7 @@ class PropertyReader:
     property's Get. A property several entities share (the LED colours and the night mode) is read once: a read
     that succeeded within `PROPERTY_READ_FRESH` is not repeated.
 
-    A job is queued once (review-4 R4-5): one still waiting is kept in its place and counted for the current link,
+    A job is queued once: one still waiting is kept in its place and counted for the current link,
     and one queued on a link that went away is dropped when its turn comes — its entity queues it again on the next
     link if it still wants it. Several quick drops used to leave a copy per link in the queue, each read in turn.
     Unverified on air.
@@ -401,7 +401,7 @@ class PropertyReader:
         on, a restart's included.
 
         A read that got every answer is not repeated until the hub sees the node restart (`hub.restarted`: a
-        firmware update restarts it; review-4 R4-5) — asked on every link, it cost a Get per node at every link-up
+        firmware update restarts it) — asked on every link, it cost a Get per node at every link-up
         and piled up in the queue when links came and went. One that went unanswered is queued again on the next
         link, at most once per link. Unverified on air.
         """

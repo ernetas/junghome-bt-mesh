@@ -188,7 +188,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-# The hub's timings (review-4 A4-12: they lived in `const.py`). How often the heartbeat deadlines are checked
+# The hub's timings (they lived in `const.py`). How often the heartbeat deadlines are checked
 # (`OPTION_HEARTBEATS`, `Liveness.check_heartbeats`).
 HEARTBEAT_CHECK_INTERVAL: Final = 30.0
 # A Scene Status a node publishes this soon after a recall of the same scene that fired EVENT_SCENE_RECALLED (a
@@ -212,8 +212,8 @@ RESTART_BLOCK: Final = 0x10000
 RESTART_SLACK: Final = 0x0400
 
 
-# Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
-# `const.py`; A4-3: the hub's components into `hub/`; A4-11: `ElementState` into `element_state.py`, `entry_lock`
+# Moved out of this module (the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
+# `const.py`, the hub's components into `hub/`, `ElementState` into `element_state.py`, `entry_lock`
 # into `data.py`); re-exported for the modules and tests that import them from here.
 __all__ = [
     "GATEWAY_CERTIFICATE_CHANGED",
@@ -324,9 +324,9 @@ def register_status_handler[H: StatusHandler](
 
 @dataclass
 class KnownMesh:
-    """What Bluetooth discovery recognises an entry's mesh by (review-4 H4-4, H I-7): its keys and its nodes.
+    """What Bluetooth discovery recognises an entry's mesh by: its keys and its nodes.
 
-    Not the entry's unique id: that is the mesh UUID (decision M10), which no advertisement carries. `keys`: the
+    Not the entry's unique id: that is the mesh UUID, which no advertisement carries. `keys`: the
     export's NetKeys (both of an export written mid key refresh) and the key of a refresh the hub follows, whatever
     its phase — a proxy advertising the Network ID or a Node Identity of any of them is this mesh
     (`jhmesh.client.classify_proxy_advert` over `unicasts`, the export's nodes). `macs`: the export's nodes, which
@@ -417,12 +417,12 @@ async def async_release_network_id(
     *,
     keep_flow: str | None = None,
 ) -> None:
-    """Drop what discovery left for `network_id`, `entry`'s own mesh: its flows, an ignored entry holding it (H4-4).
+    """Drop what discovery left for `network_id`, `entry`'s own mesh: its flows, an ignored entry holding it.
 
     After a key refresh the proxies advertise the new Network ID: a discovery flow it started before Home Assistant
     knew the key as this mesh's (its unique id is the Network ID until an export is given) is the entry's own mesh,
     and so is an entry the user made by *Ignore* on such a flow. The entry's own unique id is the mesh UUID and
-    never moves (decision M10). `keep_flow` is the flow asking (a reconfigure), which must not abort itself.
+    never moves. `keep_flow` is the flow asking (a reconfigure), which must not abort itself.
     Unverified on air.
     """
     abort_discovery_flows(hass, network_id, keep_flow=keep_flow)
@@ -546,18 +546,18 @@ class JungHomeHub:
         self.hass = hass
         self.entry = entry
         self.cdb = cdb
-        # the mesh's provisioner identity and device-key vault (review-3 N1, `identity.py`)
+        # the mesh's provisioner identity and device-key vault (`identity.py`)
         self.vault = vault
         self.devices = devices
         self.state = (
             state  # our address, sequence number and IV state, persisted per mesh
         )
-        # every timer and task the hub cancels when it stops, by name (`hub/lifecycle.py`, review-4 A4-13)
+        # every timer and task the hub cancels when it stops, by name (`hub/lifecycle.py`)
         self.lifecycle = Lifecycle()
         # the repair issues and their fixes (`hub/issues.py`); it watches the store's stalls
         self.issues = Issues(self)
         state.stall_listener = self.issues.seq_stall_started
-        # the nodes' reachability and heartbeats (`hub/liveness.py`, review-4 A4-3)
+        # the nodes' reachability and heartbeats (`hub/liveness.py`)
         self.liveness = Liveness(self)
         # the proxy link: its loop, watchdog and grace (`hub/link.py`)
         self.link = LinkManager(self)
@@ -595,7 +595,7 @@ class JungHomeHub:
         self.stopping = False  # `async_stop` began: nothing new is scheduled
         # what the proxy forwarded — decoded access messages, those unicast to us (proof that nodes accept our PDUs),
         # what our keys could not open — is counted by the proxy client, per link and in total (`proxy.link_stats`,
-        # `proxy.total_stats`, review-4 A4-14): drop detection and stale-export detection read it there
+        # `proxy.total_stats`): drop detection and stale-export detection read it there
         # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe)
         self.beacon_authenticated = False
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
@@ -612,7 +612,7 @@ class JungHomeHub:
         self.node_by_mac = nodes_by_mac(cdb)  # the node behind a Bluetooth address
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
         self.configurator: ConfiguratorView | None = None
-        # what follows the changes made in the JUNG HOME app (`app_follow.py`, review-4 U4-6), set by the setup
+        # what follows the changes made in the JUNG HOME app (`app_follow.py`), set by the setup
         self.app_follow: AppFollowView | None = None
         # the platforms' entities, by platform (`entity.async_setup_platform`), and what makes the hub follow the
         # export after a change, in place or by a reload (`model_update.async_follow_export`, set by the setup)
@@ -622,19 +622,19 @@ class JungHomeHub:
         self.gateway_polls: GatewayPollsView | None = None
         # the unknown nodes, the export refresh and the gateway's trust (`hub/export_watch.py`)
         self.export_watch = ExportWatch(self)
-        # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`, review-3 W4 / F24)
+        # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`)
         self.keep_awake = KeepAwake(self)
-        # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`, review-4 D11)
+        # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`)
         self.vault_refresh = VaultKeyRefresh(
             self, issue_id(entry, ISSUE_VAULT_KEY_REFRESH)
         )
-        # each node's insert and key layout: export, advert, a Get (`inserts.py`, review-4 F4-12)
+        # each node's insert and key layout: export, advert, a Get (`inserts.py`)
         self.inserts = NodeInserts(self, issue_id(entry, ISSUE_INSERT_MISMATCH))
-        # each node's clock, zone offset and stored location as it answers them (`node_clocks.py`, review-4 F4-8)
+        # each node's clock, zone offset and stored location as it answers them (`node_clocks.py`)
         self.clocks = NodeClocks(self, issue_id(entry, ISSUE_NODE_CLOCK_WRONG))
         # the last LINK_HISTORY links, oldest first (`LinkManager._link_ended`)
         self.link_history: deque[LinkRecord] = deque(maxlen=LINK_HISTORY)
-        # link diagnostics (review-3 F8, F9): when each node was last heard (wall clock), the signal strength of
+        # link diagnostics: when each node was last heard (wall clock), the signal strength of
         # its last advertisement, when it last restarted, and the last sequence number per source
         self.last_seen: dict[int, datetime] = {}
         self.node_rssi: dict[int, int] = {}
@@ -651,7 +651,7 @@ class JungHomeHub:
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
         self._built_from = (hub_data(entry.data), dict(entry.options))
         # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
-        # suppression and the event listeners (`hub/gestures.py`, review-4 A4-3); it ends its holds on link loss
+        # suppression and the event listeners (`hub/gestures.py`); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
         # element → (what its last state Set asked for, its cached values before it), for `async_wait_settled`
         self._requested: dict[
@@ -701,7 +701,7 @@ class JungHomeHub:
         )
         key = f"{unicast:04X}"
         if _usable_record(data, key) is None:
-            # review-3 S1: a record that parses as JSON but not as a counter used to start at 0 (reusing nonces)
+            # a record that parses as JSON but not as a counter used to start at 0 (reusing nonces)
             # and its first save overwrote the good backup; a lost store with history did the same
             if (record := _usable_record(backup_data, key)) is not None:
                 _LOGGER.warning(
@@ -739,7 +739,7 @@ class JungHomeHub:
         if _usable_record(data, key) is None and (
             why := _evidence_of_use(cdb, unicast, vault, data, backup_data, floor_data)
         ):
-            # review-4 S I5: only in what the `HAState` starts from — on disk it is the first save, which sends
+            # only in what the `HAState` starts from — on disk it is the first save, which sends
             # wait for (`_limit`): a crash before it lands starts here again, with nothing sent
             _LOGGER.warning(
                 "Address %s has no sequence-number record, but %s: its numbers start at %06X, past any it may "
@@ -943,7 +943,7 @@ class JungHomeHub:
             await self.liveness.async_disable_heartbeats()
         return True
 
-    # ------------------------------------------------------------------ following the export in place (D23)
+    # ------------------------------------------------------------------ following the export in place
     def model_refusal(self, cdb: CDB) -> str | None:
         """Why the running hub cannot take over `cdb` in place (`model_update`); None when it can.
 
@@ -984,7 +984,7 @@ class JungHomeHub:
     def async_apply_model(
         self, cdb: CDB, devices: Devices, *, scenes: bool = False
     ) -> None:
-        """Take over a new device model in place of a reload (`model_update`, review-4 D23); `model_refusal` passed.
+        """Take over a new device model in place of a reload (`model_update`); `model_refusal` passed.
 
         The states cache, the link and everything learnt over it stay. What a reload would have redone follows:
         the client learns the nodes that were added (their device keys and elements), the nodes are known by MAC
@@ -1279,7 +1279,7 @@ class JungHomeHub:
 
     # ------------------------------------------------------------------ the locator (Node Identity)
     async def async_locate(self, node: Node, seconds: float) -> C.NodeIdentityStatus:
-        """Have `node` advertise its Node Identity, and ask it to stop after `seconds` (review-4 F4-15).
+        """Have `node` advertise its Node Identity, and ask it to stop after `seconds`.
 
         A Config Node Identity Set (device key, like the audit's Gets) to the node's primary unicast: the node then
         advertises the Mesh Proxy service with its Node Identity — a hash only the mesh's keys resolve to this node
@@ -1400,7 +1400,7 @@ class JungHomeHub:
         )
 
     def _note_seq(self, src: int, seq: int) -> None:
-        """Follow the source's sequence numbers; a jump into a fresh block of the counter is a restart (review-3 F8).
+        """Follow the source's sequence numbers; a jump into a fresh block of the counter is a restart.
 
         JUNG firmware continues from the next RESTART_BLOCK after a restart. Only a jump that lands within
         RESTART_SLACK of a block start counts, and only from a number that was not about to reach that block
@@ -1497,7 +1497,7 @@ class JungHomeHub:
 
         A load that is on, heading off with a known remaining time, also sets `off_at` (the *Switches off at*
         sensor); any other Status clears it. Whether a JUNG load with a run-on time (`0x1007`) reports the time left
-        this way is unverified on air (review-4 F4-11): the app ignores the field, and no capture showed it yet.
+        this way is unverified on air: the app ignores the field, and no capture showed it yet.
         """
         if not p:
             return
@@ -1881,7 +1881,7 @@ class JungHomeHub:
 
         Key refresh Phase 2 beacons are secured with the *new* NetKey (Mesh Profile §3.10.4), so a refresh of the
         keys the export holds shows up as an unauthenticated beacon with the Key Refresh flag — "authenticated and
-        flagged" means our keys are the new ones already (review-3 T3: the issue used to wait for exactly that,
+        flagged" means our keys are the new ones already (the issue used to wait for exactly that,
         which never happens). On a GATT link only the proxy node talks, so it is a strong hint, not proof: the
         flag itself is not authenticated.
         """
@@ -1899,15 +1899,15 @@ class JungHomeHub:
 
     @callback
     def _on_key_refresh(self, phase: int, key: NetKeyMaterial) -> None:
-        """Clear the key-refresh issue: the provisioner's refresh moved on and the client followed it (review-3 N2b).
+        """Clear the key-refresh issue: the provisioner's refresh moved on and the client followed it.
 
         The export keeps the old key until it is fetched again; every setup puts the followed one in its place
         (`async_apply_followed_key_refresh`). Every move — a proven Phase 1 included — takes the devices Home
-        Assistant added along as far as it is proven (`vault_refresh.py`, review-4 D11). The entry's unique id is
-        the mesh UUID, which a key refresh does not change (decision M10, H I-9): nothing moves it.
+        Assistant added along as far as it is proven (`vault_refresh.py`). The entry's unique id is
+        the mesh UUID, which a key refresh does not change: nothing moves it.
 
-        Review-4 H4-4: from the first move on, discovery recognises the new key as this mesh (`KNOWN_MESHES`); once
-        the refresh completes (phase 0, reported only on proof that the mesh moved: review-4 D4) a discovery flow it
+        From the first move on, discovery recognises the new key as this mesh (`KNOWN_MESHES`); once
+        the refresh completes (phase 0, reported only on proof that the mesh moved) a discovery flow it
         started before is aborted and an ignored entry holding its Network ID removed (`async_release_network_id`).
         """
         ir.async_delete_issue(
@@ -1970,7 +1970,7 @@ class JungHomeHub:
         Up to REQUEST_ATTEMPTS attempts of REQUEST_TIMEOUT, each the same PDU (same TID: the load applies it once and
         answers the repeat), matched on the element and the status opcode — JUNG firmware answers a Set that changed
         something by publishing that status to the element group. A status that does not show the requested state
-        answers a state Get out to the element rather than the Set (review-4 D32: the Set was lost, the Get's reply
+        answers a state Get out to the element rather than the Set (the Set was lost, the Get's reply
         shows the old state), and the Set goes out again on its next attempt (`ProxyClient.request`). Unanswered,
         the link watchdog probes the proxy at once, and the node is marked unreachable (`Liveness.missed_answer`: `load` and
         `kind` name the load element and state Get its re-asks use, the light's for a colour-temperature element)
@@ -1978,7 +1978,7 @@ class JungHomeHub:
         the nodes are not to blame (the link is dropped, and the next one's refresh asks them all). The TimeoutError
         is raised for the caller to report either way.
 
-        A link that ended or changed while the command was out (review-4 R I-11) says nothing about the load: the
+        A link that ended or changed while the command was out says nothing about the load: the
         command is sent once more, on the next link (`LinkManager.wait_for_link`) — same PDU, same TID, so a load that did
         apply it only answers. Unverified on air. Returns the status that confirmed the Set.
         """

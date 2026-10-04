@@ -1,4 +1,4 @@
-"""Battery nodes: keep a sleeping transmitter awake while Home Assistant configures it (review-3 W4 / F24).
+"""Battery nodes: keep a sleeping transmitter awake while Home Assistant configures it.
 
 A battery wall transmitter or battery binary-input puck (`BATTERY_PIDS`) sleeps between key presses and answers
 nothing then; a key press wakes it for a moment. The app never configures one blind: its detail page runs

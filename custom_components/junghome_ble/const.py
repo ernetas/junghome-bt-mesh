@@ -41,7 +41,7 @@ CONF_GATEWAY_TOKEN: Final = "gateway_token"  # noqa: S105 - the gateway's API to
 CONF_GATEWAY_PASSWORD: Final = "gateway_password"  # noqa: S105 - form field only, never stored
 CONF_EXPORT_FILE: Final = "export_file"  # form field only: the id of the uploaded file
 # the digest of the export a new gateway entry was fetched with: the first `configurator.store.GatewaySync` record of
-# the entry (review-4 H I-10: every sync rewrote it in `entry.data` up to 1.0.0; the record took it over, the key is
+# the entry (every sync rewrote it in `entry.data` up to 1.0.0; the record took it over, the key is
 # left in place for a downgrade). Not in HUB_DATA_KEYS: a reconfigure writing it never reloads by itself
 CONF_GATEWAY_SYNCED: Final = "gateway_synced_digest"
 # when Home Assistant last handed its export to the gateway (ISO 8601, UTC), the app's `gateway_last_sync`: in
@@ -64,26 +64,26 @@ HUB_DATA_KEYS: Final = (
 # Options (entry.options, set through the options flow; a change reloads the entry through the update listener).
 OPTION_CLICK_DELAY: Final = "click_delay"  # hold every `click` back for DOUBLE_CLICK_WINDOW so a double press reports no click
 DEFAULT_CLICK_DELAY: Final = False
-# let `add_device` provision new devices (review-3 N3, experimental: nothing of it has run on a real device yet)
+# let `add_device` provision new devices (experimental: nothing of it has run on a real device yet)
 OPTION_ALLOW_PROVISIONING: Final = "allow_provisioning"
 DEFAULT_ALLOW_PROVISIONING: Final = False
 # write Home Assistant into the network's file as a provisioner of its own, with its own address ranges, and put
-# back the nodes it provisioned (review-3 N1, experimental: no app has imported such a file yet — `identity.py`)
+# back the nodes it provisioned (experimental: no app has imported such a file yet — `identity.py`)
 OPTION_PROVISIONER_IDENTITY: Final = "provisioner_identity"
 DEFAULT_PROVISIONER_IDENTITY: Final = False
-# `delete_unused_scenes` lists what it would delete unless told `dry_run: false` (review-4 W4-3, decision M3): a call
+# `delete_unused_scenes` lists what it would delete unless told `dry_run: false`: a call
 # without fields, as an automation made it before, must not delete the app's scenes from a stale export
 DEFAULT_UNUSED_SCENES_DRY_RUN: Final = True
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
 DEFAULT_HEARTBEATS: Final = False
-# Follow the app (review-4 U4-6, decision M12, `app_follow.py`): the phone heard on the mesh makes an entry set up from
+# Follow the app (`app_follow.py`): the phone heard on the mesh makes an entry set up from
 # the gateway fetch its export once the phone went quiet, and an entry set up from a file raise `app_changed` when the
 # phone was seen configuring a device; and an entry set up from the gateway checks its export every few hours
 OPTION_FOLLOW_APP: Final = "follow_app"
 DEFAULT_FOLLOW_APP: Final = True
 OPTION_GATEWAY_CHECK: Final = "gateway_check"
 DEFAULT_GATEWAY_CHECK: Final = True
-# Rooms to areas (`areas.py`, review-4 U4-2): the area each JUNG room's devices start in, chosen in the flow's `areas`
+# Rooms to areas (`areas.py`): the area each JUNG room's devices start in, chosen in the flow's `areas`
 # step — room name -> area id, or None for an area named after the room (created when missing); a room the mapping
 # does not know (added later) goes to the area named or aliased like it, else to a new one named after it
 CONF_ROOM_AREAS: Final = "room_areas"
@@ -176,7 +176,7 @@ SIGNAL_GATEWAY_SYNCED: Final = f"{DOMAIN}_gateway_synced_{{}}"
 
 DETECTOR_PROPERTY_ILLUMINANCE: Final = 0x0055  # SIG Present Illuminance: LE 0.01 lx (firmware > 1.4.0.0), all ones = unknown
 
-# While Home Assistant configures a battery node it keeps it awake the app's way (`keep_awake.py`, review-3 W4 / F24):
+# While Home Assistant configures a battery node it keeps it awake the app's way (`keep_awake.py`):
 # an Admin Get of its ButtonLayout once the node was quiet this long (`KeepLowPowerDeviceAwake`, every 6 s) ...
 KEEP_AWAKE_INTERVAL: Final = 6.0
 
@@ -184,9 +184,7 @@ KEEP_AWAKE_INTERVAL: Final = 6.0
 CLIMATE_MIN_TEMP: Final = 5.0
 CLIMATE_MAX_TEMP: Final = 30.0
 HOLD_END_TIMEOUT: Final = "timeout"  # DIM_HOLD_MAX passed
-HOLD_END_LINK_LOST: Final = (
-    "link_lost"  # the link ended: the stop could not be heard (decision M11)
-)
+HOLD_END_LINK_LOST: Final = "link_lost"  # the link ended: the stop could not be heard
 HOLD_END_STOPPED: Final = (
     "stopped"  # the entry stopped (unload, reload, Home Assistant shutting down)
 )
@@ -229,7 +227,7 @@ CONNECT_BEACON_WAIT: Final = 1.0
 # timeout leaves room for two energy polls (anchored on the connection) plus a margin, so a healthy quiet mesh never
 # reaches the keep-alive.
 LINK_IDLE_TIMEOUT: Final = 660.0  # seconds >= 2 * ENERGY_POLL_INTERVAL + margin
-# Link-loss UX (review-3): a link that drops is usually back within seconds (the next proxy node takes over), so the
+# Link-loss UX: a link that drops is usually back within seconds (the next proxy node takes over), so the
 # entities stay available for LINK_LOSS_GRACE and a command in that time waits for the new link instead of failing.
 # A group command (unacknowledged: a room, "all lights", a scene) or a movement (a blind's or hold-to-dim's Move /
 # Delta Set) the mesh does not answer within COMMAND_ECHO_TIMEOUT (JUNG loads publish their new state at once) makes
@@ -241,7 +239,7 @@ LINK_LOSS_GRACE: Final = 20.0
 STOP_TIMEOUT: Final = 10.0
 GATEWAY_SYNC_PERIOD: Final = 6 * 3600.0
 TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the first one follows every connection
-# Short-link penalty (review-4 R4-1). A proxy whose link comes up and is lost again within SHORT_LINK seconds failed
+# Short-link penalty. A proxy whose link comes up and is lost again within SHORT_LINK seconds failed
 # the connection just as much as one that never connected, only later: the pause before the next attempt doubles
 # (CONNECT_BACKOFF_MIN ..), and after SHORT_LINK_STREAK such links in a row the node is set aside for
 # FAILED_PROXY_COOLDOWN like a node that cannot be connected to — the strongest node is otherwise picked again and
@@ -264,7 +262,7 @@ PROPERTY_READ_RETRIES: Final = REQUEST_ATTEMPTS  # Get attempts before a propert
 PROPERTY_READ_FRESH: Final = 10.0  # seconds within which a property answered once is not read again by another entity
 # A config entity whose values were read is read again on a later link once this many seconds have passed since
 # (`ConfigEntity._maybe_read`): a value changed in the app is answered to the app's address, so nothing else tells
-# Home Assistant (review-4 H4-10). Once per link at most, through the reader's queue.
+# Home Assistant. Once per link at most, through the reader's queue.
 CONFIG_REREAD_INTERVAL: Final = 3 * 3600.0
 PROPERTY_WRITE_TIMEOUT: Final = (
     3.0  # seconds to wait for the Status answering an acknowledged property Set
@@ -308,7 +306,7 @@ ISSUE_ADDRESS_IN_USE: Final = (
 )
 # HA's address lies in a provisioner's range, or is excluded
 ISSUE_ADDRESS_RESERVED: Final = "address_reserved"
-# an authenticated beacon states an IV index Home Assistant cannot follow (review-3 T5)
+# an authenticated beacon states an IV index Home Assistant cannot follow
 ISSUE_IV_INDEX_MISMATCH: Final = "iv_index_mismatch"
 # ... the same issue (its id stays `iv_index_mismatch_<entry id>`) when Home Assistant is ahead of the mesh and can go
 # back to its index: the fixable text (a translation key cannot hold both a description and a fix flow)
@@ -318,8 +316,8 @@ ISSUE_SEQUENCE_SPACE_LOW: Final = "sequence_space_low"
 ISSUE_SEQ_STORE_LOST: Final = "seq_store_lost"  # our address has history, but neither copy of its sequence-number record is usable
 # the sequence-number store has refused every write for a while: sends are held back until one lands
 ISSUE_SEQ_STORE_UNWRITABLE: Final = "seq_store_unwritable"
-# a PDU from Home Assistant's own address with a number it never sent: another client uses the address (review-4
-# S I2); sends are refused until the repair skips past it
+# a PDU from Home Assistant's own address with a number it never sent: another client uses the address;
+# sends are refused until the repair skips past it
 ISSUE_ADDRESS_SHARED: Final = "address_shared"
 # ... the same issue (its id stays `address_shared_<entry id>`) seen again after that repair skipped past it once:
 # the text that asks for another address (a translation key cannot hold two descriptions)
@@ -328,7 +326,7 @@ ISSUE_ADDRESS_SHARED_AGAIN: Final = "address_shared_again"
 # past what the nodes may remember from the best record left, or — nothing left at all — this far from 0. A year of
 # a busy link (polls, refreshes, keep-alives) is well under the first; the 24-bit space holds 16 of them.
 SEQ_SKIP_AHEAD: Final = 1 << 20
-# Diagnostics (review-3 F8, F9, N2). A node's link diagnostics are signalled at most once per this many seconds
+# Diagnostics. A node's link diagnostics are signalled at most once per this many seconds
 # (last seen and signal strength change with every message and advertisement); the sequence space of every source
 # is checked this often, and a source past SEQUENCE_SPACE_WARN (3/4 of the 24-bit space) raises
 # `sequence_space_low`: the mesh needs an IV Update before it runs out, and only the gateway starts one.
@@ -339,7 +337,7 @@ ISSUE_GATEWAY_SYNC: Final = (
     "gateway_sync_failed"  # a changed export could not be handed to the gateway
 )
 ISSUE_PLAN_INTERRUPTED: Final = (
-    "plan_interrupted"  # a configuration plan was cut off by a stop or crash (D12)
+    "plan_interrupted"  # a configuration plan was cut off by a stop or crash
 )
 ISSUE_DEVICE_NAME: Final = "device_name_rejected"  # a device renamed in HA to a name the app refuses (device_names.py)
 ISSUE_PENDING_DEVICE: Final = "pending_device"  # a device Home Assistant provisioned was never recorded (onboard.py)
@@ -371,7 +369,7 @@ ISSUE_DUPLICATE_MESH: Final = (
     # records can roll each other back (the config flow refuses this for anything set up
     # after that check was added; an older or hand-edited installation can still have it)
 )
-# Every repair issue's *Learn more* link (review-4 U4-5): its entry on the user guide's maintenance page as GitHub
+# Every repair issue's *Learn more* link: its entry on the user guide's maintenance page as GitHub
 # renders it, by translation key (an issue with two wordings has both). `tests/test_repairs.py` checks that every
 # translation key has one, that the page is the published one next to the manifest's `documentation`, and that each
 # anchor is a heading of it.
@@ -430,7 +428,7 @@ def issue_id(entry: ConfigEntry, key: str) -> str:
 # is enabled — and a Scene Recall heard on the mesh as EVENT_SCENE_RECALLED. `logbook.py` describes both.
 EVENT_BUTTON_ACTION: Final = f"{DOMAIN}_button_action"
 EVENT_SCENE_RECALLED: Final = f"{DOMAIN}_scene_recalled"
-# an action's plan finished, stopped or was cancelled (review-4 W I7): `entry_id`, `name` (the entry's title),
+# an action's plan finished, stopped or was cancelled: `entry_id`, `name` (the entry's title),
 # `action`, `outcome`, and the logbook line as a translation key of the `exceptions` section with its placeholders
 EVENT_PLAN: Final = f"{DOMAIN}_plan"
 # Keys of the bus events' data, next to HA's own ATTR_DEVICE_ID / ATTR_ENTITY_ID / ATTR_NAME and CONF_TYPE:

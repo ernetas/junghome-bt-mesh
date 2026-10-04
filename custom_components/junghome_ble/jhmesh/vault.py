@@ -1,26 +1,26 @@
-"""Home Assistant as a provisioner of its own, and the vault of what only it knows (review-3 N1).
+"""Home Assistant as a provisioner of its own, and the vault of what only it knows.
 
 Two things the network's file (the Mesh CDB the app exports) does not keep for Home Assistant by itself:
 
 - **Its identity.** The file lists every provisioner with its allocated unicast / group / scene ranges, and the
   apps allocate only inside their own (`docs/android/network-logic.md` §1.1, §6.4) — the first free range when a
   new provisioner is created, a random free address inside it for the provisioner itself. Home Assistant sends
-  from an address of its own that no range reserves, so the next provisioner an app creates may cover it (review-3
-  W3). `Vault.merge_into` puts a provisioner entry for Home Assistant into the file, with ranges clear of every
+  from an address of its own that no range reserves, so the next provisioner an app creates may cover it.
+  `Vault.merge_into` puts a provisioner entry for Home Assistant into the file, with ranges clear of every
   other provisioner's (`choose_ranges`), and a node entry recording Home Assistant's address inside its unicast
   range — how the Mesh CDB records a provisioner's address (the phones appear in `nodes[]` the same way). The entry
   is *appended*: the iOS library takes the first provisioner of an imported file as the local one until the app
   picks its own by UUID, so Home Assistant's never comes first.
 - **The device keys of the nodes it provisioned.** A node Home Assistant adds (`onboarding`) exists in the file
-  only once it is recorded, and the app never downloads the file: its next upload lacks the node (review-3 W1,
-  the device-key half). The vault keeps each such node's device key from the moment provisioning completes
+  only once it is recorded, and the app never downloads the file: its next upload lacks the node.
+  The vault keeps each such node's device key from the moment provisioning completes
   (*pending* until it is recorded — a node whose commissioning failed is still reachable with it), then the node's
   CDB entry, element groups and app device rows as recorded, and `merge_into` puts back whatever a file lacks.
   Every vault node's addresses, and the element groups planned for a pending one, stay reserved
   (`reserved_unicasts`, `reserved_groups`): a node the file lacks still sends from its addresses and still holds
-  its groups, so the next node Home Assistant adds must not get them (review-4 D2). The app never hands such a node
+  its groups, so the next node Home Assistant adds must not get them. The app never hands such a node
   a new NetKey either: how far each came through the app's key refresh, which Home Assistant carries it through
-  (`vaultrefresh`, review-4 D11), is kept with it (`RefreshProgress`: the new key's Network ID, never the key).
+  (`vaultrefresh`), is kept with it (`RefreshProgress`: the new key's Network ID, never the key).
 
 The vault is the caller's to persist (`to_dict` / `from_dict`); the dict holds key material, so it belongs where
 the export itself is kept. Nothing here logs, and no `repr()` or error message carries a key.
@@ -233,7 +233,7 @@ def choose_ranges(
 
 @dataclass(frozen=True)
 class RefreshProgress:
-    """How far a vault node came through one key refresh (review-4 D11, `vaultrefresh`).
+    """How far a vault node came through one key refresh (`vaultrefresh`).
 
     The refresh is named by its new NetKey's Network ID (public: every beacon of the new key carries it), never by
     the key. `phase` is what the node confirmed: 0 nothing yet, 1 it holds the new key (NetKey Status), 2 it

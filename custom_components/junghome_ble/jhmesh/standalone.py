@@ -47,7 +47,7 @@ FAILED_COOLDOWN = 60.0  # seconds a proxy that dropped or refused the link is pa
 SILENCE_TIMEOUT = 660.0
 # a JUNG proxy sends its Secure Network Beacon right after the subscription: the filter request waits up to this long
 # for it, so it goes out under the network's current IV index rather than a stale stored one the proxy would drop (the
-# hub waits as long, `CONNECT_BEACON_WAIT`; review-4 R4-10)
+# hub waits as long, `CONNECT_BEACON_WAIT`)
 BEACON_WAIT = 1.0
 
 
@@ -211,7 +211,7 @@ class StandaloneLink:
             await asyncio.sleep(0.2)
 
     async def _watch_silence(self) -> None:
-        """Wait for the link to go; drop it when the proxy has delivered nothing for SILENCE_TIMEOUT (review-3 T10).
+        """Wait for the link to go; drop it when the proxy has delivered nothing for SILENCE_TIMEOUT.
 
         A GATT proxy that stops forwarding never disconnects by itself: a long-running CLI command (a sniff, a
         monitor) would sit on a dead link for good. Silence is judged by `ProxyClient.last_rx` — every proxy PDU,

@@ -1,4 +1,4 @@
-"""The connect-time reads of one hub: the state refresh and the slower reads that follow it (review-4 A4-3).
+"""The connect-time reads of one hub: the state refresh and the slower reads that follow it.
 
 Every link starts with `after_connect`: the clock and location broadcasts, the state refresh of every load
 (`state_jobs`, `_refresh_all`, which also notices a mesh that discards our PDUs), the energy poll, the heartbeat
@@ -80,7 +80,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Connect-time steps that read what changes rarely or is published anyway (the scene actions, the fault registers,
-# the current scenes; review-4 R I-5) are not repeated by a link that comes within CONNECT_STEP_FRESH seconds of
+# the current scenes) are not repeated by a link that comes within CONNECT_STEP_FRESH seconds of
 # their last complete round when the link before it held for SHORT_LINK: the hub heard the nodes' publications
 # meanwhile. The state refresh, the energy poll, Time Set and the location go out on every link. Unverified on air.
 CONNECT_STEP_FRESH: Final = 900.0
@@ -116,7 +116,7 @@ class Refresh:
     async def after_connect(self) -> None:
         """Run a link's connect-time sequence: the clock and location, the state refresh, then the slower reads.
 
-        Time Set and the location go first, right after the proxy filter `attach` wrote (review-4 R I-5): two
+        Time Set and the location go first, right after the proxy filter `attach` wrote: two
         unacknowledged broadcasts, they need no refresh to be through, and sent after it they never went out on a
         link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
         fault reads are not repeated soon after a round on a link that held (`connect_step`); the heartbeat
@@ -147,7 +147,7 @@ class Refresh:
 
         A link that lasted SHORT_LINK kept the hub hearing the nodes' publications (a Scene Status after every
         recall); a round within CONNECT_STEP_FRESH of this link is current enough, and repeating it on every link
-        is what made a link that comes and goes keep the mesh busy (review-4 R I-5). After a short link — a failed
+        is what made a link that comes and goes keep the mesh busy. After a short link — a failed
         connection to `LinkManager._judge_link` — the round runs again: what the hub heard through that link proves little.
         `step` returns True when it got through. Unverified on air.
         """

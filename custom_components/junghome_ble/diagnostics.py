@@ -9,7 +9,7 @@ An OS error text names the file it failed on, whose path can carry a user name: 
 (`redact_paths`). The location a node stores for its astro schedules is only compared with Home Assistant's home
 (`node_clocks.NodeClocks.diagnostics`): the coordinates stay out.
 
-The download works in every entry state (review-4 H4-6): an entry that is retrying or failed — exactly when the
+The download works in every entry state: an entry that is retrying or failed — exactly when the
 download helps — has no hub, and gets its state, why it is not loaded, what Bluetooth sees and what its export holds
 instead (`_unloaded_diagnostics`).
 """
@@ -353,7 +353,7 @@ async def async_get_config_entry_diagnostics(
         "proxy_node": f"{hub.proxy_node:04X}" if hub.proxy_node else None,
         "connected_since": hub.connected_since,
         "mtu": hub.proxy.mtu,
-        # this link's proxy configuration PDUs dropped: a wrong header, not ours, or a replay (review-4 P4-7)
+        # this link's proxy configuration PDUs dropped: a wrong header, not ours, or a replay
         "proxy_config_dropped": hub.proxy.rx_proxy_config_dropped,
         "visible_proxies": [
             {
@@ -371,7 +371,7 @@ async def async_get_config_entry_diagnostics(
             }
             for mac, advert in sorted(hub.unknown_nodes.items())
         ],
-        # why the last links ended, newest first (review-4 R I-9)
+        # why the last links ended, newest first
         "history": _link_history(hub),
     }
     data: EntryDiagnostics = {
@@ -395,7 +395,7 @@ async def async_get_config_entry_diagnostics(
             else list(hub.state.address_shared),
         },
         "link": async_redact_data(link, TO_REDACT_LINK),
-        # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`, review-4 A4-14): the current link
+        # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`): the current link
         # (the last one while none is up), every link since the entry loaded, and how many links that was
         "link_stats": {
             "current": asdict(hub.proxy.link_stats),
@@ -409,16 +409,16 @@ async def async_get_config_entry_diagnostics(
             for unicast, result in sorted(hub.audits.items())
         },
         # the last calls that ran a plan, oldest first: action, outcome, messages accepted, step texts and the
-        # error key (review-4 W I7; addresses and message names, no key material)
+        # error key (addresses and message names, no key material)
         "plans": list(plan_history(hass, entry.entry_id)),
         # where the last adopted app export kept its own version over Home Assistant's (the open
         # `carry_over_conflict` repair), UUIDs redacted
         "carry_over_conflicts": _carry_over_conflicts(hass, entry),
         # the followed key refresh, how far it is proven, and how far each device Home Assistant added came
-        # through it (review-4 D11: phases and Network IDs, never a key)
+        # through it (phases and Network IDs, never a key)
         "key_refresh": hub.vault_refresh.diagnostics(),
         # the devices Home Assistant added (`add_device`): recorded or pending, and what each offered for its
-        # provisioning and the method used (review-4 P4-8: names and flags, never a value or a key)
+        # provisioning and the method used (names and flags, never a value or a key)
         "added_devices": _added_devices(hub),
         # nodes that left a full-budget request unanswered and were not heard from since
         "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],

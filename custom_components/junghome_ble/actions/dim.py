@@ -2,7 +2,7 @@
 
 They send one command to a dimmer and write nothing; the light entity does the work (`light.JungHomeLight`). The
 handlers live here, not in `light.py`, so `services.py` registers them without importing a platform module: a light
-is told apart by what it can do (`Dimmable`), not by its class (review-4 A4-11).
+is told apart by what it can do (`Dimmable`), not by its class.
 """
 
 from __future__ import annotations

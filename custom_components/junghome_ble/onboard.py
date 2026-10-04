@@ -1,4 +1,4 @@
-"""Adding a JUNG device from Home Assistant (review-3 N3): provision, commission, read back, record — experimental.
+"""Adding a JUNG device from Home Assistant: provision, commission, read back, record — experimental.
 
 The `add_device` action (administrators only, and only with the entry's *Allow Home Assistant to add devices*
 option on) takes an unprovisioned JUNG device advertising the Mesh Provisioning Service (0x1827) nearby and does
@@ -9,23 +9,23 @@ what the app does when a device is added:
    is the one as it is now (`MeshConfigurator.async_current_export`: the gateway's, adopted first, when the app
    changed the network since the last reload), and so is every address picked next;
 2. places it above every provisioner's address range (`onboarding.free_unicast_block`), where no app allocates,
-   its element groups at the top of the app's group range, where the app allocates last (review-4 W4-2) — with
-   the *provisioner identity* option on, inside Home Assistant's own ranges instead (review-3 N1) — and clear of
+   its element groups at the top of the app's group range, where the app allocates last — with
+   the *provisioner identity* option on, inside Home Assistant's own ranges instead — and clear of
    every node the vault holds: one provisioned earlier but never recorded is in no export, yet still sends from
-   its addresses and holds its element groups (review-4 D2);
+   its addresses and holds its element groups;
 3. provisions it over PB-GATT (`provisioning.provision`, the export's NetKey and the IV state a beacon confirmed on
    the current link; the strongest method the device offers — Static OOB with the value the call gives, the HMAC
-   algorithm, else No OOB as the app, review-4 P4-8 — within the app's 30 s), refusing a device whose element
+   algorithm, else No OOB as the app — within the app's 30 s), refusing a device whose element
    count differs from the template's before it learns an address; its device key, planned element groups and
    what it offered (`provisioning.capability_record`) are on disk in the vault (`identity.py`) before
    the device receives its Provisioning Data — the key is derived one step earlier (`provision(on_device_key=…)`),
-   and a vault that cannot be written stops the provisioning there (review-4 D15) — and once it completed the
+   and a vault that cannot be written stops the provisioning there — and once it completed the
    replay list forgets the new addresses (they are Home Assistant's to give, so whatever it remembers for them is
-   a reset node's). Not during the Phase 1 of a key refresh: the device would get the key being retired (review-4
-   D11). In a proven Phase 2 it gets the new key with the Key Refresh flag, and the vault records it there, so
+   a reset node's). Not during the Phase 1 of a key refresh: the device would get the key being retired.
+   In a proven Phase 2 it gets the new key with the Key Refresh flag, and the vault records it there, so
    `vault_refresh.py` takes it on to Phase 3;
-4. sends the app's post-provisioning sequence through the proxy link (`commission.plan`, `onboarding.commission`;
-   review-4 F4-13): planned again from the node's own Composition Data, refused when it is not the template's;
+4. sends the app's post-provisioning sequence through the proxy link (`commission.plan`, `onboarding.commission`):
+   planned again from the node's own Composition Data, refused when it is not the template's;
    a push-button's InsertId read and checked against the insert the plan is for; Time Set to its Time Server;
    element groups and device-type groups by the app's rules — within `COMMISSIONING_BUDGET`; then reads the
    node's configuration back (`jhmesh.audit`). A failure there sends it a Config Node Reset with its key, as the
@@ -206,7 +206,7 @@ def unprovisioned_devices(hass: HomeAssistant) -> list[dict[str, Any]]:
 def advertises_unprovisioned(hass: HomeAssistant, uuid: str) -> bool:
     """Whether a device nearby advertises the Mesh Provisioning Service with the Device UUID `uuid`.
 
-    What a node does once reset (`remove_device` takes it as the reset done, review-4 W4-7). Any scanner counts,
+    What a node does once reset (`remove_device` takes it as the reset done). Any scanner counts,
     connectable or not: nothing connects to it.
     """
     wanted = canonical_uuid(uuid)
@@ -344,7 +344,7 @@ def _reserved_groups(hub: JungHomeHub) -> set[int]:
 
 
 def _require_iv_state(hub: JungHomeHub) -> None:
-    """Refuse to provision before a beacon on the current link confirmed the IV index (review-4 P4-6).
+    """Refuse to provision before a beacon on the current link confirmed the IV index.
 
     The device takes the IV index from the Provisioning Data: a stale one (a stored state from before an IV
     Update) would leave it unable to talk to the network.
@@ -361,7 +361,7 @@ def _refresh_progress(data: ProvisioningData) -> RefreshProgress | None:
 
 
 def _checked_request(hub: JungHomeHub, name: str) -> str:
-    """Return the name as the app takes it (`_checked_name`); refuse while a key refresh is in Phase 1 (review-4 D11).
+    """Return the name as the app takes it (`_checked_name`); refuse while a key refresh is in Phase 1.
 
     The device would get the key being retired: the app's NetKey Update, already sent to its own devices, never
     reaches a device it does not know, and nothing proven may be handed to it yet. Phase 2 hands out the new key
@@ -383,7 +383,7 @@ async def _keep_key(
     key_refresh: RefreshProgress | None = None,
     capabilities: dict[str, Any] | None = None,
 ) -> None:
-    """Keep a node's device key and planned element groups in the vault before it gets its Provisioning Data (D15).
+    """Keep a node's device key and planned element groups in the vault before it gets its Provisioning Data.
 
     `provision` awaits it the moment the key is derived (`on_device_key`): until the node is recorded, the vault
     holds the only copy, so the device learns its address and the network's keys only once that copy is on disk
@@ -391,7 +391,7 @@ async def _keep_key(
     nothing), raises the `vault_unwritable` repair naming the address (never the key; the next save that lands
     clears it, `async_clear_vault_issue`) and stops the provisioning with a translated error. `key_refresh`: where
     a node provisioned in Phase 2 of a key refresh starts; `capabilities`: what it offered and the method used
-    (`provisioning.capability_record`, review-4 P4-8). Unverified on air.
+    (`provisioning.capability_record`). Unverified on air.
     """
     keeper = hub.vault
     vault = keeper.identity()
@@ -635,7 +635,7 @@ async def async_add_device(
     function = advertised if advertised is not None else insert_function(template)
     unicast, group_range = await _place(hub, configurator, cdb, count)
     # planned before the node is known: its addresses must still be free in the export. Its element groups from the
-    # top of the app's range (review-4 W4-2): the app does not know them until it imports a file, and would give
+    # top of the app's range: the app does not know them until it imports a file, and would give
     # its next room the lowest free group — in Home Assistant's own range, nobody else allocates
     try:
         plan = commission.plan(
@@ -766,7 +766,7 @@ def _pending(vault: Vault | None, uuid: str | None, unicast: int | None) -> Vaul
 async def async_reset_pending_device(
     hub: JungHomeHub, *, uuid: str | None, unicast: int | None, force: bool
 ) -> dict[str, Any]:
-    """Send a pending node a Config Node Reset with the vault's key, then forget it (review-4 D2; unverified on air).
+    """Send a pending node a Config Node Reset with the vault's key, then forget it (unverified on air).
 
     The node is named by its UUID (the vault's key) or its primary address, and both must agree when both are
     given: a reset meant for a stale entry must not reach another device. Forgotten once it confirmed, or with

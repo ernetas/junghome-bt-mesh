@@ -158,7 +158,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     the export we had stored (every mesh key) on disk. `needs_rebuild` compares against what the hub was built
     from, and this runs before setup, so it causes no reload.
 
-    Up to 1.2 the unique id was the Network ID, which a key refresh changes (decision M10, H I-9). An entry whose
+    Up to 1.2 the unique id was the Network ID, which a key refresh changes. An entry whose
     mesh UUID cannot be read yet (its export unreadable) stays at 1.2 and is set up as it is; the next start tries
     again (`config_flow.async_migrate_unique_id`). Nothing here fails the setup. Unverified on air.
     """
@@ -194,7 +194,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
             translation_placeholders={"path": entry.data[CONF_CDB_PATH]},
         ) from err
 
-    # Home Assistant's own provisioner entry and node, should the file carry them (review-3 N1): its address, not
+    # Home Assistant's own provisioner entry and node, should the file carry them: its address, not
     # another node's; its range, not another provisioner's
     vault = await async_vault_keeper(hass, cdb.mesh_uuid)
     await vault.async_recover(cdb, int(entry.data[CONF_UNICAST], 16))
@@ -207,9 +207,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     # still migrate its 0.2 per-entry store, or removing it while stuck strands that record (HAC-06).
     await async_migrate_legacy_seq_store(hass, entry, cdb.mesh_uuid)
 
-    # a key refresh completed since the export was made: its new key, which the hub followed (review-3 N2b)
+    # a key refresh completed since the export was made: its new key, which the hub followed
     await async_apply_followed_key_refresh(hass, cdb, int(entry.data[CONF_UNICAST], 16))
-    # what discovery recognises this mesh by, even while the entry retries below (review-4 H4-4)
+    # what discovery recognises this mesh by, even while the entry retries below
     remember_known_mesh(
         hass,
         entry.entry_id,
@@ -221,7 +221,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     if not proxy_in_range(hass, cdb):
         # no connectable scanner at all is a Home Assistant without Bluetooth, not a mesh out of range: say so
         # (the app's "Bluetooth is off" screen, `ObserveBluetoothState`); nodes of the export advertising another
-        # Network ID are this mesh under keys the export lacks (review-4 H I-6): a key refresh since the export
+        # Network ID are this mesh under keys the export lacks: a key refresh since the export
         # was made, which only a new export (Reconfigure) fixes
         if bluetooth.async_scanner_count(hass, connectable=True) == 0:
             reason = "bluetooth_unavailable"
@@ -235,7 +235,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
         hass, entry, cdb, devices, int(entry.data[CONF_UNICAST], 16)
     )
     entry.runtime_data = hub
-    # what an action, a rename or the unknown-node adoption has the hub follow the export with (review-4 D23)
+    # what an action, a rename or the unknown-node adoption has the hub follow the export with
     hub.follow_export = partial(async_follow_export, hass, entry.entry_id)
     # what the nodes advertised or answered of their inserts, before any device is registered (`inserts.py`)
     await hub.inserts.async_setup()
@@ -253,15 +253,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     # with it
     await gateway_sync(hass, entry.entry_id).async_load(entry)
     # before the start: the adverts the start replays can already name unknown nodes, whose export refresh
-    # adopts through the configurator (review-3 C1)
+    # adopts through the configurator
     async_register_configurator(hass, entry)
     entry.async_on_unload(partial(async_unregister_configurator, hass, entry))
     # a configuration plan Home Assistant stopped or crashed in the middle of: what its devices accepted goes into
-    # the export, and the entry is set up again from it (D12)
+    # the export, and the entry is set up again from it
     assert hub.configurator is not None  # registered just above
     if await hub.configurator.async_replay_journal():
         _reload_once_loaded(hass, entry)
-    # changes made in the JUNG HOME app: the phone heard on the mesh, the periodic check (`app_follow.py`, U4-6)
+    # changes made in the JUNG HOME app: the phone heard on the mesh, the periodic check (`app_follow.py`)
     follower = hub.app_follow = AppFollower(hub)
     follower.start()
     entry.async_on_unload(follower.stop)
@@ -274,12 +274,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     entry.async_on_unload(async_track_device_names(hass, entry))
     async_update_gateway_issue(hass, entry)
     # a reload aborts the entry's reauth flows (Home Assistant's `async_reload`), and most actions reload it right
-    # after the change that met the rejected token: ask again while the token repair is open (review-4 H I-2)
+    # after the change that met the rejected token: ask again while the token repair is open
     if token_rejected_open(hass, entry):
         entry.async_start_reauth(hass)
-    # a device Home Assistant provisioned but never recorded (onboard.py, review-4 D2)
+    # a device Home Assistant provisioned but never recorded (onboard.py)
     async_update_pending_issue(hass, entry, hub.vault)
-    # the vault could not be written while a device was added: the next save that lands clears it (review-4 D15)
+    # the vault could not be written while a device was added: the next save that lands clears it
     entry.async_on_unload(
         hub.vault.async_add_listener(
             partial(async_clear_vault_issue, hass, entry, hub.vault)
@@ -377,7 +377,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await plan_journal(hass, entry.entry_id).async_remove()
     await held_scenes(hass, entry.entry_id).async_remove()
     await async_remove_gateway_sync(hass, entry.entry_id)
-    # the mesh's proxies were matched to this entry: let discovery offer them again (review-3 C7)
+    # the mesh's proxies were matched to this entry: let discovery offer them again
     for info in bluetooth.async_discovered_service_info(hass, connectable=True):
         if MESH_PROXY_SERVICE in info.service_data:
             bluetooth.async_rediscover_address(hass, info.address)

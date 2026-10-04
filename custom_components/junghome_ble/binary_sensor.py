@@ -25,7 +25,7 @@ sends (`docs/gap-analysis/control-and-state.md` §2.5): a Generic OnOff Set to w
 already turns into `press_on` / `press_off` events of the input's event entity. The entity keeps the last of those
 as its state (restored across restarts: the input publishes only when it changes). With edge evaluation on
 (`0x5009`, `docs/android/properties.md` §2.6) and the edges set to *Switch on* (rising) / *Switch off* (falling),
-the published value is the level on the input; the review-3 plan (F10) expects the same of state mode (edge
+the published value is the level on the input; the same is expected of state mode (edge
 evaluation off). Unverified on air — no mini actuator has been heard yet — hence off by default; which of on / off
 means "open" depends on the contact, so the entity has no device class (Home Assistant's *Show as* sets one).
 
@@ -54,7 +54,7 @@ taken from any Status the thermostat publishes.
 **Mesh connection** (`JungHomeMeshConnection`, on the mesh device, device class *connectivity*, on by default): on
 while Home Assistant has a link to the mesh, or lost one within the link-loss grace (`JungHomeHub.link_available`,
 the moment the entities go unavailable). Always available: a lost link is what it reports. The one entity to alert
-on for the mesh as a whole; *Unreachable devices* (`sensor.py`) tells which devices do not answer (review-4 U4-7).
+on for the mesh as a whole; *Unreachable devices* (`sensor.py`) tells which devices do not answer.
 
 **Scheduler function** (`JungHomeRtrSchedulerStatus`, room thermostats, diagnostic, off by default): the read-only
 0x1249 (`RtrSchedulerFunctionStatus`), which the app takes as its automatic operation (0x1246) whenever one is

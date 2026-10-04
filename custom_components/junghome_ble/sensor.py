@@ -27,7 +27,7 @@ permissions indicator), *API clients* and the *Error log* (the count of its non-
 attribute), plus *Last export upload*, when Home Assistant last handed its export to the gateway (the app's
 `gateway_last_sync`).
 
-The mesh device has the mesh's health at a glance (review-4 U4-7): *Unreachable devices*, how many mains nodes do
+The mesh device has the mesh's health at a glance: *Unreachable devices*, how many mains nodes do
 not answer and their names (`JungHomeUnreachableDevices`, on by default, the entity to alert on), and *Mesh
 overview*, the reachable mains nodes with a row per node — name, area, product, reachable, last seen, signal, the
 Bluetooth adapter or proxy that hears it best, hops, proxy — for a dashboard table (`JungHomeMeshOverview`,
@@ -40,7 +40,7 @@ Detector illuminance and battery level are spec-only so far (no such device in t
   detector has delivered none, it is the detector's own *Current brightness* (vendor property 0x6004, whole lux, what
   the app's parameter page shows), read every `DETECTOR_BRIGHTNESS_POLL` seconds;
 - a detector's *Continuous on/off* (0x6016, diagnostic, off by default) is what its own slider or keys set; the app
-  only shows it (`control-and-state.md` §2.8), so it is read once per link and never written (review-3 P3);
+  only shows it (`control-and-state.md` §2.8), so it is read once per link and never written;
 - battery products (`jhmesh.devices.BATTERY_PIDS`) sleep and answer nothing while they do, so their level is never
   polled: a `Generic Battery Get` goes out right after one of the node's keys reported an event (the node is awake
   for a moment), at most once per `BATTERY_READ_INTERVAL` once it answered (`control-and-state.md` §2.9).
@@ -187,7 +187,7 @@ BATTERY_READ_TIMEOUT: Final = 3.0  # seconds to wait for the Battery Status (the
 PARALLEL_UPDATES = 0  # push-based
 
 PROPERTY_INSTALLED = 0x5014  # `meter_timestamp`: the commissioning moment, local time, on the meter element
-# wear counters of a load (review-3 F2): how often its output switched, how often it was powered up
+# wear counters of a load: how often its output switched, how often it was powered up
 CYCLE_COUNTERS = {0x100F: "switching_cycles", 0x1010: "power_on_cycles"}
 BRIGHTNESS_SPEC = P.PROPERTIES[
     0x6004
@@ -564,7 +564,7 @@ class JungHomeInstalledSensor(PropertyEntity, SensorEntity):
 
 
 class JungHomeCounterSensor(PropertyEntity, SensorEntity):
-    """A load's wear counter (review-3 F2), read once per link: relay switching cycles, or power-ups of the device."""
+    """A load's wear counter, read once per link: relay switching cycles, or power-ups of the device."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -678,7 +678,7 @@ class JungHomeGatewayLastSync(SensorEntity):
     """When Home Assistant last handed its export to the gateway (the app's `gateway_last_sync`), from its record.
 
     Recorded by every successful upload (`configurator.store.ExportStore.upload`) in the entry's `GatewaySync` record, which
-    says so through `SIGNAL_GATEWAY_SYNCED` (review-4 H I-10: no longer an `entry.data` write and an update
+    says so through `SIGNAL_GATEWAY_SYNCED` (no longer an `entry.data` write and an update
     listener); known without a link or an answer from the gateway, so always available.
     """
 
@@ -862,7 +862,7 @@ class JungHomeSwitchOffAt(JungHomeEntity, SensorEntity):
     """When the load will be off, by the remaining time of its last Generic OnOff Status (`ElementState.off_at`).
 
     A Status carries it only while the load is in a transition; a JUNG load with a run-on time might report the
-    time left that way (review-4 F4-11), or might not: unverified on air, so the sensor is off by default and
+    time left that way, or might not: unverified on air, so the sensor is off by default and
     unknown whenever the load is off, stays on, or sent no remaining time. Read-only: nothing is written.
     """
 
@@ -1304,7 +1304,7 @@ class JungHomeLinkStateSensor(JungHomeEntity, SensorEntity):
     next follows after a back-off) and `disconnected` (the link went, the next attempt is due). Follows its own
     signal (`SIGNAL_LINK_STATE`), not every entity's link signal.
 
-    On by default (review-4 H I-5): it is the mesh's visible health indicator, which *Proxy node* (a name, or
+    On by default: it is the mesh's visible health indicator, which *Proxy node* (a name, or
     nothing) is not. Only new registrations: one an earlier version registered disabled stays as it is.
     """
 
@@ -1413,7 +1413,7 @@ def mesh_overview(hub: JungHomeHub) -> list[dict[str, Any]]:
 
 
 class JungHomeUnreachableDevices(JungHomeEntity, SensorEntity):
-    """How many mains devices do not answer, and which (review-4 U4-7): the entity to alert on for single devices.
+    """How many mains devices do not answer, and which: the entity to alert on for single devices.
 
     A mains node counts while it is unreachable (a request asked with the app's full budget went unanswered) or,
     with the *Node heartbeats* option, dead (no beat for the timeout) — the nodes whose entities are unavailable for
@@ -1469,7 +1469,7 @@ class JungHomeUnreachableDevices(JungHomeEntity, SensorEntity):
 
 
 class JungHomeMeshOverview(JungHomeEntity, SensorEntity):
-    """Every node at a glance (review-4 U4-7): the reachable mains nodes, and a row per node for a dashboard table.
+    """Every node at a glance: the reachable mains nodes, and a row per node for a dashboard table.
 
     The rows (`nodes`, `mesh_overview`) grow with the mesh and change with every message heard, so they are kept out
     of the recorder and written at most once per NODE_DIAGNOSTICS_INTERVAL: a change of a node's reachability is
@@ -1578,7 +1578,7 @@ SCAN_INTERVAL = timedelta(minutes=5)
 
 @dataclass(frozen=True, kw_only=True)
 class NodeDiagnosticDescription(SensorEntityDescription):
-    """A link diagnostic of one node (review-3 F8, F9): what it shows, read off the hub."""
+    """A link diagnostic of one node: what it shows, read off the hub."""
 
     value: Callable[[JungHomeHub, int], datetime | float | None]
     mains_only: bool = False  # battery nodes sleep: no heartbeats, no hops
@@ -1696,7 +1696,7 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
 
 @dataclass(frozen=True, kw_only=True)
 class MeshDiagnosticDescription(SensorEntityDescription):
-    """A diagnostic of the whole mesh (review-3 N2), read off the hub."""
+    """A diagnostic of the whole mesh, read off the hub."""
 
     value: Callable[[JungHomeHub], int | float | None]
     attributes: Callable[[JungHomeHub], dict[str, Any]] = lambda _hub: {}
@@ -1755,7 +1755,7 @@ MESH_DIAGNOSTICS: tuple[MeshDiagnosticDescription, ...] = (
 
 
 class JungHomeMeshDiagnostic(JungHomeEntity, SensorEntity):
-    """The mesh's IV index and how much of its sequence space is used (review-3 N2).
+    """The mesh's IV index and how much of its sequence space is used.
 
     Every source stops sending at the end of the 24-bit space of an IV index; only an IV Update (started by the
     gateway) resets it. *Sequence used* is Home Assistant's own counter, *Mesh sequence used* the source furthest

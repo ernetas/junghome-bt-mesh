@@ -1,6 +1,6 @@
 """Sending a plan: Config steps one by one, apply-and-record on a stop, the journal a crash leaves, the replies.
 
-`PlanExecutor` (review-4 brief 55) sends what a planner built — additive steps first, battery nodes first and kept
+`PlanExecutor` sends what a planner built — additive steps first, battery nodes first and kept
 awake — through the hub's proxy link, judges every Status, and when the plan stops (a refusal, silence, a lost link, a
 cancellation) records the accepted steps into a fresh copy of the export through the `ExportStore`. It also holds the
 requests that wait for an answer outside a Config plan (the keys' LBC Admin properties, scene registers and actions)
@@ -76,7 +76,7 @@ class PlanExecutor:
         return self.store.hub
 
     def plan_response(self) -> dict[str, Any]:
-        """Answer what the call's plans did: `{"applied", "total", "recorded", "nodes"}` (review-4 W I6).
+        """Answer what the call's plans did: `{"applied", "total", "recorded", "nodes"}`.
 
         `applied` of the `total` Config messages were accepted, `recorded` whether the export was written,
         `nodes` the devices that took a message. Unverified on air: the counts of a real plan.
@@ -198,16 +198,16 @@ class PlanExecutor:
         steps in the order given instead, none dropped: a plan that repeats the app's own sequence, such as a
         publication reset (`Publication Set 0x0000`, then the address again).
 
-        A plan cancelled from outside (D12: an automation in `mode: restart`, `script.turn_off`, Home Assistant
+        A plan cancelled from outside (an automation in `mode: restart`, `script.turn_off`, Home Assistant
         stopping) is recorded the same way, held to its end (`run_to_end`), before the cancellation goes on. The
         step in flight when it came is not recorded: the node may or may not have taken it, as when it stays
-        silent, and the next run sends it again. What a crash stops is in the plan journal (W I1): the plan and
+        silent, and the next run sends it again. What a crash stops is in the plan journal: the plan and
         how many of its steps were accepted, written before its first message and after every accepted one, and
         removed once the export records the outcome; the next setup records what it says (`async_replay_journal`).
         `action` names the plan there, for the repair issue.
 
         A plan with a step to a node the hub counts as unreachable (`JungHomeHub.node_alive`: a request it left
-        unanswered, or its heartbeats missing) is refused before its first message (review-4 W I5), naming them:
+        unanswered, or its heartbeats missing) is refused before its first message, naming them:
         it would only stop at that node after CONFIG_TIMEOUT times (1 + CONFIG_RETRIES), with the steps before it
         applied. `happened` is still recorded. Battery nodes are never marked so; they go the keep-awake way.
         Unverified on air.
@@ -494,8 +494,8 @@ class PlanExecutor:
     ) -> AccessMessage | None:
         """Send an AppKey request to `element` and wait for its status; None when it stays silent.
 
-        `scene`: a Scene Action Setup request's scene — a status naming another scene does not answer it (review-3
-        Q2): matched on source and opcode alone, a late duplicate of the element's answer about another scene would
+        `scene`: a Scene Action Setup request's scene — a status naming another scene does not answer it:
+        matched on source and opcode alone, a late duplicate of the element's answer about another scene would
         pass for it. One too short to name any scene still does: the callers treat it as malformed.
         A lost link names the node and the message, and says what `applied` before it (as a stopped plan does).
         """

@@ -1,4 +1,4 @@
-"""Follow the JUNG HOME app: changes made in the app reach Home Assistant without a Reconfigure (review-4 U4-6, M12).
+"""Follow the JUNG HOME app: changes made in the app reach Home Assistant without a Reconfigure.
 
 The app uploads its project to the gateway after every change (`network-features.md` §8.2), and the phone running it
 talks on the mesh while it is open: it reads states, switches loads and, for a key connection, a room or a scene,
