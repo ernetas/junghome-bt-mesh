@@ -32,6 +32,9 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.components.climate import (
+    DATA_COMPONENT as CLIMATES,
+)
+from homeassistant.components.climate import (
     DOMAIN as CLIMATE_DOMAIN,
 )
 from homeassistant.const import (
@@ -1070,7 +1073,7 @@ async def test_all_thermostats_follows_each_element_once(
     """The thermostat's sensor is its set-point element: one subscription, which the unload removes cleanly."""
     hub = hub_of(init_rtr)
     eid = entity_id(hass, "climate", f"{hub.cdb.mesh_uuid.lower()}-central-fef9")
-    assert hass.data["climate"].get_entity(eid).watched == [RTR]
+    assert hass.data[CLIMATES].get_entity(eid).watched == [RTR]
     assert await hass.config_entries.async_unload(init_rtr.entry_id)
     await hass.async_block_till_done()
     assert "Unable to remove unknown dispatcher" not in caplog.text
@@ -1111,7 +1114,7 @@ async def test_all_thermostats_sets_every_set_point_with_one_message(
         {ATTR_ENTITY_ID: eid, ATTR_HVAC_MODE: HVACMode.HEAT},
         blocking=True,
     )
-    entity = hass.data["climate"].get_entity(eid)
+    entity = hass.data[CLIMATES].get_entity(eid)
     await entity.async_set_temperature(
         hvac_mode=HVACMode.HEAT
     )  # no temperature: nothing to send

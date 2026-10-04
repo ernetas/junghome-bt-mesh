@@ -76,6 +76,9 @@
 - What a stop applied is data (`configurator.plan.Applied`: `applied_*` messages of `exceptions` and their
   placeholders), worded where the error is raised (`configurator.store.applied_message`); `texts.cached_text` reads
   the translation cache for it and for the logbook.
+- Typed `hass.data`: the integration keeps nothing there under a raw key — every access is through a `HassKey`
+  constant, and `tests/test_hass_keys.py` keeps it so; the tests read the entity components through Home Assistant's
+  own `DATA_COMPONENT` keys.
 
 ## 1.2.0
 

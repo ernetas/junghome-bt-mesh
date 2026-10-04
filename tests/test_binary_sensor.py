@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from homeassistant.components.binary_sensor import DATA_COMPONENT as BINARY_SENSORS
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.bluetooth import BluetoothChange
 from homeassistant.const import (
@@ -369,7 +370,7 @@ async def test_sensor_get_reply_is_matched_on_its_property(
     hub = init_detectors.runtime_data
     entity = next(
         e
-        for e in hass.data["entity_components"]["binary_sensor"].entities
+        for e in hass.data[BINARY_SENSORS].entities
         if isinstance(e, JungHomeDetectorOccupancy) and e.address == DETECTOR_MOTION
     )
     with patch.object(hub.proxy, "request", AsyncMock()) as request:
@@ -403,7 +404,7 @@ async def test_sensor_get_of_a_lost_link_is_repeated_with_the_next_one(
     hub = init_detectors.runtime_data
     entity = next(
         e
-        for e in hass.data["entity_components"]["binary_sensor"].entities
+        for e in hass.data[BINARY_SENSORS].entities
         if isinstance(e, JungHomeDetectorOccupancy) and e.address == DETECTOR_MOTION
     )
     assert entity._refreshed
@@ -733,7 +734,7 @@ async def test_motion_hold_is_the_relays_run_on_time(
 ) -> None:
     """The hold after an OnOff Set is the run-on time (0x1007) of the detector's relay once it has been read."""
     motion = entity_id(hass, "binary_sensor", UID_MOTION)
-    entity = hass.data["entity_components"]["binary_sensor"].get_entity(motion)
+    entity = hass.data[BINARY_SENSORS].get_entity(motion)
     assert entity.hold_seconds == DETECTOR_MOTION_HOLD  # not read yet
     # the relay's run-on time entity reads it (or the relay publishes it): 30 s
     fake_link.inject(

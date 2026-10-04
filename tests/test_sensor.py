@@ -15,6 +15,9 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from homeassistant.components.sensor import (
+    DATA_COMPONENT as SENSORS,
+)
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
     ATTR_ENTITY_ID,
@@ -722,7 +725,7 @@ async def test_illuminance_falls_back_to_the_brightness_property(
     await settle(hass)
     assert mesh.gets.count((DETECTOR_MOTION, PID_BRIGHTNESS)) == 1
     # one read at a time: a poll while the last one is still out (unanswered: three attempts) asks nothing
-    entity = hass.data["entity_components"]["sensor"].get_entity(
+    entity = hass.data[SENSORS].get_entity(
         entity_id(hass, "sensor", f"{UUID_PRESENCE.lower()}-0040-illuminance")
     )
     mesh.silent.add((DETECTOR_PRESENCE, PID_BRIGHTNESS))
