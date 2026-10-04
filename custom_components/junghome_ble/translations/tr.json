@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "{device} tarafından çağrıldı"
+    },
+    "service_preflight_differs": {
+      "message": "Gönderilmedi: {node}, {message} iletisine {found} yanıtını verdi, ancak mesh dışa aktarımı {expected} diyor ({others} fark daha). Kurulum, mesh dışa aktarımı yapıldıktan sonra değişti (JUNG HOME uygulamasında, bir cihazın sıfırlanmasıyla veya yarıda kalan önceki bir eylemle) ve plan, dışa aktarımın artık tanımlamadığı şeylerin üzerine yazardı. Projeyi uygulamadan yeniden dışa aktarın veya Home Assistant'ın ağ geçidinin dışa aktarımını devralmasına izin verin ve eylemi yeniden çalıştırın; `force` ile bu denetim yapılmadan çalışır. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Alana göre oda",
           "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
         },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
+        },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Bir düğme kontrol etse bile",
-          "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz."
+          "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
         },
         "room_area": {
           "name": "Alana göre oda",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Alana göre oda",
           "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
         },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
+        },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Sahne varlığı",
           "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
         },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
+        },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Düğme harfi",
           "description": "Cihazın hangi düğmesi: A, B, C veya D; bir mini aktüatörün girişi için E1 veya E2."
         },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
+        },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Sahne varlığı",
           "description": "Sahnenin adını veya numarasını yazmak yerine: sahne varlığı."
+        },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Bir cihaz yanıt vermese bile",
-          "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz."
+          "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
         },
         "config_entry_id": {
           "name": "Mesh ağı",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Cihazlar",
           "description": "Her iki eşiğin anahtarladığı ışıklar ve prizler; mevcut listenin yerini alır; belirtilmezse liste aynı kalır. Liste değiştiğinde mesh dışa aktarımı yeniden yazılır ve Home Assistant bunu entegrasyonu yeniden yüklemeden devralır."
+        },
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
         }
       }
     },
     "delete_threshold": {
       "name": "Eşikleri sil",
-      "description": "Enerji ölçümlü bir JUNG HOME prizinin her iki eşiğini temizler ve eşiklerin anahtarladığı ışıkların ve prizlerin bağlantısını, uygulamadaki silme işlemi gibi kaldırır. Cihazların bağlantısı kaldırıldıysa Home Assistant yeniden yazılan mesh dışa aktarımını entegrasyonu yeniden yüklemeden devralır. İstenirse yanıt olarak bağlantı mesajlarından kaçının cihazlarca uygulandığını döndürür. Yalnızca yöneticiler için."
+      "description": "Enerji ölçümlü bir JUNG HOME prizinin her iki eşiğini temizler ve eşiklerin anahtarladığı ışıkların ve prizlerin bağlantısını, uygulamadaki silme işlemi gibi kaldırır. Cihazların bağlantısı kaldırıldıysa Home Assistant yeniden yazılan mesh dışa aktarımını entegrasyonu yeniden yüklemeden devralır. İstenirse yanıt olarak bağlantı mesajlarından kaçının cihazlarca uygulandığını döndürür. Yalnızca yöneticiler için.",
+      "fields": {
+        "force": {
+          "name": "Cihazlar dışa aktarımdan farklı olsa bile",
+          "description": "Planı, kaldırdığı veya değiştirdiği şeyi önce cihazlardan okuyup mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu kesin olduğunda kullanın. Gerçek cihazlarda henüz doğrulanmadı."
+        }
+      }
     },
     "audit_network": {
       "name": "Ağı denetle",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Yanıt vermese bile",
-          "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır."
+          "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
         },
         "confirm": {
           "name": "Onayla",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Deneme çalıştırması",
-          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey gönderilmez, yazılmaz veya ağ geçidinden devralınmaz."
+          "description": "Yalnızca neyin gönderileceğini ve mesh dışa aktarımının nasıl değişeceğini yanıtlar (yanıtı isteyin); hiçbir şey yazılmaz veya ağ geçidinden devralınmaz, yalnızca cihazları mesh dışa aktarımıyla karşılaştıran okumalar gönderilir."
         }
       }
     },

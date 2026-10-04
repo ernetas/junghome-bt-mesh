@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "a été rappelée par {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Non envoyé : {node} a répondu à {message} par {found}, mais l'export du mesh indique {expected} ({others} autres différences). L'installation a changé après la création de l'export du mesh (dans l'application JUNG HOME, par la réinitialisation d'un appareil ou par une action précédente interrompue à mi-chemin), et le plan écraserait ce que l'export ne décrit plus. Exportez à nouveau le projet depuis l'application, ou laissez Home Assistant reprendre l'export de la passerelle, puis relancez l'action ; avec `force`, elle s'exécute sans cette vérification. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Zone par pièce",
           "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
         },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
+        },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Même si une touche le commande",
-          "description": "Retirer l'appareil de la zone bien qu'une touche liée à la zone le commute ; la touche cesse de le commuter."
+          "description": "Retirer l'appareil de la zone bien qu'une touche liée à la zone le commute ; la touche cesse de le commuter. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
         },
         "room_area": {
           "name": "Zone par pièce",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Zone par pièce",
           "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
         },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
+        },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entité de scène",
           "description": "Au lieu de saisir le nom ou le numéro de la scène : son entité de scène."
         },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
+        },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Lettre de la touche",
           "description": "Quelle touche de l'appareil : A, B, C ou D ; E1 ou E2 pour une entrée d'un mini-actionneur."
         },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
+        },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entité de scène",
           "description": "Au lieu de saisir le nom ou le numéro de la scène : son entité de scène."
+        },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Même si un appareil ne répond pas",
-          "description": "Supprimer la scène de l'export du mesh bien qu'un appareil qui l'a mémorisée soit injoignable ou refuse (« Supprimer quand même » dans l'application). Cet appareil conserve la scène jusqu'à ce que Supprimer les scènes inutilisées la retire ; un problème de réparation le nomme, et aucune nouvelle scène ne reçoit son numéro entre-temps."
+          "description": "Supprimer la scène de l'export du mesh bien qu'un appareil qui l'a mémorisée soit injoignable ou refuse (« Supprimer quand même » dans l'application). Cet appareil conserve la scène jusqu'à ce que Supprimer les scènes inutilisées la retire ; un problème de réparation le nomme, et aucune nouvelle scène ne reçoit son numéro entre-temps. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
         },
         "config_entry_id": {
           "name": "Réseau mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Appareils",
           "description": "Les lumières et prises que les deux seuils commutent, en remplacement de la liste actuelle ; omis, la liste reste. L'export du mesh est réécrit lorsqu'elle change, et Home Assistant le suit sans recharger l'intégration."
+        },
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
         }
       }
     },
     "delete_threshold": {
       "name": "Supprimer un seuil",
-      "description": "Efface les deux seuils d'une prise JUNG HOME avec mesure et décâble les lumières et prises qu'ils commutaient, comme le fait la suppression dans l'application. Home Assistant suit l'export du mesh réécrit sans recharger l'intégration lorsque des appareils ont été décâblés. Répond, si on le lui demande, combien de messages de câblage les appareils ont appliqués. Réservé aux administrateurs."
+      "description": "Efface les deux seuils d'une prise JUNG HOME avec mesure et décâble les lumières et prises qu'ils commutaient, comme le fait la suppression dans l'application. Home Assistant suit l'export du mesh réécrit sans recharger l'intégration lorsque des appareils ont été décâblés. Répond, si on le lui demande, combien de messages de câblage les appareils ont appliqués. Réservé aux administrateurs.",
+      "fields": {
+        "force": {
+          "name": "Même si les appareils diffèrent de l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Seulement si l'export du mesh est sûrement correct. Non vérifié sur de vrais appareils."
+        }
+      }
     },
     "audit_network": {
       "name": "Auditer le réseau",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Même s'il ne répond pas",
-          "description": "Le retirer des enregistrements du réseau bien qu'il ne confirme pas la réinitialisation (un appareil définitivement disparu), ou bien que Home Assistant soit connecté via lui."
+          "description": "Le retirer des enregistrements du réseau bien qu'il ne confirme pas la réinitialisation (un appareil définitivement disparu), ou bien que Home Assistant soit connecté via lui. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
         },
         "confirm": {
           "name": "Confirmer",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Simulation",
-          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est envoyé, écrit ni repris de la passerelle."
+          "description": "Répondre uniquement ce qui serait envoyé et comment l'export du mesh changerait (demandez la réponse) ; rien n'est écrit ni repris de la passerelle, et seules les lectures qui comparent les appareils à l'export du mesh sont envoyées."
         }
       }
     },

@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "palautettiin laitteella {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Ei lähetetty: {node} vastasi viestiin {message} arvolla {found}, mutta mesh-verkon viennissä on {expected} (muita eroja: {others}). Asennusta on muutettu mesh-verkon viennin jälkeen (JUNG HOME -sovelluksessa, laitteen nollauksella tai aiemmalla toiminnolla, joka pysähtyi kesken), ja suunnitelma korvaisi sen, mitä vienti ei enää kuvaa. Vie projekti sovelluksesta uudelleen tai anna Home Assistantin ottaa yhdyskäytävän vienti käyttöön ja suorita toiminto uudelleen; asetuksella `force` se suoritetaan ilman tätä tarkistusta. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Huone alueen mukaan",
           "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
         },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
+        },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Vaikka painike ohjaa sitä",
-          "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä."
+          "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
         },
         "room_area": {
           "name": "Huone alueen mukaan",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Huone alueen mukaan",
           "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
         },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
+        },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Tilanne-entiteetti",
           "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
         },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
+        },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Painikkeen kirjain",
           "description": "Mikä laitteen painike: A, B, C tai D; E1 tai E2 minitoimilaitteen tulolle."
         },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
+        },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Tilanne-entiteetti",
           "description": "Tilanteen nimen tai numeron kirjoittamisen sijaan: sen tilanne-entiteetti."
+        },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Vaikka laite ei vastaa",
-          "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin."
+          "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
         },
         "config_entry_id": {
           "name": "Verkko",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Laitteet",
           "description": "Valaisimet ja pistorasiat, joita molemmat kynnykset kytkevät; korvaa nykyisen luettelon, pois jätettynä luettelo säilyy. Kun se muuttuu, mesh-verkon vienti kirjoitetaan uudelleen, ja Home Assistant ottaa sen käyttöön lataamatta integraatiota uudelleen."
+        },
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
         }
       }
     },
     "delete_threshold": {
       "name": "Poista kynnys",
-      "description": "Tyhjentää energiaa mittaavan JUNG HOME -pistorasian molemmat kynnykset ja irrottaa niiden kytkemät valaisimet ja pistorasiat, kuten sovelluksen poisto. Jos laitteita irrotettiin, Home Assistant ottaa uudelleen kirjoitetun mesh-verkon viennin käyttöön lataamatta integraatiota uudelleen. Palauttaa pyydettäessä, kuinka monta kytkentäviestiä laitteet ottivat käyttöön. Vain järjestelmänvalvojille."
+      "description": "Tyhjentää energiaa mittaavan JUNG HOME -pistorasian molemmat kynnykset ja irrottaa niiden kytkemät valaisimet ja pistorasiat, kuten sovelluksen poisto. Jos laitteita irrotettiin, Home Assistant ottaa uudelleen kirjoitetun mesh-verkon viennin käyttöön lataamatta integraatiota uudelleen. Palauttaa pyydettäessä, kuinka monta kytkentäviestiä laitteet ottivat käyttöön. Vain järjestelmänvalvojille.",
+      "fields": {
+        "force": {
+          "name": "Vaikka laitteet poikkeaisivat viennistä",
+          "description": "Suorita suunnitelma lukematta ensin laitteilta, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon viennin tiedetään olevan oikein. Ei vielä varmistettu oikeilla laitteilla."
+        }
+      }
     },
     "audit_network": {
       "name": "Tarkasta verkko",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Vaikka se ei vastaa",
-          "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta."
+          "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
         },
         "confirm": {
           "name": "Vahvista",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Koeajo",
-          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei lähetetä, kirjoiteta eikä oteta yhdyskäytävältä."
+          "description": "Palauta vain, mitä lähetettäisiin ja miten mesh-verkon vienti muuttuisi (pyydä vastaus); mitään ei kirjoiteta eikä oteta yhdyskäytävältä, ja vain laitteita mesh-verkon vientiin vertaavat luvut lähetetään."
         }
       }
     },

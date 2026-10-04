@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "ble aktivert av {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Ikke sendt: {node} svarte {found} på {message}, men mesh-eksporten sier {expected} ({others} flere forskjeller). Installasjonen er endret etter at mesh-eksporten ble laget (i JUNG HOME-appen, ved en tilbakestilling av en enhet eller av en tidligere handling som stoppet halvveis), og planen ville overskrevet det eksporten ikke lenger beskriver. Eksporter prosjektet fra appen på nytt, eller la Home Assistant overta gatewayens eksport, og kjør handlingen igjen; med `force` kjører den uten denne kontrollen. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Rom via område",
           "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
         },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
+        },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Selv om en knapp styrer den",
-          "description": "Ta enheten ut av rommet selv om en knapp koblet til rommet styrer den; knappen slutter å styre den."
+          "description": "Ta enheten ut av rommet selv om en knapp koblet til rommet styrer den; knappen slutter å styre den. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
         },
         "room_area": {
           "name": "Rom via område",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Rom via område",
           "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
         },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
+        },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Sceneentitet",
           "description": "I stedet for å skrive scenens navn eller nummer: sceneentiteten."
         },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
+        },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Knappebokstav",
           "description": "Hvilken knapp på enheten: A, B, C eller D; E1 eller E2 for en inngang på en mini-aktuator."
         },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
+        },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Sceneentitet",
           "description": "I stedet for å skrive scenens navn eller nummer: sceneentiteten."
+        },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Selv om en enhet ikke svarer",
-          "description": "Slett scenen fra mesh-eksporten selv om en enhet som har lagret den, ikke kan nås eller avviser (appens “Slett likevel”). Den enheten beholder scenen til “Slett ubrukte scener” fjerner den; et reparasjonsvarsel nevner den, og ingen ny scene får nummeret dens i mellomtiden."
+          "description": "Slett scenen fra mesh-eksporten selv om en enhet som har lagret den, ikke kan nås eller avviser (appens “Slett likevel”). Den enheten beholder scenen til “Slett ubrukte scener” fjerner den; et reparasjonsvarsel nevner den, og ingen ny scene får nummeret dens i mellomtiden. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
         },
         "config_entry_id": {
           "name": "Mesh-nettverk",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Enheter",
           "description": "Lysene og stikkontaktene begge tersklene kobler, som erstatter den gjeldende listen; utelatt forblir listen. Mesh-eksporten skrives på nytt når den endres, og Home Assistant følger den uten å laste inn integrasjonen på nytt."
+        },
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
         }
       }
     },
     "delete_threshold": {
       "name": "Slett terskler",
-      "description": "Fjerner begge tersklene til en JUNG HOME-stikkontakt med energimåling og kobler fra lysene og stikkontaktene de styrte, slik appens sletting gjør. Home Assistant følger den nyskrevne mesh-eksporten uten å laste inn integrasjonen på nytt når enheter ble koblet fra. Svarer, når det blir bedt om det, hvor mange av koblingsmeldingene enhetene tok i bruk. Bare for administratorer."
+      "description": "Fjerner begge tersklene til en JUNG HOME-stikkontakt med energimåling og kobler fra lysene og stikkontaktene de styrte, slik appens sletting gjør. Home Assistant følger den nyskrevne mesh-eksporten uten å laste inn integrasjonen på nytt når enheter ble koblet fra. Svarer, når det blir bedt om det, hvor mange av koblingsmeldingene enhetene tok i bruk. Bare for administratorer.",
+      "fields": {
+        "force": {
+          "name": "Selv om enhetene avviker fra eksporten",
+          "description": "Kjør planen uten først å lese fra enhetene hva den fjerner eller erstatter, og sammenligne det med mesh-eksporten. Bare når mesh-eksporten er kjent for å være riktig. Ennå ikke verifisert på ekte enheter."
+        }
+      }
     },
     "audit_network": {
       "name": "Kontroller nettverk",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Selv om den ikke svarer",
-          "description": "Fjern den fra nettverkets registreringer selv om den ikke bekrefter tilbakestillingen (en enhet som er borte for godt), eller selv om Home Assistant er koblet til gjennom den."
+          "description": "Fjern den fra nettverkets registreringer selv om den ikke bekrefter tilbakestillingen (en enhet som er borte for godt), eller selv om Home Assistant er koblet til gjennom den. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
         },
         "confirm": {
           "name": "Bekreft",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Prøvekjøring",
-          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting sendes, skrives eller overtas fra gatewayen."
+          "description": "Svar bare hva som ville blitt sendt og hvordan mesh-eksporten ville endret seg (be om svaret); ingenting skrives eller overtas fra gatewayen, og bare lesingene som sammenligner enhetene med mesh-eksporten sendes."
         }
       }
     },

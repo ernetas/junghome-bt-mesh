@@ -1614,11 +1614,12 @@ answers it — `steps`, the messages in the order they would go out, each with t
 (`"0232 (Living room DALI): Config Model Subscription Add elem=0232 address=C00F model=1000"`, a key's KeyMode and a
 scene's member writes after them, a removal's *Config Node Reset* first), and `diff`, how the export would change
 (`path`, `before`, `after`; an entry is named by its address, number or name, a key is never shown) — plus what a
-real run would answer of its own (`create_room`'s address, `create_scene`'s number). Nothing is sent, nothing is
-written (the export, its backups, the plan journal, the held scene numbers, the vault), nothing is taken over from
-the gateway, and no device is moved into an area. The plan is made on the export on disk: with a gateway, the real
-run plans on the gateway's export when the app changed the installation since (taken over first), so its plan can
-differ by what the app changed. Its checks run as they would: what the real run refuses, the dry run refuses too.
+real run would answer of its own (`create_room`'s address, `create_scene`'s number). Nothing is written (the
+export, its backups, the plan journal, the held scene numbers, the vault), nothing is taken over from the gateway,
+no device is moved into an area, and nothing is sent but the pre-flight reads of a plan that removes or replaces
+something (see [Pre-flight reconcile](#pre-flight-reconcile)), whose findings the answer lists under `preflight`.
+The plan is made on the export on disk: with a gateway, the real run plans on the gateway's export when the app
+changed the installation since (taken over first), so its plan can differ by what the app changed. Its checks run as they would: what the real run refuses, the dry run refuses too.
 Ask for the response (*Return response* in the developer tools, `response_variable` in a script); without it a dry
 run does nothing visible.
 
@@ -1636,6 +1637,38 @@ server (English or German, see [Languages](#languages)): *0234 (…) now drives 
 *… was cancelled after …*. The bus event is `junghome_ble_plan` (`entry_id`, `name`, `action`, `outcome`:
 `finished`, `stopped` or `cancelled`, `message`, `placeholders`). The diagnostics keep the last five such calls
 (`plans`: action, outcome, messages accepted and planned, the step texts, the error key; no key material).
+
+### Pre-flight reconcile
+
+Review-4 W I4. Every plan is computed from the export; before a plan that removes or overwrites what the export says
+a node holds, the configurator reads it from the nodes and compares (`PlanExecutor.preflight`). The destructive
+steps (`jhmesh.plan.destructive`): a *Config Model Subscription Delete*, a *Config Model Publication Set* to `0x0000`,
+and a *Publication Set* to an address where the export holds another publication for that model (a key rewired) —
+not a *Subscription Add*, a *Model App Bind* or a publication where the export records none. For each element and
+model such a step changes, one *Config SIG / Vendor Model Subscription Get* or *Config Model Publication Get* goes
+out first, one at a time, battery nodes kept awake as for the plan; a scene's deletion (`remove_from_scene`,
+`delete_scene`) also reads the *Scene Register* of every member the export says stores it. The Scene Server / Scene
+Setup Server subscriptions are not read: the export lists room and device-type groups there that the nodes never
+got ([phantom entries](hidden-features.md)). A subscription the node holds beyond the export is left alone by the
+plan and not compared (the firmware subscribes some key clients to their element group by itself); what the export
+lists must be on the node, a publication must be the export's, a register must still hold the scene.
+
+A node that differs stops the plan before its first message — nothing is journaled, sent or written — with the
+error *service_preflight_differs*, naming the device, the Get, what the export says and what the node holds, and
+how many more differences the plan met; export the project from the app again (or let the gateway's export be taken
+over) and run the action again. A node that does not answer the read stops it as a plan step would (*did not
+answer*, or *asleep* for a battery node), before anything was sent. `set_threshold` and `delete_threshold` write
+the threshold first, as the app does, so their error says it was written; `remove_device` reads the others' wiring
+to the device before its *Config Node Reset*, which cannot be taken back. A dry run sends the same reads and answers
+`preflight`: `{"differences": [{"node", "element", "model", "kind", "expected", "found"}], "unanswered": [...]}`
+(every node unanswered when there is no link); a plan without destructive steps reads nothing and answers no
+`preflight`. The switches *Time keeper* and *Sensor values for IoT systems* set what the node holds whatever the
+export says, and are not compared.
+
+`force: true` skips the comparison: on `set_room`, `delete_room`, `assign_key`, `clear_key`, `remove_from_scene`,
+`set_threshold` and `delete_threshold` it does only that; on `remove_from_room`, `delete_scene` and `remove_device`
+it does that besides what it did already. Like every rewiring action, these are for administrators only.
+Unverified on air: a dry run of a destructive action against a node the app changed since the export.
 
 **Areas and scene entities.** Where an action takes a room's name (`room`), `room_area` picks the area named like the
 room instead (the rooms are matched by name, as the areas Home Assistant gives the devices); where it takes a
@@ -2059,7 +2092,10 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   the rewritten file in the app.
 - **A change a node refuses half-way is not rolled back.** Every plan is a sequence of Config messages; the steps a
   node accepted stay applied in the mesh and are recorded in the export (apply-and-record), the error says how many
-  of them were, and running the same action again with the same target completes the rest. New wiring is always sent
+  of them were, and running the same action again with the same target completes the rest. What a plan removes or
+  replaces is read from the nodes first ([Pre-flight reconcile](#pre-flight-reconcile)), so a node the app or a reset
+  changed since the export stops it before its first message rather than half-way; a node that changes between that
+  read and the plan's message, or a refusal for another reason, is not caught by it. New wiring is always sent
   before the old one is cleared, so a stopped `assign_key` leaves the previous connection working. An action that is
   cancelled — an automation in `mode: restart` starting over, `script.turn_off`, Home Assistant stopping — is
   recorded the same way before the cancellation goes on, and the integration follows it; once started, the write

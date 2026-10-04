@@ -9,6 +9,9 @@ one at a time per hub:
    installation since (the app uploads after every change), so the plan is made — and later uploaded — on top
    of the app's changes, never over them;
 2. mutate it through the `ProjectFile` mutators, collecting `ModelChange`s = the Config messages to send;
+   a plan that removes or replaces what the export says a node holds first reads that from the nodes and compares
+   (`PlanExecutor.preflight`): a node that differs — the app changed it since the export, a reset, a stopped plan —
+   stops the plan before its first message, unless the action's `force` skips the comparison;
 3. send them with the node's device key and check every Config status (`ConfigStatus.ok`, echoing the step's
    element / model / address so a late duplicate cannot pass for the next step's answer), additive messages
    before destructive ones so a stop leaves the old wiring working. The first refusal or silence stops the plan
@@ -31,9 +34,10 @@ one at a time per hub:
    gateway does not hold a change of its own meanwhile. The digest and the time of the last successful upload are
    kept in the entry's `GatewaySync` record (the time is the app's `gateway_last_sync`).
 
-A dry run (`MeshConfigurator.dry_run`) goes through step 2 on the export on disk only and ends where
-step 3 or 5 would begin, answering the plan's messages and how the export would change; nothing is sent, written or
-adopted. What a call's plans did is counted per call (`PlanOutcome`) for its answer, its error and the logbook.
+A dry run (`MeshConfigurator.dry_run`) goes through step 2 on the export on disk only, its pre-flight reads
+included, and ends where step 3 or 5 would begin, answering the plan's messages, how the export would change and
+what the reads found; nothing else is sent, and nothing is written or adopted. What a call's plans did is counted
+per call (`PlanOutcome`) for its answer, its error and the logbook.
 
 The caller (`actions.common._run`) then has the running hub take the new export over in place (`model_update`),
 which is how the hub's device model — and with it the entities, their `rooms` attributes and the buttons'
@@ -72,6 +76,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable, Collection, Coroutine, Iterable, Sequence
+from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any
 
 from .configurator.executor import PlanExecutor
@@ -311,6 +316,10 @@ class MeshConfigurator:
             return find_scene(pf, scene)
 
     # ------------------------------------------------------------------ dry runs, outcomes, the export, the gateway
+    def forcing(self, force: bool) -> AbstractContextManager[None]:
+        """Run the block's operations with an action's `force`: no pre-flight comparison (`ExportStore.forcing`)."""
+        return self.store.forcing(force)
+
     async def dry_run(
         self, operation: Callable[[MeshConfigurator], Coroutine[Any, Any, Any]]
     ) -> dict[str, Any]:

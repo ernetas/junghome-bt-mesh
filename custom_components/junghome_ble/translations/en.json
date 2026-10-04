@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "was recalled by {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Not sent: {node} answered {message} with {found}, but the mesh export says {expected} ({others} more differences). The installation changed after the mesh export was made (in the JUNG HOME app, by a device reset or by an earlier action that stopped half-way), and the plan would overwrite what the export no longer describes. Export the project from the app again, or let Home Assistant take the gateway's export over, and run the action again; with `force` it runs without this check. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Room by area",
           "description": "Instead of typing the room's name: the area named like the room."
         },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
+        },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Even if a key drives it",
-          "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it."
+          "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it. It also skips the check that compares the devices with the mesh export first."
         },
         "room_area": {
           "name": "Room by area",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Room by area",
           "description": "Instead of typing the room's name: the area named like the room."
         },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
+        },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Scene entity",
           "description": "Instead of typing the scene's name or number: its scene entity."
         },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
+        },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Key letter",
           "description": "Which key of the device: A, B, C or D; E1 or E2 for an input of a mini actuator."
         },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
+        },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Scene entity",
           "description": "Instead of typing the scene's name or number: its scene entity."
+        },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Even if a device does not answer",
-          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until Delete unused scenes removes it; a repair issue names it, and no new scene gets its number meanwhile."
+          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until Delete unused scenes removes it; a repair issue names it, and no new scene gets its number meanwhile. It also skips the check that compares the devices with the mesh export first."
         },
         "config_entry_id": {
           "name": "Mesh network",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Devices",
           "description": "The lights and sockets both thresholds switch, replacing the current list; left out, the list stays. The mesh export is rewritten when it changes, and Home Assistant follows it without reloading the integration."
+        },
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
         }
       }
     },
     "delete_threshold": {
       "name": "Delete threshold",
-      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. Home Assistant follows the rewritten mesh export without reloading the integration when devices were unwired. Answers how many of the wiring messages the devices applied when asked to. Administrators only."
+      "description": "Clears both thresholds of a JUNG HOME metering socket and unwires the lights and sockets they switched, as the app's delete does. Home Assistant follows the rewritten mesh export without reloading the integration when devices were unwired. Answers how many of the wiring messages the devices applied when asked to. Administrators only.",
+      "fields": {
+        "force": {
+          "name": "Even if the devices differ from the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
+        }
+      }
     },
     "audit_network": {
       "name": "Audit network",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Even if it does not answer",
-          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it."
+          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it. It also skips the check that compares the devices with the mesh export first."
         },
         "confirm": {
           "name": "Confirm",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Dry run",
-          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is sent, written or taken over from the gateway."
+          "description": "Only answer what would be sent and how the mesh export would change (ask for the response); nothing is written or taken over from the gateway, and only the reads that compare the devices with the mesh export are sent."
         }
       }
     },

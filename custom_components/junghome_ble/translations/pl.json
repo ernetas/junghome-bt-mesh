@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "została przywołana przez {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Nie wysłano: {node} odpowiedział na {message} wartością {found}, ale eksport mesh podaje {expected} (pozostałe różnice: {others}). Instalacja zmieniła się po wykonaniu eksportu mesh (w aplikacji JUNG HOME, przez reset urządzenia albo przez wcześniejszą akcję, która zatrzymała się w połowie), a plan nadpisałby to, czego eksport już nie opisuje. Wyeksportuj projekt z aplikacji ponownie albo pozwól Home Assistant przejąć eksport z bramki i uruchom akcję jeszcze raz; z `force` działa bez tego sprawdzenia. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Pomieszczenie według obszaru",
           "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
         },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+        },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Nawet jeśli steruje nim przycisk",
-          "description": "Usuń urządzenie z pomieszczenia, mimo że przełącza je przycisk powiązany z pomieszczeniem; przycisk przestaje je przełączać."
+          "description": "Usuń urządzenie z pomieszczenia, mimo że przełącza je przycisk powiązany z pomieszczeniem; przycisk przestaje je przełączać. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Pomieszczenie według obszaru",
           "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
         },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+        },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Encja sceny",
           "description": "Zamiast wpisywać nazwę lub numer sceny: jej encja sceny."
         },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+        },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Litera przycisku",
           "description": "Który przycisk urządzenia: A, B, C lub D; E1 lub E2 dla wejścia miniaktora."
         },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+        },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Encja sceny",
           "description": "Zamiast wpisywać nazwę lub numer sceny: jej encja sceny."
+        },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Nawet jeśli urządzenie nie odpowiada",
-          "description": "Usuń scenę z eksportu mesh, mimo że urządzenie, które ją zapisało, jest nieosiągalne lub odmawia (w aplikacji „Usuń mimo to”). To urządzenie zachowuje scenę, dopóki akcja „Usuń nieużywane sceny” jej nie usunie; wskazuje je problem w Naprawach, a w międzyczasie żadna nowa scena nie dostaje jej numeru."
+          "description": "Usuń scenę z eksportu mesh, mimo że urządzenie, które ją zapisało, jest nieosiągalne lub odmawia (w aplikacji „Usuń mimo to”). To urządzenie zachowuje scenę, dopóki akcja „Usuń nieużywane sceny” jej nie usunie; wskazuje je problem w Naprawach, a w międzyczasie żadna nowa scena nie dostaje jej numeru. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
         },
         "config_entry_id": {
           "name": "Sieć mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Urządzenia",
           "description": "Światła i gniazda przełączane przez oba progi, zastępujące bieżącą listę; jeśli pominięte, lista pozostaje bez zmian. Gdy się zmienia, eksport mesh zostaje przepisany, a Home Assistant przejmuje go bez ponownego wczytywania integracji."
+        },
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
         }
       }
     },
     "delete_threshold": {
       "name": "Usuń próg",
-      "description": "Czyści oba progi gniazda JUNG HOME z pomiarem energii i usuwa powiązania ze światłami i gniazdami, które przełączały, tak jak usuwanie w aplikacji. Gdy powiązania urządzeń zostały usunięte, Home Assistant przejmuje przepisany eksport mesh bez ponownego wczytywania integracji. Na żądanie odpowiada, ile wiadomości powiązań urządzenia zastosowały. Tylko dla administratorów."
+      "description": "Czyści oba progi gniazda JUNG HOME z pomiarem energii i usuwa powiązania ze światłami i gniazdami, które przełączały, tak jak usuwanie w aplikacji. Gdy powiązania urządzeń zostały usunięte, Home Assistant przejmuje przepisany eksport mesh bez ponownego wczytywania integracji. Na żądanie odpowiada, ile wiadomości powiązań urządzenia zastosowały. Tylko dla administratorów.",
+      "fields": {
+        "force": {
+          "name": "Nawet jeśli urządzenia różnią się od eksportu",
+          "description": "Uruchom plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest poprawny. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+        }
+      }
     },
     "audit_network": {
       "name": "Audyt sieci",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Nawet jeśli nie odpowiada",
-          "description": "Usuń je z zapisów sieci, mimo że nie potwierdza resetu (urządzenie, którego już nie ma), lub mimo że Home Assistant jest przez nie połączony."
+          "description": "Usuń je z zapisów sieci, mimo że nie potwierdza resetu (urządzenie, którego już nie ma), lub mimo że Home Assistant jest przez nie połączony. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
         },
         "confirm": {
           "name": "Potwierdź",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Próba",
-          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest wysyłane, zapisywane ani przejmowane z bramki."
+          "description": "Tylko odpowiedz, co zostałoby wysłane i jak zmieniłby się eksport mesh (poproś o odpowiedź); nic nie jest zapisywane ani przejmowane z bramki, a wysyłane są tylko odczyty porównujące urządzenia z eksportem mesh."
         }
       }
     },

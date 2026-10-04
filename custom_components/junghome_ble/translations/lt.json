@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "iškvietė {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Neišsiųsta: {node} į {message} atsakė {found}, bet tinklo eksporte nurodyta {expected} (kitų skirtumų: {others}). Po tinklo eksporto sukūrimo instaliacija pasikeitė („JUNG HOME“ programėlėje, atkūrus įrenginį arba dėl ankstesnio veiksmo, kuris sustojo pusiaukelėje), ir planas perrašytų tai, ko eksportas nebeaprašo. Iš naujo eksportuokite projektą programėlėje arba leiskite Home Assistant perimti sietuvo eksportą ir paleiskite veiksmą dar kartą; su `force` jis vykdomas be šio patikrinimo. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Patalpa pagal sritį",
           "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
         },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
+        },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Net jei jį valdo mygtukas",
-          "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys."
+          "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Patalpa pagal sritį",
           "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
         },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
+        },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Scenos objektas",
           "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
         },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
+        },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Mygtuko raidė",
           "description": "Kuris įrenginio mygtukas: A, B, C ar D; E1 ar E2 – mini aktoriaus įėjimui."
         },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
+        },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Scenos objektas",
           "description": "Užuot įvedę scenos pavadinimą ar numerį: jos scenos objektas."
+        },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Net jei įrenginys neatsako",
-          "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio."
+          "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
         },
         "config_entry_id": {
           "name": "Tinklas",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Įrenginiai",
           "description": "Šviestuvai ir lizdai, kuriuos perjungia abu slenksčiai; pakeičia dabartinį sąrašą, o nenurodžius sąrašas lieka. Jam pasikeitus, tinklo eksportas perrašomas, o Home Assistant jį perima neįkeldamas integracijos iš naujo."
+        },
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
         }
       }
     },
     "delete_threshold": {
       "name": "Ištrinti slenksčius",
-      "description": "Išvalo abu „JUNG HOME“ lizdo su energijos matavimu slenksčius ir atsieja jų perjungtus šviestuvus bei lizdus, kaip programėlės trynimas. Jei įrenginiai buvo atsieti, Home Assistant perima perrašytą tinklo eksportą neįkeldamas integracijos iš naujo. Paprašius grąžina, kiek susiejimo pranešimų įrenginiai pritaikė. Tik administratoriams."
+      "description": "Išvalo abu „JUNG HOME“ lizdo su energijos matavimu slenksčius ir atsieja jų perjungtus šviestuvus bei lizdus, kaip programėlės trynimas. Jei įrenginiai buvo atsieti, Home Assistant perima perrašytą tinklo eksportą neįkeldamas integracijos iš naujo. Paprašius grąžina, kiek susiejimo pranešimų įrenginiai pritaikė. Tik administratoriams.",
+      "fields": {
+        "force": {
+          "name": "Net jei įrenginiai skiriasi nuo eksporto",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
+        }
+      }
     },
     "audit_network": {
       "name": "Patikrinti tinklą",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Net jei neatsako",
-          "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį."
+          "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
         },
         "confirm": {
           "name": "Patvirtinti",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Bandomasis vykdymas",
-          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko nesiunčiama, neįrašoma ir neperimama iš sietuvo."
+          "description": "Tik grąžinti, kas būtų išsiųsta ir kaip pasikeistų tinklo eksportas (paprašykite atsakymo); nieko neįrašoma ir neperimama iš sietuvo, siunčiami tik skaitymai, kuriais įrenginiai palyginami su tinklo eksportu."
         }
       }
     },

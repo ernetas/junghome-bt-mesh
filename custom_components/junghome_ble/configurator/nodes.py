@@ -8,6 +8,7 @@ Server publication (`set_time_keeper`).
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
     from custom_components.junghome_ble.jhmesh.audit import NodeAudit
     from custom_components.junghome_ble.jhmesh.cdb import Node
     from custom_components.junghome_ble.jhmesh.commission import Plan
+    from custom_components.junghome_ble.jhmesh.export import ProjectFile
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -123,12 +125,15 @@ class Nodes(Operations):
                 raise _validation("remove_device_proxy", address=hexaddr(unicast))
             if self.store.dry:
                 changes = pf.remove_node(node, self.hub.proxy.state.iv_index)
+                plan = self.executor.in_order(config_steps(pf, changes))[0]
+                await self.executor.preflight(plan)
                 self.store.planned(
-                    self.executor.in_order(config_steps(pf, changes))[0],
+                    plan,
                     first=[
                         f"{self.store.node_name(unicast)}: {M.describe(C.node_reset())}"
                     ],
                 )
+            await self._preflight_unwiring(pf, unicast)
             # scanners keep a device's advert data merged: one from before it was provisioned proves nothing later
             advertised = advertises_unprovisioned(self.hub.hass, node.uuid)
             relink = False
@@ -165,6 +170,7 @@ class Nodes(Operations):
                 await self.executor.send(
                     config_steps(pf, changes),
                     action="junghome_ble.remove_device",
+                    check=False,  # read before the reset (`_preflight_unwiring`)
                     happened={
                         "kind": "excluded",
                         "node": unicast,
@@ -191,6 +197,21 @@ class Nodes(Operations):
                 len(changes),
             )
             return True
+
+    async def _preflight_unwiring(self, pf: ProjectFile, unicast: int) -> None:
+        """Read what the others' unwiring would remove and compare it with the export, before the reset.
+
+        The reset cannot be taken back, so the unwiring that follows it is planned on a copy first and its pre-flight
+        reads (`PlanExecutor.preflight`) go out before the reset: a node that no longer holds what the export says
+        stops the removal before anything changed.
+        """
+        probe = copy.deepcopy(pf)
+        node = probe.cdb.node_by_addr(unicast)
+        assert node is not None  # `remove_node` found it in `pf`
+        changes = probe.remove_node(node, self.hub.proxy.state.iv_index)
+        await self.executor.preflight(
+            self.executor.in_order(config_steps(probe, changes))[0]
+        )
 
     async def _reset_unconfirmed(
         self, node: Node, *, force: bool, advertised: bool, err: TimeoutError
@@ -261,7 +282,10 @@ class Nodes(Operations):
             steps += config_steps(
                 pf, pf.set_publication(node, element, TIME_SERVER, want)
             )
-            await self.executor.send(steps, action="the switch Time keeper")
+            # the switch shows the node's time role, not the export's: no pre-flight comparison with it
+            await self.executor.send(
+                steps, action="the switch Time keeper", check=False
+            )
             await self.store.save(pf)
             _LOGGER.info(
                 "Node %04X's Time Server %s the time keeper group",

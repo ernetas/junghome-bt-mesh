@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "è stata richiamata da {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Non inviato: {node} ha risposto a {message} con {found}, ma l'esportazione mesh indica {expected} ({others} altre differenze). L'installazione è cambiata dopo l'esportazione mesh (nell'app JUNG HOME, con il ripristino di un dispositivo o per un'azione precedente interrotta a metà) e il piano sovrascriverebbe ciò che l'esportazione non descrive più. Esporta di nuovo il progetto dall'app, oppure lascia che Home Assistant rilevi l'esportazione del gateway, ed esegui di nuovo l'azione; con `force` viene eseguita senza questo controllo. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Stanza per area",
           "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
         },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
+        },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Anche se un tasto lo comanda",
-          "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo."
+          "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
         },
         "room_area": {
           "name": "Stanza per area",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Stanza per area",
           "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
         },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
+        },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entità scena",
           "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
         },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
+        },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Lettera del tasto",
           "description": "Quale tasto del dispositivo: A, B, C o D; E1 o E2 per un ingresso di un mini attuatore."
         },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
+        },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entità scena",
           "description": "Invece di digitare il nome o il numero della scena: la sua entità scena."
+        },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Anche se un dispositivo non risponde",
-          "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero."
+          "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
         },
         "config_entry_id": {
           "name": "Rete mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Dispositivi",
           "description": "Le luci e le prese che entrambe le soglie commutano, in sostituzione dell'elenco attuale; se omesso, l'elenco resta. L'esportazione mesh viene riscritta quando cambia, e Home Assistant la segue senza ricaricare l'integrazione."
+        },
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
         }
       }
     },
     "delete_threshold": {
       "name": "Elimina soglia",
-      "description": "Cancella entrambe le soglie di una presa JUNG HOME con misurazione e scollega le luci e le prese che commutavano, come fa l'eliminazione dell'app. Home Assistant segue l'esportazione mesh riscritta senza ricaricare l'integrazione quando dei dispositivi sono stati scollegati. Su richiesta risponde quanti dei messaggi di collegamento i dispositivi hanno applicato. Solo amministratori."
+      "description": "Cancella entrambe le soglie di una presa JUNG HOME con misurazione e scollega le luci e le prese che commutavano, come fa l'eliminazione dell'app. Home Assistant segue l'esportazione mesh riscritta senza ricaricare l'integrazione quando dei dispositivi sono stati scollegati. Su richiesta risponde quanti dei messaggi di collegamento i dispositivi hanno applicato. Solo amministratori.",
+      "fields": {
+        "force": {
+          "name": "Anche se i dispositivi differiscono dall'esportazione",
+          "description": "Esegui il piano senza prima leggere dai dispositivi ciò che rimuove o sostituisce e confrontarlo con l'esportazione mesh. Solo se l'esportazione mesh è sicuramente corretta. Non verificato su dispositivi reali."
+        }
+      }
     },
     "audit_network": {
       "name": "Verifica la rete",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Anche se non risponde",
-          "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso."
+          "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
         },
         "confirm": {
           "name": "Conferma",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Simulazione",
-          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene inviato, scritto o rilevato dal gateway nulla."
+          "description": "Rispondi solo cosa verrebbe inviato e come cambierebbe l'esportazione mesh (richiedi la risposta); non viene scritto o rilevato dal gateway nulla, e vengono inviate solo le letture che confrontano i dispositivi con l'esportazione mesh."
         }
       }
     },

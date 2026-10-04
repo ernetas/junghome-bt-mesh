@@ -80,7 +80,7 @@ from .conftest import (
     setup_entry,
     wait_for_link,
 )
-from .helpers import find_issue
+from .helpers import export_model_status, find_issue
 from .jhmesh.conftest import FakeConfigServers, composition_params
 from .jhmesh.test_provisioning import FakeDevice
 from .test_services import GATEWAY_DATA
@@ -889,6 +889,8 @@ async def test_a_removal_whose_unwiring_stops_still_records_the_reset_node(
     unwired: list[int] = []
 
     def answer(node: int, access: bytes) -> bytes | None:
+        if (held := export_model_status(path, access)) is not None:
+            return held  # the pre-flight reads before the reset: the others hold what the export says
         op, _cid, params = decode_opcode(access)
         if op == C.CONFIG_NODE_RESET:
             return encode_opcode(C.CONFIG_NODE_RESET_STATUS)

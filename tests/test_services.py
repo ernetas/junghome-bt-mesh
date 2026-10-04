@@ -115,6 +115,8 @@ from .helpers import (
     UID_ROCKER_A,
     UID_SOCKET,
     entity_id,
+    export_model_status,
+    is_model_get,
 )
 from .test_logbook import describers
 
@@ -229,6 +231,8 @@ def serve_config(env: Env, link: FakeProxyLink, export: Path) -> None:
         env.config_calls.append((node, pdu))
         if pdu in env.silent:
             return None
+        if (held := export_model_status(export, pdu)) is not None:
+            return held  # a pre-flight read: the nodes hold what the export says
         op, _cid, params = decode_opcode(pdu)
         return encode_opcode(STATUS_FOR[op]) + bytes([env.refuse.get(pdu, 0)]) + params
 
@@ -236,6 +240,26 @@ def serve_config(env: Env, link: FakeProxyLink, export: Path) -> None:
     for node in CDB.load(export).nodes:
         if link.cdb.node_by_addr(node.unicast) is None:
             link.cdb.nodes.append(node)
+
+
+def config_writes(env: Env) -> list[tuple[int, bytes]]:
+    """The Config messages sent, without the pre-flight reads of a destructive plan (review-4 brief 70)."""
+    return [(node, pdu) for node, pdu in env.config_calls if not is_model_get(pdu)]
+
+
+# the pre-flight reads before rocker 0234 is rewired, and before it is cleared
+READ_ROCKER_A = [
+    (DALI_NODE, C.model_publication_get(ROCKER_A, "1001")),
+    (DALI_NODE, C.model_publication_get(ROCKER_A, "05271015")),
+    (DALI_NODE, C.model_subscription_get(ROCKER_A, "1001")),
+    (DALI_NODE, C.model_subscription_get(ROCKER_A, "05271015")),
+]
+READ_CLEAR_ROCKER_A = [
+    (DALI_NODE, C.model_publication_get(ROCKER_A, "1001")),
+    (DALI_NODE, C.model_subscription_get(ROCKER_A, "1001")),
+    (DALI_NODE, C.model_publication_get(ROCKER_A, "05271015")),
+    (DALI_NODE, C.model_subscription_get(ROCKER_A, "05271015")),
+]
 
 
 @pytest.fixture
@@ -496,8 +520,10 @@ async def test_assign_key_by_event_entity_to_a_light_entity(
     old_hub = env.hub
     await call(hass, "assign_key", {"key_entity": key, "target_entity": light})
     await settled(hass, env)
-    # the new wiring first, the old subscriptions last (the old publications are superseded, not cleared)
+    # the pre-flight reads, the new wiring, the old subscriptions last (the old publications are superseded, not
+    # cleared)
     assert env.config_calls == [
+        *READ_ROCKER_A,
         (DALI_NODE, C.model_publication_set(ROCKER_A, DIMMER_GROUP, "1001")),
         (DALI_NODE, C.model_subscription_add(ROCKER_A, DIMMER_GROUP, "1001")),
         (DALI_NODE, C.model_publication_set(ROCKER_A, DIMMER_GROUP, "1003")),
@@ -653,6 +679,7 @@ async def test_clear_key(hass: HomeAssistant, env: Env) -> None:
     )
     await settled(hass, env)
     assert env.config_calls == [
+        *READ_CLEAR_ROCKER_A,
         (DALI_NODE, C.model_publication_set(ROCKER_A, 0x0000, "1001")),
         (DALI_NODE, C.model_subscription_delete(ROCKER_A, DALI_GROUP, "1001")),
         (DALI_NODE, C.model_publication_set(ROCKER_A, 0x0000, "05271015")),
@@ -884,7 +911,7 @@ async def test_set_room_by_device_and_entity_targets(
     assert WC in subs(pf, LIGHT_CTL, "1000")
     assert LIVING not in subs(pf, LIGHT_CTL, "1000")
     assert WC in subs(pf, SOCKET, "1000")
-    assert env.config_calls[:2] == [
+    assert config_writes(env)[:2] == [
         (DALI_NODE, C.model_subscription_add(LIGHT_CTL, WC, "1000")),
         (DALI_NODE, C.model_subscription_add(LIGHT_CTL, WC, "1002")),
     ]
@@ -1987,7 +2014,7 @@ async def test_key_device_may_be_the_node_device(hass: HomeAssistant, env: Env) 
     node = device_id(hass, f"node:{NODE_LIGHT_SWITCH}")
     await call(hass, "clear_key", {"key_device": node})
     await settled(hass, env)
-    assert env.config_calls[0] == (
+    assert config_writes(env)[0] == (
         0x0148,
         C.model_publication_set(0x0149, 0x0000, "1001"),
     )
@@ -3218,13 +3245,19 @@ async def test_a_dry_run_through_the_action_sends_writes_and_places_nothing(
             },
         ),
     ):
+        reads = len(env.config_calls)
         response = await respond(hass, service, {**data, "dry_run": True})
         assert response["dry_run"] is True, service
         assert response["diff"], service
+        # a destructive plan's pre-flight reads went out (not with `force`), and found the export's view
+        if len(env.config_calls) > reads:
+            assert response["preflight"] == {"differences": [], "unanswered": []}
+        if data.get("force"):
+            assert "preflight" not in response, service
     assert response["steps"][0].startswith("0232 (")  # named by the device
     # without a response asked for, a dry run answers nothing and does nothing either
     await call(hass, "set_room", {**target, "dry_run": True})
-    assert env.config_calls == []
+    assert config_writes(env) == []  # the pre-flight reads only
     # nothing written to a load: only the hub's own reads go on (and its Time Set to all nodes, `node_clocks.py`)
     written = [
         text
@@ -3372,7 +3405,7 @@ async def test_alternative_selectors_resolve_to_the_same_plan(
         named = await respond(hass, service, {**by_name, "dry_run": True})
         selected = await respond(hass, service, {**by_selector, "dry_run": True})
         assert named == selected, service
-    assert env.config_calls == []
+    assert config_writes(env) == []  # the pre-flight reads only
     # the real calls by selector
     await call(
         hass, "rename_scene", {"scene_entity": scene, "new_name": "Everything off"}
@@ -3436,3 +3469,71 @@ async def test_a_scene_entity_of_another_network_is_refused(
         )
     assert exc.value.translation_key == "service_target_other_network"
     assert env.config_calls == []
+
+
+# ----------------------------------------------------------------------------- pre-flight reconcile (review-4 brief 70)
+
+
+async def test_a_node_the_app_changed_stops_the_action_and_force_runs_it(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The rocker listens elsewhere than the export says: `clear_key` stops before its first write with the
+    translated error naming both values, a dry run answers the difference, `force: true` runs it unread."""
+    answer = env.link.config_reply
+    assert answer is not None
+    moved = C.model_subscription_get(ROCKER_A, "1001")
+
+    def the_app_moved_it(node: int, pdu: bytes) -> bytes | None:
+        if pdu == moved:
+            env.config_calls.append((node, pdu))
+            subscriptions = {(ROCKER_A, "1001"): [DIMMER_GROUP]}
+            return export_model_status(env.path, pdu, subscriptions=subscriptions)
+        return answer(node, pdu)
+
+    env.link.config_reply = the_app_moved_it
+    key = entity_id(hass, "event", UID_ROCKER_A)
+    with pytest.raises(HomeAssistantError) as exc:
+        await call(hass, "clear_key", {"key_entity": key})
+    assert exc.value.translation_key == "service_preflight_differs"
+    placeholders = exc.value.translation_placeholders or {}
+    assert (placeholders["expected"], placeholders["found"]) == ("C044", "C070")
+    assert placeholders["node"] == "0232 (Living room DALI)"
+    assert "with `force` it runs without this check" in str(exc.value)
+    assert config_writes(env) == []
+    response = await respond(hass, "clear_key", {"key_entity": key, "dry_run": True})
+    assert response["preflight"]["differences"] == [
+        {
+            "node": "0232 (Living room DALI)",
+            "element": "0234",
+            "model": "1001",
+            "kind": "subscriptions",
+            "expected": ["C044"],
+            "found": ["C070"],
+        }
+    ]
+    env.config_calls.clear()
+    await call(hass, "clear_key", {"key_entity": key, "force": True})
+    await settled(hass, env)
+    assert not any(is_model_get(pdu) for _n, pdu in env.config_calls)
+    assert config_writes(env)[0] == (
+        DALI_NODE,
+        C.model_publication_set(ROCKER_A, 0x0000, "1001"),
+    )
+    assert env.reload().publication(ROCKER_A, "1001") is None
+
+
+async def test_remove_from_scene_reads_the_register_and_force_skips_it(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """The export says the WC mirror stores scene 1, its register no longer does: nothing is removed; forced, it is."""
+    env.registers[LIGHT_SWITCH] = [5]
+    light = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    with pytest.raises(HomeAssistantError) as exc:
+        await call(hass, "remove_from_scene", {"entity_id": light, "scene": "1"})
+    assert exc.value.translation_key == "service_preflight_differs"
+    assert env.reload().cdb.scenes[1] == [LIGHT_SWITCH]
+    await call(
+        hass, "remove_from_scene", {"entity_id": light, "scene": "1", "force": True}
+    )
+    await settled(hass, env)
+    assert env.reload().cdb.scenes[1] == []

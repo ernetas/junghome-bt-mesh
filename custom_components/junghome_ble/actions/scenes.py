@@ -24,6 +24,7 @@ from custom_components.junghome_ble.schedules import ActionError, schedule_actio
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
+    _FORCE_FIELD,
     _ONE_SCENE,
     _SCENE_FIELDS,
     _STATE_FIELDS,
@@ -89,7 +90,7 @@ STORE_SCENE_SCHEMA = vol.All(
     *_ONE_SCENE,
 )
 REMOVE_FROM_SCENE_SCHEMA = vol.All(
-    vol.Schema({**_SCENE_FIELDS, **cv.ENTITY_SERVICE_FIELDS}),
+    vol.Schema({**_SCENE_FIELDS, **_FORCE_FIELD, **cv.ENTITY_SERVICE_FIELDS}),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
     *_ONE_SCENE,
 )
@@ -301,7 +302,7 @@ async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceR
             )
             return True
 
-        await _run(hass, entry_id, operation, scenes=True)
+        await _run(hass, entry_id, operation, scenes=True, force=call.data[ATTR_FORCE])
     return None
 
 

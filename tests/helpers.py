@@ -14,8 +14,11 @@ from homeassistant.helpers import issue_registry as ir
 
 from custom_components.junghome_ble.config_flow import SECTION_ADVANCED
 from custom_components.junghome_ble.const import CONF_UNICAST, DOMAIN
+from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
-from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
+from custom_components.junghome_ble.jhmesh.cdb import CDB, parse_address
+from custom_components.junghome_ble.jhmesh.export import raw_model
+from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -100,6 +103,75 @@ PROPERTY_PRECISE_TOTAL_ENERGY = (
 )
 PROPERTY_ENERGY_SINCE_TURN_ON = 0x000D  # meter element, Manufacturer server
 BUTTON_CLICK, BUTTON_HOLD_START, BUTTON_HOLD_END = 0x05, 0x06, 0x04
+
+
+MODEL_GETS = frozenset(
+    {
+        C.CONFIG_MODEL_PUBLICATION_GET,
+        C.CONFIG_SIG_MODEL_SUBSCRIPTION_GET,
+        C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_GET,
+    }
+)
+
+
+def is_model_get(access: bytes) -> bool:
+    """Whether `access` is a Model Publication / Subscription Get (a plan's pre-flight read, review-4 brief 70)."""
+    return decode_opcode(access)[0] in MODEL_GETS
+
+
+def export_model_status(
+    export: Path,
+    access: bytes,
+    *,
+    subscriptions: dict[tuple[int, str], list[int]] | None = None,
+    publications: dict[tuple[int, str], int] | None = None,
+) -> bytes | None:
+    """What a node answers a Model Publication / Subscription Get with when it holds what `export` says.
+
+    The pre-flight reads of a destructive plan (review-4 brief 70): the fake nodes hold the export on disk unless
+    `subscriptions` / `publications` (by (element, model id)) say otherwise — the app changed them since. An element
+    or model the export does not have refuses the Get (Invalid Model). None for any other request.
+    """
+    op, _cid, params = decode_opcode(access)
+    if op not in MODEL_GETS:
+        return None
+    element = int.from_bytes(params[:2], "little")
+    vendor = len(params) == 6
+    model_id = C.decode_model_id(params[2:])
+    model = f"{model_id:08X}" if vendor else f"{model_id:04X}"
+    target = CDB.load(export).element(element)
+    try:
+        raw = None if target is None else raw_model(target, model)
+    except KeyError:
+        raw = None
+    status = 0x00 if raw is not None else 0x02  # Invalid Model
+    raw = raw or {}
+    if op == C.CONFIG_MODEL_PUBLICATION_GET:
+        publish = raw.get("publish") or {}
+        address = (publications or {}).get(
+            (element, model), parse_address(str(publish.get("address", "0000")))
+        )
+        return (
+            encode_opcode(C.CONFIG_MODEL_PUBLICATION_STATUS)
+            + bytes([status])
+            + params[:2]
+            + address.to_bytes(2, "little")
+            + bytes(5)
+            + params[2:]
+        )
+    held = (subscriptions or {}).get(
+        (element, model), [parse_address(str(a)) for a in raw.get("subscribe", [])]
+    )
+    return (
+        encode_opcode(
+            C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST
+            if vendor
+            else C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST
+        )
+        + bytes([status])
+        + params
+        + b"".join(a.to_bytes(2, "little") for a in held)
+    )
 
 
 def onoff_status(on: bool, target: bool | None = None, remaining: int = 0) -> bytes:

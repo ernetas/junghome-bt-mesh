@@ -2,10 +2,11 @@
 
 `PlanExecutor` sends what a planner built — additive steps first, battery nodes first and kept
 awake — through the hub's proxy link, judges every Status, and when the plan stops (a refusal, silence, a lost link, a
-cancellation) records the accepted steps into a fresh copy of the export through the `ExportStore`. It also holds the
-requests that wait for an answer outside a Config plan (the keys' LBC Admin properties, scene registers and actions)
-and their timeouts, and counts what the running call's plans did (`outcome`). `Operations` is what every group of
-operations (rooms, keys, scenes, thresholds, nodes) starts from.
+cancellation) records the accepted steps into a fresh copy of the export through the `ExportStore`. Before a plan that
+removes or overwrites what the export says a node holds, it reads that from the nodes and compares (`preflight`). It
+also holds the requests that wait for an answer outside a Config plan (the keys' LBC Admin properties, scene registers
+and actions) and their timeouts, and counts what the running call's plans did (`outcome`). `Operations` is what
+every group of operations (rooms, keys, scenes, thresholds, nodes) starts from.
 """
 
 from __future__ import annotations
@@ -29,15 +30,19 @@ from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.export import hexaddr
 from custom_components.junghome_ble.jhmesh.plan import (
+    Check,
     ConfigStep,
+    Difference,
     element_of,
     ordered,
+    preflight_checks,
     replay,
 )
 from custom_components.junghome_ble.keep_awake import sleepy_node
 
 from .plan import (
     APPLIED_KEY_WIRED,
+    APPLIED_NOTHING,
     Note,
     _step_from_json,
     _step_json,
@@ -181,6 +186,8 @@ class PlanExecutor:
         happened: Note | None = None,
         applied: Callable[[int, int], str] = applied_text,
         as_planned: bool = False,
+        check: bool = True,
+        registers: Iterable[Check] = (),
     ) -> None:
         """Send the plan, additive steps first; the first refusal, silence or lost link stops it, apply-and-record.
 
@@ -214,9 +221,16 @@ class PlanExecutor:
 
         The call's `outcome` counts the plan and what was accepted of it (its response, error and logbook line); a
         dry run ends here with the plan noted, before anything is journaled or sent (`ExportStore.planned`).
+
+        Before its first message the plan's destructive steps are read from the nodes and compared with the export
+        (`preflight`, with the scene `registers` the call deletes from afterwards); a dry run does those reads too.
+        `check=False` skips them: the caller read them already, or the plan sets what the node holds whatever the
+        export says (a switch's).
         """
         plan, sleepy = self.in_order(steps, as_planned=as_planned)
         if self.store.dry:
+            if check:
+                await self.preflight(plan, registers=registers)
             self.store.planned(plan)
         outcome = self.outcome
         outcome.action = action
@@ -231,6 +245,10 @@ class PlanExecutor:
             "prepare": prepare,
             "happened": happened,
         }
+        if problem is None and check:
+            await self.preflight(
+                plan, registers=registers, applied=applied(0, len(plan))
+            )
         try:
             if problem is None:
                 if plan or happened is not None:
@@ -310,6 +328,121 @@ class PlanExecutor:
         return "service_nodes_unreachable", {
             "nodes": ", ".join(self.store.node_name(n) for n in nodes)
         }
+
+    async def preflight(
+        self,
+        plan: Iterable[ConfigStep],
+        *,
+        registers: Iterable[Check] = (),
+        applied: str = APPLIED_NOTHING,
+    ) -> None:
+        """Before a plan's first write, read from the nodes what it removes or overwrites and compare with the export.
+
+        One Get per element and model a destructive step changes (`jhmesh.plan.preflight_checks`: Model Subscription
+        Get, Model Publication Get), and a Scene Register Get per register in `registers`, one at a time, to the
+        battery nodes kept awake; compared with the export the plan was made from (`ExportStore.base`). A node that
+        no longer holds what the export says — the app changed it since the export, a device was reset, an earlier
+        plan stopped half-way — stops the plan before its first message (`service_preflight_differs`, naming the
+        node, the Get, both values and how many more differ): the plan would overwrite what the export does not
+        describe. A node that does not answer stops it as a plan step would (asleep, or no reply), before
+        anything was sent. `applied` is what the error says was done before (`set_threshold` writes the threshold
+        first). An action called with `force` skips all of it (`ExportStore.forced`).
+
+        A dry run reads the same and notes what it found in its answer (`ExportStore.preflight_found`) instead of
+        raising; without a link it notes every node as unanswered. Plans that only add (a Subscription Add, a
+        Model App Bind, a publication where the export records none) send no Get. Unverified on air.
+        """
+        if self.store.forced:
+            return
+        base = self.store.base
+        assert base is not None  # every plan is made on what `ExportStore.load` read
+        checks = [*preflight_checks(plan, base), *registers]
+        if not checks:
+            return
+        differences: list[Difference] = []
+        silent: list[int] = []
+        if self.store.dry and not self.hub.connected:
+            silent = list(dict.fromkeys(c.node for c in checks))
+        else:
+            async with self.hub.keep_awake.hold(c.element for c in checks):
+                for item in checks:
+                    if item.node in silent:
+                        continue
+                    reply = await self._read(item, applied)
+                    if reply is None:
+                        if not self.store.dry:
+                            raise _failure(
+                                self._silence(item.node),
+                                node=self.store.node_name(item.node),
+                                message=item.what,
+                                applied=applied,
+                            )
+                        silent.append(item.node)
+                    elif (found := item.compare(base, reply)) is not None:
+                        differences.append(found)
+        if self.store.dry:
+            self.store.preflight_found(
+                [
+                    d.as_dict() | {"node": self.store.node_name(d.node)}
+                    for d in differences
+                ],
+                [self.store.node_name(n) for n in silent],
+            )
+            return
+        if differences:
+            first = differences[0]
+            raise _failure(
+                "service_preflight_differs",
+                node=self.store.node_name(first.node),
+                message=first.what,
+                expected=", ".join(first.expected) or "-",
+                found=", ".join(first.found) or "-",
+                others=str(len(differences) - 1),
+                applied=applied,
+            )
+
+    async def _read(self, item: Check, applied: str) -> AccessMessage | None:
+        """Send one pre-flight Get and return its answer; None when the node stays silent (or, dry, out of reach).
+
+        A lost link, or a node the running hub has no device key for, stops a real run as it stops a plan step.
+        """
+        try:
+            if item.devkey:
+                return await self.hub.proxy.request_config(
+                    item.node,
+                    item.pdu,
+                    item.expect,
+                    timeout=CONFIG_TIMEOUT,
+                    retries=CONFIG_RETRIES,
+                    match=item.matches,
+                )
+            return await self.hub.proxy.request(
+                item.element,
+                item.pdu,
+                item.expect,
+                timeout=CONFIG_TIMEOUT,
+                retries=CONFIG_RETRIES,
+            )
+        except TimeoutError:
+            return None
+        except ValueError as err:
+            if self.store.dry:
+                return None
+            raise _failure(
+                "service_export_unknown_node",
+                node=self.store.node_name(item.node),
+                path=self.store.path,
+                applied=applied,
+            ) from err
+        except (ConnectionError, OSError) as err:
+            if self.store.dry:
+                return None
+            raise _failure(
+                "service_send_failed",
+                node=self.store.node_name(item.node),
+                message=item.what,
+                applied=applied,
+            ) from err
 
     def _silence(self, node: int) -> str:
         """Return the error key for a node that did not answer: *asleep* for a battery node (press a key, then run)."""

@@ -39,6 +39,8 @@ from .helpers import (
     UID_LIGHT_SWITCH,
     UID_SOCKET,
     entity_id,
+    export_model_status,
+    is_model_get,
 )
 from .test_services import Env, settled, subs
 
@@ -105,6 +107,12 @@ PUBLICATION_RESET = [
     C.model_publication_set(METER, 0, "1001", ttl=0),
     C.model_publication_set(METER, METER_GROUP, "1001"),
 ]
+# the pre-flight reads (review-4 brief 70) before the dimmer leaves the meter's group and the publication is reset
+READ_DIMMER_LEAVES = [
+    C.model_subscription_get(LIGHT_DIMMER, "1000"),
+    C.model_subscription_get(LIGHT_DIMMER, "05271013"),
+]
+READ_PUBLICATION = [C.model_publication_get(METER, "1001")]
 
 
 # --------------------------------------------------------------------------- which sockets have them
@@ -236,7 +244,8 @@ async def test_set_threshold_wires_and_writes(hass: HomeAssistant, env: Env) -> 
     assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "1000")
     assert METER_GROUP not in subs(pf, LIGHT_DIMMER, "05271013")
     assert METER_GROUP in subs(pf, LIGHT_SWITCH, "1000")
-    assert [pdu for _n, pdu in env.config_calls] == [  # additive steps first
+    assert [pdu for _n, pdu in env.config_calls] == [
+        *READ_DIMMER_LEAVES,  # the pre-flight reads, then the additive steps first
         C.model_subscription_add(LIGHT_SWITCH, METER_GROUP, "05271013"),
         C.model_subscription_add(LIGHT_SWITCH, METER_GROUP, "1000"),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
@@ -323,7 +332,8 @@ async def test_set_threshold_devices_edge_cases(hass: HomeAssistant, env: Env) -
     env.config_calls.clear()
     assert await configurator.set_threshold_devices(SOCKET, [])
     assert [pdu for _n, pdu in env.config_calls] == [
-        C.model_subscription_delete(LIGHT_SWITCH, METER_GROUP, "1000")
+        C.model_subscription_get(LIGHT_SWITCH, "1000"),
+        C.model_subscription_delete(LIGHT_SWITCH, METER_GROUP, "1000"),
     ]
     assert env.reload().publication(METER, "1001") == METER_GROUP
 
@@ -628,6 +638,8 @@ async def test_set_threshold_disabled_unwires_like_the_app(
     await settled(hass, env)
     assert sent == [
         admin_set(SWITCH_ON, P.Threshold(20.0, 5, False)),
+        *READ_DIMMER_LEAVES,
+        *READ_PUBLICATION,
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
         *PUBLICATION_RESET,
@@ -751,6 +763,8 @@ async def test_delete_threshold(hass: HomeAssistant, env: Env) -> None:
     assert sent == [
         admin_set(SWITCH_ON, T.CLEARED),
         admin_set(SWITCH_OFF, T.CLEARED),
+        *READ_DIMMER_LEAVES,
+        *READ_PUBLICATION,
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
         *PUBLICATION_RESET,
@@ -762,7 +776,10 @@ async def test_delete_threshold(hass: HomeAssistant, env: Env) -> None:
     env.config_calls.clear()
     await call(hass, "delete_threshold", {"entity_id": socket(hass)})
     assert env.hub is hub
-    assert [pdu for _n, pdu in env.config_calls] == PUBLICATION_RESET
+    assert [pdu for _n, pdu in env.config_calls] == [
+        *READ_PUBLICATION,
+        *PUBLICATION_RESET,
+    ]
 
 
 async def test_delete_threshold_unwires_what_the_app_wired(
@@ -777,6 +794,7 @@ async def test_delete_threshold_unwires_what_the_app_wired(
     await settled(hass, env)
     # the export's meter publishes nothing: no publication reset
     assert [pdu for _n, pdu in env.config_calls] == [
+        C.model_subscription_get(LIGHT_SWITCH, "05271013"),
         C.model_subscription_delete(LIGHT_SWITCH, METER_GROUP, "05271013"),
     ]
     pf = env.reload()
@@ -941,3 +959,48 @@ async def test_unbound_client_is_bound_first(hass: HomeAssistant, env: Env) -> N
     await settled(hass, env)
     assert C.model_app_bind(METER, "1001", 0) in [p for _n, p in env.config_calls]
     assert raw_model(env.reload().cdb.element(METER), "1001")["bind"] == [0]
+
+
+async def test_a_meter_the_app_rewired_stops_the_unwiring_and_force_runs_it(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-4 brief 70: `delete_threshold` reads the meter's publication before resetting it; one the app moved
+    stops the plan after the thresholds were cleared (written first, as the app does) and says so; `force` runs it."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_off",
+            "power": 5,
+            "duration": 300,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    answer = env.link.config_reply
+    assert answer is not None
+    read = C.model_publication_get(METER, "1001")
+
+    def moved(node: int, pdu: bytes) -> bytes | None:
+        if pdu == read:
+            env.config_calls.append((node, pdu))
+            return export_model_status(
+                env.path, pdu, publications={(METER, "1001"): 0xC0FE}
+            )
+        return answer(node, pdu)
+
+    env.link.config_reply = moved
+    env.config_calls.clear()
+    with pytest.raises(HomeAssistantError) as err:
+        await call(hass, "delete_threshold", {"entity_id": socket(hass)})
+    assert err.value.translation_key == "service_preflight_differs"
+    placeholders = err.value.translation_placeholders or {}
+    assert (placeholders["expected"], placeholders["found"]) == ("C001", "C0FE")
+    assert placeholders["applied"].startswith("Before it, the switch-on threshold")
+    assert not any(not is_model_get(pdu) for _n, pdu in env.config_calls)
+    await call(hass, "delete_threshold", {"entity_id": socket(hass), "force": True})
+    await settled(hass, env)
+    assert [pdu for _n, pdu in env.config_calls if not is_model_get(pdu)][-2:] == (
+        PUBLICATION_RESET
+    )

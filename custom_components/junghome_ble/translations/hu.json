@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "előhívta: {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Nincs elküldve: {node} a(z) {message} üzenetre ezt válaszolta: {found}, de a mesh-export szerint {expected} (további eltérések: {others}). A telepítés a mesh-export elkészülte után megváltozott (a JUNG HOME alkalmazásban, egy eszköz visszaállításával vagy egy korábbi, félúton leállt művelet miatt), és a terv felülírná azt, amit az export már nem ír le. Exportálja újra a projektet az alkalmazásból, vagy hagyja, hogy a Home Assistant átvegye az átjáró exportját, majd futtassa újra a műveletet; a `force` beállítással ellenőrzés nélkül fut. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Helyiség terület alapján",
           "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
         },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
+        },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Akkor is, ha egy gomb vezérli",
-          "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább."
+          "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
         },
         "room_area": {
           "name": "Helyiség terület alapján",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Helyiség terület alapján",
           "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
         },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
+        },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Jelenetentitás",
           "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
         },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
+        },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Gomb betűjele",
           "description": "Az eszköz melyik gombja: A, B, C vagy D; mini aktor bemeneténél E1 vagy E2."
         },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
+        },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Jelenetentitás",
           "description": "A jelenet nevének vagy számának begépelése helyett: a jelenet entitása."
+        },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Akkor is, ha egy eszköz nem válaszol",
-          "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát."
+          "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
         },
         "config_entry_id": {
           "name": "Mesh hálózat",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Eszközök",
           "description": "A lámpák és aljzatok, amelyeket mindkét küszöbérték kapcsol; a jelenlegi listát váltják fel, megadás nélkül a lista változatlan marad. Ha változik, a mesh-export újraíródik, és a Home Assistant az integráció újratöltése nélkül követi a változást."
+        },
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
         }
       }
     },
     "delete_threshold": {
       "name": "Küszöbérték törlése",
-      "description": "Törli egy JUNG HOME fogyasztásmérős aljzat mindkét küszöbértékét, és megszünteti az általuk kapcsolt lámpák és aljzatok összerendelését, ahogyan az alkalmazás törlése is. Ha eszközök összerendelése szűnt meg, a Home Assistant az integráció újratöltése nélkül követi az újraírt mesh-exportot. Kérésre visszaadja, hogy az eszközök hány összerendelési üzenetet alkalmaztak. Csak rendszergazdáknak."
+      "description": "Törli egy JUNG HOME fogyasztásmérős aljzat mindkét küszöbértékét, és megszünteti az általuk kapcsolt lámpák és aljzatok összerendelését, ahogyan az alkalmazás törlése is. Ha eszközök összerendelése szűnt meg, a Home Assistant az integráció újratöltése nélkül követi az újraírt mesh-exportot. Kérésre visszaadja, hogy az eszközök hány összerendelési üzenetet alkalmaztak. Csak rendszergazdáknak.",
+      "fields": {
+        "force": {
+          "name": "Akkor is, ha az eszközök eltérnek az exporttól",
+          "description": "A terv futtatása anélkül, hogy előbb kiolvasná az eszközökről, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak ha biztos, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
+        }
+      }
     },
     "audit_network": {
       "name": "Hálózat ellenőrzése",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Akkor is, ha nem válaszol",
-          "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik."
+          "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
         },
         "confirm": {
           "name": "Megerősítés",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Próbafuttatás",
-          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem küld, nem ír ki és nem vesz át az átjáróról."
+          "description": "Csak azt adja vissza, mit küldene és hogyan változna a mesh-export (kérje a választ); semmit nem ír ki és nem vesz át az átjáróról, és csak az eszközöket a mesh-exporttal összevető olvasásokat küldi el."
         }
       }
     },

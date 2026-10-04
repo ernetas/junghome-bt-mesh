@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "bola vyvolaná zariadením {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Neodoslané: {node} odpovedal na {message} hodnotou {found}, ale export mesh uvádza {expected} (ďalších rozdielov: {others}). Inštalácia sa po vytvorení exportu mesh zmenila (v aplikácii JUNG HOME, resetom zariadenia alebo skoršou akciou, ktorá sa zastavila v polovici) a plán by prepísal to, čo export už neopisuje. Exportujte projekt z aplikácie znova alebo nechajte Home Assistant prevziať export z brány a spustite akciu znova; s `force` prebehne bez tejto kontroly. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Miestnosť podľa oblasti",
           "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
         },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
+        },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Aj keď ho ovláda tlačidlo",
-          "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať."
+          "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Miestnosť podľa oblasti",
           "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
         },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
+        },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entita scény",
           "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
         },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
+        },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Písmeno tlačidla",
           "description": "Ktoré tlačidlo zariadenia: A, B, C alebo D; E1 alebo E2 pre vstup mini aktora."
         },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
+        },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entita scény",
           "description": "Namiesto zadania názvu alebo čísla scény: jej entita scény."
+        },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Aj keď zariadenie neodpovedá",
-          "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo."
+          "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
         },
         "config_entry_id": {
           "name": "Sieť mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Zariadenia",
           "description": "Svetlá a zásuvky, ktoré spínajú obe prahové hodnoty; nahradia aktuálny zoznam. Ak sa vynechajú, zoznam zostane. Pri zmene sa export mesh prepíše a Home Assistant ho prevezme bez opätovného načítania integrácie."
+        },
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
         }
       }
     },
     "delete_threshold": {
       "name": "Odstrániť prahové hodnoty",
-      "description": "Vymaže obe prahové hodnoty zásuvky JUNG HOME s meraním energie a odpojí svetlá a zásuvky, ktoré spínali, ako to robí odstránenie v aplikácii. Ak sa zariadenia odpojili, Home Assistant prevezme prepísaný export mesh bez opätovného načítania integrácie. Na požiadanie vráti, koľko správ prepojenia zariadenia prijali. Len pre správcov."
+      "description": "Vymaže obe prahové hodnoty zásuvky JUNG HOME s meraním energie a odpojí svetlá a zásuvky, ktoré spínali, ako to robí odstránenie v aplikácii. Ak sa zariadenia odpojili, Home Assistant prevezme prepísaný export mesh bez opätovného načítania integrácie. Na požiadanie vráti, koľko správ prepojenia zariadenia prijali. Len pre správcov.",
+      "fields": {
+        "force": {
+          "name": "Aj keď sa zariadenia líšia od exportu",
+          "description": "Spustiť plán bez toho, aby sa najprv zo zariadení načítalo, čo odstraňuje alebo nahrádza, a porovnalo s exportom mesh. Len ak je isté, že export mesh je správny. Zatiaľ neoverené na skutočných zariadeniach."
+        }
+      }
     },
     "audit_network": {
       "name": "Skontrolovať sieť",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Aj keď neodpovedá",
-          "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený."
+          "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
         },
         "confirm": {
           "name": "Potvrdiť",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Skúšobný beh",
-          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa neodošle, nezapíše ani neprevezme z brány."
+          "description": "Len vráti, čo by sa odoslalo a ako by sa zmenil export mesh (vyžiadajte si odpoveď); nič sa nezapíše ani neprevezme z brány a odošlú sa len čítania, ktoré porovnávajú zariadenia s exportom mesh."
         }
       }
     },

@@ -21,7 +21,15 @@ from custom_components.junghome_ble.thresholds import (
     write_threshold,
 )
 
-from .common import ONOFF_LOAD_TYPES, TARGETS_SCHEMA, _answer, _hub, _run, _validation
+from .common import (
+    _FORCE_FIELD,
+    ATTR_FORCE,
+    ONOFF_LOAD_TYPES,
+    _answer,
+    _hub,
+    _run,
+    _validation,
+)
 from .resolve import _device_of_entity, _resolve_loads
 
 if TYPE_CHECKING:
@@ -48,12 +56,16 @@ SET_THRESHOLD_SCHEMA = vol.All(
             ),
             vol.Optional("enabled"): cv.boolean,
             vol.Optional(ATTR_DEVICES): cv.entity_ids,
+            **_FORCE_FIELD,
             **cv.ENTITY_SERVICE_FIELDS,
         }
     ),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
 )
-DELETE_THRESHOLD_SCHEMA = TARGETS_SCHEMA
+DELETE_THRESHOLD_SCHEMA = vol.All(
+    vol.Schema({**_FORCE_FIELD, **cv.ENTITY_SERVICE_FIELDS}),
+    cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+)
 
 
 # ------------------------------------------------------------------ thresholds
@@ -164,7 +176,9 @@ async def _set_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
                 progress.finish(address)
             return changed
 
-        results.append(await _run(hass, entry_id, operation))
+        results.append(
+            await _run(hass, entry_id, operation, force=call.data[ATTR_FORCE])
+        )
     return _answer(call, results)
 
 
@@ -193,5 +207,7 @@ async def _delete_threshold(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
                 progress.finish(address)
             return changed
 
-        results.append(await _run(hass, entry_id, operation))
+        results.append(
+            await _run(hass, entry_id, operation, force=call.data[ATTR_FORCE])
+        )
     return _answer(call, results)

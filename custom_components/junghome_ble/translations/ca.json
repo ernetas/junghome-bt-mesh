@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "l'ha activat {device}"
+    },
+    "service_preflight_differs": {
+      "message": "No s'ha enviat: {node} ha respost a {message} amb {found}, però l'exportació del mesh diu {expected} ({others} diferències més). La instal·lació ha canviat després de fer l'exportació del mesh (a l'aplicació JUNG HOME, per un restabliment d'un dispositiu o per una acció anterior que es va aturar a mitges), i el pla sobreescriuria el que l'exportació ja no descriu. Torna a exportar el projecte des de l'aplicació, o deixa que Home Assistant adopti l'exportació de la passarel·la, i torna a executar l'acció; amb `force` s'executa sense aquesta comprovació. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Habitació per àrea",
           "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
         },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
+        },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Fins i tot si una tecla el controla",
-          "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo."
+          "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
         },
         "room_area": {
           "name": "Habitació per àrea",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Habitació per àrea",
           "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
         },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
+        },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entitat d'escena",
           "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
         },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
+        },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Lletra de la tecla",
           "description": "Quina tecla del dispositiu: A, B, C o D; E1 o E2 per a una entrada d'un actuador mini."
         },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
+        },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entitat d'escena",
           "description": "En lloc d'escriure el nom o el número de l'escena: la seva entitat d'escena."
+        },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Fins i tot si un dispositiu no respon",
-          "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número."
+          "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
         },
         "config_entry_id": {
           "name": "Xarxa mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Dispositius",
           "description": "Els llums i els endolls que commuten tots dos llindars, en substitució de la llista actual; si s'omet, la llista es manté. L'exportació del mesh es reescriu quan canvia, i Home Assistant la segueix sense tornar a carregar la integració."
+        },
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
         }
       }
     },
     "delete_threshold": {
       "name": "Elimina el llindar",
-      "description": "Esborra tots dos llindars d'un endoll JUNG HOME amb mesura i desvincula els llums i els endolls que commutaven, com fa l'eliminació de l'aplicació. Home Assistant segueix l'exportació del mesh reescrita sense tornar a carregar la integració quan s'han desvinculat dispositius. Respon, quan se li demana, quants dels missatges de vinculació han aplicat els dispositius. Només per a administradors."
+      "description": "Esborra tots dos llindars d'un endoll JUNG HOME amb mesura i desvincula els llums i els endolls que commutaven, com fa l'eliminació de l'aplicació. Home Assistant segueix l'exportació del mesh reescrita sense tornar a carregar la integració quan s'han desvinculat dispositius. Respon, quan se li demana, quants dels missatges de vinculació han aplicat els dispositius. Només per a administradors.",
+      "fields": {
+        "force": {
+          "name": "Encara que els dispositius difereixin de l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
+        }
+      }
     },
     "audit_network": {
       "name": "Audita la xarxa",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Fins i tot si no respon",
-          "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell."
+          "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
         },
         "confirm": {
           "name": "Confirma",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Simulació",
-          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'envia, s'escriu ni s'adopta res de la passarel·la."
+          "description": "Només respon què s'enviaria i com canviaria l'exportació del mesh (demana la resposta); no s'escriu ni s'adopta res de la passarel·la, i només s'envien les lectures que comparen els dispositius amb l'exportació del mesh."
         }
       }
     },

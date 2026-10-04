@@ -18,6 +18,10 @@ set_room:
       default: false
       selector:
         boolean:
+    force:
+      default: false
+      selector:
+        boolean:
     dry_run:
       default: false
       selector:
@@ -117,6 +121,10 @@ delete_room:
     room_area:
       selector:
         area:
+    force:
+      default: false
+      selector:
+        boolean:
     dry_run:
       default: false
       selector:
@@ -211,6 +219,10 @@ assign_key:
           max: 65535
           mode: box
           unit_of_measurement: s
+    force:
+      default: false
+      selector:
+        boolean:
     dry_run:
       default: false
       selector:
@@ -240,6 +252,10 @@ clear_key:
             - "D"
             - "E1"
             - "E2"
+    force:
+      default: false
+      selector:
+        boolean:
     dry_run:
       default: false
       selector:
@@ -368,6 +384,10 @@ remove_from_scene:
         entity:
           integration: junghome_ble
           domain: scene
+    force:
+      default: false
+      selector:
+        boolean:
 
 delete_scene:
   fields:
@@ -759,6 +779,10 @@ set_threshold:
           domain:
             - light
             - switch
+    force:
+      default: false
+      selector:
+        boolean:
 
 delete_threshold:
   target:
@@ -766,6 +790,11 @@ delete_threshold:
       integration: junghome_ble
       domain:
         - switch
+  fields:
+    force:
+      default: false
+      selector:
+        boolean:
 
 audit_network:
   fields:

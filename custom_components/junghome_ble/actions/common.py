@@ -53,6 +53,8 @@ ATTR_ROOM_AREA = "room_area"  # the room named like this area, instead of `room`
 ATTR_SCENE_ENTITY = (
     "scene_entity"  # the scene behind this scene entity, instead of `scene`
 )
+# skips a check: the pre-flight comparison of the nodes with the export (every destructive action), and the
+# action's own refusal where it has one (`remove_from_room`, `delete_scene`, `remove_device`)
 ATTR_FORCE = "force"
 ATTR_DRY_RUN = "dry_run"
 # what cannot be undone asks for it explicitly: `remove_device`, `delete_scene` with `force`
@@ -81,6 +83,10 @@ CONFIGURATORS: HassKey[dict[str, MeshConfigurator]] = HassKey(f"{DOMAIN}_mesh_co
 _ENTRY_FIELD: dict[str | vol.Marker, Any] = {vol.Optional(ATTR_CONFIG_ENTRY): cv.string}
 _DRY_RUN_FIELD: dict[str | vol.Marker, Any] = {
     vol.Optional(ATTR_DRY_RUN, default=False): cv.boolean
+}
+# the destructive actions without a `force` of their own: it skips the pre-flight comparison only
+_FORCE_FIELD: dict[str | vol.Marker, Any] = {
+    vol.Optional(ATTR_FORCE, default=False): cv.boolean
 }
 # a room by name or by the area named like it; a scene by name / number or by its scene entity
 _ROOM_FIELDS: dict[str | vol.Marker, Any] = {
@@ -200,6 +206,7 @@ async def _run(
     needs_link: bool = True,
     reload: bool = False,
     scenes: bool = False,
+    force: bool = False,
 ) -> dict[str, Any]:
     """Run `operation` on the entry's configurator, then have the hub follow the export when the device model changed.
 
@@ -211,7 +218,9 @@ async def _run(
     BLE connect takes.
 
     Answers what the call's plans did (`MeshConfigurator.plan_response`); a call that ran one is reported
-    (`_report_plan`: the logbook, the diagnostics, and the error's placeholders when it stopped).
+    (`_report_plan`: the logbook, the diagnostics, and the error's placeholders when it stopped). `force`: the
+    call's `force` field — its plans skip the pre-flight comparison of the nodes with the export
+    (`PlanExecutor.preflight`).
     """
     async with _lock(hass, entry_id):
         configurator = _configurator(hass, entry_id)
@@ -221,7 +230,8 @@ async def _run(
         configurator.recorded = configurator.adopted = False
         configurator.outcome = PlanOutcome()
         try:
-            changed = await operation(configurator)
+            with configurator.forcing(force):
+                changed = await operation(configurator)
         except BaseException as err:
             _report_plan(hass, entry_id, configurator, err)
             # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one: the
@@ -248,8 +258,11 @@ async def _execute(
 ) -> dict[str, Any]:
     """`_run` the operation, or with `dry_run` only plan it (`MeshConfigurator.dry_run`), under the entry's lock.
 
-    A dry run sends, writes and adopts nothing, so it neither waits for the link nor has anything to follow.
+    A dry run writes and adopts nothing, and sends nothing but the pre-flight reads of a destructive plan
+    (`PlanExecutor.preflight`), so it neither waits for the link nor has anything to follow; without a link it
+    answers those reads as unanswered. The call's `force` skips them, as in a real run.
     """
+    force = bool(call.data.get(ATTR_FORCE))
     if not call.data.get(ATTR_DRY_RUN):
         return await _run(
             hass,
@@ -258,9 +271,12 @@ async def _execute(
             needs_link=needs_link,
             reload=reload,
             scenes=scenes,
+            force=force,
         )
     async with _lock(hass, entry_id):
-        return await _configurator(hass, entry_id).dry_run(operation)
+        configurator = _configurator(hass, entry_id)
+        with configurator.forcing(force):
+            return await configurator.dry_run(operation)
 
 
 def _answer(call: ServiceCall, results: list[dict[str, Any]]) -> ServiceResponse:

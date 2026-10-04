@@ -89,7 +89,7 @@ from custom_components.junghome_ble.mesh_config import (
 )
 
 from .conftest import CDB_PATH, META_DIR
-from .helpers import NODE_LIGHT_CTL
+from .helpers import NODE_LIGHT_CTL, export_model_status, is_model_get
 from .jhmesh.conftest import FakeBleak, FastAsyncio
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -139,6 +139,14 @@ def sub_del(element: int, address: int, model: str) -> bytes:
     return C.model_subscription_delete(element, address, model)
 
 
+def pub_get(element: int, model: str) -> bytes:
+    return C.model_publication_get(element, model)
+
+
+def sub_get(element: int, model: str) -> bytes:
+    return C.model_subscription_get(element, model)
+
+
 def admin_set(prop: int, value: bytes, *, ack: bool = True) -> bytes:
     return M.vendor_property_set("admin", prop, value, ack=ack)
 
@@ -174,6 +182,11 @@ class ConfigServer:
         self.seen: list[tuple[int, bytes]] = []
         self.last: tuple[int, bytes] | None = None
         self.on_request: Callable[[int, bytes], bool] | None = None
+        # the pre-flight reads (review-4 brief 70): a node holds what the export on disk says, unless these say
+        # otherwise for an (element, model id)
+        self.export: Path | None = None
+        self.subscriptions: dict[tuple[int, str], list[int]] = {}
+        self.publications: dict[tuple[int, str], int] = {}
 
     def __call__(self, node: int, access: bytes) -> bytes | None:
         self.seen.append((node, access))
@@ -192,6 +205,15 @@ class ConfigServer:
             )
         if access in self.silent:
             return None
+        if self.export is not None and (
+            held := export_model_status(
+                self.export,
+                access,
+                subscriptions=self.subscriptions,
+                publications=self.publications,
+            )
+        ):
+            return held
         op, _cid, params = decode_opcode(access)
         status = self.refuse.get(access, C.STATUS_SUCCESS)
         reply = encode_opcode(STATUS_FOR[op]) + bytes([status]) + params
@@ -420,11 +442,23 @@ class Bench:
             (dst, access) for _src, dst, _ttl, _seq, access in self.link.sent_config()
         ]
 
+    def config_writes(self) -> list[tuple[int, bytes]]:
+        """`config_pdus` without the pre-flight reads (Model Publication / Subscription Gets, review-4 brief 70)."""
+        return [
+            (dst, access)
+            for dst, access in self.config_pdus()
+            if not is_model_get(access)
+        ]
+
     def app_pdus(self) -> list[tuple[int, bytes]]:
         """(element, access pdu) of every AppKey message sent, in order."""
         return [
             (dst, access) for _src, dst, _ttl, _seq, access in self.link.sent_access()
         ]
+
+    def app_writes(self) -> list[tuple[int, bytes]]:
+        """`app_pdus` without the Scene Register Gets (a scene plan's pre-flight reads among them, brief 70)."""
+        return [(dst, a) for dst, a in self.app_pdus() if a != M.scene_register_get()]
 
     def file_unchanged(self) -> bool:
         return self.path.read_bytes() == self.original
@@ -478,6 +512,7 @@ async def make_bench(
     link = FakeBleak(cdb)
     link.auto_ack()
     config = ConfigServer(link)
+    config.export = path
     link.auto_config(config)
     keys = KeyServer(link, answer_sets=answer_sets)
     proxy = ProxyClient(cdb, LocalState(None, OUR_SRC))
@@ -555,6 +590,28 @@ UNLISTEN_ROCKER_A = [  # what is left of the clear once the key's clients publis
     (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "1001")),
     (DALI_NODE, sub_del(ROCKER_A, DALI_GROUP, "05271015")),
 ]
+# The pre-flight reads (review-4 brief 70) before 0234 is taken off C044: rewired, the publications its new wiring
+# replaces go first (with the additions), then the subscriptions it drops; ...
+READ_ROCKER_A = [
+    (DALI_NODE, pub_get(ROCKER_A, "1001")),
+    (DALI_NODE, pub_get(ROCKER_A, "05271015")),
+    (DALI_NODE, sub_get(ROCKER_A, "1001")),
+    (DALI_NODE, sub_get(ROCKER_A, "05271015")),
+]
+# ... cleared, model by model; ...
+READ_CLEAR_ROCKER_A = [
+    (DALI_NODE, pub_get(ROCKER_A, "1001")),
+    (DALI_NODE, sub_get(ROCKER_A, "1001")),
+    (DALI_NODE, pub_get(ROCKER_A, "05271015")),
+    (DALI_NODE, sub_get(ROCKER_A, "05271015")),
+]
+# ... in a mode without the OnOff client (gateway, lock, move): the vendor client's replaced publication first
+READ_ROCKER_A_VENDOR_FIRST = [
+    (DALI_NODE, pub_get(ROCKER_A, "05271015")),
+    (DALI_NODE, pub_get(ROCKER_A, "1001")),
+    (DALI_NODE, sub_get(ROCKER_A, "1001")),
+    (DALI_NODE, sub_get(ROCKER_A, "05271015")),
+]
 WIRE_ROCKER_A_TO_DIMMER = [  # Publication Set + Subscription Add per client model of the light key mode
     (DALI_NODE, pub_set(ROCKER_A, DIMMER_GROUP, "1001")),
     (DALI_NODE, sub_add(ROCKER_A, DIMMER_GROUP, "1001")),
@@ -577,10 +634,16 @@ async def test_assign_key_to_a_dimmer_sends_the_apps_light_mode_sequence(
     assert bench.app_pdus() == [(ROCKER_A, p) for p in RESET_PROPERTY_MODE] + [
         (ROCKER_A, admin_set(0x5003, b"\x00"))
     ]
-    # DevKey: the new wiring first, the old subscriptions last
-    assert bench.config_pdus() == [*WIRE_ROCKER_A_TO_DIMMER, *UNLISTEN_ROCKER_A]
+    # DevKey: the pre-flight reads of what it replaces, the new wiring, the old subscriptions last
+    assert bench.config_pdus() == [
+        *READ_ROCKER_A,
+        *WIRE_ROCKER_A_TO_DIMMER,
+        *UNLISTEN_ROCKER_A,
+    ]
     # byte-exact Publication Set: element, address, appkey 0 / master credentials, TTL 0xFF, no period, no retransmit
-    assert bench.config_pdus()[0][1] == bytes.fromhex("03 3402 70c0 0000 ff 00 00 0110")
+    assert bench.config_writes()[0][1] == bytes.fromhex(
+        "03 3402 70c0 0000 ff 00 00 0110"
+    )
     assert bench.keys.modes == {ROCKER_A: b"\x00"}
     # the file: written after everything succeeded, round-trips, and only the key element changed
     pf = bench.reload()
@@ -630,6 +693,7 @@ async def test_assign_key_to_a_socket_wires_the_property_user_publications(
     await bench.configurator.assign_key(ROCKER_A, element=SOCKET_NODE, mode="switch")
     # the socket's User Property servers already publish to their element groups: only the extra subscriptions
     assert bench.config_pdus() == [
+        *READ_ROCKER_A,
         (DALI_NODE, sub_add(ROCKER_A, SOCKET_GROUP, "1001")),
         (DALI_NODE, sub_add(ROCKER_A, SOCKET_GROUP, "05271015")),
         (DALI_NODE, sub_add(ROCKER_A, SENSOR_GROUP, "1001")),
@@ -647,6 +711,7 @@ async def test_assign_key_to_the_gateway_uses_key_mode_6(bench: Bench) -> None:
     await bench.configurator.assign_key(ROCKER_A, element=GATEWAY)
     # the OnOff client is not part of the gateway mode: its publication is really cleared
     assert bench.config_pdus() == [
+        *READ_ROCKER_A_VENDOR_FIRST,
         (DALI_NODE, pub_set(ROCKER_A, GATEWAY_GROUP, "05271015")),
         (DALI_NODE, sub_add(ROCKER_A, GATEWAY_GROUP, "05271015")),
         (DALI_NODE, pub_set(ROCKER_A, 0x0000, "1001")),
@@ -752,6 +817,7 @@ async def test_move_mode_is_accepted_but_flagged_untested(
     await bench.configurator.assign_key(ROCKER_A, element=DALI_LOAD + 1, mode="move")
     assert "never been tried" in caplog.text
     assert bench.config_pdus() == [
+        *READ_ROCKER_A_VENDOR_FIRST,
         (DALI_NODE, pub_set(ROCKER_A, 0xC04E, "1003")),
         (DALI_NODE, sub_add(ROCKER_A, 0xC04E, "1003")),
         (DALI_NODE, pub_set(ROCKER_A, 0xC04E, "05271015")),
@@ -788,6 +854,7 @@ async def test_assign_key_to_a_tw_lights_colour_temperature(
     )
     assert "on the color_temperature element" in caplog.text
     assert bench.config_pdus() == [
+        *READ_CLEAR_ROCKER_A,
         (DALI_NODE, pub_set(ROCKER_A, 0xC04E, "1003")),
         (DALI_NODE, sub_add(ROCKER_A, 0xC04E, "1003")),
         *CLEAR_ROCKER_A,
@@ -807,6 +874,10 @@ async def test_assign_key_to_a_blinds_slats(tmp_path: Path, fast: FastAsyncio) -
     key, slat_group, old_group = 0x0701, 0xC0A1, 0xC0B0
     await bench.configurator.assign_key(key, element=0x0600, target_element="slat")
     assert bench.config_pdus() == [
+        (0x0700, pub_get(key, "1001")),
+        (0x0700, sub_get(key, "1001")),
+        (0x0700, pub_get(key, "05271015")),
+        (0x0700, sub_get(key, "05271015")),
         (0x0700, pub_set(key, slat_group, "1003")),
         (0x0700, sub_add(key, slat_group, "1003")),
         (0x0700, pub_set(key, 0x0000, "1001")),
@@ -876,6 +947,7 @@ async def test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence(
     )
     assert "'lock' has never been tried" in caplog.text
     assert bench.config_pdus() == [
+        *READ_ROCKER_A_VENDOR_FIRST,
         (DALI_NODE, pub_set(ROCKER_A, 0xC061, "05271015")),
         (DALI_NODE, sub_add(ROCKER_A, 0xC061, "05271015")),
         (DALI_NODE, pub_set(ROCKER_A, 0x0000, "1001")),
@@ -907,6 +979,7 @@ async def test_a_lock_link_to_a_socket_wires_the_property_user_publications(
     limit means `02 01 00 00`."""
     await bench.configurator.assign_key(ROCKER_A, element=SOCKET_NODE, mode="lock")
     assert bench.config_pdus() == [
+        *READ_ROCKER_A_VENDOR_FIRST,
         (DALI_NODE, sub_add(ROCKER_A, SOCKET_GROUP, "05271015")),
         (DALI_NODE, sub_add(ROCKER_A, SENSOR_GROUP, "05271015")),
         (DALI_NODE, pub_set(ROCKER_A, SOCKET_GROUP, "05271015")),
@@ -925,6 +998,7 @@ async def test_assign_key_to_a_mini_actuator_wires_both_channels_property_users(
     group of every element of the puck, both channels (C080, C081)."""
     await bench.configurator.assign_key(ROCKER_A, element=ACTUATOR_OUT1)
     assert bench.config_pdus() == [
+        *READ_ROCKER_A,
         (DALI_NODE, sub_add(ROCKER_A, 0xC080, "1001")),
         (DALI_NODE, sub_add(ROCKER_A, 0xC080, "05271015")),
         (DALI_NODE, sub_add(ROCKER_A, 0xC081, "1001")),
@@ -1181,6 +1255,7 @@ async def test_assign_key_to_a_scene_sends_the_apps_scene_sequence(
     assert await bench.configurator.assign_key(ROCKER_A, scene="All off") is True
     assert "never been tried" in caplog.text
     assert bench.config_pdus() == [
+        *READ_CLEAR_ROCKER_A,
         (DALI_NODE, pub_set(ROCKER_A, 0xFFFF, "1205")),
         *CLEAR_ROCKER_A,
     ]
@@ -1374,6 +1449,7 @@ async def test_assign_key_to_a_room_wires_the_rooms_lamps_to_the_keys_group(
     the rocker publishes there, and the link is cached in `meta` for the app."""
     await bench.configurator.assign_key(ROCKER_A, room="wc")  # case-insensitive
     assert bench.config_pdus() == [
+        *READ_ROCKER_A,
         *WIRE_ROCKER_A_TO_WC,
         *UNLISTEN_ROCKER_A,
     ]
@@ -1484,6 +1560,17 @@ async def test_room_link_on_a_raw_cdb_warns_that_meta_is_not_written(
 
 # ----------------------------------------------------------------------------- clear
 
+# the pre-flight reads before the WC-linked dimmer key 0301 is cleared: the room's loads it drives, then the key
+READ_CLEAR_DIMMER_KEY = [
+    (SWITCH_NODE, sub_get(SWITCH_LOAD, "1000")),
+    (DIMMER_NODE, sub_get(DIMMER_LOAD, "1000")),
+    (DIMMER_NODE, sub_get(DIMMER_LOAD, "1002")),
+    (DIMMER_NODE, pub_get(DIMMER_KEY, "1001")),
+    (DIMMER_NODE, sub_get(DIMMER_KEY, "1001")),
+    (DIMMER_NODE, pub_get(DIMMER_KEY, "05271015")),
+    (DIMMER_NODE, sub_get(DIMMER_KEY, "05271015")),
+]
+
 
 async def test_clear_key_drops_publications_subscriptions_and_the_room_link(
     bench: Bench,
@@ -1492,6 +1579,7 @@ async def test_clear_key_drops_publications_subscriptions_and_the_room_link(
     KeyMode is not touched (no AppKey message at all), the `meta` row goes."""
     assert await bench.configurator.clear_key(DIMMER_KEY) is True
     assert bench.config_pdus() == [
+        *READ_CLEAR_DIMMER_KEY,
         (SWITCH_NODE, sub_del(SWITCH_LOAD, DIMMER_KEY_GROUP, "1000")),
         (DIMMER_NODE, sub_del(DIMMER_LOAD, DIMMER_KEY_GROUP, "1000")),
         (DIMMER_NODE, sub_del(DIMMER_LOAD, DIMMER_KEY_GROUP, "1002")),
@@ -1500,7 +1588,9 @@ async def test_clear_key_drops_publications_subscriptions_and_the_room_link(
         (DIMMER_NODE, pub_set(DIMMER_KEY, 0x0000, "05271015")),
         (DIMMER_NODE, sub_del(DIMMER_KEY, DIMMER_KEY_GROUP, "05271015")),
     ]
-    assert bench.config_pdus()[3][1] == bytes.fromhex("03 0103 0000 0000 ff 00 00 0110")
+    assert bench.config_writes()[3][1] == bytes.fromhex(
+        "03 0103 0000 0000 ff 00 00 0110"
+    )
     assert bench.app_pdus() == []
     pf = bench.reload()
     assert pub(pf, DIMMER_KEY, "1001") is None
@@ -1520,7 +1610,7 @@ async def test_clear_key_drops_publications_subscriptions_and_the_room_link(
 
 async def test_clear_key_of_a_device_link(bench: Bench) -> None:
     await bench.configurator.clear_key(ROCKER_A)
-    assert bench.config_pdus() == CLEAR_ROCKER_A
+    assert bench.config_pdus() == [*READ_CLEAR_ROCKER_A, *CLEAR_ROCKER_A]
     pf = bench.reload()
     assert pub(pf, ROCKER_A, "1001") is None
     assert subs(pf, ROCKER_A, "05271015") == []
@@ -1560,7 +1650,7 @@ async def test_clear_key_leaves_virtual_and_fixed_group_subscriptions_alone(
 
     bench = await prepare(tmp_path, "virtual", lambda doc: edited_network(doc, edit))
     assert await bench.configurator.clear_key(ROCKER_A) is True
-    assert bench.config_pdus() == CLEAR_ROCKER_A
+    assert bench.config_pdus() == [*READ_CLEAR_ROCKER_A, *CLEAR_ROCKER_A]
     raw = raw_model(bench.reload().cdb.element(ROCKER_A), "1001")  # type: ignore[arg-type]
     assert raw["subscribe"] == [label, "8123", "FFFD"]
     assert caplog.text.count("cannot be removed from here") == 3
@@ -1594,13 +1684,26 @@ async def test_socket_target_binds_the_property_server_before_its_publication(
 
 # ----------------------------------------------------------------------------- rooms
 
+# the pre-flight reads before a load leaves its room: every model carrying it but the Scene Servers
+READ_DALI_LEAVES = [
+    (DALI_NODE, sub_get(DALI_LOAD, m))
+    for m in ("1000", "1002", "1300", "1301", "1303", "1304")
+]
+
+
+def read_leaving_kitchen(node: int, element: int) -> list[tuple[int, bytes]]:
+    """The pre-flight reads before a switched load leaves Kitchen."""
+    return [(node, sub_get(element, m)) for m in ("1000", "1004", "1006", "1007")]
+
 
 async def test_set_room_moves_a_load_between_rooms(bench: Bench) -> None:
     """The DALI light leaves Living room and joins WC — which also wires it to the WC-linked dimmer key."""
     assert await bench.configurator.set_room(DALI_LOAD, "WC") is True
-    # joining first: the OnOff / Level servers, then the same for the WC-linked key's publish group;
-    # leaving last: every server that carried the old room (app-provisioned loads have them all on it)
+    # the pre-flight reads of the models leaving the old room (not the Scene Servers: phantom entries); joining
+    # first: the OnOff / Level servers, then the same for the WC-linked key's publish group; leaving last: every
+    # server that carried the old room (app-provisioned loads have them all on it)
     assert bench.config_pdus() == [
+        *READ_DALI_LEAVES,
         (DALI_NODE, sub_add(DALI_LOAD, WC, "1000")),
         (DALI_NODE, sub_add(DALI_LOAD, WC, "1002")),
         (DALI_NODE, sub_add(DALI_LOAD, DIMMER_KEY_GROUP, "1000")),
@@ -1610,7 +1713,7 @@ async def test_set_room_moves_a_load_between_rooms(bench: Bench) -> None:
             for m in ("1000", "1002", "1300", "1301", "1303", "1304", "1203", "1204")
         ],
     ]
-    assert bench.config_pdus()[0][1] == bytes.fromhex("801b 3202 0fc0 0010")
+    assert bench.config_writes()[0][1] == bytes.fromhex("801b 3202 0fc0 0010")
     pf = bench.reload()
     assert subs(pf, DALI_LOAD, "1000") == [DALI_GROUP, LAMPS, WC, DIMMER_KEY_GROUP]
     assert subs(pf, DALI_LOAD, "1002") == [DALI_GROUP, LAMPS, WC, DIMMER_KEY_GROUP]
@@ -1646,6 +1749,7 @@ async def test_set_room_creates_a_missing_room(bench: Bench) -> None:
         "icon": "ic_group_ground_plan",
     }
     assert bench.config_pdus() == [
+        *read_leaving_kitchen(SOCKET_NODE, SOCKET_NODE),
         (SOCKET_NODE, sub_add(SOCKET_NODE, NEW_ROOM, "1000")),
         *[
             (SOCKET_NODE, sub_del(SOCKET_NODE, KITCHEN, m))
@@ -1670,6 +1774,7 @@ async def test_set_room_on_a_raw_cdb_writes_the_cdb_flavour(
     bench = await make_bench(tmp_path, Path(CDB_PATH), META_DIR)
     await bench.configurator.set_room(ACTUATOR_OUT2, "WC")
     assert bench.config_pdus() == [
+        *read_leaving_kitchen(ACTUATOR_NODE, ACTUATOR_OUT2),
         (ACTUATOR_NODE, sub_add(ACTUATOR_OUT2, WC, "1000")),
         *[
             (ACTUATOR_NODE, sub_del(ACTUATOR_OUT2, KITCHEN, m))
@@ -1746,9 +1851,12 @@ async def test_remove_from_room_leaves_the_other_rooms(bench: Bench) -> None:
     mark = len(bench.config_pdus())
     assert await bench.configurator.remove_from_room(DALI_LOAD, "Living room") is True
     assert bench.config_pdus()[mark:] == [
-        (DALI_NODE, sub_del(DALI_LOAD, LIVING, m)) for m in LIVING_MODELS
+        *READ_DALI_LEAVES,
+        *[(DALI_NODE, sub_del(DALI_LOAD, LIVING, m)) for m in LIVING_MODELS],
     ]
-    assert bench.config_pdus()[mark:][0][1] == bytes.fromhex("801c 3202 10c0 0010")
+    assert bench.config_pdus()[mark:][len(READ_DALI_LEAVES)][1] == bytes.fromhex(
+        "801c 3202 10c0 0010"
+    )
     pf = bench.reload()
     assert subs(pf, DALI_LOAD, "1000") == [DALI_GROUP, LAMPS, WC, DIMMER_KEY_GROUP]
     assert subs(pf, DALI_LOAD, "1300") == [DALI_GROUP, LAMPS]
@@ -1798,7 +1906,7 @@ async def test_remove_from_room_refuses_a_load_a_room_linked_key_drives(
         await bench.configurator.remove_from_rooms([DALI_LOAD, SWITCH_LOAD], "WC")
     assert bench.config_pdus() == []
     assert await bench.configurator.remove_from_room(SWITCH_LOAD, "WC", force=True)
-    pdus = bench.config_pdus()
+    pdus = bench.config_writes()
     assert pdus[0] == (SWITCH_NODE, sub_del(SWITCH_LOAD, DIMMER_KEY_GROUP, "1000"))
     assert len(pdus) > 1
     assert all(
@@ -1976,6 +2084,11 @@ async def test_delete_room_unwires_members_and_linked_keys(bench: Bench) -> None
     """WC holds 0148 and 0300 and is linked to the dimmer key 0301: the key is cleared, the members leave."""
     await bench.configurator.delete_room("WC")
     assert bench.config_pdus() == [
+        # the pre-flight reads: the linked key's, then the members' models that leave the room (the subscription
+        # to 1000 read once), no Scene Server
+        *READ_CLEAR_DIMMER_KEY,
+        *[(SWITCH_NODE, sub_get(SWITCH_LOAD, m)) for m in ("1004", "1006", "1007")],
+        *[(DIMMER_NODE, sub_get(DIMMER_LOAD, m)) for m in ("1300", "1301")],
         # RemoveConnectionForAddress.GroupConnection + AllConnections on the linked key
         (SWITCH_NODE, sub_del(SWITCH_LOAD, DIMMER_KEY_GROUP, "1000")),
         (DIMMER_NODE, sub_del(DIMMER_LOAD, DIMMER_KEY_GROUP, "1000")),
@@ -2021,7 +2134,10 @@ async def test_a_refused_config_status_stops_the_plan_and_records_what_was_appli
         "status": "Not a Subscribe Model",
         "applied": mc.applied_text(3, 8),
     }
-    assert bench.config_pdus() == [*WIRE_ROCKER_A_TO_DIMMER[:4]]  # nothing after it
+    assert bench.config_pdus() == [
+        *READ_ROCKER_A,
+        *WIRE_ROCKER_A_TO_DIMMER[:4],
+    ]  # nothing after it
     assert bench.app_pdus() == []  # the reset and KeyMode only follow a complete plan
     assert bench.keys.modes == {}
     # the file holds what the mesh holds: the three accepted steps, nothing of the rest
@@ -2256,7 +2372,10 @@ async def test_a_malformed_config_status_counts_as_a_refusal(
     bench: Bench, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(C, "decode_config", lambda _op, _p: None)
-    with pytest.raises(HomeAssistantError) as exc:
+    with (
+        bench.configurator.forcing(True),  # the plan's statuses, not the pre-flight's
+        pytest.raises(HomeAssistantError) as exc,
+    ):
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_key == "service_config_refused"
     assert exc.value.translation_placeholders["status"] == "malformed status"
@@ -2270,7 +2389,10 @@ async def test_a_short_config_status_counts_as_a_refusal(
         raise ValueError("short")
 
     monkeypatch.setattr(C, "decode_config", truncated)
-    with pytest.raises(HomeAssistantError) as exc:
+    with (
+        bench.configurator.forcing(True),  # the plan's statuses, not the pre-flight's
+        pytest.raises(HomeAssistantError) as exc,
+    ):
         await bench.configurator.set_room(DALI_LOAD, "WC")
     assert exc.value.translation_placeholders["status"] == "malformed status"
 
@@ -2347,15 +2469,16 @@ async def test_key_mode_status_for_another_property_triggers_the_read_back(
 async def test_a_lost_link_surfaces_as_send_failed(bench: Bench) -> None:
     bench.link.write_error = ConnectionError("gone")
     for op, message in (
-        (
+        (  # the first pre-flight read is what the link loses
             bench.configurator.assign_key(ROCKER_A, element=DIMMER_LOAD),
-            (
-                "Config Model Publication Set elem=0234 publish=C070 model=1001 appkey=0 cred=0 ttl=255 "
-                "period=0/0 retx=0/0"
-            ),
+            "Config Model Publication Get elem=0234 model=1001",
         ),
         (
             bench.configurator.set_room(DALI_LOAD, "WC"),
+            "Config SIG Model Subscription Get elem=0232 model=1000",
+        ),
+        (
+            bench.configurator.add_to_room(DALI_LOAD, "WC"),  # nothing to read first
             "Config Model Subscription Add elem=0232 address=C00F model=1000",
         ),
     ):
@@ -2381,7 +2504,7 @@ async def test_a_lost_link_during_the_key_mode_write(bench: Bench) -> None:
             data[1:]
             and bench.link.net_pdus
             and len(bench.link.sent_access()) >= 3
-            and len(bench.config_pdus()) >= 8
+            and len(bench.config_writes()) >= 8
         ):
             raise ConnectionError("gone")
         await original(char, data, response)
@@ -2406,7 +2529,7 @@ async def test_a_lost_link_during_the_property_mode_reset(bench: Bench) -> None:
     original = bench.link.write_gatt_char
 
     async def flaky(char: str, data: bytes, response: bool | None = None) -> None:
-        if data[1:] and bench.link.net_pdus and len(bench.config_pdus()) >= 8:
+        if data[1:] and bench.link.net_pdus and len(bench.config_writes()) >= 8:
             raise ConnectionError("gone")
         await original(char, data, response)
 
@@ -3393,7 +3516,16 @@ async def test_a_node_the_hub_does_not_know_is_a_translated_error(bench: Bench) 
                 element["index"] = element.get("index", 0)
     doc["network"] = base64.b64encode(json.dumps(net).encode()).decode()
     bench.path.write_text(json.dumps(doc))
-    with pytest.raises(HomeAssistantError) as exc:
+    with pytest.raises(HomeAssistantError) as exc:  # at its first pre-flight read
+        await bench.configurator.set_room(0x0310, "Kitchen")
+    assert exc.value.translation_key == "service_export_unknown_node"
+    assert exc.value.translation_placeholders == {
+        "node": "0310",
+        "path": str(bench.path),
+        "applied": mc.APPLIED_NOTHING,
+    }
+    # ... and at the plan's first message, read or not
+    with bench.configurator.forcing(True), pytest.raises(HomeAssistantError) as exc:
         await bench.configurator.set_room(0x0310, "Kitchen")
     assert exc.value.translation_key == "service_export_unknown_node"
     assert exc.value.translation_placeholders == {
@@ -4685,6 +4817,10 @@ async def test_a_battery_keys_steps_go_first_and_it_is_kept_awake_meanwhile(
     monkeypatch.setattr(keep_awake_mod, "KEEP_AWAKE_INTERVAL", 0.0)
     assert await battery_bench.configurator.assign_key(TRANSMITTER_KEY, room="WC")
     assert battery_bench.config_pdus() == [
+        (TRANSMITTER, pub_get(TRANSMITTER_KEY, "1001")),
+        (TRANSMITTER, pub_get(TRANSMITTER_KEY, "05271015")),
+        (TRANSMITTER, sub_get(TRANSMITTER_KEY, "1001")),
+        (TRANSMITTER, sub_get(TRANSMITTER_KEY, "05271015")),
         (TRANSMITTER, pub_set(TRANSMITTER_KEY, TRANSMITTER_KEY_GROUP, "1001")),
         (TRANSMITTER, sub_add(TRANSMITTER_KEY, TRANSMITTER_KEY_GROUP, "1001")),
         (TRANSMITTER, pub_set(TRANSMITTER_KEY, TRANSMITTER_KEY_GROUP, "1003")),
@@ -4723,7 +4859,7 @@ async def test_a_sleeping_battery_key_stops_the_plan_at_its_first_message(
         "message": M.describe(first),
         "applied": mc.APPLIED_NOTHING,
     }
-    assert set(battery_bench.config_pdus()) == {(TRANSMITTER, first)}
+    assert set(battery_bench.config_writes()) == {(TRANSMITTER, first)}
     assert battery_bench.file_unchanged()
     assert battery_bench.hub.keep_awake._tasks == {}
 
@@ -4868,7 +5004,8 @@ async def test_leaving_a_scene_clears_the_devices_keys_that_recall_it_and_its_sc
     assert [r["scene"] for r in pf.meta["sceneInfo"]] == [1]  # 0148's row
     bench.config.seen.clear()
     assert await bench.configurator.remove_from_scene(1, SWITCH_LOAD)
-    assert bench.config.seen[0] == (SWITCH_NODE, pub_set(SWITCH_KEY, 0x0000, "1205"))
+    writes = [(node, pdu) for node, pdu in bench.config.seen if not is_model_get(pdu)]
+    assert writes[0] == (SWITCH_NODE, pub_set(SWITCH_KEY, 0x0000, "1205"))
     pf = bench.reload()
     assert pub(pf, SWITCH_KEY, "1205") is None
     assert scene_key_rows(pf) == []
@@ -4941,7 +5078,10 @@ async def test_delete_scene_anyway_skips_what_does_not_answer(
     assert bench.held.data is None
     assert issue_calls == {}
     bench.hub.devices.by_address[DALI_LOAD] = SimpleNamespace(name="Kitchen")
-    assert await bench.configurator.delete_scene(2, force=True) == ["0232"]
+    with bench.configurator.forcing(
+        True
+    ):  # the action's `force`: no pre-flight read either
+        assert await bench.configurator.delete_scene(2, force=True) == ["0232"]
     pf = bench.reload()
     assert 2 not in pf.cdb.scenes
     assert scenes.registers[SOCKET_NODE] == []  # the one that answered forgot it
@@ -5154,7 +5294,10 @@ async def test_a_held_scene_number_is_not_reused_until_it_is_deleted(
     assert await bench.configurator.create_scene("Evening") == NEW_SCENE
     assert await bench.configurator.store_scene(NEW_SCENE, DALI_LOAD, ON)
     original = dali_silent(bench, scenes)
-    assert await bench.configurator.delete_scene(NEW_SCENE, force=True) == ["0232"]
+    with bench.configurator.forcing(
+        True
+    ):  # the action's `force`: no pre-flight read either
+        assert await bench.configurator.delete_scene(NEW_SCENE, force=True) == ["0232"]
     assert bench.held.data == {"held": [[NEW_SCENE, DALI_LOAD]]}
     assert issue_calls[SCENE_HELD]["translation_placeholders"]["members"] == (
         f"{NEW_SCENE}: 0232"
@@ -5221,7 +5364,11 @@ async def test_keys_cleared_before_a_member_that_stops_are_recorded(
     for operation in operations:
         assert await bench.configurator.assign_key(SWITCH_KEY, scene=1)
         bench.link.responders[-1] = load_gone
-        with pytest.raises(HomeAssistantError) as err:
+        # past the pre-flight read of the member's register, which the silent member would leave unanswered
+        with (
+            bench.configurator.forcing(True),
+            pytest.raises(HomeAssistantError) as err,
+        ):
             await operation()
         assert err.value.translation_key == "service_no_reply"
         assert (
@@ -5239,12 +5386,15 @@ async def test_keys_cleared_before_a_member_that_stops_are_recorded(
 
 def cancel_at_request(bench: Bench, accepted: int) -> list[asyncio.Task[Any]]:
     """Cancel the task put into the returned list when Config request number `accepted` + 1 goes out: the
-    nodes took the first `accepted` requests and never see that one (it is swallowed)."""
+    nodes took the first `accepted` requests and never see that one (it is swallowed). The pre-flight reads before
+    a plan (review-4 brief 70) are answered and not counted."""
     tasks: list[asyncio.Task[Any]] = []
     seen = 0
 
-    def hook(_node: int, _access: bytes) -> bool:
+    def hook(_node: int, access: bytes) -> bool:
         nonlocal seen
+        if is_model_get(access):
+            return False  # a pre-flight read: answered, not counted
         seen += 1
         if seen <= accepted:
             return False
@@ -5326,7 +5476,7 @@ async def test_a_cancelled_key_assignment_records_the_steps_the_node_took(
     )
     assert bench.configurator.recorded
     assert (
-        bench.config_pdus() == WIRE_ROCKER_A_TO_DIMMER[:3]
+        bench.config_writes() == WIRE_ROCKER_A_TO_DIMMER[:3]
     )  # the third never answered
     pf = bench.reload()
     assert pub(pf, ROCKER_A, "1001") == DIMMER_GROUP
@@ -5440,7 +5590,7 @@ async def test_a_cancelled_removal_records_the_reset_node_as_excluded(
     """`remove_node` cancelled after the Node Reset was confirmed, before any other node took its unwiring: the
     reset cannot be taken back, so the node is recorded as excluded."""
     await cancelled(bench, 1, bench.configurator.remove_node(DIMMER_NODE))
-    assert bench.config_pdus()[0] == (DIMMER_NODE, C.node_reset())
+    assert bench.config_writes()[0] == (DIMMER_NODE, C.node_reset())
     pf = bench.reload()
     assert pf.cdb.node_by_addr(DIMMER_NODE) is None
     assert {DIMMER_LOAD, DIMMER_KEY} <= pf.cdb.excluded_addresses
@@ -5479,7 +5629,11 @@ async def test_a_removal_whose_unwiring_meets_an_unreachable_node_records_the_re
     assert exc.value.translation_placeholders["applied"].startswith(
         f"Device {DIMMER_NODE:04X} was reset and the mesh export records it as removed"
     )
-    assert bench.config_pdus() == [(DIMMER_NODE, C.node_reset())]
+    # the unwiring was read before the reset (those nodes answered the pre-flight reads), and not sent after it
+    assert bench.config_pdus() == [
+        (SWITCH_NODE, sub_get(SWITCH_LOAD, "1000")),
+        (DIMMER_NODE, C.node_reset()),
+    ]
     pf = bench.reload()
     assert pf.cdb.node_by_addr(DIMMER_NODE) is None
     assert {DIMMER_LOAD, DIMMER_KEY} <= pf.cdb.excluded_addresses
@@ -5777,7 +5931,10 @@ def test_a_journalled_step_reads_back_as_it_was() -> None:
 
 @dataclass
 class Before:
-    """What the bench holds before a dry run: messages sent so far, the file, the journal and held-scene saves."""
+    """What the bench holds before a dry run: messages sent so far, the file, the journal and held-scene saves.
+
+    The device-key messages are counted without the pre-flight reads, which a dry run sends (review-4 brief 70).
+    """
 
     config: int
     app: int
@@ -5788,17 +5945,17 @@ class Before:
     @classmethod
     def of(cls, bench: Bench) -> Before:
         return cls(
-            len(bench.config_pdus()),
-            len(bench.app_pdus()),
+            len(bench.config_writes()),
+            len(bench.app_writes()),
             bench.path.read_bytes(),
             len(bench.journal.saves),
             len(bench.held.saves),
         )
 
     def unchanged(self, bench: Bench) -> None:
-        """Nothing sent, written, journaled or held since: a dry run's whole footprint is its answer."""
-        assert len(bench.config_pdus()) == self.config
-        assert len(bench.app_pdus()) == self.app
+        """Nothing sent but reads, written, journaled or held since: a dry run's whole footprint is its answer."""
+        assert len(bench.config_writes()) == self.config
+        assert len(bench.app_writes()) == self.app
         assert bench.path.read_bytes() == self.file
         assert len(bench.journal.saves) == self.journal
         assert len(bench.held.saves) == self.held
@@ -5863,15 +6020,19 @@ async def test_a_dry_run_sends_writes_and_journals_nothing_and_answers_the_real_
         bench.configurator.recorded = False  # per call, as `actions.common._run` does
     before = Before.of(bench)
     snapshot = bench.reload().snapshot()
+    reads = len(bench.config_pdus())
     dry = await bench.configurator.dry_run(operation)
     before.unchanged(bench)
     assert dry["dry_run"] is True
     assert dry["diff"], "every operation here changes the export"
+    # a destructive plan's pre-flight reads went out, and the nodes hold what the export says
+    if len(bench.config_pdus()) > reads:
+        assert dry["preflight"] == {"differences": [], "unanswered": []}
     await operation(bench.configurator)
     messages = [step.split(": ", 1)[1] for step in dry["steps"]]
-    sent_config = described(bench.config_pdus()[before.config :])
+    sent_config = described(bench.config_writes()[before.config :])
     assert [m for m in messages if m.startswith("Config ")] == sent_config
-    sent_app = iter(described(bench.app_pdus()[before.app :]))
+    sent_app = iter(described(bench.app_writes()[before.app :]))
     assert all(m in sent_app for m in messages if not m.startswith("Config "))
     real = diff_documents(snapshot, bench.reload().snapshot())
     assert [d["path"] for d in dry["diff"]] == [c.where() for c in real]
@@ -5928,7 +6089,7 @@ async def test_a_detectors_dry_run_lists_no_key_mode(
     )
     assert dry["steps"]
     assert all(": Config " in step for step in dry["steps"])
-    assert bench.config_pdus() == []
+    assert bench.config_writes() == []  # the pre-flight reads only
     assert bench.file_unchanged()
 
 
@@ -6025,3 +6186,280 @@ def test_shown_never_renders_a_key() -> None:
     assert mc.shown([1, "C00F", {"x": 1}], ("subscribe",)) == "1, C00F"
     assert mc.shown([], ("subscribe",)) == "none"
     assert mc.shown(5, ("number",)) == "5"
+
+
+# ----------------------------------------------------------------------------- pre-flight reconcile (review-4 brief 70)
+
+DALI_NAME = "0232 (Push-button 2-gang)"
+# what each kind of destructive step reads first, and how the node differs from the export there: (operation, the
+# node's change, the Get, expected, found)
+PREFLIGHT_KINDS: dict[
+    str, tuple[Operation, Callable[[Bench], None], bytes, str, str]
+] = {
+    # a Subscription Delete: the app moved the key to another group meanwhile
+    "unsubscribe": (
+        lambda c: c.clear_key(ROCKER_A),
+        lambda b: b.config.subscriptions.update({(ROCKER_A, "1001"): [DIMMER_GROUP]}),
+        sub_get(ROCKER_A, "1001"),
+        "C044",
+        "C070",
+    ),
+    # a Publication Set 0x0000: the vendor client publishes nothing any more (a device reset)
+    "unpublish": (
+        lambda c: c.clear_key(ROCKER_A),
+        lambda b: b.config.publications.update({(ROCKER_A, "05271015"): 0}),
+        pub_get(ROCKER_A, "05271015"),
+        "C044",
+        "0000",
+    ),
+    # a Publication Set replacing the export's: the key publishes elsewhere already
+    "publish": (
+        lambda c: c.assign_key(ROCKER_A, element=DIMMER_LOAD),
+        lambda b: b.config.publications.update({(ROCKER_A, "1001"): 0xC061}),
+        pub_get(ROCKER_A, "1001"),
+        "C044",
+        "C061",
+    ),
+}
+
+
+@pytest.mark.parametrize("kind", sorted(PREFLIGHT_KINDS))
+async def test_a_node_that_differs_from_the_export_stops_the_plan_before_its_first_write(
+    bench: Bench, kind: str
+) -> None:
+    """Review-4 brief 70, per destructive step kind: the nodes agreeing with the export, the plan runs; one that
+    differs stops it before anything is journaled, sent or written, naming the node, the Get and both values;
+    with `force` it runs without reading."""
+    operation, change, get, expected, found = PREFLIGHT_KINDS[kind]
+    change(bench)
+    with pytest.raises(HomeAssistantError) as exc:
+        await operation(bench.configurator)
+    assert exc.value.translation_key == "service_preflight_differs"
+    assert exc.value.translation_placeholders == {
+        "node": DALI_NAME,
+        "message": M.describe(get),
+        "expected": expected,
+        "found": found,
+        "others": "0",
+        "applied": mc.APPLIED_NOTHING,
+    }
+    assert (DALI_NODE, get) in bench.config_pdus()
+    assert bench.config_writes() == []
+    assert bench.app_pdus() == []
+    assert bench.file_unchanged()
+    assert bench.journal.saves == []
+    # `force`: no read, the plan goes out
+    reads = len(bench.config_pdus())
+    with bench.configurator.forcing(True):
+        assert await operation(bench.configurator)
+    assert not any(is_model_get(pdu) for _n, pdu in bench.config_pdus()[reads:])
+    assert bench.config_writes()
+    assert not bench.configurator.store.forced  # for that call only
+
+
+async def test_every_difference_is_counted_and_the_first_named(bench: Bench) -> None:
+    bench.config.subscriptions[ROCKER_A, "1001"] = []  # a reset node
+    bench.config.subscriptions[ROCKER_A, "05271015"] = []
+    bench.config.publications[ROCKER_A, "1001"] = 0
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.clear_key(ROCKER_A)
+    placeholders = exc.value.translation_placeholders
+    assert placeholders is not None
+    assert (
+        placeholders["message"],
+        placeholders["expected"],
+        placeholders["found"],
+    ) == (
+        M.describe(pub_get(ROCKER_A, "1001")),
+        "C044",
+        "0000",
+    )
+    assert placeholders["others"] == "2"
+    assert bench.config_pdus() == READ_CLEAR_ROCKER_A  # every read, nothing else
+
+
+async def test_agreeing_nodes_let_the_plan_run(bench: Bench) -> None:
+    """An address the node holds beyond the export is left alone, and no reason to stop."""
+    bench.config.subscriptions[ROCKER_A, "1001"] = [DALI_GROUP, 0xC04F]
+    assert await bench.configurator.clear_key(ROCKER_A)
+    assert bench.config_pdus() == [*READ_CLEAR_ROCKER_A, *CLEAR_ROCKER_A]
+
+
+async def test_a_node_silent_at_the_preflight_read_stops_the_plan(bench: Bench) -> None:
+    bench.config.silent.add(sub_get(ROCKER_A, "1001"))
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.clear_key(ROCKER_A)
+    assert exc.value.translation_key == "service_no_reply"
+    assert exc.value.translation_placeholders == {
+        "node": DALI_NAME,
+        "message": M.describe(sub_get(ROCKER_A, "1001")),
+        "applied": mc.APPLIED_NOTHING,
+    }
+    assert bench.config_writes() == []
+    assert bench.file_unchanged()
+    assert bench.journal.saves == []
+
+
+async def test_a_battery_node_asleep_at_the_preflight_read_says_so(
+    battery_bench: Bench,
+) -> None:
+    get = pub_get(TRANSMITTER_KEY, "1001")
+    battery_bench.config.silent.add(get)
+    with pytest.raises(HomeAssistantError) as exc:
+        await battery_bench.configurator.assign_key(TRANSMITTER_KEY, room="WC")
+    assert exc.value.translation_key == "service_node_asleep"
+    assert exc.value.translation_placeholders == {
+        "node": "0520 (Wall transmitter 1-gang)",
+        "message": M.describe(get),
+        "applied": mc.APPLIED_NOTHING,
+    }
+    assert battery_bench.config_writes() == []
+    assert battery_bench.hub.keep_awake._tasks == {}
+
+
+async def test_a_scene_register_that_forgot_the_scene_stops_its_deletion(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """The export says 0148 stores scene 1; its register no longer holds it (the app removed it): neither
+    `remove_from_scene` nor `delete_scene` clears anything, and `force` goes ahead."""
+    scenes.registers[SWITCH_LOAD] = [5]
+    operations: list[Operation] = [
+        lambda c: c.remove_from_scene(1, SWITCH_LOAD),
+        lambda c: c.delete_scene(1),
+        lambda c: c.delete_scene(
+            1, force=True
+        ),  # the action's other `force`: members skipped, not the reads
+    ]
+    for operation in operations:
+        with pytest.raises(HomeAssistantError) as exc:
+            await operation(bench.configurator)
+        assert exc.value.translation_key == "service_preflight_differs"
+        placeholders = exc.value.translation_placeholders
+        assert placeholders is not None
+        assert placeholders["message"] == "Scene Register Get"
+        assert (placeholders["expected"], placeholders["found"]) == ("1", "5")
+        assert scenes.seen == []  # no Delete, no action cleared
+        assert bench.file_unchanged()
+    with bench.configurator.forcing(True):
+        assert await bench.configurator.remove_from_scene(1, SWITCH_LOAD)
+    assert bench.reload().cdb.scenes[1] == []
+
+
+async def test_a_removal_is_read_before_the_reset(bench: Bench) -> None:
+    """The reset cannot be taken back: a node that lost the wiring the others' unwiring removes stops the removal
+    before the Node Reset goes out."""
+    bench.config.subscriptions[SWITCH_LOAD, "1000"] = [0xC061]
+    with pytest.raises(HomeAssistantError) as exc:
+        await bench.configurator.remove_node(DIMMER_NODE)
+    assert exc.value.translation_key == "service_preflight_differs"
+    assert (DIMMER_NODE, C.node_reset()) not in bench.config_pdus()
+    assert bench.config_writes() == []
+    assert bench.file_unchanged()
+    with bench.configurator.forcing(True):
+        assert await bench.configurator.remove_node(DIMMER_NODE)
+    assert bench.config_writes()[0] == (DIMMER_NODE, C.node_reset())
+
+
+async def test_plans_that_only_add_read_nothing_first(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """Additions, a publication where the export holds none, the switches that set what the node holds whatever the
+    export says, a scene stored: no pre-flight read (the message counts as before)."""
+    assert await bench.configurator.add_to_room(DALI_LOAD, "WC")
+    assert await bench.configurator.set_sensor_publication(SOCKET_NODE, False)
+    assert await bench.configurator.set_sensor_publication(SOCKET_NODE, True)
+    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)
+    dry = await bench.configurator.dry_run(
+        lambda c: c.set_sensor_publication(SOCKET_NODE, False)
+    )
+    assert dry["steps"]
+    assert "preflight" not in dry
+    assert bench.config_writes()
+    assert not any(is_model_get(pdu) for _n, pdu in bench.config_pdus())
+
+
+async def test_a_dry_run_reports_the_differences_and_the_silent_nodes(
+    bench: Bench,
+) -> None:
+    bench.config.subscriptions[ROCKER_A, "1001"] = [DIMMER_GROUP]
+    dry = await bench.configurator.dry_run(lambda c: c.clear_key(ROCKER_A))
+    assert dry["preflight"] == {
+        "differences": [
+            {
+                "node": DALI_NAME,
+                "element": "0234",
+                "model": "1001",
+                "kind": "subscriptions",
+                "expected": ["C044"],
+                "found": ["C070"],
+            }
+        ],
+        "unanswered": [],
+    }
+    assert dry[
+        "steps"
+    ]  # the plan the real run would send, were the nodes as the export says
+    assert bench.config_writes() == []
+    # a node that does not answer, a link lost, a node the hub has no key for: listed as unanswered, once
+    silent = sub_get(DIMMER_LOAD, "1000")
+    bench.config.silent.add(silent)
+    dry = await bench.configurator.dry_run(lambda c: c.delete_room("WC"))
+    assert dry["preflight"]["unanswered"] == ["0300 (Push-button 1-gang)"]
+    # asked again as a plan step would be, then not about its other models
+    assert {pdu for node, pdu in bench.config_pdus() if node == DIMMER_NODE} == {silent}
+    with patch.object(
+        bench.hub.proxy, "request_config", side_effect=ConnectionError("gone")
+    ):
+        dry = await bench.configurator.dry_run(lambda c: c.clear_key(ROCKER_A))
+    assert dry["preflight"] == {"differences": [], "unanswered": [DALI_NAME]}
+    with patch.object(
+        bench.hub.proxy, "request_config", side_effect=ValueError("no key")
+    ):
+        dry = await bench.configurator.dry_run(lambda c: c.clear_key(ROCKER_A))
+    assert dry["preflight"] == {"differences": [], "unanswered": [DALI_NAME]}
+    # forced: nothing read, nothing reported
+    with bench.configurator.forcing(True):
+        dry = await bench.configurator.dry_run(lambda c: c.clear_key(ROCKER_A))
+    assert "preflight" not in dry
+
+
+async def test_a_dry_run_without_a_link_lists_every_node_unanswered(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    reads = len(bench.config_pdus())
+    with patch.object(FakeHub, "connected", new=property(lambda _hub: False)):
+        dry = await bench.configurator.dry_run(lambda c: c.delete_scene(1))
+        assert dry["preflight"] == {
+            "differences": [],
+            "unanswered": ["0148 (Push-button 1-gang)"],
+        }
+        dry = await bench.configurator.dry_run(lambda c: c.clear_key(ROCKER_A))
+        assert dry["preflight"]["unanswered"] == [DALI_NAME]
+    assert len(bench.config_pdus()) == reads
+    assert M.scene_register_get() not in [pdu for _n, pdu in bench.app_pdus()]
+
+
+async def test_the_scene_register_read_goes_to_the_register(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """A dry run of a scene's deletion reads the member's register (an AppKey Get), which holds the scene."""
+    dry = await bench.configurator.dry_run(lambda c: c.delete_scene(1))
+    assert dry["preflight"] == {"differences": [], "unanswered": []}
+    assert (SWITCH_LOAD, M.scene_register_get()) in bench.app_pdus()
+
+
+async def test_a_lost_link_at_a_scene_register_read_is_a_send_failure(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    with (
+        patch.object(bench.hub.proxy, "request", side_effect=OSError("gone")),
+        pytest.raises(HomeAssistantError) as exc,
+    ):
+        await bench.configurator.remove_from_scene(1, SWITCH_LOAD)
+    assert exc.value.translation_key == "service_send_failed"
+    assert exc.value.translation_placeholders == {
+        "node": "0148 (Push-button 1-gang)",
+        "message": "Scene Register Get",
+        "applied": mc.APPLIED_NOTHING,
+    }
+    assert bench.file_unchanged()

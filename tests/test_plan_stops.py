@@ -32,6 +32,7 @@ from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode
 from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
+from .helpers import is_model_get
 from .sim.node import Received
 from .sim.servers import Servers
 from .test_mesh_config import (
@@ -114,7 +115,14 @@ class Nodes:
         self.bench = bench
 
     def request(self, node: int, access: bytes) -> bool:
-        """The bench's hook: True swallows the request (silence), else the bench answers it."""
+        """The bench's hook: True swallows the request (silence), else the bench answers it.
+
+        A pre-flight read (review-4 brief 70) is answered with what the simulated node holds — not counted, and
+        never where the stop comes: it precedes the plan's first message.
+        """
+        if is_model_get(access):
+            self.hold(node, access)
+            return False
         if self.stopped_at is not None and access == self.stopped_at:
             return True  # a retry of the silent request: still nobody answers
         if self.stop is not None and self.accepted == self.stop[1]:
@@ -140,6 +148,16 @@ class Nodes:
         [answer] = server.answers
         assert answer[0] == C.STATUS_SUCCESS, f"{node:04X} refused {access.hex()}"
         return False
+
+    def hold(self, node: int, access: bytes) -> None:
+        """Have the bench answer a Model Publication / Subscription Get with the simulated node's state."""
+        _op, _cid, params = decode_opcode(access)
+        element = int.from_bytes(params[:2], "little")
+        model_id = C.decode_model_id(params[2:])
+        model = f"{model_id:08X}" if len(params) == 6 else f"{model_id:04X}"
+        cfg = self.servers[node].config.models[element, model]
+        self.bench.config.subscriptions[element, model] = sorted(cfg.subscriptions)
+        self.bench.config.publications[element, model] = cfg.publish_address
 
     def wiring(self) -> Wiring:
         return {

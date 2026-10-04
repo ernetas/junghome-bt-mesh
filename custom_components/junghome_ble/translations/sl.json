@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "je bila priklicana z naprave {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Ni poslano: {node} je na {message} odgovoril z {found}, izvoz mesh pa navaja {expected} (drugih razlik: {others}). Namestitev se je po izdelavi izvoza mesh spremenila (v aplikaciji JUNG HOME, s ponastavitvijo naprave ali s prejšnjim dejanjem, ki se je ustavilo na pol poti), in načrt bi prepisal tisto, česar izvoz ne opisuje več. Projekt znova izvozite iz aplikacije ali pustite, da Home Assistant prevzame izvoz prehoda, in dejanje znova zaženite; z `force` se izvede brez tega preverjanja. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Prostor prek območja",
           "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
         },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
+        },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Tudi če jo upravlja gumb",
-          "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več."
+          "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
         },
         "room_area": {
           "name": "Prostor prek območja",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Prostor prek območja",
           "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
         },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
+        },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entiteta scene",
           "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
         },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
+        },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Črka gumba",
           "description": "Kateri gumb naprave: A, B, C ali D; E1 ali E2 za vhod mini aktuatorja."
         },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
+        },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entiteta scene",
           "description": "Namesto vnosa imena ali številke scene: njena entiteta scene."
+        },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Tudi če se naprava ne odzove",
-          "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke."
+          "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
         },
         "config_entry_id": {
           "name": "Omrežje mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Naprave",
           "description": "Luči in vtičnice, ki jih preklapljata oba praga; nadomestijo trenutni seznam, če pa so izpuščene, seznam ostane. Ko se spremeni, se izvoz mesh znova zapiše in Home Assistant mu sledi brez ponovnega nalaganja integracije."
+        },
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
         }
       }
     },
     "delete_threshold": {
       "name": "Izbriši prag",
-      "description": "Počisti oba praga merilne vtičnice JUNG HOME in odveže luči in vtičnice, ki sta jih preklapljala, kot to stori brisanje v aplikaciji. Ko so bile naprave odvezane, Home Assistant sledi znova zapisanemu izvozu mesh brez ponovnega nalaganja integracije. Na zahtevo odgovori, koliko sporočil vezave so naprave uveljavile. Samo za skrbnike."
+      "description": "Počisti oba praga merilne vtičnice JUNG HOME in odveže luči in vtičnice, ki sta jih preklapljala, kot to stori brisanje v aplikaciji. Ko so bile naprave odvezane, Home Assistant sledi znova zapisanemu izvozu mesh brez ponovnega nalaganja integracije. Na zahtevo odgovori, koliko sporočil vezave so naprave uveljavile. Samo za skrbnike.",
+      "fields": {
+        "force": {
+          "name": "Tudi če se naprave razlikujejo od izvoza",
+          "description": "Izvedi načrt, ne da bi najprej z naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Samo kadar je gotovo, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
+        }
+      }
     },
     "audit_network": {
       "name": "Preveri omrežje",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Tudi če se ne odzove",
-          "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje."
+          "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
         },
         "confirm": {
           "name": "Potrdi",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Preizkusni zagon",
-          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni poslano, zapisano ali prevzeto s prehoda."
+          "description": "Samo odgovori, kaj bi bilo poslano in kako bi se spremenil izvoz mesh (zahtevajte odgovor); nič ni zapisano ali prevzeto s prehoda, poslana so samo branja, ki naprave primerjajo z izvozom mesh."
         }
       }
     },

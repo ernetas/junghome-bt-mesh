@@ -15,6 +15,7 @@ from custom_components.junghome_ble.areas import area_name_for
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
+    _FORCE_FIELD,
     _ONE_ROOM,
     _ROOM_FIELDS,
     ATTR_FORCE,
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
 
 ATTR_CREATE = "create"
-SET_ROOM_SCHEMA = vol.All(
+ADD_TO_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {
             **_ROOM_FIELDS,
@@ -44,7 +45,20 @@ SET_ROOM_SCHEMA = vol.All(
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
     *_ONE_ROOM,
 )
-ADD_TO_ROOM_SCHEMA = SET_ROOM_SCHEMA
+# `set_room` leaves the other rooms (Subscription Deletes): `force` skips their pre-flight comparison
+SET_ROOM_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            **_ROOM_FIELDS,
+            vol.Optional(ATTR_CREATE, default=False): cv.boolean,
+            **_FORCE_FIELD,
+            **_DRY_RUN_FIELD,
+            **cv.ENTITY_SERVICE_FIELDS,
+        }
+    ),
+    cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
+    *_ONE_ROOM,
+)
 REMOVE_FROM_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {
@@ -71,7 +85,8 @@ RENAME_ROOM_SCHEMA = vol.All(
     *_ONE_ROOM,
 )
 DELETE_ROOM_SCHEMA = vol.All(
-    vol.Schema({**_ROOM_FIELDS, **_DRY_RUN_FIELD, **_ENTRY_FIELD}), *_ONE_ROOM
+    vol.Schema({**_ROOM_FIELDS, **_FORCE_FIELD, **_DRY_RUN_FIELD, **_ENTRY_FIELD}),
+    *_ONE_ROOM,
 )
 
 

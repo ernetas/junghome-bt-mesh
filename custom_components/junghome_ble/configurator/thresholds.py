@@ -242,8 +242,9 @@ class Thresholds(Operations):
                 )
             if not steps and pf.snapshot() == before:
                 return self.store.adopted  # already so
+            # the switch shows what the node publishes, not the export: no pre-flight comparison with it
             await self.executor.send(
-                steps, action="the switch Sensor values for IoT systems"
+                steps, action="the switch Sensor values for IoT systems", check=False
             )
             await self.store.save(pf)
             _LOGGER.info(

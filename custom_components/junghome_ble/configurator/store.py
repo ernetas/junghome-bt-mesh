@@ -335,6 +335,9 @@ class DryRun:
     steps: list[str] = field(default_factory=list)
     diff: list[dict[str, str]] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
+    # what the pre-flight reads found (`PlanExecutor.preflight`): `{"differences", "unanswered"}`; None when the
+    # plan has nothing to read first, or `force` skips the reads
+    preflight: dict[str, Any] | None = None
 
 
 class _Planned(Exception):
@@ -344,6 +347,9 @@ class _Planned(Exception):
 # the dry run of the running task, if any: a context variable, so a call of another task on the same configurator
 # (the unknown-node refresh, another entry's action) is never taken for one
 _DRY_RUN: ContextVar[DryRun | None] = ContextVar(f"{DOMAIN}_dry_run", default=None)
+# whether the running task's action was called with `force` (`ExportStore.forcing`): its plans skip the pre-flight
+# comparison of the nodes with the export
+_FORCED: ContextVar[bool] = ContextVar(f"{DOMAIN}_forced", default=False)
 
 
 class ExportStore:
@@ -361,11 +367,28 @@ class ExportStore:
         self.adopted = False
         # whether the plan journal holds a plan whose outcome the export does not record yet
         self.journaled = False
+        # the export the running operation plans on, as `load` read it — before the plan edited it: what the
+        # pre-flight reads compare the nodes with (`PlanExecutor.preflight`)
+        self.base: ProjectFile | None = None
 
     @property
     def dry(self) -> bool:
         """Whether the running task's operation is a dry run (`dry_run`): it must send, write and adopt nothing."""
         return _DRY_RUN.get() is not None
+
+    @property
+    def forced(self) -> bool:
+        """Whether the running task's action was called with `force`: its plans skip the pre-flight comparison."""
+        return _FORCED.get()
+
+    @contextmanager
+    def forcing(self, force: bool) -> Iterator[None]:
+        """Run the block's operations with `force` (`forced`): a context variable, as a dry run is one."""
+        token = _FORCED.set(force)
+        try:
+            yield
+        finally:
+            _FORCED.reset(token)
 
     async def dry_run(
         self, operation: Callable[[], Coroutine[Any, Any, Any]]
@@ -380,6 +403,10 @@ class ExportStore:
         and the operation is unwound. Its checks run as they would: a call the real run refuses is refused. An
         operation with nothing to do answers no steps and no change. With a gateway, the real run plans on the
         gateway's export when the app changed the installation since, which this one does not look at.
+
+        A plan that removes or overwrites what the export says a node holds reads it from the nodes first, as the
+        real run does (`PlanExecutor.preflight`): those Gets go out, and the answer's `preflight` lists the
+        differences and the nodes that did not answer — the real run would stop there. Unverified on air.
         """
         dry = DryRun()
         token = _DRY_RUN.set(dry)
@@ -389,7 +416,22 @@ class ExportStore:
             pass
         finally:
             _DRY_RUN.reset(token)
-        return {"dry_run": True, "steps": dry.steps, "diff": dry.diff, **dry.extra}
+        preflight = {} if dry.preflight is None else {"preflight": dry.preflight}
+        return {
+            "dry_run": True,
+            "steps": dry.steps,
+            "diff": dry.diff,
+            **preflight,
+            **dry.extra,
+        }
+
+    def preflight_found(
+        self, differences: list[dict[str, Any]], unanswered: list[str]
+    ) -> None:
+        """Note in the running dry run what its pre-flight reads found (`PlanExecutor.preflight`)."""
+        dry = _DRY_RUN.get()
+        assert dry is not None
+        dry.preflight = {"differences": differences, "unanswered": unanswered}
 
     def planned(
         self,
@@ -439,6 +481,7 @@ class ExportStore:
                     "Dry run without the provisioner entry: %s", type(err).__name__
                 )
         dry.pf, dry.before = pf, pf.snapshot()
+        self.base = copy.deepcopy(pf)
         return pf
 
     def node_name(self, unicast: int) -> str:
@@ -472,7 +515,8 @@ class ExportStore:
         later one that fails must not hide the export an earlier one wrote. `fresh`: a gateway entry whose gateway
         did not answer is refused instead of planning on the copy on disk, which may lack what the app made since
         (what judges by what the export *lacks* must not fall back silently). A dry run reads the
-        disk alone and writes nothing (`_load_read_only`).
+        disk alone and writes nothing (`_load_read_only`). A copy of what was read is kept as `base`, the export
+        the pre-flight reads compare the nodes with.
         """
         if (dry := _DRY_RUN.get()) is not None:
             return await self._load_read_only(dry)
@@ -481,6 +525,7 @@ class ExportStore:
             raise _failure("service_gateway_export_unavailable")
         pf = await self.read()
         await self.with_identity(pf)
+        self.base = copy.deepcopy(pf)
         return pf
 
     async def read(self) -> ProjectFile:

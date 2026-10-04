@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "foi acionada por {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Não enviado: {node} respondeu a {message} com {found}, mas a exportação da mesh diz {expected} ({others} outras diferenças). A instalação mudou depois que a exportação da mesh foi feita (no aplicativo JUNG HOME, pela redefinição de um dispositivo ou por uma ação anterior que parou no meio), e o plano sobrescreveria o que a exportação não descreve mais. Exporte o projeto novamente pelo aplicativo, ou deixe o Home Assistant assumir a exportação do gateway, e execute a ação de novo; com `force` ela é executada sem esta verificação. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Cômodo pela área",
           "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
         },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
+        },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Mesmo que um botão o controle",
-          "description": "Retira o dispositivo do cômodo mesmo que um botão vinculado ao cômodo o comute; o botão deixa de comutá-lo."
+          "description": "Retira o dispositivo do cômodo mesmo que um botão vinculado ao cômodo o comute; o botão deixa de comutá-lo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
         },
         "room_area": {
           "name": "Cômodo pela área",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Cômodo pela área",
           "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
         },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
+        },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entidade de cena",
           "description": "Em vez de digitar o nome ou número da cena: a entidade de cena dela."
         },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
+        },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Letra do botão",
           "description": "Qual botão do dispositivo: A, B, C ou D; E1 ou E2 para uma entrada de um mini atuador."
         },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
+        },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entidade de cena",
           "description": "Em vez de digitar o nome ou número da cena: a entidade de cena dela."
+        },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Mesmo que um dispositivo não responda",
-          "description": "Exclui a cena da exportação da mesh mesmo que um dispositivo que a salvou não possa ser alcançado ou recuse (o \"Excluir mesmo assim\" do aplicativo). Esse dispositivo mantém a cena até que Excluir cenas não usadas a remova; um reparo o indica, e nenhuma cena nova recebe o número dela nesse meio-tempo."
+          "description": "Exclui a cena da exportação da mesh mesmo que um dispositivo que a salvou não possa ser alcançado ou recuse (o \"Excluir mesmo assim\" do aplicativo). Esse dispositivo mantém a cena até que Excluir cenas não usadas a remova; um reparo o indica, e nenhuma cena nova recebe o número dela nesse meio-tempo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
         },
         "config_entry_id": {
           "name": "Rede mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Dispositivos",
           "description": "As luzes e tomadas que ambos os limites comutam, substituindo a lista atual; omitida, a lista permanece. A exportação da mesh é regravada quando ela muda, e o Home Assistant a acompanha sem recarregar a integração."
+        },
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
         }
       }
     },
     "delete_threshold": {
       "name": "Excluir limite",
-      "description": "Apaga os dois limites de uma tomada JUNG HOME com medição de energia e desvincula as luzes e tomadas que eles comutavam, como faz a exclusão do aplicativo. O Home Assistant acompanha a exportação da mesh regravada sem recarregar a integração quando dispositivos foram desvinculados. Responde, quando solicitado, quantas das mensagens de vinculação os dispositivos aplicaram. Somente administradores."
+      "description": "Apaga os dois limites de uma tomada JUNG HOME com medição de energia e desvincula as luzes e tomadas que eles comutavam, como faz a exclusão do aplicativo. O Home Assistant acompanha a exportação da mesh regravada sem recarregar a integração quando dispositivos foram desvinculados. Responde, quando solicitado, quantas das mensagens de vinculação os dispositivos aplicaram. Somente administradores.",
+      "fields": {
+        "force": {
+          "name": "Mesmo que os dispositivos sejam diferentes da exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado em dispositivos reais."
+        }
+      }
     },
     "audit_network": {
       "name": "Auditar rede",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Mesmo que ele não responda",
-          "description": "Remove-o dos registros da rede mesmo que ele não confirme a redefinição (um dispositivo que não existe mais), ou mesmo que o Home Assistant esteja conectado por meio dele."
+          "description": "Remove-o dos registros da rede mesmo que ele não confirme a redefinição (um dispositivo que não existe mais), ou mesmo que o Home Assistant esteja conectado por meio dele. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
         },
         "confirm": {
           "name": "Confirmar",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Simulação",
-          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é enviado, gravado ou assumido do gateway."
+          "description": "Apenas responde o que seria enviado e como a exportação da mesh mudaria (peça a resposta); nada é gravado ou assumido do gateway, e só são enviadas as leituras que comparam os dispositivos com a exportação da mesh."
         }
       }
     },

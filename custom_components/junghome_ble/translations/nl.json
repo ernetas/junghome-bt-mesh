@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "is opgeroepen door {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Niet verzonden: {node} antwoordde op {message} met {found}, maar de mesh-export zegt {expected} ({others} andere verschillen). De installatie is gewijzigd nadat de mesh-export is gemaakt (in de JUNG HOME-app, door een reset van een apparaat of door een eerdere actie die halverwege stopte), en het plan zou overschrijven wat de export niet meer beschrijft. Exporteer het project opnieuw vanuit de app, of laat Home Assistant de export van de gateway overnemen, en voer de actie opnieuw uit; met `force` loopt ze zonder deze controle. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Kamer via ruimte",
           "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
         },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
+        },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Ook als een knop het aanstuurt",
-          "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer."
+          "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
         },
         "room_area": {
           "name": "Kamer via ruimte",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Kamer via ruimte",
           "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
         },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
+        },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Scène-entiteit",
           "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
         },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
+        },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Knopletter",
           "description": "Welke knop van het apparaat: A, B, C of D; E1 of E2 voor een ingang van een mini-actor."
         },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
+        },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Scène-entiteit",
           "description": "In plaats van de naam of het nummer van de scène te typen: haar scène-entiteit."
+        },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Ook als een apparaat niet antwoordt",
-          "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer."
+          "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
         },
         "config_entry_id": {
           "name": "Mesh-netwerk",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Apparaten",
           "description": "De lampen en stopcontacten die beide drempels schakelen, ter vervanging van de huidige lijst; weggelaten blijft de lijst. De mesh-export wordt herschreven als die verandert, en Home Assistant volgt hem zonder de integratie te herladen."
+        },
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
         }
       }
     },
     "delete_threshold": {
       "name": "Drempels verwijderen",
-      "description": "Wist beide drempels van een JUNG HOME-stopcontact met energiemeting en ontkoppelt de lampen en stopcontacten die ze schakelden, zoals verwijderen in de app doet. Home Assistant volgt de herschreven mesh-export zonder de integratie te herladen als er apparaten zijn ontkoppeld. Antwoordt op verzoek hoeveel van de koppelberichten de apparaten hebben toegepast. Alleen voor beheerders."
+      "description": "Wist beide drempels van een JUNG HOME-stopcontact met energiemeting en ontkoppelt de lampen en stopcontacten die ze schakelden, zoals verwijderen in de app doet. Home Assistant volgt de herschreven mesh-export zonder de integratie te herladen als er apparaten zijn ontkoppeld. Antwoordt op verzoek hoeveel van de koppelberichten de apparaten hebben toegepast. Alleen voor beheerders.",
+      "fields": {
+        "force": {
+          "name": "Ook als de apparaten afwijken van de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
+        }
+      }
     },
     "audit_network": {
       "name": "Netwerk controleren",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Ook als het niet antwoordt",
-          "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden."
+          "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
         },
         "confirm": {
           "name": "Bevestigen",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Proefrun",
-          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets verzonden, geschreven of van de gateway overgenomen."
+          "description": "Alleen antwoorden wat zou worden verzonden en hoe de mesh-export zou veranderen (vraag om het antwoord); er wordt niets geschreven of van de gateway overgenomen, en alleen de leesopdrachten die de apparaten met de mesh-export vergelijken worden verzonden."
         }
       }
     },

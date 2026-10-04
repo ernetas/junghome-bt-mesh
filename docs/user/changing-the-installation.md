@@ -41,8 +41,20 @@ is recorded and the action tells you which device it was; run it again once the 
 
 The actions that rewire devices — *Set room*, *Add to room*, *Remove from room*, *Create room*, *Delete room*,
 *Assign key*, *Clear key*, *Create scene*, *Delete scene* and *Remove device* — have a **Dry run** switch: the action
-answers what it would send to which device and how the export would change, and sends, writes and takes over
-nothing. Turn on *Return response* in *Developer tools → Actions* to see the answer.
+answers what it would send to which device and how the export would change, and writes and takes over nothing; it
+sends only the reads described below. Turn on *Return response* in *Developer tools → Actions* to see the answer.
+
+### When the devices no longer match the export
+
+Before a change that removes or replaces something on a device — a key wired elsewhere or cleared, a device leaving
+a room, a room deleted, a device taken out of a scene, a scene deleted, a threshold's wiring, a device removed — Home
+Assistant first asks the devices what they hold there and compares it with the export. When a device holds
+something else (you changed it in the app after the export was made, a device was reset, an earlier change stopped
+half-way), nothing is sent and the action says which device differs and how: export the project from the app again
+(or, set up from the gateway, press **Fetch export from gateway**) and run the action again. A dry run lists the
+differences under `preflight`. A device that does not answer this read stops the action too, before anything is
+changed. If you know the export is right, turn on **Even if the devices differ from the export** (`force: true`) to
+run the action without the check. This is not yet tried on a real installation.
 
 Run for real, the same actions answer how many of their messages the devices took (`applied` of `total`), whether
 the export was written (`recorded`) and which devices changed (`nodes`), and the logbook gets a line such as

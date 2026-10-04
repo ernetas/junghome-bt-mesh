@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 from homeassistant.exceptions import HomeAssistantError
 
@@ -382,15 +382,7 @@ class Keys(Operations):
                 ):  # a scene key only publishes (`ConnectToAddress … PUBLISH_ONLY`)
                     steps += config_steps(pf, pf.subscribe(key, model, plan.publish))
             if self.store.dry:
-                if plan.record_scene is not None:
-                    plan.record_scene(pf)
-                self.store.planned(
-                    self.executor.in_order(steps)[0],
-                    then=[
-                        f"{self.store.member_name(key.address)}: {M.describe(pdu)}"
-                        for pdu in _key_link_writes(plan, detector=detector)
-                    ],
-                )
+                await self._plan_dry(pf, key.address, plan, steps, detector=detector)
             # a battery key stays held from its first Config step to its KeyMode write
             async with self.hub.keep_awake.hold([key.address]):
                 await self.executor.send(
@@ -420,6 +412,28 @@ class Keys(Operations):
                 len(steps),
             )
             return True
+
+    async def _plan_dry(
+        self,
+        pf: ProjectFile,
+        key: int,
+        plan: KeyPlan,
+        steps: list[ConfigStep],
+        *,
+        detector: bool,
+    ) -> NoReturn:
+        """End a dry run of `assign_key`: its pre-flight reads, then its Config plan and vendor writes noted."""
+        if plan.record_scene is not None:
+            plan.record_scene(pf)
+        in_order = self.executor.in_order(steps)[0]
+        await self.executor.preflight(in_order)
+        self.store.planned(
+            in_order,
+            then=[
+                f"{self.store.member_name(key)}: {M.describe(pdu)}"
+                for pdu in _key_link_writes(plan, detector=detector)
+            ],
+        )
 
     async def _write_key_link(
         self, pf: ProjectFile, key: int, plan: KeyPlan, *, detector: bool

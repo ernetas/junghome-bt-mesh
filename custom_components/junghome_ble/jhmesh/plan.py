@@ -1,19 +1,26 @@
-"""The plan model: Config steps, their order on air, their replay into the export.
+"""The plan model: Config steps, their order on air, their replay into the export, their pre-flight reads.
 
 One model for every plan of Config messages: the configurator's plans (a room, a key connection, a scene, a node's
 removal: `ConfigStep` with the CDB edit it mirrors) and the commissioning of a new node (`commission.plan`: the same
 `ConfigStep` with its phase of the app's step machine and its evidence; `commission.Step` is this class). Pure: a
 `ProjectFile` and its CDB in, steps out — nothing here sends or writes anything.
+
+A plan is computed from the export; the nodes are only told. Before a plan that removes or overwrites what the
+export says a node holds (`destructive`), the configurator asks the nodes for it first (`preflight_checks`, one Get
+per element and model) and compares their answers with the export (`Check.compare`): a node that no longer holds
+what the export says stops the plan before its first write.
 """
 
 from __future__ import annotations
 
 from collections.abc import Collection, Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 from . import config_messages as C
 from . import messages as M
+from .audit import SCENE_MODELS
+from .cdb import parse_address
 from .devices import GROUP_RANGE
 from .export import ModelChange, ProjectFile, raw_model
 from .pdu import ALL_PROXIES, decode_opcode
@@ -24,14 +31,23 @@ if TYPE_CHECKING:
 
 __all__ = [
     "APP_KEY_INDEX",
+    "DESTRUCTIVE_KINDS",
+    "SCENE_SERVER",
+    "STEP_KINDS",
+    "Check",
     "ConfigStep",
+    "Difference",
     "bind_step",
     "config_step",
     "config_steps",
     "deletable",
+    "destructive",
     "element_of",
     "ordered",
+    "preflight_checks",
+    "register_check",
     "replay",
+    "step_kind",
 ]
 
 APP_KEY_INDEX = 0
@@ -236,4 +252,272 @@ def bind_step(element: Element, model: str) -> ConfigStep | None:
         C.model_app_bind(element.address, model, APP_KEY_INDEX),
         C.CONFIG_MODEL_APP_STATUS,
         bind=(element.address, model),
+    )
+
+
+# ----------------------------------------------------------------------------- destructive steps, pre-flight reads
+
+# What a step does to a model, by its edit: `bind` (Model App Bind), `subscribe`, `unsubscribe`, `publish` (a
+# Publication Set to an address), `unpublish` (a Publication Set 0x0000), `other` (a step without an edit: the
+# commissioning plan's AppKey Add and node-wide Sets, to a node that holds nothing yet)
+STEP_KINDS = ("bind", "subscribe", "unsubscribe", "publish", "unpublish", "other")
+# the kinds that always take away what the export says a node holds; a `publish` does when it replaces one
+DESTRUCTIVE_KINDS = frozenset({"unsubscribe", "unpublish"})
+SCENE_SERVER = "1203"  # the model that answers Scene Register Get
+
+CheckKind = Literal["subscriptions", "publication", "scene_register"]
+
+
+def step_kind(step: ConfigStep) -> str:
+    """Return what `step` does to its model, one of `STEP_KINDS`."""
+    if step.bind is not None:
+        return "bind"
+    change = step.change
+    if change is None:
+        return "other"
+    if change.kind == "publish":
+        return "publish" if change.address else "unpublish"
+    return change.kind
+
+
+def _raw(export: ProjectFile, element: int, model: str) -> dict[str, Any]:
+    """Return the export's entry for the model (empty for an element or a model it does not have)."""
+    target = export.cdb.element(element)
+    if target is None:
+        return {}
+    try:
+        return raw_model(target, model)
+    except KeyError:
+        return {}
+
+
+def _held_publication(export: ProjectFile, element: int, model: str) -> int:
+    """Return the publish address the export records for the model (0x0000: none)."""
+    publish = _raw(export, element, model).get("publish")
+    if not isinstance(publish, dict) or "address" not in publish:
+        return 0
+    return parse_address(str(publish["address"]))
+
+
+def _held_subscriptions(export: ProjectFile, element: int, model: str) -> list[int]:
+    """Return the addresses the export says the model subscribes to, sorted."""
+    return sorted(
+        parse_address(str(a)) for a in _raw(export, element, model).get("subscribe", [])
+    )
+
+
+def destructive(step: ConfigStep, export: ProjectFile) -> bool:
+    """Whether `step` removes or overwrites what `export` — the export the plan was made from — says the node holds.
+
+    A Subscription Delete and a Publication Set 0x0000 always do; a Publication Set to an address does when the
+    export holds another publication for the model (a key rewired), not when it holds none or the same one. A
+    Model App Bind, a Subscription Add and a commissioning step take nothing away. Not the same as
+    `ConfigStep.additive`, which orders a plan: a publication that replaces another goes out with the additions.
+    """
+    kind = step_kind(step)
+    if kind in DESTRUCTIVE_KINDS:
+        return True
+    if kind != "publish":
+        return False
+    change = step.change
+    assert change is not None  # a `publish` step carries its edit
+    return _held_publication(export, change.element, change.model) not in (
+        0,
+        change.address,
+    )
+
+
+@dataclass(frozen=True)
+class Difference:
+    """A pre-flight Get answered with something other than what the export says (`Check.compare`).
+
+    `expected` (the export) and `found` (the node) as text: hex addresses for subscriptions and a publication,
+    scene numbers for a scene register; `found` is the status name when the node refused the Get.
+    """
+
+    node: int
+    element: int
+    model: str
+    kind: CheckKind
+    what: str  # the Get, described (`messages.describe`)
+    expected: list[str]
+    found: list[str]
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the difference for an action response."""
+        return {
+            "node": f"{self.node:04X}",
+            "element": f"{self.element:04X}",
+            "model": self.model,
+            "kind": self.kind,
+            "expected": self.expected,
+            "found": self.found,
+        }
+
+
+@dataclass(frozen=True)
+class Check:
+    """One pre-flight Get: what the node holds for one model of one element, before a plan changes it.
+
+    `subscriptions` and `publication` are Config Gets under the node's device key; `scene_register` is a Scene
+    Register Get (an AppKey message) to the element holding the node's scene register, for the `scene` a plan
+    deletes there.
+    """
+
+    node: int
+    element: int
+    model: str
+    kind: CheckKind
+    scene: int | None = None
+
+    @property
+    def devkey(self) -> bool:
+        """Whether the Get goes under the node's device key (a Config Get) rather than the AppKey."""
+        return self.kind != "scene_register"
+
+    @property
+    def pdu(self) -> bytes:
+        """The Get's access payload."""
+        if self.kind == "subscriptions":
+            return C.model_subscription_get(self.element, self.model)
+        if self.kind == "publication":
+            return C.model_publication_get(self.element, self.model)
+        return M.scene_register_get()
+
+    @property
+    def expect(self) -> int:
+        """The opcode of the status that answers the Get."""
+        if self.kind == "subscriptions":
+            return (
+                C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST
+                if C.is_vendor_model(self.model)
+                else C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST
+            )
+        if self.kind == "publication":
+            return C.CONFIG_MODEL_PUBLICATION_STATUS
+        return M.SCENE_REGISTER_STATUS
+
+    @property
+    def what(self) -> str:
+        """Describe the Get for logs and errors."""
+        return M.describe(self.pdu)
+
+    def matches(self, message: AccessMessage) -> bool:
+        """Whether a Config status answers this Get: it echoes the element and model (a late one of another does not).
+
+        One that does not decode does as well: `compare` reports it as malformed rather than waiting it out.
+        """
+        try:
+            decoded = C.decode_config(message.opcode, message.params)
+        except ValueError:
+            return True
+        if not isinstance(decoded, (C.ModelPublicationStatus, C.ModelSubscriptionList)):
+            return True
+        return decoded.element == self.element and decoded.model == C.model_id(
+            self.model
+        )
+
+    def compare(self, export: ProjectFile, reply: AccessMessage) -> Difference | None:
+        """Compare the node's answer with the export; the difference, or None when the node holds what it says.
+
+        Subscriptions: every address the export lists must be on the node; one the node holds beyond them is left
+        alone by the plan and not compared (the firmware subscribes some client models to their element's group by
+        itself, docs/hidden-features.md). A publication must be the export's (0x0000 when it records none). A
+        scene register must still hold the scene. A refused or malformed status differs only where the export
+        expects something.
+        """
+        expected, found = self._values(export, reply)
+        if isinstance(found, str):
+            return self._difference(expected, [found]) if any(expected) else None
+        if self.kind == "publication":
+            differs = found != expected
+        else:
+            differs = not set(expected) <= set(found)
+        return self._difference(expected, found) if differs else None
+
+    def _values(
+        self, export: ProjectFile, reply: AccessMessage
+    ) -> tuple[list[int], list[int] | str]:
+        """Return what the export says and what the node answered (or the status it refused the Get with)."""
+        if self.kind == "scene_register":
+            assert self.scene is not None  # a register check names its scene
+            return [self.scene], _register_scenes(reply)
+        expected = (
+            [_held_publication(export, self.element, self.model)]
+            if self.kind == "publication"
+            else _held_subscriptions(export, self.element, self.model)
+        )
+        return expected, _model_values(reply)
+
+    def _difference(
+        self, expected: list[int], found: list[int] | list[str]
+    ) -> Difference:
+        def shown(values: list[int] | list[str]) -> list[str]:
+            if self.kind == "scene_register":
+                return [str(v) for v in values]
+            return [v if isinstance(v, str) else f"{v:04X}" for v in values]
+
+        return Difference(
+            self.node,
+            self.element,
+            self.model,
+            self.kind,
+            self.what,
+            shown(expected),
+            shown(found),
+        )
+
+
+def _register_scenes(reply: AccessMessage) -> list[int] | str:
+    """Return the scenes a Scene Register Status lists, or why it lists none."""
+    try:
+        return sorted(M.decode_scene_register_status(reply.params).scenes)
+    except ValueError:
+        return "malformed status"
+
+
+def _model_values(reply: AccessMessage) -> list[int] | str:
+    """Return the addresses a Publication Status or a Subscription List carries, or the status refusing the Get."""
+    try:
+        decoded = C.decode_config(reply.opcode, reply.params)
+    except ValueError:
+        return "malformed status"
+    if not isinstance(decoded, (C.ModelPublicationStatus, C.ModelSubscriptionList)):
+        return "malformed status"
+    if not decoded.ok:
+        return decoded.status_name
+    if isinstance(decoded, C.ModelPublicationStatus):
+        return [decoded.publish_address]
+    return sorted(decoded.addresses)
+
+
+def preflight_checks(steps: Iterable[ConfigStep], export: ProjectFile) -> list[Check]:
+    """List the Gets that read what the destructive steps of `steps` change: one per element, model and kind.
+
+    In plan order; `export` is the export the plan was made from. A step that changes a publication is checked
+    against the publication, one that deletes a subscription against the subscription list. The Scene Server / Scene
+    Setup Server subscriptions are not read: the export lists room and device-type groups there that the nodes never
+    got (docs/hidden-features.md §9), so comparing them would stop every plan that leaves a room. There is no
+    Model App Get: no plan unbinds an AppKey.
+    """
+    checks: dict[tuple[int, str, str], Check] = {}
+    for step in steps:
+        if not destructive(step, export):
+            continue
+        change = step.change
+        assert change is not None  # a destructive step carries its edit
+        kind: CheckKind = "publication" if change.kind == "publish" else "subscriptions"
+        if kind == "subscriptions" and change.model.upper() in SCENE_MODELS:
+            continue
+        checks.setdefault(
+            (change.element, change.model.upper(), kind),
+            Check(step.node, change.element, change.model, kind),
+        )
+    return list(checks.values())
+
+
+def register_check(element: Element, scene: int) -> Check:
+    """Return the Scene Register Get that reads whether `element` — a node's scene register — still holds `scene`."""
+    return Check(
+        element.node.unicast, element.address, SCENE_SERVER, "scene_register", scene
     )

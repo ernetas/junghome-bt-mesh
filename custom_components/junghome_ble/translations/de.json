@@ -1602,6 +1602,9 @@
     },
     "logbook_recalled_by": {
       "message": "wurde von {device} abgerufen"
+    },
+    "service_preflight_differs": {
+      "message": "Nicht gesendet: {node} hat auf {message} mit {found} geantwortet, der Mesh-Export sagt aber {expected} ({others} weitere Abweichungen). Die Installation wurde nach dem Mesh-Export geändert (in der JUNG HOME App, durch das Zurücksetzen eines Geräts oder durch eine frühere Aktion, die mittendrin stehen blieb), und der Plan würde überschreiben, was der Export nicht mehr beschreibt. Exportiere das Projekt erneut aus der App oder lass Home Assistant den Export des Gateways übernehmen und führe die Aktion noch einmal aus; mit `force` läuft sie ohne diese Prüfung. {applied}"
     }
   },
   "issues": {
@@ -2078,9 +2081,13 @@
           "name": "Raum über Bereich",
           "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
         },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
+        },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2116,7 +2123,7 @@
         },
         "force": {
           "name": "Auch wenn eine Taste es steuert",
-          "description": "Nimmt das Gerät aus dem Raum, obwohl eine mit dem Raum verknüpfte Taste es schaltet; die Taste schaltet es danach nicht mehr."
+          "description": "Nimmt das Gerät aus dem Raum, obwohl eine mit dem Raum verknüpfte Taste es schaltet; die Taste schaltet es danach nicht mehr. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
         },
         "room_area": {
           "name": "Raum über Bereich",
@@ -2124,7 +2131,7 @@
         },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2184,9 +2191,13 @@
           "name": "Raum über Bereich",
           "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
         },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
+        },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2242,9 +2253,13 @@
           "name": "Szenen-Entität",
           "description": "Statt Name oder Nummer der Szene einzugeben: ihre Szenen-Entität."
         },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
+        },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2264,9 +2279,13 @@
           "name": "Tastenbuchstabe",
           "description": "Welche Taste des Geräts: A, B, C oder D; E1 oder E2 für einen Eingang eines Mini-Aktors."
         },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
+        },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2365,6 +2384,10 @@
         "scene_entity": {
           "name": "Szenen-Entität",
           "description": "Statt Name oder Nummer der Szene einzugeben: ihre Szenen-Entität."
+        },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
         }
       }
     },
@@ -2378,7 +2401,7 @@
         },
         "force": {
           "name": "Auch wenn ein Gerät nicht antwortet",
-          "description": "Löscht die Szene aus dem Mesh-Export, obwohl ein Gerät, das sie gespeichert hat, nicht erreichbar ist oder ablehnt (in der App „Dennoch löschen“). Dieses Gerät behält die Szene, bis „Unbenutzte Szenen löschen“ sie entfernt; eine Reparatur nennt es, und bis dahin bekommt keine neue Szene ihre Nummer."
+          "description": "Löscht die Szene aus dem Mesh-Export, obwohl ein Gerät, das sie gespeichert hat, nicht erreichbar ist oder ablehnt (in der App „Dennoch löschen“). Dieses Gerät behält die Szene, bis „Unbenutzte Szenen löschen“ sie entfernt; eine Reparatur nennt es, und bis dahin bekommt keine neue Szene ihre Nummer. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
         },
         "config_entry_id": {
           "name": "Mesh-Netzwerk",
@@ -2394,7 +2417,7 @@
         },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },
@@ -2627,12 +2650,22 @@
         "devices": {
           "name": "Geräte",
           "description": "Die Leuchten und Steckdosen, die beide Schwellen schalten; ersetzt die aktuelle Liste, ohne Angabe bleibt sie. Ändert sie sich, wird der Mesh-Export neu geschrieben, und Home Assistant übernimmt ihn, ohne die Integration neu zu laden."
+        },
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
         }
       }
     },
     "delete_threshold": {
       "name": "Schwellen löschen",
-      "description": "Löscht beide Schwellen einer JUNG HOME Steckdose mit Energiemessung und trennt die Leuchten und Steckdosen, die sie geschaltet haben, wie das Löschen in der App. Wurden Geräte getrennt, übernimmt Home Assistant den neu geschriebenen Mesh-Export, ohne die Integration neu zu laden. Antwortet auf Anfrage, wie viele der Verknüpfungsnachrichten die Geräte übernommen haben. Nur für Administratoren."
+      "description": "Löscht beide Schwellen einer JUNG HOME Steckdose mit Energiemessung und trennt die Leuchten und Steckdosen, die sie geschaltet haben, wie das Löschen in der App. Wurden Geräte getrennt, übernimmt Home Assistant den neu geschriebenen Mesh-Export, ohne die Integration neu zu laden. Antwortet auf Anfrage, wie viele der Verknüpfungsnachrichten die Geräte übernommen haben. Nur für Administratoren.",
+      "fields": {
+        "force": {
+          "name": "Auch wenn die Geräte vom Export abweichen",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
+        }
+      }
     },
     "audit_network": {
       "name": "Netzwerk prüfen",
@@ -2698,7 +2731,7 @@
         },
         "force": {
           "name": "Auch wenn es nicht antwortet",
-          "description": "Entfernt es aus den Aufzeichnungen des Netzwerks, obwohl es das Zurücksetzen nicht bestätigt (ein Gerät, das endgültig weg ist) oder obwohl Home Assistant über es verbunden ist."
+          "description": "Entfernt es aus den Aufzeichnungen des Netzwerks, obwohl es das Zurücksetzen nicht bestätigt (ein Gerät, das endgültig weg ist) oder obwohl Home Assistant über es verbunden ist. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
         },
         "confirm": {
           "name": "Bestätigen",
@@ -2706,7 +2739,7 @@
         },
         "dry_run": {
           "name": "Probelauf",
-          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird gesendet, geschrieben oder vom Gateway übernommen."
+          "description": "Antwortet nur, was gesendet würde und wie sich der Mesh-Export ändern würde (Antwort anfordern); nichts wird geschrieben oder vom Gateway übernommen, und gesendet werden nur die Lesezugriffe, die die Geräte mit dem Mesh-Export vergleichen."
         }
       }
     },

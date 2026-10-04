@@ -38,6 +38,7 @@ from custom_components.junghome_ble.jhmesh.export import (
     hexaddr,
     scene_infos,
 )
+from custom_components.junghome_ble.jhmesh.plan import Check, register_check
 
 from .executor import Operations
 from .plan import (
@@ -382,9 +383,12 @@ class Scenes(Operations):
             pf = await self.store.load()
             number = find_scene(pf, scene)
             targets = [scene_load(pf, a) for a in addresses]
+            registers = _registers(pf, (store for _, store in targets), number)
             # the keys of those devices that recall the scene first, as the app does (a stop records itself)
             keys = scene_key_steps(pf, [e.node for e, _ in targets], number)
-            await self.executor.send(keys, action="junghome_ble.remove_from_scene")
+            await self.executor.send(
+                keys, action="junghome_ble.remove_from_scene", registers=registers
+            )
             for done, (element, store) in enumerate(targets):
                 try:
                     await self._forget_scene(
@@ -420,6 +424,11 @@ class Scenes(Operations):
                 if (e := pf.cdb.element(a)) is not None
             ]
             keys = scene_key_steps(pf, [e.node for e in members], number)
+            # read before the keys' plan, whose stop `force` passes over: a difference is no member to skip
+            await self.executor.preflight(
+                self.executor.in_order(keys)[0],
+                registers=_registers(pf, members, number),
+            )
             if self.store.dry:
                 pf.remove_scene(number)
                 self.store.planned(
@@ -438,7 +447,9 @@ class Scenes(Operations):
                     ],
                 )
             try:
-                await self.executor.send(keys, action="junghome_ble.delete_scene")
+                await self.executor.send(
+                    keys, action="junghome_ble.delete_scene", check=False
+                )
             except HomeAssistantError as err:
                 if not force:
                     raise
@@ -666,6 +677,13 @@ class Scenes(Operations):
         pf.set_scene_addresses(
             number, [a for a in pf.cdb.scenes.get(number, []) if a != store.address]
         )
+
+
+def _registers(pf: ProjectFile, stores: Iterable[Element], number: int) -> list[Check]:
+    """List the pre-flight reads of the scene registers a call deletes `number` from: those the export says hold it."""
+    members = set(pf.cdb.scenes.get(number, []))
+    held = {store.address: store for store in stores if store.address in members}
+    return [register_check(store, number) for store in held.values()]
 
 
 def scene_action_for(kind: str, state: Any, slat: Any = None) -> V.Action | None:

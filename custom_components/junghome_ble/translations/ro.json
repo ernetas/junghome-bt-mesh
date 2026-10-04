@@ -1601,6 +1601,9 @@
     },
     "logbook_recalled_by": {
       "message": "a fost apelată de {device}"
+    },
+    "service_preflight_differs": {
+      "message": "Netrimis: {node} a răspuns la {message} cu {found}, dar exportul rețelei mesh indică {expected} (alte diferențe: {others}). Instalația s-a schimbat după crearea exportului rețelei mesh (în aplicația JUNG HOME, prin resetarea unui dispozitiv sau printr-o acțiune anterioară oprită la jumătate), iar planul ar suprascrie ce exportul nu mai descrie. Exportă din nou proiectul din aplicație sau lasă Home Assistant să preia exportul gateway-ului și rulează din nou acțiunea; cu `force` rulează fără această verificare. {applied}"
     }
   },
   "issues": {
@@ -2077,9 +2080,13 @@
           "name": "Cameră după zonă",
           "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
         },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
+        },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2115,7 +2122,7 @@
         },
         "force": {
           "name": "Chiar dacă o tastă îl comandă",
-          "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută."
+          "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
         },
         "room_area": {
           "name": "Cameră după zonă",
@@ -2123,7 +2130,7 @@
         },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2183,9 +2190,13 @@
           "name": "Cameră după zonă",
           "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
         },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
+        },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2241,9 +2252,13 @@
           "name": "Entitate scenă",
           "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
         },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
+        },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2263,9 +2278,13 @@
           "name": "Litera tastei",
           "description": "Ce tastă a dispozitivului: A, B, C sau D; E1 sau E2 pentru o intrare a unui mini actuator."
         },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
+        },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2364,6 +2383,10 @@
         "scene_entity": {
           "name": "Entitate scenă",
           "description": "În loc să tastezi numele sau numărul scenei: entitatea ei de scenă."
+        },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
         }
       }
     },
@@ -2377,7 +2400,7 @@
         },
         "force": {
           "name": "Chiar dacă un dispozitiv nu răspunde",
-          "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei."
+          "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
         },
         "config_entry_id": {
           "name": "Rețea mesh",
@@ -2393,7 +2416,7 @@
         },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },
@@ -2626,12 +2649,22 @@
         "devices": {
           "name": "Dispozitive",
           "description": "Luminile și prizele pe care le comută ambele praguri, înlocuind lista actuală; dacă lipsește, lista rămâne. Exportul rețelei mesh este rescris când lista se schimbă, iar Home Assistant îl preia fără să reîncarce integrarea."
+        },
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
         }
       }
     },
     "delete_threshold": {
       "name": "Șterge pragurile",
-      "description": "Șterge ambele praguri ale unei prize JUNG HOME cu contorizare și deconectează luminile și prizele pe care le comutau, ca ștergerea din aplicație. Când au fost deconectate dispozitive, Home Assistant preia exportul rescris al rețelei mesh fără să reîncarce integrarea. Returnează, la cerere, câte dintre mesajele de legare au aplicat dispozitivele. Doar pentru administratori."
+      "description": "Șterge ambele praguri ale unei prize JUNG HOME cu contorizare și deconectează luminile și prizele pe care le comutau, ca ștergerea din aplicație. Când au fost deconectate dispozitive, Home Assistant preia exportul rescris al rețelei mesh fără să reîncarce integrarea. Returnează, la cerere, câte dintre mesajele de legare au aplicat dispozitivele. Doar pentru administratori.",
+      "fields": {
+        "force": {
+          "name": "Chiar dacă dispozitivele diferă de export",
+          "description": "Rulează planul fără să citească mai întâi de pe dispozitive ce elimină sau înlocuiește și fără să compare cu exportul rețelei mesh. Doar când exportul rețelei mesh este sigur corect. Neverificat încă pe dispozitive reale."
+        }
+      }
     },
     "audit_network": {
       "name": "Auditează rețeaua",
@@ -2697,7 +2730,7 @@
         },
         "force": {
           "name": "Chiar dacă nu răspunde",
-          "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el."
+          "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
         },
         "confirm": {
           "name": "Confirmare",
@@ -2705,7 +2738,7 @@
         },
         "dry_run": {
           "name": "Simulare",
-          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este trimis, scris sau preluat de la gateway."
+          "description": "Doar returnează ce s-ar trimite și cum s-ar schimba exportul rețelei mesh (cere răspunsul); nimic nu este scris sau preluat de la gateway și se trimit doar citirile care compară dispozitivele cu exportul rețelei mesh."
         }
       }
     },

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0 (unreleased)
+
+### Added
+
+- Pre-flight reconcile before destructive plans (review-4 W I4). Before a plan that removes or replaces what the
+  export says a node holds — a key rewired or cleared, a load leaving a room, a room deleted, a load leaving a scene, a
+  scene deleted, a threshold's wiring, the others' links to a removed device — the configurator reads it from the
+  nodes (Model Subscription / Publication Get, a member's Scene Register Get) and compares it with the export. A node
+  that differs (the app changed it since the export, a device reset, an earlier plan stopped half-way) stops the plan
+  before its first message with a translated error naming the device, the Get and both values; one that does not
+  answer stops it as unreachable or asleep. A dry run sends the same reads and lists what they found under
+  `preflight`. `force: true` skips the comparison — a new field on `set_room`, `delete_room`, `assign_key`,
+  `clear_key`, `remove_from_scene`, `set_threshold` and `delete_threshold`, and an added meaning of the existing one
+  on `remove_from_room`, `delete_scene` and `remove_device`. Plans that only add send no extra message. Unverified on
+  air.
+
 ## 1.2.0
 
 ### Upgrading

@@ -18,6 +18,7 @@ from custom_components.junghome_ble.mesh_config import (
 
 from .common import (
     _DRY_RUN_FIELD,
+    _FORCE_FIELD,
     _ROOM_FIELDS,
     _SCENE_FIELDS,
     ATTR_ROOM,
@@ -94,6 +95,7 @@ ASSIGN_KEY_SCHEMA = vol.All(
             vol.Optional(ATTR_LOCK_SECONDS): vol.All(
                 vol.Coerce(int), vol.Range(min=0, max=LOCK_SECONDS_MAX)
             ),
+            **_FORCE_FIELD,
             **_DRY_RUN_FIELD,
         }
     ),
@@ -104,7 +106,7 @@ ASSIGN_KEY_SCHEMA = vol.All(
     _key_only_with_device,
 )
 CLEAR_KEY_SCHEMA = vol.All(
-    vol.Schema({**_KEY_FIELDS, **_DRY_RUN_FIELD}),
+    vol.Schema({**_KEY_FIELDS, **_FORCE_FIELD, **_DRY_RUN_FIELD}),
     cv.has_at_least_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
     cv.has_at_most_one_key(ATTR_KEY_ENTITY, ATTR_KEY_DEVICE),
     _key_only_with_device,
