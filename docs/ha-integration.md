@@ -85,9 +85,12 @@ One `light` entity per output. The entity is the device, so its name is the name
   sent, so a stale cached one cannot make the light jump);
   with a colour temperature and a brightness, or to switch it on, a *Light CTL Set* carrying the brightness (the last
   known one, full brightness when none is known or the light is off); with neither, a *Generic OnOff Set*.
-- **Transitions** are not offered yet: neither the app nor the gateway ever sends a transition time, and whether a
-  JUNG dimmer, DALI light or switch insert fades a Set that carries one — or ignores the Set altogether — is still to
-  be probed on air (`docs/hidden-features.md` §11). The support is built and switched off: once a kind of light is
+- **Transitions** are not offered yet: neither the app nor the gateway ever sends a transition time. The on-air
+  sweep (B8, statuses only) found that every kind answers a Set that carries one: the DALI light reports a Lightness
+  fade with its target and remaining time and statuses until it ends, reports none for a CTL Set and switches on at
+  once, and a switch insert switches off only once the transition has run out (`docs/hidden-features.md` §11);
+  whether a light visibly fades, and the dimmer insert and a scene, are still to be checked. The support is built
+  and switched off: once a kind of light is
   known to fade, its lights offer `transition`, which goes into the Set as the nearest transition time (100 ms steps
   up to 6.2 s, then 1 s, 10 s and 10 min steps), *All lights* passes it on when all its lights fade, and the light is
   asked for its state a second after the fade it announced ends. Until then a `transition` (from a light profile, say)
@@ -110,8 +113,12 @@ One `light` entity per output. The entity is the device, so its name is the name
   (a lock nobody had read yet) fails the same way once the lock read says so, and a light known to be locked is not
   marked unavailable for leaving a command unanswered. *All lights* and the room lights send to every member
   unacknowledged and are not refused: a locked member ignores them, as in the app. A toggle of a light whose state is
-  unknown turns it on (Home Assistant's default; the app sends off), deliberately. **Unverified on air**: what a
-  locked load answers to a Set is still to be probed (`docs/hidden-features.md` §12).
+  unknown turns it on (Home Assistant's default; the app sends off), deliberately. On air (the on-air sweep's C3, a
+  switch insert and the DALI insert locked from the command line) a locked light answers an OnOff or Lightness Set
+  with its unchanged state, and publishes its lock to its element group when locked and again on each Set it
+  refuses; Home Assistant takes that publication, so a lock set by another client shows at once
+  (`docs/hidden-features.md` §12). **Unverified on air**: the attributes and the refusal in Home Assistant, and a
+  lock set in the app.
 - **Loads a room thermostat switches, and detector relays** (review-4 F4-16). The app disables a load's controls in
   two more cases, and so does Home Assistant. A light or socket a room thermostat switches — the app's thermostat
   link: the load's *Generic OnOff* server listens to the element group the thermostat's OnOff client publishes to —
@@ -398,7 +405,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Battery | `battery` | % | Yes (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device — **unverified on hardware**: read with `Generic Battery Get` right after one of the node's keys reported an event (the node sleeps otherwise and would not answer), never polled; the level from before a restart until then; while the node reports no level (0xFF) the level its battery indicator stands for (good 50 %, low 15 %, critically low 5 %) |
 | Sleep mode | `enum` | – | No (diagnostic) | Battery wall transmitters and battery mini sensors, on the node device (review-4 F4-16) — **unverified on air**: the app's *Power saving mode*: `awake` while the node was heard from (a key event, an answer, the keep-alive of a change) within the last 6 s — the app's keep-alive period — `asleep` after, `unknown` until it was heard since the start. How long a node really stays awake is not known |
 | Schedules | – | – | No (diagnostic) | Every light, socket, blind and room thermostat whose element hosts the JH Scheduler (all current products): how many of the 16 schedule slots the device holds; attribute `schedules` lists them in the fields [`create_schedule`](#actions-schedules) takes (not recorded in the history). Read once per link, updated by the schedule actions; not yet tried on a real device |
-| Switches off at | `timestamp` | – | No | Every light and socket: the moment the load will be off, when its last `Generic OnOff Status` said it is on, heading off, with a known remaining time (a run-on time running out, a fade to off); `unknown` otherwise. **Unverified on air**: whether a JUNG load with a *Run-on time* reports the time left this way is not known (the app ignores the field), so the sensor may stay `unknown` for good. Read-only; `homeassistant.update_entity` asks the load for its state |
+| Switches off at | `timestamp` | – | No | Every light and socket: the moment the load will be off, when its last `Generic OnOff Status` said it is on, heading off, with a known remaining time (a fade to off: a switch insert switched off with a transition reports it); `unknown` otherwise. A *Run-on time* is not reported this way: on air a switch insert with one answered with its plain state and switched off by itself (the firmware does not report the time left), so through a run-on time the sensor stays `unknown`. Read-only; `homeassistant.update_entity` asks the load for its state |
 | Switch-on threshold, Switch-off threshold | `power` | W | No (diagnostic) | Metering sockets only: the power level of the socket's two [thresholds](#actions-thresholds) (LBC Admin `0x5004` / `0x5005`), `unknown` while none is set; attributes `duration` (s), `enabled` and `devices` (the lights and sockets both thresholds switch, from the export's wiring). Read once per link, updated by the actions; not yet tried on a real socket |
 | IP address | – | – | Yes (diagnostic) | On the gateway's node device: the address the gateway node serves over the mesh (`0xC002`, where the app finds the gateway), read once per connection; redacted from the diagnostics |
 | Proxy node | – | – | Yes (diagnostic) | On the *mesh network* device: the JUNG node Home Assistant is currently connected through (known from the node's Bluetooth address the moment the link is up — JUNG nodes advertise from their MAC — and confirmed by the proxy's own Filter Status), `unknown` while disconnected |
@@ -597,8 +604,8 @@ Action Setup* servers after a connection (the export only lists the members; `"s
 answered; not again within 15 minutes of the last complete read when the link before lasted a minute — unverified on
 air). The export lists a two-channel device by its first channel whichever channel stored the scene, so every
 channel is asked, and each one holding an action for the scene is a member, as in the app. `active_members` names
-the members whose scene register reports this scene as its current one (read with a *Scene Get* after a connection,
-on the same terms as the actions, then from the *Scene Status* the devices publish after each recall; a device that changes state since
+the members whose scene register reports this scene as its current one (read with a *Scene Get* after a connection
+— on air every scene register answered it —, on the same terms as the actions, then from the *Scene Status* the devices publish after each recall; a device that changes state since
 reports no current scene). A recall from a key, the app or the gateway counts as an activation like one from Home
 Assistant: the entity's state is the time of the last one. The scenes the app makes for its timers (named
 `TimerScene …`) get no entity, as the app's scene list leaves them out. Scenes are created, filled and removed with
@@ -732,23 +739,26 @@ refresh reads, which is also the light's own colour-temperature limits). While *
 switch-on brightness and colour temperature are unavailable, as the app greys them out; turn it off first. The four
 brightness entities and the colour temperature are on the app's first Parameters page and enabled by default; the
 colour-temperature range is expert and disabled by default. A change to the brightness range is confirmed by the
-dimmer's group publication, not a reply. The installation's DALI insert neither answered nor applied a
-colour-temperature range Set when probed (`hidden-features.md` §9), so there a change fails as *not applied* after
-the read-back. Not yet tried on a real device.
+dimmer's group publication, not a reply. A change to the colour-temperature range is confirmed by the light's
+*Range Status*: on air the DALI insert applied the range Home Assistant sends and answered at once, to the sender
+and to its element group (`hidden-features.md` §9); a light that answers nothing is read back, and a range it kept
+fails the change as *not applied*. Home Assistant's own changes from these entities are not yet tried on a real
+device.
 
 The app's **lock function** (`0x0009` EnforceOutput) is a **Lock** switch on every light, socket and blind (config,
 disabled by default — the app has it on the device page, not the Parameters page). On sends the app's "lock":
 `[02][01][time u16 LE s]`, the output keeps its current state and ignores its keys, scenes and HA until unlocked;
 off sends command 0 with the priority, time and value last read, as the app does (so it also ends a wind alarm or a
-lock-out protection set elsewhere). Its **Lock time limit** number next to it (seconds, 0 = no limit, up to 17999 —
-4:59:59, the end of the app's H:MM:SS picker; kept by HA, not a device setting) is the time sent with the next lock;
-a limit kept in minutes by an earlier version is converted. The lock state is read once
-per connection — no device publishes it — in one Get shared with the light or socket, which reads it itself and
+lock-out protection set elsewhere), or the plain unlock `00 01 00 00` when the load reports no lock: an unlocked
+load reports priority 0, and on air a light refused an unlock with priority 0. Its **Lock time limit** number next
+to it (seconds, 0 = no limit, up to 17999 — 4:59:59, the end of the app's H:MM:SS picker; kept by HA, not a device
+setting) is the time sent with the next lock; a limit kept in minutes by an earlier version is converted. The
+lock state is read once per connection, in one Get shared with the light or socket, which reads it itself and
 shows it as `locked` (see *Locked loads* under [Light](#light)), and read back 5 s after a timed lock should have
-ended, since the device unlocks itself silently. Attributes while locked: `lock_mode` (`keep_state`,
+ended, since the device is not known to report its end. A light also publishes its lock to its element group when
+locked (seen on air), which Home Assistant takes at once. Attributes while locked: `lock_mode` (`keep_state`,
 `lockout_protection`, `wind_alarm`, `enforced_value` — the last is what a rocker's "turn on and lock" key leaves)
-and `lock_time_limit` (s). A lock set from a rocker or the app shows in HA only at the next read. Not yet tried on a
-real device.
+and `lock_time_limit` (s). Not yet tried on a real device.
 
 A blind also has the lock functions of its page in the app as a **Lock function** select (config, disabled by
 default, unverified on hardware): *Unlocked* (command 0 with the fields last read, like the switch's off), *Locked
@@ -869,7 +879,10 @@ insert, a buttons device's model the layout, and each key's event entity gets a 
 Assistant's language. The positions of the mixed layouts (*Rocker | Button*, *Button | Rocker*) follow the documented
 element order and are unverified on air. A push-button that advertises another insert than the export's raises the
 repair issue [*JUNG HOME push-buttons with another insert than in the export*](#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export);
-the export's insert keeps deciding its devices until a new export is loaded. The device diagnostics show, per node,
+the export's insert keeps deciding its devices until a new export is loaded. On air the adverts of every push-button
+matched the export but one, a 1-gang push-button exported with a switch insert and advertising an extension: the
+repair was raised for it at start and its device kept the export's insert, and no InsertId or layout Get went out,
+since the export named every insert. The device diagnostics show, per node,
 what the export, the advertisement and an answer said (`insert`) and the decoded answers (`node_info`).
 
 ### Firmware
@@ -1849,9 +1862,12 @@ response_variable: audit
 A device takes three Gets per model: about a hundred for a push-button, sent five at a time like the state refresh
 after a connection, so auditing every device takes a few minutes. A device that answers none of the eight
 device-wide Gets (six states, two key lists) is reported unanswered and not asked about its models. The last result per device stays in the
-diagnostics until the integration reloads or follows a changed export. Not yet run on the installation; the CLI's earlier `config audit`
-(publications and subscriptions only) was, with the results in `docs/hidden-features.md` §9. The Friend and key
-Gets are unverified on air.
+diagnostics until the integration reloads or follows a changed export. The CLI's `config audit` runs the same
+audit: its earlier run (publications and subscriptions) is in `docs/hidden-features.md` §9, and in the on-air sweep
+it asked a light and a socket device for their keys and Friend — both lists `[0]`, Friend *not supported* — and
+found the light's key element's Light Lightness and Light CTL clients subscribed to the element group, which the
+export does not list there (`subscriptions_extra`, harmless: the clients hear the load's statuses). `audit_network`
+itself is unverified on air.
 
 **Locating a device.** `junghome_ble.locate_node` (administrators only) has one device advertise its *Node
 Identity* — the Mesh Proxy advertisement that names the device by a hash only this mesh's keys resolve — instead of
@@ -2376,7 +2392,7 @@ it, listed as *export → device*: the insert was replaced after the export was 
 the export's insert, so a blind may show as a light or the other way round, in the app too. Check the device in the
 JUNG HOME app, export the network again and update the integration (**Reconfigure**); the issue clears as soon as
 the device advertises the export's insert again, and is not raised again by an export that names the new insert.
-Unverified on air.
+Seen raised on air for a push-button whose advert really differs; its clearing is unverified on air.
 
 ### Repair issue "JUNG HOME devices with a wrong clock"
 

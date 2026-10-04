@@ -330,7 +330,7 @@ question 1; until verified, HA must poll (`_refresh_all` + after each command).
 | Socket power, voltage, current | Sensor Status (loc `0040` element) | **yes**, on change, when "sensor values for gateway" is on (verified) | push; one Sensor Get at connect (done) |
 | Socket energy total, operating hours | SIG Admin Property Status 0x4A | no | poll (minutes) |
 | Blind position / slat | Generic Level Status | configured; cadence unverified | push + Get at connect and after each command |
-| Blind mode (0x1104), lock state (0x0009) | LBC Admin Status | unknown (open q. 1) | Get at connect and after each command |
+| Blind mode (0x1104), lock state (0x0009) | LBC Admin Status; a light's lock also as an LBC User Status to its element group | blind mode unknown (open q. 1); a light's lock **yes**, on a lock and on each refused Set (verified) | Get at connect and after each command; a published lock is taken |
 | RTR current temperature | Sensor Status 0x004F | expected when "sensor values for gateway" is on; unverified | push + Sensor Get at connect; fall back to polling |
 | RTR set-point | Generic Level Status (set-point element) | configured; unverified | push + Get at connect |
 | RTR mode / boost / auto-manu | LBC Admin Status 0x120B / 0x120D / 0x1246 | unknown | Get at connect; poll boost while active (app: 5 s) |
@@ -398,7 +398,9 @@ Ordered by user value × certainty. "Builders/decoders" refer to `jhmesh/message
    *Partly answered (`hidden-features.md` §9): a property changed by an Admin Set is **not** published
    (unicast Status only), and a 10-minute sniffer baseline of the idle mesh holds no vendor property status to any
    group at all — only Sensor Statuses. Local changes on devices this installation lacks (RTR, blinds, detectors)
-   remain untested; plan on polling.*
+   remain untested; plan on polling.* *The lock is the exception (the on-air sweep, `hidden-features.md` §12): an
+   Admin Set of `0x0009` that locks a light makes it publish an LBC **User** Property Status (`D1 27 05`) of
+   `0x0009` to its element group, twice, and it publishes it again on every Set it refuses while locked.*
 2. **Blind movement reporting.** Does the position element publish `Generic Level Status` at movement start
    (target ≠ present, remaining time) and at the end, or only at the end? Does the slat element publish during
    the slat move? Is the `Generic Delta Set` direction semantic (−1 up / +1 down / 0 stop) also honoured when sent

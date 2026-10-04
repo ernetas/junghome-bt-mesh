@@ -43,6 +43,18 @@
 - The integration is called *JUNG HOME Bluetooth Mesh* (was *JUNG HOME (Bluetooth Mesh)*) in Home Assistant's
   integration list, HACS and the docs (decision M15). Nothing else changes: the domain, entries, devices and entities
   stay as they are, and the gateway still shows Home Assistant's access request as *Home Assistant (Bluetooth Mesh)*.
+- What the on-air sweep settled (review-4 brief 30; groups A–D, from the command line, without Home Assistant's
+  API) is no longer called unverified in the reference, the user guide and the parity ledger, and the docs say what
+  it found. The DALI insert applies the colour-temperature range Home Assistant sends and answers it at once (an
+  earlier probe had it ignore the Set), so *Minimum* / *Maximum colour temperature* are expected to work there. A
+  locked light keeps its state, answers a Set with that state and announces its lock to its element group, which
+  Home Assistant takes as the lock. A run-on time is not reported in the OnOff Status, so *Switches off at* stays
+  unknown through one (the sensor stays, for a fade to off). The scene registers answer the Scene Get after a
+  connection, every node answers the connect-time Time Set, the connect-time order holds on a first link, the
+  audit's key and Friend Gets are answered, and the repair *JUNG HOME push-buttons with another insert than in the
+  export* is raised for a real difference. Still open: Home Assistant's own side of each (its entities, attributes
+  and refusals), a second link within 15 minutes, a lock set in the app, and whether anything visibly fades
+  (`docs/hidden-features.md` §11–§13 have the transitions, locks and firmware-only properties as seen).
 - *Start dimming*, *Stop dimming* and *Dim by a step* are no longer called untried, in the action descriptions (every
   language), the reference and the user guide: review 3 saw them dim, stop and step a dimmer on the installation. A
   tunable-white channel has not been dimmed this way yet.

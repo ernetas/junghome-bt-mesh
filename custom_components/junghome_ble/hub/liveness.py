@@ -161,10 +161,10 @@ class Liveness:
         nothing about whether their keys still work, so they are never marked (the app does not show them as "No
         connection" either).
 
-        Nor is a load known to be locked (`load_locked`) for a `command` it left unanswered: a locked load may well
-        ignore the Set, and is not gone for it — it is asked again with a state Get after
-        UNREACHABLE_RECHECK, whose silence counts as any other. Whether a locked load answers a Set at all is
-        unverified on air (`docs/hidden-features.md` §12).
+        Nor is a load known to be locked (`load_locked`) for a `command` it left unanswered: it is not gone for
+        that — it is asked again with a state Get after UNREACHABLE_RECHECK, whose silence counts as any other. On
+        air a locked load did answer its Sets, with its unchanged state (`docs/hidden-features.md` §12); this only
+        keeps a lost answer from counting against it.
         """
         node = self.hub.cdb.node_by_addr(address)
         if node is None or node.pid in BATTERY_PIDS:

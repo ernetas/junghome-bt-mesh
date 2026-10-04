@@ -861,9 +861,10 @@ def switch_off_sensors(hub: JungHomeHub) -> list[JungHomeSwitchOffAt]:
 class JungHomeSwitchOffAt(JungHomeEntity, SensorEntity):
     """When the load will be off, by the remaining time of its last Generic OnOff Status (`ElementState.off_at`).
 
-    A Status carries it only while the load is in a transition; a JUNG load with a run-on time might report the
-    time left that way, or might not: unverified on air, so the sensor is off by default and
-    unknown whenever the load is off, stays on, or sent no remaining time. Read-only: nothing is written.
+    A Status carries it only while the load is in a transition: on air a switch insert switched off with a
+    transition did, one running out its run-on time did not (the firmware does not report the time left), so through
+    a run-on time the sensor stays unknown. Off by default, and unknown whenever the load is off, stays on, or sent
+    no remaining time. Read-only: nothing is written.
     """
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP

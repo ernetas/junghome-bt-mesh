@@ -369,9 +369,10 @@ class JungHomeColorTempBound(SetupStateEntity, NumberEntity):
     As the app's range slider: 2000 to 10000 K in 100 K steps (`cells/Y.java` `k`), and a Set carries both ends, the
     other one as read, clamped into those limits as the app clamps both (`p234v7/V0.java`, `p097i9/b.java`). A
     minimum above the maximum is refused. The range is also the light's own slider limits
-    (`JungHomeHub._on_ctl_range_status`): an applied change moves them. The installation's DALI insert neither
-    answered nor applied a range Set on air (`hidden-features.md` §9): the read-back then fails the change as not
-    applied rather than show a range the light does not have.
+    (`JungHomeHub._on_ctl_range_status`): an applied change moves them. On air the installation's DALI insert
+    applied a range Set and answered it at once with a Range Status, to the sender and to its element group
+    (`hidden-features.md` §9); a light that answers nothing is read back, and a range it kept fails the change as
+    not applied rather than show a range the light does not have.
     """
 
     _attr_native_min_value = WHITE_RANGE_MIN_KELVIN

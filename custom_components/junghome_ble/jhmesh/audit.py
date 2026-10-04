@@ -8,8 +8,7 @@ so. The audit asks each node, with Gets only (it never sends a Set), and compare
   Beacon, GATT Proxy, Friend — against the export's `features`, `relayRetransmit`, `networkTransmit`, `defaultTTL`
   and `secureNetworkBeacon` (a state the export does not record is reported, not compared);
 - the keys the node holds: NetKey Get, and AppKey Get for every NetKey the export gives the node —
-  against its `netKeys` and `appKeys`. Indexes only: a key list carries no key, and no key is ever compared. These
-  and the Friend Get are unverified on air;
+  against its `netKeys` and `appKeys`. Indexes only: a key list carries no key, and no key is ever compared;
 - for every model of every element except the Configuration Server / Client (device-key models: no
   publication, no subscriptions, no AppKey): Model Publication Get, SIG / Vendor Model Subscription Get and
   SIG / Vendor Model App Get — against the model's `publish`, `subscribe` and `bind`.

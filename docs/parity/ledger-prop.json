@@ -52,7 +52,7 @@
     "tests/jhmesh/test_devices.py::test_the_insert_comes_from_the_export_then_from_what_the_node_reported",
     "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
    ],
-   "note": "Unverified on air: the InsertId Get (LBC User 0x0002, inserts.py::NodeInserts.read_unknown) is asked only of a push-button whose export and advertisement told nothing, after the export's value and the JUNG advertisement (the app's own order differs: it reads the InsertId at provisioning, where onboard.py::async_add_device takes the advertised function instead; commission.py::NOT_COVERED still lists that read). The node device's model names the insert (inserts.py::NodeInserts.node_model), the device diagnostics decode the answer."
+   "note": "Unverified on air: the InsertId Get (LBC User 0x0002, inserts.py::NodeInserts.read_unknown) is asked only of a push-button whose export and advertisement told nothing, after the export's value and the JUNG advertisement (the app's own order differs: it reads the InsertId at provisioning, where onboard.py::async_add_device takes the advertised function instead; commission.py::NOT_COVERED still lists that read). The node device's model names the insert (inserts.py::NodeInserts.node_model), the device diagnostics decode the answer. On air (`sweep-ha`, docs/on-air-sweep.md A5) no InsertId or ButtonLayout Get went out: every push-button has an export InsertId; one advertising another insert than the export's raised insert_mismatch."
   },
   {
    "id": "prop:0x0003",

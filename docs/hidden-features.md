@@ -41,11 +41,12 @@ device_lock `0001`, button_layout `5001`, LED triples `A000`–`A005`, automatic
 switch_blocking_time `100D`, enforced_output `0009`; the DALI insert adds **hotel_dimm_value `1008` (= 51)**,
 **night_dimm_value `1011` (= 51)**, **basic_light_function_enable `1009` (= 0)**, **presentation_mode_enable
 `1012` (8 bytes `00 6f00 2008 000000`, RW)**, **presentation_mode_time `1013` (`b400 0020 08000000`)**,
-dim_to_warm `100E`, **server_state_publish_request `000E` (empty)** and an unnamed **`1FFF`** (empty). The
+dim_to_warm `100E`, **server_state_publish_request `000E` (empty)** and an unnamed **`1FFF`** (empty; a Get is
+answered with the id alone, on-air sweep A7). The
 switch insert's list ends in `1008` repeated five times — a firmware quirk (fixed-size list, unused slots carry
 the last id). LBC Manufacturer (identical on every node): insert_id `0002`, secure_element_version `0003`,
 bootloader_version `0004`, the schema versions `000A–000C`, **current / all-time runtime stats `0F01/0F02`**
-(empty on the socket). LBC User = Admin ∪ Manufacturer (read view). SIG Manufacturer / User: hardware_revision
+(a Get is answered with the id alone everywhere it was asked, where listed too: nothing counts, §13). LBC User = Admin ∪ Manufacturer (read view). SIG Manufacturer / User: hardware_revision
 `0010` (`"10000000"`), software_version `001A`, **date_of_manufacture `000C`** (SIG *Device Date of Manufacture*,
 uint24 days since 1970: the socket `0172` reads `2022-09-22`), manufacturer_name `0011` (`Albrecht Jung GmbH &
 Co.KG`). SIG Admin: empty on push-buttons.
@@ -240,14 +241,21 @@ publications match; 44 of 52 subscription lists match; **the 8 that differ are a
 Setup Server (`1204`) entries** — the export records room groups and the device-type group (`FEF5` / `FEF8`) on
 them, the nodes hold only the element group on `1203` and nothing on `1204`. Phantom CDB entries, harmless in
 practice: the app, the rockers and HA recall scenes to `0xFFFF` (`network-logic.md` §4.3), never to a room group.
-Worth remembering when `export.py` mirrors the app's room wiring.
+Worth remembering when `export.py` mirrors the app's room wiring. The on-air sweep's audit of a light node (A8)
+found the other direction too: its key element's Light Lightness Client and Light CTL Client (`1302`, `1305`)
+subscribe to the load's element group, which the export does not list on them (`audit_network` reports it as
+`subscriptions_extra`). Harmless as well: a client that hears the load's statuses.
 
 **How Sets are acknowledged** (`probe_sets.py`, `probe_sig_sets.py`; the matrix `device-settings.md` §13 q.3 was
-waiting for): LBC Admin Property Set → unicast Status in ~0.25 s, no publication, value changed or not; Admin Set
-Unack (`C4`, first use) applied silently; the Set's access byte is stored (userAccess 1 → 3). SIG: OnPowerUp Set,
-Lightness Default Set, CTL Default Set → unicast Status; Lightness Range Set → group publication only (×2, like
-OnOff Set); **CTL Temperature Range Set → no answer, no publication, no change** (the DALI insert's 2000–6000 K is
-fixed).
+waiting for): LBC Admin Property Set → unicast Status in ~0.25 s, no publication, value changed or not (except the
+lock function `0x0009`, whose change a load also publishes to its element group, §12); Admin Set Unack (`C4`,
+first use) applied silently; the Set's access byte is stored (userAccess 1 → 3). SIG: OnPowerUp Set, Lightness
+Default Set, CTL Default Set → unicast Status; Lightness Range Set → group publication only (×2, like OnOff Set);
+CTL Temperature Range Set → no answer, no publication, no change in this pass. **The on-air sweep (C1) found
+otherwise**: the acknowledged Set `34 08 70 17` (2100..6000 K, Home Assistant's message) to the DALI insert's CTL
+element was answered at once with a *Range Status* (`8263`, status 0, 2100..6000 K) to the sender and to the
+element group, and the Range Get read the new range; set back to 2000..6000 K the same way. The DALI insert's range
+is not fixed.
 
 **`0x000E server_state_publish_request`** (Admin Set `01` to `0148`): acknowledged with an empty Admin Status,
 **no publication followed** in the next 6 s — not the one-message refresh hoped for, at least not with that value.
@@ -370,7 +378,7 @@ each element's sequence number moved to the next `0x010000` block on its own (`0
 **Left open from the list**: the vendor GATT channel `2f98a382` / `a0dc3a44` (writes only with a device to spare),
 and everything about devices this installation lacks.
 
-## 11. Transitions on a Set (probe pending)
+## 11. Transitions on a Set (statuses probed)
 
 Neither the app nor the gateway ever sends a transition time: the gateway's OnOff and CTL Temperature Sets carry
 transition 0, every other Set none, and the nodes' Default Transition Time is 0 (§3; the DALI insert ignores a DTT
@@ -394,25 +402,57 @@ prints `target=… remaining=…`), and does a final Status follow at the end of
 all means the load ignores a Set with a transition: that kind must stay out of `TRANSITION_KINDS`. The results go
 here, and into `TRANSITION_KINDS` / `SCENE_TRANSITIONS`.
 
+**What the statuses showed** (on-air sweep B8, CLI only, 3 s each; nobody watched the lights, the dimmer insert and
+the scene were not run — there is no dimmer here, and a recall to all nodes is not harmless):
+
+| load, Set | answer | after it |
+|---|---|---|
+| DALI, Lightness Set down / up | target and remaining time (2.8 s), the target rounded to the DALI's step (6553 → 6425) | statuses to the element group about every 100 ms over the last half second, a final one at the end (after 3 s) |
+| DALI, CTL Set | at once, the new lightness and temperature, no target | nothing: the transition is not reported (whether it fades is not known) |
+| DALI, OnOff Set off | a short Status (on), then *on, target off, remaining 0* | off after about 3 s |
+| DALI, OnOff Set on | at once | full level within 0.4 s: no transition |
+| switch insert, OnOff Set on | at once | — |
+| switch insert, OnOff Set off | *on, target off, remaining 2.8 s* | off after 3 s: the relay waits the transition out |
+
+So every kind answers a Set with a transition; the DALI insert's Lightness Set reports a fade the way the Mesh
+Model specification describes, the CTL Set and the switching on do not, and a switch insert delays its switching
+off by the transition. Whether anything visibly fades needs a person, so `TRANSITION_KINDS` stays empty and
+`SCENE_TRANSITIONS` off (review-4 brief 31 decides them).
+
 A key in scene mode carries a transition of its own (KeyModeSceneConfig `0x5002`, `[scene u16][transition u32 ms]`;
 the app writes 0, `mesh_config.py` too): writing one from `assign_key` waits for this probe to show that a recalled
 scene fades, and for the key-scene check of the on-air sweep (review-4 brief 30).
 
-## 12. A locked load and a Set (probe pending)
+## 12. A locked load and a Set (probed without the app)
 
 A load locked by its lock function (`0x0009` EnforceOutput: the app's *Lock*, a key in lock mode, Home Assistant's
-*Lock* switch) keeps its state against its keys, scenes and remote commands. What it **answers** to an acknowledged
-Generic OnOff or Light Lightness Set while locked is **not known yet** (review-4 F4-2): a Status with its unchanged
-state, or nothing at all. Nor is it known whether a lock set in the app reaches anyone but the app: the Status
-answering the app's Set goes to the app's address, and no load was seen publishing its lock.
+*Lock* switch) keeps its state against its keys, scenes and remote commands. Review-4 F4-2 asked what it **answers**
+to an acknowledged Generic OnOff or Light Lightness Set while locked — a Status with its unchanged state, or nothing
+at all — and whether a lock reaches anyone but the client that set it.
+
+**What the probe showed** (on-air sweep C3, CLI only, on a switch insert and on the DALI insert; each unlocked again):
+
+- **Lock** (Admin Set `02 01 00 00`): the Admin Property Status to the sender carries 8 bytes, `02 01 0000` and a
+  4-byte value; and **the load publishes an LBC *User* Property Status of `0x0009` to its element group**, twice. A
+  lock does reach others than the sender.
+- **While locked**, an OnOff Set (switch insert, DALI) and a Lightness Set (DALI) are each answered, to the sender,
+  with a Status showing the unchanged state (off / present 0), and the load publishes its `0x0009` Status to the
+  group again. It keeps its state. No Set went unanswered.
+- **Unlock with priority 0** (`00 00 00 00`) is refused: a Status with the property id alone, the lock stays.
+  `00 01 00 00` (the app's unlock) works, and the read-back, `00 00 0000` and the value, is exactly what was read
+  before the lock: an unlocked load reports priority 0.
+- Not seen: a lock set in the app itself, a timed lock running out, a dimmer insert (none here).
 
 Home Assistant reads every light's and socket's lock once per link and refuses commands to a load known to be locked
-(`config_entities.LoadLock`). Until this probe ran, both outcomes are handled: a Status with the old state counts for
-the Set when no other request is out to the load (review-4 D32), so the entity reads the lock and reports the
-refusal; silence from a load known to be locked does not mark it unreachable (`Liveness.missed_answer`).
+(`config_entities.LoadLock`). It takes the load's published `0x0009` Status like any vendor Status, so a lock set
+by another client shows at once; a command a locked load answers with its old state counts for the Set when no
+other request is out to the load (review-4 D32), so the entity reads the lock and reports the refusal; and an unlock
+from Home Assistant never carries priority 0 (`LockFunctionEntity.async_unlock`: the plain unlock when no lock is
+known, else the lock's own priority). Silence from a load known to be locked still does not mark it unreachable
+(`Liveness.missed_answer`), for an answer lost on the air.
 
-The probe, with `tools/mesh_poc.py listen` (or the sniffer) running alongside, on a switch insert and on a dimmer or
-the DALI insert, each unlocked again at the end:
+The probe, for a dimmer insert or a lock set in the app, with `tools/mesh_poc.py listen` (or the sniffer) running
+alongside, each load unlocked again at the end:
 
     tools/mesh_poc.py prop get <element> enforced_output                  # unlocked: command 00
     tools/mesh_poc.py prop set <element> enforced_output hex:02010000     # lock the current state, no time limit
@@ -420,38 +460,39 @@ the DALI insert, each unlocked again at the end:
     tools/mesh_poc.py lightness <element> 30000                           # the dimmer / DALI insert only
     tools/mesh_poc.py prop set <element> enforced_output hex:00010000     # unlock
 
-For each Set: does a Status come back (to the CLI, or published to the element group), and with which state — or
-does the CLI time out after its attempts? Then lock the same load in the app (device page, *Lock*) and unlock it
-again, watching `listen`: does a `0x0009` Status reach anyone but the app? The results go here; the code markers
-that `docs/on-air-sweep.md` C3 names go once they agree.
+Then lock the same load in the app (device page, *Lock*) and unlock it again, watching `listen`: the `0x0009`
+Status to the element group should appear as it did for the CLI's lock.
 
-## 13. Firmware-only properties (probe pending)
+## 13. Firmware-only properties (probed in part)
 
-Review-4 brief 36 (F4-3, F4-9, F4-10, F4-11). What is established, from §2, §9 and §10 alone:
+Review-4 brief 36 (F4-3, F4-9, F4-10, F4-11). What is established, from §2, §9, §10 and the on-air sweep's A7 (read
+only) and C6 (set and restored, CLI only, nobody at the keys):
 
 | id | name (gateway firmware) | where it was read | value | settled? |
 |---|---|---|---|---|
 | `0x000E` | server_state_publish_request | every node | write-only trigger | **yes** (§10): a dimmer publishes all its light states; others ignore it. No entity: Home Assistant reads the states itself |
-| `0x0F00` | transmission_settings | key elements, socket meter (LBC Admin) | `0100` | no — the brief's hypothesis: the meter's publication rhythm (about 65 s, §3) |
-| `0x0F01` / `0x0F02` | current / all-time runtime stats | every node's LBC Manufacturer server | empty on the socket | no — whether they count anything |
-| `0x500C` | key_toggle_enable | key elements (LBC Admin) | `01` | no — whether `00` stops a single key toggling |
-| `0x1008` / `0x1011` | hotel / night dim value | DALI insert only | `51` / `51` | no — unit (percent?) and when they apply |
-| `0x1009` | basic_light_function_enable | DALI insert only | `0` | no |
-| `0x1012` / `0x1013` | presentation mode enable / time | DALI insert only | 8 bytes each (`00 6f00 2008 000000`, `b400 0020 08000000`) | no — layout unknown; **never enabled unattended** |
-| OnOff Status `[present][target][remaining]` | run-on time `0x1007` | — | — | no — whether a load with a run-on time reports the time left |
-| `0xA0xx` | LED mode `[r][g][b][mode]`, 0..100 | push-buttons, sockets | app palette only | no — whether a colour outside the palette is accepted and shown |
+| `0x0F00` | transmission_settings | key elements, mini-actuator inputs, socket meter (LBC Admin) | `0100` | no — on the meter `0000` is answered `0100`, `0101` is answered `0100`, `0200` is kept; with each, over four minutes, the meter kept its rhythm (power, voltage and current about every 65 s, plus statuses on change), so no setting showed an effect |
+| `0x0F01` / `0x0F02` | current / all-time runtime stats | every node's LBC Manufacturer server | the id alone everywhere asked (a push-button, a mini actuator, a socket and its meter, the DALI insert), where listed too | **yes**: nothing counts; no entity |
+| `0x500C` | key_toggle_enable | key elements, mini-actuator inputs (LBC Admin) | `01` | no — whether `00` stops a single key toggling needs a person at the key |
+| `0x1008` / `0x1011` | hotel / night dim value | DALI insert only (a switch insert answers `0x1008` with the id alone) | `33` / `33` | hotel: **yes**, a level in 1/255 (`0x33` = 51 = 20 %, below); night: no — when it applies needs the dark and a person |
+| `0x1009` | basic_light_function_enable | DALI insert only | `00` | **yes**: with `01`, an OnOff Set off leaves the light on at the hotel value (OnOff Status on, CTL Status lightness 13107 = 20 %), and moves its Lightness Last there and its colour temperature to 2700 K |
+| `0x1012` / `0x1013` | presentation mode enable / time | DALI insert only | 8 bytes each (`006f002008000000`, `b400002008000000`) | no — layout unknown, left as read; **never enabled unattended** |
+| OnOff Status `[present][target][remaining]` | run-on time `0x1007` | a switch insert, run-on 20 s | the short form | **yes**: the On Set's Status and a Get during the run-on carry no target or remaining time, and the light publishes off by itself at the end; this firmware does not report the time left |
+| `0xA0xx` | LED mode `[r][g][b][mode]`, 0..100 | push-buttons, sockets | on `04640000`, off `641b0000` | in part: `32143c00`, outside the app's palette, is accepted and read back unchanged; whether the LED shows it needs a person |
 
-So Home Assistant exposes none of the unsettled ids and writes none of them. What it has meanwhile: an allow-list,
+So Home Assistant exposes none of these ids and writes none of them yet. What it has meanwhile: an allow-list,
 `config_entities.FIRMWARE_ENTITIES` (empty), of firmware-only ids a probe settled — only those become config
 entities, disabled by default, and only with a codec (the ids above stay `Raw`); the runtime statistics sit on the
 Manufacturer server in the catalogue, where every node lists them; and every light and socket has a *Switches off
-at* sensor (disabled by default, read-only) from the remaining time of an OnOff Status heading off, which stays
-unknown if no JUNG load ever reports one.
+at* sensor (disabled by default, read-only) from the remaining time of an OnOff Status heading off. A run-on time
+is not reported that way (above), so the sensor stays unknown through one; a transition to off is (a switch insert
+switched off with a 3 s transition answers *on, target off, remaining 2.8 s*, §11). The sensor is kept for now.
 
 The probe, in two halves of `on-air-sweep.md`: **A7** reads every id above (twice for the statistics, minutes apart)
 and the OnOff Status of a light whose run-on time is set, right after its key switched it on — read-only, any time;
 **C6** sets and restores them with someone at home (the meter's rhythm under `0000` / `0200` / `0101`, a key with
 `500C = 00`, the basic-light enable and night value on the DALI insert, the presentation time field, a 20 s run-on
-time, an LED colour outside the palette). The outcomes go here and into `android/properties.md` §1.10; then codecs
-for the settled ids, their entries in `FIRMWARE_ENTITIES` (a number for a percentage, a switch for an enable), and
-the RGB LED light if the colour step worked.
+time, an LED colour outside the palette). What is still open: the key toggling, the night value, the presentation
+ids, whether the LED shows a colour outside the palette, and the dimmer insert (none here). The outcomes go here and
+into `android/properties.md` §1.10; then codecs for the settled ids, their entries in `FIRMWARE_ENTITIES` (a number
+for a percentage, a switch for an enable), and the RGB LED light if the colour step works.

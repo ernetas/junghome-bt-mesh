@@ -11,12 +11,13 @@ from tools import on_air
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKLIST = ROOT / "docs" / "on-air-sweep.md"
-# the rows review 4 brief 30 names, each carrying its on-air procedure in the ledger
+# the rows review 4 brief 30 names, each carrying its on-air procedure in the ledger (the range rows only the part the
+# sweep's CLI probe could not settle, Home Assistant's own Set)
 BRIEF_ROWS = (
     "air:access:8264.missing",
     "msg:op:8241.note",
-    "msg:op:826b.missing",
-    "prod:param:lamp:tunable-white-range.missing",
+    "msg:op:826b.note",
+    "prod:param:lamp:tunable-white-range.note",
     "net:uc:createthreshold.note",
     "net:uc:togglethreshold.note",
     "net:uc:deletethreshold.note",

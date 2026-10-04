@@ -19,7 +19,9 @@ the device at once and builds the devices at the next reload. A push-button adve
 export's (an insert was swapped after the export was made) raises the `insert_mismatch` repair: only a new export
 tells the app's devices of the new insert. The node device's model names the insert, the buttons device's the
 layout, and each key's event entity where the key sits (`position`), in the user's language (`selector.insert`,
-`selector.button_layout` in `strings.json`). Unverified on air: the Gets, and the key positions of the mixed layouts.
+`selector.button_layout` in `strings.json`). On air the repair was raised for the one push-button whose advert
+differs from the export, and nothing was asked of push-buttons the export names. Unverified on air: the Gets, and
+the key positions of the mixed layouts.
 """
 
 from __future__ import annotations

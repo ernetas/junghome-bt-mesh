@@ -277,7 +277,7 @@ class PropertyReader:
     A job is queued once: one still waiting is kept in its place and counted for the current link,
     and one queued on a link that went away is dropped when its turn comes — its entity queues it again on the next
     link if it still wants it. Several quick drops used to leave a copy per link in the queue, each read in turn.
-    Unverified on air.
+    On air a first link read each property once; links that come and go are unverified on air.
 
     An entity that rewrites a value other entities write too (an LED colour and the night-mode byte, the three
     fields of an edge-evaluation byte, the two ends of a lightness range) holds `modifying(addr)` from reading the
@@ -403,7 +403,8 @@ class PropertyReader:
         A read that got every answer is not repeated until the hub sees the node restart (`hub.restarted`: a
         firmware update restarts it) — asked on every link, it cost a Get per node at every link-up
         and piled up in the queue when links came and went. One that went unanswered is queued again on the next
-        link, at most once per link. Unverified on air.
+        link, at most once per link. On air each node was asked once on the first link; that the next link asks
+        nothing is unverified on air.
         """
         unicast = node.unicast
         read = self._version_read.get(unicast)
@@ -731,8 +732,9 @@ class PropertyReader:
         """Send an acknowledged setup Set; re-read the state when no Status answered it. Returns how it ended.
 
         The Lightness Range Set is answered by a *publication* of its Status only (`device-settings.md` §13 q.3);
-        a reply is matched on source and opcode, whatever its destination; the CTL Temperature Range Set was not
-        answered at all on air (`hidden-features.md` §9), so its outcome is the read-back's. A Status whose status
+        a reply is matched on source and opcode, whatever its destination; the CTL Temperature Range Set is answered
+        by a Status to the sender and to the element group (on air, `hidden-features.md` §9). A Set nothing answers
+        is read back, and the read-back decides. A Status whose status
         code is not Success (a range's Cannot Set Range Min / Max) answers a Set that did not take. A read-back
         counts as applied when the Status repeats the Set's parameters (a range's after its status code).
         """

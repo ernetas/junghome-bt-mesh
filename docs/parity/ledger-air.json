@@ -1471,7 +1471,7 @@
     "tests/jhmesh/test_messages.py::test_decode_time_status",
     "tests/test_diagnostics.py::test_diagnostics_show_the_node_clocks_but_not_their_location"
    ],
-   "note": "Unverified on air (review 4 brief 34): every node should answer Home Assistant's Time Set to all nodes (after each connection, once a day) and its Time Get with a Time Status (5D, 10 bytes) close to Home Assistant's clock; the node's Clock offset sensor and the diagnostics' clocks then show it, and the node_clock_wrong repair stays away."
+   "note": "Unverified on air: only the daily read and what Home Assistant makes of the answers - the daily Time Get, the nodes' Clock offset sensors, the diagnostics' clocks and the node_clock_wrong repair (docs/on-air-sweep.md A6, needs Home Assistant access and a day). The answers are settled: in `sweep-ha` 27 of the 29 nodes, and the node missing from the export, answered Home Assistant's connect-time Time Set to all nodes (`01BCFA`) with a Time Status (5D, 10 bytes) within seconds (two were not heard); in `sweep-cli` a Time Get from the CLI's address was answered by three nodes with the zone Home Assistant sent and a clock 0.44-0.47 s behind the capture host's at reception."
   },
   {
    "id": "air:access:5e",

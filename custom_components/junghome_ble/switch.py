@@ -4,9 +4,10 @@ A dimmer's *Use previous value* (Light Lightness Default 0: switch on at the las
 
 The lock function (0x0009, the app's "Lock device") is a config switch per lockable load: on locks the output in
 its current state against local and remote operation — for the time limit its `number` entity sets, or until
-switched off. Nothing publishes the lock state (`docs/gap-analysis/control-and-state.md` §5 q. 1): a light or
-socket reads its own once per link (`config_entities.LoadLock`, one Get shared with this switch), and the switch
-reads it back when a timed lock should have ended. A locked socket shows `locked` and refuses commands (`LoadLock`).
+switched off. A light or socket reads its own lock once per link (`config_entities.LoadLock`, one Get shared with
+this switch), and the switch reads it back when a timed lock should have ended; a lock the load publishes to its
+element group (on air, when locked and on every Set it refuses, `docs/hidden-features.md` §12) is taken as it
+comes. A locked socket shows `locked` and refuses commands (`LoadLock`).
 
 The device lock (0x0001) is a config switch per flag the app offers: *Lock operation* and *Lock factory reset* on
 every node, *Key lock* and *Lock configuration on the unit* on a room thermostat — off by default, since which bit

@@ -403,7 +403,7 @@
     "tests/jhmesh/test_messages.py::test_describe_time_status_and_get",
     "tests/test_node_clocks.py::test_a_time_status_gives_the_offset_and_a_wrong_clock_raises_the_repair"
    ],
-   "note": "Unverified on air (review 4 brief 34): see air:access:5d; the Time Status every node answers Time Set or Time Get with is kept per node as its clock offset and zone offset."
+   "note": "Unverified on air: only what Home Assistant keeps of it per node, its clock offset and zone offset (docs/on-air-sweep.md A6, needs Home Assistant access). The nodes' side is settled, see air:access:5d: every node answers Time Set and Time Get with it."
   },
   {
    "id": "msg:op:5e",
@@ -482,7 +482,7 @@
     "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
     "tests/jhmesh/test_audit.py::test_unanswered_appkey_gets_leave_the_appkeys_unknown"
    ],
-   "note": "Unverified on air (review 4 brief 41): Config AppKey Get per NetKey the export gives the node; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Seen on air with the CLI's `config audit` (tools/mesh_poc.py), which runs jhmesh/audit.py: in `sweep-cli` (`004263`) one Config AppKey Get for NetKey 0 per run, on a light node and a socket node (docs/on-air-sweep.md A8). `audit_network` sends it to every mains node, read-only, per NetKey the export gives the node; the action's own run needs Home Assistant access."
   },
   {
    "id": "msg:op:8002",
@@ -497,7 +497,7 @@
     "tests/jhmesh/test_audit.py::test_a_node_missing_a_key_is_reported_by_index",
     "tests/jhmesh/test_audit.py::test_a_node_without_the_export_s_netkey_refuses_its_appkey_get"
    ],
-   "note": "Unverified on air (review 4 brief 41): the AppKey List answering it, compared by index with the node's `appKeys`; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Seen on air with the CLI's `config audit`, which runs jhmesh/audit.py: the AppKey List answering `sweep-cli` `004263` was Success, NetKey 0, [0], and the CLI printed app_keys 0 for a light node and a socket node, as their `appKeys` (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8003",
@@ -607,7 +607,7 @@
     "tests/jhmesh/test_config_messages.py::test_friend_get_and_status",
     "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
    ],
-   "note": "Unverified on air (review 4 brief 41): Config Friend Get, read only: becoming a Friend stays declined (docs/roadmap.md, 'Friend and Low Power Node'); `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Seen on air with the CLI's `config audit`, which runs jhmesh/audit.py: in `sweep-cli` (`004261`) one Config Friend Get per run, answered (docs/on-air-sweep.md A8). Read only: becoming a Friend stays declined (docs/roadmap.md, 'Friend and Low Power Node'); `audit_network` sends it to every mains node."
   },
   {
    "id": "msg:op:8010",
@@ -629,7 +629,7 @@
     "tests/jhmesh/test_config_messages.py::test_friend_get_and_status",
     "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
    ],
-   "note": "Unverified on air (review 4 brief 41): the Friend Status answering it, compared with the export's `features.friend` (2, not supported, on every node per docs/hidden-features.md section 1); `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Unverified on air: only the audit's decode of it. In `sweep-cli` the light node's Friend Status answering `004261` was seen on air as not supported (2), as the export's `features.friend` and docs/hidden-features.md section 1 say, but did not reach the CLI through its distant proxy (it printed friend ?) (docs/on-air-sweep.md A8). Compared with `features.friend` by `audit_network` and `tools/mesh_poc.py config audit <node>`, read-only."
   },
   {
    "id": "msg:op:8012",
@@ -1092,7 +1092,7 @@
     "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
     "tests/jhmesh/test_audit.py::test_a_node_holding_the_export_has_no_findings"
    ],
-   "note": "Unverified on air (review 4 brief 41): Config NetKey Get; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Seen on air with the CLI's `config audit` (tools/mesh_poc.py), which runs jhmesh/audit.py: in `sweep-cli` (`004262`) one Config NetKey Get per run, on a light node and a socket node (docs/on-air-sweep.md A8). `audit_network` sends the same Get to every mains node, read-only; the action's own run needs Home Assistant access."
   },
   {
    "id": "msg:op:8043",
@@ -1106,7 +1106,7 @@
     "tests/jhmesh/test_config_messages.py::test_key_list_gets_and_lists",
     "tests/jhmesh/test_audit.py::test_a_node_missing_a_key_is_reported_by_index"
    ],
-   "note": "Unverified on air (review 4 brief 41): the NetKey List answering it, compared by index with the node's `netKeys`; `audit_network` (or `tools/mesh_poc.py config audit <node>`) sends it to every mains node, read-only (docs/on-air-sweep.md A8)."
+   "note": "Seen on air with the CLI's `config audit`, which runs jhmesh/audit.py: the NetKey List answering `sweep-cli` `004262` held [0], and the CLI printed net_keys 0 for a light node and a socket node, as their `netKeys` (docs/on-air-sweep.md A8)."
   },
   {
    "id": "msg:op:8044",
@@ -1583,7 +1583,7 @@
     "tests/test_node_clocks.py::test_the_daily_read_asks_every_mains_node_in_chunks",
     "tests/test_node_clocks.py::test_a_silent_node_is_asked_nothing_more_and_a_lost_link_stops_the_read"
    ],
-   "note": "Unverified on air (review 4 brief 34): after the daily Time Set, each mains node's Time Server (1200) should answer Home Assistant's Time Get with a Time Status (5D); a CLI probe saw 27 nodes answer within a second (docs/hidden-features.md section 9)."
+   "note": "Unverified on air (review 4 brief 34): after the daily Time Set, each mains node's Time Server (1200) should answer Home Assistant's Time Get with a Time Status (5D). Probes over jhmesh saw it answered: 27 nodes within a second (docs/hidden-features.md section 9), and in `sweep-cli` three nodes, each with the zone Home Assistant sent (docs/on-air-sweep.md A6)."
   },
   {
    "id": "msg:op:8238",
@@ -1680,7 +1680,7 @@
     "tests/test_scene.py::test_current_scenes_are_read_after_the_connection",
     "tests/test_coordinator.py::test_initial_connection_and_refresh"
    ],
-   "note": "Unverified on air (review 4 brief 30): after a (re)connection, every element holding a scene register (each address in the export's scenes[].addresses) should answer Home Assistant's Scene Get with a 3-byte Scene Status (5E 00 <current u16>), and the scene entity's active_members then name the members whose current scene it is; no capture has a Scene Get yet."
+   "note": "Unverified on air: only the entity side, the scene entity's active_members and the per-member Scenes sensor (docs/on-air-sweep.md A1, needs Home Assistant access). The reads are settled: in `sweep-ha` (`01BF01`-`01BF09`), after the scene-action and fault rounds, Home Assistant's Scene Get went to every element of the export's scenes[].addresses and every one answered with a 3-byte Scene Status (5E 00 <current u16>, status 0)."
   },
   {
    "id": "msg:op:8242",
@@ -2061,7 +2061,7 @@
   },
   {
    "id": "msg:op:826b",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_range_set",
     "custom_components/junghome_ble/number.py::JungHomeColorTempBound",
@@ -2072,11 +2072,10 @@
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_range_and_default",
     "tests/test_setup_states.py::test_white_area_moves_one_end_and_keeps_the_other",
     "tests/test_setup_states.py::test_white_area_the_light_does_not_take_is_not_applied",
-    "tests/test_setup_states.py::test_white_area_unknown_is_read_first"
+    "tests/test_setup_states.py::test_white_area_unknown_is_read_first",
+    "tests/test_setup_states.py::test_white_area_on_the_dali_insert_as_on_air"
    ],
-   "missing": "on-air check: enable the DALI light's Minimum colour temperature entity and set it to 2100 K; the sniffer must show HA's acknowledged 0x826B to the light's el0 with parameters 34 08 70 17 (2100..6000 K). The earlier probe (hidden-features.md section 9) saw no 0x8263 answer and no change: then HA re-reads the range (0x8262), still 2000..6000, and the change fails with 'not applied'. If the light answers and applies it instead, its min_color_temp_kelvin becomes 2100; set Minimum back to 2000 K afterwards and check the light reports 2000..6000 again. Offline done: two expert number entities write the range the app's way (one Set with both ends, the other as read, clamped to 2000..10000 K, min > max refused), confirmed by the Status or by the read-back.",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air: only Home Assistant's own Set from the Minimum / Maximum colour temperature entities (docs/on-air-sweep.md C1, needs Home Assistant access). The message and the light's answer are settled: the CLI sent Home Assistant's message in `sweep-cli` `00A11A`, the acknowledged 0x826B with 34 08 70 17 (2100..6000 K) to the DALI insert's CTL element, answered at once by a Range Status (0x8263, status 0, 2100..6000 K) to the element group (`19040D`) and to the sender (`19040E`), and the Range Get read 2100..6000; set back to 2000..6000 with `00A31D` -> `190412`. The DALI insert applies the range, against the earlier probe (hidden-features.md section 9). Offline: two expert number entities write the range the app's way (one Set with both ends, the other as read, clamped to 2000..10000 K, min > max refused), confirmed by the Status or, when nothing answers, by the read-back."
   },
   {
    "id": "msg:op:826d",

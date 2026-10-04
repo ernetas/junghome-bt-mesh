@@ -604,6 +604,7 @@ async def test_both_ends_of_the_range_set_at_once_keep_both(
 
 UID_WHITE_MIN = f"{UID_LIGHT_CTL}-color_temp_min"
 UID_WHITE_MAX = f"{UID_LIGHT_CTL}-color_temp_max"
+GROUP_LIGHT_CTL = 0xC044  # the DALI light's element group
 
 
 def ctl_range(kelvin_min: int, kelvin_max: int, code: int = 0) -> bytes:
@@ -623,11 +624,15 @@ def white_area_enabled(hass: HomeAssistant) -> None:
         er.async_get(hass).async_get_or_create("number", DOMAIN, uid, disabled_by=None)
 
 
-def serve_white_area(link: FakeProxyLink, *, apply: bool = True, code: int = 0) -> None:
-    """Make the DALI insert's CTL Setup Server answer the range Get and Set, as a spec'd server does.
+def serve_white_area(
+    link: FakeProxyLink, *, apply: bool = True, code: int = 0, group: int | None = None
+) -> None:
+    """Make the DALI insert's CTL Setup Server answer the range Get and Set, as a spec'd server does (and the
+    installation's DALI insert did on air).
 
-    `apply` off: the Set is neither answered nor applied (what the installation's DALI insert did on air,
+    `apply` off: the Set is neither answered nor applied (what an earlier probe took the DALI insert to do,
     `hidden-features.md` §9). `code`: the status code a Set is answered with (1/2: Cannot Set Range Min / Max).
+    `group`: the element group the Status is published to as well, as on air.
     """
     held = [2000, 6000]
     answer = link._answer_setup
@@ -649,6 +654,8 @@ def serve_white_area(link: FakeProxyLink, *, apply: bool = True, code: int = 0) 
                     int.from_bytes(p[2:4], "little"),
                 ]
         link.inject(dst, src, ctl_range(*held, code=code))
+        if group is not None and op == M.LIGHT_CTL_TEMP_RANGE_SET:
+            link.inject(dst, group, ctl_range(*held, code=code))
 
     link._answer_setup = setup_server  # type: ignore[method-assign]
 
@@ -747,13 +754,41 @@ async def test_white_area_unknown_is_read_first(
     ]
 
 
+async def test_white_area_on_the_dali_insert_as_on_air(
+    hass: HomeAssistant, fake_link: FakeProxyLink, mesh: PropertyMesh, mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any], fast_sleep: list[float], white_area_enabled: None,
+) -> None:  # fmt: skip
+    """The on-air sweep's probe: the DALI insert took the Range Set `34 08 70 17` (2100..6000 K) and answered it at
+    once with a Range Status, status 0 and the new range, to the sender and to its element group. The change is
+    confirmed by that Status (no read-back), and the light's own colour-temperature limits follow it."""
+    serve_white_area(fake_link, group=GROUP_LIGHT_CTL)
+    await _setup(hass, mock_config_entry)
+    low = entity_id(hass, "number", UID_WHITE_MIN)
+    light = entity_id(hass, "light", UID_LIGHT_CTL)
+    fake_link.inject(LIGHT_CTL, OUR_ADDRESS, ctl_range(2000, 6000))
+    await hass.async_block_till_done()
+    gets = len(_sets(fake_link, M.LIGHT_CTL_TEMP_RANGE_GET))
+
+    await _call(
+        hass, NUMBER_DOMAIN, SERVICE_SET_VALUE, {ATTR_ENTITY_ID: low, ATTR_VALUE: 2100}
+    )
+    assert _sets(fake_link, M.LIGHT_CTL_TEMP_RANGE_SET) == [
+        (LIGHT_CTL, bytes.fromhex("34087017"))
+    ]
+    await hass.async_block_till_done()
+    assert len(_sets(fake_link, M.LIGHT_CTL_TEMP_RANGE_GET)) == gets
+    assert hass.states.get(low).state == "2100"
+    assert hass.states.get(light).attributes["min_color_temp_kelvin"] == 2100
+    assert hass.states.get(light).attributes["max_color_temp_kelvin"] == 6000
+
+
 @pytest.mark.parametrize(
     ("apply", "code"),
     [
         (
             False,
             0,
-        ),  # unanswered and not applied, as on air: the read-back shows the old range
+        ),  # unanswered and not applied: the read-back shows the old range
         (True, 1),  # Cannot Set Range Min
         (True, 2),  # Cannot Set Range Max
     ],

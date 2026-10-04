@@ -16,9 +16,10 @@ took them. Here:
   raises the fixable `node_clock_wrong` repair; the fix sends Time Set now and asks those nodes again.
 
 Each mains node's *Clock offset* sensor (diagnostic, off by default) shows the offset, the diagnostics the rest.
-The stored location is only compared with Home Assistant's home, never shown: diagnostics get shared. Unverified on
-air: the Gets, the nodes' answers to the Time Set broadcast and the repair (a probe saw 27 nodes answer a Time Get
-within a second of the probing host's clock, `docs/hidden-features.md` §9).
+The stored location is only compared with Home Assistant's home, never shown: diagnostics get shared. The nodes'
+answers to the Time Set broadcast were seen on air (all but two within seconds, `docs/on-air-sweep.md` A6), and
+probes saw nodes answer a Time Get within a second of the probing host's clock (`docs/hidden-features.md` §9).
+Unverified on air: the daily Gets and the repair.
 """
 
 from __future__ import annotations

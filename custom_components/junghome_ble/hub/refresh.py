@@ -120,7 +120,8 @@ class Refresh:
         unacknowledged broadcasts, they need no refresh to be through, and sent after it they never went out on a
         link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
         fault reads are not repeated soon after a round on a link that held (`connect_step`); the heartbeat
-        configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The new order is unverified on air.
+        configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The order was seen on air on a
+        first link (`docs/on-air-sweep.md` A2).
         """
         await self.hub.clock.send_time()
         await self.hub.clock.send_location()

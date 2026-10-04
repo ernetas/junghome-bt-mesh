@@ -1496,8 +1496,9 @@ class JungHomeHub:
         """Store a Generic OnOff Status `[present u8]` or `[present u8][target u8][remaining u8]`: present is the state.
 
         A load that is on, heading off with a known remaining time, also sets `off_at` (the *Switches off at*
-        sensor); any other Status clears it. Whether a JUNG load with a run-on time (`0x1007`) reports the time left
-        this way is unverified on air: the app ignores the field, and no capture showed it yet.
+        sensor); any other Status clears it. A JUNG load with a run-on time (`0x1007`) does not report the time left
+        this way: on air a switch insert answered with the short form during its run-on time and switched off by
+        itself. One switched off with a transition does (`on, target off, remaining`).
         """
         if not p:
             return

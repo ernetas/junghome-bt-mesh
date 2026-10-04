@@ -112,7 +112,8 @@ class Clock:
 
         The nodes compute their sunrise / sunset times from it (astro schedules, `schedules.py`); the app only sends
         the phone's position when it creates such a schedule. Every node hosts the Location Setup Server on its
-        primary element, which the all-nodes address reaches, as for Time Set. Unverified on air.
+        primary element, which the all-nodes address reaches, as for Time Set. Seen going out on air right after Time
+        Set; whether the nodes keep it (their Location Status) is unverified on air.
         """
         config = self.hub.hass.config
         pdu = M.generic_location_global_set(
@@ -146,7 +147,7 @@ class Clock:
         """Broadcast Time Set, then ask the mains nodes for their time, zone and location (`NodeClocks.read_all`).
 
         Once a day and after a change of the local UTC offset, not on every link: the nodes answer the Time Set of
-        each link with their Time Status all the same. Unverified on air.
+        each link with their Time Status all the same (seen on air). The daily read is unverified on air.
         """
         await self.send_time()
         await self.hub.clocks.read_all()

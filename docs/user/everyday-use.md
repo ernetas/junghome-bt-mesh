@@ -37,8 +37,10 @@ and **All sockets in ‹room›** switch many at once.
 
 A light or socket can be **locked**: in the JUNG HOME app, by a key set up to lock it, or with its *Lock* switch in
 Home Assistant (a setting, off by default). A locked load keeps its state; Home Assistant then refuses to switch it
-and says so, instead of sending a command the device ignores. The attribute `locked` shows the lock, `lock_until`
-when a timed lock ends. **Unverified on air.**
+and says so, instead of sending a command the device would not carry out. The attribute `locked` shows the lock,
+`lock_until` when a timed lock ends. A locked light was seen to keep its state and to announce its lock to the
+mesh, which lets Home Assistant see a lock set elsewhere at once; Home Assistant's own side of it is **unverified on
+air.**
 
 Likewise, a load that a room thermostat switches, or the relay of a detector held on or off by the detector's own
 controls, refuses commands with a message saying why — as the app greys out its buttons. **Unverified on

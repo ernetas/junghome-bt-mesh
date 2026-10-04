@@ -61,17 +61,21 @@ from .conftest import (
     wait_until,
 )
 from .helpers import (
+    GROUP_DIMMER,
     LIGHT_CTL,
     LIGHT_CTL_TEMPERATURE,
+    LIGHT_DIMMER,
     MESH_UUID,
     OUR_ADDRESS,
     SOCKET,
     SOCKET_SENSOR,
     UID_LIGHT_CTL,
+    UID_LIGHT_DIMMER,
     UID_SOCKET,
     ctl_status,
     entity_id,
     find_issue,
+    lightness_status,
     onoff_status,
 )
 
@@ -346,8 +350,8 @@ async def test_a_locked_load_that_leaves_a_command_unanswered_stays_reachable(
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """F4-2: a load known to be locked may ignore a Set altogether; its silence to the command is the lock's, not a
-    sign it is gone: no unreachable mark, a state Get later (whose silence would count). Unverified on air."""
+    """F4-2: a command a load known to be locked leaves unanswered (on air a locked load answers, so the answer was
+    lost) is no sign it is gone: no unreachable mark, a state Get later (whose silence would count)."""
     hub = hub_of(init_integration)
     await settle(hass)
     hub.element_state(SOCKET).note_lock(bytes.fromhex("02010000"))
@@ -394,6 +398,91 @@ async def test_a_command_a_load_answers_with_its_old_state_is_reported_as_locked
     assert exc.value.translation_key == "load_locked"
     assert len(load_sets(fake_link)) == 1
     assert hub.load_locked(SOCKET)
+    assert hass.states.get(eid).attributes["locked"] is True
+    assert not hub.unreachable
+
+
+# The lock a load publishes to its element group (on air: an LBC *User* Property Status, the 4-byte lock and a
+# 4-byte value), when it is locked and again on every Set it refuses while locked.
+LOCK_PUBLISHED = M.vendor_property_status(
+    "user", 0x0009, bytes.fromhex("0201000000000000")
+)
+LOCKED_READ = M.vendor_property_status(
+    "admin", 0x0009, bytes.fromhex("0201000000000000")
+)
+
+
+async def _brighten(hass: HomeAssistant) -> None:
+    await hass.services.async_call(
+        "light",
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: entity_id(hass, "light", UID_LIGHT_DIMMER), "brightness": 128},
+        blocking=True,
+    )
+
+
+async def test_a_lock_the_load_publishes_is_known_at_once(
+    hass: HomeAssistant,
+    fast_requests: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """On air a load locked by another client published its lock to its element group, twice: Home Assistant takes
+    it as the lock, without a read, and refuses the next command before sending it."""
+    hub = hub_of(init_integration)
+    eid = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    await settle(hass)
+    assert not hub.load_locked(LIGHT_DIMMER)
+    sent = len(fake_link.sent)
+    for _ in range(2):
+        fake_link.inject(LIGHT_DIMMER, GROUP_DIMMER, LOCK_PUBLISHED)
+    await settle(hass)
+    assert fake_link.sent[sent:] == []
+    assert hub.load_locked(LIGHT_DIMMER)
+    assert hass.states.get(eid).attributes["locked"] is True
+
+    fake_link.app_reply = lambda dst, access: (
+        LOCKED_READ if (dst, access) == (LIGHT_DIMMER, LOCK_GET) else None
+    )
+    with pytest.raises(ServiceValidationError) as exc:
+        await _brighten(hass)
+    assert exc.value.translation_key == "load_locked"
+    assert load_sets(fake_link) == []
+
+
+async def test_a_locked_light_refusing_a_lightness_set_as_on_air(
+    hass: HomeAssistant,
+    fast_requests: None,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """The exchange of the on-air probe, with a lock Home Assistant had not heard of: the locked light answers the
+    Lightness Set with its unchanged state (off, present 0) and publishes its lock to its element group again. The
+    action fails for the lock, and the light stays reachable."""
+    hub = hub_of(init_integration)
+    eid = entity_id(hass, "light", UID_LIGHT_DIMMER)
+    await settle(hass)
+
+    def reply(dst: int, access: bytes) -> bytes | None:
+        if dst != LIGHT_DIMMER:
+            return None
+        if access == LOCK_GET:
+            return LOCKED_READ
+        if decode_opcode(access)[0] == M.LIGHT_LIGHTNESS_SET:
+            fake_link.inject(LIGHT_DIMMER, GROUP_DIMMER, LOCK_PUBLISHED)
+            return lightness_status(0)
+        return None
+
+    fake_link.app_reply = reply
+    with patch.object(LinkManager, "_keep_alive", AsyncMock(return_value=True)):
+        with pytest.raises(ServiceValidationError) as exc:
+            await _brighten(hass)
+        await settle(hass)
+    assert exc.value.translation_key == "load_locked"
+    assert len(load_sets(fake_link)) == 1
+    assert hub.load_locked(LIGHT_DIMMER)
     assert hass.states.get(eid).attributes["locked"] is True
     assert not hub.unreachable
 

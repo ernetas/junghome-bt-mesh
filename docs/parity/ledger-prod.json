@@ -2770,7 +2770,7 @@
   },
   {
    "id": "prod:param:lamp:tunable-white-range",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/number.py::JungHomeColorTempBound",
     "custom_components/junghome_ble/properties/targets.py::SETUP_ENTITIES",
@@ -2781,11 +2781,10 @@
     "tests/test_setup_states.py::test_white_area_moves_one_end_and_keeps_the_other",
     "tests/test_setup_states.py::test_white_area_unknown_is_read_first",
     "tests/test_setup_states.py::test_white_area_the_light_does_not_take_is_not_applied",
-    "tests/test_setup_states.py::test_targets_follow_the_models_of_each_load"
+    "tests/test_setup_states.py::test_targets_follow_the_models_of_each_load",
+    "tests/test_setup_states.py::test_white_area_on_the_dali_insert_as_on_air"
    ],
-   "missing": "on-air check: as msg:op:826b's - set the DALI light's Minimum colour temperature to 2100 K and check that the light answers the 0x826B with a 0x8263 and reports 2100..6000 K afterwards (then set it back to 2000 K). When probed (hidden-features.md section 9) the installation's only CTL Setup Server, the DALI insert, neither answered nor applied a range Set, so on this installation every change is expected to fail as 'not applied' until that check shows otherwise. Offline done: the app's expert 'White area' range slider (2000..10000 K, step 100, cells/Y.java k) is two number entities, Minimum / Maximum colour temperature (config, disabled by default: HA has no two-thumb number), on the Light CTL Setup Server's element (1304) as the app's TunableWhiteRangeSetupCapability. A change sends one 0x826B with both ends, the other as read and clamped into 2000..10000 K as the app clamps both (p097i9/b.java, p234v7/V0.java); the moved end is bounded by the entity's 2000..10000 K instead of coerced (HA rejects an out-of-range number), and a minimum above the maximum is refused (the app's slider cannot produce one). The value is the range the connect-time refresh reads for the light's own limits (no Get of its own). HA reports 'not applied' when the read-back shows the old range.",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air: only Home Assistant's own change from the entities and the light's min_color_temp_kelvin following it (docs/on-air-sweep.md C1, needs Home Assistant access). The light's side is settled as msg:op:826b's: in `sweep-cli` `00A11A` the DALI insert, the installation's only CTL Setup Server, applied 2100..6000 K and answered with a 0x8263 to the sender and to its element group (`19040E`, `19040D`), and was set back (`00A31D` -> `190412`); the earlier probe's 'neither answered nor applied' (hidden-features.md section 9) did not hold. The app's expert 'White area' range slider (2000..10000 K, step 100, cells/Y.java k) is two number entities, Minimum / Maximum colour temperature (config, disabled by default: HA has no two-thumb number), on the Light CTL Setup Server's element (1304) as the app's TunableWhiteRangeSetupCapability. A change sends one 0x826B with both ends, the other as read and clamped into 2000..10000 K as the app clamps both (p097i9/b.java, p234v7/V0.java); the moved end is bounded by the entity's 2000..10000 K instead of coerced (HA rejects an out-of-range number), and a minimum above the maximum is refused (the app's slider cannot produce one). The value is the range the connect-time refresh reads for the light's own limits (no Get of its own); the Range Status confirms a change, and a light that answers nothing is read back: 'not applied' when the read-back shows the old range."
   },
   {
    "id": "prod:param:lamp:use-last-value",
