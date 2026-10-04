@@ -54,6 +54,7 @@ import os
 import sys
 import time
 from collections.abc import Awaitable, Callable, Coroutine
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -1140,13 +1141,62 @@ TRANSITION_OPTION: dict[str, Any] = {
     "help": "transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s or 10 min)",
 }
 
+# one argument: `add_argument`'s flags and keywords
+Arg = tuple[tuple[str, ...], dict[str, Any]]
 
-def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat listing of every sub-command
-    ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    ap.add_argument("--cdb", default=str(DEFAULT_CDB))
-    ap.add_argument(
+
+def arg(*flags: str, **kwargs: Any) -> Arg:
+    return flags, kwargs
+
+
+@dataclass(frozen=True)
+class Exclusive:
+    """Arguments of which at most one may be given (argparse's mutually exclusive group)."""
+
+    args: tuple[Arg, ...]
+
+
+@dataclass(frozen=True)
+class SubCommand:
+    """A sub-command: its arguments in `--help` order, and its own sub-commands (stored under `dest`)."""
+
+    name: str
+    args: tuple[Arg | Exclusive, ...] = ()
+    help: str | None = None
+    subs: tuple[SubCommand, ...] = ()
+    dest: str = ""
+
+
+def add_sub_commands(
+    parser: argparse.ArgumentParser, dest: str, commands: tuple[SubCommand, ...]
+) -> None:
+    sub = parser.add_subparsers(dest=dest, required=True)
+    for command in commands:
+        # a sub-command without help is not listed with an empty one
+        kwargs: dict[str, Any] = {} if command.help is None else {"help": command.help}
+        p = sub.add_parser(command.name, **kwargs)
+        for a in command.args:
+            if isinstance(a, Exclusive):
+                group = p.add_mutually_exclusive_group()
+                for flags, options in a.args:
+                    group.add_argument(*flags, **options)
+            else:
+                p.add_argument(*a[0], **a[1])
+        if command.subs:
+            add_sub_commands(p, command.dest, command.subs)
+
+
+TARGET = arg("target")
+ELEMENT_TARGET = arg("target", help="element address (hex) or name")
+NODE = arg("node", type=ops.parse_address, help="any element of the node, hex")
+PROPERTY = arg("property", help="name (key_mode) or hex id (5003)")
+SERVER = arg("--server", choices=ops.SERVERS, help="override the hosting server")
+TRANSITION = arg("--transition", **TRANSITION_OPTION)
+UNACK = arg("--unack", action="store_true", help="use Set Unacknowledged")
+
+GLOBAL_OPTIONS: tuple[Arg, ...] = (
+    arg("--cdb", default=str(DEFAULT_CDB)),
+    arg(
         "--source",
         type=ops.parse_address,
         default=DEFAULT_SOURCE,
@@ -1154,297 +1204,388 @@ def build_parser() -> argparse.ArgumentParser:  # noqa: PLR0915  # one flat list
         help="our unicast address, hex (default 7FFF; the HA integration uses 0D00); it must be free in the export"
         " (no node's, not excluded, outside every provisioner's range). Each address has its own "
         "sequence store tools/.jhmesh_state_<ADDR>.json; never share an address with another client",
-    )
-    ap.add_argument(
+    ),
+    arg(
         "--ha-storage",
         metavar="DIR",
         help="Home Assistant's .storage directory: refuse every address its sequence store of this mesh"
         " (junghome_ble.seq.<mesh uuid>) holds a counter for, not only 0D00",
-    )
-    ap.add_argument(
+    ),
+    arg(
         "--scan", type=float, default=4.0, help="proxy scan duration before connecting"
-    )
-    ap.add_argument(
+    ),
+    arg(
         "--window", type=float, default=2.0, help="collection window for group requests"
-    )
-    ap.add_argument(
-        "--timeout", type=float, default=3.0, help="per-attempt response timeout"
-    )
-    ap.add_argument("--retries", type=int, default=3)
-    ap.add_argument("-v", "--verbose", action="store_true")
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("scan")
-    p.add_argument(
-        "--adv",
-        action="store_true",
-        help="also print local name / manufacturer data / service UUIDs of each advertisement",
-    )
-    p = sub.add_parser("listen")
-    p.add_argument("--seconds", type=float, default=60.0, help="listen duration")
-    p.add_argument("--src", help="only messages from this element (hex)")
-    p.add_argument("--dst", help="only messages to this address (hex)")
-    p = sub.add_parser("get")
-    p.add_argument("target")
-    p = sub.add_parser("set")
-    p.add_argument("target")
-    p.add_argument(
-        "value",
-        type=str.lower,
-        choices=ONOFF_VALUES,
-        help="on|off (true/false, 1/0); a typo is an error, not OFF",
-    )
-    fade = p.add_mutually_exclusive_group()
-    fade.add_argument(
-        "--t0",
-        action="store_true",
-        help="send explicit transition time 0 (like the gateway does)",
-    )
-    fade.add_argument("--transition", **TRANSITION_OPTION)
-    p.add_argument("--unack", action="store_true", help="use Set Unacknowledged")
-    p = sub.add_parser("blink")
-    p.add_argument("target")
-    p.add_argument("--hold", type=float, default=2.0)
-    p = sub.add_parser("lightness")
-    p.add_argument("target")
-    p.add_argument(
-        "value", nargs="?", type=ops.parse_uint16, help="0..65535; omitted = Get"
-    )
-    p.add_argument("--transition", **TRANSITION_OPTION)
-    p = sub.add_parser("ctl")
-    p.add_argument("target")
-    p.add_argument("lightness", type=ops.parse_uint16, help="0..65535")
-    p.add_argument(
-        "kelvin", type=ops.parse_uint16, help="colour temperature, 800..20000 K"
-    )
-    p.add_argument("--transition", **TRANSITION_OPTION)
-    p = sub.add_parser(
-        "delta", help="Generic Delta Set to a level server (acknowledged)"
-    )
-    p.add_argument("target")
-    p.add_argument(
-        "delta", type=int, help="signed level change (the lightness range is 65535)"
-    )
-    p.add_argument("--transition", **TRANSITION_OPTION)
-    p = sub.add_parser("ctlrange")
-    p.add_argument("target")
-    p = sub.add_parser("scene")
-    p.add_argument("target")
-    p.add_argument("number", type=ops.parse_scene_number)
-    p.add_argument("--transition", **TRANSITION_OPTION)
-    p = sub.add_parser(
-        "scene-actions", help="what an element does in its scenes (Scene Action Setup)"
-    )
-    p.add_argument("target", help="element address (hex) or name")
-    p.add_argument(
-        "number",
-        nargs="?",
-        type=ops.parse_scene_or_list,
-        help="one scene number; omitted = every scene",
-    )
-    p = sub.add_parser("sched", help="JH Scheduler slots of an element")
-    p.add_argument("target", help="element address (hex) or name")
-    p.add_argument(
-        "--slot", type=int, help="dump this slot (0..15) instead of the used ones"
-    )
-    p.add_argument(
-        "--central-id",
-        type=int,
-        default=0,
-        help="centralScheduleId to match in the slot list",
-    )
-    p = sub.add_parser("health", help="Health faults of a node (or of all nodes: FFFF)")
-    p.add_argument("target", help="node address (hex), name or group")
-    p.add_argument(
-        "--clear", action="store_true", help="clear the registered faults first"
-    )
-    p.add_argument("--test", type=int, help="run self-test N (company 0527) first")
+    ),
+    arg("--timeout", type=float, default=3.0, help="per-attempt response timeout"),
+    arg("--retries", type=int, default=3),
+    arg("-v", "--verbose", action="store_true"),
+)
 
-    prop = sub.add_parser(
-        "prop", help="device properties (codec-aware, see jhmesh/properties.py)"
-    )
-    psub = prop.add_subparsers(dest="prop_cmd", required=True)
-    p = psub.add_parser("get")
-    p.add_argument("target")
-    p.add_argument("property", help="name (key_mode) or hex id (5003)")
-    p.add_argument("--server", choices=ops.SERVERS, help="override the hosting server")
-    p.add_argument(
-        "--pad",
-        type=int,
-        default=0,
-        help="append N zero bytes (forces segmentation above 11 bytes; test only)",
-    )
-    p = psub.add_parser("set")
-    p.add_argument("target")
-    p.add_argument("property", help="name (key_mode) or hex id (5003)")
-    p.add_argument("value", help="codec text form, or hex:<bytes>")
-    p.add_argument("--server", choices=ops.SERVERS, help="override the hosting server")
-    p.add_argument("--unack", action="store_true", help="use Set Unacknowledged")
-    p.add_argument(
-        "--access",
-        type=int,
-        choices=range(4),
-        help="userAccess byte of an Admin Set (default: what the app sends for this property)",
-    )
-    p.add_argument(
-        "--yes",
-        action="store_true",
-        help="confirm a Set to a group (every member takes it); a unicast target needs none",
-    )
-    p = psub.add_parser("list")
-    p.add_argument(
-        "product",
-        type=ops.parse_product,
-        help="JUNG product id, hex (01 = 1-gang push-button)",
-    )
-    p.add_argument("--all", action="store_true", help="include firmware-only ids")
-    p = psub.add_parser(
-        "lists", help="ask an element on air which properties its servers hold"
-    )
-    p.add_argument("target", help="element address (hex) or name")
+PROP_COMMANDS = (
+    SubCommand(
+        "get",
+        (
+            TARGET,
+            PROPERTY,
+            SERVER,
+            arg(
+                "--pad",
+                type=int,
+                default=0,
+                help="append N zero bytes (forces segmentation above 11 bytes; test only)",
+            ),
+        ),
+    ),
+    SubCommand(
+        "set",
+        (
+            TARGET,
+            PROPERTY,
+            arg("value", help="codec text form, or hex:<bytes>"),
+            SERVER,
+            UNACK,
+            arg(
+                "--access",
+                type=int,
+                choices=range(4),
+                help="userAccess byte of an Admin Set (default: what the app sends for this property)",
+            ),
+            arg(
+                "--yes",
+                action="store_true",
+                help="confirm a Set to a group (every member takes it); a unicast target needs none",
+            ),
+        ),
+    ),
+    SubCommand(
+        "list",
+        (
+            arg(
+                "product",
+                type=ops.parse_product,
+                help="JUNG product id, hex (01 = 1-gang push-button)",
+            ),
+            arg("--all", action="store_true", help="include firmware-only ids"),
+        ),
+    ),
+    SubCommand(
+        "lists",
+        (ELEMENT_TARGET,),
+        help="ask an element on air which properties its servers hold",
+    ),
+)
 
-    config = sub.add_parser("config", help="Config Server messages (device key)")
-    csub = config.add_subparsers(dest="config_cmd", required=True)
-    p = csub.add_parser("get-composition")
-    p.add_argument("node", type=ops.parse_address, help="any element of the node, hex")
-    p.add_argument("--page", type=int, default=0)
-    p = csub.add_parser(
-        "audit",
-        help="compare the node's settings, publications, subscriptions and AppKeys with the export (Gets only)",
-    )
-    p.add_argument("node", type=ops.parse_address, help="any element of the node, hex")
-    p = csub.add_parser(
-        "hops",
-        help="mesh hops between two nodes (Heartbeat Subscription probe, everything restored)",
-    )
-    p.add_argument("node", type=ops.parse_address, help="the node that counts, hex")
-    p.add_argument(
-        "origin", type=ops.parse_address, help="the node that beats, hex"
-    )  # not "source": that is our own address (--source)
-    p.add_argument(
-        "--beats", type=int, default=4, help="heartbeats to send (default 4)"
-    )
-    p.add_argument(
-        "--period", type=int, default=2, help="seconds between them (default 2)"
-    )
-    p = csub.add_parser(
-        "hopmatrix",
-        help="hops between every pair of nodes (each beats in turn, all others count; everything restored)",
-    )
-    p.add_argument(
-        "nodes",
-        type=ops.parse_address,
-        nargs="*",
-        help="restrict to these nodes (any element, hex); default: every provisioned node",
-    )
-    p.add_argument(
-        "--beats", type=int, default=4, help="heartbeats per origin (default 4)"
-    )
-    p.add_argument(
-        "--period", type=int, default=2, help="seconds between them (default 2)"
-    )
-    p.add_argument(
-        "--parallel",
-        type=int,
-        default=3,
-        help="config exchanges in flight at once (default 3)",
-    )
-    p.add_argument("--json", help="also write the pairs to this JSON file")
-    for name, group_arg in (
-        ("publication", "?"),
-        ("subscribe", None),
-        ("unsubscribe", None),
-        ("subscriptions", ""),
-        ("bind", ""),
-        ("unbind", ""),
-    ):
-        p = csub.add_parser(name)
-        p.add_argument(
-            "node", type=ops.parse_address, help="any element of the node, hex"
+
+def _config_model_command(name: str, group: str | None) -> SubCommand:
+    """A Config sub-command on one model of one element; `group` is "?" (optional), None (required) or "" (none)."""
+    args: list[Arg] = [
+        NODE,
+        arg("element", type=ops.parse_address, help="element address, hex"),
+        arg("model", type=ops.parse_model, help="model id (1000, 05271013)"),
+    ]
+    if group == "?":
+        args.append(
+            arg("group", nargs="?", help="group address (hex) or name; omitted = Get")
         )
-        p.add_argument("element", type=ops.parse_address, help="element address, hex")
-        p.add_argument("model", type=ops.parse_model, help="model id (1000, 05271013)")
-        if group_arg == "?":
-            p.add_argument(
-                "group", nargs="?", help="group address (hex) or name; omitted = Get"
-            )
-        elif group_arg is None:
-            p.add_argument("group", help="group address (hex) or name")
-        p.add_argument(
+    elif group is None:
+        args.append(arg("group", help="group address (hex) or name"))
+    args.append(
+        arg(
             "--dry-run",
             action="store_true",
             help="print the Config message that would be sent and stop",
         )
-        if (
-            name != "subscriptions"
-        ):  # the one read-only sub-command here (publication is one without a group)
-            p.add_argument(
+    )
+    if (
+        name != "subscriptions"
+    ):  # the one read-only sub-command here (publication is one without a group)
+        args.append(
+            arg(
                 "--yes",
                 action="store_true",
                 help="confirm the write: it changes the node now and does not update the export",
             )
+        )
+    return SubCommand(name, tuple(args))
 
-    export = sub.add_parser("export", help="project-file writer checks")
-    esub = export.add_subparsers(dest="export_cmd", required=True)
-    p = esub.add_parser("write")
-    p.add_argument("file")
-    p.add_argument(
-        "--out", help="also write the re-rendered file here (never the input)"
-    )
-    p.add_argument(
-        "--strict",
-        action="store_true",
-        help="exit 1 when the round trip is not byte-identical",
-    )
 
-    p = sub.add_parser(
+BEATS_PERIOD = (
+    arg("--period", type=int, default=2, help="seconds between them (default 2)"),
+)
+CONFIG_COMMANDS = (
+    SubCommand("get-composition", (NODE, arg("--page", type=int, default=0))),
+    SubCommand(
+        "audit",
+        (NODE,),
+        help="compare the node's settings, publications, subscriptions and AppKeys with the export (Gets only)",
+    ),
+    SubCommand(
+        "hops",
+        (
+            arg("node", type=ops.parse_address, help="the node that counts, hex"),
+            # not "source": that is our own address (--source)
+            arg("origin", type=ops.parse_address, help="the node that beats, hex"),
+            arg("--beats", type=int, default=4, help="heartbeats to send (default 4)"),
+            *BEATS_PERIOD,
+        ),
+        help="mesh hops between two nodes (Heartbeat Subscription probe, everything restored)",
+    ),
+    SubCommand(
+        "hopmatrix",
+        (
+            arg(
+                "nodes",
+                type=ops.parse_address,
+                nargs="*",
+                help="restrict to these nodes (any element, hex); default: every provisioned node",
+            ),
+            arg(
+                "--beats", type=int, default=4, help="heartbeats per origin (default 4)"
+            ),
+            *BEATS_PERIOD,
+            arg(
+                "--parallel",
+                type=int,
+                default=3,
+                help="config exchanges in flight at once (default 3)",
+            ),
+            arg("--json", help="also write the pairs to this JSON file"),
+        ),
+        help="hops between every pair of nodes (each beats in turn, all others count; everything restored)",
+    ),
+    *(
+        _config_model_command(name, group)
+        for name, group in (
+            ("publication", "?"),
+            ("subscribe", None),
+            ("unsubscribe", None),
+            ("subscriptions", ""),
+            ("bind", ""),
+            ("unbind", ""),
+        )
+    ),
+)
+
+COMMANDS = (
+    SubCommand(
+        "scan",
+        (
+            arg(
+                "--adv",
+                action="store_true",
+                help="also print local name / manufacturer data / service UUIDs of each advertisement",
+            ),
+        ),
+    ),
+    SubCommand(
+        "listen",
+        (
+            arg("--seconds", type=float, default=60.0, help="listen duration"),
+            arg("--src", help="only messages from this element (hex)"),
+            arg("--dst", help="only messages to this address (hex)"),
+        ),
+    ),
+    SubCommand("get", (TARGET,)),
+    SubCommand(
+        "set",
+        (
+            TARGET,
+            arg(
+                "value",
+                type=str.lower,
+                choices=ONOFF_VALUES,
+                help="on|off (true/false, 1/0); a typo is an error, not OFF",
+            ),
+            Exclusive(
+                (
+                    arg(
+                        "--t0",
+                        action="store_true",
+                        help="send explicit transition time 0 (like the gateway does)",
+                    ),
+                    TRANSITION,
+                )
+            ),
+            UNACK,
+        ),
+    ),
+    SubCommand("blink", (TARGET, arg("--hold", type=float, default=2.0))),
+    SubCommand(
+        "lightness",
+        (
+            TARGET,
+            arg(
+                "value",
+                nargs="?",
+                type=ops.parse_uint16,
+                help="0..65535; omitted = Get",
+            ),
+            TRANSITION,
+        ),
+    ),
+    SubCommand(
+        "ctl",
+        (
+            TARGET,
+            arg("lightness", type=ops.parse_uint16, help="0..65535"),
+            arg(
+                "kelvin", type=ops.parse_uint16, help="colour temperature, 800..20000 K"
+            ),
+            TRANSITION,
+        ),
+    ),
+    SubCommand(
+        "delta",
+        (
+            TARGET,
+            arg(
+                "delta",
+                type=int,
+                help="signed level change (the lightness range is 65535)",
+            ),
+            TRANSITION,
+        ),
+        help="Generic Delta Set to a level server (acknowledged)",
+    ),
+    SubCommand("ctlrange", (TARGET,)),
+    SubCommand(
+        "scene", (TARGET, arg("number", type=ops.parse_scene_number), TRANSITION)
+    ),
+    SubCommand(
+        "scene-actions",
+        (
+            ELEMENT_TARGET,
+            arg(
+                "number",
+                nargs="?",
+                type=ops.parse_scene_or_list,
+                help="one scene number; omitted = every scene",
+            ),
+        ),
+        help="what an element does in its scenes (Scene Action Setup)",
+    ),
+    SubCommand(
+        "sched",
+        (
+            ELEMENT_TARGET,
+            arg(
+                "--slot",
+                type=int,
+                help="dump this slot (0..15) instead of the used ones",
+            ),
+            arg(
+                "--central-id",
+                type=int,
+                default=0,
+                help="centralScheduleId to match in the slot list",
+            ),
+        ),
+        help="JH Scheduler slots of an element",
+    ),
+    SubCommand(
+        "health",
+        (
+            arg("target", help="node address (hex), name or group"),
+            arg(
+                "--clear", action="store_true", help="clear the registered faults first"
+            ),
+            arg("--test", type=int, help="run self-test N (company 0527) first"),
+        ),
+        help="Health faults of a node (or of all nodes: FFFF)",
+    ),
+    SubCommand(
+        "prop",
+        help="device properties (codec-aware, see jhmesh/properties.py)",
+        subs=PROP_COMMANDS,
+        dest="prop_cmd",
+    ),
+    SubCommand(
+        "config",
+        help="Config Server messages (device key)",
+        subs=CONFIG_COMMANDS,
+        dest="config_cmd",
+    ),
+    SubCommand(
+        "export",
+        help="project-file writer checks",
+        subs=(
+            SubCommand(
+                "write",
+                (
+                    arg("file"),
+                    arg(
+                        "--out",
+                        help="also write the re-rendered file here (never the input)",
+                    ),
+                    arg(
+                        "--strict",
+                        action="store_true",
+                        help="exit 1 when the round trip is not byte-identical",
+                    ),
+                ),
+            ),
+        ),
+        dest="export_cmd",
+    ),
+    SubCommand(
         "provision",
+        (
+            arg(
+                "uuid",
+                nargs="?",
+                type=ops.parse_device_uuid,
+                help="Device UUID as `provision --scan` shows it",
+            ),
+            arg(
+                "--scan",
+                dest="list_devices",
+                action="store_true",
+                help="list the devices advertising the Mesh Provisioning Service and stop",
+            ),
+            arg(
+                "--unicast",
+                type=ops.parse_address,
+                help="primary unicast address for the new node, hex (all its elements must be free)",
+            ),
+            arg(
+                "--iv-index",
+                type=ops.parse_iv_index,
+                help="the network's current IV index (default: the export's lower bound)",
+            ),
+            arg(
+                "--iv-update",
+                action="store_true",
+                help="the network is in the IV Update procedure",
+            ),
+            arg(
+                "--seconds", type=float, default=10.0, help="scan duration (default 10)"
+            ),
+            arg(
+                "--key-file",
+                type=Path,
+                help="owner-only file for the new device key (default tools/.jhmesh_devkey_<unicast>.json; must not exist)",
+            ),
+            arg(
+                "--yes",
+                action="store_true",
+                help="really provision (the device only returns to unprovisioned by a factory reset)",
+            ),
+        ),
         help="provision an unprovisioned device over PB-GATT (No OOB); its device key goes to an owner-only file",
-    )
-    p.add_argument(
-        "uuid",
-        nargs="?",
-        type=ops.parse_device_uuid,
-        help="Device UUID as `provision --scan` shows it",
-    )
-    p.add_argument(
-        "--scan",
-        dest="list_devices",
-        action="store_true",
-        help="list the devices advertising the Mesh Provisioning Service and stop",
-    )
-    p.add_argument(
-        "--unicast",
-        type=ops.parse_address,
-        help="primary unicast address for the new node, hex (all its elements must be free)",
-    )
-    p.add_argument(
-        "--iv-index",
-        type=ops.parse_iv_index,
-        help="the network's current IV index (default: the export's lower bound)",
-    )
-    p.add_argument(
-        "--iv-update",
-        action="store_true",
-        help="the network is in the IV Update procedure",
-    )
-    p.add_argument(
-        "--seconds", type=float, default=10.0, help="scan duration (default 10)"
-    )
-    p.add_argument(
-        "--key-file",
-        type=Path,
-        help="owner-only file for the new device key (default tools/.jhmesh_devkey_<unicast>.json; must not exist)",
-    )
-    p.add_argument(
-        "--yes",
-        action="store_true",
-        help="really provision (the device only returns to unprovisioned by a factory reset)",
-    )
+    ),
+    SubCommand("devices"),
+    SubCommand("ctlget", (TARGET, arg("--echo", action="store_true"))),
+)
 
-    sub.add_parser("devices")
-    p = sub.add_parser("ctlget")
-    p.add_argument("target")
-    p.add_argument("--echo", action="store_true")
+
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    for flags, options in GLOBAL_OPTIONS:
+        ap.add_argument(*flags, **options)
+    add_sub_commands(ap, "cmd", COMMANDS)
     return ap
 
 

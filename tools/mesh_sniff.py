@@ -607,93 +607,122 @@ def parse_hex(text: str) -> int:
         raise argparse.ArgumentTypeError(f"{text!r} is not a hex address") from None
 
 
+CAPTURE_OPTIONS: tuple[tuple[tuple[str, ...], dict[str, Any]], ...] = (
+    (
+        ("--port",),
+        {
+            "default": DEFAULT_PORT,
+            "help": f"sniffer serial port (default {DEFAULT_PORT})",
+        },
+    ),
+    (
+        ("--api",),
+        {
+            "default": DEFAULT_API,
+            "help": f"directory holding Nordic's SnifferAPI (default {DEFAULT_API})",
+        },
+    ),
+    (
+        ("--channels",),
+        {
+            "default": "37,38,39",
+            "help": "advertising channel hop sequence (default 37,38,39)",
+        },
+    ),
+    (
+        ("--seconds",),
+        {
+            "type": float,
+            "default": 0,
+            "help": "stop after this long (default: run until Ctrl-C)",
+        },
+    ),
+    (("--ndjson",), {"help": "write records here (`-` = stdout, for a pipe)"}),
+    (
+        ("--pcap",),
+        {"help": "also write every good BLE packet as a Nordic BLE pcap (Wireshark)"},
+    ),
+    (
+        ("--dedupe",),
+        {
+            "type": float,
+            "default": 0,
+            "help": "fold byte-identical PDUs within this many seconds into one record",
+        },
+    ),
+    (
+        ("--follow",),
+        {
+            "metavar": "MAC",
+            "type": parse_mac,
+            "help": "follow this node (its public MAC) into its GATT connection and record the ATT traffic"
+            " (proxy PDUs)",
+        },
+    ),
+)
+DECODE_OPTIONS: tuple[tuple[tuple[str, ...], dict[str, Any]], ...] = (
+    (("--export",), {"required": True, "help": "MeshNetwork.json or JungHome.json"}),
+    (("input",), {"help": "NDJSON or pcap file, or `-` for stdin"}),
+    (("--src",), {"type": parse_hex, "help": "only messages from this address"}),
+    (("--dst",), {"type": parse_hex, "help": "only messages to this address"}),
+    (("--grep",), {"help": "only messages whose description contains this text"}),
+    (
+        ("--copies",),
+        {"action": "store_true", "help": "also print every relay / retransmit copy"},
+    ),
+    (
+        ("--beacons",),
+        {"action": "store_true", "help": "print every beacon, not only changes"},
+    ),
+    (
+        ("--foreign",),
+        {
+            "action": "store_true",
+            "help": "print PDUs of other networks and PB-ADV traffic",
+        },
+    ),
+    (
+        ("--gatt",),
+        {
+            "action": "store_true",
+            "help": "print every ATT PDU of a followed connection, not only the mesh ones",
+        },
+    ),
+    (
+        ("--iv",),
+        {
+            "type": int,
+            "help": "IV index to start from (default: the export's, then the beacons)",
+        },
+    ),
+    (("--json",), {"help": "also write every decoded record as NDJSON here"}),
+)
+# the sub-commands: name (`cmd_<name>` runs it), help, its arguments in `--help` order
+COMMANDS = (
+    (
+        "capture",
+        "scan with the dongle, write mesh AD structures as NDJSON / pcap",
+        CAPTURE_OPTIONS,
+    ),
+    (
+        "decode",
+        "decrypt a capture (NDJSON, pcap or `-`) with the keys of an export",
+        DECODE_OPTIONS,
+    ),
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
-    """The two sub-commands."""
+    """The sub-commands of `COMMANDS`."""
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     sub = ap.add_subparsers(dest="cmd", required=True)
-
-    cap = sub.add_parser(
-        "capture",
-        help="scan with the dongle, write mesh AD structures as NDJSON / pcap",
-    )
-    cap.add_argument(
-        "--port",
-        default=DEFAULT_PORT,
-        help=f"sniffer serial port (default {DEFAULT_PORT})",
-    )
-    cap.add_argument(
-        "--api",
-        default=DEFAULT_API,
-        help=f"directory holding Nordic's SnifferAPI (default {DEFAULT_API})",
-    )
-    cap.add_argument(
-        "--channels",
-        default="37,38,39",
-        help="advertising channel hop sequence (default 37,38,39)",
-    )
-    cap.add_argument(
-        "--seconds",
-        type=float,
-        default=0,
-        help="stop after this long (default: run until Ctrl-C)",
-    )
-    cap.add_argument("--ndjson", help="write records here (`-` = stdout, for a pipe)")
-    cap.add_argument(
-        "--pcap",
-        help="also write every good BLE packet as a Nordic BLE pcap (Wireshark)",
-    )
-    cap.add_argument(
-        "--dedupe",
-        type=float,
-        default=0,
-        help="fold byte-identical PDUs within this many seconds into one record",
-    )
-    cap.add_argument(
-        "--follow",
-        metavar="MAC",
-        type=parse_mac,
-        help="follow this node (its public MAC) into its GATT connection and record the ATT traffic (proxy PDUs)",
-    )
-    cap.set_defaults(fn=cmd_capture)
-
-    dec = sub.add_parser(
-        "decode",
-        help="decrypt a capture (NDJSON, pcap or `-`) with the keys of an export",
-    )
-    dec.add_argument(
-        "--export", required=True, help="MeshNetwork.json or JungHome.json"
-    )
-    dec.add_argument("input", help="NDJSON or pcap file, or `-` for stdin")
-    dec.add_argument("--src", type=parse_hex, help="only messages from this address")
-    dec.add_argument("--dst", type=parse_hex, help="only messages to this address")
-    dec.add_argument(
-        "--grep", help="only messages whose description contains this text"
-    )
-    dec.add_argument(
-        "--copies", action="store_true", help="also print every relay / retransmit copy"
-    )
-    dec.add_argument(
-        "--beacons", action="store_true", help="print every beacon, not only changes"
-    )
-    dec.add_argument(
-        "--foreign",
-        action="store_true",
-        help="print PDUs of other networks and PB-ADV traffic",
-    )
-    dec.add_argument(
-        "--gatt",
-        action="store_true",
-        help="print every ATT PDU of a followed connection, not only the mesh ones",
-    )
-    dec.add_argument(
-        "--iv",
-        type=int,
-        help="IV index to start from (default: the export's, then the beacons)",
-    )
-    dec.add_argument("--json", help="also write every decoded record as NDJSON here")
-    dec.set_defaults(fn=cmd_decode)
+    for name, help_text, options in COMMANDS:
+        p = sub.add_parser(name, help=help_text)
+        for flags, kwargs in options:
+            p.add_argument(*flags, **kwargs)
+        p.set_defaults(fn=globals()[f"cmd_{name}"])
     return ap
 
 
