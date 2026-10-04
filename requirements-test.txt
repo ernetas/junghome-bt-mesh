@@ -6,6 +6,6 @@
 # its test-runner pins (pytest, pytest-asyncio, pytest-timeout, pytest-cov, coverage) from the same release's metadata
 # and installs the mypy and hypothesis below. Hypothesis (the property tests) is not among what
 # pytest-homeassistant-custom-component pins, so it is pinned here on its own.
-pytest-homeassistant-custom-component==0.13.366
+pytest-homeassistant-custom-component==0.13.368
 mypy==2.4.0
 hypothesis==6.168.5
