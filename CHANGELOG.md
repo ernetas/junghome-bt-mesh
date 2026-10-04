@@ -63,6 +63,15 @@
   `const.py` keeps the Home Assistant-facing keys and what several modules share (A4-12): the 84 constants one
   module used moved to it, and the SIG identity property ids and the JH Scheduler model to `jhmesh`.
   Nothing changes in behaviour.
+- Internal: dead code, docstrings and the long switch chains (review-4 brief 63, A4-16, A4-17, A4-18). The one
+  function only its test called (`_confirms_key_mode`) is gone. Comments and docstrings no longer cite review
+  findings, decisions or briefs (this changelog records them), and fourteen docstrings no longer restate their code.
+  `jhmesh.messages.describe` and `describe_config` look a message's formatter up by opcode
+  (`_SIG_GETS`, `_SIG_DESCRIBERS`, `_PARAM_FORMATTERS`) instead of an if-chain, and `tools/mesh_poc.py` and
+  `tools/mesh_sniff.py` build their parsers from sub-command tables; golden files pin `describe`'s text for every
+  opcode it names (`tests/jhmesh/describe_golden.txt`) and the tools' `--help` (`tests/cli_help/`), unchanged by
+  either. The integration still imports its bundled `jhmesh` relatively: the absolute imports wait for the first
+  publication on PyPI (`docs/roadmap.md`). Nothing changes in behaviour.
 
 ### Fixed
 
