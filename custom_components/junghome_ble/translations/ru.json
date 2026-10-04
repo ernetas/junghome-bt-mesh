@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "У {name} нет порога, который можно изменить (или оно не ответило): укажите и мощность, и длительность."
     },
-    "threshold_not_applied": {
-      "message": "Розетка JUNG {address} не приняла свой порог {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Розетка JUNG {address} не приняла свой порог включения. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Не удалось отправить порог {which} розетке JUNG {address}: нет подключенного прокси-узла. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Розетка JUNG {address} не приняла свой порог выключения. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Не удалось отправить порог включения розетке JUNG {address}: нет подключенного прокси-узла. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Не удалось отправить порог выключения розетке JUNG {address}: нет подключенного прокси-узла. {applied}"
     },
     "threshold_other_network": {
       "message": "Розетка и устройства, которые должны переключать ее пороги, принадлежат разным mesh-сетям."

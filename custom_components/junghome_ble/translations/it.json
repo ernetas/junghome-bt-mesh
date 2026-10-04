@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} non contiene alcuna soglia da modificare (o non ha risposto): indica sia la potenza sia la durata."
     },
-    "threshold_not_applied": {
-      "message": "La presa JUNG {address} non ha accettato la sua soglia {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "La presa JUNG {address} non ha accettato la sua soglia di accensione. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Impossibile inviare la soglia {which} alla presa JUNG {address}; nessun nodo proxy è connesso. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "La presa JUNG {address} non ha accettato la sua soglia di spegnimento. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Impossibile inviare la soglia di accensione alla presa JUNG {address}; nessun nodo proxy è connesso. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Impossibile inviare la soglia di spegnimento alla presa JUNG {address}; nessun nodo proxy è connesso. {applied}"
     },
     "threshold_other_network": {
       "message": "La presa e i dispositivi che le sue soglie devono commutare appartengono a reti mesh diverse."

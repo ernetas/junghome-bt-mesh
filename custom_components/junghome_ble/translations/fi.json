@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "Laitteessa {name} ei ole muutettavaa kynnystä (tai se ei vastannut): anna sekä teho että kesto."
     },
-    "threshold_not_applied": {
-      "message": "JUNG-pistorasia {address} ei ottanut käyttöön kynnystä {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG-pistorasia {address} ei ottanut käyttöön kytkentäkynnystään. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Kynnystä {which} ei voitu lähettää JUNG-pistorasialle {address}; yhtään välityssolmua ei ole yhdistetty. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG-pistorasia {address} ei ottanut käyttöön katkaisukynnystään. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Kytkentäkynnystä ei voitu lähettää JUNG-pistorasialle {address}; yhtään välityssolmua ei ole yhdistetty. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Katkaisukynnystä ei voitu lähettää JUNG-pistorasialle {address}; yhtään välityssolmua ei ole yhdistetty. {applied}"
     },
     "threshold_other_network": {
       "message": "Pistorasia ja laitteet, joita sen kynnysten pitäisi kytkeä, kuuluvat eri mesh-verkkoihin."

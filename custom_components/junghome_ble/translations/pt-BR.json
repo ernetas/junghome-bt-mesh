@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} não tem nenhum limite a alterar (ou não respondeu): informe a potência e a duração."
     },
-    "threshold_not_applied": {
-      "message": "A tomada JUNG {address} não aceitou seu limite {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "A tomada JUNG {address} não aceitou seu limite de ligamento. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Não foi possível enviar o limite {which} à tomada JUNG {address}; nenhum nó proxy está conectado. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "A tomada JUNG {address} não aceitou seu limite de desligamento. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Não foi possível enviar o limite de ligamento à tomada JUNG {address}; nenhum nó proxy está conectado. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Não foi possível enviar o limite de desligamento à tomada JUNG {address}; nenhum nó proxy está conectado. {applied}"
     },
     "threshold_other_network": {
       "message": "A tomada e os dispositivos que os limites dela devem comutar pertencem a redes mesh diferentes."

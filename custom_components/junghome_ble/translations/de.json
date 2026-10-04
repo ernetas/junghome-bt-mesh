@@ -1330,11 +1330,17 @@
     "threshold_incomplete": {
       "message": "{name} hat keinen Schwellwert, der geändert werden könnte (oder hat nicht geantwortet): Gib Leistung und Dauer an."
     },
-    "threshold_not_applied": {
-      "message": "Die JUNG-Steckdose {address} hat ihren Schwellwert {which} nicht übernommen. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Die JUNG-Steckdose {address} hat ihre Einschaltschwelle nicht übernommen. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Der Schwellwert {which} konnte nicht an die JUNG-Steckdose {address} gesendet werden: Es ist kein Proxy-Knoten verbunden. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Die JUNG-Steckdose {address} hat ihre Ausschaltschwelle nicht übernommen. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Die Einschaltschwelle konnte nicht an die JUNG-Steckdose {address} gesendet werden: Es ist kein Proxy-Knoten verbunden. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Die Ausschaltschwelle konnte nicht an die JUNG-Steckdose {address} gesendet werden: Es ist kein Proxy-Knoten verbunden. {applied}"
     },
     "threshold_other_network": {
       "message": "Die Steckdose und die Geräte, die ihre Schwellwerte schalten sollen, gehören zu verschiedenen Mesh-Netzwerken."

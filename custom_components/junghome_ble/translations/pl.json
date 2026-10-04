@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} nie ma progu do zmiany (lub nie odpowiedziało): podaj zarówno moc, jak i czas trwania."
     },
-    "threshold_not_applied": {
-      "message": "Gniazdo JUNG {address} nie przyjęło swojego progu {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Gniazdo JUNG {address} nie przyjęło swojego progu włączenia. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Nie udało się wysłać progu {which} do gniazda JUNG {address}; żaden węzeł proxy nie jest połączony. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Gniazdo JUNG {address} nie przyjęło swojego progu wyłączenia. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Nie udało się wysłać progu włączenia do gniazda JUNG {address}; żaden węzeł proxy nie jest połączony. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Nie udało się wysłać progu wyłączenia do gniazda JUNG {address}; żaden węzeł proxy nie jest połączony. {applied}"
     },
     "threshold_other_network": {
       "message": "Gniazdo i urządzenia, które mają przełączać jego progi, należą do różnych sieci mesh."

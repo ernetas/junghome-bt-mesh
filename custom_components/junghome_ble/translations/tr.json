@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} değiştirilecek bir eşik tutmuyor (veya yanıt vermedi): hem gücü hem de süreyi verin."
     },
-    "threshold_not_applied": {
-      "message": "{address} JUNG prizi {which} eşiğini almadı. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "{address} JUNG prizi açma eşiğini almadı. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "{which} eşiği {address} JUNG prizine gönderilemedi; bağlı bir proxy düğümü yok. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "{address} JUNG prizi kapatma eşiğini almadı. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Açma eşiği {address} JUNG prizine gönderilemedi; bağlı bir proxy düğümü yok. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Kapatma eşiği {address} JUNG prizine gönderilemedi; bağlı bir proxy düğümü yok. {applied}"
     },
     "threshold_other_network": {
       "message": "Priz ve eşiklerinin anahtarlaması gereken cihazlar farklı mesh ağlarına ait."

@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} neturi keistino slenksčio (arba neatsakė): nurodykite ir galią, ir trukmę."
     },
-    "threshold_not_applied": {
-      "message": "JUNG elektros lizdas {address} nepriėmė slenksčio {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG elektros lizdas {address} nepriėmė įjungimo slenksčio. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Slenksčio {which} nepavyko išsiųsti JUNG elektros lizdui {address}: neprisijungta prie jokio tarpinio mazgo. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG elektros lizdas {address} nepriėmė išjungimo slenksčio. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Įjungimo slenksčio nepavyko išsiųsti JUNG elektros lizdui {address}: neprisijungta prie jokio tarpinio mazgo. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Išjungimo slenksčio nepavyko išsiųsti JUNG elektros lizdui {address}: neprisijungta prie jokio tarpinio mazgo. {applied}"
     },
     "threshold_other_network": {
       "message": "Elektros lizdas ir įrenginiai, kuriuos turėtų perjungti jo slenksčiai, priklauso skirtingiems tinklams."

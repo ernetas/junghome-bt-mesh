@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} holds no threshold to change (or did not answer): give both power and duration."
     },
-    "threshold_not_applied": {
-      "message": "The JUNG socket {address} did not take its {which} threshold. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "The JUNG socket {address} did not take its switch-on threshold. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "The {which} threshold could not be sent to the JUNG socket {address}; no proxy node is connected. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "The JUNG socket {address} did not take its switch-off threshold. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "The switch-on threshold could not be sent to the JUNG socket {address}; no proxy node is connected. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "The switch-off threshold could not be sent to the JUNG socket {address}; no proxy node is connected. {applied}"
     },
     "threshold_other_network": {
       "message": "The socket and the devices its thresholds should switch belong to different mesh networks."

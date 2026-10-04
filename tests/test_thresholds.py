@@ -6,6 +6,8 @@ socket's two threshold properties answered by stubs), so the wiring they plan is
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -439,10 +441,16 @@ async def test_a_malformed_threshold_is_none(hass: HomeAssistant, env: Env) -> N
                 "duration": 5,
             },
         )
-    assert err.value.translation_key == "threshold_not_applied"
+    assert err.value.translation_key == "threshold_switch_on_not_applied"
 
 
-async def test_threshold_not_taken(hass: HomeAssistant, env: Env) -> None:
+@pytest.mark.parametrize(
+    ("which", "words"), [("switch_on", "switch-on"), ("switch_off", "switch-off")]
+)
+async def test_threshold_not_taken(
+    hass: HomeAssistant, env: Env, which: str, words: str
+) -> None:
+    """One key per threshold, so the message names it in words in every language, not as `switch_on`."""
     env.threshold_sets = False
     with pytest.raises(HomeAssistantError) as err:
         await call(
@@ -450,20 +458,27 @@ async def test_threshold_not_taken(hass: HomeAssistant, env: Env) -> None:
             "set_threshold",
             {
                 "entity_id": socket(hass),
-                "threshold": "switch_on",
+                "threshold": which,
                 "power": 5,
                 "duration": 5,
             },
         )
-    assert err.value.translation_key == "threshold_not_applied"
+    assert err.value.translation_key == f"threshold_{which}_not_applied"
     assert err.value.translation_placeholders == {
         "address": "0172",
-        "which": "switch_on",
         "applied": mesh_config.APPLIED_NOTHING,
     }
+    assert str(err.value) == (
+        f"The JUNG socket 0172 did not take its {words} threshold. {mesh_config.APPLIED_NOTHING}"
+    )
 
 
-async def test_threshold_lost_link(hass: HomeAssistant, env: Env) -> None:
+@pytest.mark.parametrize(
+    ("which", "words"), [("switch_on", "switch-on"), ("switch_off", "switch-off")]
+)
+async def test_threshold_lost_link(
+    hass: HomeAssistant, env: Env, which: str, words: str
+) -> None:
     with (
         patch.object(PropertyReader, "write", side_effect=ConnectionError),
         pytest.raises(HomeAssistantError) as err,
@@ -473,17 +488,34 @@ async def test_threshold_lost_link(hass: HomeAssistant, env: Env) -> None:
             "set_threshold",
             {
                 "entity_id": socket(hass),
-                "threshold": "switch_on",
+                "threshold": which,
                 "power": 5,
                 "duration": 5,
             },
         )
-    assert err.value.translation_key == "threshold_send_failed"
+    assert err.value.translation_key == f"threshold_{which}_send_failed"
     assert err.value.translation_placeholders == {
         "address": "0172",
-        "which": "switch_on",
         "applied": mesh_config.APPLIED_NOTHING,
     }
+    assert str(err.value) == (
+        f"The {words} threshold could not be sent to the JUNG socket 0172; no proxy node is connected. "
+        f"{mesh_config.APPLIED_NOTHING}"
+    )
+
+
+def test_threshold_errors_name_the_threshold_in_every_language() -> None:
+    """Each threshold has its own key in every language, and no text shows the raw `switch_on` / `switch_off`."""
+    keys = [*T.NOT_APPLIED.values(), *T.SEND_FAILED.values()]
+    assert len(set(keys)) == 4
+    folder = Path(T.__file__).parent
+    for path in [folder / "strings.json", *sorted(folder.glob("translations/*.json"))]:
+        exceptions = json.loads(path.read_text(encoding="utf-8"))["exceptions"]
+        messages = [exceptions[key]["message"] for key in keys]
+        assert len(set(messages)) == 4, path.name
+        for message in messages:
+            assert "switch_" not in message, (path.name, message)
+            assert "{which}" not in message, (path.name, message)
 
 
 async def test_a_threshold_failure_names_what_was_written_before_it(
@@ -510,22 +542,36 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
             raise ConnectionError
         return await real_write(self, *args, **kwargs)
 
+    # the write that fails: the switch-off threshold of the first socket, then both of the second
     expected = {
-        2: "Before it, the switch-on threshold of socket 0172 was written. Run the action again with the same "
-        "target to finish.",
-        3: "Before it, socket 0172 was set as asked. Run the action again with the same target to finish.",
-        4: "Before it, socket 0172 was set as asked and the switch-on threshold of socket 0172 was written. Run "
-        "the action again with the same target to finish.",
+        2: (
+            "threshold_switch_off_send_failed",
+            (
+                "Before it, the switch-on threshold of socket 0172 was written. Run the action again with the "
+                "same target to finish."
+            ),
+        ),
+        3: (
+            "threshold_switch_on_send_failed",
+            "Before it, socket 0172 was set as asked. Run the action again with the same target to finish.",
+        ),
+        4: (
+            "threshold_switch_off_send_failed",
+            (
+                "Before it, socket 0172 was set as asked and the switch-on threshold of socket 0172 was written. "
+                "Run the action again with the same target to finish."
+            ),
+        ),
     }
     with (
         patch.object(threshold_actions, "_threshold_sockets", two_sockets),
         patch.object(PropertyReader, "write", write),
     ):
-        for fail_at, applied in expected.items():  # noqa: B007  # read by `write`
+        for fail_at, (key, applied) in expected.items():  # noqa: B007  # read by `write`
             writes.clear()
             with pytest.raises(HomeAssistantError) as err:
                 await call(hass, "delete_threshold", {"entity_id": socket(hass)})
-            assert err.value.translation_key == "threshold_send_failed"
+            assert err.value.translation_key == key
             assert err.value.translation_placeholders["applied"] == applied
             await settled(hass, env)
 

@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} heeft geen drempel om te wijzigen (of heeft niet geantwoord): geef zowel vermogen als duur op."
     },
-    "threshold_not_applied": {
-      "message": "Het JUNG-stopcontact {address} heeft zijn {which}-drempel niet overgenomen. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Het JUNG-stopcontact {address} heeft zijn inschakeldrempel niet overgenomen. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "De {which}-drempel kon niet naar het JUNG-stopcontact {address} worden verzonden; er is geen proxy-node verbonden. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Het JUNG-stopcontact {address} heeft zijn uitschakeldrempel niet overgenomen. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "De inschakeldrempel kon niet naar het JUNG-stopcontact {address} worden verzonden; er is geen proxy-node verbonden. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "De uitschakeldrempel kon niet naar het JUNG-stopcontact {address} worden verzonden; er is geen proxy-node verbonden. {applied}"
     },
     "threshold_other_network": {
       "message": "Het stopcontact en de apparaten die zijn drempels moeten schakelen, horen bij verschillende mesh-netwerken."

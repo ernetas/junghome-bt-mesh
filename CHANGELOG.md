@@ -47,6 +47,14 @@
   language), the reference and the user guide: review 3 saw them dim, stop and step a dimmer on the installation. A
   tunable-white channel has not been dimmed this way yet.
 
+### Fixed
+
+- A socket threshold that could not be written or was not taken is named in words in every language (*switch-on
+  threshold*, *Einschaltschwelle*, …), not as the raw `switch_on` / `switch_off`: the two errors have a key per
+  threshold now (`threshold_switch_on_not_applied`, `threshold_switch_off_not_applied`,
+  `threshold_switch_on_send_failed`, `threshold_switch_off_send_failed`), as Home Assistant never translates a
+  placeholder's value.
+
 ## 1.1.0
 
 ### Upgrading

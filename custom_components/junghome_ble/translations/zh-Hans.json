@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} 中没有可更改的阈值（或未应答）：请同时提供功率和持续时间。"
     },
-    "threshold_not_applied": {
-      "message": "JUNG 插座 {address} 未接受其 {which} 阈值。{applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG 插座 {address} 未接受其开启阈值。{applied}"
     },
-    "threshold_send_failed": {
-      "message": "无法将 {which} 阈值发送到 JUNG 插座 {address}；没有已连接的代理节点。{applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG 插座 {address} 未接受其关闭阈值。{applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "无法将开启阈值发送到 JUNG 插座 {address}；没有已连接的代理节点。{applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "无法将关闭阈值发送到 JUNG 插座 {address}；没有已连接的代理节点。{applied}"
     },
     "threshold_other_network": {
       "message": "该插座与其阈值应切换的设备属于不同的 Mesh 网络。"

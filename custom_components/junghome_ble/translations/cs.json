@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} nemá žádný práh ke změně (nebo neodpovídá): zadejte výkon i dobu."
     },
-    "threshold_not_applied": {
-      "message": "Zásuvka JUNG {address} nepřevzala svůj práh {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Zásuvka JUNG {address} nepřevzala svůj práh zapnutí. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Práh {which} nelze odeslat do zásuvky JUNG {address}; není připojen žádný proxy uzel. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Zásuvka JUNG {address} nepřevzala svůj práh vypnutí. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Práh zapnutí nelze odeslat do zásuvky JUNG {address}; není připojen žádný proxy uzel. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Práh vypnutí nelze odeslat do zásuvky JUNG {address}; není připojen žádný proxy uzel. {applied}"
     },
     "threshold_other_network": {
       "message": "Zásuvka a zařízení, která mají její prahy spínat, patří do různých sítí mesh."

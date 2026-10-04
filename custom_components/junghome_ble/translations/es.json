@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} no contiene ningún umbral que cambiar (o no respondió): indica tanto la potencia como la duración."
     },
-    "threshold_not_applied": {
-      "message": "El enchufe JUNG {address} no adoptó su umbral de {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "El enchufe JUNG {address} no adoptó su umbral de conexión. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "No se pudo enviar el umbral de {which} al enchufe JUNG {address}; no hay ningún nodo proxy conectado. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "El enchufe JUNG {address} no adoptó su umbral de desconexión. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "No se pudo enviar el umbral de conexión al enchufe JUNG {address}; no hay ningún nodo proxy conectado. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "No se pudo enviar el umbral de desconexión al enchufe JUNG {address}; no hay ningún nodo proxy conectado. {applied}"
     },
     "threshold_other_network": {
       "message": "El enchufe y los dispositivos que deben conmutar sus umbrales pertenecen a redes mesh distintas."

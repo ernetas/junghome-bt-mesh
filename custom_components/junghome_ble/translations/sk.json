@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} nemá žiadnu prahovú hodnotu na zmenu (alebo neodpovedalo): zadajte výkon aj trvanie."
     },
-    "threshold_not_applied": {
-      "message": "Zásuvka JUNG {address} neprijala svoju prahovú hodnotu {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Zásuvka JUNG {address} neprijala svoju prahovú hodnotu zapnutia. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Prahovú hodnotu {which} sa nepodarilo odoslať do zásuvky JUNG {address}; nie je pripojený žiadny proxy uzol. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Zásuvka JUNG {address} neprijala svoju prahovú hodnotu vypnutia. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Prahovú hodnotu zapnutia sa nepodarilo odoslať do zásuvky JUNG {address}; nie je pripojený žiadny proxy uzol. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Prahovú hodnotu vypnutia sa nepodarilo odoslať do zásuvky JUNG {address}; nie je pripojený žiadny proxy uzol. {applied}"
     },
     "threshold_other_network": {
       "message": "Zásuvka a zariadenia, ktoré majú jej prahové hodnoty spínať, patria do rôznych sietí mesh."

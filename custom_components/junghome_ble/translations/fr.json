@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} ne contient aucun seuil à modifier (ou n'a pas répondu) : indiquez à la fois la puissance et la durée."
     },
-    "threshold_not_applied": {
-      "message": "La prise JUNG {address} n'a pas pris son seuil {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "La prise JUNG {address} n'a pas pris son seuil d'activation. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Le seuil {which} n'a pas pu être envoyé à la prise JUNG {address} ; aucun nœud proxy n'est connecté. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "La prise JUNG {address} n'a pas pris son seuil de désactivation. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Le seuil d'activation n'a pas pu être envoyé à la prise JUNG {address} ; aucun nœud proxy n'est connecté. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Le seuil de désactivation n'a pas pu être envoyé à la prise JUNG {address} ; aucun nœud proxy n'est connecté. {applied}"
     },
     "threshold_other_network": {
       "message": "La prise et les appareils que ses seuils doivent commuter appartiennent à des réseaux mesh différents."

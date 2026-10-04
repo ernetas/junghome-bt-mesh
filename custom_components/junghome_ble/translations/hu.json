@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "A(z) {name} nem tárol módosítható küszöböt (vagy nem válaszolt): adja meg a teljesítményt és az időtartamot is."
     },
-    "threshold_not_applied": {
-      "message": "A(z) {address} JUNG aljzat nem vette át a(z) {which} küszöbét. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "A(z) {address} JUNG aljzat nem vette át a bekapcsolási küszöbét. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "A(z) {which} küszöböt nem sikerült elküldeni a(z) {address} JUNG aljzatnak; egyetlen proxy csomópont sem csatlakozik. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "A(z) {address} JUNG aljzat nem vette át a kikapcsolási küszöbét. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "A bekapcsolási küszöböt nem sikerült elküldeni a(z) {address} JUNG aljzatnak; egyetlen proxy csomópont sem csatlakozik. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "A kikapcsolási küszöböt nem sikerült elküldeni a(z) {address} JUNG aljzatnak; egyetlen proxy csomópont sem csatlakozik. {applied}"
     },
     "threshold_other_network": {
       "message": "Az aljzat és azok az eszközök, amelyeket a küszöbeinek kapcsolniuk kellene, különböző mesh hálózatokhoz tartoznak."

@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} には変更するしきい値がありません（または応答しませんでした）。電力と継続時間の両方を指定してください。"
     },
-    "threshold_not_applied": {
-      "message": "JUNG のコンセント {address} は {which} のしきい値を受け付けませんでした。{applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG のコンセント {address} はオンしきい値を受け付けませんでした。{applied}"
     },
-    "threshold_send_failed": {
-      "message": "{which} のしきい値を JUNG のコンセント {address} に送信できませんでした。プロキシノードが接続されていません。{applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG のコンセント {address} はオフしきい値を受け付けませんでした。{applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "オンしきい値を JUNG のコンセント {address} に送信できませんでした。プロキシノードが接続されていません。{applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "オフしきい値を JUNG のコンセント {address} に送信できませんでした。プロキシノードが接続されていません。{applied}"
     },
     "threshold_other_network": {
       "message": "コンセントと、そのしきい値で切り替えるデバイスが、異なるメッシュネットワークに属しています。"

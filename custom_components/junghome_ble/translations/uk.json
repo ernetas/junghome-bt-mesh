@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} не має порога, який можна змінити (або не відповів): вкажіть і потужність, і тривалість."
     },
-    "threshold_not_applied": {
-      "message": "Розетка JUNG {address} не прийняла свій поріг {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Розетка JUNG {address} не прийняла свій поріг увімкнення. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Не вдалося надіслати поріг {which} розетці JUNG {address}: немає підключеного проксі-вузла. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Розетка JUNG {address} не прийняла свій поріг вимкнення. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Не вдалося надіслати поріг увімкнення розетці JUNG {address}: немає підключеного проксі-вузла. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Не вдалося надіслати поріг вимкнення розетці JUNG {address}: немає підключеного проксі-вузла. {applied}"
     },
     "threshold_other_network": {
       "message": "Розетка та пристрої, які мають перемикати її пороги, належать до різних mesh-мереж."

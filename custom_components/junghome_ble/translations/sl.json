@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} nima praga, ki bi ga bilo mogoče spremeniti (ali se ni odzvala): podajte moč in trajanje."
     },
-    "threshold_not_applied": {
-      "message": "Vtičnica JUNG {address} ni sprejela svojega praga {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Vtičnica JUNG {address} ni sprejela svojega praga vklopa. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Praga {which} ni bilo mogoče poslati vtičnici JUNG {address}; nobeno vozlišče proxy ni povezano. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Vtičnica JUNG {address} ni sprejela svojega praga izklopa. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Praga vklopa ni bilo mogoče poslati vtičnici JUNG {address}; nobeno vozlišče proxy ni povezano. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Praga izklopa ni bilo mogoče poslati vtičnici JUNG {address}; nobeno vozlišče proxy ni povezano. {applied}"
     },
     "threshold_other_network": {
       "message": "Vtičnica in naprave, ki naj jih preklapljajo njeni pragovi, pripadajo različnim omrežjem mesh."

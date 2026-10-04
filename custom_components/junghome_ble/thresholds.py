@@ -48,6 +48,16 @@ OTHER_THRESHOLD: dict[Which, Which] = {
     "switch_on": "switch_off",
     "switch_off": "switch_on",
 }
+# the error of a write, one key per threshold: Home Assistant translates a message, never a placeholder's value, so
+# a `{which}` would show the raw `switch_on` in every language
+NOT_APPLIED: dict[Which, str] = {
+    "switch_on": "threshold_switch_on_not_applied",
+    "switch_off": "threshold_switch_off_not_applied",
+}
+SEND_FAILED: dict[Which, str] = {
+    "switch_on": "threshold_switch_on_send_failed",
+    "switch_off": "threshold_switch_off_send_failed",
+}
 # the app's delete: no power, no time, not active
 CLEARED = P.Threshold(None, 0, False)
 
@@ -242,10 +252,7 @@ async def write_threshold(
         await reader.write(socket.address, spec, value)
     except OSError as err:  # a lost link (ConnectionError)
         raise _error(
-            "threshold_send_failed",
-            address=address,
-            which=which,
-            applied=progress.text(),
+            SEND_FAILED[which], address=address, applied=progress.text()
         ) from err
     raw = reader.cached(socket.address, spec)
     try:
@@ -253,10 +260,5 @@ async def write_threshold(
     except ValueError:
         held = None
     if held != value:
-        raise _error(
-            "threshold_not_applied",
-            address=address,
-            which=which,
-            applied=progress.text(),
-        )
+        raise _error(NOT_APPLIED[which], address=address, applied=progress.text())
     progress.wrote(socket.address, which)

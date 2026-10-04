@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} har ingen tröskel att ändra (eller svarade inte): ange både effekt och varaktighet."
     },
-    "threshold_not_applied": {
-      "message": "JUNG-uttaget {address} tog inte emot sin {which}-tröskel. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG-uttaget {address} tog inte emot sin tillslagströskel. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "{which}-tröskeln kunde inte skickas till JUNG-uttaget {address}; ingen proxynod är ansluten. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG-uttaget {address} tog inte emot sin frånslagströskel. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Tillslagströskeln kunde inte skickas till JUNG-uttaget {address}; ingen proxynod är ansluten. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Frånslagströskeln kunde inte skickas till JUNG-uttaget {address}; ingen proxynod är ansluten. {applied}"
     },
     "threshold_other_network": {
       "message": "Uttaget och enheterna som dess trösklar ska styra tillhör olika mesh-nätverk."

@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} no conté cap llindar per canviar (o no ha respost): indica tant la potència com la durada."
     },
-    "threshold_not_applied": {
-      "message": "L'endoll JUNG {address} no ha acceptat el seu llindar {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "L'endoll JUNG {address} no ha acceptat el seu llindar d'encesa. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "No s'ha pogut enviar el llindar {which} a l'endoll JUNG {address}; no hi ha cap node proxy connectat. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "L'endoll JUNG {address} no ha acceptat el seu llindar d'apagada. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "No s'ha pogut enviar el llindar d'encesa a l'endoll JUNG {address}; no hi ha cap node proxy connectat. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "No s'ha pogut enviar el llindar d'apagada a l'endoll JUNG {address}; no hi ha cap node proxy connectat. {applied}"
     },
     "threshold_other_network": {
       "message": "L'endoll i els dispositius que els seus llindars han de commutar pertanyen a xarxes mesh diferents."

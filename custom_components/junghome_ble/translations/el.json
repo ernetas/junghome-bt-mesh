@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name}: δεν έχει κατώφλι προς αλλαγή (ή δεν απάντησε): δώστε και ισχύ και διάρκεια."
     },
-    "threshold_not_applied": {
-      "message": "Η πρίζα JUNG {address} δεν δέχτηκε το κατώφλι {which}. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "Η πρίζα JUNG {address} δεν δέχτηκε το κατώφλι ενεργοποίησης. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "Δεν ήταν δυνατή η αποστολή του κατωφλίου {which} στην πρίζα JUNG {address}· δεν είναι συνδεδεμένος κανένας κόμβος proxy. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "Η πρίζα JUNG {address} δεν δέχτηκε το κατώφλι απενεργοποίησης. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Δεν ήταν δυνατή η αποστολή του κατωφλίου ενεργοποίησης στην πρίζα JUNG {address}· δεν είναι συνδεδεμένος κανένας κόμβος proxy. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Δεν ήταν δυνατή η αποστολή του κατωφλίου απενεργοποίησης στην πρίζα JUNG {address}· δεν είναι συνδεδεμένος κανένας κόμβος proxy. {applied}"
     },
     "threshold_other_network": {
       "message": "Η πρίζα και οι συσκευές που πρέπει να ελέγχουν τα κατώφλιά της ανήκουν σε διαφορετικά δίκτυα mesh."

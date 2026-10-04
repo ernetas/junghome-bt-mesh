@@ -1329,11 +1329,17 @@
     "threshold_incomplete": {
       "message": "{name} har ingen terskel å endre (eller svarte ikke): Oppgi både effekt og varighet."
     },
-    "threshold_not_applied": {
-      "message": "JUNG-stikkontakten {address} tok ikke imot {which}-terskelen sin. {applied}"
+    "threshold_switch_on_not_applied": {
+      "message": "JUNG-stikkontakten {address} tok ikke imot påslagsterskelen sin. {applied}"
     },
-    "threshold_send_failed": {
-      "message": "{which}-terskelen kunne ikke sendes til JUNG-stikkontakten {address}; ingen proxynode er tilkoblet. {applied}"
+    "threshold_switch_off_not_applied": {
+      "message": "JUNG-stikkontakten {address} tok ikke imot avslagsterskelen sin. {applied}"
+    },
+    "threshold_switch_on_send_failed": {
+      "message": "Påslagsterskelen kunne ikke sendes til JUNG-stikkontakten {address}; ingen proxynode er tilkoblet. {applied}"
+    },
+    "threshold_switch_off_send_failed": {
+      "message": "Avslagsterskelen kunne ikke sendes til JUNG-stikkontakten {address}; ingen proxynode er tilkoblet. {applied}"
     },
     "threshold_other_network": {
       "message": "Stikkontakten og enhetene tersklene skal styre, tilhører forskjellige mesh-nettverk."
