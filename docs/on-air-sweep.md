@@ -137,6 +137,7 @@ pass removed the markers of the checks that passed.
 | [C7](#c7--repairs-that-fix-u4-5) | Repairs that fix: gateway sync, a device name, a fetch | gateway, a light, a firewall rule | a device name, restored | — |
 | [C8](#c8--following-the-app-u4-6) | Following the app: a rename in the app reaches Home Assistant | gateway, the app, a light | a device name, restored | **yes** |
 | [C9](#c9--rooms-to-areas-u4-2) | *Change which area each room's devices go to*: devices move, a hand-placed one stays | the integration's devices | areas, set back | — |
+| [C10](#c10--hotel-function-entities-written-from-home-assistant-brief-73) | Hotel function, its brightness and the night-light brightness from Home Assistant | DALI TW light | settings, restored | — |
 | [D1](#d1--socket-thresholds-netuccreatethreshold-togglethreshold-deletethreshold) | Thresholds create / disable / delete | socket + harmless load, a light | wiring, removed | — |
 | [D2](#d2--key--scene-f15) | Key → scene (F15) | push-button key, harmless scene | key wiring, restored | **yes** |
 | [D3](#d3--rooms-and-scenes-allocated-from-the-top) | Rooms and scenes allocated from the top | a light, the app | room / scene, removed | — |
@@ -149,6 +150,7 @@ pass removed the markers of the checks that passed.
 | [D10](#d10--a-key-that-only-talks-to-home-assistant-with-a-blueprint) | A key that only talks to Home Assistant, with a blueprint | a key, a light | a room and a key, undone | **yes** |
 | [D11](#d11--areas-follow-a-room-change-u4-2) | *Move devices along when their JUNG room changes* after `set_room` | a light, two rooms | a room and areas, set back | — |
 | [D12](#d12--dry-runs-and-the-answer-of-a-real-assign_key-w-i3-w-i6) | Dry runs; the answer of a real `assign_key` | a key, a light | a key connection, restored | — |
+| [D13](#d13--pre-flight-reconcile-before-a-destructive-plan-w-i4) | Pre-flight reads stop a plan the nodes no longer match | a key, a light, the app | a key in the app, set back | — |
 | [E1](#e1--gateway-re-authentication) | Gateway re-authentication | gateway, the app | the gateway token | — |
 | [E2](#e2--backup-and-restore) | Backup and restore | HA backups | **2^20 sequence numbers** | — |
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
@@ -860,6 +862,25 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   options change.
 - **Markers:** `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow._async_areas_option`.
 
+### C10 · Hotel function entities written from Home Assistant (brief 73)
+
+- **Checks:** review-4 brief 73 — the DALI insert's *Hotel function* switch (`basic_light_function_enable`,
+  `0x1009`), *Hotel function brightness* (`hotel_dimm_value`, `0x1008`) and *Night-light brightness*
+  (`night_dimm_value`, `0x1011`), written from Home Assistant rather than the CLI (C6 settled their layouts).
+- **Needs:** the DALI tunable-white light `<tw light>`; the three entities enabled on its device. **Safety:** each
+  value goes back to what the entity showed first.
+- **Do:**
+  1. Note the three entities' states. Set *Hotel function brightness* to 30 %, turn *Hotel function* on, switch
+     `<tw light>` off from Home Assistant: it should stay on, dimmed to about 30 %.
+  2. Turn *Hotel function* off, switch the light off (it goes off), set the brightness back to its first value.
+  3. Set *Night-light brightness* to another value and back (its effect needs the dark and a person; skip if not).
+- **Capture:** `--src <ha>` and `--dst <ha>` over the sitting.
+- **Pass:** each write is a vendor Property Set answered by a Status with the written byte (30 % = `0x4D`), the
+  entity shows the read-back, and step 1's off leaves the light at that level.
+- **Markers:** `prod:unused-string:device_parameter_hotel_function`,
+  `prod:unused-string:device_parameter_hotel_lightness`,
+  `prod:unused-string:device_parameter_night_light_lightness`.
+
 ## D · Rewiring, undone in the sitting
 
 **These change the network's wiring and the export, upload it to the gateway and reload the entry.** Each ends with the
@@ -1151,6 +1172,23 @@ starting state restored; the app shows Home Assistant's changes only once it tak
   the Config messages seen, `recorded` is true and `nodes` names the key's device; the logbook shows *… now drives
   …; N messages* with the same N.
 - **Markers:** `custom_components/junghome_ble/configurator/executor.py::PlanExecutor.plan_response`.
+
+### D13 · Pre-flight reconcile before a destructive plan (W I4)
+
+- **Checks:** review-4 brief 70 — before a plan that removes or replaces what the export says a node holds, Home
+  Assistant reads it from the nodes and stops on a difference; a dry run lists the differences under `preflight`.
+- **Needs:** a key `<key>` wired to a `<light>`, the app. **Safety:** step 1 only reads; step 2 changes the key in
+  the app and sets it back there.
+- **Do:**
+  1. `clear_key` with `key_entity: <key>`, `dry_run: true`, *Return response* on: the capture shows Model
+     Subscription / Publication Gets from `<ha>` and no Set; `preflight.differences` is empty.
+  2. In the app, connect `<key>` to another light (do not export). Repeat step 1: `preflight.differences` names the
+     key's element, the Get and both addresses. Run `clear_key` without `dry_run`: it fails with *… the mesh export
+     says …* and nothing is written. Connect the key back in the app.
+- **Capture:** `--src <ha>` over the sitting.
+- **Pass:** as described; no Config Set from `<ha>` in either step.
+- **Markers:** `custom_components/junghome_ble/configurator/executor.py::PlanExecutor.preflight`,
+  `custom_components/junghome_ble/configurator/store.py::ExportStore.dry_run`, `custom_components/junghome_ble/strings.json::services.set_room.fields.force.description`, `custom_components/junghome_ble/strings.json::services.delete_room.fields.force.description`, `custom_components/junghome_ble/strings.json::services.assign_key.fields.force.description`, `custom_components/junghome_ble/strings.json::services.clear_key.fields.force.description`, `custom_components/junghome_ble/strings.json::services.remove_from_scene.fields.force.description`, `custom_components/junghome_ble/strings.json::services.set_threshold.fields.force.description`, `custom_components/junghome_ble/strings.json::services.delete_threshold.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.set_room.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.delete_room.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.assign_key.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.clear_key.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.remove_from_scene.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.set_threshold.fields.force.description`, `custom_components/junghome_ble/translations/en.json::services.delete_threshold.fields.force.description`.
 
 ## E · Credentials, sequence numbers and keys
 
