@@ -2036,7 +2036,7 @@
     },
     "sequence_space_low": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME pohajajo",
-      "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Pošiljatelj ne more čez konec tega prostora, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update). Bluetooth Mesh pričakuje, da naprava, ki ji zmanjkuje številk, to posodobitev sproži sama; ali naprave JUNG HOME to počnejo, še ni znano. Home Assistant IV Update sledi, vendar ga ne sproži. Vsak ponovni zagon naprave (izpad elektrike, sprožen varovalni odklopnik) prestavi njene zaporedne številke daleč naprej, zato številk najprej zmanjka napravi, ki pogosto ostane brez napajanja. Težava po posodobitvi izgine sama."
+      "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Pošiljatelj ne more čez konec tega prostora, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update). Bluetooth Mesh pričakuje, da naprava, ki ji zmanjkuje številk, to posodobitev sproži sama; ali naprave JUNG HOME to počnejo, še ni znano. Home Assistant IV Update sledi, skrbnik pa ga lahko sproži z dejanjem `junghome_ble.start_iv_update` (tega ni mogoče razveljaviti; v delovanju še ni preverjeno). Vsak ponovni zagon naprave (izpad elektrike, sprožen varovalni odklopnik) prestavi njene zaporedne številke daleč naprej, zato številk najprej zmanjka napravi, ki pogosto ostane brez napajanja. Težava po posodobitvi izgine sama."
     },
     "iv_index_mismatch": {
       "title": "Omrežje mesh JUNG HOME je na drugem indeksu IV",

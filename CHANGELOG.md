@@ -15,6 +15,30 @@
   `clear_key`, `remove_from_scene`, `set_threshold` and `delete_threshold`, and an added meaning of the existing one
   on `remove_from_room`, `delete_scene` and `remove_device`. Plans that only add send no extra message. Unverified on
   air.
+- **Start an IV Update from Home Assistant** (review-4 P I-11): the action `junghome_ble.start_iv_update` (administrators
+  only) moves the mesh to the next IV index, which gives every sender a fresh sequence-number space, for a mesh whose
+  devices do not start the update themselves (Bluetooth Mesh expects a device running out of sequence numbers to;
+  that JUNG devices do is unverified). Home Assistant sends its proxy an authenticated Secure Network beacon of the
+  update, which Mesh Protocol 1.1 §6.7 has the proxy process like one from any other node and carry to the mesh; the
+  proxy's beacon back confirms it, and Home Assistant returns to normal operation 96 hours later (§3.11.5). It cannot
+  be undone, so the call needs `confirm: true`, and it is refused unless a sender has used three quarters of its
+  sequence numbers (the *sequence numbers running low* repair, whose text now names the action, in every language) or
+  `force: true` is given, without a link, during a key refresh and within 96 hours of the last start or end of an IV
+  Update, each with its own message. The answer gives the new IV index and when normal operation is due; the diagnostics show who
+  started the last update (Home Assistant or a beacon) and when. The new state is written to the sequence-number store
+  before the beacon goes. Unverified on air. In the library: `LocalState.start_iv_update` (with `IVUpdateRefused`,
+  `iv_update_due`, `complete_iv_update`, `persist_durably`), `ProxyClient.start_iv_update` and
+  `pdu.secure_network_beacon`.
+
+### Fixed
+
+- **Segmented messages are acknowledged as Mesh Protocol 1.1 §3.5.3.4 specifies** (review-4 P I-8): the receiver now
+  runs the SAR Acknowledgment timer, acknowledging the segments received so far shortly after the last new one (150 ms
+  at the spec's defaults, §4.2.49) instead of only on completion or when the last segment arrived with others missing;
+  a segment already received changes nothing, a retransmission of the message completed last is acknowledged again
+  as complete (at most every 150 ms, also once its reassembly has expired) rather than dropped as a replay, and a
+  reassembly discarded after 10 s without a new segment takes its timer with it. Messages to a group or another node
+  are still never acknowledged. Regression only on air: a segmented status from a node exercises the receive path.
 
 ## 1.2.0
 

@@ -2213,11 +2213,16 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_network_pdu",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_complete",
     "custom_components/junghome_ble/jhmesh/pdu.py::segment_ack",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._wait_for_acks"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
+    "tests/jhmesh/test_sar_receive.py::test_the_timer_acknowledges_what_arrived_and_restarts_with_each_new_segment",
+    "tests/jhmesh/test_sar_receive.py::test_the_last_message_is_acknowledged_again_after_its_reassembly_expired",
     "tests/jhmesh/test_client.py::test_segment_ack_only_counts_when_addressed_to_us_from_the_right_node",
     "tests/jhmesh/test_pdu.py::test_segment_ack_encoding",
     "tests/jhmesh/test_sim_mesh.py::test_segmented_replies_with_lost_client_acks"

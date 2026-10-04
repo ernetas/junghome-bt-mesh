@@ -2036,7 +2036,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnummer börjar ta slut",
-      "description": "I meshet {title} har {source} använt {percent} % av sekvensnumren för IV-index {iv_index}. En sändare kan inte gå förbi slutet av det utrymmet förrän meshet går över till nästa IV-index (en IV Update). Bluetooth Mesh förväntar sig att en enhet som håller på att få slut på nummer själv startar den uppdateringen; om JUNG HOME-enheter gör det är ännu inte känt. Home Assistant följer en IV Update men startar ingen själv. Varje omstart av en enhet (ett strömavbrott, en utlöst säkring) får dess sekvensnummer att hoppa långt fram, så en enhet som ofta blir strömlös får slut först. Problemet försvinner av sig självt efter uppdateringen."
+      "description": "I meshet {title} har {source} använt {percent} % av sekvensnumren för IV-index {iv_index}. En sändare kan inte gå förbi slutet av det utrymmet förrän meshet går över till nästa IV-index (en IV Update). Bluetooth Mesh förväntar sig att en enhet som håller på att få slut på nummer själv startar den uppdateringen; om JUNG HOME-enheter gör det är ännu inte känt. Home Assistant följer en IV Update, och en administratör kan låta den starta en med åtgärden `junghome_ble.start_iv_update` (kan inte ångras; ännu inte prövat i drift). Varje omstart av en enhet (ett strömavbrott, en utlöst säkring) får dess sekvensnummer att hoppa långt fram, så en enhet som ofta blir strömlös får slut först. Problemet försvinner av sig självt efter uppdateringen."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-meshet har ett annat IV-index",

@@ -50,6 +50,7 @@ from .pdu import (
     parse_private_beacon,
     proxy_config_set_filter,
     proxy_frame,
+    secure_network_beacon,
     segment_ack,
     seq_auth_from,
     upper_decrypt,
@@ -60,11 +61,15 @@ from .pdu import (
 # an explicit alias instead: it is private, so not in `__all__`, and the integration checks its stored records with it.
 from .state import (
     IV_INDEX_MAX,
+    IV_ORIGIN_BEACON,
+    IV_ORIGIN_LOCAL,
     IV_RECOVERY_MIN_INTERVAL,
+    IV_UPDATE_MAX_STATE,
     IV_UPDATE_MIN_STATE,
     SEQ_GUARD_FIRST_BEACON,
     SEQ_MAX,
     SEQ_TX_LIMIT,
+    IVUpdateRefused,
     LocalState,
     SequenceExhausted,
     SequenceStalled,
@@ -87,10 +92,17 @@ __all__ = [
     "FOREIGN_SOURCE_REPORT_INTERVAL",
     "GATT_TIMEOUT",
     "HEARTBEAT_OPCODE",
+    "IV_BEACON_INTERVAL",
+    "IV_BEACON_INTERVAL_MAX",
     "MESH_PROXY_DATA_IN",
     "MESH_PROXY_DATA_OUT",
     "MESH_PROXY_SERVICE",
     "NET_KEY_INDEX",
+    "SAR_ACK_DELAY_INCREMENT",
+    "SAR_ACK_RETRANSMISSIONS",
+    "SAR_DISCARD_TIMEOUT",
+    "SAR_SEGMENTS_THRESHOLD",
+    "SAR_SEGMENT_INTERVAL",
     "SEGMENT_ACK_TIMEOUT",
     "SEGMENT_RESTARTS",
     "SEGMENT_RETRIES",
@@ -106,11 +118,15 @@ __all__ = [
 # rejects; mypy treats both as an explicit re-export.
 __all__ += [
     "IV_INDEX_MAX",
+    "IV_ORIGIN_BEACON",
+    "IV_ORIGIN_LOCAL",
     "IV_RECOVERY_MIN_INTERVAL",
+    "IV_UPDATE_MAX_STATE",
     "IV_UPDATE_MIN_STATE",
     "SEQ_GUARD_FIRST_BEACON",
     "SEQ_MAX",
     "SEQ_TX_LIMIT",
+    "IVUpdateRefused",
     "LocalState",
     "SequenceExhausted",
     "SequenceStalled",
@@ -145,6 +161,21 @@ GATT_TIMEOUT = 5.0  # one GATT write (a frame, without response), subscription, 
 # a PDU from our own address with a number we never handed out is reported at most this often per link (seconds):
 # another client on the address sends steadily, and one report (with the highest number seen) is the news
 FOREIGN_SOURCE_REPORT_INTERVAL = 60.0
+# The SAR Receiver state (Mesh Protocol 1.1 §4.2.49) at the spec's defaults — a proxy client has no Configuration
+# Server to set it: acknowledgment delay increment 2.5 (state 0b001, §4.2.49.2), one transmission of each Segment
+# Acknowledgment (retransmissions count 0b00, §4.2.49.3) for messages of more than 3 segments (§4.2.49.1), a
+# reassembly discarded 10 s after its last new segment (0b0001, §4.2.49.4), a segment reception interval of 60 ms
+# (0b0101, §4.2.49.5). `ProxyClient._on_segment` applies them (§3.5.3.4)
+SAR_ACK_DELAY_INCREMENT = 2.5
+SAR_ACK_RETRANSMISSIONS = 0
+SAR_SEGMENTS_THRESHOLD = 3
+SAR_DISCARD_TIMEOUT = 10.0
+SAR_SEGMENT_INTERVAL = 0.060  # seconds
+# the Beacon Interval (§3.10.3.1) of an IV Update this client started (`ProxyClient._run_iv_update`): 10 s, the
+# shortest, which the spec's formula gives a node that observes no other beacons (a proxy client hears only its
+# proxy's), until the mesh took the update; then 600 s, the longest
+IV_BEACON_INTERVAL = 10.0
+IV_BEACON_INTERVAL_MAX = 600.0
 # proxy service data classified (`ProxyClient.classify_service_data`) kept by its bytes, least recently seen dropped
 # first: a Node Identity costs one AES per node per key, and a proxy repeats the same advert for its whole session
 CLASSIFY_CACHE_SIZE = 256
@@ -423,6 +454,8 @@ class ProxyClient:
         self._filter_task: asyncio.Task[None] | None = (
             None  # the one filter (re-)send running in the background
         )
+        # the beacons and the return to Normal Operation of an IV Update this client started (`_run_iv_update`)
+        self._iv_task: asyncio.Task[None] | None = None
         self._ready = (
             asyncio.Event()
         )  # set once attach() is through (notifications, proxy filter)
@@ -720,6 +753,7 @@ class ProxyClient:
                         self._start_filter_task(FILTER_BLACKLIST, None, sent=1)
             if self.client is client:  # the link may have dropped during the attach
                 self._ready.set()
+                self._start_iv_task(sent=False)
         except BaseException:
             log.debug(
                 "attach to %s failed, releasing the connection",
@@ -1001,15 +1035,16 @@ class ProxyClient:
             raise ConnectionError(f"proxy write failed: {err}") from err
 
     # ------------------------------------------------------------------ background tasks
-    def _spawn(self, coro: Coroutine[Any, Any, None]) -> None:
-        """Run a coroutine in the background, keeping a reference until it finishes.
+    def _spawn(self, coro: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
+        """Run a coroutine in the background, keeping a reference until it finishes; return its task.
 
         A bare create_task may be garbage collected mid-way; failures are logged, never raised into the
-        notification callback.
+        notification callback. Every one is cancelled when the link goes (`_cancel_tasks`).
         """
         task = asyncio.get_running_loop().create_task(coro)
         self._tasks.add(task)
         task.add_done_callback(self._task_done)
+        return task
 
     def _task_done(self, task: asyncio.Task[None]) -> None:
         self._tasks.discard(task)
@@ -1507,17 +1542,7 @@ class ProxyClient:
                     if b.authenticated:
                         self._beacon_seen.set()
                         if self.state.apply_beacon(b.iv_index, b.iv_update):
-                            log.warning(
-                                "IV state now index=%d update_active=%s (tx index %d)",
-                                self.state.iv_index,
-                                self.state.iv_update_active,
-                                self.state.tx_iv_index,
-                            )
-                            self._purge_rpl()
-                            if self._filter_type is not None:
-                                self._start_filter_task(
-                                    self._filter_type, "IV index changed"
-                                )
+                            self._iv_state_changed()
                     else:
                         self._stats.beacons_unauthenticated += 1
                     if b.key_refresh:
@@ -1539,6 +1564,112 @@ class ProxyClient:
                 log.info("proxy msg type %d: %s", msg_type, payload.hex())
         except Exception:
             log.exception("error handling proxy PDU %s", data.hex())
+
+    def _iv_state_changed(self) -> None:
+        """Act on a move of the IV state (a beacon, or the end of an update we started): log, purge, re-send the filter.
+
+        The filter goes again because it was sealed with the old transmit index, which may be over now.
+        """
+        log.warning(
+            "IV state now index=%d update_active=%s (tx index %d)",
+            self.state.iv_index,
+            self.state.iv_update_active,
+            self.state.tx_iv_index,
+        )
+        self._purge_rpl()
+        if self._filter_type is not None:
+            self._start_filter_task(self._filter_type, "IV index changed")
+
+    # ------------------------------------------------------------------ IV Update initiation
+    async def start_iv_update(self) -> int:
+        """Start an IV Update and send the proxy our Secure Network Beacon of it; return the new IV index.
+
+        Mesh Protocol 1.1 §6.7: the proxy processes a beacon from its client as any other (§3.10.3.1), moves to IV
+        Update in Progress (§3.11.5) and beacons the new state to the mesh and back to us — the confirmation
+        (`LocalState.iv_update_confirmed`). The state moves first and is on disk (`LocalState.persist_durably`)
+        before the beacon is written; a write that did not land puts it back and raises (OSError). Refused with
+        `ConnectionError` without a link, `IVUpdateRefused` by `LocalState.start_iv_update`'s rules (`iv_unknown`
+        when no beacon of this link named the index, `key_refresh` while this client follows one). A link lost
+        before the beacon went leaves the update started: the next link sends it. The beacon is repeated and the
+        update completed by `_run_iv_update`. Unverified on air.
+        """
+        if not self.ready:
+            raise ConnectionError("not connected to a proxy")
+        if self.key_refresh_phase:
+            raise IVUpdateRefused(
+                "key_refresh", f"a key refresh is in phase {self.key_refresh_phase}"
+            )
+        new = self.state.start_iv_update(index_confirmed=self.beacon_seen)
+        try:
+            await self.state.persist_durably()
+        except BaseException:
+            self.state.revert_iv_update_start()
+            raise
+        log.warning(
+            "IV Update started: IV index %d in progress (still transmitting with %d)",
+            new,
+            self.state.tx_iv_index,
+        )
+        self._purge_rpl()
+        self._start_iv_task(sent=await self._send_iv_beacon())
+        return new
+
+    async def _send_iv_beacon(self) -> bool:
+        """Write our Secure Network Beacon of the IV state to the proxy; False when the link could not take it.
+
+        A beacon takes no sequence number.
+        """
+        payload = secure_network_beacon(
+            self.nk, self.state.iv_index, iv_update=self.state.iv_update_active
+        )
+        try:
+            await self._write(PROXY_BEACON, payload)
+        except ConnectionError as err:
+            log.debug("IV Update beacon not sent: %s", err)
+            return False
+        trace.info(
+            "beacon sent: iv_index=%d iv_update=%s",
+            self.state.iv_index,
+            self.state.iv_update_active,
+        )
+        return True
+
+    def _start_iv_task(self, sent: bool) -> None:
+        """Run `_run_iv_update` while an update this client started is in progress (one per link)."""
+        state = self.state
+        if not (state.iv_update_active and state.iv_update_origin == IV_ORIGIN_LOCAL):
+            return
+        if self._iv_task is not None and not self._iv_task.done():
+            return
+        self._iv_task = self._spawn(self._run_iv_update(sent))
+
+    async def _run_iv_update(self, sent: bool) -> None:
+        """Beacon the update this client started every Beacon Interval, and end it when `LocalState.iv_update_due`.
+
+        `IV_BEACON_INTERVAL` until the mesh took it (`iv_update_confirmed`), `IV_BEACON_INTERVAL_MAX` after; `sent`:
+        the first beacon of this link went already. The return to Normal Operation (§3.11.5) is deferred while a
+        segmented message of ours awaits its acknowledgment: its SeqAuth would not survive the sequence restarting
+        at 0. Then the proxy gets our beacon of Normal Operation. Ends when the update ends (a beacon of the mesh can
+        end it first) or the link goes.
+        """
+        state = self.state
+        while state.iv_update_active and state.iv_update_origin == IV_ORIGIN_LOCAL:
+            if state.iv_update_due():
+                if not self._ack_waiters and state.complete_iv_update():
+                    log.warning("IV Update completed: back to Normal Operation")
+                    self._iv_state_changed()
+                    await self._send_iv_beacon()
+                    return
+                await asyncio.sleep(SEGMENT_ACK_TIMEOUT)
+                continue
+            if not sent and not await self._send_iv_beacon():
+                return
+            sent = False
+            await asyncio.sleep(
+                IV_BEACON_INTERVAL_MAX
+                if state.iv_update_confirmed
+                else IV_BEACON_INTERVAL
+            )
 
     def _on_proxy_config(self, payload: bytes) -> None:
         """Take a proxy configuration PDU (§6.5): the Filter Status that names the proxy node and acknowledges our filter.
@@ -1877,10 +2008,25 @@ class ProxyClient:
         self.state.purge_rpl(self.state.iv_index - 1)
 
     def _on_segment(self, n: NetworkPDU, s: SegmentInfo) -> None:
+        """Reassemble a segmented message and acknowledge it as Mesh Protocol 1.1 §3.5.3.4 (Reassembly behavior) says.
+
+        A reassembly is kept per (source, SeqZero). A new segment (First / Next Segment) of a message to our address
+        starts the SAR Acknowledgment timer again — min(SegN + 0.5, `SAR_ACK_DELAY_INCREMENT`) segment reception
+        intervals (`SAR_SEGMENT_INTERVAL`) — and when it fires the segments received so far are acknowledged
+        (`_ack_timer`); the segment that completes the message stops it and acknowledges every segment at once (Last
+        Segment). A segment already received (Repeated Segment) changes nothing. The SAR Discard timer: a reassembly
+        with no new segment for `SAR_DISCARD_TIMEOUT` is dropped, segments and all, when the next segment arrives
+        (nothing can complete it meanwhile). A segment of the message last completed from that source (Most Recent
+        SeqAuth) is acknowledged again as complete — the sender did not hear our acknowledgment — at most once per
+        `SAR_ACK_DELAY_INCREMENT` intervals, and is not delivered again. Only messages to our own address are
+        acknowledged: a group's or another node's never.
+        """
         key = (n.src, s.seq_zero)
         now = time.monotonic()
-        for k in [k for k, v in self._segments.items() if now - v["t"] > 10]:
-            del self._segments[k]
+        for k in [
+            k for k, v in self._segments.items() if now - v["t"] > SAR_DISCARD_TIMEOUT
+        ]:
+            self._drop_reassembly(k)
         if s.seg_o > s.seg_n:
             trace.debug(
                 "RX %04X→%04X segment %d of %d: SegO beyond SegN, dropped",
@@ -1897,33 +2043,86 @@ class ProxyClient:
             return
         st = self._segments.get(key)
         if st is None:
-            # The replay check belongs to the *start* of a reassembly (checking the completed message would drop a
-            # late-completing one after acknowledging it). It is on the segment's own sequence number, as §3.8.8
-            # checks every PDU: a recorded segment replayed later carries its old number, below the list, while
-            # a retransmission carries a fresh one — checking the message's SeqAuth instead would lock a message
-            # out for good once anything the node sent after it (a Heartbeat, a Segment Ack) moved the list past
-            # that SeqAuth. A message already delivered is recognised by its SeqAuth instead (`_seq_auth_done`).
-            if self._is_replay(n.src, n.iv_index, n.seq) or (
-                (n.iv_index, seq_auth) <= self._seq_auth_done.get(n.src, (-1, -1))
-            ):
-                self._stats.replays_dropped += 1
-                trace.debug(
-                    "replay from %04X seq %06X ignored (segment of SeqAuth %06X)",
-                    n.src,
-                    n.seq,
-                    seq_auth,
-                )
-                return
-            st = self._segments[key] = {
-                "parts": {},
-                "n": s.seg_n,
-                "t": now,
-                "done": False,
-                "seq_auth": seq_auth,
-            }
+            st = self._start_reassembly(n, s, key, seq_auth, now)
+        if st is None or not self._fits_reassembly(n, s, st, seq_auth):
+            return
+        ours = n.dst == self.state.src
+        if st["done"]:
+            st["t"] = now  # keeps the entry: it answers the sender's retransmissions
+            if ours:  # Most Recent SeqAuth: the sender did not see our ack; repeat it
+                self._ack_complete(n.src, s.seq_zero, st, now)
+            return
+        if s.seg_o in st["parts"]:
+            return  # Repeated Segment: ignored, no timer restarts
+        st["t"] = now  # the SAR Discard timer starts again with every new segment
+        st["parts"][s.seg_o] = s.data
         if (
-            s.seg_n != st["n"]
-        ):  # a different SegN under the same SeqZero: not the message being assembled
+            len(st["parts"]) == s.seg_n + 1
+        ):  # every index 0..SegN is present (SegO was range-checked)
+            data = b"".join(st["parts"][i] for i in range(s.seg_n + 1))
+            st["done"], st["parts"] = True, {}
+            self._stop_ack_timer(st)
+            self._seq_auth_done[n.src] = max(
+                self._seq_auth_done.get(n.src, (-1, -1)),
+                (n.iv_index, st["seq_auth"]),
+            )
+            if ours:
+                self._ack_complete(n.src, s.seq_zero, st, now)
+            self._deliver(
+                n, s.akf, s.aid, data, s.szmic, st["seq_auth"], segmented=True
+            )
+        elif ours:
+            self._stop_ack_timer(st)
+            delay = min(s.seg_n + 0.5, SAR_ACK_DELAY_INCREMENT) * SAR_SEGMENT_INTERVAL
+            st["ack_task"] = self._spawn(self._ack_timer(key, st, delay))
+
+    def _start_reassembly(
+        self,
+        n: NetworkPDU,
+        s: SegmentInfo,
+        key: tuple[int, int],
+        seq_auth: int,
+        now: float,
+    ) -> dict[str, Any] | None:
+        """Start the reassembly a segment opens, or None when the segment is a replay (`_on_segment`).
+
+        The replay check belongs to the *start* of a reassembly (checking the completed message would drop a
+        late-completing one after acknowledging it). It is on the segment's own sequence number, as §3.8.8
+        checks every PDU: a recorded segment replayed later carries its old number, below the list, while
+        a retransmission carries a fresh one — checking the message's SeqAuth instead would lock a message
+        out for good once anything the node sent after it (a Heartbeat, a Segment Ack) moved the list past
+        that SeqAuth. A message already delivered is recognised by its SeqAuth instead (`_seq_auth_done`): an
+        older one is a replay, the last one a retransmission to acknowledge again (Most Recent SeqAuth, §3.5.3.4).
+        """
+        done = self._seq_auth_done.get(n.src, (-1, -1))
+        if self._is_replay(n.src, n.iv_index, n.seq) or (n.iv_index, seq_auth) < done:
+            self._stats.replays_dropped += 1
+            trace.debug(
+                "replay from %04X seq %06X ignored (segment of SeqAuth %06X)",
+                n.src,
+                n.seq,
+                seq_auth,
+            )
+            return None
+        st: dict[str, Any] = {
+            "parts": {},
+            "n": s.seg_n,
+            "t": now,
+            "done": (n.iv_index, seq_auth) == done,
+            "seq_auth": seq_auth,
+            "acked_at": None,  # monotonic time of the last complete acknowledgment
+            "ack_task": None,  # the SAR Acknowledgment timer running
+        }
+        self._segments[key] = st
+        return st
+
+    @staticmethod
+    def _fits_reassembly(
+        n: NetworkPDU, s: SegmentInfo, st: dict[str, Any], seq_auth: int
+    ) -> bool:
+        """Whether a segment belongs to the reassembly of its (source, SeqZero): same SegN, same SeqAuth."""
+        if s.seg_n != st["n"]:
+            # a different SegN under the same SeqZero: not the message being assembled
             trace.debug(
                 "RX %04X→%04X segment %d of %d contradicts the %d segments announced, dropped",
                 n.src,
@@ -1932,10 +2131,9 @@ class ProxyClient:
                 s.seg_n + 1,
                 st["n"] + 1,
             )
-            return
-        if (
-            seq_auth != st["seq_auth"]
-        ):  # same SeqZero, another message (8192·k earlier): not a part of this one
+            return False
+        if seq_auth != st["seq_auth"]:
+            # same SeqZero, another message (8192·k earlier): not a part of this one
             trace.debug(
                 "RX %04X→%04X segment of SeqAuth %06X does not belong to reassembly %06X, dropped",
                 n.src,
@@ -1943,64 +2141,92 @@ class ProxyClient:
                 seq_auth,
                 st["seq_auth"],
             )
-            return
-        st["t"] = (
-            now  # §3.5.3.4: the incomplete timer restarts with every segment, and keeps a done entry fresh
-        )
-        if st["done"]:
-            if n.dst == self.state.src:  # sender did not see our ack; repeat it
-                self._spawn(self._send_ack(n.src, s.seq_zero, (1 << (s.seg_n + 1)) - 1))
-            return
-        st["parts"][s.seg_o] = s.data
+            return False
+        return True
+
+    def _drop_reassembly(self, key: tuple[int, int]) -> None:
+        """Discard a reassembly whose SAR Discard timer ran out, with its acknowledgment timer (§3.5.3.4)."""
+        self._stop_ack_timer(self._segments.pop(key))
+
+    def _stop_ack_timer(self, st: dict[str, Any]) -> None:
+        """Stop a reassembly's SAR Acknowledgment timer, if one is running."""
+        task, st["ack_task"] = st["ack_task"], None
+        if task is not None:
+            task.cancel()
+            self._tasks.discard(task)
+
+    async def _ack_timer(
+        self, key: tuple[int, int], st: dict[str, Any], delay: float
+    ) -> None:
+        """Run a reassembly's SAR Acknowledgment timer: when it fires, acknowledge the segments received so far."""
+        await asyncio.sleep(delay)
+        # fired: a new segment starts a timer of its own rather than cancel this acknowledgment
+        st["ack_task"] = None
         block = 0
         for i in st["parts"]:
             block |= 1 << i
-        if (
-            len(st["parts"]) == s.seg_n + 1
-        ):  # every index 0..SegN is present (SegO was range-checked)
-            data = b"".join(st["parts"][i] for i in range(s.seg_n + 1))
-            st["done"], st["parts"] = True, {}
-            self._seq_auth_done[n.src] = max(
-                self._seq_auth_done.get(n.src, (-1, -1)),
-                (n.iv_index, st["seq_auth"]),
-            )
-            if n.dst == self.state.src:
-                self._spawn(self._send_ack(n.src, s.seq_zero, block))
-            self._deliver(
-                n, s.akf, s.aid, data, s.szmic, st["seq_auth"], segmented=True
-            )
-        elif (
-            s.seg_o == s.seg_n and n.dst == self.state.src
-        ):  # last segment arrived, some missing → partial ack
-            self._spawn(self._send_ack(n.src, s.seq_zero, block))
+        await self._send_ack(key[0], key[1], block, self._ack_transmissions(st["n"]))
 
-    async def _send_ack(self, dst: int, seq_zero: int, block: int) -> None:
+    def _ack_complete(
+        self, src: int, seq_zero: int, st: dict[str, Any], now: float
+    ) -> None:
+        """Acknowledge every segment of a completed message, at most once per `SAR_ACK_DELAY_INCREMENT` intervals."""
+        last = st["acked_at"]
+        if (
+            last is not None
+            and now - last < SAR_ACK_DELAY_INCREMENT * SAR_SEGMENT_INTERVAL
+        ):
+            return
+        st["acked_at"] = now
+        self._spawn(
+            self._send_ack(
+                src,
+                seq_zero,
+                (1 << (st["n"] + 1)) - 1,
+                self._ack_transmissions(st["n"]),
+            )
+        )
+
+    @staticmethod
+    def _ack_transmissions(seg_n: int) -> int:
+        """How often a Segment Acknowledgment goes: once, or 1 + the retransmissions count above the threshold (§3.5.3.4)."""
+        if seg_n + 1 > SAR_SEGMENTS_THRESHOLD:
+            return SAR_ACK_RETRANSMISSIONS + 1
+        return 1
+
+    async def _send_ack(
+        self, dst: int, seq_zero: int, block: int, transmissions: int = 1
+    ) -> None:
         """Acknowledge a segmented message; its sequence number is reserved and written under `_send_lock`.
 
         Taken outside the lock, the number could land in the middle of a segmented round, whose numbers are all
         reserved before its first segment is written: the ack reached the air ahead of the round's remaining
-        segments with a higher number, and the nodes' replay protection dropped those.
+        segments with a higher number, and the nodes' replay protection dropped those. `transmissions` > 1 repeats
+        it, each with a new sequence number, `SAR_SEGMENT_INTERVAL` apart (§3.5.3.4).
         """
         if not is_unicast(dst):
             return
-        try:
-            async with self._send_lock:
-                self._refuse_unlinked()
-                pdu = network_encrypt(
-                    self.nk,
-                    self.state.tx_iv_index,
-                    ctl=True,
-                    ttl=self.ttl,
-                    seq=self.state.next_seq(),
-                    src=self.state.src,
-                    dst=dst,
-                    transport_pdu=segment_ack(seq_zero, block),
-                )
-                await self._write(PROXY_NETWORK_PDU, pdu)
-        except (
-            ConnectionError
-        ):  # link gone, or the sequence space exhausted: nothing we can send
-            pass
+        for sent in range(transmissions):
+            if sent:
+                await asyncio.sleep(SAR_SEGMENT_INTERVAL)
+            try:
+                async with self._send_lock:
+                    self._refuse_unlinked()
+                    pdu = network_encrypt(
+                        self.nk,
+                        self.state.tx_iv_index,
+                        ctl=True,
+                        ttl=self.ttl,
+                        seq=self.state.next_seq(),
+                        src=self.state.src,
+                        dst=dst,
+                        transport_pdu=segment_ack(seq_zero, block),
+                    )
+                    await self._write(PROXY_NETWORK_PDU, pdu)
+            except (
+                ConnectionError
+            ):  # link gone, or the sequence space exhausted: nothing we can send
+                return
 
     def _count_undecryptable(self) -> None:
         """One more PDU our keys cannot open: count it and tell the application.

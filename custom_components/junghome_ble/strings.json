@@ -1604,6 +1604,30 @@
     },
     "service_preflight_differs": {
       "message": "Not sent: {node} answered {message} with {found}, but the mesh export says {expected} ({others} more differences). The installation changed after the mesh export was made (in the JUNG HOME app, by a device reset or by an earlier action that stopped half-way), and the plan would overwrite what the export no longer describes. Export the project from the app again, or let Home Assistant take the gateway's export over, and run the action again; with `force` it runs without this check. {applied}"
+    },
+    "start_iv_update_needs_confirm": {
+      "message": "An IV Update cannot be undone: add \"confirm: true\" to the call to start it."
+    },
+    "start_iv_update_not_needed": {
+      "message": "No sender of the mesh has used three quarters of the sequence numbers of its IV index yet, so an IV Update is not needed; add \"force: true\" to start one anyway."
+    },
+    "start_iv_update_in_progress": {
+      "message": "An IV Update to IV index {iv_index} is already in progress."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "The mesh's network key is being renewed (a key refresh): start the IV Update once that has finished."
+    },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant has not yet heard the mesh's IV index from the device it is connected through; try again in a moment."
+    },
+    "start_iv_update_too_early": {
+      "message": "An IV Update began or ended in the mesh less than 96 hours ago (the IV index is {iv_index}): a new one can be started from {not_before}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "The mesh's IV index is at its highest value ({iv_index}): it cannot go further."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant could not write the new IV index to its sequence-number store, so it did not start the IV Update; see the log."
     }
   },
   "issues": {
@@ -2036,7 +2060,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
-      "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update but does not start one. Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
+      "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update, and an administrator can have it start one with the action `junghome_ble.start_iv_update` (it cannot be undone; unverified on air). Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh is at another IV index",
@@ -2785,6 +2809,24 @@
         "client": {
           "name": "Client",
           "description": "The name the client asks for access as, exactly as listed under `waiting`. Left empty, nothing is approved."
+        },
+        "config_entry_id": {
+          "name": "Mesh network",
+          "description": "Which JUNG HOME network, when more than one is configured."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Start IV Update",
+      "description": "Has Home Assistant start an IV Update of the mesh: the mesh moves to the next IV index, which gives every sender a fresh sequence-number space. Bluetooth Mesh expects a device that is running out of sequence numbers to start one itself; use this when the repair *JUNG HOME mesh sequence numbers running low* stays open. It cannot be undone (the IV index only goes up), and the mesh returns to normal operation 96 to 144 hours later. Refused unless a sender has used three quarters of its sequence numbers (or *Even if not needed* is on), without a connection to the mesh, during a renewal of the network key and within 96 hours of the last start or end of an IV Update. Administrators only. Unverified on air.",
+      "fields": {
+        "confirm": {
+          "name": "Confirm",
+          "description": "Needed to carry it out: an IV Update cannot be undone."
+        },
+        "force": {
+          "name": "Even if not needed",
+          "description": "Start it although no sender has used three quarters of its sequence numbers yet."
         },
         "config_entry_id": {
           "name": "Mesh network",

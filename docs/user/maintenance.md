@@ -215,10 +215,14 @@ Free up space or repair the storage. [Details](../ha-integration.md#repair-issue
 #### JUNG HOME mesh sequence numbers running low
 
 A device of the installation has used most of its numbers. The mesh moves on to new ones with an IV Update, which
-Bluetooth Mesh expects the device running low to start itself; that JUNG HOME devices do is unverified on air, and
-Home Assistant only follows the update. Every restart of a device (a power cut, a tripped breaker) skips its numbers
-far ahead, so a device that often loses power runs low first.
-[Details](../ha-integration.md#repair-issue-jung-home-mesh-sequence-numbers-running-low)
+Bluetooth Mesh expects the device running low to start itself; that JUNG HOME devices do is unverified on air. Home
+Assistant follows the update, and if the repair stays open an administrator can have Home Assistant start one with
+the action `junghome_ble.start_iv_update` (*Developer tools → Actions*, with `confirm: true`). It cannot be undone:
+the IV index only goes up, and the mesh is back in normal operation 96 to 144 hours later. That a JUNG device takes
+an IV Update from Home Assistant is unverified on air. Every restart of a device (a power cut, a tripped breaker)
+skips its numbers far ahead, so a device that often loses power runs low first.
+[Details](../ha-integration.md#repair-issue-jung-home-mesh-sequence-numbers-running-low),
+[the action](../ha-integration.md#actions-iv-update)
 
 #### JUNG HOME mesh is at another IV index
 

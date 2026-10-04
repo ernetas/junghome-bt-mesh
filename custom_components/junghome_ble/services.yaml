@@ -907,6 +907,22 @@ approve_gateway_client:
         config_entry:
           integration: junghome_ble
 
+start_iv_update:
+  fields:
+    confirm:
+      required: true
+      default: false
+      selector:
+        boolean:
+    force:
+      default: false
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
 
 start_dim:
   target:

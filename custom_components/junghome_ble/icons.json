@@ -439,6 +439,9 @@
     "approve_gateway_client": {
       "service": "mdi:account-check-outline"
     },
+    "start_iv_update": {
+      "service": "mdi:counter"
+    },
     "start_dim": {
       "service": "mdi:brightness-auto"
     },

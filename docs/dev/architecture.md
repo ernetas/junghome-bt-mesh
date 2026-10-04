@@ -59,7 +59,7 @@ Layout of `custom_components/junghome_ble/`:
 | `number.py`, `select.py`, `button.py` (+ the config switches in `switch.py`) | The device-parameter entities generated from `config_entities.py` (`PropertySpec` → platform by codec) |
 | `device_trigger.py`, `logbook.py` | Device triggers for the rocker events (per key, the event types its wiring produces) and the logbook descriptions of the `junghome_ble_button_action` / `junghome_ble_scene_recalled` bus events |
 | `services.py`, `mesh_config.py`, `services.yaml` | The room / key-connection actions and the mesh configurator behind them: `mesh_config.MeshConfigurator` is the facade every caller uses (each operation delegates; a planner's `PlanError` becomes the translated service error) |
-| `actions/` | The actions' handlers and schemas, one module per domain (`rooms`, `keys`, `scenes`, `schedules`, `thresholds`, `devices`, `audit`); `common.py` runs an operation (the entry's lock, the link wait, following the export, the plan's logbook line), `resolve.py` turns the ids a call names into mesh elements, `dim.py` holds the light platform's dimming entity actions (`Dimmable`); `services.py` is the registration table |
+| `actions/` | The actions' handlers and schemas, one module per domain (`rooms`, `keys`, `scenes`, `schedules`, `thresholds`, `devices`, `audit`, `iv_update`); `common.py` runs an operation (the entry's lock, the link wait, following the export, the plan's logbook line), `resolve.py` turns the ids a call names into mesh elements, `dim.py` holds the light platform's dimming entity actions (`Dimmable`); `services.py` is the registration table |
 | `configurator/` | The configurator's parts (review-4 brief 55): `plan.py` (what a stopped plan applied, `KeyPlan`, `PlanError`, the plan journal's step rows; the plan model itself — `ConfigStep`, `ordered`, `replay`, the step builders — is `jhmesh.plan`) and `wiring.py` (modes and models, the wiring read from an export through `ProjectFile`'s methods — the configurator touches no raw `meta` row —, the export's paths and digest, the room / key-link / scene planners as plain functions), both without a Home Assistant import; `store.py` (`ExportStore`: the export read and written, the provisioner identity, the plan journal, dry runs, the gateway's copy adopted, uploaded and retried); `executor.py` (`PlanExecutor`: a plan sent and judged step by step, a stop recorded, the journal replayed, the requests that wait for an answer and their timeouts); `rooms.py`, `scenes.py`, `thresholds.py`, `nodes.py` (the operations) |
 | `schedules.py` | `Scheduler` (one per hub, `scheduler`): a load's JH Scheduler slots — read once per link for the *Schedules* sensor, written by the `get_schedules` … `delete_schedule` actions (`update_schedule` rewrites a slot in place); an astro schedule is preceded by Home Assistant's home location. Not tried on a device yet |
 | `thresholds.py` | A metering socket's switch-on / switch-off thresholds (`0x5004` / `0x5005`): the two sensors and the reads and writes behind `set_threshold` / `delete_threshold`; the loads they switch are wiring, done by `MeshConfigurator` |
@@ -239,7 +239,16 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   the counter as `iv_changed_at` / `iv_recovered_at`; absent = no restriction; the fresh state's first beacon stamps
   nothing). A stored time later than the clock (the clock went back) is pulled back to it, so a backwards jump costs
   at most one more period. Refusals are logged at WARNING once per index. Without the timing, ten authenticated
-  beacons each 42 ahead took the index from 5 to 425 (`tests/jhmesh/test_iv_timing.py`). A beacon that fails authentication with the export's NetKey but carries the Key Refresh flag raises the
+  beacons each 42 ahead took the index from 5 to 425 (`tests/jhmesh/test_iv_timing.py`). Home Assistant can also
+  start an IV Update (review-4 P I-11, the `start_iv_update` action; unverified on air): Mesh Protocol 1.1 §6.7 has
+  the proxy process a Secure Network beacon from its client per §3.10.3.1, so `LocalState.start_iv_update` (Normal
+  Operation, 96 h since the last change, no key refresh in phase 1 or 2, an index a beacon of this link named when
+  no change was seen) moves to index + 1 in progress, `ProxyClient.start_iv_update` has it on disk
+  (`persist_durably`; `HAState` checks what the store holds) before it writes the beacon
+  (`pdu.secure_network_beacon`), and `_run_iv_update` repeats it every 10 s until the proxy's beacon back sets
+  `iv_update_confirmed` (600 s after), then completes it 96 h on (`iv_update_due`, `complete_iv_update`; deferred
+  while a segmented send awaits its ack) and beacons Normal Operation. Who moved the state to in progress last and
+  when (`iv_update_origin`, `iv_update_started_at`) is stored with the record and shown in the diagnostics. A beacon that fails authentication with the export's NetKey but carries the Key Refresh flag raises the
   `key_refresh` repair issue (`JungHomeHub._on_beacon`; not fixable; deleted when the coordinator starts or stops):
   Phase 2 beacons are secured with the new key (Mesh Profile §3.10.4), so a flagged beacon *our* key authenticates
   means our keys are the new ones already and raises nothing. The flag is outside anything our key can verify, so it
@@ -297,8 +306,12 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   group. Each round holds the send lock only while it reserves and writes its segments, not while it waits for the
   acknowledgement, so other messages are not queued behind an absent node; segmented messages to one destination go
   one at a time. When the IV index changes mid-way the message starts over under the new index. Received segmented
-  messages are reassembled and, when addressed to us, acknowledged (a partial ack after the last segment, the full
-  ack again when a completed message's segments are repeated).
+  messages are reassembled and, when addressed to us, acknowledged as Mesh Protocol 1.1 §3.5.3.4 says
+  (`ProxyClient._on_segment`, review-4 P I-8), with the SAR Receiver state at the spec's defaults (§4.2.49,
+  `SAR_*`): every new segment starts the SAR Acknowledgment timer again (min(SegN + 0.5, 2.5) × 60 ms; `_ack_timer`
+  acknowledges what arrived), the last missing segment acknowledges all at once, a repeated segment changes nothing,
+  the message completed last is acknowledged again as complete — also from `_seq_auth_done` once its reassembly
+  expired — at most every 150 ms, and a reassembly without a new segment for 10 s goes with its timer.
 - Replay protection (Mesh Profile §3.8.8) covers access and control PDUs: the last accepted (IV index, sequence
   number) per source address (`LocalState.rpl`), stored with our sequence counter in `HAState`'s record so a PDU
   recorded off the air is not accepted again after a restart. The list holds up to 2048 sources and refuses new ones

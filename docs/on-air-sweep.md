@@ -154,6 +154,7 @@ pass removed the markers of the checks that passed.
 | [E3](#e3--a-new-unicast-address-starts-220-in) | New address starts 2^20 in | a free address | **2^20 numbers, an address used** | — |
 | [E4](#e4--a-key-renewal-in-the-app-decision) | Key renewal in the app (decision) | the app | **the network key** | — |
 | [E5](#e5--approve-a-gateway-api-client-f4-17) | `approve_gateway_client` | gateway, a second API client | **an approved client** | — |
+| [E6](#e6--home-assistant-starts-an-iv-update-p-i-11) | `start_iv_update`: Home Assistant starts an IV Update (decision) | any proxy node | **the IV index, for good** | — |
 | [F](#f--not-checkable-here) | Not checkable here | — | — | — |
 | [G](#g--already-seen-on-air) | Seen on air before; markers to drop | — | — | — |
 
@@ -212,10 +213,13 @@ says connected and the state refresh is through (a few minutes), then do the lin
 
 - **Checks:** that the sweep's own traffic trips none of the new guards: own PDUs relayed back are not taken for
   another client (review-4 S I2), proxy configuration PDUs pass the header and replay checks (P4-7), a disconnect
-  never hangs (R4-11).
+  never hangs (R4-11); and, as a regression check, that segmented messages to Home Assistant are still acknowledged
+  (review-4 P I-8: the SAR Acknowledgment timer of Mesh Protocol 1.1 §3.5.3.4) — any segmented status a node sends
+  Home Assistant (the connect-time Composition Data or a long property status) exercises it.
 - **Pass:** at the end of the sitting the diagnostics show `address_shared` empty, `proxy_config_dropped` 0, no
   *Another client uses Home Assistant's JUNG HOME address* repair, and the log no *disconnect … timed out* warning.
-  Provoking them is not possible here (see F).
+  In the capture, each segmented message to `<ha>` is followed by Home Assistant's Segment Acknowledgment with every
+  segment's bit set, and the node does not send the message again. Provoking the guards is not possible here (see F).
 - **Markers:** `custom_components/junghome_ble/jhmesh/client.py::ProxyClient._disconnect` (passive only).
 
 ### A5 · Inserts and key layouts from the adverts (F4-12)
@@ -1228,6 +1232,43 @@ spend.
   `custom_components/junghome_ble/actions/audit.py::_approve_gateway_client`,
   `custom_components/junghome_ble/strings.json::services.approve_gateway_client.description`.
 
+### E6 · Home Assistant starts an IV Update (P I-11)
+
+- **Checks:** review-4 P I-11 — `start_iv_update` has Home Assistant move to the next IV index in *IV Update in
+  Progress* and send its proxy the Secure Network beacon of it; Mesh Protocol 1.1 §6.7 has the proxy process it like
+  any other beacon and beacon the new state back (the confirmation), and the mesh carry it on (§3.11.5, §3.9.4);
+  96 to 144 hours later the mesh, and Home Assistant, are back in normal operation under the new index.
+- **Needs:** the maintainer's decision. **Cannot be undone:** the IV index only goes up, for every device of the mesh
+  and for the app and the gateway. Best done when the *sequence numbers running low* repair is open anyway; otherwise
+  it spends nothing but moves the index once (`force: true`). Not within 96 hours of an IV change.
+- **Do:** start the unattended capture (`docs/sniffer.md`) and keep it running for the whole update (about six days);
+  note the *IV index* sensor; run `junghome_ble.start_iv_update` with `confirm: true` (and `force: true` unless the
+  repair is open), response on; keep Home Assistant running. During the update switch a light from Home Assistant, the
+  app and a rocker once a day; after it, the same.
+- **Capture:** Home Assistant's beacon to its proxy (on the GATT link: Home Assistant's log at `jhmesh.trace: info`,
+  `beacon sent: iv_index=<n+1> iv_update=True`), the proxy's beacon back (`beacon: iv_index=<n+1> iv_update=True`),
+  the Secure Network beacons on the air (which nodes beacon `<n+1>` with the IV Update flag, and when), the IVI bit
+  of the nodes' traffic, and later the beacons of normal operation (flag clear) and the first PDUs under `<n+1>`.
+- **Pass:** the answer names IV index `<n+1>`, transmit index `<n>`, `confirmed: false`; within seconds the
+  diagnostics' `local.iv_update.confirmed` turns true; the capture shows the proxy and then the other nodes beaconing
+  `<n+1>` in progress; every load keeps answering Home Assistant, the app and the rockers throughout; 96 hours on
+  Home Assistant logs *IV Update completed: back to Normal Operation*, its sequence numbers start over (*Sequence
+  numbers used* near 0) and the devices still answer; by 144 hours every node beacons `<n+1>` with the flag clear, the
+  *sequence numbers running low* repair is gone and the *Mesh sequence numbers used* sensor starts low. **Fail:**
+  `confirmed` stays false (the proxy did not take the beacon: Home Assistant stays in progress and keeps transmitting
+  under `<n>`, which the mesh accepts; the update then waits for the mesh's own) — note the proxy node, its firmware
+  and whether the capture shows the beacon reaching it.
+- **Markers:** `custom_components/junghome_ble/actions/iv_update.py::<module>`,
+  `custom_components/junghome_ble/actions/iv_update.py::_start_iv_update`,
+  `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.start_iv_update`,
+  `custom_components/junghome_ble/jhmesh/state.py::<module>`,
+  `custom_components/junghome_ble/jhmesh/state.py::LocalState.start_iv_update`,
+  `custom_components/junghome_ble/jhmesh/state.py::LocalState.complete_iv_update`,
+  `custom_components/junghome_ble/services.py::<module>` (its `start_iv_update` sentence),
+  `custom_components/junghome_ble/strings.json::issues.sequence_space_low.description` (and every translation),
+  `custom_components/junghome_ble/strings.json::services.start_iv_update.description`,
+  `mgmt:api:meshnetwork.setivindex`.
+
 ## F · Not checkable here
 
 | Why | Markers |
@@ -1245,7 +1286,7 @@ spend.
 | **Another client on Home Assistant's address** (S I2): the CLI refuses Home Assistant's address by design, and a client starting below Home Assistant's counter would not even be detected; provoking it means two clients on one address, i.e. reused nonces. *Decision for the maintainer:* leave it simulated (the docs' *to check it, run `tools/mesh_poc.py` with `--source` set to Home Assistant's address* cannot be followed as written) | `custom_components/junghome_ble/strings.json::issues.address_shared.fix_flow.step.confirm.description`, `custom_components/junghome_ble/strings.json::issues.address_shared_again.fix_flow.step.confirm.description` |
 | **Repairs whose cause is not to be provoked here** (brief 44, U4-5): a node on Home Assistant's address, a key renewal Home Assistant did not follow, devices missing from an export set up from a file. The flows run in `tests/test_repairs.py` | `custom_components/junghome_ble/repairs.py::FreeAddressFlow`, `custom_components/junghome_ble/strings.json::issues.address_in_use.fix_flow.step.confirm.description`, `custom_components/junghome_ble/strings.json::issues.key_refresh.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.key_refresh.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.export_stale.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.export_stale.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes.fix_flow.step.gateway_refetch.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes.fix_flow.step.upload.description`, `custom_components/junghome_ble/strings.json::issues.unknown_nodes_gateway.fix_flow.step.upload.description` |
 | **Home Assistant ahead of the mesh's IV index**: never happens on its own; not to be provoked | `custom_components/junghome_ble/strings.json::issues.iv_index_ahead.fix_flow.step.confirm.description` |
-| **Which node starts an IV Update** (Mesh Protocol §3.10.5: a node at risk of running out starts one itself): needs a sender to run low; not to be provoked. The unattended capture (`docs/sniffer.md`) records the update when it comes | `custom_components/junghome_ble/hub/issues.py::Issues.check_sequence_space` |
+| **Which node starts an IV Update** (Mesh Protocol 1.1 §3.11.5, Mesh Profile §3.10.5: a node at risk of running out starts one itself): needs a sender to run low; not to be provoked. The unattended capture (`docs/sniffer.md`) records the update when it comes. Home Assistant starting one is E6 | `custom_components/junghome_ble/hub/issues.py::Issues.check_sequence_space` |
 
 ## G · Already seen on air
 

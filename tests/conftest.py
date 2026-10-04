@@ -61,6 +61,7 @@ from custom_components.junghome_ble.jhmesh.pdu import (
     lower_unsegmented_access,
     network_decrypt,
     network_encrypt,
+    parse_beacon,
     proxy_frame,
     segment_ack,
     seq_auth_from,
@@ -527,6 +528,10 @@ class FakeProxyLink:
             None  # (element, access_pdu) -> status access PDU or None: the elements' AppKey servers, tried first
         )
         self.raw_writes: list[bytes] = []
+        # the Secure Network beacons the hub wrote, as (IV index, IV Update flag), authenticated ones only; with
+        # `follow_beacons` the proxy processes them as Mesh Protocol 1.1 §6.7 has it, and beacons a new state back
+        self.beacons_in: list[tuple[int, bool]] = []
+        self.follow_beacons = True
         # the mesh's replay protection (§3.8.8), shared by every node and kept across links as on air: the last
         # (IV index, sequence number) accepted per source; a PDU at or below it is dropped and listed in `replayed`
         # — the test's teardown fails on any (`fake_link`) unless the test expects them (`expect_replays`)
@@ -624,6 +629,8 @@ class FakeProxyLink:
                 self._answer_filter_status(n.src)
             return
         if msg_type != PROXY_NETWORK_PDU:
+            if msg_type == PROXY_BEACON:
+                self._on_beacon(payload)
             return
         n = network_decrypt(self.nk, self.iv_index, payload)
         if n is None:
@@ -643,6 +650,20 @@ class FakeProxyLink:
 
     async def disconnect(self) -> None:
         self.is_connected = False
+
+    def _on_beacon(self, payload: bytes) -> None:
+        """A beacon from the hub: recorded; followed when it authenticates and moves the IV state on (§3.11.5)."""
+        b = parse_beacon(self.nk, payload)
+        if b is None or not b.authenticated:
+            return
+        self.beacons_in.append((b.iv_index, b.iv_update))
+        if self.follow_beacons and (b.iv_index, b.iv_update) != (
+            self.iv_index,
+            self.iv_update,
+        ):
+            asyncio.get_running_loop().call_soon(
+                self.inject_beacon, b.iv_index, b.iv_update
+            )
 
     def _undecryptable(self, layer: str, payload: bytes) -> None:
         """Record a PDU the mesh drops unopened, with the position of the GATT write that completed it."""

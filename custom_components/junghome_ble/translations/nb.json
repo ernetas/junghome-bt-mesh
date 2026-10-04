@@ -2036,7 +2036,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnumre begynner å gå tomme",
-      "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. En sender kan ikke gå forbi slutten av det intervallet før meshet går over til neste IV-indeks (en IV Update). Bluetooth Mesh forventer at en enhet som begynner å gå tom, starter den oppdateringen selv; om JUNG HOME-enheter gjør det, er ennå ikke kjent. Home Assistant følger en IV Update, men starter ingen selv. Hver omstart av en enhet (et strømbrudd, en utløst sikring) får sekvensnumrene dens til å hoppe langt frem, så en enhet som ofte mister strømmen, går tom først. Problemet forsvinner av seg selv etter oppdateringen."
+      "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. En sender kan ikke gå forbi slutten av det intervallet før meshet går over til neste IV-indeks (en IV Update). Bluetooth Mesh forventer at en enhet som begynner å gå tom, starter den oppdateringen selv; om JUNG HOME-enheter gjør det, er ennå ikke kjent. Home Assistant følger en IV Update, og en administrator kan få den til å starte en med handlingen `junghome_ble.start_iv_update` (kan ikke angres; ikke utprøvd i drift). Hver omstart av en enhet (et strømbrudd, en utløst sikring) får sekvensnumrene dens til å hoppe langt frem, så en enhet som ofte mister strømmen, går tom først. Problemet forsvinner av seg selv etter oppdateringen."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-meshet er på en annen IV-indeks",

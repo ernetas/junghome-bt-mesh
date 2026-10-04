@@ -420,7 +420,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Switching cycles, Power-on cycles | – | – | No (diagnostic) | Lights and sockets of the products whose firmware lists the counters (`0x100F` / `0x1010`, LBC Admin; read on a socket on air, `docs/hidden-features.md` §2), on the light or socket device: how often the output has switched, and how often the device was powered up, over its lifetime; read once per connection |
 | IV index | – | – | Yes (diagnostic) | On the *mesh network* device: the mesh's current IV index (attributes `iv_update_active`, `transmit_iv_index`); known without a link |
 | Sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: how much of the sequence-number space of the current IV index Home Assistant's own address has used (attribute `source`, the address) |
-| Mesh sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: the same for the sender furthest along in the mesh (attributes `source`, `source_name`) — every sender stops at the end of the space until the mesh moves to the next IV index (an IV Update), which Bluetooth Mesh expects a node running low to start itself — that JUNG HOME devices do is unverified on air, and Home Assistant only follows one; the repair issue *JUNG HOME mesh sequence numbers running low* warns at three quarters |
+| Mesh sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: the same for the sender furthest along in the mesh (attributes `source`, `source_name`) — every sender stops at the end of the space until the mesh moves to the next IV index (an IV Update), which Bluetooth Mesh expects a node running low to start itself — that JUNG HOME devices do is unverified on air; Home Assistant follows one, and an administrator can have it start one ([`start_iv_update`](#actions-iv-update)); the repair issue *JUNG HOME mesh sequence numbers running low* warns at three quarters |
 
 After (re)connecting the integration asks each metering socket for its measurements once — one `Sensor Get` per
 property (power `0x0081`, voltage `0x005D`, current `0x005C`): the socket's sensor server answers only
@@ -1294,6 +1294,12 @@ message it hears. Because all mains-powered JUNG nodes relay, this covers the wh
   to run or only when it stops is not known, so waiting for an answer could fail a blind that works. A command fails at once only
   when no proxy node is connected (after the short grace a lost link gets) or the Bluetooth write fails (or does not
   complete within 5 s).
+- A segmented message to Home Assistant (a long status, a configuration answer) is acknowledged as Mesh Protocol 1.1
+  §3.5.3.4 specifies: the segments received so far shortly after the last new one (150 ms at the spec's defaults,
+  §4.2.49, the SAR Acknowledgment timer), all of them at once with the segment that completes the message, and the
+  whole message again, at most every 150 ms, when its sender retransmits a segment because it missed that. A
+  message is put together once and never delivered twice; one without a new segment for 10 s is dropped. Messages to
+  a group or to another device are never acknowledged.
 
 **Choosing the proxy node.** The integration watches the Bluetooth advertisements of the network's nodes through Home
 Assistant's Bluetooth stack (local adapters and ESPHome proxies alike) and connects to the node with the strongest
@@ -1439,7 +1445,7 @@ events described under [Event](#event). The integration registers no conditions 
 
 **Who may run them.** Every `junghome_ble` action that rewires, deletes or writes the export or the devices — rooms,
 key connections, scenes (`store_scene` included: it writes every member's scene register and the export, and can
-add members), schedules, thresholds, `sync_gateway`, `export_network` and adding or removing devices — is for
+add members), schedules, thresholds, `sync_gateway`, `export_network`, `start_iv_update` and adding or removing devices — is for
 administrators only: a call from a user who is no administrator, or with such a user's long-lived token, fails with
 *Unauthorized* (review-4 W4-9). Automations triggered by the system run with no user and are not affected; a
 script or dashboard button a non-administrator starts runs as that user and is refused. Open to every user:
@@ -1951,6 +1957,48 @@ data: { client: ioBroker }  # approves that one: {approved: "ioBroker", waiting:
   unreachable for the app and Home Assistant alike).
 
 Unverified on air.
+
+### Actions: IV Update
+
+Every sender of the mesh stops at the end of the sequence-number space of the current IV index until the mesh moves
+to the next one: an IV Update (Mesh Protocol 1.1 §3.11.5). Bluetooth Mesh expects a device at risk of running out to
+start the update itself; whether JUNG HOME devices do is unverified. **`junghome_ble.start_iv_update`** has Home
+Assistant start it (review-4 P I-11):
+
+```yaml
+action: junghome_ble.start_iv_update
+data: { confirm: true }
+response_variable: update  # {iv_index: 1, transmit_iv_index: 0, started_by: home_assistant, started_at: …,
+                           #  confirmed: false, in_progress: true, normal_operation_from: …, normal_operation_by: …}
+```
+
+- **How.** Home Assistant reaches the mesh as a GATT Proxy Client. Mesh Protocol 1.1 §6.7 has a proxy process a Secure
+  Network beacon from its client as defined in §3.10.3.1 — like one from any other node — and beacon a new IV state
+  back to the client; §3.11.5 has a node that accepts a beacon with the IV Update flag follow it, and §3.9.4 has it
+  carry the new index on with beacons of its own. So Home Assistant moves to the next IV index in *IV Update in
+  Progress* (it keeps transmitting with the old index, so its sequence numbers carry on), writes that to its
+  sequence-number store (nothing is sent when the write does not land) and sends its proxy the authenticated beacon
+  of the new state: every 10 s until the proxy's beacon back confirms it (`confirmed`), every 600 s after, and again on
+  every new link while the update runs.
+- **Back to normal operation** 96 hours later (§3.11.5: after at least 96 and before 144 hours), by Home Assistant
+  itself unless a beacon of the mesh ends the update first: its sequence numbers start over at 0 under the new index,
+  the proxy filter is sent again and the proxy gets the beacon of normal operation. The return waits while a
+  segmented message of Home Assistant's awaits its acknowledgment. An update the mesh never confirmed is not ended
+  by Home Assistant — that would leave it transmitting under an index the devices do not accept; it ends when the
+  mesh's own update reaches the same index.
+- **It cannot be undone**: the IV index only goes up. So the call needs `confirm: true`, and it is refused unless a
+  sender has used three quarters of its sequence numbers (the repair *JUNG HOME mesh sequence numbers running low* is
+  open) or `force: true` is given.
+- **Refused, each with its own message:** without a link to the mesh (after the usual wait for one), while an update
+  is in progress, during a key refresh (phase 1 or 2), before Home Assistant heard the mesh's IV index from a beacon
+  of the current link (when it has not seen the IV index change), and within 96 hours of the last change of the IV
+  state Home Assistant saw (the message says from when; §3.11.5 has a node spend 96 hours in normal operation
+  first).
+- **Where to see it:** the answer (when asked for), the [diagnostics](#diagnostics) (`local.iv_update`), the *IV
+  index* sensor and the log (`IV Update started …`, `IV Update completed …`).
+
+Unverified on air: no JUNG device has been seen taking an IV Update from a proxy client. The
+[on-air sweep](on-air-sweep.md) has the check (E6), to run only when an update is wanted anyway.
 
 ### Actions: adding and removing devices (experimental)
 
@@ -2542,9 +2590,10 @@ number sent since it was taken (see *The sequence-number store must be kept* und
 A sender of the mesh — a device, the app or Home Assistant, named in the issue — has used three quarters of the
 sequence numbers of the current IV index (the *Mesh sequence numbers used* sensor, [Sensor](#sensor)). A sender cannot
 go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh (Mesh Protocol
-§3.10.5) expects a node at risk of running out to start that update itself; that JUNG HOME devices do is unverified on
-air, and nothing captured so far shows the JUNG HOME Gateway starting one. Home Assistant follows an IV Update but
-never starts one. Steady traffic uses few numbers; what moves a device far ahead is a restart: after a power cut or a
+1.1 §3.11.5, Mesh Profile §3.10.5) expects a node at risk of running out to start that update itself; that JUNG HOME devices do is unverified on
+air, and nothing captured so far shows the JUNG HOME Gateway starting one. Home Assistant follows an IV Update, and an
+administrator can have it start one with [`start_iv_update`](#actions-iv-update): it cannot be undone, and it is
+unverified on air. Steady traffic uses few numbers; what moves a device far ahead is a restart: after a power cut or a
 tripped breaker it continues a whole persisted block (roughly 180 000 to 260 000 numbers on the installation it was
 seen on) past where it was (the *Last restart* sensor). So the sender furthest along is usually a mains device that
 often loses power, not the gateway or the app. The issue clears itself after the update.
@@ -2767,7 +2816,9 @@ from … (attempt 1/3)"). The [diagnostics](#diagnostics) count what the links c
 
 Open the entry's menu and select **Download diagnostics**. The file contains the address in use (the configured file
 paths and Bluetooth addresses are redacted), a summary of the network (mesh UUID, network ID, number of nodes, groups, scene numbers), Home Assistant's own sequence
-number and IV index (with how long the sequence-number store has held sends back, its last write error and how many
+number and IV index (with the last IV Update under `iv_update` — who started it, Home Assistant or a beacon, when,
+whether the mesh confirmed one Home Assistant started, and when normal operation is due —, how long the
+sequence-number store has held sends back, its last write error and how many
 numbers may go out before the next hold; the file path in that error is redacted, the error itself kept), the link
 state (connected node, MTU, connection time, visible proxy nodes), under `link_stats` what the current link (the last
 one while none is up) and every link since the entry loaded carried and dropped — PDUs sent (`tx`) and received

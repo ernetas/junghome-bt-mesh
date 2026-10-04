@@ -470,6 +470,9 @@ async def test_a_burst_is_stored_every_save_interval_without_waiting(
         "seq_peak": peak,
         "seq_peak_from": 0,
         "iv_changed_at": 1000.0 + IV_UPDATE_MIN_STATE,
+        "iv_update_origin": "beacon",
+        "iv_update_confirmed": True,
+        "iv_update_started_at": 1000.0,
     }
 
 

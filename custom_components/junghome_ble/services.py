@@ -11,7 +11,8 @@ the loads' own JH Scheduler (`schedules.py`) and change no model; a socket thres
 (`thresholds.py`), and the model follows only when the wiring changed. `audit_network` only reads (`jhmesh.audit`): it answers
 what the nodes' Configuration Servers hold against the export and changes nothing. `locate_node` has a node advertise
 its Node Identity for a minute at most; `approve_gateway_client` lists the access requests waiting at the gateway and
-approves the one named. The dimming actions
+approves the one named; `start_iv_update` has Home Assistant start an IV Update of the mesh (`actions/iv_update.py`,
+irreversible, so it needs `confirm`; unverified on air). The dimming actions
 (`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`actions/dim.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
 for administrators only. The rewiring actions answer what their plans applied, or with `dry_run` only
@@ -91,6 +92,7 @@ from .actions.dim import (
     async_step_dim,
     async_stop_dim,
 )
+from .actions.iv_update import START_IV_UPDATE_SCHEMA, _start_iv_update
 from .actions.keys import (
     ASSIGN_KEY_SCHEMA,
     CLEAR_KEY_SCHEMA,
@@ -216,6 +218,8 @@ SERVICE_LOCATE_NODE = (
 )
 # admin only: an approved client gets the gateway's whole API, the export with every key of the mesh included
 SERVICE_APPROVE_GATEWAY_CLIENT = "approve_gateway_client"
+# admin only, with `confirm`: an IV Update cannot be undone (the IV index only goes up)
+SERVICE_START_IV_UPDATE = "start_iv_update"
 SERVICE_START_DIM = "start_dim"
 SERVICE_STOP_DIM = "stop_dim"
 SERVICE_STEP_DIM = "step_dim"
@@ -244,6 +248,7 @@ RESPONSES: dict[str, SupportsResponse] = {
     SERVICE_RESET_PENDING_DEVICE: SupportsResponse.OPTIONAL,
     SERVICE_LOCATE_NODE: SupportsResponse.OPTIONAL,
     SERVICE_APPROVE_GATEWAY_CLIENT: SupportsResponse.OPTIONAL,
+    SERVICE_START_IV_UPDATE: SupportsResponse.OPTIONAL,
 }
 # every other action rewires, deletes or writes the export and the devices, and is for
 # administrators only (`async_register_admin_service`); these only read. Moving a name here opens it to every user.
@@ -323,6 +328,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             _approve_gateway_client,
             APPROVE_GATEWAY_CLIENT_SCHEMA,
         ),
+        (SERVICE_START_IV_UPDATE, _start_iv_update, START_IV_UPDATE_SCHEMA),
     ]
     for name, handler, schema in handlers:
         if name in USER_SERVICES:

@@ -203,7 +203,7 @@ async def test_sequence_space_running_low_raises_an_issue(
     diagnostics: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """Every source stops at the end of the 24-bit space until an IV Update, which Home Assistant does not start."""
+    """Every source stops at the end of the 24-bit space until an IV Update (`start_iv_update` can start one)."""
     hub = hub_of(diagnostics)
     await send_from(fake_link, LIGHT_SWITCH, SEQUENCE_SPACE_WARN + 5)
     freezer.tick(SEQUENCE_CHECK_INTERVAL + 1)

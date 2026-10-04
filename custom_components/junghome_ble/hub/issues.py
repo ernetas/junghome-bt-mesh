@@ -156,20 +156,33 @@ class Issues:
         self._lifecycle.set_timer("seq_stall", None)
         self.hub.state.report_unwritable()
 
+    def sequence_space_low(self) -> tuple[int, int] | None:
+        """Return (source, sequence number) of the source past SEQUENCE_SPACE_WARN in the current IV index, else None.
+
+        The condition of the `sequence_space_low` repair, and what the `start_iv_update` action asks for unless
+        forced.
+        """
+        highest = self.hub.highest_seq()
+        if highest is None or highest[1] < SEQUENCE_SPACE_WARN:
+            return None
+        return highest
+
     @callback
     def check_sequence_space(self, _now: datetime | None = None) -> None:
         """Raise `sequence_space_low` while a source is past SEQUENCE_SPACE_WARN; clear it after.
 
         Every source (node, app, Home Assistant) stops sending at the end of the 24-bit space of the current IV
-        index until an IV Update resets it. Mesh Protocol §3.10.5 expects a node at risk of running out to start
-        that update itself; that JUNG HOME nodes do is unverified on air (nothing captured shows the gateway
-        starting one either), and Home Assistant only follows one. Steady traffic uses few numbers; a node's restart
-        skips it a whole persisted block ahead, so a mains node that often loses power runs low first. The numbers
-        are those the replay protection accepted, so they are what the mesh really used.
+        index until an IV Update resets it. Mesh Protocol 1.1 §3.11.5 (Mesh Profile §3.10.5) expects a node at risk
+        of running out to start that update itself; that JUNG HOME nodes do is unverified on air (nothing captured
+        shows the gateway starting one either). Home Assistant follows one, and an administrator can start one with
+        the `start_iv_update` action (`actions/iv_update.py`; unverified on air). Steady traffic uses few numbers; a
+        node's restart skips it a whole persisted block ahead, so a mains node that often loses power runs low
+        first. The numbers are those the replay protection accepted, so they are what the mesh really used. Cleared
+        once the IV index moves on (an update in progress counts: its index is the new one).
         """
-        highest = self.hub.highest_seq()
+        highest = self.sequence_space_low()
         key = issue_id(self.hub.entry, ISSUE_SEQUENCE_SPACE_LOW)
-        if highest is None or highest[1] < SEQUENCE_SPACE_WARN:
+        if highest is None:
             ir.async_delete_issue(self.hub.hass, DOMAIN, key)
             return
         src, seq = highest

@@ -245,8 +245,9 @@ def test_segmented_messages_are_reassembled_once_whatever_the_air_does(
         await client.attach(link, filter_blacklist=False)
         seen: list[set[int]] = [set() for _ in messages]
         completed_by: list[int | None] = [None] * len(messages)
-        # the Segment Acks §3.5.3.3 asks of a receiver: the full block on completion and for every segment heard
-        # after it (the sender missed the ack), a partial one when the last segment arrives with others missing
+        # the Segment Acks §3.5.3.4 asks of a receiver: the full block on completion and for every segment heard
+        # after it (the sender missed the ack; its 150 ms limit is off here). The acknowledgment timer of a partial
+        # block never fires: the segments arrive without the loop running in between
         expected_acks: list[list[int]] = [[] for _ in messages]
         for m, t in schedule:
             msg = messages[m]
@@ -256,7 +257,7 @@ def test_segmented_messages_are_reassembled_once_whatever_the_air_does(
             seen[m].add(i)
             if completed_by[m] is None and len(seen[m]) == len(msg.segments):
                 completed_by[m] = seq
-            if done_before or completed_by[m] is not None or i == len(msg.segments) - 1:
+            if done_before or completed_by[m] is not None:
                 expected_acks[m].append(sum(1 << j for j in seen[m]))
             delivered = [g for g in got if g.src == msg.src]
             assert len(delivered) == (1 if completed_by[m] is not None else 0)
@@ -295,7 +296,7 @@ def test_segmented_messages_are_reassembled_once_whatever_the_air_does(
         assert len(got) == len(messages)
         await client.detach()
 
-    with _no_errors_logged():
+    with _no_errors_logged(), patch.object(client_mod, "SAR_ACK_DELAY_INCREMENT", 0):
         asyncio.run(scenario())
 
 

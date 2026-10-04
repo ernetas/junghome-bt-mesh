@@ -21,6 +21,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.util.file import WriteError
 from homeassistant.util.hass_dict import HassKey
 
@@ -35,6 +36,10 @@ from .const import (
 )
 from .jhmesh.client import (
     IV_INDEX_MAX,
+    IV_ORIGIN_BEACON,
+    IV_ORIGIN_LOCAL,
+    IV_UPDATE_MAX_STATE,
+    IV_UPDATE_MIN_STATE,
     NET_KEY_INDEX,
     SEQ_GUARD_FIRST_BEACON,
     SEQ_MAX,
@@ -100,6 +105,9 @@ class SeqRecord(TypedDict, total=False):
     seq_guard: int
     iv_changed_at: float
     iv_recovered_at: float
+    iv_update_origin: str
+    iv_update_started_at: float
+    iv_update_confirmed: bool
     clean: bool
     address_shared: list[int]
     in_backup: str
@@ -111,6 +119,38 @@ SEQ_OWNERS: HassKey[dict[str, HAState]] = HassKey(f"{DOMAIN}_seq_owners")
 # while it is set carries it (`HAState._snapshot`), so a start that finds a record with a mark this process did not
 # set knows the record came back from a backup, or that Home Assistant stopped during one
 SEQ_BACKUP_TOKEN: HassKey[str] = HassKey(f"{DOMAIN}_seq_backup_token")
+
+
+def _utc(timestamp: float | None) -> str | None:
+    """Return a wall-clock time (seconds since the epoch) as ISO 8601 in UTC; None stays None."""
+    return (
+        None if timestamp is None else dt_util.utc_from_timestamp(timestamp).isoformat()
+    )
+
+
+def iv_update_summary(state: LocalState) -> dict[str, Any]:
+    """Describe the last IV Update of `state`, as the `start_iv_update` action answers and the diagnostics show it.
+
+    Who started it (`home_assistant`, `beacon`; None when none was seen since this was kept), when, whether the
+    mesh took one Home Assistant started (`LocalState.iv_update_confirmed`), whether it is still in progress, and the
+    window Mesh Protocol 1.1 §3.11.5 gives its return to Normal Operation: 96 to 144 hours after the start.
+    """
+    started = state.iv_update_started_at
+    return {
+        "started_by": {
+            IV_ORIGIN_LOCAL: "home_assistant",
+            IV_ORIGIN_BEACON: "beacon",
+        }.get(state.iv_update_origin or ""),
+        "started_at": _utc(started),
+        "confirmed": state.iv_update_confirmed,
+        "in_progress": state.iv_update_active,
+        "normal_operation_from": _utc(
+            None if started is None else started + IV_UPDATE_MIN_STATE
+        ),
+        "normal_operation_by": _utc(
+            None if started is None else started + IV_UPDATE_MAX_STATE
+        ),
+    }
 
 
 class SeqStore(Store[dict[str, Any]]):
@@ -1250,6 +1290,24 @@ class HAState(LocalState):
                 self._backup_store.async_save(self._snapshot(force_dirty=True))
             )
         await asyncio.gather(*saves)
+
+    async def persist_durably(self) -> None:
+        """Write both copies now and check that the store holds our IV state (`ProxyClient.start_iv_update`).
+
+        `Store` only logs a write that fails (`SeqStore`): what landed (`written`) tells. OSError when the store
+        does not hold our IV index and update state — a failed write, or a superseded `HAState`, which writes
+        nothing — so the IV Update is put back before its beacon goes.
+        """
+        await self.async_save_now()
+        record = _usable_record(self._store.written, f"{self.src:04X}")
+        if record is None or (
+            record.get("iv_index"),
+            record.get("iv_update_active"),
+        ) != (self.iv_index, self.iv_update_active):
+            raise OSError(
+                "the sequence-number store does not hold the new IV state: "
+                + (self._store.write_error or "not written")
+            )
 
     def carries_backup_token(self, token: str) -> bool:
         """Whether what both copies durably hold for our address carries the backup's mark `token`."""

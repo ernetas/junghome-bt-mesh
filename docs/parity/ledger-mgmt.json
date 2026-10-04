@@ -512,11 +512,22 @@
   },
   {
    "id": "mgmt:api:meshnetwork.setivindex",
-   "status": "na",
-   "code": [],
-   "tests": [],
-   "class": "declined",
-   "reason": "Declined: initiating an IV Update is review-3 N13 (docs/review-3/plan.md, '## Phase 4 — owning the network', N13 \"IV Update initiation (fallback without a gateway)\": \"only after a real network-initiated update was observed\", risk medium). docs/review-3/plan.md, '## Status' (Phase 4): \"Not started: N6, N8 (little gain next to the link-loss grace, costs a proxy connection slot), N9, N10, N11, N13.\"; '## Suggested order', item 4: \"N6 / N9 / N10 / N11 / N13 only after N3 is proven.\" Following an IV Update from beacons is implemented."
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.start_iv_update",
+    "custom_components/junghome_ble/jhmesh/state.py::LocalState.complete_iv_update",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.start_iv_update",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._run_iv_update",
+    "custom_components/junghome_ble/jhmesh/pdu.py::secure_network_beacon",
+    "custom_components/junghome_ble/actions/iv_update.py::_start_iv_update"
+   ],
+   "tests": [
+    "tests/jhmesh/test_iv_update_start.py::test_start_moves_to_the_next_index_in_progress",
+    "tests/jhmesh/test_iv_update_start.py::test_start_persists_then_beacons_and_repeats_until_the_proxy_takes_it",
+    "tests/jhmesh/test_iv_update_start.py::test_the_update_returns_to_normal_96_hours_later",
+    "tests/test_iv_update_action.py::test_start_sends_the_beacon_and_answers_the_new_index"
+   ],
+   "note": "Unverified on air: that a JUNG proxy takes an IV Update from Home Assistant's beacon (Mesh Protocol 1.1 §6.7) and the mesh follows it, the `start_iv_update` action (review-4 P I-11; docs/on-air-sweep.md E6, the maintainer's decision: it cannot be undone). Review-3 N13 had declined it until a network-initiated update was observed; review-4 brief 71 builds it as an explicit, guarded action instead"
   },
   {
    "id": "mgmt:api:meshnetwork.switchtonewkey",

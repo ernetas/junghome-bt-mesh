@@ -2,8 +2,8 @@
 
 The nonce of every PDU we send is (SRC, SEQ, IV index); reusing one breaks AES-CCM and every node's replay list
 drops us. The machine drives the file-backed state through what can happen to it — single and segmented sends,
-every kind of beacon (IV Update start / completion, a lagging node, recovery, far-ahead and stale indexes),
-clean restarts and crashes, writes of the state file or of its `.bak` copy that fail, and the state file lost or
+every kind of beacon (IV Update start / completion, a lagging node, recovery, far-ahead and stale indexes), an IV
+Update this client starts itself (taken by the mesh or not) and completes 96 h later, clean restarts and crashes, writes of the state file or of its `.bak` copy that fail, and the state file lost or
 torn so that a restart falls back to the copy — and checks, after every step, that nothing it was handed was
 handed before, under the transmit index it was sent with.
 
@@ -35,6 +35,7 @@ from jhmesh.client import (
     IV_UPDATE_MIN_STATE,
     SEQ_GUARD_FIRST_BEACON,
     SEQ_TX_LIMIT,
+    IVUpdateRefused,
     LocalState,
     SequenceExhausted,
 )
@@ -199,6 +200,32 @@ class LocalStateMachine(RuleBasedStateMachine):
                 self.state.apply_beacon(target, update, now=self.now)
             except OSError:
                 pass
+
+    @precondition(lambda self: self.state is not None)
+    @rule(taken=st.booleans())
+    def start_iv_update(self, taken: bool) -> None:
+        """This client starts an IV Update (review-4 P I-11); the mesh takes it (the proxy's beacon back) or not."""
+        assert self.state is not None
+        try:
+            new = self.state.start_iv_update(now=self.now, index_confirmed=True)
+        except (IVUpdateRefused, OSError):
+            return  # refused, or its write failed: put back, nothing sent
+        if taken:
+            self.network_iv = max(self.network_iv, new)
+            try:
+                self.state.apply_beacon(new, True, now=self.now)
+            except OSError:
+                pass
+
+    @precondition(lambda self: self.state is not None)
+    @rule()
+    def complete_iv_update(self) -> None:
+        """The update this client started goes back to Normal Operation, once due (`LocalState.iv_update_due`)."""
+        assert self.state is not None
+        try:
+            self.state.complete_iv_update(now=self.now)
+        except OSError:
+            pass
 
     @rule(hours=st.sampled_from((1, 95, 96, 191, 192, 1000)))
     def time_passes(self, hours: int) -> None:

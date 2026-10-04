@@ -1188,6 +1188,10 @@ async def test_iv_update_beacon_through_the_hub_persists_the_restart(
         "seq_peak": peak,
         "seq_peak_from": 0,
         "iv_changed_at": clock[0],
+        # who started the update (a beacon of the mesh), and when: kept after it completed
+        "iv_update_origin": "beacon",
+        "iv_update_confirmed": True,
+        "iv_update_started_at": clock[0] - client_mod.IV_UPDATE_MIN_STATE,
     }
 
 

@@ -189,6 +189,15 @@ async def test_diagnostics(
         "seq": seq,
         "iv_index": 0,
         "iv_update_active": False,
+        # no IV Update seen since the store was made
+        "iv_update": {
+            "started_by": None,
+            "started_at": None,
+            "confirmed": False,
+            "in_progress": False,
+            "normal_operation_from": None,
+            "normal_operation_by": None,
+        },
         "stalled_for": None,
         "last_write_error": None,
         "durable_headroom": headroom,

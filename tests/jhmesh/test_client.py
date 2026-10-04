@@ -292,6 +292,10 @@ def test_apply_beacon_iv_update_procedure(tmp_path: Path):
         "seq_peak": 0,
         "seq_peak_from": 0,
         "iv_changed_at": 10,
+        # who started it, and when: a beacon (`start_iv_update` is the other way)
+        "iv_update_origin": "beacon",
+        "iv_update_confirmed": True,
+        "iv_update_started_at": 10,
     }
     assert s.apply_beacon(1, True, now=20) is False  # repeated beacon: no change
     s.seq = 1300
@@ -309,6 +313,9 @@ def test_apply_beacon_iv_update_procedure(tmp_path: Path):
         "seq_peak": 1300,
         "seq_peak_from": 0,
         "iv_changed_at": 10 + IV_UPDATE_MIN_STATE,
+        "iv_update_origin": "beacon",  # the last update's, kept
+        "iv_update_confirmed": True,
+        "iv_update_started_at": 10,
     }
     s.seq = 77
     # 3. a lagging node still beaconing "update in progress" for index 1 must not drag us back to index 0
@@ -1136,18 +1143,23 @@ async def test_receive_devkey_messages(
 
 
 async def test_receive_segmented_message_is_reassembled_and_acked(
-    attached: ProxyClient, link: FakeBleak, recorder: Recorder
+    attached: ProxyClient, link: FakeBleak, recorder: Recorder, fast: FastAsyncio
 ):
+    """Mesh Protocol 1.1 §3.5.3.4: the SAR Acknowledgment timer acknowledges what arrived so far; the last segment
+    acknowledges all at once; a segment of the completed message is acknowledged again, at most every 150 ms."""
     access = h("8245000100") + b"".join(
         i.to_bytes(2, "little") for i in range(1, 9)
     )  # 21 bytes
     seq0, pdus = link.access_pdus(PROXY_NODE, OUR_SRC, access)
     assert len(pdus) == 3
+    fast.sleeps.clear()
     for p in pdus[:-1]:
         link.deliver(PROXY_NETWORK_PDU, p)
     await settle()
     assert recorder.messages == []
-    assert link.sent_acks() == []
+    # the timer, started again by the second segment, fired: min(SegN + 0.5, 2.5) * 60 ms
+    assert fast.sleeps == [pytest.approx(0.15)]
+    assert link.sent_acks() == [(OUR_SRC, PROXY_NODE, seq0 & 0x1FFF, 0b011)]
     link.deliver(PROXY_NETWORK_PDU, pdus[-1])
     assert len(recorder.messages) == 1
     m = recorder.messages[0]
@@ -1167,15 +1179,20 @@ async def test_receive_segmented_message_is_reassembled_and_acked(
         )
     )  # the replay list holds the last sequence number accepted, not the SeqAuth (§3.8.8)
     await settle()
-    assert link.sent_acks() == [(OUR_SRC, PROXY_NODE, seq0 & 0x1FFF, 0b111)]
+    assert link.sent_acks()[1:] == [(OUR_SRC, PROXY_NODE, seq0 & 0x1FFF, 0b111)]
     ack = [n for n in link.net_pdus if n.ctl][-1]
     assert ack.ttl == 5
-    assert ack.seq == 1
-    # a repeated segment after completion is acknowledged again but not delivered twice
+    assert ack.seq == 2
+    # a repeated segment right after completion is not acknowledged again within 150 ms (§3.5.3.4) ...
+    link.deliver(PROXY_NETWORK_PDU, pdus[0])
+    await settle()
+    assert len(link.sent_acks()) == 2
+    # ... later it is, as complete, and the message is not delivered twice
+    attached._segments[(PROXY_NODE, seq0 & 0x1FFF)]["acked_at"] -= 0.15
     link.deliver(PROXY_NETWORK_PDU, pdus[0])
     await settle()
     assert len(recorder.messages) == 1
-    assert link.sent_acks() == [(OUR_SRC, PROXY_NODE, seq0 & 0x1FFF, 0b111)] * 2
+    assert link.sent_acks()[1:] == [(OUR_SRC, PROXY_NODE, seq0 & 0x1FFF, 0b111)] * 2
 
 
 async def test_receive_segmented_partial_ack_when_last_segment_arrives_first(
@@ -1264,7 +1281,10 @@ async def test_stale_segment_state_is_discarded(
     )  # the late second half starts over → partial ack only
     await settle()
     assert recorder.messages == []
-    assert link.sent_acks() == [(OUR_SRC, PROXY_NODE, seq_a & 0x1FFF, 0b10)]
+    # the discarded reassembly's acknowledgment timer went with it (§3.5.3.4): no 0b01 for the first half
+    assert [a for a in link.sent_acks() if a[1] == PROXY_NODE] == [
+        (OUR_SRC, PROXY_NODE, seq_a & 0x1FFF, 0b10)
+    ]
 
 
 async def test_replay_protection(

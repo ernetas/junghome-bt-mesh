@@ -2036,7 +2036,7 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh ağının sıra numaraları azalıyor",
-      "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Bir gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunu aşamaz. Bluetooth Mesh, numaraları azalan bir cihazın bu güncellemeyi kendisinin başlatmasını bekler; JUNG HOME cihazlarının bunu yapıp yapmadığı henüz bilinmiyor. Home Assistant bir IV Update'i takip eder ama başlatmaz. Bir cihazın her yeniden başlatılması (bir elektrik kesintisi, atan bir sigorta) sıra numaralarını çok ileriye atlatır; bu yüzden elektriği sık sık kesilen bir cihazın numaraları ilk önce azalır. Güncellemeden sonra sorun kendiliğinden kaybolur."
+      "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Bir gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunu aşamaz. Bluetooth Mesh, numaraları azalan bir cihazın bu güncellemeyi kendisinin başlatmasını bekler; JUNG HOME cihazlarının bunu yapıp yapmadığı henüz bilinmiyor. Home Assistant bir IV Update'i takip eder; bir yönetici `junghome_ble.start_iv_update` eylemiyle Home Assistant'ın bir tane başlatmasını sağlayabilir (geri alınamaz; gerçek ağda henüz doğrulanmadı). Bir cihazın her yeniden başlatılması (bir elektrik kesintisi, atan bir sigorta) sıra numaralarını çok ileriye atlatır; bu yüzden elektriği sık sık kesilen bir cihazın numaraları ilk önce azalır. Güncellemeden sonra sorun kendiliğinden kaybolur."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh ağı başka bir IV dizininde",

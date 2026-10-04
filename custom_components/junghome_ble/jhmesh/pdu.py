@@ -1,7 +1,8 @@
 """Mesh PDU encoding/decoding: network, lower/upper transport, access opcodes, proxy protocol, beacons.
 
 Only what a GATT-proxy client needs: unsegmented + segmented *receive*, unsegmented *send*,
-segment acknowledgement, proxy configuration, secure network beacon.
+segment acknowledgement, proxy configuration, secure network beacon (parsed, and built for an IV Update Home
+Assistant starts: `secure_network_beacon`).
 """
 
 from __future__ import annotations
@@ -64,6 +65,7 @@ __all__ = [
     "proxy_config_add_addresses",
     "proxy_config_set_filter",
     "proxy_frame",
+    "secure_network_beacon",
     "segment_ack",
     "seq_auth_from",
     "upper_decrypt",
@@ -621,6 +623,20 @@ def parse_beacon(nk: NetKeyMaterial, payload: bytes) -> SecureNetworkBeacon | No
         aes_cmac(nk.beacon_key, payload[1:14])[:8], bytes(auth)
     )  # a MAC is compared in constant time, like the CCM tags inside `cryptography`
     return SecureNetworkBeacon(bool(flags & 1), bool(flags & 2), net_id, iv, ok)
+
+
+def secure_network_beacon(
+    nk: NetKeyMaterial, iv_index: int, *, iv_update: bool, key_refresh: bool = False
+) -> bytes:
+    """Build a Secure Network Beacon (Mesh Protocol 1.1 §3.10.3): type, Flags, Network ID, IV Index, Authentication.
+
+    The Authentication Value is the first 8 octets of AES-CMAC(BeaconKey, Flags || Network ID || IV Index); the
+    spec's sample §8.4.4 is the test vector. What `ProxyClient.start_iv_update` sends to the proxy, which processes it
+    as one from the advertising bearer (§6.7).
+    """
+    flags = (1 if key_refresh else 0) | (2 if iv_update else 0)
+    body = bytes([flags]) + nk.network_id + iv_index.to_bytes(4, "big")
+    return bytes([BEACON_SECURE]) + body + aes_cmac(nk.beacon_key, body)[:8]
 
 
 def parse_private_beacon(

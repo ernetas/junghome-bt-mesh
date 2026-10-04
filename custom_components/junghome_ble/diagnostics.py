@@ -56,6 +56,7 @@ from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
 from .jhmesh.client import MESH_PROXY_SERVICE, classify_proxy_advert
 from .mesh_config import plan_history
+from .seq_store import iv_update_summary
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -114,6 +115,7 @@ class LocalDiagnostics(TypedDict):
     seq: int
     iv_index: int
     iv_update_active: bool
+    iv_update: dict[str, Any]
     stalled_for: float | None
     last_write_error: str | None
     durable_headroom: int
@@ -383,6 +385,9 @@ async def async_get_config_entry_diagnostics(
             "seq": st.seq,
             "iv_index": st.iv_index,
             "iv_update_active": st.iv_update_active,
+            # the last IV Update: started by Home Assistant (`start_iv_update`) or a beacon, when, whether the mesh
+            # took one Home Assistant started, and when Normal Operation is due (`seq_store.iv_update_summary`)
+            "iv_update": iv_update_summary(st),
             # the sequence-number store's back-pressure: how long sends have been held back (None: they are
             # not), the last write's error, and how many numbers may go out before the next hold
             "stalled_for": hub.state.stalled_for,
