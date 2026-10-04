@@ -136,5 +136,10 @@ check on air. *human* = needs a person.
 | [67](67-hacs-default-submission.md) | hacs/default submission (HACS-3) | P6 | 24 | S | local *human* | 66, M14, M15 | `README.md`, `hacs.json` |
 | [68](68-more-languages.md) | The languages of the JUNG HOME gateway integration (24 beyond en, de) | P3 | 14b | L | local | 51 | `translations/<lang>.json` |
 | [69](69-jung-only-discovery-and-mesh-uuid-id.md) | JUNG-only discovery, the mesh UUID as the entry's unique id (M10) | P3 | 18 | M | local | 24, 60 | `manifest.json`, `config_flow.py`, `__init__.py` |
+| [70](70-preflight-reconcile.md) | Pre-flight reconcile before destructive plans | P3 | 22 | M | yes (dry run) | 49 | `jhmesh/plan.py`, `configurator/`, `actions/` |
+| [71](71-iv-update-initiation-and-sar-ack.md) | IV Update initiation (guarded action), SAR receive ack timer | P1 | 22 | M | group E / regr. | 09 | `jhmesh/state.py`, `jhmesh/client.py`, `actions/` |
+| [72](72-lock-follow-ups-and-audit-client-subscriptions.md) | Lock follow-ups from the sweep; client subscriptions in the audit | P2 | 22 | S–M | yes | 30, 35 | `config_entities.py`, `light.py`, `jhmesh/audit.py` |
+| [73](73-firmware-only-settings-entities.md) | Firmware-only settings as entities, from the sweep's readings | P2 | 22 | M | yes | 30, 36 | `properties/targets.py`, `jhmesh/properties.py`, platforms |
+| [74](74-housekeeping-applied-hasskeys-renovate-flake.md) | Localised `{applied}`, typed `hass.data`, Renovate pre-commit, a flaky test | P5 | 22 | S–M | local | — | `strings.json`, `renovate.json`, tests |
 
 Briefs 01 and 02 should be cherry-picked first in wave 1; every later brief assumes the strict fake teardown.

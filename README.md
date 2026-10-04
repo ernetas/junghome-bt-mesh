@@ -17,8 +17,9 @@ welcome.
 
 ## Install
 
-- **HACS:** *HACS → Integrations → ⋮ → Custom repositories* → this repository's URL, category *Integration*; install
-  *JUNG HOME Bluetooth Mesh* and restart Home Assistant.
+- **HACS:** [open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=ernetas&repository=junghome-bt-mesh&category=integration)
+  on your Home Assistant, or add it by hand: *HACS → Integrations → ⋮ → Custom repositories* → this repository's
+  URL, category *Integration*. Install *JUNG HOME Bluetooth Mesh* and restart Home Assistant.
 - **By hand:** unpack `junghome_ble.zip` from the latest release into your configuration's `custom_components/`
   (the mesh library is inside it) and restart Home Assistant.
 

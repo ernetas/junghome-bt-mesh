@@ -147,7 +147,7 @@ Merged across reports, ranked within each theme (value per size). Brief numbers 
 | Carry vault nodes through the app's key refresh | P I-3 | M / M | 14 |
 | Mesh 1.1 private beacons / identities + spec vectors | P I-4, I-5 | M / S–M | 29 |
 | Automatic bounded skip-ahead | S I4 | M / S | — (decision M6) |
-| SAR receive ack timer; IV Update initiation | P I-8, I-11 | L–M / S | — |
+| SAR receive ack timer; IV Update initiation | P I-8, I-11 | L–M / S | 71 |
 | CLI counter batching | S I11 | L–M / S | 16 |
 
 ### Mesh functionality
@@ -187,7 +187,7 @@ Merged across reports, ranked within each theme (value per size). Brief numbers 
 | Onboarding: zeroconf gateway, unicast under *Advanced*, icons | U4-8, H4-9 | M–H / S–M | 50 |
 | Dry runs, structured responses, action ergonomics | W I3, I6, I7, I9, U4-13 | M–H / M | 49 |
 | Fewer config entities on by default | H I-8 | M / S | 25 (decision M9) |
-| Pre-flight reconcile before destructive plans | W I4 | H / M | — |
+| Pre-flight reconcile before destructive plans | W I4 | H / M | 70 |
 | Topology card, signed export download, French / Spanish / Italian / Dutch, per-key double click | U4-14, U4-17, U4-18, U4-19 | L–M | — |
 
 ### Architecture
@@ -252,17 +252,17 @@ the HACS panel itself may not show inline icons yet; HA's own UI does.
 
 TODO:
 
-- [ ] Public repository (brief 65, decision M2).
-- [ ] First full GitHub release `v0.3.0` through `release.yml`, CHANGELOG section as notes — needs the CI artifact fix
-  (brief 06) first (brief 66).
-- [ ] `hacsjson` and `integration_manifest` validators: their exemptions in `ci.yml` drop by themselves on the public
+- [x] Public repository (brief 65, decision M2).
+- [x] First full GitHub release through `release.yml`, CHANGELOG section as notes (brief 66): 1.0.0, then 1.1.0 and
+  1.2.0.
+- [x] `hacsjson` and `integration_manifest` validators: their exemptions in `ci.yml` drop by themselves on the public
   repository; confirm both pass there with nothing ignored (brief 66). Both files already pass HACS's own schemas
   (`HACS_MANIFEST_JSON_SCHEMA`, `INTEGRATION_MANIFEST_JSON_SCHEMA` from hacs/integration, run locally); what fails
   on the private repository is only the unauthenticated download.
 - [ ] PR to hacs/default, opened by the owner (brief 67, decision M14).
-- [ ] README *Install* section with the my.home-assistant.io HACS repository link and an "unofficial, not affiliated
+- [x] README *Install* section with the my.home-assistant.io HACS repository link and an "unofficial, not affiliated
   with JUNG" line near the top (brief 67, decision M15).
-- [ ] `country` key in `hacs.json`: recommended to leave it out — JUNG HOME is sold in several European countries
+- [x] `country` key in `hacs.json`: left out, as recommended to leave it out — JUNG HOME is sold in several European countries
   (brief 67).
 
 ## Roadmap
@@ -593,4 +593,6 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and brief 67 is TODO; the on-air sweep is the maintainer's.
+Every finding and low item has landed. Wave 22 (briefs 70–74) is in progress: the backlog rows *pre-flight
+reconcile* and *IV Update initiation / SAR ack*, the sweep's follow-ups and settled firmware-only settings,
+housekeeping. Brief 67 waits for decision M14 (custom repository first); the on-air checks are the maintainer's.
