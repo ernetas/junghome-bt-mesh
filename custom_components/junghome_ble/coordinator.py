@@ -632,10 +632,9 @@ class JungHomeHub:
         self.energy = Energy(self)
         self.clock = Clock(self)
         self.stopping = False  # `async_stop` began: nothing new is scheduled
-        self.rx_messages = 0  # decoded access messages, any destination
-        self.rx_to_us = (
-            0  # ... of which unicast to our address: proof that nodes accept our PDUs
-        )
+        # what the proxy forwarded — decoded access messages, those unicast to us (proof that nodes accept our PDUs),
+        # what our keys could not open — is counted by the proxy client, per link and in total (`proxy.link_stats`,
+        # `proxy.total_stats`, review-4 A4-14): drop detection and stale-export detection read it there
         # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe)
         self.beacon_authenticated = False
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
@@ -690,9 +689,6 @@ class JungHomeHub:
         )
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
         self._built_from = (hub_data(entry.data), dict(entry.options))
-        # per link: what the proxy forwarded that our keys could open, and what they could not (stale export detection)
-        self.rx_decoded_link = 0
-        self.rx_undecodable_link = 0
         # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
         # suppression and the event listeners (`hub/gestures.py`, review-4 A4-3); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
@@ -1507,8 +1503,6 @@ class JungHomeHub:
     def _on_message(self, m: AccessMessage) -> None:
         """Account for the traffic (link watchdog, drop detection, stale-export detection, the app), then hand the message to its handler."""
         self.link.last_rx = time.monotonic()
-        self.rx_messages += 1
-        self.rx_decoded_link += 1
         self._note_seq(m.src, m.seq)
         self.liveness.heard_from(m.src)
         if self.heartbeats_enabled:
@@ -1517,12 +1511,10 @@ class JungHomeHub:
             self.issues.report_export_stale(
                 False
             )  # our keys opened something: the export fits the mesh after all
-        if m.dst == self.proxy.state.src:
-            self.rx_to_us += 1
-            if self.issues.pdus_dropped:
-                self.issues.report_pdus_dropped(
-                    False
-                )  # a node answered us: our PDUs get through again
+        if m.dst == self.proxy.state.src and self.issues.pdus_dropped:
+            self.issues.report_pdus_dropped(
+                False
+            )  # a node answered us: our PDUs get through again
         if self.app_follow is not None:
             self.app_follow.note(m)
         handler = STATUS_HANDLERS.get((m.company_id, m.opcode))

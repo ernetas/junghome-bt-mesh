@@ -72,7 +72,8 @@ __all__ = [
     "upper_encrypt_dev",
 ]
 
-log = logging.getLogger("jhmesh")
+# the proxy reassembly logs per frame it drops: traffic, on the `jhmesh.trace` logger (`client.trace`, review-4 A4-14)
+trace = logging.getLogger("jhmesh.trace")
 
 UNASSIGNED = 0x0000
 ALL_PROXIES = 0xFFFC
@@ -556,14 +557,16 @@ class ProxyReassembler:
         """
         if orphan:
             self.orphaned += 1
-            log.debug("proxy PDU segment of type %d without a first segment dropped", t)
+            trace.debug(
+                "proxy PDU segment of type %d without a first segment dropped", t
+            )
             return
         del self._buf[t]
         self._drop(t)
 
     def _drop(self, t: int) -> None:
         self.dropped += 1
-        log.debug(
+        trace.debug(
             "proxy PDU of type %d longer than %d bytes dropped (%d so far)",
             t,
             self.max_len,

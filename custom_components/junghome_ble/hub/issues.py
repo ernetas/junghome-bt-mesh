@@ -298,20 +298,25 @@ class Issues:
         return None
 
     def count_undecodable(self) -> None:
-        """Count a PDU our keys cannot open, or a beacon they cannot authenticate.
+        """Judge a PDU our keys cannot open, or a beacon they cannot authenticate: the proxy client counted it.
 
         One or two are normal (another mesh in range, a node the export does not know). A link that has forwarded
         EXPORT_STALE_THRESHOLD of them and nothing decodable is a mesh whose keys are not the export's: a key refresh
         completed after the export was made (`docs/cross-repo-analysis.md` §5). Without this the symptom is only a
         silent link dropped by the watchdog every LINK_IDLE_TIMEOUT.
         """
-        self.hub.rx_undecodable_link += 1
         if (
             not self.export_stale
-            and self.hub.rx_decoded_link == 0
-            and self.hub.rx_undecodable_link >= EXPORT_STALE_THRESHOLD
+            and self.hub.proxy.link_stats.messages == 0
+            and self.undecodable_link >= EXPORT_STALE_THRESHOLD
         ):
             self.report_export_stale(True)
+
+    @property
+    def undecodable_link(self) -> int:
+        """What the current link forwarded that our keys could not open: PDUs and beacons (`count_undecodable`)."""
+        stats = self.hub.proxy.link_stats
+        return stats.undecryptable + stats.beacons_unauthenticated
 
     def report_export_stale(self, stale: bool) -> None:
         """Raise (or clear) the repair issue for a mesh whose keys are not the ones in the export."""
@@ -325,7 +330,7 @@ class Issues:
             "Nothing heard through proxy node %s can be decrypted with the keys of the export (%d messages so far): "
             "the mesh keys changed — export the network again and reconfigure",
             self.hub.proxy_address,
-            self.hub.rx_undecodable_link,
+            self.undecodable_link,
         )
         ir.async_create_issue(
             self.hub.hass,

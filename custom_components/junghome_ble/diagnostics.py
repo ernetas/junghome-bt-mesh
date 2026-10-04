@@ -316,6 +316,13 @@ async def async_get_config_entry_diagnostics(
                 else list(hub.state.address_shared),
             },
             "link": async_redact_data(link, TO_REDACT_LINK),
+            # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`, review-4 A4-14): the current link
+            # (the last one while none is up), every link since the entry loaded, and how many links that was
+            "link_stats": {
+                "current": asdict(hub.proxy.link_stats),
+                "total": asdict(hub.proxy.total_stats),
+                "links": hub.link_count,
+            },
             "heartbeats": _heartbeats(hub),
             # each node's last `audit_network` result (settings and findings, no keys) since the entry loaded
             "audit": {

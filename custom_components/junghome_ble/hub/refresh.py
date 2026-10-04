@@ -276,17 +276,21 @@ class Refresh:
         place to notice.
         """
         jobs = self.state_jobs()
-        heard, answered = self.hub.rx_messages, self.hub.rx_to_us
+        before = self.hub.proxy.total_stats
         try:
             await self.hub.chunked(jobs)
         except ConnectionError as err:
             _LOGGER.debug("refresh aborted: %s", err)
             return False
-        if self.hub.rx_to_us > answered:
+        after = self.hub.proxy.total_stats
+        if after.messages_to_us > before.messages_to_us:
             self.hub.issues.report_pdus_dropped(False)
         elif jobs and (
-            self.hub.rx_messages > heard
-            or (self.hub.beacon_authenticated and self.hub.rx_decoded_link == 0)
+            after.messages > before.messages
+            or (
+                self.hub.beacon_authenticated
+                and self.hub.proxy.link_stats.messages == 0
+            )
         ):
             _LOGGER.error(
                 "No JUNG device answered the state refresh although the link works: the nodes discard our messages "

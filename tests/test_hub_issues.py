@@ -160,7 +160,12 @@ async def test_undecryptable_traffic_next_to_decodable_traffic_is_no_stale_expor
     # an authenticated beacon is not "undecodable" either
     fake_link.inject_beacon()
     hub = hub_of(init_integration)
-    assert hub.rx_undecodable_link == EXPORT_STALE_THRESHOLD * 2 + 1
+    assert hub.issues.undecodable_link == EXPORT_STALE_THRESHOLD * 2 + 1
+    stats = hub.proxy.link_stats
+    assert (stats.undecryptable, stats.beacons_unauthenticated) == (
+        EXPORT_STALE_THRESHOLD * 2,
+        1,
+    )
 
 
 async def test_export_stale_counts_restart_with_every_link(
@@ -180,7 +185,7 @@ async def test_export_stale_counts_restart_with_every_link(
     await wait_for_link(hass, init_integration, connected=False)
     await wait_for_link(hass, init_integration)
     assert hub.proxy_address == SECOND_PROXY
-    assert (hub.rx_undecodable_link, hub.proxy.rx_undecryptable) == (0, 0)
+    assert (hub.issues.undecodable_link, hub.proxy.rx_undecryptable) == (0, 0)
     inject_foreign(fake_link, EXPORT_STALE_THRESHOLD - 1)
     await hass.async_block_till_done()
     assert find_issue(hass, ISSUE_EXPORT_STALE) is None

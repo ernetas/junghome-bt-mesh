@@ -248,6 +248,15 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   configuration PDU counts only as a control PDU to the unassigned address with a sequence number above the last one
   taken on the link (`_on_proxy_config`, review-4 P4-7); the rest is dropped and counted (`rx_proxy_config_dropped`,
   `link.proxy_config_dropped` in the diagnostics).
+- Link counters and the trace logger (review-4 A4-14): `ProxyClient` counts what each link carried and dropped in a
+  `jhmesh.stats.LinkStats` — PDUs sent and received, access messages decoded and those unicast to us, undecryptable
+  PDUs, unauthenticated beacons, oversize proxy PDUs, replays dropped, segments retransmitted, request attempts
+  unanswered, proxy configuration PDUs dropped and replayed — per link (`link_stats`, started over by every
+  `attach`) and in total (`total_stats`). The hub keeps no counters of its own: drop detection (`Refresh`) and
+  stale-export detection (`Issues.count_undecodable`) read them there, and the diagnostics show both under
+  `link_stats` with the hub's `link_count`. Per-PDU log lines (TX, RX, every drop and why, the proxy's beacons) go to
+  the `jhmesh.trace` child logger, link lifecycle and anomalies stay on `jhmesh`; `LinkManager.set_link_state` logs
+  every link state change as one `key=value` DEBUG line.
 - Own-source detection (`address_shared`, review-4 S I2): a PDU from our own address is our echo when it carries a
   number we handed out (`ProxyClient._handed_out`: below the counter under the transmit index, below the counter and
   `seq_peak` under an older index from `seq_peak_from` on, nothing under a newer one unless `seq_guard` covers it);
@@ -264,7 +273,7 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   Status; `_filter_status_overdue` raises the issue (WARNING, once per link) when the beacon authenticated
   (`_beacon_authenticated`, per link) and `proxy_node` is still None. `_on_filter_status` cancels the watchdog and
   clears the issue, as does the first unicast reply (`_on_message`). The refresh-based check in `_refresh_all` also
-  counts a link as dropped when the beacon authenticated and it decoded nothing at all (`_rx_decoded_link == 0`)
+  counts a link as dropped when the beacon authenticated and it decoded nothing at all (`proxy.link_stats.messages == 0`)
   and nothing answered — with a stuck whitelist there is no other traffic to hear by construction.
 - Reload after a reconfiguration: HA 2026.9 deprecates `async_update_reload_and_abort` for integrations with an
   update listener ("should use it for scheduling a reload", breaks in 2026.12). `_async_finish_checked` therefore

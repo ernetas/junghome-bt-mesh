@@ -461,6 +461,7 @@ async def test_link_state_follows_the_link_and_bluetooth(
 ) -> None:
     """connecting → updating (the connect-time refresh) → connected; a lost link, a search, no Bluetooth at all (a
     repair issue), a failed attempt; the sensor is a diagnostic, and shows each of them."""
+    caplog.set_level(logging.DEBUG, logger="custom_components.junghome_ble.hub.link")
     registry = er.async_get(hass)
     registry.async_get_or_create("sensor", DOMAIN, UID_LINK_STATE, disabled_by=None)
     seen: list[str] = []
@@ -477,6 +478,9 @@ async def test_link_state_follows_the_link_and_bluetooth(
     hub = hub_of(mock_config_entry)
     await wait_until(hass, lambda: hub.link_state == "connected", what="connected")
     assert seen == ["connecting", "updating", "connected"]
+    # every change is one DEBUG line of key=value fields (review-4 A4-14)
+    assert "link_state from=searching to=connecting link=0 proxy_node=-" in caplog.text
+    assert "link_state from=updating to=connected link=1 proxy_node=0148" in caplog.text
     eid = entity_id(hass, "sensor", UID_LINK_STATE)
     assert hass.states.get(eid).state == "connected"
 

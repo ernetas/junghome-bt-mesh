@@ -1095,6 +1095,7 @@ API: dict[str, list[str]] = {
         "SequenceStalled",
         "StateInUse",
     ],
+    "jhmesh.stats": ["LinkStats"],
     "jhmesh.vault": [
         "DEFAULT_NAME",
         "GROUP_BOUNDS",

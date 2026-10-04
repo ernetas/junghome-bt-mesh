@@ -73,6 +73,7 @@ from .state import (
 from .state import (
     _check_range as _check_range,  # noqa: PLC0414  # the alias is the re-export
 )
+from .stats import LinkStats
 
 if TYPE_CHECKING:
     from .cdb import CDB, Node
@@ -117,6 +118,9 @@ __all__ += [
 ]
 
 log = logging.getLogger("jhmesh")
+# per-PDU lines — what was sent and received, what was dropped and why — go to a child logger (review-4 A4-14): traffic
+# can be logged at DEBUG alone, or left out of a `jhmesh` DEBUG log; link lifecycle and anomalies stay on `jhmesh`
+trace = logging.getLogger("jhmesh.trace")
 
 MESH_PROXY_SERVICE = "00001828-0000-1000-8000-00805f9b34fb"
 MESH_PROXY_DATA_IN = "00002add-0000-1000-8000-00805f9b34fb"
@@ -369,7 +373,9 @@ class ProxyClient:
         )
         self.connected_at: float | None = None
         self.last_rx = 0.0  # monotonic time the proxy last delivered anything (`StandaloneLink` silence watchdog)
-        self.rx_undecryptable = 0  # since attach(): network PDUs that failed NID / MIC / upper-transport decryption
+        # the current link's counts (`link_stats`, started over by every attach) and the sum of the links before it
+        self._stats = LinkStats()
+        self._past_stats = LinkStats()
         # on the current link: Set Filter Type requests actually written — none means the proxy was never
         # asked, so a missing Filter Status says nothing about it discarding our PDUs (the HA hub's watchdog)
         self.filter_writes = 0
@@ -377,9 +383,7 @@ class ProxyClient:
         # another client sends from it (`_on_own_source`) — and when it was last reported (monotonic)
         self.foreign_own_source: tuple[int, int] | None = None
         self._foreign_reported_at: float | None = None
-        # on the current link: proxy configuration PDUs dropped (not CTL=1 / DST=0, undecryptable, or a replay of
-        # one already taken), and the (IV index, SEQ) of the last one taken (review-4 P4-7)
-        self.rx_proxy_config_dropped = 0
+        # on the current link: the (IV index, SEQ) of the last proxy configuration PDU taken (review-4 P4-7)
         self._proxy_config_last: tuple[int, int] | None = None
         self._reasm = ProxyReassembler()
         self._segments: dict[tuple[int, int], dict[str, Any]] = {}
@@ -535,6 +539,24 @@ class ProxyClient:
         )
 
     @property
+    def link_stats(self) -> LinkStats:
+        """What the current link (the last one, while none is up) carried and dropped: a copy, `LinkStats`.
+
+        Started over by every `attach`: what the last link saw says nothing about this one.
+        """
+        return replace(self._stats, garbage=self._reasm.dropped)
+
+    @property
+    def total_stats(self) -> LinkStats:
+        """What every link since this client was made carried and dropped, the current one included: a copy."""
+        return self._past_stats + self.link_stats
+
+    @property
+    def rx_undecryptable(self) -> int:
+        """Since attach(): network PDUs that failed NID / MIC / upper-transport decryption (`LinkStats.undecryptable`)."""
+        return self._stats.undecryptable
+
+    @property
     def rx_garbage(self) -> int:
         """Since attach(): proxy PDUs dropped before authentication because they outgrew `PROXY_PDU_MAX`.
 
@@ -542,6 +564,11 @@ class ProxyClient:
         Network ID to be connected to); the application can read this next to `rx_undecryptable`.
         """
         return self._reasm.dropped
+
+    @property
+    def rx_proxy_config_dropped(self) -> int:
+        """Since attach(): proxy configuration PDUs dropped (not CTL=1 / DST=0, undecryptable, or a replay of one taken)."""
+        return self._stats.proxy_config_dropped
 
     # ------------------------------------------------------------------ discovery helpers
     def classify_service_data(self, sd: bytes) -> tuple[str, int | None] | None:
@@ -632,7 +659,6 @@ class ProxyClient:
                 await self._stop_notify(old)  # subscribed again below
         self._ready.clear()  # a previous attach whose link dropped mid-way may have left it set
         self.client = client
-        self._reasm = ProxyReassembler()
         self._filter_type = None
         self._beacon_seen.clear()
         self._filter_acked.clear()
@@ -703,9 +729,13 @@ class ProxyClient:
             raise
 
     def _reset_link_counters(self) -> None:
-        """Start the per-link counts and marks over (`attach`): what the last link saw says nothing about this one."""
-        self.rx_undecryptable = 0
-        self.rx_proxy_config_dropped = 0
+        """Start the per-link counts and marks over (`attach`): what the last link saw says nothing about this one.
+
+        The last link's counts go into the totals first (`total_stats`), and its reassembly (its `garbage`) with them.
+        """
+        self._past_stats = self.total_stats
+        self._stats = LinkStats()
+        self._reasm = ProxyReassembler()
         self._proxy_config_last = None
         self.foreign_own_source = self._foreign_reported_at = None
 
@@ -942,7 +972,7 @@ class ProxyClient:
         """Write the SAR frames of one proxy PDU; entered holding the write lock (`_write`), which it releases."""
         try:
             try:
-                client = self.client
+                client, stats = self.client, self._stats
                 if client is None:
                     raise ConnectionError("not connected to a proxy")
                 for frame in proxy_frame(msg_type, payload, self.mtu - 3):
@@ -961,6 +991,8 @@ class ProxyClient:
                         raise ConnectionError(
                             f"proxy write not completed within {GATT_TIMEOUT:g}s"
                         ) from None
+                # counted for the link it was written on, should another be attached by now
+                stats.tx += 1
             finally:
                 self._write_lock.release()
         except ConnectionError:
@@ -1069,7 +1101,7 @@ class ProxyClient:
                 dst,
                 lower_unsegmented_access(key.aid, upper, akf=key.akf),
             )
-            log.debug(
+            trace.debug(
                 "TX %04X→%04X seq=%06X [%s] %s",
                 self.state.src,
                 dst,
@@ -1164,7 +1196,7 @@ class ProxyClient:
         except BaseException:
             self._send_lock.release()
             raise
-        log.debug(
+        trace.debug(
             "TX %04X→%04X seq=%06X [%s] segmented x%d %s",
             self.state.src,
             dst,
@@ -1212,6 +1244,9 @@ class ProxyClient:
                     else:
                         first = self.state.reserve_seq(len(order))
                         seqs = [first + k for k in range(len(order))]
+                        # a group's second round is no retransmission: it always goes twice
+                        if is_unicast(dst):
+                            self._stats.segment_retransmissions += len(order)
                     acked.event.clear()  # before the writes: an ack may land while the last one is in flight
                     await self._write_segments(dst, ttl, iv, segments, order, seqs, net)
                 finally:
@@ -1273,7 +1308,7 @@ class ProxyClient:
                 # grace: acks for later segments usually follow within ~50 ms
                 await asyncio.sleep(0.25)
         except asyncio.TimeoutError:
-            log.debug("no segment ack from %04X (attempt %d)", dst, attempt + 1)
+            trace.debug("no segment ack from %04X (attempt %d)", dst, attempt + 1)
 
     async def request(
         self,
@@ -1395,6 +1430,7 @@ class ProxyClient:
                 if fut.done() and not fut.cancelled() and fut.exception() is None:
                     # a segmented send whose acks got lost: the node applied it and answered all the same
                     return fut.result()
+                self._stats.request_timeouts += 1
                 log.debug(
                     "no response from %04X (attempt %d/%d)", dst, attempt + 1, retries
                 )
@@ -1455,11 +1491,12 @@ class ProxyClient:
                 return
             msg_type, payload = r
             if msg_type == PROXY_NETWORK_PDU:
+                self._stats.rx += 1
                 self._on_network_pdu(payload)
             elif msg_type == PROXY_BEACON:
                 b = self._parse_beacon(payload)
                 if b:
-                    log.info(
+                    trace.info(
                         "%sbeacon: iv_index=%d iv_update=%s key_refresh=%s auth=%s",
                         "private " if b.private else "",
                         b.iv_index,
@@ -1481,6 +1518,8 @@ class ProxyClient:
                                 self._start_filter_task(
                                     self._filter_type, "IV index changed"
                                 )
+                    else:
+                        self._stats.beacons_unauthenticated += 1
                     if b.key_refresh:
                         # Phase 2 beacons are secured with the *new* key (§3.10.4): one ours authenticates means
                         # ours are the new keys already; one it cannot is the only sign that they are being
@@ -1512,8 +1551,8 @@ class ProxyClient:
         """
         n = self._network_decrypt(payload, proxy=True)
         if n is None or not n.ctl or n.dst != 0x0000:
-            self.rx_proxy_config_dropped += 1
-            log.debug(
+            self._stats.proxy_config_dropped += 1
+            trace.debug(
                 "proxy configuration PDU dropped: %s",
                 "not ours"
                 if n is None
@@ -1523,8 +1562,9 @@ class ProxyClient:
         if self._proxy_config_last is not None and (
             (n.iv_index, n.seq) <= self._proxy_config_last
         ):
-            self.rx_proxy_config_dropped += 1
-            log.debug(
+            self._stats.proxy_config_dropped += 1
+            self._stats.proxy_config_replays += 1
+            trace.debug(
                 "proxy configuration PDU from %04X seq %06X dropped: a replay",
                 n.src,
                 n.seq,
@@ -1544,7 +1584,7 @@ class ProxyClient:
             if self.on_filter_status:
                 self.on_filter_status(n.src)
         elif pdu[0] == 0x03:
-            log.debug(
+            trace.debug(
                 "proxy filter status from %04X too short (%d octets), dropped",
                 n.src,
                 len(pdu),
@@ -1589,7 +1629,7 @@ class ProxyClient:
                 return b
             first = first or b
         if private:
-            log.debug("Mesh Private beacon that no key of ours opens dropped")
+            trace.debug("Mesh Private beacon that no key of ours opens dropped")
         return first
 
     def _follow_key_refresh(self, msg: AccessMessage) -> None:
@@ -1687,7 +1727,7 @@ class ProxyClient:
     def _on_network_pdu(self, payload: bytes) -> None:
         n = self._network_decrypt(payload)
         if n is None:
-            log.debug("undecryptable network PDU %s", payload.hex())
+            trace.debug("undecryptable network PDU %s", payload.hex())
             self._count_undecryptable()
             return
         if n.src == self.state.src:
@@ -1696,7 +1736,7 @@ class ProxyClient:
         try:
             kind = parse_lower(n.transport_pdu, n.ctl)
         except ValueError as err:  # authenticated with the NetKey, yet not a lower transport PDU: dropped, no trace
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X malformed lower transport PDU dropped: %s",
                 n.src,
                 n.dst,
@@ -1708,14 +1748,15 @@ class ProxyClient:
             # a recorded Segment Ack acknowledge a message the node never got
             iv = n.iv_index
             if self._is_replay(n.src, iv, n.seq):
-                log.debug("replay from %04X seq %06X ignored (control)", n.src, n.seq)
+                self._stats.replays_dropped += 1
+                trace.debug("replay from %04X seq %06X ignored (control)", n.src, n.seq)
                 return
             op, p = kind[1], kind[2]
             if op == 0x00 and len(p) >= 6:
                 self.state.note_received(n.src, iv, n.seq)
                 hdr = int.from_bytes(p[:2], "big")
                 seq_zero, block = (hdr >> 2) & 0x1FFF, int.from_bytes(p[2:6], "big")
-                log.debug(
+                trace.debug(
                     "RX %04X→%04X Segment Ack seq_zero=%d block=%08X",
                     n.src,
                     n.dst,
@@ -1735,7 +1776,7 @@ class ProxyClient:
                 beat = Heartbeat(
                     n.src, n.dst, p[0] & 0x7F, n.ttl, int.from_bytes(p[1:3], "big")
                 )
-                log.debug(
+                trace.debug(
                     "RX %04X→%04X Heartbeat init_ttl=%d hops=%d features=%04X",
                     n.src,
                     n.dst,
@@ -1749,7 +1790,9 @@ class ProxyClient:
                     except Exception:
                         log.exception("on_heartbeat handler failed")
             else:
-                log.debug("RX %04X→%04X control op %02X %s", n.src, n.dst, op, p.hex())
+                trace.debug(
+                    "RX %04X→%04X control op %02X %s", n.src, n.dst, op, p.hex()
+                )
             return
         if kind[0] == "unseg":
             _, akf, aid, upper = kind
@@ -1839,7 +1882,7 @@ class ProxyClient:
         for k in [k for k, v in self._segments.items() if now - v["t"] > 10]:
             del self._segments[k]
         if s.seg_o > s.seg_n:
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X segment %d of %d: SegO beyond SegN, dropped",
                 n.src,
                 n.dst,
@@ -1850,7 +1893,7 @@ class ProxyClient:
         try:
             seq_auth = seq_auth_from(n.seq, s.seq_zero)
         except ValueError as err:
-            log.debug("RX %04X→%04X segment dropped: %s", n.src, n.dst, err)
+            trace.debug("RX %04X→%04X segment dropped: %s", n.src, n.dst, err)
             return
         st = self._segments.get(key)
         if st is None:
@@ -1863,7 +1906,8 @@ class ProxyClient:
             if self._is_replay(n.src, n.iv_index, n.seq) or (
                 (n.iv_index, seq_auth) <= self._seq_auth_done.get(n.src, (-1, -1))
             ):
-                log.debug(
+                self._stats.replays_dropped += 1
+                trace.debug(
                     "replay from %04X seq %06X ignored (segment of SeqAuth %06X)",
                     n.src,
                     n.seq,
@@ -1880,7 +1924,7 @@ class ProxyClient:
         if (
             s.seg_n != st["n"]
         ):  # a different SegN under the same SeqZero: not the message being assembled
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X segment %d of %d contradicts the %d segments announced, dropped",
                 n.src,
                 n.dst,
@@ -1892,7 +1936,7 @@ class ProxyClient:
         if (
             seq_auth != st["seq_auth"]
         ):  # same SeqZero, another message (8192·k earlier): not a part of this one
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X segment of SeqAuth %06X does not belong to reassembly %06X, dropped",
                 n.src,
                 n.dst,
@@ -1964,7 +2008,7 @@ class ProxyClient:
         Every JUNG node relays, so a stale NetKey (a completed key refresh after the export) shows as an unbroken
         stream of these while nothing decodes; a single one is normal (another mesh in range, a node we do not know).
         """
-        self.rx_undecryptable += 1
+        self._stats.undecryptable += 1
         if self.on_undecryptable:
             self.on_undecryptable()
 
@@ -2004,7 +2048,7 @@ class ProxyClient:
                         key = f"dev:{addr:04X}"
                         break
         if access is None:
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X undecryptable upper transport (akf=%s aid=%d)",
                 n.src,
                 n.dst,
@@ -2014,19 +2058,23 @@ class ProxyClient:
             self._count_undecryptable()
             return
         if not segmented and self._is_replay(n.src, iv, n.seq):
-            log.debug("replay from %04X seq %06X ignored", n.src, seq_auth)
+            self._stats.replays_dropped += 1
+            trace.debug("replay from %04X seq %06X ignored", n.src, seq_auth)
             return
         try:
             op, cid, params = decode_opcode(access)
         except ValueError as err:  # authenticated, yet no access message (§3.7.3): dropped before the list moves
-            log.debug(
+            trace.debug(
                 "RX %04X→%04X malformed access PDU dropped: %s", n.src, n.dst, err
             )
             return
         self.state.note_received(n.src, iv, n.seq)
+        self._stats.messages += 1
+        if n.dst == self.state.src:
+            self._stats.messages_to_us += 1
         msg = AccessMessage(n.src, n.dst, n.ttl, n.seq, op, cid, params, access, key)
         self._follow_key_refresh(msg)
-        log.debug(
+        trace.debug(
             "RX %s", msg
         )  # per-message traffic stays out of INFO (a token read would show up there)
         # every pending predicate sees it (collect() gathers through its own, never resolving), but one status

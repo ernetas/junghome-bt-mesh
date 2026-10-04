@@ -6,6 +6,7 @@ import json
 import logging
 import re
 import shutil
+from dataclasses import asdict, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -42,6 +43,7 @@ from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.pdu import (
     encode_opcode,
 )
+from custom_components.junghome_ble.jhmesh.stats import LinkStats
 
 from . import key_scan
 from .conftest import (
@@ -280,6 +282,35 @@ async def test_diagnostics(
         0x5003: b"\x06",
         0x5013: b"\x01\x00",
     }  # the cache itself is untouched
+
+
+async def test_diagnostics_count_what_the_link_carried(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """`link_stats` (review-4 A4-14): the current link's counts, every link's since the entry loaded, and the links."""
+    fake_link.inject(LIGHT_CTL, 0xC044, ctl_status(30000, 4000))
+    fake_link.inject(
+        SOCKET,
+        OUR_ADDRESS,
+        admin_property_status(PROPERTY_POWER_ON_TIME, (12345).to_bytes(3, "little")),
+    )
+    await hass.async_block_till_done()
+    hub = init_integration.runtime_data
+
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+
+    stats = result["link_stats"]
+    assert stats["links"] == 1
+    # the first link is all there was
+    assert stats["current"] == stats["total"] == asdict(hub.proxy.link_stats)
+    assert list(stats["current"]) == [f.name for f in fields(LinkStats)]
+    current = stats["current"]
+    assert current["messages"] >= 2  # the two injected above
+    assert current["messages_to_us"] >= 1  # the power-on time, unicast to us
+    assert (current["undecryptable"], current["replays_dropped"]) == (0, 0)
 
 
 async def test_diagnostics_list_the_open_carry_over_conflicts(
@@ -535,6 +566,9 @@ async def test_diagnostics_without_link(
 
     result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
     [ended] = result["link"].pop("history")  # the link that just went
+    # no link up: the counts are the last link's, the only one there was
+    assert result["link_stats"]["links"] == 1
+    assert result["link_stats"]["current"] == result["link_stats"]["total"]
     assert (ended["reason"], ended["proxy_node"]) == ("the proxy disconnected", "0148")
     assert result["link"] == {
         "connected": False,

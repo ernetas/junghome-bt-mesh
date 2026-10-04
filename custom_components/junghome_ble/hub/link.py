@@ -477,9 +477,19 @@ class LinkManager:
         return self.last_rx != before
 
     def set_link_state(self, state: str) -> None:
-        """Record the link's state (one of `LINK_STATES`) and tell the link state sensor when it changed."""
+        """Record the link's state (one of `LINK_STATES`) and tell the link state sensor when it changed.
+
+        Every change is one DEBUG line of `key=value` fields (review-4 A4-14), so a log can be searched by them.
+        """
         if state == self.hub.link_state:
             return
+        _LOGGER.debug(
+            "link_state from=%s to=%s link=%d proxy_node=%s",
+            self.hub.link_state,
+            state,
+            self.hub.link_count,
+            "-" if self.hub.proxy_node is None else f"{self.hub.proxy_node:04X}",
+        )
         self.hub.link_state = state
         async_dispatcher_send(
             self.hub.hass, SIGNAL_LINK_STATE.format(self.hub.entry.entry_id)
@@ -519,7 +529,7 @@ class LinkManager:
             max_attempts=2,
             use_services_cache=True,
         )
-        self.hub.rx_decoded_link = self.hub.rx_undecodable_link = 0
+        # the link's counts start over in the attach (`proxy.link_stats`)
         self.hub.beacon_authenticated = False
         # counted before the attach: `proxy.connected` turns True inside it, and an entity added right then must
         # already see the new link's number (`config_entities.PropertyEntity._maybe_read`)

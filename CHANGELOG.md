@@ -2,6 +2,26 @@
 
 ## 1.2.0 (unreleased)
 
+### Upgrading
+
+- **The per-message log lines come from `jhmesh.trace`** (decision M1, review-4 A4-14): every sent command (`TX`),
+  decrypted message (`RX`), proxy beacon and dropped PDU is now logged by the `jhmesh.trace` logger instead of
+  `jhmesh`. Existing `logger:` settings for `jhmesh` keep working — `jhmesh.trace` is its child and follows it — and
+  `jhmesh.trace` can now be set on its own (see *Added*). A filter that matches the logger name exactly (a log
+  viewer's, say) needs `jhmesh.trace` added. The diagnostics gain a `link_stats` section.
+
+### Added
+
+- Link counters and a trace logger (review-4 A4-14). The diagnostics count what the current link and every link since
+  the entry loaded carried and dropped, under `link_stats`: PDUs sent and received, messages decoded and those
+  addressed to Home Assistant, PDUs the keys could not open, beacons they could not authenticate, oversize proxy PDUs,
+  replays dropped, segments sent again, request attempts left unanswered, proxy configuration PDUs dropped and
+  replayed, and the number of links. The traffic has its own logger, `jhmesh.trace`: `jhmesh: warning` with
+  `jhmesh.trace: debug` logs only the messages, `jhmesh: debug` with `jhmesh.trace: info` the link without a line per
+  message. Every change of the link state is one `link_state from=… to=…` debug line. In the library, `ProxyClient`
+  keeps the counts in a `jhmesh.stats.LinkStats` per link (`link_stats`) and in total (`total_stats`);
+  `rx_undecryptable`, `rx_garbage` and `rx_proxy_config_dropped` read from it.
+
 ### Changed
 
 - The integration is called *JUNG HOME Bluetooth Mesh* (was *JUNG HOME (Bluetooth Mesh)*) in Home Assistant's

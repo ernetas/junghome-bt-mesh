@@ -11,7 +11,8 @@ itself, its logger). The modules:
   `advert` (a node's advertisement, without keys);
 - `messages`, `config_messages`, `vendor_models` (build and decode access messages);
 - `client` (`ProxyClient` over any GATT proxy link), `state` (`LocalState`: our address, sequence numbers, IV index,
-  replay list — `client` re-exports it), `standalone` (`client` over a plain `bleak` adapter);
+  replay list — `client` re-exports it), `stats` (`LinkStats`: what a link carried and dropped), `standalone`
+  (`client` over a plain `bleak` adapter);
 - `provisioning`, `commission`, `onboarding` (add a node), `vault`, `vaultrefresh`, `keyrefresh` (a provisioner of
   your own, its keys, key refresh), `export`, `merge` (write and merge the app's files), `audit` (check the nodes'
   configuration against the export), `sniffer` (decode captures);

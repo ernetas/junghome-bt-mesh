@@ -1045,7 +1045,8 @@ async def test_messages_without_a_handler_are_ignored(
     await hass.async_block_till_done()
     assert hub.states == {}
     assert signalled == []
-    assert hub.rx_to_us == 2  # counted for drop detection all the same
+    # counted for drop detection all the same
+    assert hub.proxy.total_stats.messages_to_us == 2
 
 
 async def test_a_registered_handler_gets_the_hub_the_message_and_its_parameters(

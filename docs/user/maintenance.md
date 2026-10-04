@@ -267,6 +267,20 @@ Each device's page has its own *Download diagnostics* too. Attach it when you re
 *⋮ → Enable debug logging* on the integration's page; reproduce the problem; select it again to stop and download
 the log. It shows what Home Assistant sends to and hears from the devices (never a key).
 
+That log has a line for every message on the mesh. To keep it shorter, or to see only the messages, set the loggers
+in `configuration.yaml` instead:
+
+```yaml
+logger:
+  logs:
+    custom_components.junghome_ble: debug  # connections and what the integration decides
+    jhmesh: debug  # the Bluetooth link: proxy, filter, lost links, unanswered requests
+    jhmesh.trace: info  # one line per message sent or heard: `debug` to see them
+```
+
+With `jhmesh: warning` and `jhmesh.trace: debug` the log shows the messages alone. The
+[reference](../ha-integration.md#enabling-debug-logging) lists every logger.
+
 ## Backups
 
 Home Assistant backups include everything the integration needs. Restoring one is safe: Home Assistant notices the

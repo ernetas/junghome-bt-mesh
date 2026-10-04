@@ -2660,11 +2660,36 @@ logger:
     jhmesh: debug
 ```
 
-`custom_components.junghome_ble` logs connection attempts and entity-level decisions; `jhmesh` logs every decrypted
-mesh message (addresses, opcodes and values, never keys), sent commands and undecryptable packets. Without debug
-logging a device that does not answer leaves one warning when it is marked unavailable ("… did not answer a request
-…") and one line when it is back; each unanswered attempt is a `jhmesh` debug line ("no response from … (attempt
-1/3)").
+The loggers:
+
+| Logger | What it logs |
+|---|---|
+| `custom_components.junghome_ble` (and its modules, `….hub.link` and so on) | Connection attempts, entity-level decisions, every change of the link state as one `link_state from=… to=… link=… proxy_node=…` debug line |
+| `jhmesh` | The link's lifecycle: attaching to a proxy, the proxy filter, beacons that move the IV index or a key refresh, a lost link, unanswered requests ("no response from … (attempt 1/3)") |
+| `jhmesh.trace` | The traffic, one line per PDU: every sent command (`TX`) and decrypted mesh message (`RX`: addresses, opcodes and values, never keys), the proxy's beacons, and every PDU dropped and why (undecryptable, a replay, malformed) |
+| `jhmesh.provisioning`, `jhmesh.standalone` | Adding a device, and the CLI's own Bluetooth link |
+
+`jhmesh.trace` is a child of `jhmesh`: `jhmesh: debug` includes it, as before. To see only the traffic, or only the
+rest:
+
+```yaml
+logger:
+  logs:
+    jhmesh: warning
+    jhmesh.trace: debug  # every PDU, nothing else of the library
+```
+
+```yaml
+logger:
+  logs:
+    jhmesh: debug
+    jhmesh.trace: info  # the link's lifecycle without a line per PDU
+```
+
+Without debug logging a device that does not answer leaves one warning when it is marked unavailable ("… did not
+answer a request …") and one line when it is back; each unanswered attempt is a `jhmesh` debug line ("no response
+from … (attempt 1/3)"). The [diagnostics](#diagnostics) count what the links carried without any logging
+(`link_stats`).
 
 ### Diagnostics
 
@@ -2672,7 +2697,13 @@ Open the entry's menu and select **Download diagnostics**. The file contains the
 paths and Bluetooth addresses are redacted), a summary of the network (mesh UUID, network ID, number of nodes, groups, scene numbers), Home Assistant's own sequence
 number and IV index (with how long the sequence-number store has held sends back, its last write error and how many
 numbers may go out before the next hold; the file path in that error is redacted, the error itself kept), the link
-state (connected node, MTU, connection time, visible proxy nodes) and the last 20 links, newest first — the proxy node
+state (connected node, MTU, connection time, visible proxy nodes), under `link_stats` what the current link (the last
+one while none is up) and every link since the entry loaded carried and dropped — PDUs sent (`tx`) and received
+(`rx`), access messages decoded (`messages`) and those addressed to Home Assistant (`messages_to_us`), PDUs the keys
+could not open (`undecryptable`), beacons they could not authenticate (`beacons_unauthenticated`), oversize proxy PDUs
+(`garbage`), replays dropped (`replays_dropped`), segments sent again (`segment_retransmissions`), request attempts
+left unanswered (`request_timeouts`), proxy configuration PDUs dropped (`proxy_config_dropped`) and of those replays
+(`proxy_config_replays`) — with the number of links (`links`), and the last 20 links, newest first — the proxy node
 by its mesh address, how long ago it ended, how long it lasted, why it ended (`the proxy disconnected`, `the proxy
 went silent`, `sequence numbers skipped ahead`, …), how long its connect-time state refresh took (`null`: the link went
 first) and how long sends were held back for the sequence-number store during it —, the entry's options, the open
