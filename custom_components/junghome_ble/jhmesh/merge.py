@@ -295,8 +295,9 @@ def apply_changes(
     for change in changes:
         where = _resolve(doc, change.path)
         if where is None:
-            # what the change sits in is gone (the app removed the node / model): nothing left to change
-            conflicts.append(change)
+            # what the change sits in is gone (the app removed the node / model): a removal is already done there,
+            # anything else has nothing left to change
+            (applied if change.new is MISSING else conflicts).append(change)
             continue
         container, name = where
         step = change.path[-1]

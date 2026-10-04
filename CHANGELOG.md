@@ -87,6 +87,9 @@
 
 ### Fixed
 
+- Carrying Home Assistant's changes over onto a newer app export no longer reports a removal as a conflict when the
+  app had removed what it sat in (a node, a model, an exclusion): the result is what both sides wanted, so it counts
+  as applied. Found by the merge's property test.
 - A socket threshold that could not be written or was not taken is named in words in every language (*switch-on
   threshold*, *Einschaltschwelle*, …), not as the raw `switch_on` / `switch_off`: the two errors have a key per
   threshold now (`threshold_switch_on_not_applied`, `threshold_switch_off_not_applied`,

@@ -138,6 +138,25 @@ def test_a_change_inside_something_the_app_removed_is_a_conflict() -> None:
     assert len(theirs["network"]["nodes"]) == 1
 
 
+def test_a_removal_inside_something_the_app_removed_is_already_applied() -> None:
+    base = doc()
+    base["network"]["networkExclusions"] = [
+        {"ivIndex": 0, "addresses": ["0002"]},
+        {"ivIndex": 1, "addresses": ["0002"]},
+    ]
+    ours = copy.deepcopy(base)
+    del ours["network"]["networkExclusions"][1]["addresses"]  # HA dropped the list
+    theirs = copy.deepcopy(base)
+    del theirs["network"]["networkExclusions"][1]  # the app removed the whole exclusion
+    changes = diff_documents(base, ours)
+    applied, conflicts = apply_changes(theirs, changes)
+    assert applied == changes
+    assert conflicts == []
+    assert theirs["network"]["networkExclusions"] == [
+        {"ivIndex": 0, "addresses": ["0002"]}
+    ]
+
+
 def test_removals_additions_and_already_present_changes() -> None:
     base = doc()
     ours = copy.deepcopy(base)
