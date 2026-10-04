@@ -157,7 +157,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
-    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
     "custom_components/junghome_ble/light.py::async_setup_entry",
     "custom_components/junghome_ble/cover.py::async_setup_entry",
     "custom_components/junghome_ble/climate.py::async_setup_entry",
@@ -317,7 +317,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/event.py::async_setup_entry",
-    "custom_components/junghome_ble/entity.py::buttons_device_info"
+    "custom_components/junghome_ble/device_info.py::buttons_device_info"
    ],
    "tests": [
     "tests/test_event.py::test_same_named_gangs_stay_separate_devices",
@@ -558,7 +558,7 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
-    "custom_components/junghome_ble/entity.py::product_name"
+    "custom_components/junghome_ble/device_info.py::product_name"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_two_channel_node_shares_one_scene_register"
@@ -612,7 +612,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/cover.py::JungHomeCover",
-    "custom_components/junghome_ble/entity.py::blind_device_info",
+    "custom_components/junghome_ble/device_info.py::blind_device_info",
     "custom_components/junghome_ble/actions/schedules.py::_create_schedule"
    ],
    "tests": [
@@ -741,7 +741,7 @@
    "id": "ui:screen:controlswitchdetailactivity",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::buttons_device_info",
+    "custom_components/junghome_ble/device_info.py::buttons_device_info",
     "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor",
     "custom_components/junghome_ble/keep_awake.py::KeepAwake"
    ],
@@ -775,7 +775,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/entity.py::JungHomeEntity",
-    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
     "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
     "custom_components/junghome_ble/actions/schedules.py::_create_schedule"
    ],
@@ -792,8 +792,8 @@
    "id": "ui:screen:deviceinfofragment",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
-    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::software_version",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS"
    ],
    "tests": [
@@ -990,7 +990,7 @@
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor",
     "custom_components/junghome_ble/keep_awake.py::KeepAwake",
-    "custom_components/junghome_ble/entity.py::node_device_info"
+    "custom_components/junghome_ble/device_info.py::node_device_info"
    ],
    "tests": [
     "tests/test_sensor.py::test_battery_sensor_per_node_and_sig_key_events",
@@ -1526,7 +1526,7 @@
    "code": [
     "custom_components/junghome_ble/config_entities.py::LockFunctionEntity",
     "custom_components/junghome_ble/config_entities.py::LoadLock",
-    "custom_components/junghome_ble/coordinator.py::ElementState.note_lock",
+    "custom_components/junghome_ble/element_state.py::ElementState.note_lock",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
     "custom_components/junghome_ble/light.py::JungHomeLight",
     "custom_components/junghome_ble/switch.py::JungHomeSocket",
@@ -1569,7 +1569,7 @@
    "id": "ui:state:manufacturersoftwareversioncapability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
@@ -1801,7 +1801,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/event.py::JungHomeButtonEvent",
-    "custom_components/junghome_ble/entity.py::buttons_device_info"
+    "custom_components/junghome_ble/device_info.py::buttons_device_info"
    ],
    "tests": [
     "tests/test_event.py::test_same_named_gangs_stay_separate_devices"
@@ -1838,7 +1838,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/event.py::JungHomeButtonEvent",
-    "custom_components/junghome_ble/entity.py::node_device_info"
+    "custom_components/junghome_ble/device_info.py::node_device_info"
    ],
    "tests": [
     "tests/test_input_edges.py::test_inputs_offer_device_triggers_named_e1_e2",
@@ -1902,8 +1902,8 @@
    "id": "ui:tile:unknown",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::node_device_info",
-    "custom_components/junghome_ble/entity.py::register_parent_devices"
+    "custom_components/junghome_ble/device_info.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::register_parent_devices"
    ],
    "tests": [
     "tests/test_binary_sensor.py::test_fault_register_is_asked_of_every_node_and_shown_where_identify_is",
@@ -2341,7 +2341,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
-    "custom_components/junghome_ble/entity.py::current_device_identifiers"
+    "custom_components/junghome_ble/device_info.py::current_device_identifiers"
    ],
    "tests": [
     "tests/test_light.py::test_entities",
@@ -2384,8 +2384,8 @@
    "id": "ui:uc:observemeshnetwork",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::current_device_identifiers",
-    "custom_components/junghome_ble/entity.py::update_node_device"
+    "custom_components/junghome_ble/device_info.py::current_device_identifiers",
+    "custom_components/junghome_ble/device_info.py::update_node_device"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",
@@ -2505,7 +2505,7 @@
    "id": "ui:uc:requestmanufacturerinfos",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS"
    ],
@@ -2522,7 +2522,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
-    "custom_components/junghome_ble/entity.py::software_version"
+    "custom_components/junghome_ble/device_info.py::software_version"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",
@@ -3092,7 +3092,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
-    "custom_components/junghome_ble/entity.py::room_loads"
+    "custom_components/junghome_ble/device_info.py::room_loads"
    ],
    "tests": [
     "tests/jhmesh/test_devices.py::test_room_members_are_the_loads_listening_to_the_room",
@@ -3253,8 +3253,8 @@
    "id": "ui:vm:controlswitchconfigurationviewmodel.observeitems",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::button_gang",
-    "custom_components/junghome_ble/entity.py::buttons_device_info"
+    "custom_components/junghome_ble/device_info.py::button_gang",
+    "custom_components/junghome_ble/device_info.py::buttons_device_info"
    ],
    "tests": [
     "tests/test_event.py::test_same_named_gangs_stay_separate_devices",
@@ -3409,7 +3409,7 @@
    "id": "ui:vm:deviceinfoviewmodel.observedevices",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/properties/targets.py::_Element.load_kind"
    ],
    "tests": [
@@ -3775,8 +3775,8 @@
    "id": "ui:vm:mainviewmodel.observejungmeshnetwork",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::current_device_identifiers",
-    "custom_components/junghome_ble/entity.py::update_node_device"
+    "custom_components/junghome_ble/device_info.py::current_device_identifiers",
+    "custom_components/junghome_ble/device_info.py::update_node_device"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",
@@ -3937,7 +3937,7 @@
    "id": "ui:vm:nameconfigviewmodel.observedevice",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::light_device_info"
+    "custom_components/junghome_ble/device_info.py::light_device_info"
    ],
    "tests": [
     "tests/test_light.py::test_entities"

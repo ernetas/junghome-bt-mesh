@@ -34,9 +34,8 @@ from .const import (
     DOMAIN,
     PROPERTY_READ_RETRIES,
     SCHEDULER_MODEL,
-    SCHEDULERS,
 )
-from .cover import closedness_to_level, level_to_closedness
+from .conversions import closedness_to_level, level_to_closedness
 from .entity import (
     blind_device_info,
     light_device_info,
@@ -47,6 +46,7 @@ from .errors import mesh_errors
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
 from .jhmesh.devices import Blind, Light, Socket, Thermostat
+from .node_clocks import SCHEDULERS
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -655,11 +655,12 @@ def scheduler(hass: HomeAssistant, hub: JungHomeHub) -> Scheduler:
     """Return the hub's scheduler, created on first use and dropped when the entry unloads."""
     schedulers = hass.data.setdefault(SCHEDULERS, {})
     entry_id = hub.entry.entry_id
-    if entry_id not in schedulers:
-        schedulers[entry_id] = Scheduler(hub)
+    if isinstance(known := schedulers.get(entry_id), Scheduler):
+        return known
+    made = schedulers[entry_id] = Scheduler(hub)
 
-        def forget() -> None:
-            schedulers.pop(entry_id, None)
+    def forget() -> None:
+        schedulers.pop(entry_id, None)
 
-        hub.entry.async_on_unload(forget)
-    return schedulers[entry_id]
+    hub.entry.async_on_unload(forget)
+    return made

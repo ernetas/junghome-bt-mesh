@@ -17,7 +17,7 @@ import logging
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
@@ -37,6 +37,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
+from .bus_events import fire_scene_recalled, publish_button_event
 from .const import (
     AUDIT_RETRIES,
     AUDIT_TIMEOUT,
@@ -72,7 +73,8 @@ from .const import (
     TIME_SET_INTERVAL,
     issue_id,
 )
-from .entity import update_node_device
+from .device_info import update_node_device
+from .element_state import ElementState
 from .hub.clock import Clock, next_utc_offset_change
 from .hub.energy import (
     COUNTER_FIELDS,
@@ -125,7 +127,7 @@ from .jhmesh.devices import (
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
-from .jhmesh.properties import PROPERTIES, SIG_PROPERTIES, EnforcedOutput, Scaled
+from .jhmesh.properties import SIG_PROPERTIES, Scaled
 from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
 from .node_clocks import NodeClocks
@@ -179,16 +181,18 @@ from .vault_refresh import VaultKeyRefresh
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
-    from .app_follow import AppFollower
-    from .entity import TrackedPlatform
-    from .gateway_status import GatewayPolls
     from .identity import VaultKeeper
-    from .mesh_config import MeshConfigurator
+    from .protocols import (
+        AppFollowView,
+        ConfiguratorView,
+        GatewayPollsView,
+        TrackedPlatform,
+    )
 
 _LOGGER = logging.getLogger(__name__)
 
 # Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
-# `const.py`; A4-3: the hub's components into `hub/`); re-exported for the modules and tests that import them from here.
+# `const.py`; A4-3: the hub's components into `hub/`; A4-11: `ElementState` into `element_state.py`); re-exported for the modules and tests that import them from here.
 __all__ = [
     "GATEWAY_CERTIFICATE_CHANGED",
     "GATEWAY_UNVERIFIED",
@@ -213,6 +217,7 @@ __all__ = [
     "STORAGE_VERSION",
     "AddressShared",
     "CounterNotReset",
+    "ElementState",
     "HAState",
     "LinkEnd",
     "NodeInfoStore",
@@ -255,7 +260,6 @@ SIG_PROPERTY_STATUS_OPCODES = (
 # The vendor message gateway-mode keys publish their gestures with (docs/cross-repo-analysis.md §1.2).
 VENDOR_USER_PROPERTY_SET_UNACK = 0x10  # LBC User Property Set Unacknowledged
 PROPERTY_BUTTON_EVENT = 0x5012  # KEY_EVT: [counter][code]
-PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`)
 GENERIC_LEVEL_OPCODES = frozenset(
     {M.GEN_LEVEL_SET, M.GEN_LEVEL_SET_UNACK, 0x8209, 0x820A, 0x820B, 0x820C}
 )
@@ -456,98 +460,6 @@ def _settled(st: ElementState, kind: str) -> bool:
     return st.on is not None and st.on == st.target_on
 
 
-@dataclass
-class ElementState:
-    """Last known state of one mesh element (a load, a socket, a level or battery element, a property owner).
-
-    `on` / `lightness` / `kelvin` are the *present* values of the last status (what the element is doing now, what
-    the app shows); `target_*` is where a transition is heading, equal to the present value when the element is idle
-    or the status came in its short form. Nothing renders the targets yet: they are kept because they are free.
-    """
-
-    on: bool | None = None
-    lightness: int | None = None  # 0..65535
-    kelvin: int | None = None
-    target_on: bool | None = None
-    target_lightness: int | None = None
-    target_kelvin: int | None = None
-    # when the element will be off by its last Generic OnOff Status: on, heading off, with a known remaining time
-    # (a run-on time running out, or a fade to off); None otherwise (`_on_onoff_status`)
-    off_at: datetime | None = None
-    # a CTL light's own temperature range (Light CTL Temperature Range Status); None until read
-    kelvin_min: int | None = None
-    kelvin_max: int | None = None
-    level: int | None = None  # Generic Level, -32768..32767 (blinds position / slat)
-    target_level: int | None = None  # a moving blind's destination; level when idle
-    battery: int | None = None  # Generic Battery level, percent
-    power_w: float | None = None
-    voltage_v: float | None = None
-    current_a: float | None = None
-    # the polled SIG counters of a metering socket (COUNTER_READS); None until read or while the socket says "unknown"
-    power_on_hours: int | None = None
-    energy_wh: int | None = (
-        None  # 0x0072 precise total energy: lifetime, nothing resets it
-    )
-    energy_resettable_wh: int | None = (
-        None  # 0x006A total energy: what the app shows and its "reset" zeroes
-    )
-    energy_since_on_wh: int | None = (
-        None  # 0x000D energy since the socket was switched on
-    )
-    # the load's meter does not serve 0x0072, so its *Energy* is 0x006A (`energy_total`); never set on a socket
-    energy_fallback: bool = False
-    properties: dict[int, bytes] = field(
-        default_factory=dict
-    )  # raw property values by property id (SIG or JUNG)
-    # raw SIG setup-server states by their Status opcode (OnPowerUp, Lightness Range / Default, CTL Default)
-    setup: dict[int, bytes] = field(default_factory=dict)
-    # a node's registered Health faults (its primary element; JUNG's vendor codes 0x81 / 0x80); None until read
-    faults: tuple[int, ...] | None = None
-    # the element's current scene (Scene Status / Scene Register Status; 0 = none): what its Scene Server says it
-    # last recalled and still shows; None until the element said
-    scene: int | None = None
-    # a load's lock function (0x0009, `note_lock`): None until it reported one; and when a timed lock should end
-    lock: EnforcedOutput | None = None
-    lock_until: datetime | None = None
-    updated: float = field(default_factory=time.monotonic)
-
-    def note_lock(self, raw: bytes) -> None:
-        """Take a reported lock function (0x0009); its time limit counts from now, as the *Lock* switch counts it.
-
-        Whether a Status carries the time left or the time the lock was set for is not known (a read-back of a
-        timed lock that still holds pushes `lock_until` on by the whole limit again). A malformed value is ignored.
-        """
-        try:
-            value: EnforcedOutput = PROPERTIES[PROPERTY_LOCK].codec.decode(raw)
-        except ValueError:
-            return
-        self.lock = value
-        self.lock_until = (
-            dt_util.utcnow() + timedelta(seconds=value.time_s)
-            if value.locked and value.time_s
-            else None
-        )
-
-    @property
-    def locked(self) -> bool:
-        """Whether the load reported a lock that has not run out yet (its time limit, when it had one)."""
-        if self.lock is None or not self.lock.locked:
-            return False
-        return self.lock_until is None or dt_util.utcnow() < self.lock_until
-
-    @property
-    def energy_total(self) -> int | None:
-        """The *Energy* sensor's counter: the lifetime total 0x0072, or 0x006A where the meter does not serve it.
-
-        Only a load other than a metering socket falls back (`Energy._get_counters`, `_on_sig_property_status`),
-        and only on a definite sign, never because 0x0072 went unanswered: 0x006A is at most 0x0072, so switching to
-        it after a silence and back once 0x0072 answers would put the whole difference into one hour of the Energy
-        dashboard. 0x006A is resettable; the app's "reset consumption" then shows as a meter reset, which
-        `total_increasing` statistics handle.
-        """
-        return self.energy_resettable_wh if self.energy_fallback else self.energy_wh
-
-
 def load_network(cdb_path: str, metadata_dir: str | None) -> tuple[CDB, Devices]:
     """Blocking: parse the app export (and optional metadata) into the device model."""
     cdb = CDB.load(Path(cdb_path))
@@ -599,6 +511,10 @@ def hub_data(data: Mapping[str, Any]) -> dict[str, Any]:
     The gateway host, token and certificate fingerprint are left out: they only serve the config flow's re-fetch.
     """
     return {key: data.get(key) for key in HUB_DATA_KEYS}
+
+
+# a config entry of this integration: its `runtime_data` is the entry's hub
+type JungHomeConfigEntry = ConfigEntry[JungHomeHub]
 
 
 class JungHomeHub:
@@ -682,15 +598,15 @@ class JungHomeHub:
         self._scene_recalls: dict[int, float] = {}
         self.node_by_mac = nodes_by_mac(cdb)  # the node behind a Bluetooth address
         # the entry's configurator, which registers itself: the unknown-node refresh adopts through it, under its lock
-        self.configurator: MeshConfigurator | None = None
+        self.configurator: ConfiguratorView | None = None
         # what follows the changes made in the JUNG HOME app (`app_follow.py`, review-4 U4-6), set by the setup
-        self.app_follow: AppFollower | None = None
+        self.app_follow: AppFollowView | None = None
         # the platforms' entities, by platform (`entity.async_setup_platform`), and what makes the hub follow the
         # export after a change, in place or by a reload (`model_update.async_follow_export`, set by the setup)
-        self.platforms: dict[str, TrackedPlatform] = {}
+        self.platforms: dict[str, TrackedPlatform[JungHomeHub]] = {}
         self.follow_export: Callable[[], Awaitable[None]] | None = None
         # the gateway's REST status polls (`gateway_status.gateway_polls`), made by the first platform that asks
-        self.gateway_polls: GatewayPolls | None = None
+        self.gateway_polls: GatewayPollsView | None = None
         # the unknown nodes, the export refresh and the gateway's trust (`hub/export_watch.py`)
         self.export_watch = ExportWatch(self)
         # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`, review-3 W4 / F24)
@@ -1845,7 +1761,6 @@ class JungHomeHub:
         if self.gestures.is_button(m.src):
             self.fire_button(m.src, "scene", {"scene": number})
             return
-        from .event import fire_scene_recalled  # noqa: PLC0415
 
         fire_scene_recalled(self.hass, self, number, m.src)
 
@@ -1874,8 +1789,6 @@ class JungHomeHub:
             and m.src not in self.refresh.scene_gets
             and self.note_scene_recall(status.current)
         ):
-            from .event import fire_scene_recalled  # noqa: PLC0415
-
             fire_scene_recalled(
                 self.hass, self, status.current, None, reported_by=m.src
             )
@@ -1935,8 +1848,6 @@ class JungHomeHub:
         self, addr: int, event: str, attrs: dict[str, Any]
     ) -> None:
         """Publish a button event on the bus (`event.publish_button_event`), for `ButtonGestures.fire_button`."""
-        from .event import publish_button_event  # noqa: PLC0415
-
         publish_button_event(self.hass, self, addr, event, attrs)
 
     # ------------------------------------------------------------------ repairs (`hub/issues.py`)
@@ -2339,7 +2250,5 @@ class JungHomeHub:
                 number, ack=False, transition=self._transition_byte(transition)
             ),
         )
-        # event.py imports this module, hence the late import
-        from .event import fire_scene_recalled  # noqa: PLC0415
 
         fire_scene_recalled(self.hass, self, number, self.proxy.state.src)

@@ -12,7 +12,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable, Container
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
@@ -26,10 +26,56 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
+from custom_components.junghome_ble.protocols import HubPort
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.inserts import NodeInserts
     from custom_components.junghome_ble.jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.protocols import LinkView
+
+    from .clock import Clock
+    from .energy import Energy
+    from .issues import Issues
+    from .liveness import Liveness
+
+
+class RefreshHub(HubPort, Protocol):
+    """What the connect-time reads ask of the hub besides `HubPort`: the other parts and the scene caches."""
+
+    scene_actions: dict[int, dict[int, V.Action | None]]
+    scene_lists_read: set[int]
+
+    @property
+    def clock(self) -> Clock:
+        """The time and location broadcasts."""
+
+    @property
+    def energy(self) -> Energy:
+        """The metered loads' readings and polls."""
+
+    @property
+    def inserts(self) -> NodeInserts:
+        """Each node's insert and key layout."""
+
+    @property
+    def issues(self) -> Issues:
+        """The repair issues."""
+
+    @property
+    def link(self) -> LinkView:
+        """The proxy link (`hub.link.LinkManager`)."""
+
+    @property
+    def liveness(self) -> Liveness:
+        """The nodes' reachability and heartbeats."""
+
+    @property
+    def heartbeats_enabled(self) -> bool:
+        """Whether the heartbeat option is on."""
+
+    def scene_action_channels(self, addr: int) -> list[int]:
+        """Return the channels whose JUNG scene action describes the load at `addr` in a scene."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +97,7 @@ ONOFF_GET: tuple[Callable[[], bytes], int] = (M.generic_onoff_get, M.GEN_ONOFF_S
 class Refresh:
     """The connect-time reads of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: RefreshHub) -> None:
         """Bind to `hub` (its link, devices and the other components); nothing read yet."""
         self.hub = hub  # its task, the connect-time sequence of the link, is the hub's `refresh` (`lifecycle`)
         # connect-time step → when its last complete round ended (monotonic; `connect_step`)

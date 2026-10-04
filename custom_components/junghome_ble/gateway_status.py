@@ -41,8 +41,8 @@ from .const import (
     GATEWAY_STATUS_INTERVAL,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
+    issue_id,
 )
-from .coordinator import issue_id
 from .entity import node_device_info
 from .gateway_api import (
     GatewayAuthError,
@@ -156,17 +156,18 @@ class GatewayPolls:
 
 def gateway_polls(hass: HomeAssistant, hub: JungHomeHub) -> GatewayPolls | None:
     """Return the hub's gateway polls, made on first use; None without a gateway (the entry's or a node)."""
-    if hub.gateway_polls is not None:
-        return hub.gateway_polls
+    if (polls := hub.gateway_polls) is not None:
+        assert isinstance(polls, GatewayPolls)  # only this function sets it
+        return polls
     node = next((n for n in hub.cdb.nodes if n.pid == GATEWAY_PID), None)
     if node is None or api_for_entry(hass, hub.entry) is None:
         return None
-    hub.gateway_polls = GatewayPolls(
+    polls = hub.gateway_polls = GatewayPolls(
         node,
         GatewayPoll(hass, hub, "status", GATEWAY_STATUS_INTERVAL, _config),
         GatewayPoll(hass, hub, "error log", GATEWAY_HEALTH_INTERVAL, _health),
     )
-    return hub.gateway_polls
+    return polls
 
 
 class GatewayPollEntity[T](CoordinatorEntity[GatewayPoll[T]]):

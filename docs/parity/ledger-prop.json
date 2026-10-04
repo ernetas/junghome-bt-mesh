@@ -40,7 +40,7 @@
     "custom_components/junghome_ble/hub/link.py::LinkManager.adv_seen",
     "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/inserts.py::NodeInserts.node_model",
-    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
     "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS"
    ],
    "tests": [
@@ -1808,8 +1808,8 @@
     "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.remember_node_info",
-    "custom_components/junghome_ble/entity.py::node_registry_fields",
-    "custom_components/junghome_ble/entity.py::update_node_device"
+    "custom_components/junghome_ble/device_info.py::node_registry_fields",
+    "custom_components/junghome_ble/device_info.py::update_node_device"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_describe_status",
@@ -1830,8 +1830,8 @@
     "custom_components/junghome_ble/properties/reader.py::PropertyReader._unsupported",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.remember_node_info",
-    "custom_components/junghome_ble/entity.py::node_text",
-    "custom_components/junghome_ble/entity.py::node_registry_fields"
+    "custom_components/junghome_ble/device_info.py::node_text",
+    "custom_components/junghome_ble/device_info.py::node_registry_fields"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_describe_status",
@@ -1849,7 +1849,7 @@
     "custom_components/junghome_ble/jhmesh/properties.py::AsciiVersion",
     "custom_components/junghome_ble/properties/reader.py::PropertyReader._read_version",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/entity.py::software_version"
+    "custom_components/junghome_ble/device_info.py::software_version"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_version_codecs",

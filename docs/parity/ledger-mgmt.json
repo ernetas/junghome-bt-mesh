@@ -3367,7 +3367,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow._async_finish",
-    "custom_components/junghome_ble/entity.py::hub_device_info"
+    "custom_components/junghome_ble/device_info.py::hub_device_info"
    ],
    "tests": [
     "tests/test_init.py::test_device_registry_layout"
@@ -5257,7 +5257,7 @@
    "code": [
     "custom_components/junghome_ble/properties/targets.py::_Element.load_kind",
     "custom_components/junghome_ble/node_info.py::node_versions_store",
-    "custom_components/junghome_ble/entity.py::node_device_info"
+    "custom_components/junghome_ble/device_info.py::node_device_info"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version",

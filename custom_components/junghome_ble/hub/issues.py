@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
@@ -49,10 +49,20 @@ from custom_components.junghome_ble.jhmesh.devices import (
     PP2_PIDS,
     time_keeper_candidates,
 )
+from custom_components.junghome_ble.protocols import HubPort
 from custom_components.junghome_ble.seq_store import async_rewind_seq_floor
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.protocols import LinkView
+
+
+class IssuesHub(HubPort, Protocol):
+    """What the repair issues ask of the hub besides `HubPort`: the link, which a fix drops."""
+
+    @property
+    def link(self) -> LinkView:
+        """The proxy link (`hub.link.LinkManager`)."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +76,7 @@ SEQ_STALL_ISSUE_AFTER = 60.0
 class Issues:
     """The repair issues of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: IssuesHub) -> None:
         """Bind to `hub` (its entry, link and store); nothing raised yet."""
         self.hub = hub
         # its timers are the hub's (`JungHomeHub.lifecycle`): `seq_stall`, the look `seq_stall_started` armed, and

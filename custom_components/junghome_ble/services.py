@@ -3,7 +3,7 @@
 The services are registered once per Home Assistant run, in `async_setup` (`async_setup_services`); they stay
 registered and answer "not loaded" while no entry is loaded. A call resolves the
 Home Assistant ids it was given — device ids, entity ids, areas — to mesh elements through the registries and the
-device-identifier scheme documented in `entity.py` (`{uuid}-{location:04x}` loads, `{uuid}-{location:04x}-buttons`
+device-identifier scheme documented in `device_info.py` (`{uuid}-{location:04x}` loads, `{uuid}-{location:04x}-buttons`
 gangs of keys, `node:{uuid}` nodes), hands the operation to the hub's `MeshConfigurator`, and finally has the
 running hub take the rewritten export over in place (`model_update`, review-4 D23: no entity goes `unavailable`, the
 link stays up; adding or removing a node still reloads the entry). The schedule actions write no export: they go to
@@ -12,7 +12,7 @@ the loads' own JH Scheduler (`schedules.py`) and change no model; a socket thres
 what the nodes' Configuration Servers hold against the export and changes nothing. `locate_node` has a node advertise
 its Node Identity for a minute at most; `approve_gateway_client` lists the access requests waiting at the gateway and
 approves the one named (review-4 F4-15, F4-17). The dimming actions
-(`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`light.py`): they send one
+(`start_dim` / `stop_dim` / `step_dim`) are entity actions of the light platform (`actions/dim.py`): they send one
 command to a dimmer and write nothing. Every action but the reading ones (`USER_SERVICES`) and the dimming ones is
 for administrators only (review-4 W4-9). The rewiring actions answer what their plans applied, or with `dry_run` only
 what they would send and change (`actions.common._execute`, `MeshConfigurator.dry_run`); every call that ran a plan is
@@ -83,6 +83,15 @@ from .actions.devices import (
     _remove_device,
     _reset_pending_device,
 )
+from .actions.dim import (
+    ATTR_DIRECTION,
+    ATTR_SPEED,
+    ATTR_STEP,
+    DIM_DIRECTIONS,
+    async_start_dim,
+    async_step_dim,
+    async_stop_dim,
+)
 from .actions.keys import (
     ASSIGN_KEY_SCHEMA,
     CLEAR_KEY_SCHEMA,
@@ -142,15 +151,6 @@ from .actions.thresholds import (
     _set_threshold,
 )
 from .const import DIM_DEFAULT_SPEED, DOMAIN
-from .light import (
-    ATTR_DIRECTION,
-    ATTR_SPEED,
-    ATTR_STEP,
-    DIM_DIRECTIONS,
-    async_start_dim,
-    async_step_dim,
-    async_stop_dim,
-)
 from .thresholds import THRESHOLD_PROPERTIES
 
 # what other modules (and the tests) import from here, now defined in `actions/`
@@ -247,7 +247,7 @@ USER_SERVICES = frozenset(
     {SERVICE_GET_SCHEDULES, SERVICE_AUDIT_NETWORK, SERVICE_FIND_NEW_DEVICES}
 )
 
-# the dimming entity actions (`light.py`): a direction and a speed in % of the range per second, or a step in %
+# the dimming entity actions (`actions/dim.py`): a direction and a speed in % of the range per second, or a step in %
 START_DIM_SCHEMA: dict[str | vol.Marker, Any] = {
     vol.Required(ATTR_DIRECTION): vol.In(DIM_DIRECTIONS),
     vol.Optional(ATTR_SPEED, default=DIM_DEFAULT_SPEED): vol.All(

@@ -39,6 +39,7 @@ from homeassistant.const import (
 )
 from homeassistant.helpers import device_registry as dr
 
+from .bus_events import EVENT_TYPES
 from .config_entities import PROPERTY_KEY_MODE, cached_value
 from .const import (
     ATTR_KEY,
@@ -48,7 +49,6 @@ from .const import (
     KEY_EVENT_SIDE_UP,
 )
 from .entity import button_gang, buttons_device_id
-from .event import EVENT_TYPES
 from .jhmesh import properties as P
 from .jhmesh.devices import BUTTON_LETTERS, INPUT_NAMES
 

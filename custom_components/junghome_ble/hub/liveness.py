@@ -43,9 +43,9 @@ from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
     from custom_components.junghome_ble.jhmesh.cdb import Node
     from custom_components.junghome_ble.jhmesh.client import Heartbeat
+    from custom_components.junghome_ble.protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ _LOGGER = logging.getLogger(__name__)
 class Liveness:
     """The reachability and heartbeat state of one hub's nodes (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: HubPort) -> None:
         """Bind to `hub` (its export, link and entry); every node alive, the heartbeat option read from the entry."""
         self.hub = hub
         # Option: node heartbeats — per-node liveness (`heartbeats`, `configure_heartbeats`, `node_alive`)

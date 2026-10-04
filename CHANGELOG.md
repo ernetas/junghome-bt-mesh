@@ -51,7 +51,12 @@
   `replay` and the step builders. The export's `meta` rows the configurator edited by hand (room links, the keys'
   scene rows, the app device covering an element) are read and written through `ProjectFile` methods
   (`room_links`, `take_room_links`, `add_room_link`, `record_scene_link`, `device_entry`, …), and
-  `ProjectFile.matches_function` is public. Nothing changes in behaviour.
+  `ProjectFile.matches_function` is public. The hub's parts name the hub by a Protocol (`protocols.py`, A4-11):
+  `MeshPort`, `HubPort`, `HubView` and a few views, so the import graph has no cycle even for the type checker
+  (`tools/import_graph.py`, `tests/test_layers.py`, which also keeps every module off the platform modules and
+  `jhmesh` off the integration). New modules for what moved: `device_info.py` (the device model, from
+  `entity.py`), `element_state.py`, `bus_events.py` (from `event.py`), `actions/dim.py` (from `light.py`).
+  Nothing changes in behaviour.
 
 ### Fixed
 

@@ -141,6 +141,7 @@ if TYPE_CHECKING:
     from .jhmesh.export import ProjectFile
     from .jhmesh.onboarding import DeviceCount
     from .jhmesh.vault import Ranges
+    from .protocols import GatewayHost
 
 __all__ = [
     "APPLIED_KEY_WIRED",
@@ -336,7 +337,7 @@ class MeshConfigurator:
         """Drop the entry's pending retry of a failed upload: a newer upload supersedes it."""
         self.store.cancel_upload_retry()
 
-    def report_token_rejected(self, api: JungHomeGatewayApi) -> None:
+    def report_token_rejected(self, api: GatewayHost) -> None:
         """Raise the repair for a token the gateway rejects (`ExportStore.report_token_rejected`)."""
         self.store.report_token_rejected(api)
 

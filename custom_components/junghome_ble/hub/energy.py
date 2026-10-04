@@ -32,9 +32,9 @@ from custom_components.junghome_ble.jhmesh.devices import MeteredLoad, Socket
 from custom_components.junghome_ble.jhmesh.properties import SIG_PROPERTIES
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
     from custom_components.junghome_ble.jhmesh.cdb import CDB
     from custom_components.junghome_ble.jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ SIG_PROPERTY_STATUS_BY_SERVER = {
 class Energy:
     """The metered loads' polls and reads of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: HubPort) -> None:
         """Bind to `hub` (its devices, link and entry); no poll armed yet, nothing read."""
         self.hub = hub
         # its timer and task are the hub's (`JungHomeHub.lifecycle`): `energy`, the poll timer (`arm_poll`), and

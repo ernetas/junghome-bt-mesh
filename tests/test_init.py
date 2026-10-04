@@ -53,7 +53,8 @@ from custom_components.junghome_ble.const import (
     STORAGE_DIR,
 )
 from custom_components.junghome_ble.coordinator import KNOWN_MESHES
-from custom_components.junghome_ble.entity import mac_from_uuid, product_name
+from custom_components.junghome_ble.entity import product_name
+from custom_components.junghome_ble.jhmesh.advert import mac_from_uuid
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 
 from .conftest import (

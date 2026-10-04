@@ -67,6 +67,7 @@ from .coordinator import (
     load_network,
     remember_known_mesh,
 )
+from .coordinator import JungHomeConfigEntry as JungHomeConfigEntry
 from .device_names import async_track_device_names
 from .entity import current_device_identifiers, register_parent_devices
 from .identity import async_vault_keeper
@@ -106,7 +107,6 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-type JungHomeConfigEntry = ConfigEntry[JungHomeHub]
 
 INCOMING_MAX_AGE: Final = (
     3600.0  # seconds; an `.incoming-*` file older than this belongs to no flow any more
@@ -262,9 +262,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     if await hub.configurator.async_replay_journal():
         _reload_once_loaded(hass, entry)
     # changes made in the JUNG HOME app: the phone heard on the mesh, the periodic check (`app_follow.py`, U4-6)
-    hub.app_follow = AppFollower(hub)
-    hub.app_follow.start()
-    entry.async_on_unload(hub.app_follow.stop)
+    follower = hub.app_follow = AppFollower(hub)
+    follower.start()
+    entry.async_on_unload(follower.stop)
     await hub.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # every device registered: those whose room an export change moved follow it (`OPTION_SYNC_AREAS`)

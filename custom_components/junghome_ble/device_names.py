@@ -36,8 +36,7 @@ from .entity import button_gang, buttons_device_id, node_identifier
 from .services import async_configure
 
 if TYPE_CHECKING:
-    from . import JungHomeConfigEntry
-    from .coordinator import JungHomeHub
+    from .coordinator import JungHomeConfigEntry, JungHomeHub
     from .jhmesh.devices import Device
     from .mesh_config import MeshConfigurator
 

@@ -17,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_call_later
@@ -41,12 +41,22 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import Button
+from custom_components.junghome_ble.protocols import HubPort
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from homeassistant.core import CALLBACK_TYPE
+
     from custom_components.junghome_ble.jhmesh.client import AccessMessage
 
     from .link import LinkEnd
+
+
+class GesturesHub(HubPort, Protocol):
+    """What the gestures ask of the hub besides `HubPort`: the end of every link, to end the holds."""
+
+    def async_on_link_loss(self, listener: Callable[[LinkEnd], None]) -> CALLBACK_TYPE:
+        """Call `listener` with every link's end; returns the unsubscribe."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -119,7 +129,7 @@ class KeyHold:
 class ButtonGestures:
     """The button gestures of one hub (module docstring): their state, timers and listeners."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: GesturesHub) -> None:
         """Bind to `hub` (its `hass`, devices and link-loss listeners); nothing pending, the option read from its entry."""
         self.hub = hub
         # Option: report a `click` only once a second click can no longer turn it into a double click.

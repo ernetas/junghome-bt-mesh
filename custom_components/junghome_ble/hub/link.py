@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
@@ -54,11 +54,58 @@ from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.advert import parse_manufacturer_data
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
+from custom_components.junghome_ble.protocols import HubPort
 
 from .lifecycle import Backoff
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from collections import deque
+
+    from custom_components.junghome_ble.inserts import NodeInserts
+    from custom_components.junghome_ble.vault_refresh import VaultKeyRefresh
+
+    from .energy import Energy
+    from .export_watch import ExportWatch
+    from .issues import Issues
+    from .liveness import Liveness
+    from .refresh import Refresh
+
+
+class LinkHub(HubPort, Protocol):
+    """What the link asks of the hub besides `HubPort`: the parts it hands each link to, and the link's record."""
+
+    link_count: int
+    link_state: str
+    link_history: deque[LinkRecord]
+
+    @property
+    def energy(self) -> Energy:
+        """The metered loads' readings and polls."""
+
+    @property
+    def export_watch(self) -> ExportWatch:
+        """The unknown nodes, the export refresh and the gateway's trust."""
+
+    @property
+    def inserts(self) -> NodeInserts:
+        """Each node's insert and key layout."""
+
+    @property
+    def issues(self) -> Issues:
+        """The repair issues."""
+
+    @property
+    def liveness(self) -> Liveness:
+        """The nodes' reachability and heartbeats."""
+
+    @property
+    def refresh(self) -> Refresh:
+        """The connect-time reads of every link."""
+
+    @property
+    def vault_refresh(self) -> VaultKeyRefresh:
+        """The vault's devices taken through the app's key refresh."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -108,7 +155,7 @@ class LinkRecord:
 class LinkManager:
     """The proxy link of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: LinkHub) -> None:
         """Bind to `hub` (its proxy client, entry and components); no link yet."""
         self.hub = hub
         # its timers and the connection loop's task are the hub's (`JungHomeHub.lifecycle`): `grace`,

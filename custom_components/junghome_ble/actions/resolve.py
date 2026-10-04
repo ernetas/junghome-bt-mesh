@@ -1,6 +1,6 @@
 """Resolving the Home Assistant ids a call names — devices, entities, areas, scene entities — to mesh elements.
 
-Through the registries and the device-identifier scheme documented in `entity.py` (`{uuid}-{location:04x}` loads,
+Through the registries and the device-identifier scheme documented in `device_info.py` (`{uuid}-{location:04x}` loads,
 `{uuid}-{location:04x}-buttons` gangs of keys, `node:{uuid}` nodes).
 """
 

@@ -517,7 +517,7 @@ def _heartbeats(hub: JungHomeHub) -> dict[str, Any]:
 
 
 def _node_of(hub: JungHomeHub, identifiers: set[str]) -> Node | None:
-    """Return the node behind one of our device identifiers (see entity.py).
+    """Return the node behind one of our device identifiers (see device_info.py).
 
     `node:{uuid}` is the node device itself (thermostats, detectors and the parameter entities of a node live
     there); `{uuid}-{location}` a light, socket or blind device; `{uuid}-{location}-buttons` a gang of keys.

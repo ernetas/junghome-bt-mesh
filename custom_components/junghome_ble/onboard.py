@@ -51,7 +51,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
@@ -120,8 +120,35 @@ if TYPE_CHECKING:
     from .jhmesh.cdb import CDB, Node
     from .jhmesh.commission import Plan
     from .jhmesh.export import ProjectFile
-    from .jhmesh.vault import Vault, VaultNode
-    from .mesh_config import MeshConfigurator
+    from .jhmesh.onboarding import DeviceCount
+    from .jhmesh.vault import Ranges, Vault, VaultNode
+
+
+class NodeRecorder(Protocol):
+    """What adding a node asks of the entry's configurator (`mesh_config.MeshConfigurator`)."""
+
+    @property
+    def identity_enabled(self) -> bool:
+        """Whether the entry's *provisioner identity* option is on."""
+
+    async def async_identity_ranges(self) -> Ranges:
+        """Return the address ranges of the provisioner identity."""
+
+    async def async_current_export(self) -> ProjectFile:
+        """Return the export as a change would plan on it now."""
+
+    async def record_node(
+        self,
+        template: Node,
+        entry_for: Callable[[dict[str, Any]], dict[str, Any]],
+        audit: NodeAudit,
+        plan: Plan,
+        name: str,
+        function: int | None = None,
+        layout: int | None = None,
+    ) -> DeviceCount | None:
+        """Record a node Home Assistant just provisioned and commissioned."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -271,7 +298,7 @@ def _template(cdb: CDB, advert: JungAdvertisement) -> Node:
 
 
 async def _place(
-    hub: JungHomeHub, configurator: MeshConfigurator, cdb: CDB, count: int
+    hub: JungHomeHub, configurator: NodeRecorder, cdb: CDB, count: int
 ) -> tuple[int, tuple[int, int] | None]:
     """Return where a node of `count` elements goes in `cdb` and the group range for its element groups (None: the app's).
 
@@ -581,7 +608,7 @@ async def _commission(
 async def async_add_device(
     hass: HomeAssistant,
     hub: JungHomeHub,
-    configurator: MeshConfigurator,
+    configurator: NodeRecorder,
     address: str,
     name: str,
     static_oob: bytes | None = None,

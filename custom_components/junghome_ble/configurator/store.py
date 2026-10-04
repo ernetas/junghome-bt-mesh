@@ -20,7 +20,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, Protocol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
@@ -89,7 +89,7 @@ from .wiring import (
 if TYPE_CHECKING:
     from custom_components.junghome_ble.coordinator import JungHomeHub
     from custom_components.junghome_ble.jhmesh.plan import ConfigStep
-    from custom_components.junghome_ble.mesh_config import MeshConfigurator
+    from custom_components.junghome_ble.protocols import GatewayHost
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -912,7 +912,7 @@ class ExportStore:
         if raise_on_failure:
             raise _failure(key, **placeholders)
 
-    def report_token_rejected(self, api: JungHomeGatewayApi) -> None:
+    def report_token_rejected(self, api: GatewayHost) -> None:
         """Raise the repair for a token the gateway rejects, and start Home Assistant's reauthentication.
 
         Logged, and the reauth flow started, once per outage — while the repair is open: a change's check,
@@ -1421,6 +1421,18 @@ UPLOAD_RETRIES: HassKey[dict[str, asyncio.Task[None]]] = HassKey(
 RELOAD_POLL = 1.0  # seconds between looks at an entry a retry found mid-reload
 
 
+class _Retrying(Protocol):
+    """What a retry uses of the entry's configurator of the moment (`mesh_config.MeshConfigurator`)."""
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        """The configurator's lock: one operation at a time."""
+
+    @property
+    def store(self) -> ExportStore:
+        """The configurator's export."""
+
+
 async def _retry_upload(hass: HomeAssistant, entry_id: str, left: int) -> None:
     """Upload the entry's export again every `GATEWAY_UPLOAD_RETRY_DELAY` seconds, `left` times at most.
 
@@ -1442,7 +1454,7 @@ async def _retry_upload(hass: HomeAssistant, entry_id: str, left: int) -> None:
                     "Not handing the mesh export to the gateway again: the entry is not loaded"
                 )
                 break
-            configurator: MeshConfigurator = entry.runtime_data.configurator
+            configurator: _Retrying = entry.runtime_data.configurator
             async with configurator.lock:
                 _LOGGER.info(
                     "Handing the mesh export to the gateway again (retry %d of %d)",

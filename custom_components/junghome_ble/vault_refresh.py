@@ -27,7 +27,7 @@ from .const import DOMAIN, ISSUE_VAULT_KEY_REFRESH, learn_more_url
 from .jhmesh.vaultrefresh import carry, target_of, wanted
 
 if TYPE_CHECKING:
-    from .coordinator import JungHomeHub
+    from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ REQUEST_TIMEOUT = 3.0
 class VaultKeyRefresh:
     """Takes the vault's devices as far through the followed key refresh as it is proven (see the module docstring)."""
 
-    def __init__(self, hub: JungHomeHub, issue: str) -> None:
+    def __init__(self, hub: HubPort, issue: str) -> None:
         """Work for `hub`; `issue` is the id of its `vault_key_refresh_lagging` repair issue."""
         self._hub = hub
         self._issue = issue

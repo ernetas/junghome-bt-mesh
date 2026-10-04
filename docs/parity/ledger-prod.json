@@ -1490,8 +1490,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::Device",
-    "custom_components/junghome_ble/entity.py::node_device_info",
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/properties/reader.py::PropertyReader.schedule_version",
     "custom_components/junghome_ble/jhmesh/properties.py::_VENDOR_SPECS",
     "custom_components/junghome_ble/jhmesh/properties.py::VersionLE",
@@ -1852,8 +1852,8 @@
    "id": "prod:class:unknown-device",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
-    "custom_components/junghome_ble/entity.py::node_device_info",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::node_device_info",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices"
    ],
    "tests": [
@@ -3179,7 +3179,7 @@
    "id": "prod:pid:0x0001",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::PUSH_BUTTON_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::_PALETTE_ROCKER_1G",
     "custom_components/junghome_ble/properties/targets.py::_node_page"
@@ -3197,7 +3197,7 @@
    "id": "prod:pid:0x0002",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::PUSH_BUTTON_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::_PALETTE_ROCKER_2G",
     "custom_components/junghome_ble/properties/targets.py::_node_page"
@@ -3215,7 +3215,7 @@
    "id": "prod:pid:0x0003",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::SOCKET_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::meter_element",
     "custom_components/junghome_ble/thresholds.py::threshold_targets",
@@ -3232,7 +3232,7 @@
    "id": "prod:pid:0x0004",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::MINI_SWITCH"
    ],
@@ -3247,7 +3247,7 @@
    "id": "prod:pid:0x0005",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::BATTERY_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::_PALETTE_WT_1G",
     "custom_components/junghome_ble/keep_awake.py::sleepy_node"
@@ -3262,7 +3262,7 @@
    "id": "prod:pid:0x0006",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::BATTERY_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::_PALETTE_WT_2G",
     "custom_components/junghome_ble/keep_awake.py::sleepy_node"
@@ -3277,7 +3277,7 @@
    "id": "prod:pid:0x0007",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::DETECTOR_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_detector"
    ],
@@ -3293,7 +3293,7 @@
    "id": "prod:pid:0x0008",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::DETECTOR_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_detector"
    ],
@@ -3308,7 +3308,7 @@
    "id": "prod:pid:0x0009",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::PRESENCE_DETECTOR_PID",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_detector"
    ],
@@ -3324,7 +3324,7 @@
    "id": "prod:pid:0x000a",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::THERMOSTAT_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::_build_thermostat"
    ],
@@ -3338,7 +3338,7 @@
    "id": "prod:pid:0x000b",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::GATEWAY_PID",
     "custom_components/junghome_ble/properties/targets.py::gateway_status_targets"
    ],
@@ -3352,7 +3352,7 @@
    "id": "prod:pid:0x000c",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::SOCKET_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::_PALETTE_SOCKET"
    ],
@@ -3365,7 +3365,7 @@
    "id": "prod:pid:0x000d",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::BLIND_ONLY_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS"
    ],
@@ -3381,7 +3381,7 @@
    "id": "prod:pid:0x0010",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::meter_element",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS"
    ],
@@ -3397,7 +3397,7 @@
    "id": "prod:pid:0x0011",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::MINI_SWITCH"
    ],
@@ -3410,7 +3410,7 @@
    "id": "prod:pid:0x0012",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::MINI_SWITCH"
    ],
@@ -3423,7 +3423,7 @@
    "id": "prod:pid:0x0013",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::BLIND_ONLY_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS"
    ],
@@ -3439,7 +3439,7 @@
    "id": "prod:pid:0x0014",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::MINI_SWITCH"
    ],
@@ -3452,7 +3452,7 @@
    "id": "prod:pid:0x0015",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/properties.py::MINI_INPUT",
     "custom_components/junghome_ble/properties/targets.py::_node_page"
@@ -3466,7 +3466,7 @@
    "id": "prod:pid:0x0016",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::MINI_ACTUATOR_PIDS",
     "custom_components/junghome_ble/jhmesh/devices.py::BATTERY_PIDS",
     "custom_components/junghome_ble/sensor.py::JungHomeBatterySensor"
@@ -3480,7 +3480,7 @@
    "id": "prod:pid:other",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::PRODUCT_NAMES",
+    "custom_components/junghome_ble/device_info.py::PRODUCT_NAMES",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices"
    ],
    "tests": [
@@ -4002,7 +4002,7 @@
    "id": "prod:ui:device_info_insert_info_dialog_title",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::node_device_info"
+    "custom_components/junghome_ble/device_info.py::node_device_info"
    ],
    "tests": [
     "tests/test_init.py::test_device_registry_layout"
@@ -4036,7 +4036,7 @@
    "id": "prod:ui:device_info_software_version",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/properties/reader.py::PropertyReader.schedule_version",
     "custom_components/junghome_ble/jhmesh/properties.py::AsciiVersion"
    ],
@@ -4486,7 +4486,7 @@
    "id": "prod:ui:update_available_link",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version"
+    "custom_components/junghome_ble/device_info.py::software_version"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version"
@@ -4546,7 +4546,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/devices.py::Metadata",
-    "custom_components/junghome_ble/entity.py::node_device_info"
+    "custom_components/junghome_ble/device_info.py::node_device_info"
    ],
    "tests": [
     "tests/test_init.py::test_device_registry_layout"

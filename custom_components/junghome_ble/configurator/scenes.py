@@ -17,13 +17,13 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
-from custom_components.junghome_ble.climate import level_to_temperature
 from custom_components.junghome_ble.const import (
     DEFAULT_UNUSED_SCENES_DRY_RUN,
     DOMAIN,
     ISSUE_SCENE_HELD,
     learn_more_url,
 )
+from custom_components.junghome_ble.conversions import level_to_temperature
 from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V

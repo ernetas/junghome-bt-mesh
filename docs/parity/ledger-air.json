@@ -1480,7 +1480,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_scene_status",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_current_scene",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.note_scene_recall",
-    "custom_components/junghome_ble/event.py::fire_scene_recalled",
+    "custom_components/junghome_ble/bus_events.py::fire_scene_recalled",
     "custom_components/junghome_ble/scene.py::JungHomeScene._on_recalled",
     "custom_components/junghome_ble/scene.py::JungHomeScene.extra_state_attributes",
     "custom_components/junghome_ble/jhmesh/messages.py::decode_scene_status"

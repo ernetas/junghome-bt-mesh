@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_point_in_utc_time
@@ -23,9 +23,19 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES
+from custom_components.junghome_ble.protocols import HubPort
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.node_clocks import NodeClocks
+
+
+class ClockHub(HubPort, Protocol):
+    """What the broadcasts ask of the hub besides `HubPort`: the nodes' clocks, read after the daily Time Set."""
+
+    @property
+    def clocks(self) -> NodeClocks:
+        """Each node's clock offset, zone offset and stored location (`node_clocks.NodeClocks`)."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +69,7 @@ def next_utc_offset_change(now: datetime) -> datetime | None:
 class Clock:
     """The time and location broadcasts of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: ClockHub) -> None:
         """Bind to `hub` (its link, entry and node clocks); no timer armed yet."""
         self.hub = hub
         # its timers are the hub's (`JungHomeHub.lifecycle`): `time`, the daily Time Set (`send_time_daily`, armed

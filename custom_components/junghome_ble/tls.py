@@ -38,7 +38,7 @@ from .jhmesh import messages as M
 from .jhmesh.devices import GATEWAY_PID
 
 if TYPE_CHECKING:
-    from .coordinator import JungHomeHub
+    from .protocols import MeshPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ async def async_learn_fingerprint(session: aiohttp.ClientSession, host: str) -> 
     )
 
 
-async def async_read_mesh_fingerprint(hub: JungHomeHub) -> str | None:
+async def async_read_mesh_fingerprint(hub: MeshPort) -> str | None:
     """Ask the gateway node over the mesh for its certificate fingerprint (property 0xC003); None when it cannot.
 
     The gateway node is the one with product id `GATEWAY_PID` in the export; a mesh without one, no link, a

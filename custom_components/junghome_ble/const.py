@@ -6,12 +6,8 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from homeassistant.util.hass_dict import HassKey
-
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
-
-    from .schedules import Scheduler
 
 DOMAIN: Final = "junghome_ble"
 
@@ -385,9 +381,8 @@ OFFSET_SEARCH_DAYS: Final = 400
 CLOCK_OFFSET_MAX: Final = 60.0
 CLOCK_READ_PAUSE: Final = 0.5
 LOCATION_TOLERANCE: Final = 0.01
-# the JH Scheduler model (`schedules.py`) and the entry's schedulers, here so the clocks can see what they cached
+# the JH Scheduler model (`schedules.py`); the entry's schedulers are `node_clocks.SCHEDULERS`
 SCHEDULER_MODEL: Final = "05271016"
-SCHEDULERS: HassKey[dict[str, Scheduler]] = HassKey(f"{DOMAIN}_schedulers")
 # The connection loop's pause after a failed connection doubles from CONNECT_BACKOFF_MIN up to CONNECT_BACKOFF_MAX; a
 # link that lasted SHORT_LINK counts as a working one and starts it over.
 CONNECT_BACKOFF_MIN: Final = 2.0

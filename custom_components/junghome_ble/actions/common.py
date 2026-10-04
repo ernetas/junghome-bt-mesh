@@ -42,8 +42,10 @@ from custom_components.junghome_ble.mesh_config import (
 from custom_components.junghome_ble.model_update import async_follow_export
 
 if TYPE_CHECKING:
-    from custom_components.junghome_ble import JungHomeConfigEntry
-    from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.coordinator import (
+        JungHomeConfigEntry,
+        JungHomeHub,
+    )
 
 
 ATTR_ROOM = "room"

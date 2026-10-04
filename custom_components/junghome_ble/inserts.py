@@ -40,7 +40,7 @@ from .const import (
     SIGNAL_UPDATE,
     learn_more_url,
 )
-from .entity import (
+from .device_info import (
     model_name,
     product_name,
     update_buttons_devices,
@@ -65,10 +65,10 @@ if TYPE_CHECKING:
 
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import JungHomeHub
     from .jhmesh.advert import JungAdvertisement
     from .jhmesh.cdb import CDB, Node
     from .jhmesh.devices import Button, Devices
+    from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ async def async_load_labels(hass: HomeAssistant) -> dict[str, str]:
 class NodeInserts:
     """What the hub knows of each node's insert and key layout (module docstring), and what it shows of them."""
 
-    def __init__(self, hub: JungHomeHub, issue: str) -> None:
+    def __init__(self, hub: HubPort, issue: str) -> None:
         """Bind to `hub`; `issue` is the entry's `insert_mismatch` repair id."""
         self.hub = hub
         self.issue = issue

@@ -46,9 +46,9 @@ from .const import (
     ISSUE_APP_CHANGED,
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
+    issue_id,
     learn_more_url,
 )
-from .coordinator import issue_id
 from .jhmesh import config_messages as C
 from .jhmesh import messages as M
 from .mesh_config import token_rejected_open

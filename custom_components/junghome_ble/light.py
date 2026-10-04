@@ -30,8 +30,8 @@ from homeassistant.components.light import (
     LightEntity,
 )
 from homeassistant.components.light.const import ColorMode, LightEntityFeature
-from homeassistant.exceptions import ServiceValidationError
 
+from .actions.dim import DIM_DIRECTIONS
 from .config_entities import LoadLock
 from .const import (
     DIM_MOVE_TRANSITION,
@@ -49,18 +49,18 @@ from .entity import (
 from .jhmesh.devices import ALL_LIGHTS, Light
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant, ServiceCall
-    from homeassistant.helpers.entity import Entity
+    from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import JungHomeConfigEntry
     from .coordinator import JungHomeHub
     from .jhmesh.devices import Device
 
+# re-exported: the dimming actions' schema lived here before `actions/dim.py`
+__all__ = ["DIM_DIRECTIONS"]
+
 PARALLEL_UPDATES = 0  # push-based; commands are serialised by the mesh client itself
 
-ATTR_DIRECTION, ATTR_SPEED, ATTR_STEP = "direction", "speed", "step"
-DIM_DIRECTIONS = ("up", "down")
 LEVEL_SERVER = "1002"  # Generic Level server: what the dimming messages go to
 LIGHTNESS_RANGE = 65535  # the full Generic Level range, bottom to top
 # The light kinds (`Light.kind`) whose firmware fades a Set with a transition time, from the probe of
@@ -261,34 +261,6 @@ class JungHomeLight(LoadLock, LightEntity):
             self.hub.async_refresh_element(self.address, self.light.kind),
             f"{DOMAIN} light refresh",
         )
-
-
-def _dimmable(entity: Entity) -> JungHomeLight:
-    """Return the light a dimming action targets; *All lights* and a switched light cannot be dimmed this way."""
-    if isinstance(entity, JungHomeLight) and entity.dimmable:
-        return entity
-    raise ServiceValidationError(
-        translation_domain=DOMAIN,
-        translation_key="dim_not_dimmable",
-        translation_placeholders={"entity": entity.entity_id},
-    )
-
-
-async def async_start_dim(entity: Entity, call: ServiceCall) -> None:
-    """`junghome_ble.start_dim` on one light entity."""
-    await _dimmable(entity).async_start_dim(
-        call.data[ATTR_DIRECTION], call.data[ATTR_SPEED]
-    )
-
-
-async def async_stop_dim(entity: Entity, call: ServiceCall) -> None:
-    """`junghome_ble.stop_dim` on one light entity."""
-    await _dimmable(entity).async_stop_dim()
-
-
-async def async_step_dim(entity: Entity, call: ServiceCall) -> None:
-    """`junghome_ble.step_dim` on one light entity."""
-    await _dimmable(entity).async_step_dim(call.data[ATTR_STEP])
 
 
 class JungHomeAllLights(JungHomeCentralEntity, LightEntity):

@@ -15,7 +15,7 @@ import ipaddress
 import logging
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
@@ -36,7 +36,7 @@ from custom_components.junghome_ble.const import (
     issue_id,
     learn_more_url,
 )
-from custom_components.junghome_ble.entity import PRODUCT_NAMES
+from custom_components.junghome_ble.device_info import PRODUCT_NAMES
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi, api_for_entry
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.advert import (
@@ -45,15 +45,37 @@ from custom_components.junghome_ble.jhmesh.advert import (
 )
 from custom_components.junghome_ble.jhmesh.devices import GATEWAY_PID
 from custom_components.junghome_ble.jhmesh.properties import PROPERTIES
+from custom_components.junghome_ble.protocols import HubPort
 from custom_components.junghome_ble.tls import normalize_fingerprint
 
 from .lifecycle import Backoff
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from homeassistant.components import bluetooth
 
-    from custom_components.junghome_ble.coordinator import JungHomeHub
     from custom_components.junghome_ble.jhmesh.cdb import Node
+    from custom_components.junghome_ble.protocols import ConfiguratorView, LinkView
+
+
+class ExportWatchHub(HubPort, Protocol):
+    """What the export watch asks of the hub besides `HubPort`: the link, the configurator, the nodes by MAC."""
+
+    node_by_mac: dict[str, Node]
+
+    @property
+    def link(self) -> LinkView:
+        """The proxy link (`hub.link.LinkManager`)."""
+
+    @property
+    def configurator(self) -> ConfiguratorView | None:
+        """The entry's configurator, once registered (`mesh_config.MeshConfigurator`)."""
+
+    @property
+    def follow_export(self) -> Callable[[], Awaitable[None]] | None:
+        """What makes the hub follow the export after a change, set by the setup."""
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +110,7 @@ def is_gateway_host(text: str) -> bool:
 class ExportWatch:
     """The unknown nodes, the export refresh and the gateway's trust of one hub (module docstring)."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: ExportWatchHub) -> None:
         """Bind to `hub` (its entry, link and configurator); no unknown node, nothing fetched, nothing distrusted."""
         self.hub = hub
         self.unknown_nodes: dict[

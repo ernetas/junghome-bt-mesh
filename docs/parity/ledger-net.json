@@ -1563,7 +1563,7 @@
    "id": "net:debug:nodedetailsviewmodel.getsoftwareversion",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/entity.py::software_version",
+    "custom_components/junghome_ble/device_info.py::software_version",
     "custom_components/junghome_ble/node_info.py::NODE_VERSIONS"
    ],
    "tests": [
@@ -4523,7 +4523,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/node_info.py::NODE_VERSIONS",
-    "custom_components/junghome_ble/entity.py::software_version"
+    "custom_components/junghome_ble/device_info.py::software_version"
    ],
    "tests": [
     "tests/test_sensor.py::test_node_device_shows_the_software_version"
@@ -4826,7 +4826,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.room_level",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_stop",
     "custom_components/junghome_ble/entity.py::JungHomeCentralEntity",
-    "custom_components/junghome_ble/entity.py::room_loads",
+    "custom_components/junghome_ble/device_info.py::room_loads",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_command",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_level"
@@ -4961,9 +4961,9 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.room_level",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.central_stop",
     "custom_components/junghome_ble/entity.py::JungHomeCentralEntity",
-    "custom_components/junghome_ble/entity.py::room_loads",
+    "custom_components/junghome_ble/device_info.py::room_loads",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices",
-    "custom_components/junghome_ble/entity.py::current_room_central_ids",
+    "custom_components/junghome_ble/device_info.py::current_room_central_ids",
     "custom_components/junghome_ble/model_update.py::remove_stale_devices"
    ],
    "tests": [

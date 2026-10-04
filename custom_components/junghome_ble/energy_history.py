@@ -65,8 +65,8 @@ from .jhmesh import properties as P
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import JungHomeHub
     from .jhmesh.devices import MeteredLoad
+    from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -176,9 +176,7 @@ def backfill_rows(
     return rows
 
 
-async def read_chart(
-    hub: JungHomeHub, addr: int, pid: int
-) -> list[float | None] | None:
+async def read_chart(hub: HubPort, addr: int, pid: int) -> list[float | None] | None:
     """Read one chart from the load's meter element (LBC User Property Get); None when it did not answer."""
     key = pid.to_bytes(2, "little")
     try:
@@ -236,7 +234,7 @@ async def last_recorded(hass: HomeAssistant, entity_id: str) -> LastHour | None:
 
 
 async def read_charts(
-    hub: JungHomeHub, addr: int, last_start: datetime
+    hub: HubPort, addr: int, last_start: datetime
 ) -> list[Span] | None:
     """Read the hourly chart, and the daily one when the hours do not reach back to `last_start`, into spans.
 
@@ -254,7 +252,7 @@ async def read_charts(
     return chart_spans(now, hourly, daily)
 
 
-async def async_backfill(hub: JungHomeHub, load: MeteredLoad, before: datetime) -> None:
+async def async_backfill(hub: HubPort, load: MeteredLoad, before: datetime) -> None:
     """Import the hours the load's Energy statistics lack from its charts, when there are any and the charts fit.
 
     `before` is the hour the link came up in (`backfill_rows`). Needs the recorder loaded; the statistics are the

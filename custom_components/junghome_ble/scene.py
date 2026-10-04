@@ -23,6 +23,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
+from .bus_events import scene_unique_id
 from .const import DOMAIN, SIGNAL_SCENE_RECALLED, SIGNAL_SCENES
 from .entity import JungHomeEntity, async_setup_platform
 from .errors import mesh_errors
@@ -69,11 +70,6 @@ def build_entities(hub: JungHomeHub) -> list[JungHomeScene]:
     return [
         JungHomeScene(hub, scene) for scene in hub.devices.scenes if not scene.timer
     ]
-
-
-def scene_unique_id(hub: JungHomeHub, number: int) -> str:
-    """Return the unique id of scene `number`'s entity (the scene event links the entity by it, `event.py`)."""
-    return f"{hub.cdb.mesh_uuid.lower()}-scene-{number}"
 
 
 class JungHomeScene(JungHomeEntity, Scene):

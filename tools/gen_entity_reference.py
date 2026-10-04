@@ -9,7 +9,7 @@ Nothing here is written by hand, so the page cannot drift from the code. The nam
 of `strings.json`; everything else comes from the registry snapshot (`tests/snapshots/test_snapshots.ambr`,
 `test_registry_identity`), the reviewed record of what every synthetic fixture network registers — per entity its
 platform, translation key, category, `disabled_by`, whether it starts hidden and the device it sits on — and from the
-fixture exports themselves, which say which JUNG product each device belongs to (`PRODUCT_NAMES` of `entity.py`,
+fixture exports themselves, which say which JUNG product each device belongs to (`PRODUCT_NAMES` of `device_info.py`,
 read without importing Home Assistant). A translation key with a `_key` twin (`input_state` / `input_state_key`: one key of a
 device with several gets its letter in the name) is one row. A key that no fixture network registers is still
 listed, marked so (`tests/test_docs_reference.py` fails on one).
@@ -37,7 +37,8 @@ from jhmesh.devices import BATTERY_PIDS, GATEWAY_PID
 ROOT = Path(__file__).resolve().parent.parent
 INTEGRATION = Path("custom_components/junghome_ble")
 STRINGS = INTEGRATION / "strings.json"
-ENTITY_PY = INTEGRATION / "entity.py"
+# the device model (it was `entity.py`, which re-exports it)
+ENTITY_PY = INTEGRATION / "device_info.py"
 SNAPSHOT = Path("tests/snapshots/test_snapshots.ambr")
 FIXTURES = Path("tests/fixtures")
 OUT = Path("docs/user/entities.md")

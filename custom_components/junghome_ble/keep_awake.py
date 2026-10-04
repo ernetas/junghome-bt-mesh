@@ -41,9 +41,9 @@ from .jhmesh import messages as M
 from .jhmesh.devices import BATTERY_PIDS
 
 if TYPE_CHECKING:
-    from .coordinator import JungHomeHub
     from .jhmesh.cdb import CDB
     from .jhmesh.client import AccessMessage
+    from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def _is_layout(message: AccessMessage) -> bool:
 class KeepAwake:
     """The keep-alive tasks of one hub: one per battery node that an operation holds, reference-counted."""
 
-    def __init__(self, hub: JungHomeHub) -> None:
+    def __init__(self, hub: HubPort) -> None:
         """Bind to `hub` (its CDB, proxy, `last_heard` and entry); no task until a battery node is held."""
         self.hub = hub
         self._holders: Counter[int] = Counter()

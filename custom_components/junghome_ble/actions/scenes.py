@@ -9,8 +9,8 @@ import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from custom_components.junghome_ble.climate import temperature_to_level
 from custom_components.junghome_ble.const import DEFAULT_UNUSED_SCENES_DRY_RUN, DOMAIN
+from custom_components.junghome_ble.conversions import temperature_to_level
 from custom_components.junghome_ble.entity import load_entity_id
 from custom_components.junghome_ble.errors import mesh_errors
 from custom_components.junghome_ble.jhmesh import vendor_models as V
