@@ -4,7 +4,7 @@ The metering socket's counters live on two elements (`docs/hidden-features.md` �
 element, the energy counters on the meter element — `0x0072` the lifetime total nothing resets (the *Energy* sensor,
 `total_increasing`, what the Energy dashboard wants), `0x006A` the total the app shows and its "reset consumption"
 zeroes, `0x000D` the energy since the socket was last switched on (both diagnostic, off by default). The coordinator
-polls all of them every five minutes (`coordinator.COUNTER_READS`). The meter element also keeps the moment the
+polls all of them every five minutes (`hub.energy.COUNTER_READS`). The meter element also keeps the moment the
 socket was commissioned (JUNG firmware property `0x5014`, `docs/hidden-features.md` §10) — the *Installed*
 timestamp, read once per link through the config entities' property reader and never polled. Any other load whose
 node has a meter (`jhmesh.devices.meter_element`: the energy puck 0x0010's output, a light) gets the same meter

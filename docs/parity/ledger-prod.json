@@ -1540,7 +1540,7 @@
     "tests/test_config_entities.py::test_gateway_status_and_address",
     "tests/test_config_entities.py::test_gateway_status_targets",
     "tests/test_tls.py::test_mesh_provided_fingerprint_wins_over_the_stored_one",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ]
   },
   {
@@ -1560,7 +1560,7 @@
     "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind",
     "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set",
     "tests/test_switch.py::test_lock_locks_the_current_state_and_unlocks_like_the_app",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected",
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected",
     "tests/test_config_entities.py::test_mapping_table"
    ]
   },
@@ -1571,7 +1571,7 @@
     "custom_components/junghome_ble/jhmesh/devices.py::meter_element",
     "custom_components/junghome_ble/jhmesh/devices.py::Light",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/energy_history.py::HOURLY_CHART",
     "custom_components/junghome_ble/switch.py::sensor_publication_nodes"
    ],
@@ -1617,7 +1617,7 @@
     "custom_components/junghome_ble/jhmesh/devices.py::meter_element",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/energy_history.py::HOURLY_CHART",
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton"
    ],
@@ -1640,7 +1640,7 @@
    "tests": [
     "tests/jhmesh/test_devices.py::test_mini_actuator_inputs_are_named_e1_e2_as_in_the_app",
     "tests/jhmesh/test_devices.py::test_blinds_detectors_and_thermostats_of_the_other_fixture_networks",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ]
   },
   {
@@ -1685,7 +1685,7 @@
     "tests/test_init.py::test_device_registry_layout",
     "tests/test_event.py::test_entities",
     "tests/jhmesh/test_properties.py::test_led_palettes_and_ids",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
@@ -1745,7 +1745,7 @@
     "tests/test_setup_states.py::test_power_on_behaviour_is_read_and_set",
     "tests/test_switch.py::test_lock_locks_the_current_state_and_unlocks_like_the_app",
     "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
@@ -1786,7 +1786,7 @@
    ],
    "tests": [
     "tests/test_sensor.py::test_power_sensor",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_button.py::test_reset_consumption_zeroes_both_counters_like_the_app",
     "tests/test_thresholds.py::test_set_threshold_wires_and_writes",
     "tests/test_thresholds.py::test_threshold_sensors",
@@ -1842,7 +1842,7 @@
     "tests/test_event.py::test_entities",
     "tests/test_select.py::test_second_led_of_a_two_gang",
     "tests/jhmesh/test_properties.py::test_led_palettes_and_ids",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
@@ -3678,13 +3678,13 @@
    "id": "prod:setup:configure-socket",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/sensor.py::JungHomeInstalledSensor",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
     "custom_components/junghome_ble/energy_history.py::HOURLY_CHART"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_sensor.py::test_power_sensor",
     "tests/test_sensor.py::test_installed_sensor_is_read_once_from_the_meter_element",
     "tests/test_energy_history.py::test_read_charts"
@@ -4349,11 +4349,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS"
    ],
    "tests": [
     "tests/test_sensor.py::test_power_sensor",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
@@ -4404,8 +4404,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_RESETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_RESETS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.reset_consumption"
    ],
    "tests": [
     "tests/test_button.py::test_reset_consumption_zeroes_both_counters_like_the_app"
@@ -4416,10 +4416,10 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_sensor.py::test_installed_sensor_is_read_once_from_the_meter_element"
    ]
   },

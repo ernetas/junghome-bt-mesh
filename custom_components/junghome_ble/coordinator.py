@@ -17,10 +17,10 @@ import ipaddress
 import logging
 import re
 import time
-from collections import defaultdict, deque
+from collections import deque
 from collections.abc import Awaitable, Callable, Container, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -35,7 +35,6 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_call_later,
-    async_track_point_in_utc_time,
     async_track_time_interval,
 )
 from homeassistant.util import dt as dt_util
@@ -55,8 +54,6 @@ from .const import (
     CONNECT_STEP_FRESH,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    ENERGY_HISTORY_INTERVAL,
-    ENERGY_POLL_INTERVAL,
     EXPORT_REFRESH_BACKOFF,
     EXPORT_STALE_THRESHOLD,
     FAILED_PROXY_COOLDOWN,
@@ -97,8 +94,6 @@ from .const import (
     NODE_DIAGNOSTICS_INTERVAL,
     NODE_INFO,
     NODE_INFO_TIME_ROLE,
-    OFFSET_CHANGE_DELAY,
-    OFFSET_SEARCH_DAYS,
     OPTION_HEARTBEATS,
     PIN_FROM_MESH,
     PROXY_ADVERT_MAX_AGE,
@@ -124,9 +119,17 @@ from .const import (
     issue_id,
     learn_more_url,
 )
-from .energy_history import async_backfill, floor_hour
 from .entity import PRODUCT_NAMES, update_node_device
 from .gateway_api import JungHomeGatewayApi, api_for_entry
+from .hub.clock import Clock, next_utc_offset_change
+from .hub.energy import (
+    COUNTER_FIELDS,
+    PROPERTY_PRECISE_TOTAL_ENERGY,
+    SENSOR_FIELDS,
+    CounterNotReset,
+    Energy,
+    lacks_precise_energy,
+)
 from .hub.liveness import Liveness
 from .hub_gestures import ButtonGestures, EventListener
 from .identity import async_vault_keeper
@@ -227,7 +230,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 # Moved out of this module (review-4 A4-1: the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
-# `const.py`); re-exported for the modules and tests that import them from here.
+# `const.py`; A4-3: the hub's components into `hub/`); re-exported for the modules and tests that import them from here.
 __all__ = [
     "NODE_VERSIONS",
     "NODE_VERSIONS_SAVE_DELAY",
@@ -247,6 +250,7 @@ __all__ = [
     "SEQ_TX_LIMIT",
     "STORAGE_VERSION",
     "AddressShared",
+    "CounterNotReset",
     "HAState",
     "NodeInfoStore",
     "SeqStore",
@@ -255,7 +259,9 @@ __all__ = [
     "async_remove_node_versions",
     "async_skip_seq_store_ahead",
     "issue_id",
+    "lacks_precise_energy",
     "merge_legacy_seq_store",
+    "next_utc_offset_change",
     "seq_backup_store",
     "seq_floor_store_for_uuid",
     "seq_store",
@@ -287,118 +293,16 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 # as its last publication may come before the fade ends (`_reread_after_transition`)
 TRANSITION_REREAD_SLACK = 1.0
 
-# how long one send waits for the store to catch up (`JungHomeHub._while_seq_stalls`) before it is given up on: a
+# how long one send waits for the store to catch up (`JungHomeHub.while_seq_stalls`) before it is given up on: a
 # healthy store lands its write within a second, one that refuses for this long will not do so by waiting
 SEQ_STALL_DEADLINE = 120.0
 # how long the store may refuse before `seq_store_unwritable` is raised (`HAState.report_unwritable`)
 SEQ_STALL_ISSUE_AFTER = 60.0
-SENSOR_POWER, SENSOR_VOLTAGE, SENSOR_CURRENT = 0x0081, 0x005D, 0x005C
-# What the connect-time refresh asks a socket's meter element for, one property-qualified `Sensor Get` each: on air
-# the meter ignores an unqualified Sensor Get (no property id; two attempts, no reply, every connection) and answers
-# a qualified one within ~100 ms — the gateway polls the same way. Another metered load (the energy puck's output)
-# is asked for its power only: all the app reads there (`docs/android/properties.md` §4, `MeasureLampDevice`), and
-# voltage and current are the metering socket's properties (`properties.SOCKET_METERING`); unverified on air.
-SENSOR_READINGS = (SENSOR_POWER, SENSOR_VOLTAGE, SENSOR_CURRENT)
-METER_READINGS = (SENSOR_POWER,)
-SENSOR_FIELDS = {  # `ElementState` field each reading lands in
-    SENSOR_POWER: "power_w",
-    SENSOR_VOLTAGE: "voltage_v",
-    SENSOR_CURRENT: "current_a",
-}
-# SIG device properties a metering socket keeps on its Generic Property servers, none of them ever published, so
-# `_poll_energy` reads them every ENERGY_POLL_INTERVAL: the power-on hours on the *main* element's Admin server
-# (`docs/gap-analysis/control-and-state.md` §2.4) and the energy counters on the *meter* element (the Sensor
-# Server's, `docs/hidden-features.md` §2): the lifetime total 0x0072 and the energy since turn-on 0x000D on its
-# Manufacturer server, the resettable total 0x006A (the app's "reset consumption") on its Admin server. Another
-# metered load (the energy puck's output) has the meter's counters only: the app reads no power-on hours there
-# (`docs/gap-analysis/device-settings.md` §6, "no 0x006D"; `counter_element`), unverified on air.
-PROPERTY_POWER_ON_TIME = 0x006D
-PROPERTY_TOTAL_ENERGY = 0x006A
-PROPERTY_PRECISE_TOTAL_ENERGY = 0x0072
-PROPERTY_ENERGY_SINCE_TURN_ON = 0x000D
-
-
-@dataclass(frozen=True)
-class CounterRead:
-    """One counter of a metering socket: which property, on which server, of which element, into which field."""
-
-    pid: int
-    server: (
-        str  # "admin" | "manufacturer" — the Generic Property server kind that holds it
-    )
-    meter: bool  # False = the socket's main element, True = its meter element (`counter_element`)
-    field: (
-        str  # `ElementState` attribute the decoded value lands in (on the load's state)
-    )
-
-
-class CounterNotReset(Exception):
-    """A socket answered a counter reset with a value other than 0 (it kept counting), or with none."""
-
-    def __init__(self, address: int, pid: int) -> None:
-        """Name the element and the counter."""
-        super().__init__(f"{address:04X} did not reset property {pid:04X}")
-        self.address = address
-        self.pid = pid
-
-
-COUNTER_READS: tuple[CounterRead, ...] = (
-    CounterRead(PROPERTY_POWER_ON_TIME, "admin", False, "power_on_hours"),
-    CounterRead(PROPERTY_PRECISE_TOTAL_ENERGY, "manufacturer", True, "energy_wh"),
-    CounterRead(PROPERTY_TOTAL_ENERGY, "admin", True, "energy_resettable_wh"),
-    CounterRead(
-        PROPERTY_ENERGY_SINCE_TURN_ON, "manufacturer", True, "energy_since_on_wh"
-    ),
-)
-COUNTER_FIELDS = {read.pid: read.field for read in COUNTER_READS}
-# the app's "reset consumption" (`docs/gap-analysis/device-settings.md` §5.2): an acknowledged Admin Property Set of
-# a 0 to each of these, in the app's order (`ConfigurationConsumptionViewModel.resetTotalConsumption`: the power-on
-# hours first, then the resettable total); `meter` as in CounterRead. The lifetime total 0x0072 has no reset.
-COUNTER_RESETS: tuple[tuple[int, bool], ...] = (
-    (PROPERTY_POWER_ON_TIME, False),
-    (PROPERTY_TOTAL_ENERGY, True),
-)
-
-
-def meter_readings(load: MeteredLoad) -> tuple[int, ...]:
-    """Return the readings the connect-time refresh asks the load's meter for: SENSOR_READINGS or METER_READINGS."""
-    return SENSOR_READINGS if isinstance(load, Socket) else METER_READINGS
-
-
-def lacks_precise_energy(cdb: CDB, load: MeteredLoad) -> bool:
-    """Whether a load other than a socket has no Generic Manufacturer Property Server (`1012`) on its meter.
-
-    That server holds 0x0072 and 0x000D (`docs/hidden-features.md` §2, read on the metering socket only); the app
-    reads neither on the energy puck (`docs/android/properties.md` §4), so the composition decides. Without it the
-    load's *Energy* is 0x006A (`ElementState.energy_total`). A socket keeps its field-tested reads.
-    """
-    if isinstance(load, Socket) or load.meter_address is None:
-        return False
-    meter = cdb.element(load.meter_address)
-    return meter is not None and "1012" not in meter.models
-
-
-def counter_element(load: MeteredLoad, meter: bool) -> int | None:
-    """Return the element that holds one of the load's counters (`CounterRead.meter`); None where it has no such counter.
-
-    The meter element for the energy counters; the main element for the power-on hours, which only the metering
-    socket keeps (`SIG_PROPERTIES[0x006D].products`).
-    """
-    if meter:
-        return load.meter_address
-    return load.address if isinstance(load, Socket) else None
-
-
 SIG_PROPERTY_STATUS_OPCODES = (
     M.GEN_USER_PROP_STATUS,
     M.GEN_ADMIN_PROP_STATUS,
     M.GEN_MANU_PROP_STATUS,
 )
-SIG_PROPERTY_STATUS_BY_SERVER = {
-    "admin": M.GEN_ADMIN_PROP_STATUS,
-    "manufacturer": M.GEN_MANU_PROP_STATUS,
-    "user": M.GEN_USER_PROP_STATUS,
-}
 # The vendor message gateway-mode keys publish their gestures with (docs/cross-repo-analysis.md §1.2).
 VENDOR_USER_PROPERTY_SET_UNACK = 0x10  # LBC User Property Set Unacknowledged
 PROPERTY_BUTTON_EVENT = 0x5012  # KEY_EVT: [counter][code]
@@ -410,7 +314,7 @@ GENERIC_LEVEL_OPCODES = frozenset(
 # the colour-temperature range a CTL light supports ("ctl_range": read once per connection, it is a device property)
 # and the colour temperature on its temperature element ("ctl_temperature": Light CTL Temperature Get to the element
 # after the light's, as the gateway reads it; its silence is not counted toward reachability, see `_refresh_all`).
-# A socket's meter element is not here: its readings need one qualified Sensor Get each (`_get_readings`).
+# A socket's meter element is not here: its readings need one qualified Sensor Get each (`Energy.get_readings`).
 STATE_GETS: dict[str, tuple[Callable[[], bytes], int]] = {
     "ctl": (M.light_ctl_get, M.LIGHT_CTL_STATUS),
     "dimmer": (M.light_lightness_get, M.LIGHT_LIGHTNESS_STATUS),
@@ -566,32 +470,6 @@ async def async_release_network_id(
         await hass.config_entries.async_remove(holder.entry_id)
 
 
-def next_utc_offset_change(now: datetime) -> datetime | None:
-    """Return the first moment (UTC) after `now` at which `now`'s time zone changes its UTC offset, within a year.
-
-    Found by stepping a day at a time, then bisecting the day to the second: zoneinfo keeps its transitions to
-    itself. None when the offset does not change within the year (no daylight-saving time).
-    """
-    tz = now.tzinfo
-    assert tz is not None
-    offset = now.utcoffset()
-    step = timedelta(days=1)
-    probe = now.astimezone(UTC)
-    for _ in range(OFFSET_SEARCH_DAYS):
-        nxt = probe + step
-        if nxt.astimezone(tz).utcoffset() != offset:
-            low, high = probe, nxt  # the change lies after `low`, at or before `high`
-            while high - low > timedelta(seconds=1):
-                mid = low + (high - low) / 2
-                if mid.astimezone(tz).utcoffset() == offset:
-                    low = mid
-                else:
-                    high = mid
-            return high.replace(microsecond=0)
-        probe = nxt
-    return None
-
-
 def _evidence_of_use(
     cdb: CDB, unicast: int, keeper: VaultKeeper, *stores: Any
 ) -> str | None:
@@ -713,7 +591,7 @@ class ElementState:
     def energy_total(self) -> int | None:
         """The *Energy* sensor's counter: the lifetime total 0x0072, or 0x006A where the meter does not serve it.
 
-        Only a load other than a metering socket falls back (`JungHomeHub._get_counters`, `_on_sig_property_status`),
+        Only a load other than a metering socket falls back (`Energy._get_counters`, `_on_sig_property_status`),
         and only on a definite sign, never because 0x0072 went unanswered: 0x006A is at most 0x0072, so switching to
         it after a silence and back once 0x0072 answers would put the whole difference into one hour of the Energy
         dashboard. 0x006A is resettable; the app's "reset consumption" then shows as a meter reset, which
@@ -870,17 +748,10 @@ class JungHomeHub:
         self.link_state = LINK_SEARCHING  # one of LINK_STATES (`_set_link_state`), for the link state sensor
         self._bluetooth_off = False  # `bluetooth_unavailable` is raised
         self._task: asyncio.Task[None] | None = None
-        self._refresh_task: asyncio.Task[None] | None = None
-        self._energy_task: asyncio.Task[None] | None = None
-        self._energy_history_at: float | None = (
-            None  # monotonic time of the last energy-chart import (`energy_history`)
-        )
-        # per socket (main address): its counter Gets and a reset share reply opcodes, so they take turns
-        self._counter_locks: defaultdict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
-        # per metered load (main address): the on-demand read running now, which later callers wait for
-        self._meter_refreshes: dict[int, asyncio.Event] = {}
-        self._unsub_time: Callable[[], None] | None = None
-        self._unsub_energy: Callable[[], None] | None = None
+        self.refresh_task: asyncio.Task[None] | None = None
+        # the metered loads' polls and reads, and the time and location broadcasts (`hub/energy.py`, `hub/clock.py`)
+        self.energy = Energy(self)
+        self.clock = Clock(self)
         self._link_lost = asyncio.Event()
         self.stopping = False  # `async_stop` began: nothing new is scheduled
         self._unsub_adv: Callable[[], None] | None = None
@@ -976,9 +847,6 @@ class JungHomeHub:
         self._unsub_ha_stop: CALLBACK_TYPE | None = None
         self._unsub_echo: CALLBACK_TYPE | None = (
             None  # the check that a command was answered (`_command`)
-        )
-        self._unsub_offset_change: CALLBACK_TYPE | None = (
-            None  # the Time Set after a DST change
         )
         # link diagnostics (review-3 F8, F9): when each node was last heard (wall clock), the signal strength of
         # its last advertisement, when it last restarted, and the last sequence number per source
@@ -1131,7 +999,7 @@ class JungHomeHub:
     async def async_start(self) -> None:
         """Start watching for proxy advertisements, the connection loop and the daily Time Set.
 
-        The energy poll is armed by every connection (`_arm_energy_poll`), so its grid starts with the link.
+        The energy poll is armed by every connection (`Energy.arm_poll`), so its grid starts with the link.
         """
         # a successful (re)start after a reconfiguration means the user followed the key-refresh advice; a mesh that is
         # still refreshing raises the issue again with its next beacon, one whose keys still do not fit raises the
@@ -1153,10 +1021,10 @@ class JungHomeHub:
         self._task = self.entry.async_create_background_task(
             self.hass, self._connection_loop(), f"{DOMAIN} link"
         )
-        self._unsub_time = async_track_time_interval(
-            self.hass, self._send_time_daily, timedelta(seconds=TIME_SET_INTERVAL)
+        self.clock.unsub_time = async_track_time_interval(
+            self.hass, self.clock.send_time_daily, timedelta(seconds=TIME_SET_INTERVAL)
         )
-        self._arm_offset_change()
+        self.clock.arm_offset_change()
         if self.heartbeats_enabled:
             self.liveness.unsub_heartbeats = async_track_time_interval(
                 self.hass,
@@ -1179,42 +1047,26 @@ class JungHomeHub:
             EVENT_HOMEASSISTANT_STOP, on_ha_stop
         )
 
-    def _arm_energy_poll(self) -> None:
-        """(Re)start the energy poll timer so its grid is anchored on the connection just made.
-
-        Anchored on the start of the integration instead, a poll could fall right before the link watchdog's
-        deadline on a mesh where the poll's reply is the only traffic. No timer without a metered load.
-        """
-        if self._unsub_energy is not None:
-            self._unsub_energy()
-            self._unsub_energy = None
-        if self.devices.metered:
-            self._unsub_energy = async_track_time_interval(
-                self.hass,
-                self._poll_energy_periodic,
-                timedelta(seconds=ENERGY_POLL_INTERVAL),
-            )
-
     async def async_stop(self) -> None:
         """Stop the connection loop and background work, then drop the link."""
         self.stopping = True
         for unsub in (
             self._unsub_adv,
-            self._unsub_time,
-            self._unsub_energy,
+            self.clock.unsub_time,
+            self.energy.unsub_energy,
             self.liveness.unsub_heartbeats,
             self._unsub_seq_check,
             self._unsub_grace,
             self._unsub_ha_stop,
             self._unsub_echo,
-            self._unsub_offset_change,
+            self.clock.unsub_offset_change,
             self._unsub_seq_stall,
         ):
             if unsub:
                 unsub()
         self._unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
-        self._unsub_offset_change = self._unsub_seq_stall = None
-        self._unsub_adv = self._unsub_time = self._unsub_energy = None
+        self.clock.unsub_offset_change = self._unsub_seq_stall = None
+        self._unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
         self.liveness.unsub_heartbeats = self._unsub_seq_check = None
         self._cancel_export_refresh_timer()
         self._cancel_filter_watch()
@@ -1233,10 +1085,10 @@ class JungHomeHub:
         try:
             await self._cancel(self._task)
             self._task = None
-            await self._cancel(self._refresh_task)
-            self._refresh_task = None
-            await self._cancel(self._energy_task)
-            self._energy_task = None
+            await self._cancel(self.refresh_task)
+            self.refresh_task = None
+            await self._cancel(self.energy.task)
+            self.energy.task = None
             await self._cancel(self.liveness.heartbeat_task)
             self.liveness.heartbeat_task = None
             await self._cancel(self.vault_refresh.task)
@@ -2086,7 +1938,7 @@ class JungHomeHub:
         A Get is the one message JUNG firmware always answers (`_refresh_all`), so an unanswered keep-alive means
         the proxy no longer forwards (or the element is gone: up to KEEP_ALIVE_ATTEMPTS distinct elements are
         tried). Traffic of any kind arriving meanwhile counts as well. A send the sequence-number store holds
-        back is waited for (`_while_seq_stalls`), not taken for a dead link; one that cannot go out at all (the
+        back is waited for (`while_seq_stalls`), not taken for a dead link; one that cannot go out at all (the
         store refused past SEQ_STALL_DEADLINE, the sequence space is used up) is no verdict either way, so what
         arrived since decides alone — with nothing, the watchdog drops a silent proxy as after any unanswered
         keep-alive.
@@ -2095,7 +1947,7 @@ class JungHomeHub:
         for addr in self._keep_alive_targets()[:KEEP_ALIVE_ATTEMPTS]:
             asked = time.monotonic()
             try:
-                await self._while_seq_stalls(
+                await self.while_seq_stalls(
                     partial(
                         self.proxy.request,
                         addr,
@@ -2226,8 +2078,8 @@ class JungHomeHub:
             self._unsub_filter_watch = async_call_later(
                 self.hass, FILTER_STATUS_TIMEOUT, self._filter_status_overdue
             )
-        self._arm_energy_poll()
-        self._refresh_task = self.entry.async_create_background_task(
+        self.energy.arm_poll()
+        self.refresh_task = self.entry.async_create_background_task(
             self.hass, self._after_connect(), f"{DOMAIN} refresh"
         )
         self._check_gateway_pin()
@@ -2236,10 +2088,10 @@ class JungHomeHub:
 
     def _cancel_refresh(self) -> None:
         """Cancel the per-link background work: the connect-time refresh, a running energy poll, the Filter Status watchdog."""
-        for task in (self._refresh_task, self._energy_task):
+        for task in (self.refresh_task, self.energy.task):
             if task is not None:
                 task.cancel()
-        self._refresh_task = self._energy_task = None
+        self.refresh_task = self.energy.task = None
         self._cancel_filter_watch()
 
     def _cancel_filter_watch(self) -> None:
@@ -2423,15 +2275,15 @@ class JungHomeHub:
         fault reads are not repeated soon after a round on a link that held (`_connect_step`); the heartbeat
         configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The new order is unverified on air.
         """
-        await self._send_time()
-        await self._send_location()
+        await self.clock.send_time()
+        await self.clock.send_location()
         if not await self._refresh_all():
             return
         # a link lost meanwhile cancelled this task (`_cancel_refresh`): the link is still the one refreshed
         self._link_refresh = time.monotonic() - self._link_since
         self._set_link_state(LINK_CONNECTED)
-        await self._poll_energy()
-        await self._backfill_energy_history()
+        await self.energy.poll()
+        await self.energy.backfill_history()
         await self.liveness.configure_heartbeats()
         if not self.heartbeats_enabled and self.liveness.heartbeats_publishing:
             # the option went off while some nodes could not be told (link down, a node silent or refusing)
@@ -2664,7 +2516,7 @@ class JungHomeHub:
         one unanswered request marks the node unreachable at once (`Liveness.missed_answer`), and the light's own state Get
         already decides that for the node. Returns False when the link went away before the refresh was through.
 
-        A metered load's meter element gets one job that asks for its readings property by property (`_get_readings`).
+        A metered load's meter element gets one job that asks for its readings property by property (`Energy.get_readings`).
 
         Gets are the one message JUNG firmware always answers with a unicast status, so a refresh nobody answered while
         other nodes' traffic kept arriving means the mesh discards our PDUs: a stale sequence number (lost store) or
@@ -2709,7 +2561,7 @@ class JungHomeHub:
             if only is None or sock.address in only
         ]
         jobs += [
-            partial(self._get_readings, load)
+            partial(self.energy.get_readings, load)
             for load in devices.metered
             if only is None or load.address in only
         ]
@@ -2739,13 +2591,13 @@ class JungHomeHub:
     async def chunked(self, jobs: Sequence[Callable[[], Awaitable[object]]]) -> None:
         """Run the jobs REFRESH_CHUNK at a time with a short pause in between (as the app does).
 
-        Each job is retried while the sequence-number store holds sends back (`_while_seq_stalls`).
+        Each job is retried while the sequence-number store holds sends back (`while_seq_stalls`).
         """
         for i in range(0, len(jobs), REFRESH_CHUNK):
             if i:
                 await asyncio.sleep(0.5)
             await asyncio.gather(
-                *(self._while_seq_stalls(job) for job in jobs[i : i + REFRESH_CHUNK])
+                *(self.while_seq_stalls(job) for job in jobs[i : i + REFRESH_CHUNK])
             )
 
     @callback
@@ -2762,7 +2614,7 @@ class JungHomeHub:
         self._unsub_seq_stall = None
         self.state.report_unwritable()
 
-    async def _while_seq_stalls[T](self, send: Callable[[], Awaitable[T]]) -> T:
+    async def while_seq_stalls[T](self, send: Callable[[], Awaitable[T]]) -> T:
         """Run `send`, again every SEQ_STALL_RETRY seconds while the sequence-number store holds it back, for a while.
 
         `HAState.reserve_seq` refuses numbers while the store's last save has not landed (`SequenceStalled`, a
@@ -2790,177 +2642,6 @@ class JungHomeHub:
                 )
                 await asyncio.sleep(SEQ_STALL_RETRY)
                 waited += SEQ_STALL_RETRY
-
-    async def _poll_energy(self) -> None:
-        """Read the counters of every metered load (energy; a socket's power-on hours); nothing ever publishes them.
-
-        A load's answers share opcodes (Generic Property Statuses), so a load gets its Gets one after the
-        other; different loads are polled REFRESH_CHUNK at a time like the state refresh.
-        """
-        try:
-            await self.chunked(
-                [partial(self._get_counters, load) for load in self.devices.metered]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("energy poll aborted: %s", err)
-
-    async def async_refresh_meter(self, load: MeteredLoad) -> None:
-        """Read one metered load's readings and counters now: `homeassistant.update_entity` on one of its sensors.
-
-        The app reads them every 5 s while its consumption page is open (`PowerConsumptionViewModel.requestData`);
-        here nothing is open, so they are read every ENERGY_POLL_INTERVAL and on demand. The meter's Sensor Gets
-        (`_get_readings`) go first, then the counters (`_get_counters`), as the connect-time refresh orders them.
-        A call while one is running for the same load waits for it instead of asking again: an update of all of a
-        load's sensors at once is one read. Best effort: a lost link or a silent meter leaves the cached values.
-        """
-        running = self._meter_refreshes.get(load.address)
-        if running is not None:
-            await running.wait()
-            return
-        done = self._meter_refreshes[load.address] = asyncio.Event()
-        try:
-            await self._get_readings(load)
-            await self._get_counters(load)
-        except ConnectionError as err:
-            _LOGGER.debug("%04X: meter not read: %s", load.address, err)
-        finally:
-            del self._meter_refreshes[load.address]
-            done.set()
-
-    async def _backfill_energy_history(self) -> None:
-        """Import what each metered load counted while nobody saw it into its Energy statistics (`energy_history`).
-
-        Right after the connect-time poll, so the counter the charts are checked against is fresh. Needs the
-        recorder (an optional dependency: without it there are no statistics to fill); once per link, and not again
-        within ENERGY_HISTORY_INTERVAL of the last try — the link before this one lasted until less than that ago,
-        so no whole hour can be missing. Loads go REFRESH_CHUNK at a time like the poll.
-        """
-        now = time.monotonic()
-        if (
-            "recorder" not in self.hass.config.components
-            or self.connected_since is None
-            or (
-                self._energy_history_at is not None
-                and now - self._energy_history_at < ENERGY_HISTORY_INTERVAL
-            )
-        ):
-            return
-        self._energy_history_at = now
-        link_up = floor_hour(datetime.fromtimestamp(self.connected_since, UTC))
-        try:
-            await self.chunked(
-                [
-                    partial(async_backfill, self, load, link_up)
-                    for load in self.devices.metered
-                ]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("energy history import aborted: %s", err)
-
-    @callback
-    def _poll_energy_periodic(self, _now: datetime) -> None:
-        """Start a poll every ENERGY_POLL_INTERVAL while a link is up and the previous one is through.
-
-        The connect-time refresh ends with a poll of its own (`_after_connect`), so a tick during it is skipped too.
-        """
-        if not self.connected or any(
-            task is not None and not task.done()
-            for task in (self._refresh_task, self._energy_task)
-        ):
-            return
-        self._energy_task = self.entry.async_create_background_task(
-            self.hass, self._poll_energy(), f"{DOMAIN} energy"
-        )
-
-    async def _send_time(self, destination: int = ALL_NODES) -> None:
-        """Broadcast Time Set (unacknowledged, to all nodes) as the app does after every connection.
-
-        Devices with timers or astro schedules have no clock source but this message: the gateway never publishes
-        time (its publish interval is configured to 0), so without a phone nearby their schedules drift.
-        `destination`: one element instead (a new node's Time Server, `onboard`'s SetTime phase).
-        """
-        now = dt_util.now()
-        try:
-            pdu = M.time_set(now)
-        except (
-            ValueError
-        ):  # a zone offset the message cannot carry: better a UTC clock than none
-            pdu = M.time_set(now, zone_offset=timedelta(0))
-        try:
-            await self._while_seq_stalls(
-                partial(self.proxy.send_access, destination, pdu)
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("Time Set not sent: %s", err)
-        else:
-            _LOGGER.debug(
-                "Sent Time Set %s to %04X",
-                now.isoformat(timespec="seconds"),
-                destination,
-            )
-
-    async def _send_location(self) -> None:
-        """Broadcast Home Assistant's home location (Generic Location Global Set Unacknowledged, to all nodes).
-
-        The nodes compute their sunrise / sunset times from it (astro schedules, `schedules.py`); the app only sends
-        the phone's position when it creates such a schedule. Every node hosts the Location Setup Server on its
-        primary element, which the all-nodes address reaches, as for Time Set. Unverified on air.
-        """
-        config = self.hass.config
-        pdu = M.generic_location_global_set(
-            config.latitude, config.longitude, int(config.elevation)
-        )
-        try:
-            await self._while_seq_stalls(
-                partial(self.proxy.send_access, ALL_NODES, pdu)
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("Location not sent: %s", err)
-        else:
-            _LOGGER.debug("Sent the home location to all nodes")
-
-    async def async_send_time(self, destination: int = ALL_NODES) -> None:
-        """Broadcast Time Set now (the `node_clock_wrong` repair's fix); without a link nothing goes out.
-
-        `destination`: one element instead of all nodes (`onboard`: the new node's Time Server).
-        """
-        await self._send_time(destination)
-
-    @callback
-    def _send_time_daily(self, _now: datetime) -> None:
-        if self.connected:
-            self.entry.async_create_background_task(
-                self.hass, self._send_time_and_read_clocks(), f"{DOMAIN} time"
-            )
-
-    async def _send_time_and_read_clocks(self) -> None:
-        """Broadcast Time Set, then ask the mains nodes for their time, zone and location (`NodeClocks.read_all`).
-
-        Once a day and after a change of the local UTC offset, not on every link: the nodes answer the Time Set of
-        each link with their Time Status all the same. Unverified on air.
-        """
-        await self._send_time()
-        await self.clocks.read_all()
-
-    def _arm_offset_change(self) -> None:
-        """Send Time Set again right after the next change of the local UTC offset (review-3 F17).
-
-        A Time Set carries the zone offset in force when it is sent; the nodes' timers and astro schedules run on it
-        until the next one — up to TIME_SET_INTERVAL after a daylight-saving change, an hour off meanwhile.
-        """
-        change = next_utc_offset_change(dt_util.now())
-        if change is None:
-            return
-
-        @callback
-        def changed(_now: datetime) -> None:
-            self._unsub_offset_change = None
-            self._send_time_daily(_now)
-            self._arm_offset_change()
-
-        self._unsub_offset_change = async_track_point_in_utc_time(
-            self.hass, changed, change + timedelta(seconds=OFFSET_CHANGE_DELAY)
-        )
 
     async def async_refresh_element(
         self, addr: int, kind: str, *, quiet: bool = False
@@ -3053,88 +2734,18 @@ class JungHomeHub:
         )
         return near or present != before or None in before.values()
 
-    async def _get_readings(self, load: MeteredLoad) -> None:
-        """Ask a load's meter element for its readings, one property-qualified Sensor Get per `meter_readings` entry.
-
-        The meter ignores an unqualified Sensor Get, so the readings are asked for one at a time; each reply is a
-        Sensor Status `_on_sensor_status` stores. One attempt each: the meter publishes every change afterwards,
-        so a missed reading is filled in by its next publication.
-        """
-        addr = load.meter_address
-        assert addr is not None  # only metered loads are asked
-        for pid in meter_readings(load):
-            try:
-                await self.proxy.request(
-                    addr, M.sensor_get(pid), M.SENSOR_STATUS, retries=1
-                )
-            except TimeoutError:
-                _LOGGER.debug(
-                    "%04X did not answer its Sensor Get for property %04X", addr, pid
-                )
-
-    async def _get_counters(self, load: MeteredLoad) -> None:
-        """Read the counters of one metered load: a Generic Property Get per COUNTER_READS entry it has (`counter_element`)."""
-        no_manufacturer = lacks_precise_energy(self.cdb, load)
-        if no_manufacturer:
-            self.element_state(load.address).energy_fallback = True
-        async with self._counter_locks[load.address]:
-            for read in COUNTER_READS:
-                if (addr := counter_element(load, read.meter)) is None:
-                    continue
-                if no_manufacturer and read.server == "manufacturer":
-                    continue  # no server to answer it
-                try:
-                    await self.proxy.request(
-                        addr,
-                        M.generic_property_get(read.server, read.pid),
-                        SIG_PROPERTY_STATUS_BY_SERVER[read.server],
-                        retries=1,
-                    )
-                except TimeoutError:
-                    _LOGGER.debug(
-                        "%04X did not answer its property Get %04X", addr, read.pid
-                    )
+    # ------------------------------------------------------------------ energy and time (`hub/energy.py`, `hub/clock.py`)
+    async def async_refresh_meter(self, load: MeteredLoad) -> None:
+        """Read one metered load's readings and counters now (`Energy.async_refresh_meter`)."""
+        await self.energy.async_refresh_meter(load)
 
     async def reset_consumption(self, load: MeteredLoad) -> None:
-        """Zero a metered load's resettable energy total (a socket's power-on hours too), as the app's "reset consumption" does.
+        """Zero a metered load's resettable counters, as the app does (`Energy.reset_consumption`)."""
+        await self.energy.reset_consumption(load)
 
-        One acknowledged Admin Property Set per COUNTER_RESETS entry the load has (`counter_element`), each answered
-        by an Admin Property Status that `_on_sig_property_status` stores. JUNG firmware may only publish the status
-        of a Set that changed something, so an unanswered Set is read back with a Get. The first counter that does
-        not read 0 stops the reset with CounterNotReset; an unanswered read-back raises TimeoutError. The energy
-        puck's reset (0x006A on its meter) is the app's (`device-settings.md` §5.2), unverified on air.
-        """
-        async with self._counter_locks[load.address]:
-            for pid, meter in COUNTER_RESETS:
-                if (addr := counter_element(load, meter)) is not None:
-                    await self._reset_counter(addr, pid)
-
-    async def _reset_counter(self, addr: int, pid: int) -> None:
-        codec = SIG_PROPERTIES[pid].codec
-        key = pid.to_bytes(2, "little")
-
-        def for_pid(m: AccessMessage) -> bool:
-            return m.params[:2] == key
-
-        try:
-            status = await self.proxy.request(
-                addr,
-                M.generic_property_set("admin", pid, codec.encode(0)),
-                M.GEN_ADMIN_PROP_STATUS,
-                retries=1,
-                match=for_pid,
-            )
-        except TimeoutError:
-            status = await self.proxy.request(
-                addr,
-                M.generic_property_get("admin", pid),
-                M.GEN_ADMIN_PROP_STATUS,
-                retries=1,
-                match=for_pid,
-            )
-        value = status.params[3:]
-        if not value or codec.decode(value) != 0:
-            raise CounterNotReset(addr, pid)
+    async def async_send_time(self, destination: int = ALL_NODES) -> None:
+        """Broadcast Time Set now; without a link nothing goes out (`Clock.async_send_time`)."""
+        await self.clock.async_send_time(destination)
 
     # ------------------------------------------------------------------ Configuration Server audit
     async def async_audit(self, nodes: Sequence[Node]) -> list[NodeAudit]:
@@ -3528,7 +3139,7 @@ class JungHomeHub:
 
     @register_status_handler(*SIG_PROPERTY_STATUS_OPCODES)
     def _on_sig_property_status(self, m: AccessMessage, p: bytes) -> None:
-        """Store a SIG Generic Property Status `[pid u16][user access u8][value]`: a socket counter `_poll_energy` reads.
+        """Store a SIG Generic Property Status `[pid u16][user access u8][value]`: a socket counter `Energy.poll` reads.
 
         The value is decoded with the property's codec from `properties.SIG_PROPERTIES` (an LE counter of whatever
         length the firmware sends, 3 or 4 bytes on air); the GSS "not known" / "not valid" markers (all-ones, all-ones

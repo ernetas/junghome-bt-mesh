@@ -437,7 +437,7 @@ class JungHomeDetectorOccupancy(JungHomeEntity, BinarySensorEntity):
         """One property-qualified Sensor Get per value, both in flight at once.
 
         The unqualified form (no property id) is the one JUNG's sensor server is known to ignore — the metering
-        socket never answered it on air (`coordinator.SENSOR_READINGS`) and the thermostat is asked the qualified
+        socket never answered it on air (`hub.energy.SENSOR_READINGS`) and the thermostat is asked the qualified
         way too. Each reply is matched on its property id, so the two outstanding requests cannot take each
         other's answer.
         """

@@ -98,12 +98,12 @@
     "custom_components/junghome_ble/jhmesh/devices.py::ALL_SCENES",
     "custom_components/junghome_ble/configurator/wiring.py::plan_scene_link",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time"
    ],
    "tests": [
     "tests/test_scene.py::test_activate",
     "tests/test_mesh_config.py::test_assign_key_to_a_scene_sends_the_apps_scene_sequence",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ]
   },
   {
@@ -1821,11 +1821,11 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::time_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_time_set_explicit_fields_and_zone",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected"
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:debug:timelocationdebugviewmodel.senddatetime; note from this row: Time Set carries the current time only; no chosen date/time can be sent",
@@ -1836,7 +1836,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_location"
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_location"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_location_global_set_vector",
@@ -3296,12 +3296,12 @@
    "id": "net:uc:configuresocket",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::PROPERTY_POWER_ON_TIME",
+    "custom_components/junghome_ble/hub/energy.py::PROPERTY_POWER_ON_TIME",
     "custom_components/junghome_ble/energy_history.py::async_backfill",
     "custom_components/junghome_ble/sensor.py::METER_SENSORS"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_energy_history.py::test_read_charts",
     "tests/test_sensor.py::test_power_sensor"
    ],
@@ -3965,12 +3965,12 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._after_connect",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_time_set_falls_back_to_utc_for_an_odd_zone"
+    "tests/test_hub_clock.py::test_time_set_falls_back_to_utc_for_an_odd_zone"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:flow:loadinitialdevicestate",

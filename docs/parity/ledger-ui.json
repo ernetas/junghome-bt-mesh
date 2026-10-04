@@ -707,7 +707,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_RESETS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_RESETS",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor"
    ],
@@ -1087,7 +1087,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
@@ -1327,7 +1327,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS"
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS"
    ],
    "tests": [
     "tests/test_sensor.py::test_power_sensor",
@@ -1607,12 +1607,12 @@
    "id": "ui:state:powerontimecapability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::PROPERTY_POWER_ON_TIME",
+    "custom_components/junghome_ble/hub/energy.py::PROPERTY_POWER_ON_TIME",
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor"
    ],
    "tests": [
     "tests/test_sensor.py::test_diagnostic_sensors_when_enabled",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
@@ -1751,7 +1751,7 @@
    "id": "ui:state:totalenergyusecapability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::PROPERTY_TOTAL_ENERGY",
+    "custom_components/junghome_ble/hub/energy.py::PROPERTY_TOTAL_ENERGY",
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor"
    ],
    "tests": [
@@ -2216,13 +2216,13 @@
    "id": "ui:uc:loadinitialdevicestate",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected",
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected",
     "tests/jhmesh/test_messages.py::test_time_set_vector",
     "tests/test_config_entities.py::test_gateway_status_and_address"
    ],
@@ -3138,24 +3138,24 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor",
-    "custom_components/junghome_ble/coordinator.py::PROPERTY_TOTAL_ENERGY"
+    "custom_components/junghome_ble/hub/energy.py::PROPERTY_TOTAL_ENERGY"
    ],
    "tests": [
     "tests/test_sensor.py::test_energy_sensor",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
    "id": "ui:vm:configurationconsumptionviewmodel.requestdata",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_FIELDS",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_FIELDS",
     "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL"
    ],
    "tests": [
     "tests/test_sensor.py::test_socket_sensor_set",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_energy_puck.py::test_the_meter_is_asked_for_power_and_the_energy_counters"
    ]
   },
@@ -3164,8 +3164,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_RESETS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_RESETS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.reset_consumption"
    ],
    "tests": [
     "tests/test_button.py::test_reset_consumption_zeroes_both_counters_like_the_app",
@@ -4001,7 +4001,7 @@
     "custom_components/junghome_ble/energy_history.py::async_backfill"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_energy_history.py::test_missed_hours_are_imported_on_connect"
    ],
    "class": "dup",
@@ -4031,7 +4031,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/sensor.py::JungHomeCounterSensor",
-    "custom_components/junghome_ble/coordinator.py::PROPERTY_TOTAL_ENERGY"
+    "custom_components/junghome_ble/hub/energy.py::PROPERTY_TOTAL_ENERGY"
    ],
    "tests": [
     "tests/test_sensor.py::test_energy_sensor"
@@ -4054,15 +4054,15 @@
    "id": "ui:vm:powerconsumptionviewmodel.requestdata",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_refresh_meter",
+    "custom_components/junghome_ble/hub/energy.py::Energy.async_refresh_meter",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor._update_read",
     "custom_components/junghome_ble/entity.py::JungHomeEntity.async_update",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._poll_energy",
+    "custom_components/junghome_ble/hub/energy.py::Energy.poll",
     "custom_components/junghome_ble/const.py::ENERGY_POLL_INTERVAL"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_update_entity_reads_the_meter_now",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_update_entity_reads_the_meter_now",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_sensor.py::test_power_sensor"
    ],
    "note": "The app reads power 0x0081 and the counters every 5 s while its consumption page is open. HA has no open page: power comes from the meter's publications, the counters are read every ENERGY_POLL_INTERVAL = 300 s, and homeassistant.update_entity on any meter sensor reads the load's Sensor Gets and counters at once (coordinator.async_refresh_meter; concurrent updates of one load share one read, and entity.JungHomeEntity.async_update asks a load's meter at most once per UPDATE_READ_INTERVAL = 2 s). A 5 s poll with nobody looking would only load the mesh (docs/ha-integration.md '## Data updates')."

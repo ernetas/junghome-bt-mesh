@@ -676,8 +676,9 @@
   the sequence number carries on and that the stored replay list holds.
 - Internal: the hub's remaining components (review-4 brief 60: A4-3, A4-13), each moved verbatim out of
   `JungHomeHub` into the `hub/` package with its own state: `hub/liveness.py` (`Liveness`, `hub.liveness`: the nodes'
-  reachability and heartbeats; the diagnostics read `hub.liveness.configured_at` instead of a private attribute). The
-  hub keeps one-line delegations for what entities, actions, the configurator and the diagnostics call
+  reachability and heartbeats; the diagnostics read `hub.liveness.configured_at` instead of a private attribute),
+  `hub/energy.py` (`Energy`, `hub.energy`: the meter readings and counters, their polls, the reset, the history
+  import's trigger) and `hub/clock.py` (`Clock`, `hub.clock`: the Time Set and location broadcasts). The hub keeps one-line delegations for what entities, actions, the configurator and the diagnostics call
   (`node_alive`, `unreachable`, `last_heard`, `heartbeats`, …); the tests of each component moved out of
   `tests/test_coordinator.py` into `tests/test_hub_<component>.py`. Log lines of the moved code come from the
   component's logger. No behaviour changes.

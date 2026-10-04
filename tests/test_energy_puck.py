@@ -243,7 +243,7 @@ async def init_puck_reset(
     hub = mock_config_entry.runtime_data
     await wait_until(
         hass,
-        lambda: hub._refresh_task is None or hub._refresh_task.done(),
+        lambda: hub.refresh_task is None or hub.refresh_task.done(),
         what="the connect-time refresh",
     )
     # nobody answered the refresh either (every request gives up after milliseconds here), so every node counts as
@@ -326,7 +326,7 @@ async def test_a_meter_without_a_manufacturer_server_is_not_asked_for_it(
     assert lacks_precise_energy(hub.cdb, puck)
     assert not lacks_precise_energy(hub.cdb, socket)
     fake_link.sent.clear()
-    await hub._get_counters(puck)
+    await hub.energy._get_counters(puck)
     assert [(dst, pdu) for _, dst, pdu in fake_link.sent if pdu in COUNTER_GETS] == [
         (PUCK_METER, TC.RESETTABLE_GET)
     ]

@@ -271,8 +271,8 @@ Info tab as §3.1. Display tab: on/off (**done**), lock functions (S12), and for
 | Item | Shown as | Mesh implementation | Flow | Ours | HA |
 |---|---|---|---|---|---|
 | Current power | W | Sensor Get **0x0081** ×0.1 W (props §1.1) | polled every 5 s while open (`…$requestData$1.java:118-121`) | **done** (`sensor.py`, plus voltage 0x005D, current 0x005C) | `sensor` |
-| Total consumption | kWh (`raw/1000`, `ConfigurationConsumptionViewModel.java:92`) | SIG Admin Property Get 0x822D **0x006A** TotalDeviceEnergyUse (props §1.1) | `…$requestData$1.java:170` | **done** (`sensor.py`: `energy_resettable`, polled by `coordinator.COUNTER_READS`; see `control-and-state.md` §2.10) | `sensor` energy (total_increasing) |
-| Power-on time | h | SIG Admin Property Get **0x006D** (field-tested: uint24 hours) | `:150` | **done** (`sensor.py`: `power_on_time`, `coordinator.COUNTER_READS`) | `sensor` duration (diag) |
+| Total consumption | kWh (`raw/1000`, `ConfigurationConsumptionViewModel.java:92`) | SIG Admin Property Get 0x822D **0x006A** TotalDeviceEnergyUse (props §1.1) | `…$requestData$1.java:170` | **done** (`sensor.py`: `energy_resettable`, polled by `hub.energy.COUNTER_READS`; see `control-and-state.md` §2.10) | `sensor` energy (total_increasing) |
+| Power-on time | h | SIG Admin Property Get **0x006D** (field-tested: uint24 hours) | `:150` | **done** (`sensor.py`: `power_on_time`, `hub.energy.COUNTER_READS`) | `sensor` duration (diag) |
 | **Reset** total consumption / power-on time | button | SIG **Generic Admin Property Set** 0x48 `[0x6A][access 3][0 u32]` and `[0x6D]…` (`…$resetTotalConsumption$1.java:97-112`, `p234v7/P0.java`, `C2364i0.java`) | 2 acked Sets | **done** (`button.py`: *Reset consumption*, `coordinator.reset_consumption`; unverified on air) | `button` |
 | Daily / 31-day energy chart | bar chart | LBC **User** Property Get `CE 27 05` **0x5010** / **0x5011** (props §1.6) | on open | lib (raw Get) | optional `sensor` attributes — low priority |
 | Consumption price (ct/kWh) | text field | app-local | – | – | config option |

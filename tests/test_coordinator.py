@@ -12,7 +12,7 @@ import shutil
 import time
 from collections import defaultdict
 from collections.abc import Awaitable, Callable, Generator, Mapping
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
 from types import SimpleNamespace
@@ -59,7 +59,6 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
     DOUBLE_CLICK_WINDOW,
-    ENERGY_POLL_INTERVAL,
     EXPORT_STALE_THRESHOLD,
     FILTER_STATUS_TIMEOUT,
     GATEWAY_SYNC_PERIOD,
@@ -81,7 +80,6 @@ from custom_components.junghome_ble.const import (
     SIGNAL_CONNECTION,
     SIGNAL_UPDATE,
     TID_REPEAT_WINDOW,
-    TIME_SET_INTERVAL,
     learn_more_url,
 )
 from custom_components.junghome_ble.coordinator import (
@@ -518,7 +516,7 @@ async def test_refresh_of_a_lost_link_is_cancelled(
         len(answering_link.sent) == first_link
     )  # Time Set and location, the first chunk; the refresh waits at the pause
     assert answering_link.sent[0][2][0] == M.TIME_SET
-    old = hub._refresh_task
+    old = hub.refresh_task
     assert old is not None
     assert not old.done()
 
@@ -528,8 +526,8 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     await settle(hass)
     assert old.cancelled()
     assert answering_link.connect_count == 2
-    assert hub._refresh_task is not None
-    assert hub._refresh_task is not old
+    assert hub.refresh_task is not None
+    assert hub.refresh_task is not old
     assert (
         len(answering_link.sent) == 2 * first_link
     )  # the new link's broadcasts and first chunk, nothing more from the old refresh
@@ -544,7 +542,7 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     # refresh's second chunk) — the first link lasted too short for its reads to count as fresh
     assert [dst for _, dst, _ in answering_link.sent].count(ALL_NODES) == 2 * BROADCASTS
     assert answering_link.sent[-AFTER_ENERGY:-CONNECT_TAIL] == COUNTER_GETS
-    assert hub._refresh_task.done()
+    assert hub.refresh_task.done()
 
 
 async def test_stop_cancels_a_running_refresh(
@@ -558,12 +556,12 @@ async def test_stop_cancels_a_running_refresh(
     await wait_for_link(hass, mock_config_entry)
     await settle(hass)
     hub = hub_of(mock_config_entry)
-    task = hub._refresh_task
+    task = hub.refresh_task
     assert task is not None
     assert not task.done()
     await hub.async_stop()
     assert task.cancelled()
-    assert hub._refresh_task is None
+    assert hub.refresh_task is None
     assert hub._task is None
     await hub._watch_link()  # a link that is already gone: returns at once
 
@@ -1040,9 +1038,9 @@ KEEP_ALIVE_TARGETS = [
 
 def quiet_mesh(hub: JungHomeHub) -> None:
     """Stop the periodic energy poll: on a mesh without a gateway nothing else is on air at night."""
-    assert hub._unsub_energy is not None
-    hub._unsub_energy()
-    hub._unsub_energy = None
+    assert hub.energy.unsub_energy is not None
+    hub.energy.unsub_energy()
+    hub.energy.unsub_energy = None
 
 
 def stop_answering(link: FakeProxyLink) -> None:
@@ -1308,12 +1306,12 @@ async def test_a_send_held_back_past_the_deadline_is_given_up(
 
     fast_sleep.clear()
     assert (
-        await hub._while_seq_stalls(held_back) == retries + 1
+        await hub.while_seq_stalls(held_back) == retries + 1
     )  # through on the last retry
     calls.clear()
     retries += 1  # one refusal more than the deadline allows
     with pytest.raises(client_mod.SequenceStalled):
-        await hub._while_seq_stalls(held_back)
+        await hub.while_seq_stalls(held_back)
     assert len(calls) == retries
     assert fast_sleep == [coordinator.SEQ_STALL_RETRY] * (2 * retries - 2)
 
@@ -2736,91 +2734,6 @@ async def test_commands_are_clamped(
     ]
 
 
-async def test_time_set_repeats_daily_while_connected(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_answered: MockConfigEntry,
-    fake_link: FakeProxyLink,
-) -> None:
-    """Device timers have no other clock: the gateway never publishes time, so we do, once a day and after every connection."""
-    hub = hub_of(init_answered)
-    assert [dst for _, dst, _ in fake_link.sent].count(
-        ALL_NODES
-    ) == BROADCASTS  # the Time Set and location after the refresh
-    assert hub._unsub_energy is not None
-    hub._unsub_energy()  # a day of ticks would also fire the energy poll; it has its own tests
-    hub._unsub_energy = None
-    fake_link.sent.clear()
-
-    # day-long jumps would trip the link watchdog (a silent proxy is another test); keep it out of the way; the
-    # clock reads that follow the daily Time Set have their own tests (test_node_clocks.py)
-    with (
-        patch(
-            "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
-            10 * TIME_SET_INTERVAL,
-        ),
-        patch.object(hub.clocks, "read_all", AsyncMock(return_value=True)) as reads,
-    ):
-        freezer.tick(TIME_SET_INTERVAL - 60)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert not fake_link.sent  # not yet
-
-        freezer.tick(120)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert len(fake_link.sent) == 1
-        assert_time_set(fake_link.sent[0], dt_util.now())
-        reads.assert_awaited_once()  # the nodes' clocks are read after it
-
-        # nothing goes out while the link is down, and a failing send is only logged
-        fake_link.sent.clear()
-        with patch.object(
-            JungHomeHub, "connected", new_callable=PropertyMock, return_value=False
-        ):
-            freezer.tick(TIME_SET_INTERVAL)
-            async_fire_time_changed(hass)
-            await settle(hass)
-        assert not fake_link.sent
-
-    fake_link.write_error = ConnectionError("gone")
-    await hub._send_time()
-    await hub._send_location()
-    assert not fake_link.sent
-
-
-async def test_time_set_falls_back_to_utc_for_an_odd_zone(
-    hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
-) -> None:
-    """A zone offset Time Set cannot carry (not a quarter hour) still gets the devices a UTC clock."""
-    odd = datetime(2026, 1, 15, 12, 0, tzinfo=timezone(timedelta(minutes=7)))
-    fake_link.sent.clear()
-    with patch(
-        "custom_components.junghome_ble.coordinator.dt_util.now", return_value=odd
-    ):
-        await hub_of(init_answered)._send_time()
-    assert len(fake_link.sent) == 1
-    assert_time_set(fake_link.sent[0], odd, zone=timedelta(0))
-
-
-async def test_time_set_goes_out_before_the_refresh(
-    hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
-) -> None:
-    """Review-4 R I-5: Time Set and the location follow the proxy filter, before the refresh — sent after a complete
-    refresh, they never went out on a link lost before it was through. A refresh cut short sends nothing more."""
-    hub = hub_of(init_answered)
-    fake_link.sent.clear()
-    with patch.object(hub, "_refresh_all", AsyncMock(return_value=False)):
-        await hub._after_connect()
-    assert [dst for _, dst, _ in fake_link.sent] == [ALL_NODES] * BROADCASTS
-    assert_time_set(fake_link.sent[0], dt_util.now())
-    # a link already gone: nothing goes out, and nothing is raised
-    fake_link.sent.clear()
-    fake_link.write_error = ConnectionError("proxy disconnected")
-    await hub._after_connect()
-    assert not fake_link.sent
-
-
 async def test_connect_reads_are_not_repeated_soon_after_a_link_that_held(
     hass: HomeAssistant,
     init_answered: MockConfigEntry,
@@ -2977,252 +2890,12 @@ async def test_a_stalled_store_on_a_lost_link_is_a_lost_link(
     with patch.object(
         JungHomeHub, "connected", new_callable=PropertyMock, return_value=False
     ):
-        await hub._send_time()
-    await hub._send_location()  # the one refusal is used up: this goes out
+        await hub.clock.send_time()
+    await hub.clock.send_location()  # the one refusal is used up: this goes out
     assert [dst for _src, dst, _pdu in fake_link.sent] == [ALL_NODES]
 
 
-# --------------------------------------------------------------------------- energy poll
-
-
-async def test_energy_poll_repeats_while_connected(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_answered: MockConfigEntry,
-    fake_link: FakeProxyLink,
-) -> None:
-    """The counter is read after the connect-time refresh and every ENERGY_POLL_INTERVAL while a link is up."""
-    hub = hub_of(init_answered)
-    assert fake_link.sent[-AFTER_ENERGY:-CONNECT_TAIL] == COUNTER_GETS
-    assert hub.states[SOCKET].power_on_hours == 42
-    fake_link.sent.clear()
-
-    # the poll interval is as long as the link watchdog's patience (a silent proxy is another test); keep it out of the way
-    with patch(
-        "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT",
-        10 * ENERGY_POLL_INTERVAL,
-    ):
-        freezer.tick(ENERGY_POLL_INTERVAL - 60)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert not fake_link.sent  # not yet
-
-        STATE_REPLIES[HOURS_GET] = admin_property_status(
-            PROPERTY_POWER_ON_TIME, (43).to_bytes(3, "little")
-        )
-        try:
-            freezer.tick(120)
-            async_fire_time_changed(hass)
-            await settle(hass)
-        finally:
-            STATE_REPLIES[HOURS_GET] = admin_property_status(
-                PROPERTY_POWER_ON_TIME, (42).to_bytes(3, "little")
-            )
-        assert fake_link.sent == COUNTER_GETS
-        assert hub.states[SOCKET].power_on_hours == 43
-        assert hub._energy_task is not None
-        assert hub._energy_task.done()
-
-        # nothing is asked while the link is down
-        fake_link.sent.clear()
-        with patch.object(
-            JungHomeHub, "connected", new_callable=PropertyMock, return_value=False
-        ):
-            freezer.tick(ENERGY_POLL_INTERVAL)
-            async_fire_time_changed(hass)
-            await settle(hass)
-        assert not fake_link.sent
-
-        # ... nor while a poll (or the connect-time refresh that ends with one) is still running
-        hub._energy_task = running = never_done(hass)
-        freezer.tick(ENERGY_POLL_INTERVAL)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert not fake_link.sent
-        assert hub._energy_task is running
-        running.cancel()
-        await settle(hass)
-
-        # stopping the hub unsubscribes the timer and cancels a running poll
-        hub._energy_task = task = never_done(hass)
-        await hub.async_stop()
-        assert task.cancelled()
-        assert hub._energy_task is None
-        assert hub._unsub_energy is None
-        fake_link.sent.clear()
-        freezer.tick(ENERGY_POLL_INTERVAL)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert not fake_link.sent
-
-
-async def test_update_entity_reads_the_meter_now(
-    hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
-) -> None:
-    """`homeassistant.update_entity` on a meter sensor reads the socket's readings and counters at once, not at the
-    next ENERGY_POLL_INTERVAL: the app's consumption page reads them every 5 s (`requestData`)."""
-    hub = hub_of(init_answered)
-    readings = [
-        (OUR_ADDRESS, SOCKET_SENSOR, M.sensor_get(pid))
-        for pid in (SENSOR_POWER, SENSOR_VOLTAGE, SENSOR_CURRENT)
-    ]
-    STATE_REPLIES[HOURS_GET] = admin_property_status(
-        PROPERTY_POWER_ON_TIME, (44).to_bytes(3, "little")
-    )
-    try:
-        fake_link.sent.clear()
-        await hass.services.async_call(
-            "homeassistant",
-            "update_entity",
-            {"entity_id": entity_id(hass, "sensor", f"{UID_SOCKET}-power")},
-            blocking=True,
-        )
-        await settle(hass)
-    finally:
-        STATE_REPLIES[HOURS_GET] = admin_property_status(
-            PROPERTY_POWER_ON_TIME, (42).to_bytes(3, "little")
-        )
-    assert fake_link.sent == readings + COUNTER_GETS
-    assert hub.states[SOCKET].power_on_hours == 44
-
-    # asked twice at once (every sensor of the load updated together): one read, the second call waits for it
-    socket = hub.devices.by_address[SOCKET]
-    gate = asyncio.Event()
-    real_readings = hub._get_readings
-
-    async def held(load: Any) -> None:
-        await gate.wait()
-        await real_readings(load)
-
-    fake_link.sent.clear()
-    with patch.object(hub, "_get_readings", held):
-        first = hass.async_create_task(hub.async_refresh_meter(socket))
-        await asyncio.sleep(0)
-        second = hass.async_create_task(hub.async_refresh_meter(socket))
-        await asyncio.sleep(0)
-        assert not second.done()
-        gate.set()
-        await first
-        await second
-    assert fake_link.sent == readings + COUNTER_GETS
-    assert not hub._meter_refreshes
-
-    # no link: nothing raised, the cached values stay
-    hub.states[SOCKET].power_on_hours = 44
-    fake_link.write_error = OSError("GATT write failed")
-    try:
-        await hub.async_refresh_meter(socket)
-    finally:
-        fake_link.write_error = None
-    assert hub.states[SOCKET].power_on_hours == 44
-    assert not hub._meter_refreshes
-
-
-async def test_energy_poll_is_cancelled_with_the_link(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_answered: MockConfigEntry,
-    fake_link: FakeProxyLink,
-    mock_bluetooth_env: dict[str, Any],
-) -> None:
-    """A poll that the link outlives is cancelled with the link's refresh, and a failing send is only logged."""
-    hub = hub_of(init_answered)
-    hub._energy_task = task = never_done(hass)
-    mock_bluetooth_env["infos"] = []
-    fake_link.drop_link()
-    await settle(hass)
-    assert task.cancelled()
-    assert hub._energy_task is None
-
-    fake_link.sent.clear()
-    fake_link.write_error = ConnectionError("proxy disconnected")
-    await hub._poll_energy()  # the link went away between the tick and the send
-    assert not fake_link.sent
-
-
-async def test_energy_poll_survives_an_unanswered_socket(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_answered: MockConfigEntry,
-    fake_link: FakeProxyLink,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """A socket that does not answer costs one attempt per counter (no retries), then the poll moves on."""
-    hub = hub_of(init_answered)
-    replies = {get: STATE_REPLIES.pop(get) for _src, _dst, get in COUNTER_GETS}
-    fake_link.sent.clear()
-    try:
-        poll = hass.async_create_background_task(hub._poll_energy(), "poll")
-        await settle(hass)
-        assert fake_link.sent == COUNTER_GETS[:1]
-        for n in range(
-            2, len(COUNTER_GETS) + 1
-        ):  # each timeout moves on to the next counter, no retry
-            freezer.tick(3.1)
-            async_fire_time_changed(hass)
-            await settle(hass)
-            assert fake_link.sent == COUNTER_GETS[:n]
-        freezer.tick(3.1)
-        async_fire_time_changed(hass)
-        await settle(hass)
-        assert fake_link.sent == COUNTER_GETS
-        assert poll.done()
-    finally:
-        STATE_REPLIES.update(replies)
-    assert "0172 did not answer its property Get 006D" in caplog.text
-    assert "0173 did not answer its property Get 0072" in caplog.text
-    assert hub.states[SOCKET].power_on_hours == 42  # the connect-time values stay
-    assert hub.states[SOCKET].energy_wh == 210198
-
-
-async def test_energy_poll_is_anchored_on_the_connection(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_answered: MockConfigEntry,
-    fake_link: FakeProxyLink,
-) -> None:
-    """The poll grid restarts with every link: the connect-time poll is tick 0, the next one ENERGY_POLL_INTERVAL later,
-    wherever the integration's own start was (so a poll never lands right at the link watchdog's deadline)."""
-    hub = hub_of(init_answered)
-    timer = hub._unsub_energy
-    assert timer is not None
-    await tick(hass, freezer, 200)
-    fake_link.drop_link()
-    await settle(hass)
-    await wait_for_link(hass, init_answered)
-    assert fake_link.connect_count == 2
-    assert hub._unsub_energy is not None
-    assert (
-        hub._unsub_energy is not timer
-    )  # re-armed by the new link, the old timer is gone
-    # the connect-time poll of the new link; the scene and fault reads of the first, a link that held, are fresh
-    assert fake_link.sent[-ENERGY_GETS:] == COUNTER_GETS
-    fake_link.sent.clear()
-
-    await tick(
-        hass, freezer, ENERGY_POLL_INTERVAL - 60
-    )  # 500 s after the start: the old grid would poll now
-    assert not fake_link.sent
-    await tick(
-        hass, freezer, 120
-    )  # 360 s after the new link came up: the new grid does
-    assert fake_link.sent == COUNTER_GETS
-
-
-async def test_energy_poll_skips_meshes_without_a_metering_socket(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """Without a metering socket there is nothing to poll, so no connection arms a timer."""
-    hub = hub_of(init_integration)
-    assert hub._unsub_energy is not None
-    await hub.async_stop()
-    hub.devices.sockets.clear()
-    hub.stopping = False
-    await hub.async_start()
-    await wait_for_link(hass, init_integration)
-    assert hub.connected
-    assert hub._unsub_energy is None
-    await hub.async_stop()
+# --------------------------------------------------------------------------- socket counters (SIG Generic Property Status)
 
 
 async def test_sig_property_status_decoding(

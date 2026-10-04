@@ -19,6 +19,7 @@ from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
+from custom_components.junghome_ble.hub import clock
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import ALL_LIGHTS
 
@@ -157,13 +158,13 @@ def test_the_next_utc_offset_change_is_found_to_the_second() -> None:
     """Review-3 F17: the Time Set after a daylight-saving change needs its moment; zoneinfo does not tell it."""
     berlin = ZoneInfo("Europe/Berlin")
     before = datetime(2021, 3, 1, 12, 0, tzinfo=berlin)
-    assert coordinator.next_utc_offset_change(before) == datetime(
+    assert clock.next_utc_offset_change(before) == datetime(
         2021, 3, 28, 1, 0, tzinfo=UTC
     )
-    assert coordinator.next_utc_offset_change(
+    assert clock.next_utc_offset_change(
         datetime(2021, 4, 1, tzinfo=berlin)
     ) == datetime(2021, 10, 31, 1, 0, tzinfo=UTC)
-    assert coordinator.next_utc_offset_change(datetime(2021, 4, 1, tzinfo=UTC)) is None
+    assert clock.next_utc_offset_change(datetime(2021, 4, 1, tzinfo=UTC)) is None
 
 
 async def test_a_time_set_follows_a_daylight_saving_change(
@@ -188,7 +189,7 @@ async def test_a_time_set_follows_a_daylight_saving_change(
     ]
     assert len(time_sets) == 1
     hub = mock_config_entry.runtime_data
-    assert hub._unsub_offset_change is not None  # the autumn change is armed next
+    assert hub.clock.unsub_offset_change is not None  # the autumn change is armed next
 
 
 async def test_no_daylight_saving_no_extra_time_set(
@@ -201,7 +202,7 @@ async def test_no_daylight_saving_no_extra_time_set(
     await hass.config.async_set_time_zone("UTC")
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
-    assert mock_config_entry.runtime_data._unsub_offset_change is None
+    assert mock_config_entry.runtime_data.clock.unsub_offset_change is None
 
 
 def light_available(hass: HomeAssistant) -> bool:

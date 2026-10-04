@@ -695,7 +695,7 @@ class AddressShared(SequenceStalled):
 
     A `SequenceStalled` so whatever treats a refusal as "cannot send now" rather than as a lost link or real
     exhaustion does here too (the link stays, receive-only; a keep-alive refused is no verdict); not retried by
-    `JungHomeHub._while_seq_stalls`, which only waits for a store to catch up — this one waits for the user.
+    `JungHomeHub.while_seq_stalls`, which only waits for a store to catch up — this one waits for the user.
     """
 
 

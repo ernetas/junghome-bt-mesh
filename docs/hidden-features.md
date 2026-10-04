@@ -141,7 +141,7 @@ bundled in the APK (`android/…/assets/updates/`), and that version reads need 
 ## 7. What to do with it (candidates, in value order)
 
 1. ~~**Energy sensor** from `0x0072` (+ `0x006A`, `0x000D` as diagnostics)~~ **done the same day**: polled with the
-   power-on hours, `total_increasing` kWh for the Energy dashboard (`roadmap.md` step 8, `coordinator.COUNTER_READS`).
+   power-on hours, `total_increasing` kWh for the Energy dashboard (`roadmap.md` step 8, `hub.energy.COUNTER_READS`).
 2. ~~**Heartbeat-based availability**~~ **done the same day** as the *Node heartbeats* option (`ha-integration.md`
    "Options"): Heartbeat Publication Set to every mains node (64 s period, to HA's address, TTL 5, persisted in the
    node), a node is dead after 3½ minutes without a beat or any message, its entities go unavailable; switching

@@ -1,7 +1,7 @@
 """Each node's clock, zone offset and stored location, as the nodes answer them (review-4 F4-8).
 
 The nodes run their schedules (JH Scheduler slots, astro times) on their own clock, with the zone offset and the
-location Home Assistant last broadcast (`JungHomeHub._send_time`, `_send_location`); nothing confirmed that they
+location Home Assistant last broadcast (`Clock.send_time`, `_send_location`); nothing confirmed that they
 took them. Here:
 
 - every Time Status a node sends is kept (`NodeClocks.note_time`): the answer each node gives the Time Set broadcast
@@ -71,7 +71,7 @@ def time_server(node: Node) -> Element | None:
 def zone_sent(now: datetime) -> int:
     """Return the zone offset, in minutes, of a Time Set sent at `now`: UTC when the message cannot carry the local one.
 
-    The same fallback as `JungHomeHub._send_time`.
+    The same fallback as `Clock.send_time`.
     """
     try:
         return (M.time_set(now)[-1] - 64) * 15

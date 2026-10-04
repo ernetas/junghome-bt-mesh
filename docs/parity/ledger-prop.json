@@ -1609,8 +1609,8 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption"
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters",
+    "custom_components/junghome_ble/hub/energy.py::Energy.reset_consumption"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -1751,8 +1751,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_CURRENT",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_CURRENT",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor"
    ],
    "tests": [
@@ -1768,8 +1768,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_CURRENT",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_CURRENT",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
     "custom_components/junghome_ble/sensor.py::JungHomeMeterSensor"
    ],
    "tests": [
@@ -1785,8 +1785,8 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_CURRENT",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_CURRENT",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
     "custom_components/junghome_ble/jhmesh/properties.py::ThresholdCodec"
    ],
    "tests": [
@@ -1862,8 +1862,8 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.reset_consumption",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.reset_consumption",
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton"
    ],
    "tests": [
@@ -1877,13 +1877,13 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/properties.py::_SIG_SPECS",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_RESETS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_RESETS",
     "custom_components/junghome_ble/button.py::JungHomeResetConsumptionButton"
    ],
    "tests": [
     "tests/test_button.py::test_reset_consumption_zeroes_both_counters_like_the_app",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   }
  ]

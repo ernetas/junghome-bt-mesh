@@ -9,7 +9,7 @@ app draws the energy puck's page from the same two (`properties.md` §4, `Measur
 the same way, unverified on air (`jhmesh.devices.meter_element`), and checked against the counter its *Energy*
 sensor shows (`ElementState.energy_total`: 0x006A where the meter has no 0x0072; a reset in the gap moves that
 counter backwards, and no row goes past what the counter moved, `backfill_rows`). After
-the connect-time energy poll the hub reads them (`JungHomeHub._backfill_energy_history`: once per link, at most once
+the connect-time energy poll the hub reads them (`Energy.backfill_history`: once per link, at most once
 every `ENERGY_HISTORY_INTERVAL`) and imports the hours the sensor's statistics lack into those statistics, so the
 jump is spread back over the hours it was counted in — beyond the hourly chart, one row per day, at the day's last
 hour. The daily chart is only read when the gap reaches back past the hourly one.

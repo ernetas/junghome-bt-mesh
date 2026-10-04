@@ -1302,7 +1302,7 @@
    "id": "air:access:42",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_location",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_location",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
     "custom_components/junghome_ble/schedules.py::Scheduler._send_location"
    ],
@@ -1317,7 +1317,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS"
    ],
    "tests": [
     "tests/test_coordinator.py::test_sig_property_status_decoding",
@@ -1355,7 +1355,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._lacks_precise_energy"
    ],
    "tests": [
@@ -1368,7 +1368,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS"
    ],
    "tests": [
     "tests/test_coordinator.py::test_sig_property_status_decoding",
@@ -1380,7 +1380,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sig_property_status",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS"
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS"
    ],
    "tests": [
     "tests/test_coordinator.py::test_sig_property_status_decoding",
@@ -1406,7 +1406,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_FIELDS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
    ],
    "tests": [
@@ -1420,7 +1420,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_FIELDS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
    ],
    "tests": [
@@ -1434,7 +1434,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_sensor_status",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_FIELDS",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_FIELDS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_values"
    ],
    "tests": [
@@ -1447,15 +1447,15 @@
    "id": "air:access:5c",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time_daily",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._arm_offset_change",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time_daily",
+    "custom_components/junghome_ble/hub/clock.py::Clock.arm_offset_change",
     "custom_components/junghome_ble/jhmesh/messages.py::time_set"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_time_set_repeats_daily_while_connected",
+    "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected",
     "tests/test_link_loss.py::test_a_time_set_follows_a_daylight_saving_change",
-    "tests/test_coordinator.py::test_time_set_falls_back_to_utc_for_an_odd_zone"
+    "tests/test_hub_clock.py::test_time_set_falls_back_to_utc_for_an_odd_zone"
    ]
   },
   {
@@ -1823,13 +1823,13 @@
    "id": "air:access:822b:0x000d",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
@@ -1862,26 +1862,26 @@
    "id": "air:access:822b:0x0072",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
    "id": "air:access:822d:0x006a",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected",
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected",
     "tests/test_button.py::test_reset_consumption_reads_back_an_unanswered_set"
    ]
   },
@@ -1889,13 +1889,13 @@
    "id": "air:access:822d:0x006d",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters",
-    "custom_components/junghome_ble/coordinator.py::COUNTER_READS",
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters",
+    "custom_components/junghome_ble/hub/energy.py::COUNTER_READS",
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_energy_poll_repeats_while_connected"
+    "tests/test_hub_energy.py::test_energy_poll_repeats_while_connected"
    ]
   },
   {
@@ -1916,8 +1916,8 @@
    "id": "air:access:8231:0x005c",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
    ],
    "tests": [
@@ -1928,8 +1928,8 @@
    "id": "air:access:8231:0x005d",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
    ],
    "tests": [
@@ -1940,8 +1940,8 @@
    "id": "air:access:8231:0x0081",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings",
-    "custom_components/junghome_ble/coordinator.py::SENSOR_READINGS",
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings",
+    "custom_components/junghome_ble/hub/energy.py::SENSOR_READINGS",
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_get"
    ],
    "tests": [

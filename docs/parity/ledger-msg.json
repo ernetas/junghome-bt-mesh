@@ -186,7 +186,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_location_global_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_location",
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_location",
     "custom_components/junghome_ble/schedules.py::Scheduler._send_location"
    ],
    "tests": [
@@ -227,7 +227,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._reset_counter"
+    "custom_components/junghome_ble/hub/energy.py::Energy._reset_counter"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_set_builders_and_describe",
@@ -380,7 +380,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::time_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
+    "custom_components/junghome_ble/hub/clock.py::Clock.send_time"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_time_set_vector",
@@ -1469,7 +1469,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -1482,7 +1482,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -1495,7 +1495,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::generic_property_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_counters"
+    "custom_components/junghome_ble/hub/energy.py::Energy._get_counters"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_property_get_builders",
@@ -1519,7 +1519,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::sensor_get",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._get_readings"
+    "custom_components/junghome_ble/hub/energy.py::Energy.get_readings"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_sensor_get_builder_and_describe",
@@ -1576,7 +1576,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::time_get",
     "custom_components/junghome_ble/node_clocks.py::NodeClocks._read",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time_and_read_clocks"
+    "custom_components/junghome_ble/hub/clock.py::Clock._send_time_and_read_clocks"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_time_get_and_time_zone_get",

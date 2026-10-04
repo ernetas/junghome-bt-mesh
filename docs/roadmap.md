@@ -72,7 +72,7 @@ air · **lib** = message builder/decoder exists, no HA surface · **todo** = not
    socket's *main* element; the meter element (location 0x0040, the Sensor Server) listed the
    counters (`hidden-features.md` §2) and the sensors came back: *Energy* = SIG Manufacturer `0x0072` lifetime
    total (210,198 Wh), diagnostics *Energy since reset* = SIG Admin `0x006A` (the app's resettable total) and
-   *Energy since switched on* = `0x000D` (`coordinator.COUNTER_READS`). ~~Reset button~~ **done**
+   *Energy since switched on* = `0x000D` (`hub.energy.COUNTER_READS`). ~~Reset button~~ **done**
    (*Reset consumption*, `0x006D` = 0 and `0x006A` = 0 in the app's order, `coordinator.reset_consumption`; not yet
    pressed on a real socket). ~~Lock function~~ **done** (a *Lock* switch + *Lock time limit* number
    per light, socket and blind, `02 01 <s>` / unlock with the read fields, `switch.JungHomeLockSwitch`; not yet

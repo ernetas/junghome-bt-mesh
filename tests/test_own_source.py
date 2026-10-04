@@ -85,7 +85,7 @@ async def test_another_client_on_our_address_stops_sends_until_the_repair(
     with pytest.raises(AddressShared):
         await hub.proxy.send_access(LIGHT, M.generic_onoff_set(True))
     with pytest.raises(AddressShared):
-        await hub._while_seq_stalls(
+        await hub.while_seq_stalls(
             lambda: hub.proxy.send_access(LIGHT, M.generic_onoff_set(True))
         )
     assert hub.state.seq == seq

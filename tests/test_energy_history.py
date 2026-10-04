@@ -178,7 +178,7 @@ async def connect(
     hub: JungHomeHub = entry.runtime_data
     await wait_until(
         hass,
-        lambda: hub._refresh_task is not None and hub._refresh_task.done(),
+        lambda: hub.refresh_task is not None and hub.refresh_task.done(),
         what="the connect-time sequence",
     )
     await async_wait_recording_done(hass)
@@ -229,7 +229,7 @@ async def test_missed_hours_are_imported_on_connect(
 
     # a second link within the hour asks nothing: no whole hour can be missing
     mesh.gets.clear()
-    await hub._backfill_energy_history()
+    await hub.energy.backfill_history()
     assert mesh.gets == []
 
 
@@ -376,22 +376,22 @@ async def test_what_the_hub_skips(
     sock = next(s for s in hub.devices.sockets if s.address == SOCKET)
 
     # within the hour of the last try: nothing
-    await hub._backfill_energy_history()
+    await hub.energy.backfill_history()
     assert mesh.gets == []
 
     # an hour on, but the link just went away
     freezer.tick(ENERGY_HISTORY_INTERVAL)
     since, hub.connected_since = hub.connected_since, None
-    await hub._backfill_energy_history()
+    await hub.energy.backfill_history()
     assert mesh.gets == []
     hub.connected_since = since
 
     # the link breaks while reading
     with patch(
-        "custom_components.junghome_ble.coordinator.async_backfill",
+        "custom_components.junghome_ble.hub.energy.async_backfill",
         AsyncMock(side_effect=ConnectionError("not connected to a proxy")),
     ):
-        await hub._backfill_energy_history()
+        await hub.energy.backfill_history()
     assert "energy history import aborted: not connected to a proxy" in caplog.text
 
     # the counter is unknown; a zone half an hour off the statistics' hours
