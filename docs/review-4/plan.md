@@ -603,8 +603,12 @@ Dependencies (hard unless marked *soft*):
   time budget under load) (74). A test now requires every on-air marker to be cited in the checklist (C10, D13 added).
   All unverified on air.
 
-- **Released:** 1.3.0 (wave 22). Wave 23 (briefs 75–77: topology image, export download link, per-key double
-  click) is in progress.
+- **Released:** 1.3.0 (wave 22).
+- **Wave 23 (briefs 75–77): done.** U4-14 the *Mesh topology* image on the mesh network device, an SVG of Home
+  Assistant, its proxy node and every node banded by heartbeat hops, with state and features in shape, colour and
+  words; the same snapshot in the diagnostics (75). U4-17 `download_export`, an administrator's five-minute signed
+  link to the export on the host, with Home Assistant's changes in it (76). U4-19 *Keys that wait for a double click*,
+  the click delay per key, chosen in the options (77). All unverified on air; sweep items A12, E7, B13.
 
 Every finding and low item has landed. Brief 67 waits for decision M14 (custom repository first); the on-air checks
 are the maintainer's.
