@@ -582,9 +582,9 @@ async def test_new_loads_are_asked_and_new_nodes_get_heartbeats(env: Env) -> Non
     node = hub.cdb.node_by_addr(LIGHT_SWITCH)
     assert node is not None
     with (
-        patch.object(hub, "heartbeats_enabled", True),
-        patch.object(hub, "_chunked", AsyncMock()) as chunked,
-        patch.object(hub, "_configure_heartbeats", AsyncMock()) as configure,
+        patch.object(hub.liveness, "heartbeats_enabled", True),
+        patch.object(hub, "chunked", AsyncMock()) as chunked,
+        patch.object(hub.liveness, "configure_heartbeats", AsyncMock()) as configure,
     ):
         await hub._welcome({LIGHT_SWITCH}, [node])
         assert len(chunked.await_args.args[0]) == 1  # the switch's OnOff Get

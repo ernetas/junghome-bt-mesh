@@ -43,6 +43,7 @@ from custom_components.junghome_ble.const import (
     UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.hub import liveness
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import ProxyClient
@@ -84,7 +85,7 @@ def fast_requests() -> Generator[None]:
     """Every request that names no timeout (the hub's commands and state Gets) gives up after milliseconds."""
     timeout, *rest = ProxyClient.request.__defaults__ or ()
     assert (
-        timeout == coordinator.REQUEST_TIMEOUT
+        timeout == liveness.REQUEST_TIMEOUT
     )  # the hub relies on the library's default being the app's
     with patch.object(ProxyClient.request, "__defaults__", (FAST_TIMEOUT, *rest)):
         yield
@@ -313,7 +314,9 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
     ):
         with pytest.raises(HomeAssistantError) as exc:
             await switch_on(hass, eid)
-        await wait_until(hass, lambda: SOCKET in hub._recheck, what="the verdict")
+        await wait_until(
+            hass, lambda: SOCKET in hub.liveness.recheck, what="the verdict"
+        )
     keep_alive.assert_awaited_once()
     assert exc.value.translation_key == "device_not_reachable"
     assert (OUR_ADDRESS, SOCKET, M.vendor_property_get("admin", 0x0009)) in (
@@ -323,7 +326,7 @@ async def test_a_node_heard_from_during_its_command_stays_reachable(
     assert not hub.unreachable
     assert hass.states.get(eid).state != STATE_UNAVAILABLE
     assert (
-        SOCKET in hub._recheck
+        SOCKET in hub.liveness.recheck
     )  # asked again later (the node's primary), with the full budget
 
 
@@ -346,7 +349,7 @@ async def test_a_locked_load_that_leaves_a_command_unanswered_stays_reachable(
     fake_link.sets_silent.add(SOCKET)
     with (
         patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)),
-        patch.object(hub, "_schedule_recheck") as recheck,
+        patch.object(hub.liveness, "_schedule_recheck") as recheck,
     ):
         with pytest.raises(TimeoutError):
             await hub.set_onoff(SOCKET, True)  # past the entity, which would refuse it
@@ -407,7 +410,7 @@ async def test_a_colour_temperature_command_is_accounted_to_the_light(
     fake_link.sets_silent.add(LIGHT_CTL_TEMPERATURE)
     with (
         patch.object(JungHomeHub, "_keep_alive", AsyncMock(return_value=True)),
-        patch.object(hub, "_schedule_recheck") as recheck,
+        patch.object(hub.liveness, "_schedule_recheck") as recheck,
     ):
         with pytest.raises(HomeAssistantError):
             await hass.services.async_call(

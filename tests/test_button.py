@@ -333,7 +333,7 @@ async def init_reset_enabled(
         what="the connect-time refresh",
     )
     # nobody answered the refresh either (every request gives up after milliseconds here), so every node counts as
-    # unreachable (`JungHomeHub._missed_answer`); a status from the socket brings it back, as any message from it does
+    # unreachable (`Liveness.missed_answer`); a status from the socket brings it back, as any message from it does
     fake_link.inject(SOCKET, 0xC000, onoff_status(False))
     await hass.async_block_till_done()
     return mock_config_entry

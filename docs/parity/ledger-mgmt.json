@@ -1357,7 +1357,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_publication_status",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness._set_heartbeat"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_status_decode_and_describe",
@@ -1981,7 +1981,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness._set_heartbeat"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_builders",
@@ -4226,11 +4226,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
     "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
   {
@@ -4238,11 +4238,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
     "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
   {
@@ -4250,11 +4250,11 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
     "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
   {
@@ -4266,7 +4266,7 @@
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_request_config_retries_then_times_out",
-    "tests/test_coordinator.py::test_unanswered_state_get_and_keep_alive_count"
+    "tests/test_hub_liveness.py::test_unanswered_state_get_and_keep_alive_count"
    ]
   },
   {
@@ -4990,12 +4990,12 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/const.py::REFRESH_CHUNK"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
     "tests/test_coordinator.py::test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair"
    ],
    "note": "acknowledged Gets in chunks of REFRESH_CHUNK instead of one every 300 ms; unreachable nodes counted per node"
@@ -5013,12 +5013,12 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._command"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_request_config_retries_then_times_out",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
     "tests/test_coordinator.py::test_refresh_stops_on_send_failure"
    ],
    "note": "3 attempts x 3 s like the app; fails fast without a link; unanswered nodes become unreachable; models are bound up front instead of lazily"
@@ -7642,10 +7642,10 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/strings.json::exceptions.service_no_reply",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ]
   },
   {
@@ -9249,7 +9249,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/const.py::REFRESH_CHUNK",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh"

@@ -63,7 +63,7 @@ from .helpers import (
     onoff_status,
 )
 from .test_binary_sensor import make_detectors_entry, start_detectors
-from .test_coordinator import HEARTBEAT_TIMEOUT, start_with_heartbeats
+from .test_hub_liveness import HEARTBEAT_TIMEOUT, start_with_heartbeats
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
@@ -110,7 +110,7 @@ async def tick(
 
 def miss(hub: JungHomeHub, address: int) -> None:
     """Have the node of `address` leave a full-budget request unanswered: it is unreachable from now on."""
-    hub._missed_answer(address, "onoff", time.monotonic() + 1)
+    hub.liveness.missed_answer(address, "onoff", time.monotonic() + 1)
 
 
 @pytest.fixture
@@ -247,7 +247,7 @@ async def test_dead_nodes_count_with_heartbeats(
         patch(
             "custom_components.junghome_ble.coordinator.LINK_IDLE_TIMEOUT", 10 * 3600.0
         ),
-        patch.object(hub, "_reprobe_dead", AsyncMock()),
+        patch.object(hub.liveness, "_reprobe_dead", AsyncMock()),
     ):
         await tick(
             hass, freezer, HEARTBEAT_TIMEOUT + 30

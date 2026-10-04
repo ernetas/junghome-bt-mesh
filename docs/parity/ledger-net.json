@@ -640,12 +640,12 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._configure_heartbeats",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.configure_heartbeats",
     "tools/cli_ops.py::HopProbe.publish"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_builders",
-    "tests/test_coordinator.py::test_heartbeat_disable_counts_only_a_node_that_stopped",
+    "tests/test_hub_liveness.py::test_heartbeat_disable_counts_only_a_node_that_stopped",
     "tests/test_cli.py::test_cmd_config_hops"
    ],
    "class": "dup",
@@ -3172,11 +3172,11 @@
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config",
     "custom_components/junghome_ble/configurator/executor.py::CONFIG_TIMEOUT",
     "custom_components/junghome_ble/configurator/plan.py::bind_step",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_request_config_retries_then_times_out",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
     "tests/test_mesh_config.py::test_assign_key_binds_an_unbound_client_first"
    ],
    "class": "dup",
@@ -3980,13 +3980,13 @@
    "id": "net:uc:loadstatefordevices",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._refresh_all"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
     "tests/test_coordinator.py::test_refresh_stops_on_send_failure",
-    "tests/test_coordinator.py::test_unanswered_state_get_and_keep_alive_count"
+    "tests/test_hub_liveness.py::test_unanswered_state_get_and_keep_alive_count"
    ],
    "class": "dup",
    "reason": "same behaviour as mgmt:flow:loadstatefordevices",

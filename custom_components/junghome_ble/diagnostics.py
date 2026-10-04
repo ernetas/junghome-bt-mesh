@@ -504,7 +504,7 @@ def _heartbeats(hub: JungHomeHub) -> dict[str, Any]:
     return {
         "enabled": True,
         "timeout": hub.heartbeat_timeout,
-        "configured": hub._heartbeats_configured_at is not None,  # noqa: SLF001  # the hub's own diagnostics
+        "configured": hub.liveness.configured_at is not None,
         "nodes": nodes,
     }
 

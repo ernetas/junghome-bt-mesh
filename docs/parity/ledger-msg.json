@@ -53,7 +53,7 @@
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._request",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_request_config_ignores_replies_with_the_wrong_key_source_or_opcode",
@@ -144,7 +144,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_heartbeat_publication_status",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._set_heartbeat"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness._set_heartbeat"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_status_decode_and_describe",
@@ -981,12 +981,12 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::heartbeat_publication_set",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._configure_heartbeats"
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.configure_heartbeats"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_heartbeat_publication_builders",
     "tests/jhmesh/test_properties_codecs.py::test_heartbeat_publication_set_and_its_status",
-    "tests/test_coordinator.py::test_heartbeat_disable_counts_only_a_node_that_stopped"
+    "tests/test_hub_liveness.py::test_heartbeat_disable_counts_only_a_node_that_stopped"
    ]
   },
   {

@@ -48,7 +48,6 @@ from .const import (
     CONF_GATEWAY_FINGERPRINT,
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_PIN_SOURCE,
-    CONF_HEARTBEATS_PUBLISHING,
     CONF_SOURCE,
     CONNECT_BACKOFF_MAX,
     CONNECT_BACKOFF_MIN,
@@ -63,10 +62,6 @@ from .const import (
     FAILED_PROXY_COOLDOWN,
     FILTER_STATUS_TIMEOUT,
     HEARTBEAT_CHECK_INTERVAL,
-    HEARTBEAT_MISSED_BEATS,
-    HEARTBEAT_PERIOD_LOG,
-    HEARTBEAT_RECONFIGURE_INTERVAL,
-    HEARTBEAT_REPROBE_INTERVAL,
     HUB_DATA_KEYS,
     IDENTIFY_SECONDS,
     ISSUE_ADDRESS_SHARED,
@@ -110,7 +105,6 @@ from .const import (
     REFRESH_CHUNK,
     REFRESH_RETRIES,
     REQUEST_ATTEMPTS,
-    REQUEST_TIMEOUT,
     RESTART_BLOCK,
     RESTART_SLACK,
     SCENE_RECALL_WINDOW,
@@ -123,19 +117,17 @@ from .const import (
     SIGNAL_CONNECTION,
     SIGNAL_LINK_STATE,
     SIGNAL_NODE,
-    SIGNAL_REACHABILITY,
     SIGNAL_SCENES,
     SIGNAL_UPDATE,
     STOP_TIMEOUT,
     TIME_SET_INTERVAL,
-    UNREACHABLE_RECHECK,
-    UNREACHABLE_REPROBE,
     issue_id,
     learn_more_url,
 )
 from .energy_history import async_backfill, floor_hour
 from .entity import PRODUCT_NAMES, update_node_device
 from .gateway_api import JungHomeGatewayApi, api_for_entry
+from .hub.liveness import Liveness
 from .hub_gestures import ButtonGestures, EventListener
 from .identity import async_vault_keeper
 from .inserts import NodeInserts
@@ -845,6 +837,8 @@ class JungHomeHub:
         )
         state.stall_listener = self._seq_stall_started
         self._unsub_seq_stall: CALLBACK_TYPE | None = None
+        # the nodes' reachability and heartbeats (`hub/liveness.py`, review-4 A4-3)
+        self.liveness = Liveness(self)
         self.proxy = ProxyClient(
             cdb,
             state,
@@ -853,7 +847,7 @@ class JungHomeHub:
             on_beacon=self._on_beacon,
             on_filter_status=self._on_filter_status,
             on_undecryptable=self._on_undecryptable,
-            on_heartbeat=self._on_heartbeat,
+            on_heartbeat=self.liveness.on_heartbeat,
             on_key_refresh=self._on_key_refresh,
             on_foreign_own_source=self._on_foreign_own_source,
         )
@@ -888,7 +882,7 @@ class JungHomeHub:
         self._unsub_time: Callable[[], None] | None = None
         self._unsub_energy: Callable[[], None] | None = None
         self._link_lost = asyncio.Event()
-        self._stop = False
+        self.stopping = False  # `async_stop` began: nothing new is scheduled
         self._unsub_adv: Callable[[], None] | None = None
         self._was_available = False
         self._last_rx = time.monotonic()  # when the proxy last forwarded anything we could decode, or named itself (link watchdog)
@@ -904,11 +898,6 @@ class JungHomeHub:
         # and the watchdog waiting for its Filter Status (`_filter_status_overdue`)
         self._beacon_authenticated = False
         self._unsub_filter_watch: Callable[[], None] | None = None
-        # Option: node heartbeats — per-node liveness (`heartbeats`, `_configure_heartbeats`, `node_alive`)
-        self.heartbeats_enabled = bool(
-            entry.options.get(OPTION_HEARTBEATS, DEFAULT_HEARTBEATS)
-        )
-        self.heartbeats: dict[int, Heartbeat] = {}  # node unicast → its last Heartbeat
         # node unicast → its last Configuration Server audit (`async_audit`), for the diagnostics
         self.audits: dict[int, NodeAudit] = {}
         # scene number → {member element → its JUNG scene action (None: stored without a description)}, read from
@@ -946,23 +935,9 @@ class JungHomeHub:
         # one mesh read of the gateway's certificate at a time, and a pin the gateway node contradicted (not used)
         self._gateway_check = asyncio.Lock()
         self._distrusted_pin: str | None = None
-        self._reprobed_at: dict[
-            int, float
-        ] = {}  # dead node → when it was last asked for heartbeats again
-        self._reprobe_task: asyncio.Task[None] | None = None
         self.unknown_nodes: dict[
             str, JungAdvertisement | None
         ] = {}  # MAC → what it advertises; nodes of our network the export does not know
-        self._alive_deadline: dict[
-            int, float
-        ] = {}  # node unicast → monotonic time after which it counts as dead
-        self._dead_nodes: set[int] = set()
-        # nodes that left a full-budget request unanswered (`_missed_answer`): their entities are unavailable until
-        # the node is heard from (`_heard_from`)
-        self.unreachable: set[int] = set()
-        self.last_heard: dict[
-            int, float
-        ] = {}  # node unicast → monotonic time of its last message
         # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`, review-3 W4 / F24)
         self.keep_awake = KeepAwake(self)
         # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`, review-4 D11)
@@ -1013,19 +988,13 @@ class JungHomeHub:
         self._last_seq: dict[int, int] = {}
         self._node_signalled: dict[int, float] = {}
         self._unsub_seq_check: CALLBACK_TYPE | None = None
-        self._recheck: dict[
-            int, CALLBACK_TYPE
-        ] = {}  # node unicast → its pending re-ask
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread: dict[int, CALLBACK_TYPE] = {}
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
         self._locating: dict[int, CALLBACK_TYPE] = {}
-        self._heartbeats_configured_at: float | None = None
         self._rebuilding = (
             False  # `async_begin_rebuild` ran: a reload replaces this hub
         )
-        self._unsub_heartbeats: Callable[[], None] | None = None
-        self._heartbeat_task: asyncio.Task[None] | None = None
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
         self._built_from = (hub_data(entry.data), dict(entry.options))
         # per link: what the proxy forwarded that our keys could open, and what they could not (stale export detection)
@@ -1189,9 +1158,9 @@ class JungHomeHub:
         )
         self._arm_offset_change()
         if self.heartbeats_enabled:
-            self._unsub_heartbeats = async_track_time_interval(
+            self.liveness.unsub_heartbeats = async_track_time_interval(
                 self.hass,
-                self._check_heartbeats,
+                self.liveness.check_heartbeats,
                 timedelta(seconds=HEARTBEAT_CHECK_INTERVAL),
             )
         self._unsub_seq_check = async_track_time_interval(
@@ -1228,12 +1197,12 @@ class JungHomeHub:
 
     async def async_stop(self) -> None:
         """Stop the connection loop and background work, then drop the link."""
-        self._stop = True
+        self.stopping = True
         for unsub in (
             self._unsub_adv,
             self._unsub_time,
             self._unsub_energy,
-            self._unsub_heartbeats,
+            self.liveness.unsub_heartbeats,
             self._unsub_seq_check,
             self._unsub_grace,
             self._unsub_ha_stop,
@@ -1246,18 +1215,18 @@ class JungHomeHub:
         self._unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
         self._unsub_offset_change = self._unsub_seq_stall = None
         self._unsub_adv = self._unsub_time = self._unsub_energy = None
-        self._unsub_heartbeats = self._unsub_seq_check = None
+        self.liveness.unsub_heartbeats = self._unsub_seq_check = None
         self._cancel_export_refresh_timer()
         self._cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
         # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
         for cancel in (
-            *self._recheck.values(),
+            *self.liveness.recheck.values(),
             *self._transition_reread.values(),
             *self._locating.values(),  # the nodes stop by themselves within 60 s
         ):
             cancel()
-        self._recheck.clear()
+        self.liveness.recheck.clear()
         self._transition_reread.clear()
         self._locating.clear()
         self.gestures.cancel_all()
@@ -1268,8 +1237,8 @@ class JungHomeHub:
             self._refresh_task = None
             await self._cancel(self._energy_task)
             self._energy_task = None
-            await self._cancel(self._heartbeat_task)
-            self._heartbeat_task = None
+            await self._cancel(self.liveness.heartbeat_task)
+            self.liveness.heartbeat_task = None
             await self._cancel(self.vault_refresh.task)
             self.vault_refresh.task = None
         finally:
@@ -1355,7 +1324,7 @@ class JungHomeHub:
             return True
         return (
             self._lost_at is not None
-            and not self._stop
+            and not self.stopping
             and time.monotonic() - self._lost_at < LINK_LOSS_GRACE
         )
 
@@ -1402,14 +1371,14 @@ class JungHomeHub:
         ):
             self._cancel_refresh()
             assert (
-                self._unsub_heartbeats is not None
+                self.liveness.unsub_heartbeats is not None
             )  # armed by `async_start` with the option on
-            self._unsub_heartbeats()
-            self._unsub_heartbeats = None
-            await self._cancel(self._heartbeat_task)
-            await self._cancel(self._reprobe_task)
-            self._heartbeat_task = self._reprobe_task = None
-            await self.async_disable_heartbeats()
+            self.liveness.unsub_heartbeats()
+            self.liveness.unsub_heartbeats = None
+            await self._cancel(self.liveness.heartbeat_task)
+            await self._cancel(self.liveness.reprobe_task)
+            self.liveness.heartbeat_task = self.liveness.reprobe_task = None
+            await self.liveness.async_disable_heartbeats()
         return True
 
     # ------------------------------------------------------------------ following the export in place (D23)
@@ -1505,19 +1474,22 @@ class JungHomeHub:
     async def _welcome(self, loads: set[int], nodes: list[Node]) -> None:
         """Ask the loads an export added for their state, and its mains nodes for heartbeats, over the current link."""
         try:
-            await self._chunked(self._state_jobs(loads))
+            await self.chunked(self._state_jobs(loads))
         except ConnectionError as err:
             _LOGGER.debug("state read of the new loads aborted: %s", err)
             return
         if (
             self.heartbeats_enabled
             and any(n.pid is not None and n.pid not in BATTERY_PIDS for n in nodes)
-            and (self._heartbeat_task is None or self._heartbeat_task.done())
+            and (
+                self.liveness.heartbeat_task is None
+                or self.liveness.heartbeat_task.done()
+            )
         ):
-            self._heartbeats_configured_at = (
+            self.liveness.configured_at = (
                 None  # a round for every node: the new ones are among them
             )
-            await self._configure_heartbeats()
+            await self.liveness.configure_heartbeats()
 
     # ------------------------------------------------------------------ connection loop
     def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
@@ -1549,7 +1521,7 @@ class JungHomeHub:
             self._link_lost.set()  # wake the loop: a candidate appeared
         if (node := self.node_for_address(info.address)) is not None:
             self.node_rssi[node.unicast] = info.rssi
-            self._signal_node(node.unicast)
+            self.signal_node(node.unicast)
             # its JUNG record, merged into the proxy advert's data: insert and key layout (`inserts.py`)
             self.inserts.note_advert(
                 node, parse_manufacturer_data(info.manufacturer_data)
@@ -1607,7 +1579,7 @@ class JungHomeHub:
         """
         if (
             not self.unknown_nodes
-            or self._stop
+            or self.stopping
             or self._gateway_for_refresh() is None
             or (self._export_refresh is not None and not self._export_refresh.done())
             or self.configurator is None
@@ -1908,7 +1880,7 @@ class JungHomeHub:
         failed: dict[str, float] = {}
         # shared with `_connection_pass`, which doubles it on a failure or a short link and resets it after a long one
         backoff = [CONNECT_BACKOFF_MIN]
-        while not self._stop:
+        while not self.stopping:
             try:
                 await self._connection_pass(failed, backoff)
             except Exception:
@@ -2050,7 +2022,7 @@ class JungHomeHub:
                 # a command went unanswered: ask the proxy now rather than after LINK_IDLE_TIMEOUT of silence
                 if await self._keep_alive():
                     for address, kind, asked in unanswered:
-                        self._missed_answer(address, kind, asked, command=True)
+                        self.liveness.missed_answer(address, kind, asked, command=True)
                     continue
                 if not self._link_lost.is_set():
                     _LOGGER.warning(
@@ -2136,7 +2108,7 @@ class JungHomeHub:
             except TimeoutError:
                 _LOGGER.debug("%04X did not answer the keep-alive Get", addr)
                 # an OnOff Get, like the refresh of a switch; one attempt is no verdict on the node
-                self._missed_answer(addr, "switch", asked, full=False)
+                self.liveness.missed_answer(addr, "switch", asked, full=False)
                 if self._last_rx != before:
                     return True  # not that element, but the proxy forwarded something else meanwhile
                 continue
@@ -2230,14 +2202,8 @@ class JungHomeHub:
         self._held_back_at_link = self.state.held_back_total
         self._connect_failure_logged = False
         self.proxy_address = info.address
-        # silence while the link was down was the link's fault, not the nodes': every node gets a full timeout
-        # from here (a dead node stays dead until heard from — `_mark_alive` revives it)
-        now = time.monotonic()
-        for unicast in self._alive_deadline:
-            self._alive_deadline[unicast] = now + self.heartbeat_timeout
-        # ... and no re-ask pending (the refresh asks everyone); an unreachable node stays so until heard from
-        for unicast in list(self._recheck):
-            self._cancel_recheck(unicast)
+        # every node gets a full timeout from here, and no re-ask stays pending
+        self.liveness.link_up()
         # the proxy's Filter Status names the node a little after the filter request (`_on_filter_status`); its
         # Bluetooth address usually names it already (JUNG nodes advertise from their MAC, `node_for_address`)
         node = self.node_for_address(info.address)
@@ -2455,7 +2421,7 @@ class JungHomeHub:
         unacknowledged broadcasts, they need no refresh to be through, and sent after it they never went out on a
         link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
         fault reads are not repeated soon after a round on a link that held (`_connect_step`); the heartbeat
-        configuration has a longer interval of its own (`_configure_heartbeats`). The new order is unverified on air.
+        configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The new order is unverified on air.
         """
         await self._send_time()
         await self._send_location()
@@ -2466,10 +2432,10 @@ class JungHomeHub:
         self._set_link_state(LINK_CONNECTED)
         await self._poll_energy()
         await self._backfill_energy_history()
-        await self._configure_heartbeats()
-        if not self.heartbeats_enabled and self.heartbeats_publishing:
+        await self.liveness.configure_heartbeats()
+        if not self.heartbeats_enabled and self.liveness.heartbeats_publishing:
             # the option went off while some nodes could not be told (link down, a node silent or refusing)
-            await self.async_disable_heartbeats()
+            await self.liveness.async_disable_heartbeats()
         await self._connect_step("scene actions", self._get_scene_actions)
         await self._connect_step("faults", self._get_faults)
         await self._connect_step("current scenes", self._get_current_scenes)
@@ -2510,7 +2476,7 @@ class JungHomeHub:
         False when the link went away first.
         """
         try:
-            await self._chunked(
+            await self.chunked(
                 [
                     partial(self._get_faults_of, node.unicast)
                     for node in self.cdb.nodes
@@ -2555,7 +2521,7 @@ class JungHomeHub:
         if not members:
             return True
         try:
-            await self._chunked(
+            await self.chunked(
                 [partial(self._get_scene_actions_of, addr) for addr in members]
             )
         except ConnectionError as err:
@@ -2577,7 +2543,7 @@ class JungHomeHub:
         if not registers:
             return True
         try:
-            await self._chunked(
+            await self.chunked(
                 [partial(self._get_current_scene_of, addr) for addr in registers]
             )
         except ConnectionError as err:
@@ -2695,7 +2661,7 @@ class JungHomeHub:
         Temperature Get, the gateway's read of a tunable-white light: range from the light, temperature from the
         element after it). That last Get is a third one to the same node in the same refresh and one the app never
         sends, so its silence does not count toward the node's reachability (`counted=False`): under the app's rule
-        one unanswered request marks the node unreachable at once (`_missed_answer`), and the light's own state Get
+        one unanswered request marks the node unreachable at once (`Liveness.missed_answer`), and the light's own state Get
         already decides that for the node. Returns False when the link went away before the refresh was through.
 
         A metered load's meter element gets one job that asks for its readings property by property (`_get_readings`).
@@ -2710,7 +2676,7 @@ class JungHomeHub:
         jobs = self._state_jobs()
         heard, answered = self._rx_messages, self._rx_to_us
         try:
-            await self._chunked(jobs)
+            await self.chunked(jobs)
         except ConnectionError as err:
             _LOGGER.debug("refresh aborted: %s", err)
             return False
@@ -2770,7 +2736,7 @@ class JungHomeHub:
         ]
         return jobs
 
-    async def _chunked(self, jobs: Sequence[Callable[[], Awaitable[object]]]) -> None:
+    async def chunked(self, jobs: Sequence[Callable[[], Awaitable[object]]]) -> None:
         """Run the jobs REFRESH_CHUNK at a time with a short pause in between (as the app does).
 
         Each job is retried while the sequence-number store holds sends back (`_while_seq_stalls`).
@@ -2832,7 +2798,7 @@ class JungHomeHub:
         other; different loads are polled REFRESH_CHUNK at a time like the state refresh.
         """
         try:
-            await self._chunked(
+            await self.chunked(
                 [partial(self._get_counters, load) for load in self.devices.metered]
             )
         except ConnectionError as err:
@@ -2882,7 +2848,7 @@ class JungHomeHub:
         self._energy_history_at = now
         link_up = floor_hour(datetime.fromtimestamp(self.connected_since, UTC))
         try:
-            await self._chunked(
+            await self.chunked(
                 [
                     partial(async_backfill, self, load, link_up)
                     for load in self.devices.metered
@@ -3026,7 +2992,7 @@ class JungHomeHub:
         except TimeoutError:
             _LOGGER.debug("%04X did not answer its state Get", addr)
             if counted:
-                self._missed_answer(addr, kind, asked, full=not quiet)
+                self.liveness.missed_answer(addr, kind, asked, full=not quiet)
 
     async def async_wait_settled(self, addr: int, kind: str) -> bool:
         """Ask a load for its state until it answers with no transition left (present = target); True once it does.
@@ -3174,7 +3140,7 @@ class JungHomeHub:
     async def async_audit(self, nodes: Sequence[Node]) -> list[NodeAudit]:
         """Compare the nodes' Configuration Servers with the export (`jhmesh.audit`: device-key Gets, never a Set).
 
-        One node after the other, its Gets paced like the connect-time refresh (`_chunked`: REFRESH_CHUNK at a
+        One node after the other, its Gets paced like the connect-time refresh (`chunked`: REFRESH_CHUNK at a
         time, each retried while the sequence-number store holds sends back); a node that stays silent is a result,
         not an error.
         Each node's result is kept for the diagnostics. A lost link raises `ConnectionError`.
@@ -3184,7 +3150,7 @@ class JungHomeHub:
         )
         results = []
         for node in nodes:
-            result = await audit_node(exchange, node, run=self._chunked)
+            result = await audit_node(exchange, node, run=self.chunked)
             self.audits[node.unicast] = result
             results.append(result)
         return results
@@ -3253,137 +3219,51 @@ class JungHomeHub:
         assert isinstance(status, C.NodeIdentityStatus)  # what the opcode decodes to
         return status
 
-    # ------------------------------------------------------------------ heartbeats (per-node liveness)
+    # ------------------------------------------------------------------ liveness (`hub/liveness.py`)
+    @property
+    def heartbeats_enabled(self) -> bool:
+        """Whether the heartbeat option is on (`Liveness.heartbeats_enabled`)."""
+        return self.liveness.heartbeats_enabled
+
+    @property
+    def heartbeats(self) -> dict[int, Heartbeat]:
+        """Each node's last Heartbeat, by node unicast (`Liveness.heartbeats`)."""
+        return self.liveness.heartbeats
+
+    @property
+    def unreachable(self) -> set[int]:
+        """The nodes that left a full-budget request unanswered (`Liveness.unreachable`)."""
+        return self.liveness.unreachable
+
+    @property
+    def last_heard(self) -> dict[int, float]:
+        """When each node was last heard from, monotonic, by node unicast (`Liveness.last_heard`)."""
+        return self.liveness.last_heard
+
     @property
     def heartbeat_nodes(self) -> list[Node]:
-        """The nodes asked for heartbeats: every provisioned mains device (battery nodes sleep and would not beat)."""
-        return [
-            n for n in self.cdb.nodes if n.pid is not None and n.pid not in BATTERY_PIDS
-        ]
+        """The nodes asked for heartbeats (`Liveness.heartbeat_nodes`)."""
+        return self.liveness.heartbeat_nodes
 
     @property
     def heartbeat_timeout(self) -> float:
-        """Seconds without a beat (or any message) after which a node counts as dead."""
-        period = C.heartbeat_period_seconds(HEARTBEAT_PERIOD_LOG)
-        return period * (HEARTBEAT_MISSED_BEATS + 0.5)
+        """Seconds without a beat after which a node counts as dead (`Liveness.heartbeat_timeout`)."""
+        return self.liveness.heartbeat_timeout
 
     def node_alive(self, address: int) -> bool:
-        """Whether the node owning element `address` counts as there: it answers its requests, and beats.
+        """Whether the node owning element `address` counts as there (`Liveness.node_alive`)."""
+        return self.liveness.node_alive(address)
 
-        Unreachable after one request asked with the app's full budget went unanswered (`_missed_answer`, always
-        on), dead after a heartbeat timeout (only with the heartbeat option); either ends with the next message from it.
-        """
-        if not self.unreachable and not (self.heartbeats_enabled and self._dead_nodes):
-            return True
-        node = self.cdb.node_by_addr(address)
-        if node is None:
-            return True
-        return node.unicast not in self.unreachable and not (
-            self.heartbeats_enabled and node.unicast in self._dead_nodes
-        )
+    def heartbeat_age(self, node: Node) -> float | None:
+        """Seconds since the node's last Heartbeat (`Liveness.heartbeat_age`)."""
+        return self.liveness.heartbeat_age(node)
 
     def load_locked(self, address: int) -> bool:
         """Whether the load at `address` last reported a lock that has not run out (`ElementState.locked`)."""
         st = self.states.get(address)
         return st is not None and st.locked
 
-    def _missed_answer(
-        self,
-        address: int,
-        kind: str,
-        asked: float,
-        *,
-        full: bool = True,
-        command: bool = False,
-    ) -> None:
-        """Take note that the element at `address` left a request sent at `asked` (`time.monotonic()`) unanswered.
-
-        The app's rule (`MeshMessengerImpl$handleError$1`: a request timeout sets the device's failed-message counter
-        to the unreachable mark at once): a `full` budget exhausted — REQUEST_ATTEMPTS attempts of a state Get or a
-        load's command — marks the node unreachable, and its entities unavailable until it is heard from
-        (`_heard_from`). Two exceptions keep it: a node heard from since `asked` is there, only busy (the app
-        completes a pending request on any User Property Status from the element, and resets the counter on any
-        status, so the same node would not be unreachable there either); and a shorter probe (the link watchdog's
-        one-attempt keep-alive) is no verdict — the element is asked again with a full-budget Get (its `kind`'s)
-        after UNREACHABLE_RECHECK. An unreachable node is asked again every UNREACHABLE_REPROBE for as long as the
-        link lasts (nothing else would ask it: its entities are unavailable, so nobody can operate them).
-
-        Battery nodes sleep between key presses: they are never asked for their state, and a command they miss says
-        nothing about whether their keys still work, so they are never marked (the app does not show them as "No
-        connection" either).
-
-        Nor is a load known to be locked (`load_locked`) for a `command` it left unanswered: a locked load may well
-        ignore the Set, and is not gone for it (review-4 F4-2) — it is asked again with a state Get after
-        UNREACHABLE_RECHECK, whose silence counts as any other. Whether a locked load answers a Set at all is
-        unverified on air (`docs/hidden-features.md` §12).
-        """
-        node = self.cdb.node_by_addr(address)
-        if node is None or node.pid in BATTERY_PIDS:
-            return
-        if node.unicast in self.unreachable:
-            self._schedule_recheck(node.unicast, address, kind, UNREACHABLE_REPROBE)
-            return
-        if (
-            not full
-            or self.last_heard.get(node.unicast, -1e9) >= asked
-            or (command and self.load_locked(address))
-        ):
-            self._schedule_recheck(node.unicast, address, kind, UNREACHABLE_RECHECK)
-            return
-        self._cancel_recheck(node.unicast)
-        self.unreachable.add(node.unicast)
-        _LOGGER.warning(
-            "%s did not answer a request (%d attempts in %.0f s): marking it unavailable",
-            node.name,
-            REQUEST_ATTEMPTS,
-            REQUEST_ATTEMPTS * REQUEST_TIMEOUT,
-        )
-        self._notify_node(node)
-        self._schedule_recheck(node.unicast, address, kind, UNREACHABLE_REPROBE)
-
-    def _schedule_recheck(
-        self, unicast: int, address: int, kind: str, delay: float
-    ) -> None:
-        """Ask the node again (its element `address`, `kind`'s Get) after `delay`, unless a re-ask is pending."""
-        if unicast not in self._recheck and not self._stop:
-            self._recheck[unicast] = async_call_later(
-                self.hass, delay, partial(self._recheck_node, unicast, address, kind)
-            )
-
-    def _cancel_recheck(self, unicast: int) -> None:
-        if (cancel := self._recheck.pop(unicast, None)) is not None:
-            cancel()
-
-    @callback
-    def _recheck_node(
-        self, unicast: int, address: int, kind: str, _now: datetime
-    ) -> None:
-        """Ask a node that missed a state Get again, unless it was heard from meanwhile or the link is down."""
-        del self._recheck[unicast]
-        if not self.connected:
-            return  # the new link's refresh asks every node again
-        self.entry.async_create_background_task(
-            self.hass,
-            self.async_refresh_element(
-                address, kind, quiet=unicast in self.unreachable
-            ),
-            f"{DOMAIN} reachability {address:04X}",
-        )
-
-    def _heard_from(self, address: int) -> None:
-        node = self.cdb.node_by_addr(address)
-        if node is None:
-            return
-        self.last_heard[node.unicast] = time.monotonic()
-        self.last_seen[node.unicast] = dt_util.utcnow()
-        self._signal_node(node.unicast)
-        self._cancel_recheck(node.unicast)
-        if node.unicast in self.unreachable:
-            self.unreachable.discard(node.unicast)
-            _LOGGER.info("%s is reachable again", node.name)
-            self._notify_node(node)
-
-    def _signal_node(self, unicast: int, *, force: bool = False) -> None:
+    def signal_node(self, unicast: int, *, force: bool = False) -> None:
         """Tell the node's diagnostic entities, at most once per NODE_DIAGNOSTICS_INTERVAL unless `force`d."""
         now = time.monotonic()
         if (
@@ -3429,7 +3309,7 @@ class JungHomeHub:
                 last,
                 seq,
             )
-            self._signal_node(node.unicast, force=True)
+            self.signal_node(node.unicast, force=True)
 
     def highest_seq(self) -> tuple[int, int] | None:
         """Return (source, sequence number) of the source furthest into the current IV index's space, us included."""
@@ -3479,256 +3359,6 @@ class JungHomeHub:
             },
         )
 
-    def heartbeat_age(self, node: Node) -> float | None:
-        """Seconds since the node's last Heartbeat; None when none was seen since the start."""
-        beat = self.heartbeats.get(node.unicast)
-        return None if beat is None else time.monotonic() - beat.received
-
-    async def _configure_heartbeats(self) -> None:
-        """Ask every mains node to publish Heartbeats to our address (`OPTION_HEARTBEATS`), at most every few hours.
-
-        A Config Heartbeat Publication Set with the device key, one node at a time in the usual chunks; the
-        publication persists in the node, so this is not repeated on every link — only when the last round is
-        older than HEARTBEAT_RECONFIGURE_INTERVAL (a node that lost it, e.g. after a mains failure, gets it back
-        then; until then any message it sends keeps it alive anyway). Every node gets a fresh deadline: silence
-        counts only from here.
-        """
-        if not self.heartbeats_enabled:
-            return
-        now = time.monotonic()
-        if (
-            self._heartbeats_configured_at is not None
-            and now - self._heartbeats_configured_at < HEARTBEAT_RECONFIGURE_INTERVAL
-        ):
-            return
-        pdu = C.heartbeat_publication_set(
-            self.proxy.state.src, HEARTBEAT_PERIOD_LOG, ttl=self.proxy.ttl
-        )
-        # before the first Set: any node may take it
-        self._set_heartbeats_publishing({node.unicast for node in self.heartbeat_nodes})
-        try:
-            await self._chunked(
-                [
-                    partial(self._set_heartbeat, node, pdu, "configure")
-                    for node in self.heartbeat_nodes
-                ]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("heartbeat configuration aborted: %s", err)
-            return
-        self._heartbeats_configured_at = time.monotonic()
-
-    async def async_disable_heartbeats(self) -> None:
-        """Tell the mains nodes to stop publishing Heartbeats (the option was switched off).
-
-        The nodes still to be told are `heartbeats_publishing` (every heartbeat node when nothing is recorded);
-        each that confirms leaves the list, and the next link with the option off asks the rest again
-        (`_after_connect`) — the publication has CountLog 0xFF, a node told nothing publishes forever.
-        """
-        pending = self.heartbeats_publishing
-        nodes = [n for n in self.heartbeat_nodes if not pending or n.unicast in pending]
-        pdu = C.heartbeat_publication_set(0x0000, C.HEARTBEAT_PERIOD_OFF, count_log=0)
-        confirmed: set[int] = set()
-        try:
-            await self._chunked(
-                [
-                    partial(self._disable_heartbeat, node, pdu, confirmed)
-                    for node in nodes
-                ]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("disabling heartbeats aborted: %s", err)
-        # what is left to tell: of the nodes asked, those that did not confirm (a node no longer in the export
-        # cannot be asked, nor needs to be)
-        self._set_heartbeats_publishing({n.unicast for n in nodes} - confirmed)
-
-    async def _disable_heartbeat(
-        self, node: Node, pdu: bytes, confirmed: set[int]
-    ) -> None:
-        if await self._set_heartbeat(node, pdu, "disable"):
-            confirmed.add(node.unicast)
-
-    @property
-    def heartbeats_publishing(self) -> set[int]:
-        """Nodes that may still publish heartbeats to us (`CONF_HEARTBEATS_PUBLISHING`, unicasts as hex)."""
-        recorded = self.entry.data.get(CONF_HEARTBEATS_PUBLISHING)
-        if (
-            recorded is True
-        ):  # one flag, as an earlier 0.3.0 build wrote it: any node may
-            return {node.unicast for node in self.heartbeat_nodes}
-        return {int(address, 16) for address in recorded or []}
-
-    def _set_heartbeats_publishing(self, nodes: set[int]) -> None:
-        """Record which nodes may still publish heartbeats to us; not hub data, so this reloads nothing."""
-        if (
-            CONF_HEARTBEATS_PUBLISHING in self.entry.data
-            and self.heartbeats_publishing == nodes
-        ):
-            return
-        self.hass.config_entries.async_update_entry(
-            self.entry,
-            data={
-                **self.entry.data,
-                CONF_HEARTBEATS_PUBLISHING: [f"{n:04X}" for n in sorted(nodes)],
-            },
-        )
-
-    async def _set_heartbeat(self, node: Node, pdu: bytes, what: str) -> bool:
-        """Send one Heartbeat Publication Set; whether the node confirmed it."""
-        try:
-            reply = await self.proxy.request_config(
-                node.unicast, pdu, C.CONFIG_HEARTBEAT_PUBLICATION_STATUS, retries=1
-            )
-        except TimeoutError:
-            _LOGGER.debug("%04X did not answer the heartbeat %s", node.unicast, what)
-            if what == "configure":
-                # a node that did not even answer the Set (off, out of range) is the case liveness is for: it gets
-                # a deadline like the others, counts as dead when it passes and is asked again every
-                # HEARTBEAT_REPROBE_INTERVAL (`_check_heartbeats`) — an answer then revives it. A node that did
-                # answer earlier keeps its deadline (`setdefault`).
-                self._alive_deadline.setdefault(
-                    node.unicast, time.monotonic() + self.heartbeat_timeout
-                )
-            return False
-        try:
-            status = C.decode_heartbeat_publication_status(reply.params)
-        except ValueError as err:
-            _LOGGER.debug(
-                "%04X: malformed Heartbeat Publication Status: %s", node.unicast, err
-            )
-            return False
-        if not status.ok:
-            _LOGGER.warning(
-                "%s refused the heartbeat %s: %s", node.name, what, status.status_name
-            )
-            return False
-        if what == "disable" and status.enabled:
-            # a success status only says the Set was taken; what the node publishes now is in the rest of it
-            _LOGGER.warning(
-                "%s answered the heartbeat disable but still publishes to %04X",
-                node.name,
-                status.destination,
-            )
-            return False
-        if what == "configure":
-            self._alive_deadline[node.unicast] = (
-                time.monotonic() + self.heartbeat_timeout
-            )
-        elif what == "reconfigure":
-            self._mark_alive(node.unicast)  # it answered: back, and publishing again
-        return True
-
-    def _beats_stopped(self, node: Node, now: float) -> bool:
-        """Whether the node beat since the current configuration but not for a whole timeout: its publication is gone although it talks."""
-        beat = self.heartbeats.get(node.unicast)
-        configured = self._heartbeats_configured_at
-        return (
-            beat is not None
-            and configured is not None
-            and beat.received >= configured
-            and now - beat.received >= self.heartbeat_timeout
-        )
-
-    async def _reprobe_dead(self, nodes: list[Node]) -> None:
-        """Send the heartbeat configuration to dead (or no longer beating) nodes again; an answer revives a dead one."""
-        pdu = C.heartbeat_publication_set(
-            self.proxy.state.src, HEARTBEAT_PERIOD_LOG, ttl=self.proxy.ttl
-        )
-        try:
-            await self._chunked(
-                [
-                    partial(self._set_heartbeat, node, pdu, "reconfigure")
-                    for node in nodes
-                ]
-            )
-        except ConnectionError as err:
-            _LOGGER.debug("heartbeat reprobe aborted: %s", err)
-
-    @callback
-    def _on_heartbeat(self, beat: Heartbeat) -> None:
-        """Remember a node's Heartbeat and mark the node alive."""
-        node = self.cdb.node_by_addr(beat.src)
-        if node is None:
-            return
-        self.heartbeats[node.unicast] = beat
-        self._mark_alive(beat.src)
-        self._signal_node(
-            node.unicast, force=True
-        )  # hops change rarely: show them at once
-
-    def _mark_alive(self, address: int) -> None:
-        node = self.cdb.node_by_addr(address)
-        if node is None or node.unicast not in self._alive_deadline:
-            return  # not a node we asked for heartbeats (yet)
-        self._alive_deadline[node.unicast] = time.monotonic() + self.heartbeat_timeout
-        if node.unicast in self._dead_nodes:
-            self._dead_nodes.discard(node.unicast)
-            _LOGGER.info("%s is back (heard from it again)", node.name)
-            self._notify_node(node)
-
-    @callback
-    def _check_heartbeats(self, _now: datetime) -> None:
-        """Mark the nodes whose deadline passed as dead and tell their entities; renew the publications when due.
-
-        A link that stays up for days would otherwise never repeat the configuration (`_after_connect` runs it
-        once per link). A dead node is asked again every HEARTBEAT_REPROBE_INTERVAL (`_reprobe_dead`): a node
-        that rebooted — a mains blip, seen on a mini actuator — starts with an empty heartbeat
-        publication and would otherwise stay unavailable until the next renewal, hours later. So is a node whose
-        beats stopped while its other traffic keeps it alive (a metering socket after a power cut:
-        it publishes readings every minute, so it never counts as dead, and it would not beat again before the
-        renewal either).
-        """
-        now = time.monotonic()
-        if (
-            self.connected
-            and self._heartbeats_configured_at is not None
-            and now - self._heartbeats_configured_at >= HEARTBEAT_RECONFIGURE_INTERVAL
-            and (self._heartbeat_task is None or self._heartbeat_task.done())
-        ):
-            self._heartbeat_task = self.entry.async_create_background_task(
-                self.hass, self._configure_heartbeats(), f"{DOMAIN} heartbeats"
-            )
-        for node in self.heartbeat_nodes if self.connected else ():
-            # while the link is down nobody can be heard: the silence is the link's (`_connect_to` renews the
-            # deadlines when it is back), and the entities are unavailable anyway
-            deadline = self._alive_deadline.get(node.unicast)
-            if deadline is None or now < deadline or node.unicast in self._dead_nodes:
-                continue
-            self._dead_nodes.add(node.unicast)
-            _LOGGER.warning(
-                "%s has not been heard from for %.0f s: marking it unavailable",
-                node.name,
-                self.heartbeat_timeout,
-            )
-            self._notify_node(node)
-        due = [
-            node
-            for node in self.heartbeat_nodes
-            if (node.unicast in self._dead_nodes or self._beats_stopped(node, now))
-            and now - self._reprobed_at.get(node.unicast, -HEARTBEAT_REPROBE_INTERVAL)
-            >= HEARTBEAT_REPROBE_INTERVAL
-        ]
-        if (
-            due
-            and self.connected
-            and (self._reprobe_task is None or self._reprobe_task.done())
-        ):
-            for node in due:
-                self._reprobed_at[node.unicast] = now
-            self._reprobe_task = self.entry.async_create_background_task(
-                self.hass, self._reprobe_dead(due), f"{DOMAIN} heartbeat reprobe"
-            )
-
-    def _notify_node(self, node: Node) -> None:
-        """Tell the node's entities, and the mesh health sensors, that its reachability changed."""
-        for element in node.elements:
-            async_dispatcher_send(
-                self.hass, SIGNAL_UPDATE.format(self.entry.entry_id, element.address)
-            )
-        async_dispatcher_send(
-            self.hass, SIGNAL_REACHABILITY.format(self.entry.entry_id)
-        )
-
     # ------------------------------------------------------------------ incoming messages
     def element_state(self, addr: int) -> ElementState:
         """Return the cached state of the element at `addr`, creating an empty one on first contact."""
@@ -3748,9 +3378,9 @@ class JungHomeHub:
         self._rx_messages += 1
         self._rx_decoded_link += 1
         self._note_seq(m.src, m.seq)
-        self._heard_from(m.src)
+        self.liveness.heard_from(m.src)
         if self.heartbeats_enabled:
-            self._mark_alive(m.src)  # any message is as good as a heartbeat
+            self.liveness.mark_alive(m.src)  # any message is as good as a heartbeat
         if self._export_stale:
             self._report_export_stale(
                 False
@@ -4502,7 +4132,7 @@ class JungHomeHub:
     # ------------------------------------------------------------------ commands
     async def _wait_for_link(self) -> None:
         """During the link-loss grace, wait for the new link: a command then goes out on it instead of failing."""
-        if not self.connected and self._lost_at is not None and not self._stop:
+        if not self.connected and self._lost_at is not None and not self.stopping:
             remaining = LINK_LOSS_GRACE - (time.monotonic() - self._lost_at)
             if remaining > 0:
                 await self.async_wait_connected(remaining)
@@ -4551,7 +4181,7 @@ class JungHomeHub:
         something by publishing that status to the element group. A status that does not show the requested state
         answers a state Get out to the element rather than the Set (review-4 D32: the Set was lost, the Get's reply
         shows the old state), and the Set goes out again on its next attempt (`ProxyClient.request`). Unanswered,
-        the link watchdog probes the proxy at once, and the node is marked unreachable (`_missed_answer`: `load` and
+        the link watchdog probes the proxy at once, and the node is marked unreachable (`Liveness.missed_answer`: `load` and
         `kind` name the load element and state Get its re-asks use, the light's for a colour-temperature element)
         only once the proxy answered the probe: a proxy that stopped forwarding leaves every command unanswered, and
         the nodes are not to blame (the link is dropped, and the next one's refresh asks them all). The TimeoutError

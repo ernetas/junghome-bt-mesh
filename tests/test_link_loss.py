@@ -133,7 +133,7 @@ async def test_home_assistant_stopping_closes_the_link_and_the_counter(
     hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
     await hass.async_block_till_done()
     assert not hub.connected
-    assert hub._stop
+    assert hub.stopping
     assert hub.state._closed  # stored as cleanly closed: no restart margin next time
 
 

@@ -469,13 +469,13 @@
    "id": "ui:msg:device_not_reachable_title",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._heard_from",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.heard_from",
     "custom_components/junghome_ble/entity.py::JungHomeEntity"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
-    "tests/test_coordinator.py::test_a_new_link_drops_pending_re_asks_but_keeps_an_unreachable_node"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
+    "tests/test_hub_liveness.py::test_a_new_link_drops_pending_re_asks_but_keeps_an_unreachable_node"
    ]
   },
   {
@@ -809,7 +809,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/light.py::JungHomeLight",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/actions/devices.py::_remove_device"
    ],
    "tests": [
@@ -1086,7 +1086,7 @@
    "id": "ui:screen:proxyconnectionloadingactivity",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time"
    ],
    "tests": [
@@ -1422,16 +1422,16 @@
    "id": "ui:state:devicereachability",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._heard_from",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.heard_from",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._load_command",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._watch_link",
     "custom_components/junghome_ble/const.py::UNREACHABLE_RECHECK"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
-    "tests/test_coordinator.py::test_a_node_heard_from_while_asked_is_busy_not_unreachable",
-    "tests/test_coordinator.py::test_a_short_probe_is_no_verdict_and_battery_nodes_are_never_marked",
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it",
+    "tests/test_hub_liveness.py::test_a_node_heard_from_while_asked_is_busy_not_unreachable",
+    "tests/test_hub_liveness.py::test_a_short_probe_is_no_verdict_and_battery_nodes_are_never_marked",
     "tests/test_reachability.py::test_an_unanswered_command_marks_the_node_unreachable_and_fails_the_action",
     "tests/test_reachability.py::test_commands_a_silent_proxy_leaves_unanswered_mark_no_node"
    ],
@@ -1527,7 +1527,7 @@
     "custom_components/junghome_ble/config_entities.py::LockFunctionEntity",
     "custom_components/junghome_ble/config_entities.py::LoadLock",
     "custom_components/junghome_ble/coordinator.py::ElementState.note_lock",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer",
+    "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer",
     "custom_components/junghome_ble/light.py::JungHomeLight",
     "custom_components/junghome_ble/switch.py::JungHomeSocket",
     "custom_components/junghome_ble/switch.py::JungHomeLockSwitch",
@@ -2001,7 +2001,7 @@
     "tests/test_reachability.py::test_a_load_command_is_retried_until_its_status_comes",
     "tests/test_reachability.py::test_an_unanswered_command_marks_the_node_unreachable_and_fails_the_action",
     "tests/test_reachability.py::test_a_colour_temperature_command_is_accounted_to_the_light",
-    "tests/test_coordinator.py::test_unanswered_state_get_and_keep_alive_count",
+    "tests/test_hub_liveness.py::test_unanswered_state_get_and_keep_alive_count",
     "tests/test_config_entities.py::test_unanswered_read_stays_unknown_and_is_repeated_on_the_next_link",
     "tests/test_reachability.py::test_commands_a_silent_proxy_leaves_unanswered_mark_no_node",
     "tests/test_cover.py::test_a_blind_that_does_not_answer_its_movements_still_runs",
@@ -2218,7 +2218,7 @@
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._send_time",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_follow_gateway",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
@@ -2234,7 +2234,7 @@
    "id": "ui:uc:loadstatefordevices",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/const.py::REFRESH_CHUNK"
    ],
    "tests": [
@@ -2871,7 +2871,7 @@
    ],
    "tests": [
     "tests/test_light.py::test_availability_follows_the_link",
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ],
    "class": "dup",
    "reason": "its shortfalls are the lock icon / gate (this row), the RTR toggle gate (ui:vm:devicesviewmodel.isactiondisabled), the button-layout text (prop:0x5001) and the favourite star (ha-native)",
@@ -3457,7 +3457,7 @@
    "id": "ui:vm:devicesviewmodel.observedevices",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/jhmesh/devices.py::build_devices"
    ],
    "tests": [
@@ -3493,7 +3493,7 @@
    "id": "ui:vm:dimviewmodel.requestlightnesslevel",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/properties/targets.py::SetupTarget"
    ],
    "tests": [
@@ -3580,7 +3580,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/actions/rooms.py::_suggest_area",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
     "tests/test_services.py::test_set_room_creates_the_room_and_places_an_area_less_device",
@@ -3987,7 +3987,7 @@
     "custom_components/junghome_ble/entity.py::JungHomeEntity"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
+    "tests/test_hub_liveness.py::test_one_unanswered_request_marks_the_node_unreachable_and_any_message_revives_it"
    ],
    "class": "dup",
    "reason": "reachability is honoured; the missing half is the RTR connection mode",
@@ -4403,7 +4403,7 @@
    "id": "ui:vm:simpleswitchviewmodel.requestgenericonoffifmissing",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked"
    ],
    "tests": [
     "tests/test_coordinator.py::test_initial_connection_and_refresh",
@@ -4440,7 +4440,7 @@
    "id": "ui:vm:tunablewhiteviewmodel.requesttunablewhite",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._chunked",
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.chunked",
     "custom_components/junghome_ble/light.py::JungHomeLight.min_color_temp_kelvin"
    ],
    "tests": [

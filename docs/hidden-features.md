@@ -409,7 +409,7 @@ answering the app's Set goes to the app's address, and no load was seen publishi
 Home Assistant reads every light's and socket's lock once per link and refuses commands to a load known to be locked
 (`config_entities.LoadLock`). Until this probe ran, both outcomes are handled: a Status with the old state counts for
 the Set when no other request is out to the load (review-4 D32), so the entity reads the lock and reports the
-refusal; silence from a load known to be locked does not mark it unreachable (`JungHomeHub._missed_answer`).
+refusal; silence from a load known to be locked does not mark it unreachable (`Liveness.missed_answer`).
 
 The probe, with `tools/mesh_poc.py listen` (or the sniffer) running alongside, on a switch insert and on a dimmer or
 the DALI insert, each unlocked again at the end:

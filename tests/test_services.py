@@ -69,6 +69,7 @@ from custom_components.junghome_ble.gateway_api import (
     GatewayUnreachable,
     JungHomeGatewayApi,
 )
+from custom_components.junghome_ble.hub.liveness import Liveness
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
@@ -329,7 +330,7 @@ async def env(
     with (
         patch.object(ProxyClient.request, "__defaults__", (REPLY_TIMEOUT, *rest)),
         # ... and marks none of them unreachable, which would refuse every plan to it (review-4 W I5)
-        patch.object(JungHomeHub, "_missed_answer", lambda *_args, **_kwargs: None),
+        patch.object(Liveness, "missed_answer", lambda *_args, **_kwargs: None),
     ):
         await setup_entry(hass, entry)
         await wait_for_link(hass, entry)

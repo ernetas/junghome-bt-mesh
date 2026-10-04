@@ -666,11 +666,11 @@ Each item writes a device setting and restores the value noted in [0](#note-what
   load that answers with its old state: the lock is read after it), the second is refused at once, and the one
   after the unlock works; the key works again. Write the probe's answers into `docs/hidden-features.md` §12. If the
   locked load stays silent instead, step 3's first command fails with *did not answer* and `<light>` goes
-  unavailable until it is heard from (only a lock already known spares it, `JungHomeHub._missed_answer`): note it —
+  unavailable until it is heard from (only a lock already known spares it, `Liveness.missed_answer`): note it —
   the decision is then whether to read the lock after every unanswered command (an unreachable load's action would
   take one more read to fail).
 - **Markers:** `custom_components/junghome_ble/config_entities.py::LoadLock`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub._missed_answer`, `ui:state:lockfunctioncapability`,
+  `custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer`, `ui:state:lockfunctioncapability`,
   the docs' lock-function paragraph and *Locked loads* (the cover's lock markers are the blinds', see F).
 
 ### C4 · Mini-actuator inputs (F10)
