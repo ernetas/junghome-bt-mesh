@@ -2204,7 +2204,7 @@
    ],
    "tests": [
     "tests/test_key_mode.py::test_key_mode_sensor_reads_the_mode",
-    "tests/test_mesh_config.py::test_confirms_key_mode"
+    "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector"
    ]
   },
   {

@@ -298,11 +298,6 @@ def _confirms_property(params: bytes, prop: int, value: bytes) -> bool:
     )
 
 
-def _confirms_key_mode(params: bytes, key_mode: int) -> bool:
-    """Whether an LBC Admin Property Status reports KeyMode == `key_mode`."""
-    return _confirms_property(params, PROPERTY_KEY_MODE, bytes([key_mode]))
-
-
 # what a carried-over change may hold that is never shown: a key (`netKeys[].key`, `nodes[].deviceKey`, …)
 _SECRET_FIELDS = frozenset({"key", "oldKey", "deviceKey"})
 # the fields of an entry that say which one it is, in this order (a room, a scene, a node, a link row)

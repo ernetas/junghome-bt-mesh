@@ -2538,13 +2538,6 @@ def test_element_groups_fall_back_to_meta_rows(tmp_path: Path) -> None:
     assert wiring_mod.element_groups(pf)[ROCKER_A] == ROCKER_A_GROUP
 
 
-def test_confirms_key_mode() -> None:
-    assert wiring_mod._confirms_key_mode(bytes.fromhex("0350 03 05"), 5)
-    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0350 03 05"), 0)
-    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0650 03 05"), 5)
-    assert not wiring_mod._confirms_key_mode(bytes.fromhex("0350 03"), 5)
-
-
 def test_function_code_and_as_int() -> None:
     assert function_code("light_and_switch") == 6
     assert function_code(3) == 3
