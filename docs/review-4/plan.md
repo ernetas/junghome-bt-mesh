@@ -593,6 +593,15 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every finding and low item has landed. Wave 22 (briefs 70–74) is in progress: the backlog rows *pre-flight
-reconcile* and *IV Update initiation / SAR ack*, the sweep's follow-ups and settled firmware-only settings,
-housekeeping. Brief 67 waits for decision M14 (custom repository first); the on-air checks are the maintainer's.
+- **Wave 22 (briefs 70–74): done.** W I4 pre-flight reconcile: destructive plans read what they would remove or
+  replace and stop on a difference with the export, `force` skips it, dry runs list the differences (70). P I-11
+  `start_iv_update`, a guarded action (Mesh Protocol 1.1 §6.7 has a proxy process a client's Secure Network beacon),
+  and P I-8 the SAR receive acknowledgment timer (71). The sweep's lock follow-ups (a brightness the answer does not
+  show is a refusal; a published lock counts as fresh) and `client_subscriptions` notes in the audit (72). The DALI
+  insert's hotel function, its brightness and the night-light brightness as config entities (73). `{applied}`
+  translated, typed `hass.data` kept by a test, Renovate's pre-commit manager, the APK-anchor "flake" (the per-test
+  time budget under load) (74). A test now requires every on-air marker to be cited in the checklist (C10, D13 added).
+  All unverified on air.
+
+Every finding and low item has landed. Brief 67 waits for decision M14 (custom repository first); the on-air checks
+are the maintainer's.
