@@ -565,6 +565,14 @@ Dependencies (hard unless marked *soft*):
   version 1.3 migrates it at the first start and leaves an unreadable export's entry for the next one; discovery
   recognises a configured mesh by the Network ID or Node Identity of its keys and its nodes' MACs; a key refresh no
   longer moves the unique id (decision M10). The migration on the real entry and the absent card: sweep A11.
+- **Wave 19 (brief 62): done.** A4-10 the plan model in `jhmesh.plan` (one class with the commissioning steps),
+  `ProjectFile` methods for every meta row the configurator edited; A4-11 Protocols in `protocols.py` (the import
+  graph has no cycle, `tools/import_graph.py --check` and an AST layer test keep it so), TypedDicts for the meta rows,
+  a sequence-number record and the diagnostics, `data.py` for six of the `HassKey`s (the rest are read by test
+  assertions or would bring the cycle back); A4-12 `const.py` keeps the Home Assistant-facing keys (236 → 147 names).
+- **On-air sweep, groups A–D remote with the CLI only:** results in `docs/on-air-sweep.md`; no product failure; C1
+  took outcome (b); C3 three new facts about locked loads; C6 the run-on time is never reported (a decision on
+  *Switches off at*). The second pass (ledger rows, markers) waits for the maintainer's review.
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
   private `junghome-bt-mesh-private`. 1.1.0: waves 3–17.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
@@ -572,4 +580,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 61–64 and 67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 63, 64 and 67 are TODO; the on-air sweep is the maintainer's.
