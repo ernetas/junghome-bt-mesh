@@ -108,6 +108,7 @@ from .conftest import (
     settle,
     setup_entry,
     wait_for_link,
+    wait_until,
 )
 from .helpers import advanced, areas_prefill, through_areas
 
@@ -3343,8 +3344,10 @@ async def test_areas_step_holds_an_upload_until_it_is_submitted(
     assert len(_incoming_files(hass)) == 1
     assert not _stored(hass).exists()
     hass.config_entries.flow.async_abort(result["flow_id"])
-    await hass.async_block_till_done()
-    assert _incoming_files(hass) == []
+    # the removal deletes the copy in the executor, a job HA does not track for a test's call: wait for the file
+    await wait_until(
+        hass, lambda: _incoming_files(hass) == [], what="the discarded upload gone"
+    )
 
 
 async def test_areas_step_refuses_a_mesh_set_up_meanwhile(

@@ -65,6 +65,7 @@ from .conftest import (
     SHARE_EXPORT_PATH,
     settle,
     wait_for_link,
+    wait_until,
 )
 from .helpers import UID_LIGHT_SWITCH, find_issue
 from .test_docs import anchors
@@ -462,8 +463,10 @@ async def test_the_new_export_repair_refuses_an_upload_that_does_not_pass(
     assert flow._incoming is not None
     write(flow._incoming, "{}")
     flow.async_remove()
-    await hass.async_block_till_done()
-    assert incoming_files(hass) == []
+    # the removal deletes the copy in the executor, a job HA does not track for a test's call: wait for the file
+    await wait_until(
+        hass, lambda: incoming_files(hass) == [], what="the discarded copy gone"
+    )
 
 
 async def test_the_new_export_repair_refuses_another_mesh_and_a_gone_entry(
