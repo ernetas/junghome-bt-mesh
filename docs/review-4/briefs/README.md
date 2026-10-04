@@ -27,8 +27,8 @@ Every brief links here; follow all of it.
 - **Worktree.** Work in your own git worktree of the main checkout, branched from `main`. Commit
   there, with a subject that names the finding IDs the brief closes (for example `D2 (W4-1, S4-2, P4-4): …`). Do not
   push and do not open a pull request.
-- **Commit trailer.** Every commit message ends with the line
-  `Claude-Session: https://claude.ai/code/session_01WiarruU6FbaU7R8Kq3m85K`
+- **Commit metadata.** No trailers. Commit with the author the main checkout configures (the GitHub no-reply
+  address); do not set another.
 - **Gates.** Run from the worktree root with the main checkout's venv,
   `PY=<main checkout>/.venv/bin/python`:
   1. `$PY -m ruff check .`

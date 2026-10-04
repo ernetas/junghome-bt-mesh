@@ -577,8 +577,8 @@ Dependencies (hard unless marked *soft*):
 - **Wave 21 (brief 64): done.** Q4-14, Q4-18 personal environment details scrubbed from docs and tests (paths,
   host remarks, a zone, home-range test IPs, capture-looking identifiers); Q4-15 `.gitignore` covers `android/`,
   exports anywhere, `.claude/`, `*.tmp`; D2 `tools/privacy_scan.py` with its allowlist in CI's lint job and as a
-  pre-commit hook (`--history` is run by hand: the public history's session trailers and author e-mail are the
-  maintainer's call); D1 `.pre-commit-config.yaml`; D3 `noxfile.py` mirroring the CI jobs.
+  pre-commit hook (`--history` is run by hand; the public history was rewritten to carry no session trailers and only
+  the no-reply author address, and `--history` finds nothing); D1 `.pre-commit-config.yaml`; D3 `noxfile.py` mirroring the CI jobs.
 - **On-air sweep, groups A–D remote with the CLI only:** results in `docs/on-air-sweep.md`; no product failure; C1
   took outcome (b); C3 three new facts about locked loads; C6 the run-on time is never reported (a decision on
   *Switches off at*). The second pass (ledger rows, markers) waits for the maintainer's review.
