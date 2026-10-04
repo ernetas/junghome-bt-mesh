@@ -731,7 +731,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::decode_model_publication_status",
-    "custom_components/junghome_ble/configurator/plan.py::config_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_status_round_trips_the_set",
@@ -753,7 +753,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
-    "custom_components/junghome_ble/configurator/plan.py::config_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -765,7 +765,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
-    "custom_components/junghome_ble/configurator/plan.py::config_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -1030,7 +1030,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
-    "custom_components/junghome_ble/configurator/plan.py::bind_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::bind_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",

@@ -207,7 +207,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
-    "custom_components/junghome_ble/configurator/plan.py::config_step",
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
     "tools/cli_ops.py::config_publication"
    ],
@@ -689,7 +689,7 @@
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
     "custom_components/junghome_ble/jhmesh/commission.py::BIND_LIST",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
-    "custom_components/junghome_ble/configurator/plan.py::bind_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::bind_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",
@@ -3171,7 +3171,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request_config",
     "custom_components/junghome_ble/configurator/executor.py::CONFIG_TIMEOUT",
-    "custom_components/junghome_ble/configurator/plan.py::bind_step",
+    "custom_components/junghome_ble/jhmesh/plan.py::bind_step",
     "custom_components/junghome_ble/hub/liveness.py::Liveness.missed_answer"
    ],
    "tests": [
@@ -3322,7 +3322,7 @@
    "id": "net:uc:connecttoaddress",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/configurator/plan.py::config_step",
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step",
     "custom_components/junghome_ble/configurator/executor.py::PlanExecutor._request",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.set_publication",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.subscribe"

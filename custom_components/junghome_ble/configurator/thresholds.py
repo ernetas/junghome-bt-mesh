@@ -14,9 +14,15 @@ from typing import TYPE_CHECKING
 
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.export import ProjectFile, has_model, hexaddr
+from custom_components.junghome_ble.jhmesh.plan import (
+    ConfigStep,
+    bind_step,
+    config_step,
+    config_steps,
+)
 
 from .executor import Operations
-from .plan import ConfigStep, applied_text, bind_step, config_step, config_steps
+from .plan import applied_text
 from .store import _validation
 from .wiring import (
     ONOFF_CLIENT,

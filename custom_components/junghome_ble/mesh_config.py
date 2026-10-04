@@ -60,8 +60,8 @@ element's own group, and the loads it should switch subscribe their JUNG User Pr
 
 No key material is logged or put into error messages.
 
-The code is split (review-4 brief 55) into the `configurator` package: `plan` (the plan model: `ConfigStep`, `ordered`,
-`replay`, the texts of what a stop applied) and `wiring` (the modes and models, the wiring read from an export and the
+The code is split (review-4 brief 55) into the `configurator` package: `plan` (the texts of what a stop applied; the
+plan model — `ConfigStep`, `ordered`, `replay` — is the library's `jhmesh.plan`) and `wiring` (the modes and models, the wiring read from an export and the
 planners) are pure — a `ProjectFile` in, steps out, a `PlanError` for a refusal —; `store` reads and writes the export
 and the gateway's copy (`ExportStore`), `executor` sends the plans and records a stop (`PlanExecutor`), and `rooms`,
 `scenes`, `thresholds` and `nodes` hold the operations. `MeshConfigurator` here is the facade every caller uses: each
@@ -81,7 +81,6 @@ from .configurator.plan import (
     APPLIED_LOCK_WIRED,
     APPLIED_NOTHING,
     APPLIED_SCENE_WIRED,
-    ConfigStep,
     applied_members,
     applied_removed,
     applied_scene_cleared,
@@ -89,8 +88,6 @@ from .configurator.plan import (
     applied_scene_stored,
     applied_text,
     applied_unused_deleted,
-    ordered,
-    replay,
 )
 from .configurator.rooms import Keys, Rooms
 from .configurator.scenes import HELD_SCENES, Scenes, held_scenes, scene_action_for
@@ -130,6 +127,7 @@ from .configurator.wiring import (
 )
 from .configurator.wiring import derive_mode as plan_mode
 from .const import DEFAULT_UNUSED_SCENES_DRY_RUN
+from .jhmesh.plan import ConfigStep, ordered, replay
 
 if TYPE_CHECKING:
     import asyncio

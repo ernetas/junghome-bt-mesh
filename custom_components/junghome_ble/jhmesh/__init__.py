@@ -13,7 +13,8 @@ itself, its logger). The modules:
 - `client` (`ProxyClient` over any GATT proxy link), `state` (`LocalState`: our address, sequence numbers, IV index,
   replay list — `client` re-exports it), `stats` (`LinkStats`: what a link carried and dropped), `standalone`
   (`client` over a plain `bleak` adapter);
-- `provisioning`, `commission`, `onboarding` (add a node), `vault`, `vaultrefresh`, `keyrefresh` (a provisioner of
+- `provisioning`, `commission`, `onboarding` (add a node; `plan`: the Config steps of a plan, shared with the
+  integration's configurator), `vault`, `vaultrefresh`, `keyrefresh` (a provisioner of
   your own, its keys, key refresh), `export`, `merge` (write and merge the app's files), `audit` (check the nodes'
   configuration against the export), `sniffer` (decode captures);
 - `pdu`, `crypto`, `fileio`: the layers below, public for tools that need them.

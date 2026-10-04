@@ -1340,7 +1340,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
-    "custom_components/junghome_ble/configurator/plan.py::config_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_publication_set_app_defaults",
@@ -1689,7 +1689,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_add",
-    "custom_components/junghome_ble/configurator/plan.py::config_step",
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups"
    ],
    "tests": [
@@ -1706,7 +1706,7 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_subscription_delete",
-    "custom_components/junghome_ble/configurator/plan.py::config_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_subscription_builders",
@@ -2045,7 +2045,7 @@
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_app_bind",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.bind",
-    "custom_components/junghome_ble/configurator/plan.py::bind_step"
+    "custom_components/junghome_ble/jhmesh/plan.py::bind_step"
    ],
    "tests": [
     "tests/jhmesh/test_config_messages.py::test_model_app_bind_and_unbind",

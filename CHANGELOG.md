@@ -46,6 +46,9 @@
 - *Start dimming*, *Stop dimming* and *Dim by a step* are no longer called untried, in the action descriptions (every
   language), the reference and the user guide: review 3 saw them dim, stop and step a dimmer on the installation. A
   tunable-white channel has not been dimmed this way yet.
+- Internal: the plan model lives in the library (review-4 brief 62, A4-10): `jhmesh.plan` holds `ConfigStep` — one
+  model for the configurator's plans and a new node's commissioning (`jhmesh.commission.Step` is it) —, `ordered`,
+  `replay` and the step builders. Nothing changes in behaviour.
 
 ### Fixed
 

@@ -819,6 +819,17 @@ API: dict[str, list[str]] = {
         "upper_encrypt_app",
         "upper_encrypt_dev",
     ],
+    "jhmesh.plan": [
+        "APP_KEY_INDEX",
+        "ConfigStep",
+        "bind_step",
+        "config_step",
+        "config_steps",
+        "deletable",
+        "element_of",
+        "ordered",
+        "replay",
+    ],
     "jhmesh.properties": [
         "ACTUATOR_FUNCTION",
         "ALL_PRODUCTS",

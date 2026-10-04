@@ -64,17 +64,14 @@ from custom_components.junghome_ble.jhmesh.export import (
     raw_model,
 )
 from custom_components.junghome_ble.jhmesh.merge import MISSING, Change
-
-from .plan import (
+from custom_components.junghome_ble.jhmesh.plan import (
     ConfigStep,
-    KeyPlan,
-    Note,
-    PlanError,
-    _deletable,
-    _drop_scene_key_row,
     bind_step,
     config_steps,
+    deletable,
 )
+
+from .plan import KeyPlan, Note, PlanError, _drop_scene_key_row
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.jhmesh.cdb import Element, Node
@@ -565,7 +562,7 @@ def _clear_plan(pf: ProjectFile, key: Element) -> list[ConfigStep]:
         if pf.publication(key, model) is not None:
             steps += config_steps(pf, pf.set_publication(key.node, key, model, None))
         for group in key.subscriptions(model):
-            if not _deletable(group):
+            if not deletable(group):
                 # review-3 W12: no Subscription Delete can carry it; the key keeps it, the rest is cleared
                 _LOGGER.warning(
                     "Key %04X keeps its subscription to %04X (model %s): a virtual or fixed group address "

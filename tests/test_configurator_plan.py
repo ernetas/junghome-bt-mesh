@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from custom_components.junghome_ble.configurator.plan import PlanError, ordered
+from custom_components.junghome_ble.configurator.plan import PlanError
 from custom_components.junghome_ble.configurator.wiring import (
     find_element,
     plan_room_link,
@@ -20,6 +20,7 @@ from custom_components.junghome_ble.configurator.wiring import (
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.devices import Metadata
 from custom_components.junghome_ble.jhmesh.export import KEY_MODE_LIGHT, ProjectFile
+from custom_components.junghome_ble.jhmesh.plan import ordered
 
 ANDROID_PATH = Path(__file__).parent / "fixtures" / "JungHome-android.json"
 DALI_NODE, ROCKER_A, DALI_GROUP, ROCKER_A_GROUP = 0x0232, 0x0234, 0xC044, 0xC04F

@@ -322,7 +322,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/config_messages.py::model_publication_set",
-    "custom_components/junghome_ble/configurator/plan.py::config_step",
+    "custom_components/junghome_ble/jhmesh/plan.py::config_step",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.element_groups",
     "custom_components/junghome_ble/configurator/thresholds.py::Thresholds.unwire_threshold"
    ],

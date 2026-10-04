@@ -75,7 +75,7 @@ from custom_components.junghome_ble.jhmesh.merge import (
 )
 from custom_components.junghome_ble.jhmesh.vault import RangeError, Ranges
 
-from .plan import ConfigStep, PlanError
+from .plan import PlanError
 from .wiring import (
     app_copy_path,
     export_digest,
@@ -88,6 +88,7 @@ from .wiring import (
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.coordinator import JungHomeHub
+    from custom_components.junghome_ble.jhmesh.plan import ConfigStep
     from custom_components.junghome_ble.mesh_config import MeshConfigurator
 
 _LOGGER = logging.getLogger(__name__)

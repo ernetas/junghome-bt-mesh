@@ -28,19 +28,21 @@ from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.export import hexaddr
+from custom_components.junghome_ble.jhmesh.plan import (
+    ConfigStep,
+    element_of,
+    ordered,
+    replay,
+)
 from custom_components.junghome_ble.keep_awake import sleepy_node
 
 from .plan import (
     APPLIED_KEY_WIRED,
-    ConfigStep,
     Note,
     _drop_link_rows,
-    _element_of,
     _step_from_json,
     _step_json,
     applied_text,
-    ordered,
-    replay,
 )
 from .store import ExportStore, PlanOutcome, _failure, run_to_end
 from .wiring import _confirms_property, _confirms_scene_action, record_room_link
@@ -159,7 +161,7 @@ class PlanExecutor:
         elif note["kind"] == "room_link":
             record_room_link(
                 record,
-                _element_of(record, note["key"]),
+                element_of(record, note["key"]),
                 note["room"],
                 note["publish"],
                 note["function"],

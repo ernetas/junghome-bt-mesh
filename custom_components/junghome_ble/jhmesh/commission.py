@@ -87,7 +87,7 @@ from .devices import (
     insert_function,
 )
 from .export import Allocation, group_addresses_in_use, pick_free
-from .pdu import decode_opcode
+from .plan import ConfigStep
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -305,25 +305,9 @@ class CompositionMismatch(ValueError):
         )
 
 
-@dataclass(frozen=True)
-class Step:
-    """One Config message of the plan, for the new node's primary unicast under its device key.
-
-    `pdu` is the access payload (opcode + parameters); an AppKey Add carries the AppKey, so it stays out of
-    `repr()` — `text` describes the message without key bytes.
-    """
-
-    phase: str
-    destination: int
-    pdu: bytes = field(repr=False)
-    expect: int  # opcode of the status that answers it
-    evidence: str
-
-    @property
-    def text(self) -> str:
-        """Describe the message (`config_messages.describe_config`: key bytes are never shown)."""
-        opcode, _cid, params = decode_opcode(self.pdu)
-        return C.describe_config(opcode, params, devkey=True)
+# One Config message of the plan, for the new node's primary unicast under its device key: the plan model's step
+# (`plan.ConfigStep`, review-4 A4-10) with its `phase` and `evidence`; `destination` is its `node`.
+Step = ConfigStep
 
 
 @dataclass(frozen=True)
@@ -578,7 +562,9 @@ class _Builder:
         )
 
     def add(self, phase: str, pdu: bytes, expect: int, evidence: str) -> None:
-        self.steps.append(Step(phase, self.unicast, pdu, expect, evidence))
+        self.steps.append(
+            Step(self.unicast, pdu, expect, phase=phase, evidence=evidence)
+        )
 
     def add_app_key(self, app_key: bytes) -> None:
         self.add(
