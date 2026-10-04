@@ -51,9 +51,11 @@ async def test_time_set_repeats_daily_while_connected(
     assert [dst for _, dst, _ in fake_link.sent].count(
         ALL_NODES
     ) == BROADCASTS  # the Time Set and location after the refresh
-    assert hub.energy.unsub_energy is not None
-    hub.energy.unsub_energy()  # a day of ticks would also fire the energy poll; it has its own tests
-    hub.energy.unsub_energy = None
+    assert hub.lifecycle.timer("energy") is not None
+    hub.lifecycle.timer(
+        "energy"
+    )()  # a day of ticks would also fire the energy poll; it has its own tests
+    hub.lifecycle.set_timer("energy", None)
     fake_link.sent.clear()
 
     # day-long jumps would trip the link watchdog (a silent proxy is another test); keep it out of the way; the

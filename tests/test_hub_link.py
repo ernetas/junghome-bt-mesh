@@ -121,7 +121,7 @@ async def test_refresh_of_a_lost_link_is_cancelled(
         len(answering_link.sent) == first_link
     )  # Time Set and location, the first chunk; the refresh waits at the pause
     assert answering_link.sent[0][2][0] == M.TIME_SET
-    old = hub.refresh.task
+    old = hub.lifecycle.task("refresh")
     assert old is not None
     assert not old.done()
 
@@ -131,8 +131,8 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     await settle(hass)
     assert old.cancelled()
     assert answering_link.connect_count == 2
-    assert hub.refresh.task is not None
-    assert hub.refresh.task is not old
+    assert hub.lifecycle.task("refresh") is not None
+    assert hub.lifecycle.task("refresh") is not old
     assert (
         len(answering_link.sent) == 2 * first_link
     )  # the new link's broadcasts and first chunk, nothing more from the old refresh
@@ -147,7 +147,7 @@ async def test_refresh_of_a_lost_link_is_cancelled(
     # refresh's second chunk) — the first link lasted too short for its reads to count as fresh
     assert [dst for _, dst, _ in answering_link.sent].count(ALL_NODES) == 2 * BROADCASTS
     assert answering_link.sent[-AFTER_ENERGY:-CONNECT_TAIL] == COUNTER_GETS
-    assert hub.refresh.task.done()
+    assert hub.lifecycle.task("refresh").done()
 
 
 async def test_link_loss_waits_for_a_proxy_and_wakes_on_advertisement(
@@ -1045,13 +1045,13 @@ async def test_missing_filter_status_raises_the_pdus_dropped_repair(
     assert hub.proxy_node == 0x0148  # named by its MAC; the Filter Status is still due
     assert hub.proxy.proxy_addr is None
     assert silent_filter == [OUR_ADDRESS]
-    assert hub.link.unsub_filter_watch is not None
+    assert hub.lifecycle.timer("filter_watch") is not None
     fake_link.inject_beacon()
 
     await tick(hass, freezer, FILTER_STATUS_TIMEOUT - 1)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
     await tick(hass, freezer, 1.1)
-    assert hub.link.unsub_filter_watch is None
+    assert hub.lifecycle.timer("filter_watch") is None
     issue = find_issue(hass, ISSUE_PDUS_DROPPED)
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.ERROR
@@ -1097,7 +1097,7 @@ async def test_missing_filter_status_without_a_beacon_is_not_reported(
     await wait_for_link(hass, mock_config_entry)
     hub = hub_of(mock_config_entry)
     await tick(hass, freezer, FILTER_STATUS_TIMEOUT + 0.1)
-    assert hub.link.unsub_filter_watch is None
+    assert hub.lifecycle.timer("filter_watch") is None
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
     assert "did not answer the proxy filter request" not in caplog.text
 
@@ -1109,7 +1109,7 @@ async def test_missing_filter_status_without_a_beacon_is_not_reported(
     await wait_for_link(hass, mock_config_entry, connected=False)
     await wait_for_link(hass, mock_config_entry)
     assert fake_link.connect_count == 2
-    assert hub.link.unsub_filter_watch is not None
+    assert hub.lifecycle.timer("filter_watch") is not None
     assert (
         hub.beacon_authenticated is False
     )  # the previous link's beacon does not count for this one
@@ -1118,7 +1118,7 @@ async def test_missing_filter_status_without_a_beacon_is_not_reported(
     fake_link.drop_link()  # a lost link takes its watchdog with it
     await settle(hass)
     assert not hub.connected
-    assert hub.link.unsub_filter_watch is None
+    assert hub.lifecycle.timer("filter_watch") is None
     await tick(hass, freezer, FILTER_STATUS_TIMEOUT + 0.1)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
@@ -1129,7 +1129,7 @@ async def test_filter_status_watchdog_is_not_armed_when_the_proxy_answers(
     """The fake proxy answers the filter request during `attach()`: nothing to wait for."""
     hub = hub_of(init_integration)
     assert hub.proxy_node == PROXY_NODE
-    assert hub.link.unsub_filter_watch is None
+    assert hub.lifecycle.timer("filter_watch") is None
 
 
 async def test_filter_status_watchdog_stops_with_the_hub(
@@ -1144,9 +1144,9 @@ async def test_filter_status_watchdog_stops_with_the_hub(
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
     hub = hub_of(mock_config_entry)
-    assert hub.link.unsub_filter_watch is not None
+    assert hub.lifecycle.timer("filter_watch") is not None
     fake_link.inject_beacon()
     await hub.async_stop()
-    assert hub.link.unsub_filter_watch is None
+    assert hub.lifecycle.timer("filter_watch") is None
     await tick(hass, freezer, FILTER_STATUS_TIMEOUT + 0.1)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None

@@ -613,7 +613,7 @@ async def test_gateway_export_refresh_is_retried_until_the_app_uploaded(
             BluetoothChange.ADVERTISEMENT,
         )
         await fetched(1)
-        assert hub.export_watch.unsub_export_refresh is not None
+        assert hub.lifecycle.timer("export_refresh") is not None
         await tick(hass, freezer, export_watch.EXPORT_REFRESH_BACKOFF[0] + 1)
         await fetched(2)
         follow.assert_not_called()
@@ -623,7 +623,7 @@ async def test_gateway_export_refresh_is_retried_until_the_app_uploaded(
         await fetched(3)
         await hass.async_block_till_done()
         follow.assert_awaited_once_with()
-    assert hub.export_watch.unsub_export_refresh is None
+    assert hub.lifecycle.timer("export_refresh") is None
 
 
 async def test_following_the_adopted_export_waits_for_a_running_service_call(
@@ -702,9 +702,9 @@ async def test_a_new_link_asks_the_gateway_again_and_stop_cancels_the_retry(
             what="the export fetch of the new link",
         )
         assert fetch.await_count == 1
-    assert hub.export_watch.unsub_export_refresh is not None
+    assert hub.lifecycle.timer("export_refresh") is not None
     await hub.async_stop()
-    assert hub.export_watch.unsub_export_refresh is None
+    assert hub.lifecycle.timer("export_refresh") is None
 
 
 async def test_gateway_export_refresh_runs_one_fetch_at_a_time(

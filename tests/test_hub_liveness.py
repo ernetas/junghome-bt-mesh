@@ -293,7 +293,7 @@ async def test_heartbeats_off_by_default(
     hub = hub_of(init_answered)
     assert hub.heartbeats_enabled is False
     assert fake_link.config_sent == []
-    assert hub.liveness.unsub_heartbeats is None
+    assert hub.lifecycle.timer("heartbeats") is None
     assert hub.node_alive(LIGHT_SWITCH)
     fake_link.inject_heartbeat(LIGHT_SWITCH, OUR_ADDRESS)
     await hass.async_block_till_done()
@@ -342,8 +342,8 @@ async def test_heartbeats_are_configured_once_per_reconfigure_interval(
         assert [pdu for _s, _n, pdu in fake_link.config_sent] == [HEARTBEAT_SET] * len(
             HEARTBEAT_NODES
         )
-        assert hub.liveness.heartbeat_task is not None
-        assert hub.liveness.heartbeat_task.done()
+        assert hub.lifecycle.task("heartbeats") is not None
+        assert hub.lifecycle.task("heartbeats").done()
         fake_link.config_sent.clear()
         # ... and so does a new link after the interval
         await tick(hass, freezer, HEARTBEAT_RECONFIGURE_INTERVAL + 1)
@@ -834,17 +834,21 @@ async def test_disable_round_stops_the_heartbeat_work_first(
     flight before the disable round goes out: their configure Sets would switch nodes that confirmed the disable
     back on, and nothing would tell them again."""
     hub = await start_with_heartbeats(hass, mock_config_entry, fake_link)
-    assert hub.liveness.unsub_heartbeats is not None
+    assert hub.lifecycle.timer("heartbeats") is not None
     release = asyncio.Event()
-    hub.liveness.heartbeat_task = hass.async_create_task(release.wait())
+    hub.lifecycle.set_task("heartbeats", hass.async_create_task(release.wait()))
     hub.liveness.reprobe_task = hass.async_create_task(release.wait())
-    renewal, reprobe = hub.liveness.heartbeat_task, hub.liveness.reprobe_task
+    renewal, reprobe = hub.lifecycle.task("heartbeats"), hub.liveness.reprobe_task
     seen: list[tuple[object, bool, bool]] = []
     disable = hub.liveness.async_disable_heartbeats
 
     async def recording() -> None:
         seen.append(
-            (hub.liveness.unsub_heartbeats, renewal.cancelled(), reprobe.cancelled())
+            (
+                hub.lifecycle.timer("heartbeats"),
+                renewal.cancelled(),
+                reprobe.cancelled(),
+            )
         )
         await disable()
 

@@ -243,7 +243,10 @@ async def init_puck_reset(
     hub = mock_config_entry.runtime_data
     await wait_until(
         hass,
-        lambda: hub.refresh.task is None or hub.refresh.task.done(),
+        lambda: (
+            hub.lifecycle.task("refresh") is None
+            or hub.lifecycle.task("refresh").done()
+        ),
         what="the connect-time refresh",
     )
     # nobody answered the refresh either (every request gives up after milliseconds here), so every node counts as

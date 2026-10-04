@@ -8,7 +8,6 @@ again soon after a round on a link that held). `async_refresh_element` asks one 
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable, Container
@@ -54,10 +53,7 @@ class Refresh:
 
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub` (its link, devices and the other components); nothing read yet."""
-        self.hub = hub
-        self.task: asyncio.Task[None] | None = (
-            None  # the connect-time sequence of the link (`after_connect`)
-        )
+        self.hub = hub  # its task, the connect-time sequence of the link, is the hub's `refresh` (`lifecycle`)
         # connect-time step → when its last complete round ended (monotonic; `connect_step`)
         self.connect_steps_done: dict[str, float] = {}
         # elements asked for their current scene right now (`_get_current_scene_of`): their Scene Status is an

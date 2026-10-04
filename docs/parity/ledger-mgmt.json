@@ -3356,7 +3356,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_stop"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_stop_disconnects_even_when_a_background_task_failed"
+    "tests/test_hub_lifecycle.py::test_stop_disconnects_even_when_a_background_task_failed"
    ],
    "missing": "no \"disconnect the current proxy\" action (only disabling / reloading the entry drops the link). To build: a button that detaches; the loop reconnects to another proxy; testable.",
    "class": "build",
@@ -8397,7 +8397,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_stop"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_stop_is_idempotent"
+    "tests/test_hub_lifecycle.py::test_stop_is_idempotent"
    ],
    "class": "dup",
    "reason": "State / label of the connection states HA handles internally but does not surface.",
@@ -8432,7 +8432,7 @@
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.async_stop"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_stop_disconnects_even_when_a_background_task_failed"
+    "tests/test_hub_lifecycle.py::test_stop_disconnects_even_when_a_background_task_failed"
    ],
    "class": "dup",
    "reason": "Label of the missing disconnect action.",

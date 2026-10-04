@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
-from homeassistant.core import CALLBACK_TYPE, callback
+from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
 
 from custom_components.junghome_ble.const import (
@@ -148,9 +148,9 @@ class Energy:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub` (its devices, link and entry); no poll armed yet, nothing read."""
         self.hub = hub
-        self.task: asyncio.Task[None] | None = (
-            None  # the energy poll running now (`_poll_energy_periodic`)
-        )
+        # its timer and task are the hub's (`JungHomeHub.lifecycle`): `energy`, the poll timer (`arm_poll`), and
+        # `energy`, the poll running now (`_poll_energy_periodic`)
+        self._lifecycle = hub.lifecycle
         self._energy_history_at: float | None = (
             None  # monotonic time of the last energy-chart import (`energy_history`)
         )
@@ -158,7 +158,6 @@ class Energy:
         self._counter_locks: defaultdict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
         # per metered load (main address): the on-demand read running now, which later callers wait for
         self._meter_refreshes: dict[int, asyncio.Event] = {}
-        self.unsub_energy: CALLBACK_TYPE | None = None  # the poll timer (`arm_poll`)
 
     def arm_poll(self) -> None:
         """(Re)start the energy poll timer so its grid is anchored on the connection just made.
@@ -166,14 +165,15 @@ class Energy:
         Anchored on the start of the integration instead, a poll could fall right before the link watchdog's
         deadline on a mesh where the poll's reply is the only traffic. No timer without a metered load.
         """
-        if self.unsub_energy is not None:
-            self.unsub_energy()
-            self.unsub_energy = None
+        self._lifecycle.cancel_timer("energy")
         if self.hub.devices.metered:
-            self.unsub_energy = async_track_time_interval(
-                self.hub.hass,
-                self._poll_energy_periodic,
-                timedelta(seconds=ENERGY_POLL_INTERVAL),
+            self._lifecycle.set_timer(
+                "energy",
+                async_track_time_interval(
+                    self.hub.hass,
+                    self._poll_energy_periodic,
+                    timedelta(seconds=ENERGY_POLL_INTERVAL),
+                ),
             )
 
     async def poll(self) -> None:
@@ -250,11 +250,17 @@ class Energy:
         """
         if not self.hub.connected or any(
             task is not None and not task.done()
-            for task in (self.hub.refresh.task, self.task)
+            for task in (
+                self._lifecycle.task("refresh"),
+                self._lifecycle.task("energy"),
+            )
         ):
             return
-        self.task = self.hub.entry.async_create_background_task(
-            self.hub.hass, self.poll(), f"{DOMAIN} energy"
+        self._lifecycle.set_task(
+            "energy",
+            self.hub.entry.async_create_background_task(
+                self.hub.hass, self.poll(), f"{DOMAIN} energy"
+            ),
         )
 
     async def get_readings(self, load: MeteredLoad) -> None:

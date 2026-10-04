@@ -16,7 +16,7 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from homeassistant.core import CALLBACK_TYPE, callback
+from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_call_later
 
@@ -69,18 +69,15 @@ class Issues:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub` (its entry, link and store); nothing raised yet."""
         self.hub = hub
-        self.unsub_seq_stall: CALLBACK_TYPE | None = (
-            None  # the look `seq_stall_started` armed
-        )
+        # its timers are the hub's (`JungHomeHub.lifecycle`): `seq_stall`, the look `seq_stall_started` armed, and
+        # `seq_check`, `check_sequence_space` (armed by `JungHomeHub.async_start`)
+        self._lifecycle = hub.lifecycle
         self._bluetooth_off = False  # `bluetooth_unavailable` is raised
         self.pdus_dropped = False  # `pdus_dropped` is raised
         # the `address_shared` repair skipped past another client's numbers since this hub started: a new sighting
         # asks for another address (`report_address_shared`)
         self._address_shared_skipped = False
         self.export_stale = False  # `export_stale` is raised
-        self.unsub_seq_check: CALLBACK_TYPE | None = (
-            None  # `check_sequence_space`, armed by `JungHomeHub.async_start`
-        )
 
     def clear(self) -> None:
         """Drop every issue the hub raises: it starts (raised again if still due) or stops (`JungHomeHub.async_stop`)."""
@@ -131,15 +128,19 @@ class Issues:
     @callback
     def seq_stall_started(self) -> None:
         """Look again SEQ_STALL_ISSUE_AFTER after the store began holding sends back (`HAState.reserve_seq`)."""
-        if self.unsub_seq_stall is not None:
-            self.unsub_seq_stall()  # an earlier stall's, which ended meanwhile
-        self.unsub_seq_stall = async_call_later(
-            self.hub.hass, SEQ_STALL_ISSUE_AFTER, self._seq_stall_overdue
+        self._lifecycle.cancel_timer(
+            "seq_stall"
+        )  # an earlier stall's, which ended meanwhile
+        self._lifecycle.set_timer(
+            "seq_stall",
+            async_call_later(
+                self.hub.hass, SEQ_STALL_ISSUE_AFTER, self._seq_stall_overdue
+            ),
         )
 
     @callback
     def _seq_stall_overdue(self, _now: datetime) -> None:
-        self.unsub_seq_stall = None
+        self._lifecycle.set_timer("seq_stall", None)
         self.hub.state.report_unwritable()
 
     @callback

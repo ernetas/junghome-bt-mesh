@@ -340,7 +340,10 @@ async def env(
         hub = entry.runtime_data
         await wait_until(
             hass,
-            lambda: hub.refresh.task is None or hub.refresh.task.done(),
+            lambda: (
+                hub.lifecycle.task("refresh") is None
+                or hub.lifecycle.task("refresh").done()
+            ),
             what="the connect-time refresh",
         )
         env.hubs.append(hub)
@@ -382,7 +385,7 @@ async def refreshed(hass: HomeAssistant, env: Env) -> None:
     """
     await wait_until(
         hass,
-        lambda: (task := env.hub.refresh.task) is None or task.done(),
+        lambda: (task := env.hub.lifecycle.task("refresh")) is None or task.done(),
         what="the connect-time refresh",
     )
 

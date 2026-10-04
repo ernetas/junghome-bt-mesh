@@ -178,7 +178,10 @@ async def connect(
     hub: JungHomeHub = entry.runtime_data
     await wait_until(
         hass,
-        lambda: hub.refresh.task is not None and hub.refresh.task.done(),
+        lambda: (
+            hub.lifecycle.task("refresh") is not None
+            and hub.lifecycle.task("refresh").done()
+        ),
         what="the connect-time sequence",
     )
     await async_wait_recording_done(hass)

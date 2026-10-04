@@ -193,7 +193,9 @@ async def test_a_time_set_follows_a_daylight_saving_change(
     ]
     assert len(time_sets) == 1
     hub = mock_config_entry.runtime_data
-    assert hub.clock.unsub_offset_change is not None  # the autumn change is armed next
+    assert (
+        hub.lifecycle.timer("offset_change") is not None
+    )  # the autumn change is armed next
 
 
 async def test_no_daylight_saving_no_extra_time_set(
@@ -206,7 +208,7 @@ async def test_no_daylight_saving_no_extra_time_set(
     await hass.config.async_set_time_zone("UTC")
     await setup_entry(hass, mock_config_entry)
     await wait_for_link(hass, mock_config_entry)
-    assert mock_config_entry.runtime_data.clock.unsub_offset_change is None
+    assert mock_config_entry.runtime_data.lifecycle.timer("offset_change") is None
 
 
 def light_available(hass: HomeAssistant) -> bool:

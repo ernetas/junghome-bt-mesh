@@ -89,6 +89,7 @@ from .hub.export_watch import (
     is_gateway_host,
 )
 from .hub.issues import SEQ_STALL_ISSUE_AFTER, Issues
+from .hub.lifecycle import Lifecycle, async_cancel_task
 from .hub.link import LINK_HISTORY, LinkEnd, LinkManager, LinkRecord
 from .hub.liveness import Liveness
 from .hub.refresh import ONOFF_GET, STATE_GETS, Refresh
@@ -590,6 +591,8 @@ class JungHomeHub:
         self.state = (
             state  # our address, sequence number and IV state, persisted per mesh
         )
+        # every timer and task the hub cancels when it stops, by name (`hub/lifecycle.py`, review-4 A4-13)
+        self.lifecycle = Lifecycle()
         # the repair issues and their fixes (`hub/issues.py`); it watches the store's stalls
         self.issues = Issues(self)
         state.stall_listener = self.issues.seq_stall_started
@@ -671,10 +674,6 @@ class JungHomeHub:
         self.clocks = NodeClocks(self, issue_id(entry, ISSUE_NODE_CLOCK_WRONG))
         # the last LINK_HISTORY links, oldest first (`LinkManager._link_ended`)
         self.link_history: deque[LinkRecord] = deque(maxlen=LINK_HISTORY)
-        self._unsub_ha_stop: CALLBACK_TYPE | None = None
-        self._unsub_echo: CALLBACK_TYPE | None = (
-            None  # the check that a command was answered (`_command`)
-        )
         # link diagnostics (review-3 F8, F9): when each node was last heard (wall clock), the signal strength of
         # its last advertisement, when it last restarted, and the last sequence number per source
         self.last_seen: dict[int, datetime] = {}
@@ -683,9 +682,9 @@ class JungHomeHub:
         self._last_seq: dict[int, int] = {}
         self._node_signalled: dict[int, float] = {}
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
-        self._transition_reread: dict[int, CALLBACK_TYPE] = {}
+        self._transition_reread = self.lifecycle.keyed("transition_reread")
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
-        self._locating: dict[int, CALLBACK_TYPE] = {}
+        self._locating = self.lifecycle.keyed("locating")
         self._rebuilding = (
             False  # `async_begin_rebuild` ran: a reload replaces this hub
         )
@@ -837,86 +836,75 @@ class JungHomeHub:
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
             self.issues.report_address_shared()
-        self.link.unsub_adv = bluetooth.async_register_callback(
-            self.hass,
-            self.link.adv_seen,
-            {"service_uuid": MESH_PROXY_SERVICE, "connectable": True},
-            bluetooth.BluetoothScanningMode.PASSIVE,
+        lifecycle = self.lifecycle
+        lifecycle.set_timer(
+            "adv",
+            bluetooth.async_register_callback(
+                self.hass,
+                self.link.adv_seen,
+                {"service_uuid": MESH_PROXY_SERVICE, "connectable": True},
+                bluetooth.BluetoothScanningMode.PASSIVE,
+            ),
         )
-        self.link.task = self.entry.async_create_background_task(
-            self.hass, self.link.connection_loop(), f"{DOMAIN} link"
+        lifecycle.set_task(
+            "link",
+            self.entry.async_create_background_task(
+                self.hass, self.link.connection_loop(), f"{DOMAIN} link"
+            ),
         )
-        self.clock.unsub_time = async_track_time_interval(
-            self.hass, self.clock.send_time_daily, timedelta(seconds=TIME_SET_INTERVAL)
+        lifecycle.set_timer(
+            "time",
+            async_track_time_interval(
+                self.hass,
+                self.clock.send_time_daily,
+                timedelta(seconds=TIME_SET_INTERVAL),
+            ),
         )
         self.clock.arm_offset_change()
         if self.heartbeats_enabled:
-            self.liveness.unsub_heartbeats = async_track_time_interval(
-                self.hass,
-                self.liveness.check_heartbeats,
-                timedelta(seconds=HEARTBEAT_CHECK_INTERVAL),
+            lifecycle.set_timer(
+                "heartbeats",
+                async_track_time_interval(
+                    self.hass,
+                    self.liveness.check_heartbeats,
+                    timedelta(seconds=HEARTBEAT_CHECK_INTERVAL),
+                ),
             )
-        self.issues.unsub_seq_check = async_track_time_interval(
-            self.hass,
-            self.issues.check_sequence_space,
-            timedelta(seconds=SEQUENCE_CHECK_INTERVAL),
+        lifecycle.set_timer(
+            "seq_check",
+            async_track_time_interval(
+                self.hass,
+                self.issues.check_sequence_space,
+                timedelta(seconds=SEQUENCE_CHECK_INTERVAL),
+            ),
         )
 
         async def on_ha_stop(_event: Event) -> None:
             # Home Assistant does not unload entries when it stops: close the link (an ESPHome proxy's slot) and
             # store the counter as cleanly closed, so the next start needs no restart margin
-            self._unsub_ha_stop = None
+            lifecycle.set_timer("ha_stop", None)
             await self.async_stop()
 
-        self._unsub_ha_stop = self.hass.bus.async_listen_once(
-            EVENT_HOMEASSISTANT_STOP, on_ha_stop
+        lifecycle.set_timer(
+            "ha_stop",
+            self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, on_ha_stop),
         )
 
     async def async_stop(self) -> None:
-        """Stop the connection loop and background work, then drop the link."""
+        """Stop the connection loop and background work, then drop the link.
+
+        Everything registered goes through the registry (`hub/lifecycle.py`), in its fixed order: the timers, the
+        timers per node (a Node Identity advert stops by itself within 60 s), the gestures pending, then the tasks
+        and the key refresh's. Not a pending retry of a failed upload: it is the entry's and outlives the reload
+        most changes end with (`MeshConfigurator._upload_or_retry`); removing the entry cancels it.
+        """
         self.stopping = True
-        for unsub in (
-            self.link.unsub_adv,
-            self.clock.unsub_time,
-            self.energy.unsub_energy,
-            self.liveness.unsub_heartbeats,
-            self.issues.unsub_seq_check,
-            self.link.unsub_grace,
-            self._unsub_ha_stop,
-            self._unsub_echo,
-            self.clock.unsub_offset_change,
-            self.issues.unsub_seq_stall,
-        ):
-            if unsub:
-                unsub()
-        self.link.unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
-        self.clock.unsub_offset_change = self.issues.unsub_seq_stall = None
-        self.link.unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
-        self.liveness.unsub_heartbeats = self.issues.unsub_seq_check = None
-        self.export_watch.cancel_timer()
-        self.link.cancel_filter_watch()
-        # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
-        # (`MeshConfigurator._upload_or_retry`); removing the entry cancels it
-        for cancel in (
-            *self.liveness.recheck.values(),
-            *self._transition_reread.values(),
-            *self._locating.values(),  # the nodes stop by themselves within 60 s
-        ):
-            cancel()
-        self.liveness.recheck.clear()
-        self._transition_reread.clear()
-        self._locating.clear()
+        self.lifecycle.cancel_timers()
+        self.lifecycle.cancel_keyed()
         self.gestures.cancel_all()
         try:
-            await self._cancel(self.link.task)
-            self.link.task = None
-            await self._cancel(self.refresh.task)
-            self.refresh.task = None
-            await self._cancel(self.energy.task)
-            self.energy.task = None
-            await self._cancel(self.liveness.heartbeat_task)
-            self.liveness.heartbeat_task = None
-            await self._cancel(self.vault_refresh.task)
+            await self.lifecycle.async_cancel_tasks()
+            await async_cancel_task(self.vault_refresh.task)
             self.vault_refresh.task = None
         finally:
             # always reached, even if one of the cancels above still raised: an unclosed link keeps holding a
@@ -932,32 +920,6 @@ class JungHomeHub:
             # live problems to show — a restart raises them again if they persist
             await self.state.async_close()
             self.issues.clear()
-
-    @staticmethod
-    async def _cancel(task: asyncio.Task[None] | None) -> None:
-        """Cancel `task` and wait for it, without raising an error it had already failed with (HAC-04).
-
-        `cancel()` is a no-op on a task that is already done; a task that finished with an exception before we
-        got here then re-raises it from `await task`, which is not an error this cancel caused and was never
-        ours to raise — `async_stop` used to abort right there, skipping the disconnect and the counter close
-        that must always run. A cancellation of the caller itself (this coroutine's own task being torn down,
-        not merely the cancellation we just issued to `task`) still propagates.
-        """
-        if task is None:
-            return
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            current = asyncio.current_task()
-            if current is not None and current.cancelling():
-                raise
-        except (
-            Exception
-        ):  # a task that had already failed: its error was not ours to raise here
-            _LOGGER.debug(
-                "background task %s had failed", task.get_name(), exc_info=True
-            )
 
     @property
     def connected(self) -> bool:
@@ -1015,13 +977,12 @@ class JungHomeHub:
         ):
             self.link.cancel_refresh()
             assert (
-                self.liveness.unsub_heartbeats is not None
+                self.lifecycle.timer("heartbeats") is not None
             )  # armed by `async_start` with the option on
-            self.liveness.unsub_heartbeats()
-            self.liveness.unsub_heartbeats = None
-            await self._cancel(self.liveness.heartbeat_task)
-            await self._cancel(self.liveness.reprobe_task)
-            self.liveness.heartbeat_task = self.liveness.reprobe_task = None
+            self.lifecycle.cancel_timer("heartbeats")
+            await self.lifecycle.async_cancel_task("heartbeats")
+            await async_cancel_task(self.liveness.reprobe_task)
+            self.liveness.reprobe_task = None
             await self.liveness.async_disable_heartbeats()
         return True
 
@@ -1128,10 +1089,7 @@ class JungHomeHub:
         if (
             self.heartbeats_enabled
             and any(n.pid is not None and n.pid not in BATTERY_PIDS for n in nodes)
-            and (
-                self.liveness.heartbeat_task is None
-                or self.liveness.heartbeat_task.done()
-            )
+            and ((task := self.lifecycle.task("heartbeats")) is None or task.done())
         ):
             self.liveness.configured_at = (
                 None  # a round for every node: the new ones are among them
@@ -2041,20 +1999,22 @@ class JungHomeHub:
         """
         await self.link.wait_for_link()
         await self.proxy.send_access(dst, access_pdu)
-        if self._unsub_echo is not None:
+        if self.lifecycle.timer("echo") is not None:
             return  # the first command of a burst is watched: anything the mesh sends answers them all
         sent_at = self.link.last_rx
 
         @callback
         def check(_now: datetime) -> None:
-            self._unsub_echo = None
+            self.lifecycle.set_timer("echo", None)
             if self.connected and self.link.last_rx == sent_at:
                 _LOGGER.debug(
                     "No answer to a command within %.0f s", COMMAND_ECHO_TIMEOUT
                 )
                 self.link.probe_link.set()
 
-        self._unsub_echo = async_call_later(self.hass, COMMAND_ECHO_TIMEOUT, check)
+        self.lifecycle.set_timer(
+            "echo", async_call_later(self.hass, COMMAND_ECHO_TIMEOUT, check)
+        )
 
     async def _load_command(
         self,

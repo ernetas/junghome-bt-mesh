@@ -445,27 +445,6 @@ async def test_initial_connection_and_refresh(
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
 
-async def test_stop_cancels_a_running_refresh(
-    hass: HomeAssistant,
-    mock_config_entry: MockConfigEntry,
-    mock_bluetooth_env: dict[str, Any],
-    answering_link: FakeProxyLink,
-    refresh_gate: asyncio.Event,
-) -> None:
-    await setup_entry(hass, mock_config_entry)
-    await wait_for_link(hass, mock_config_entry)
-    await settle(hass)
-    hub = hub_of(mock_config_entry)
-    task = hub.refresh.task
-    assert task is not None
-    assert not task.done()
-    await hub.async_stop()
-    assert task.cancelled()
-    assert hub.refresh.task is None
-    assert hub.link.task is None
-    await hub.link._watch_link()  # a link that is already gone: returns at once
-
-
 async def test_an_unchanged_status_writes_no_state(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
@@ -503,43 +482,6 @@ async def test_an_unchanged_status_writes_no_state(
     assert hass.states.get(light).state == STATE_UNAVAILABLE
 
 
-async def test_stop_is_idempotent(
-    hass: HomeAssistant,
-    init_integration: MockConfigEntry,
-    fake_link: FakeProxyLink,
-    mock_bluetooth_env: dict[str, Any],
-) -> None:
-    hub = hub_of(init_integration)
-    await hub.async_stop()
-    assert not hub.connected
-    assert not fake_link.is_connected
-    assert mock_bluetooth_env["callbacks"] == []
-    await hub.async_stop()
-
-
-async def test_stop_disconnects_even_when_a_background_task_failed(
-    hass: HomeAssistant,
-    init_integration: MockConfigEntry,
-    fake_link: FakeProxyLink,
-) -> None:
-    """HAC-04: `_cancel`'s `task.cancel()` is a no-op on a task that has already finished with an exception, and
-    `await task` then re-raises it — an error `async_stop` had no `try/finally` to survive, so it used to skip
-    the disconnect and the counter close and leave the BLE connection (and its adapter/proxy slot) open."""
-    hub = hub_of(init_integration)
-
-    async def boom() -> None:
-        raise ValueError("x")
-
-    hub.liveness.heartbeat_task = hass.async_create_task(boom())
-    await (
-        hass.async_block_till_done()
-    )  # the task is done with the exception before async_stop cancels it
-
-    await hub.async_stop()  # must not raise
-    assert not fake_link.is_connected
-    assert hub.liveness.heartbeat_task is None
-
-
 async def test_malformed_heartbeat_publication_status_is_ignored(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
@@ -562,34 +504,6 @@ async def test_malformed_heartbeat_publication_status_is_ignored(
     hub.proxy.request_config.assert_awaited_once()
     assert hub.liveness._alive_deadline == deadlines
     assert f"{node.unicast:04X}: malformed Heartbeat Publication Status" in caplog.text
-
-
-async def test_cancel_still_propagates_a_cancellation_of_its_own_task(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """HAC-04: `_cancel` swallows the `CancelledError` its own `task.cancel()` produces, but must not swallow
-    one that means `_cancel`'s own caller (here, the task running it) is itself being cancelled — that would
-    turn a cancelled `async_stop` into one that quietly finishes instead of stopping partway as asked."""
-    hub = hub_of(init_integration)
-    release = asyncio.Event()
-
-    async def stubborn() -> None:
-        try:
-            await release.wait()
-        except asyncio.CancelledError:
-            await asyncio.sleep(
-                0.01
-            )  # still running when the wrapper below is cancelled
-            raise
-
-    task = hass.async_create_task(stubborn())
-    await asyncio.sleep(0)
-
-    wrapper = hass.async_create_task(hub._cancel(task))
-    await asyncio.sleep(0)  # let it call task.cancel() and reach `await task`
-    wrapper.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await wrapper
 
 
 async def test_sequence_number_survives_a_reload(
@@ -636,9 +550,9 @@ async def test_sequence_number_survives_a_reload(
 
 def quiet_mesh(hub: JungHomeHub) -> None:
     """Stop the periodic energy poll: on a mesh without a gateway nothing else is on air at night."""
-    assert hub.energy.unsub_energy is not None
-    hub.energy.unsub_energy()
-    hub.energy.unsub_energy = None
+    assert hub.lifecycle.timer("energy") is not None
+    hub.lifecycle.timer("energy")()
+    hub.lifecycle.set_timer("energy", None)
 
 
 def stop_answering(link: FakeProxyLink) -> None:

@@ -18,7 +18,7 @@ from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING
 
-from homeassistant.core import CALLBACK_TYPE, callback
+from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
@@ -75,13 +75,12 @@ class Liveness:
         self.last_heard: dict[
             int, float
         ] = {}  # node unicast → monotonic time of its last message
-        self.recheck: dict[int, CALLBACK_TYPE] = {}  # node unicast → its pending re-ask
+        # node unicast → its pending re-ask; the hub's (`JungHomeHub.lifecycle`), as are the `heartbeats` timer
+        # (`check_heartbeats`, armed by `JungHomeHub.async_start`) and task (a renewal of the publications)
+        self._lifecycle = hub.lifecycle
+        self.recheck = hub.lifecycle.keyed("recheck")
         # when the last heartbeat configuration round ended (monotonic, `configure_heartbeats`); the diagnostics show it
         self.configured_at: float | None = None
-        self.unsub_heartbeats: CALLBACK_TYPE | None = (
-            None  # `check_heartbeats`, armed by `JungHomeHub.async_start`
-        )
-        self.heartbeat_task: asyncio.Task[None] | None = None
 
     def link_up(self) -> None:
         """Give every node a full timeout and drop the pending re-asks: a new link is up (`LinkManager._connect_to`)."""
@@ -428,10 +427,13 @@ class Liveness:
             self.hub.connected
             and self.configured_at is not None
             and now - self.configured_at >= HEARTBEAT_RECONFIGURE_INTERVAL
-            and (self.heartbeat_task is None or self.heartbeat_task.done())
+            and ((task := self._lifecycle.task("heartbeats")) is None or task.done())
         ):
-            self.heartbeat_task = self.hub.entry.async_create_background_task(
-                self.hub.hass, self.configure_heartbeats(), f"{DOMAIN} heartbeats"
+            self._lifecycle.set_task(
+                "heartbeats",
+                self.hub.entry.async_create_background_task(
+                    self.hub.hass, self.configure_heartbeats(), f"{DOMAIN} heartbeats"
+                ),
             )
         for node in self.heartbeat_nodes if self.hub.connected else ():
             # while the link is down nobody can be heard: the silence is the link's (`LinkManager._connect_to` renews the

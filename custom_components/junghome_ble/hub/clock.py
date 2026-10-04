@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
-from homeassistant.core import CALLBACK_TYPE, callback
+from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.util import dt as dt_util
 
@@ -62,12 +62,9 @@ class Clock:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub` (its link, entry and node clocks); no timer armed yet."""
         self.hub = hub
-        self.unsub_time: CALLBACK_TYPE | None = (
-            None  # the daily Time Set (`send_time_daily`)
-        )
-        self.unsub_offset_change: CALLBACK_TYPE | None = (
-            None  # the Time Set after a DST change
-        )
+        # its timers are the hub's (`JungHomeHub.lifecycle`): `time`, the daily Time Set (`send_time_daily`, armed
+        # by `JungHomeHub.async_start`), and `offset_change`, the Time Set after a DST change
+        self._lifecycle = hub.lifecycle
 
     async def send_time(self, destination: int = ALL_NODES) -> None:
         """Broadcast Time Set (unacknowledged, to all nodes) as the app does after every connection.
@@ -152,10 +149,13 @@ class Clock:
 
         @callback
         def changed(_now: datetime) -> None:
-            self.unsub_offset_change = None
+            self._lifecycle.set_timer("offset_change", None)
             self.send_time_daily(_now)
             self.arm_offset_change()
 
-        self.unsub_offset_change = async_track_point_in_utc_time(
-            self.hub.hass, changed, change + timedelta(seconds=OFFSET_CHANGE_DELAY)
+        self._lifecycle.set_timer(
+            "offset_change",
+            async_track_point_in_utc_time(
+                self.hub.hass, changed, change + timedelta(seconds=OFFSET_CHANGE_DELAY)
+            ),
         )

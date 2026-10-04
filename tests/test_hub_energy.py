@@ -94,8 +94,8 @@ async def test_energy_poll_repeats_while_connected(
             )
         assert fake_link.sent == COUNTER_GETS
         assert hub.states[SOCKET].power_on_hours == 43
-        assert hub.energy.task is not None
-        assert hub.energy.task.done()
+        assert hub.lifecycle.task("energy") is not None
+        assert hub.lifecycle.task("energy").done()
 
         # nothing is asked while the link is down
         fake_link.sent.clear()
@@ -108,21 +108,23 @@ async def test_energy_poll_repeats_while_connected(
         assert not fake_link.sent
 
         # ... nor while a poll (or the connect-time refresh that ends with one) is still running
-        hub.energy.task = running = never_done(hass)
+        running = never_done(hass)
+        hub.lifecycle.set_task("energy", running)
         freezer.tick(ENERGY_POLL_INTERVAL)
         async_fire_time_changed(hass)
         await settle(hass)
         assert not fake_link.sent
-        assert hub.energy.task is running
+        assert hub.lifecycle.task("energy") is running
         running.cancel()
         await settle(hass)
 
         # stopping the hub unsubscribes the timer and cancels a running poll
-        hub.energy.task = task = never_done(hass)
+        task = never_done(hass)
+        hub.lifecycle.set_task("energy", task)
         await hub.async_stop()
         assert task.cancelled()
-        assert hub.energy.task is None
-        assert hub.energy.unsub_energy is None
+        assert hub.lifecycle.task("energy") is None
+        assert hub.lifecycle.timer("energy") is None
         fake_link.sent.clear()
         freezer.tick(ENERGY_POLL_INTERVAL)
         async_fire_time_changed(hass)
@@ -201,12 +203,13 @@ async def test_energy_poll_is_cancelled_with_the_link(
 ) -> None:
     """A poll that the link outlives is cancelled with the link's refresh, and a failing send is only logged."""
     hub = hub_of(init_answered)
-    hub.energy.task = task = never_done(hass)
+    task = never_done(hass)
+    hub.lifecycle.set_task("energy", task)
     mock_bluetooth_env["infos"] = []
     fake_link.drop_link()
     await settle(hass)
     assert task.cancelled()
-    assert hub.energy.task is None
+    assert hub.lifecycle.task("energy") is None
 
     fake_link.sent.clear()
     fake_link.write_error = ConnectionError("proxy disconnected")
@@ -258,16 +261,16 @@ async def test_energy_poll_is_anchored_on_the_connection(
     """The poll grid restarts with every link: the connect-time poll is tick 0, the next one ENERGY_POLL_INTERVAL later,
     wherever the integration's own start was (so a poll never lands right at the link watchdog's deadline)."""
     hub = hub_of(init_answered)
-    timer = hub.energy.unsub_energy
+    timer = hub.lifecycle.timer("energy")
     assert timer is not None
     await tick(hass, freezer, 200)
     fake_link.drop_link()
     await settle(hass)
     await wait_for_link(hass, init_answered)
     assert fake_link.connect_count == 2
-    assert hub.energy.unsub_energy is not None
+    assert hub.lifecycle.timer("energy") is not None
     assert (
-        hub.energy.unsub_energy is not timer
+        hub.lifecycle.timer("energy") is not timer
     )  # re-armed by the new link, the old timer is gone
     # the connect-time poll of the new link; the scene and fault reads of the first, a link that held, are fresh
     assert fake_link.sent[-ENERGY_GETS:] == COUNTER_GETS
@@ -288,12 +291,12 @@ async def test_energy_poll_skips_meshes_without_a_metering_socket(
 ) -> None:
     """Without a metering socket there is nothing to poll, so no connection arms a timer."""
     hub = hub_of(init_integration)
-    assert hub.energy.unsub_energy is not None
+    assert hub.lifecycle.timer("energy") is not None
     await hub.async_stop()
     hub.devices.sockets.clear()
     hub.stopping = False
     await hub.async_start()
     await wait_for_link(hass, init_integration)
     assert hub.connected
-    assert hub.energy.unsub_energy is None
+    assert hub.lifecycle.timer("energy") is None
     await hub.async_stop()

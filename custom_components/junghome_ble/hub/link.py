@@ -55,6 +55,8 @@ from custom_components.junghome_ble.jhmesh.advert import parse_manufacturer_data
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 from custom_components.junghome_ble.jhmesh.devices import BATTERY_PIDS
 
+from .lifecycle import Backoff
+
 if TYPE_CHECKING:
     from custom_components.junghome_ble.coordinator import JungHomeHub
 
@@ -109,24 +111,18 @@ class LinkManager:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub` (its proxy client, entry and components); no link yet."""
         self.hub = hub
-        self.task: asyncio.Task[None] | None = (
-            None  # the connection loop (`connection_loop`)
-        )
-        self.unsub_adv: CALLBACK_TYPE | None = (
-            None  # the proxy advertisements (`adv_seen`)
-        )
+        # its timers and the connection loop's task are the hub's (`JungHomeHub.lifecycle`): `grace`,
+        # `filter_watch`, `adv` (`adv_seen`), and `link` (`connection_loop`)
+        self._lifecycle = hub.lifecycle
         # set with `connected_since`, cleared when the link goes down
         self._link_up = asyncio.Event()
         self._connect_failure_logged = False  # the first failure of a link-down period is a WARNING, the rest DEBUG
         self._link_lost = asyncio.Event()
         self._was_available = False
         self.last_rx = time.monotonic()  # when the proxy last forwarded anything we could decode, or named itself (link watchdog)
-        # per link: the watchdog waiting for the proxy's Filter Status (`_filter_status_overdue`)
-        self.unsub_filter_watch: CALLBACK_TYPE | None = None
         self._lost_at: float | None = (
             None  # monotonic time the last link was lost, while no new one is up
         )
-        self.unsub_grace: CALLBACK_TYPE | None = None  # the end of the link-loss grace
         # how the last link ended, None while one is up (`_link_ended`); when the current one came up (monotonic)
         self._link_end: LinkEnd | None = NO_LINK
         self._link_since = 0.0
@@ -239,7 +235,7 @@ class LinkManager:
         """
         failed: dict[str, float] = {}
         # shared with `_connection_pass`, which doubles it on a failure or a short link and resets it after a long one
-        backoff = [CONNECT_BACKOFF_MIN]
+        backoff = Backoff(CONNECT_BACKOFF_MIN, CONNECT_BACKOFF_MAX)
         while not self.hub.stopping:
             try:
                 await self._connection_pass(failed, backoff)
@@ -256,7 +252,7 @@ class LinkManager:
                 await asyncio.sleep(CONNECT_BACKOFF_MAX)
 
     async def _connection_pass(
-        self, failed: dict[str, float], backoff: list[float]
+        self, failed: dict[str, float], backoff: Backoff
     ) -> None:
         """One pass of `connection_loop`: wait for a candidate, connect, watch the link until it goes."""
         cands = self.visible_proxies()
@@ -293,13 +289,13 @@ class LinkManager:
                 "connecting to %s failed: %s; retry in %.0fs",
                 info.address,
                 err,
-                backoff[0],
+                backoff.delay,
             )
             self._connect_failure_logged = True
             self._set_available(False)
             self.set_link_state(LINK_FAILED)
-            await asyncio.sleep(backoff[0])
-            backoff[0] = min(backoff[0] * 2, CONNECT_BACKOFF_MAX)
+            await asyncio.sleep(backoff.delay)
+            backoff.grow()
             return
         self._link_lost.clear()
         await self._watch_link()
@@ -311,7 +307,7 @@ class LinkManager:
         await asyncio.sleep(self._judge_link(info.address, failed, backoff))
 
     def _judge_link(
-        self, address: str, failed: dict[str, float], backoff: list[float]
+        self, address: str, failed: dict[str, float], backoff: Backoff
     ) -> float:
         """Weigh the link to `address` that just ended (`_link_end`) against its proxy; the pause before the next pass.
 
@@ -332,7 +328,7 @@ class LinkManager:
             failed[address] = now
         if end.lasted >= SHORT_LINK:
             self._short_links.pop(address, None)
-            backoff[0] = CONNECT_BACKOFF_MIN
+            backoff.reset()
             return 1.0
         streak = self._short_links[address] = self._short_links.get(address, 0) + 1
         if streak >= SHORT_LINK_STREAK:
@@ -345,9 +341,7 @@ class LinkManager:
                     streak,
                     SHORT_LINK,
                 )
-        pause = backoff[0]
-        backoff[0] = min(pause * 2, CONNECT_BACKOFF_MAX)
-        return pause
+        return backoff.grow()
 
     async def _watch_link(self) -> None:
         """Block while the link is up; drop it (`drop_link`) when the proxy went silent.
@@ -563,12 +557,18 @@ class LinkManager:
         if (
             self.hub.proxy.proxy_addr is None
         ):  # the Filter Status itself is still due, whatever the address told us
-            self.unsub_filter_watch = async_call_later(
-                self.hub.hass, FILTER_STATUS_TIMEOUT, self._filter_status_overdue
+            self._lifecycle.set_timer(
+                "filter_watch",
+                async_call_later(
+                    self.hub.hass, FILTER_STATUS_TIMEOUT, self._filter_status_overdue
+                ),
             )
         self.hub.energy.arm_poll()
-        self.hub.refresh.task = self.hub.entry.async_create_background_task(
-            self.hub.hass, self.hub.refresh.after_connect(), f"{DOMAIN} refresh"
+        self._lifecycle.set_task(
+            "refresh",
+            self.hub.entry.async_create_background_task(
+                self.hub.hass, self.hub.refresh.after_connect(), f"{DOMAIN} refresh"
+            ),
         )
         self.hub.export_watch.check_pin()
         self.hub.export_watch.request_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
@@ -576,17 +576,15 @@ class LinkManager:
 
     def cancel_refresh(self) -> None:
         """Cancel the per-link background work: the connect-time refresh, a running energy poll, the Filter Status watchdog."""
-        for task in (self.hub.refresh.task, self.hub.energy.task):
-            if task is not None:
+        for name in ("refresh", "energy"):
+            if (task := self._lifecycle.task(name)) is not None:
                 task.cancel()
-        self.hub.refresh.task = self.hub.energy.task = None
+            self._lifecycle.set_task(name, None)
         self.cancel_filter_watch()
 
     def cancel_filter_watch(self) -> None:
         """Stop waiting for the proxy's Filter Status: it came, a new link is up, or the hub stops."""
-        if self.unsub_filter_watch is not None:
-            self.unsub_filter_watch()
-            self.unsub_filter_watch = None
+        self._lifecycle.cancel_timer("filter_watch")
 
     @callback
     def _filter_status_overdue(self, _now: datetime) -> None:
@@ -602,7 +600,7 @@ class LinkManager:
         every attempt back) — or while the store holds sends back: the proxy was not asked, and the repair's
         skip-ahead could not be written either (`seq_store_unwritable` reports that).
         """
-        self.unsub_filter_watch = None
+        self._lifecycle.set_timer("filter_watch", None)
         if (
             not self.hub.connected
             or self.hub.proxy.proxy_addr is not None  # the status did arrive
@@ -721,9 +719,7 @@ class LinkManager:
         return partial(self._link_loss_listeners.remove, listener)
 
     def _cancel_grace(self) -> None:
-        if self.unsub_grace is not None:
-            self.unsub_grace()
-            self.unsub_grace = None
+        self._lifecycle.cancel_timer("grace")
 
     def _start_grace(self) -> None:
         """Keep the entities available for LINK_LOSS_GRACE after a link loss; tell them when it ends."""
@@ -732,12 +728,14 @@ class LinkManager:
 
         @callback
         def ended(_now: datetime) -> None:
-            self.unsub_grace = None
+            self._lifecycle.set_timer("grace", None)
             async_dispatcher_send(
                 self.hub.hass, SIGNAL_CONNECTION.format(self.hub.entry.entry_id)
             )
 
-        self.unsub_grace = async_call_later(self.hub.hass, LINK_LOSS_GRACE, ended)
+        self._lifecycle.set_timer(
+            "grace", async_call_later(self.hub.hass, LINK_LOSS_GRACE, ended)
+        )
 
     def on_filter_status(self, proxy_unicast: int) -> None:
         """Record which node of the mesh we talk through, now that the proxy's Filter Status named it.

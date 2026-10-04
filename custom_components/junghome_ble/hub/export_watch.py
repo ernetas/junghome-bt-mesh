@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import CALLBACK_TYPE, callback
+from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_call_later
 
@@ -46,6 +46,8 @@ from custom_components.junghome_ble.jhmesh.advert import (
 from custom_components.junghome_ble.jhmesh.devices import GATEWAY_PID
 from custom_components.junghome_ble.jhmesh.properties import PROPERTIES
 from custom_components.junghome_ble.tls import normalize_fingerprint
+
+from .lifecycle import Backoff
 
 if TYPE_CHECKING:
     from homeassistant.components import bluetooth
@@ -95,12 +97,10 @@ class ExportWatch:
         self._export_refresh: asyncio.Task[None] | None = (
             None  # the gateway export fetch in flight, if any
         )
-        self._export_refresh_failures = (
-            0  # unanswered fetches in a row: index into EXPORT_REFRESH_BACKOFF
-        )
-        self.unsub_export_refresh: CALLBACK_TYPE | None = (
-            None  # the next fetch, when one is scheduled
-        )
+        # the delay before the next fetch, one step on per unanswered fetch in a row (EXPORT_REFRESH_BACKOFF); the
+        # fetch itself, when one is scheduled, is the hub's `export_refresh` timer (`JungHomeHub.lifecycle`)
+        self._backoff = Backoff(schedule=EXPORT_REFRESH_BACKOFF)
+        self._lifecycle = hub.lifecycle
         # one mesh read of the gateway's certificate at a time, and a pin the gateway node contradicted (not used)
         self._gateway_check = asyncio.Lock()
         self._distrusted_pin: str | None = None
@@ -129,7 +129,7 @@ class ExportWatch:
         )
         # the app uploads its project to the gateway after a change: fetch it before bothering the user (a new
         # node restarts the back-off; the issue below stands until the reload that follows a successful fetch)
-        self._export_refresh_failures = 0
+        self._backoff.reset()
         self.request_refresh()
         self.report_unknown_nodes()
 
@@ -158,24 +158,21 @@ class ExportWatch:
 
     def cancel_timer(self) -> None:
         """Cancel the next export fetch, if one is scheduled: no unknown node is left, or the hub stops."""
-        if self.unsub_export_refresh is not None:
-            self.unsub_export_refresh()
-            self.unsub_export_refresh = None
+        self._lifecycle.cancel_timer("export_refresh")
 
     def _schedule_export_refresh(self) -> None:
         """Ask again after the next EXPORT_REFRESH_BACKOFF delay: the app may not have uploaded yet."""
-        delay = EXPORT_REFRESH_BACKOFF[
-            min(self._export_refresh_failures, len(EXPORT_REFRESH_BACKOFF) - 1)
-        ]
-        self._export_refresh_failures += 1
+        delay = self._backoff.grow()
         self.cancel_timer()
 
         @callback
         def again(_now: datetime) -> None:
-            self.unsub_export_refresh = None
+            self._lifecycle.set_timer("export_refresh", None)
             self.request_refresh()
 
-        self.unsub_export_refresh = async_call_later(self.hub.hass, delay, again)
+        self._lifecycle.set_timer(
+            "export_refresh", async_call_later(self.hub.hass, delay, again)
+        )
 
     @property
     def follows_gateway(self) -> bool:

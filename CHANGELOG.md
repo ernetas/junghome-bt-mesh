@@ -682,7 +682,9 @@
   (`ExportWatch`, `hub.export_watch`: the unknown nodes, the gateway's export refresh and the gateway's trust),
   `hub/refresh.py` (`Refresh`, `hub.refresh`: the connect-time reads), `hub/issues.py` (`Issues`, `hub.issues`: the
   repair issues and their fixes) and `hub/link.py` (`LinkManager`, `hub.link`: the connection loop, proxy choice,
-  connect, watchdog, keep-alive, Filter Status watch and the link-loss grace). The hub
+  connect, watchdog, keep-alive, Filter Status watch and the link-loss grace). Every timer and task the hub stops is registered by name in
+  `hub/lifecycle.py` (`Lifecycle`, `hub.lifecycle`), and `async_stop` cancels them through it in the order it always
+  did (a test pins that order); the connection loop's back-off and the export re-fetch's are one `Backoff`. The hub
   keeps one-line delegations for what entities, actions, the configurator and the diagnostics call
   (`node_alive`, `unreachable`, `last_heard`, `heartbeats`, …); the tests of each component moved out of
   `tests/test_coordinator.py` into `tests/test_hub_<component>.py`. Log lines of the moved code come from the
