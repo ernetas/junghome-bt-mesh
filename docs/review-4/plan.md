@@ -543,11 +543,15 @@ Dependencies (hard unless marked *soft*):
   trace and its privacy test, upgrade fixtures from 1.0.0 (59; traces of the installation's own devices wait for the
   maintainer's captures). Follow-ups: `mesh_errors` at seven more sites (`audit_network` keeps mapping only a lost
   link), comments name the moved code's new homes, `actions/` imports absolutely.
+- **Wave 17 (brief 60): done.** A4-3, A4-13 `JungHomeHub` as the composition root of the `hub/` package: liveness,
+  energy, clock, export watch, connect-time reads, repair issues, the link manager, gestures, and one registry that
+  cancels the hub's timers and tasks in the old stop order, with a `Backoff` helper. The state cache, the status
+  handlers, the commands, scenes and sequence accounting stay in `coordinator.py` (not in the brief's steps).
 - **Released:** 1.0.0 (waves 1–2) from the new public repository, a single commit; the earlier history is in the
-  private `junghome-bt-mesh-private`.
+  private `junghome-bt-mesh-private`. 1.1.0: waves 3–17.
 - **HACS brand:** done — the existing JUNG HOME brand assets shipped in
   `custom_components/junghome_ble/brand/`, `brands` removed from the `ci.yml` ignore list, `quality_scale.yaml`,
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 60–64 and 67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and briefs 61–64 and 67 are TODO; the on-air sweep is the maintainer's.
