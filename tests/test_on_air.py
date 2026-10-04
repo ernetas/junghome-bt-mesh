@@ -311,7 +311,6 @@ def test_committed_tree_skips_released_history_and_the_checklist(
 ) -> None:
     paths = {m.path for m in committed}
     assert paths >= {
-        "CHANGELOG.md",
         "docs/ha-integration.md",
         "docs/user/buttons-and-automations.md",  # the free-rocker recipe
         "docs/dev/architecture.md",  # the developer notes moved out of the reference
@@ -330,6 +329,13 @@ def test_committed_tree_skips_released_history_and_the_checklist(
     ]
     assert released  # 1.0.0 is out, and its section holds markers of its time
     assert all(m.line < released[0] for m in committed if m.path == "CHANGELOG.md")
+    # the unreleased section's markers are read while there is one with a marker (none right after a release)
+    unreleased = "\n".join(
+        "\n".join(lines[start - 1 : end])
+        for start, end in on_air.unreleased_spans(lines)
+    )
+    if any(kind.search(unreleased) for kind in on_air.KINDS.values()):
+        assert "CHANGELOG.md" in paths
 
 
 def test_the_checklist_cites_the_brief_rows_and_findings() -> None:

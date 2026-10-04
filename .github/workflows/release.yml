@@ -4,7 +4,7 @@ name: Release
 # becomes an installable version.
 #
 #   1. bump "version" in custom_components/junghome_ble/manifest.json and pyproject.toml (one version for both), and
-#      replace "(unreleased)" in the CHANGELOG.md heading of that version by the release date; that section becomes
+#      drop "(unreleased)" from the CHANGELOG.md heading of that version (headings carry no date); that section becomes
 #      the release notes (HACS shows them in its update dialog), so it is where upgrade steps go
 #   2. merge to main, then git tag vX.Y.Z (on main) && git push origin vX.Y.Z
 #
@@ -76,7 +76,7 @@ jobs:
 
       - name: Verify CHANGELOG.md dates the version
         # A pre-release (X.Y.Zb1, X.Y.Zrc1) is cut while the version's section is still "(unreleased)": only a plain
-        # X.Y.Z tag has to find its heading dated.
+        # X.Y.Z tag has to find its heading released.
         run: ./scripts/release_checks.sh changelog
 
       - name: Verify the tag matches the manifest and pyproject versions

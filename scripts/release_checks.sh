@@ -4,7 +4,7 @@
 # fixture trees) instead of only on a tag, where a mistake in them would first show up while releasing.
 #
 #   scripts/release_checks.sh on-main      the tagged commit ($GITHUB_SHA) is on origin/main
-#   scripts/release_checks.sh changelog    a plain X.Y.Z tag has a dated "## X.Y.Z" heading in CHANGELOG.md
+#   scripts/release_checks.sh changelog    a plain X.Y.Z tag has a released "## X.Y.Z" heading in CHANGELOG.md
 #   scripts/release_checks.sh versions     the tag matches manifest.json and pyproject.toml (one version for both)
 #   scripts/release_checks.sh notes FILE   writes the version's CHANGELOG.md section to FILE (the release body)
 #
@@ -33,7 +33,7 @@ check_on_main() {
 
 check_changelog() {
 	# A pre-release is cut while the version's section is still "(unreleased)": only a plain X.Y.Z tag has to find its
-	# heading dated.
+	# heading released (no "(unreleased)").
 	if ! is_release; then
 		echo "Pre-release version ($tag): the CHANGELOG.md heading is not checked."
 		return

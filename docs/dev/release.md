@@ -2,12 +2,12 @@
 
 HACS offers the repository's GitHub releases as installable versions, so every version is a tag: bump `"version"` in
 `custom_components/junghome_ble/manifest.json` and `pyproject.toml` (the `jhmesh` library carries the same version),
-date the version's `CHANGELOG.md` heading (it replaces "(unreleased)"), merge to `main`, then
+drop "(unreleased)" from the version's `CHANGELOG.md` heading (headings carry no date), merge to `main`, then
 `git tag vX.Y.Z && git push origin vX.Y.Z` on the merged commit. `.github/workflows/release.yml` re-runs the whole CI
 (lint with actionlint, shellcheck and zizmor on the workflows and scripts, strict typing, tests, the `jhmesh` sdist +
 wheel build and `twine check --strict` with the library tests on the oldest Python `requires-python` admits, floor
 import, hassfest, HACS validation, the manual-install zip) against the tagged commit, refuses a tag that is not on
-`main`, does not match either version or has no dated CHANGELOG section, creates the GitHub release with that
+`main`, does not match either version or has no released CHANGELOG section, creates the GitHub release with that
 CHANGELOG section as its notes and `junghome_ble.zip` (the manual-install package from `scripts/package_ha.sh`)
 attached, and only then publishes the `jhmesh` sdist + wheel to PyPI (job `pypi`, after `release`, so a refused tag
 never burns an immutable PyPI version). Both uploads are the files CI built and checked in that run, never a rebuild:
