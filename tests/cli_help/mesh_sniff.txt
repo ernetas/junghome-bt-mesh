@@ -1,0 +1,74 @@
+===== mesh_sniff.py
+usage: mesh_sniff.py [-h] {capture,decode} ...
+
+Sniff the mesh from the outside with a Nordic nRF Sniffer for Bluetooth LE and decode it with the export's keys.
+
+Two halves that may run on different machines (`docs/sniffer.md`):
+
+    capture   next to the dongle — needs only Python 3, pyserial/psutil and Nordic's SnifferAPI (the extcap
+              directory of the nRF Sniffer download); writes one JSON line per mesh AD structure, no keys involved
+    decode    where the export lives — turns those lines (a file, or stdin for a live pipe) or a Nordic pcap into
+              decrypted, described messages; relay copies are collapsed, segmented messages reassembled
+
+    # live view from the machine that holds the export (the capture host never sees a key):
+    ssh sniffhost '/path/to/venv/bin/python - capture --api /path/to/extcap --ndjson -' < tools/mesh_sniff.py \
+        | .venv/bin/python tools/mesh_sniff.py decode --export ~/Downloads/JungHome.json -
+
+    # record on the sniffer host, decode later
+    python3 mesh_sniff.py capture --api ~/nrfsniff/extcap --seconds 600 --ndjson cap.ndjson --pcap cap.pcap
+    .venv/bin/python tools/mesh_sniff.py decode --export JungHome.json cap.ndjson --copies --json decoded.ndjson
+
+`decode --src/--dst/--grep` filter what is printed (hex addresses; `--grep` matches the described text),
+`--copies` also prints every relay copy (channel, RSSI, TTL), `--beacons` every beacon (our network's, and the
+Unprovisioned Device beacons of devices waiting to be added) instead of only changes, `--foreign` the PDUs of other
+networks. The summary at the end (stderr) counts records per kind and messages per source. `--json` is written
+readable by the owner only and withholds the parameter bytes of anything that carries a key or a credential (Config
+AppKey / NetKey Add and Update, every other device-key message the decoder does not know, the gateway API token
+property): the described `text` is all it keeps of those, exactly like the terminal.
+
+The capture half deliberately imports nothing from `jhmesh` so it can be streamed to the sniffer host over ssh as
+shown above; `jhmesh.sniffer.SniffRecord` defines the line format both halves share.
+
+positional arguments:
+  {capture,decode}
+    capture         scan with the dongle, write mesh AD structures as NDJSON / pcap
+    decode          decrypt a capture (NDJSON, pcap or `-`) with the keys of an export
+
+options:
+  -h, --help        show this help message and exit
+===== mesh_sniff.py capture
+usage: mesh_sniff.py capture [-h] [--port PORT] [--api API] [--channels CHANNELS]
+                             [--seconds SECONDS] [--ndjson NDJSON] [--pcap PCAP] [--dedupe DEDUPE]
+                             [--follow MAC]
+
+options:
+  -h, --help           show this help message and exit
+  --port PORT          sniffer serial port (default /dev/ttyACM0)
+  --api API            directory holding Nordic's SnifferAPI (default ~/nrfsniff/extcap)
+  --channels CHANNELS  advertising channel hop sequence (default 37,38,39)
+  --seconds SECONDS    stop after this long (default: run until Ctrl-C)
+  --ndjson NDJSON      write records here (`-` = stdout, for a pipe)
+  --pcap PCAP          also write every good BLE packet as a Nordic BLE pcap (Wireshark)
+  --dedupe DEDUPE      fold byte-identical PDUs within this many seconds into one record
+  --follow MAC         follow this node (its public MAC) into its GATT connection and record the
+                       ATT traffic (proxy PDUs)
+===== mesh_sniff.py decode
+usage: mesh_sniff.py decode [-h] --export EXPORT [--src SRC] [--dst DST] [--grep GREP] [--copies]
+                            [--beacons] [--foreign] [--gatt] [--iv IV] [--json JSON]
+                            input
+
+positional arguments:
+  input            NDJSON or pcap file, or `-` for stdin
+
+options:
+  -h, --help       show this help message and exit
+  --export EXPORT  MeshNetwork.json or JungHome.json
+  --src SRC        only messages from this address
+  --dst DST        only messages to this address
+  --grep GREP      only messages whose description contains this text
+  --copies         also print every relay / retransmit copy
+  --beacons        print every beacon, not only changes
+  --foreign        print PDUs of other networks and PB-ADV traffic
+  --gatt           print every ATT PDU of a followed connection, not only the mesh ones
+  --iv IV          IV index to start from (default: the export's, then the beacons)
+  --json JSON      also write every decoded record as NDJSON here

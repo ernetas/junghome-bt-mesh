@@ -1,0 +1,33 @@
+===== mesh_report.py
+usage: mesh_report.py [-h] [--keys] [--out OUT] [--anonymise] [--salt SALT] [root]
+
+Render a human-readable Markdown report of a JUNG HOME iOS app data dump.
+
+Usage:
+    tools/mesh_report.py [ios/AppDomain-de.jung.junghome] --anonymise > docs/network-topology.md
+    tools/mesh_report.py [ios/AppDomain-de.jung.junghome] --keys --out /somewhere/private.md
+
+Reads the nRF-Mesh style MeshNetwork.json plus the app's own JSON caches and
+joins them into one topology view: nodes, elements, models, pub/sub wiring,
+rooms, scenes, connections.  Every key (NetKey, AppKey, DevKeys) prints as
+`[redacted]` — not even a prefix — unless --keys is given, and --keys only
+writes to an explicit --out file (created 0600) that does not lie under the
+repository's docs/, so a tracked page can never pick up key material.
+
+--anonymise replaces everything that identifies the installation (MACs, EUI-64 node UUIDs, the mesh and
+provisioner UUIDs, the mesh / provisioner / node / app-device / room / group / scene names) with pseudonyms
+that are consistent within the run, so the report's cross-references still line up; keys stay `[redacted]`
+and --keys is refused alongside it.
+
+positional arguments:
+  root         the app container (default ios/AppDomain-de.jung.junghome)
+
+options:
+  -h, --help   show this help message and exit
+  --keys       print the keys in clear (needs --out, outside docs/; the file is created 0600)
+  --out OUT    write the report here instead of stdout
+  --anonymise  pseudonymise MACs, UUIDs and every name (for a page that is published); refuses
+               --keys
+  --salt SALT  with --anonymise: a private string that makes the address pseudonyms repeatable
+               across runs (default: random per run; never commit it, it is what keeps the
+               pseudonyms from being inverted)

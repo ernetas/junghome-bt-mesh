@@ -1,0 +1,448 @@
+===== mesh_poc.py
+usage: mesh_poc.py [-h] [--cdb CDB] [--source ADDR] [--ha-storage DIR] [--scan SCAN]
+                   [--window WINDOW] [--timeout TIMEOUT] [--retries RETRIES] [-v]
+                   {scan,listen,get,set,blink,lightness,ctl,delta,ctlrange,scene,scene-actions,sched,health,prop,config,export,provision,devices,ctlget} ...
+
+Proof of concept: talk to the JUNG HOME mesh through any proxy node using the keys exported by the app.
+
+    .venv/bin/python tools/mesh_poc.py scan [--adv]                 # proxies of our network (+ advertisement details)
+    .venv/bin/python tools/mesh_poc.py listen --seconds 60 [--src 0293] [--dst C005]
+    .venv/bin/python tools/mesh_poc.py get  <addr|group name>
+    .venv/bin/python tools/mesh_poc.py set  <addr|group name> on|off [--transition S]  # also true/false, 1/0
+    .venv/bin/python tools/mesh_poc.py blink <addr>            # get → toggle → restore
+    .venv/bin/python tools/mesh_poc.py lightness <addr> [0-65535] [--transition S]
+    .venv/bin/python tools/mesh_poc.py ctl <addr> <lightness> <kelvin> [--transition S]
+    .venv/bin/python tools/mesh_poc.py delta <addr> <delta> [--transition S]  # Generic Delta Set (level server)
+    .venv/bin/python tools/mesh_poc.py ctlrange <addr>         # Light CTL Temperature Range Get (0x8262)
+    .venv/bin/python tools/mesh_poc.py scene <addr|group> <number> [--transition S]
+    .venv/bin/python tools/mesh_poc.py prop get  <addr> <name|ID> [--server admin|manufacturer|user|sig_admin|...]
+    .venv/bin/python tools/mesh_poc.py prop set  <addr> <name|ID> <value> [--unack] [--access N] [--server ...]
+                                                                   # a group target also needs --yes
+    .venv/bin/python tools/mesh_poc.py prop list <product id> [--all]   # the catalogue (from the app / firmware)
+    .venv/bin/python tools/mesh_poc.py prop lists <addr>               # what the element really serves (on air)
+    .venv/bin/python tools/mesh_poc.py config get-composition <node>
+    .venv/bin/python tools/mesh_poc.py config publication <node> <element> <model> [<group> --yes]  # Get without a group
+    .venv/bin/python tools/mesh_poc.py config subscribe|unsubscribe <node> <element> <model> <group> --yes|--dry-run
+    .venv/bin/python tools/mesh_poc.py config subscriptions <node> <element> <model>
+    .venv/bin/python tools/mesh_poc.py config bind|unbind <node> <element> <model> --yes|--dry-run
+    .venv/bin/python tools/mesh_poc.py config audit <node>            # export vs what the node holds (read-only)
+    .venv/bin/python tools/mesh_poc.py export write <file> [--out <path>]  # round trip through ProjectFile, diff
+    .venv/bin/python tools/mesh_poc.py provision --scan                    # unprovisioned devices (0x1827)
+    .venv/bin/python tools/mesh_poc.py provision <uuid> --unicast 0D10 --yes   # PB-GATT, No OOB; device key to a 0600 file
+
+Addresses, ids and model ids are hex (`0149`, `5003`, `05271013`; `0x` optional); property names are the
+snake_case identifiers of `jhmesh.properties` (`key_mode`); groups also by name. `listen` prints every decoded
+message with a millisecond timestamp and the property values decoded by the codec catalogue.
+
+The Config writes (publication Set, subscribe, unsubscribe, bind, unbind) change the node at once and leave the
+export as it was, and a property Set to a group changes every member: each needs `--yes`, and a Config write ends
+with a reminder that `config audit` shows what now differs from the export.
+
+Our own identity (unicast address + sequence number) lives in tools/.jhmesh_state_<ADDR>.json, one file per
+source address (--source, default 7FFF). The HA integration uses 0D00 with its own store: two clients must never
+share an address, because replay protection is per (source address, sequence number) and the nodes silently drop
+whichever side's counter lags. The address must also be free in the export: no node's, not in networkExclusions and
+outside every provisioner's allocated range (the app provisions there). `--ha-storage <HA config>/.storage` also
+refuses every address Home Assistant's sequence store of this mesh holds a counter for (an address other than 0D00
+configured there, or one it used before).
+
+positional arguments:
+  {scan,listen,get,set,blink,lightness,ctl,delta,ctlrange,scene,scene-actions,sched,health,prop,config,export,provision,devices,ctlget}
+    delta               Generic Delta Set to a level server (acknowledged)
+    scene-actions       what an element does in its scenes (Scene Action Setup)
+    sched               JH Scheduler slots of an element
+    health              Health faults of a node (or of all nodes: FFFF)
+    prop                device properties (codec-aware, see jhmesh/properties.py)
+    config              Config Server messages (device key)
+    export              project-file writer checks
+    provision           provision an unprovisioned device over PB-GATT (No OOB); its device key
+                        goes to an owner-only file
+
+options:
+  -h, --help            show this help message and exit
+  --cdb CDB
+  --source ADDR         our unicast address, hex (default 7FFF; the HA integration uses 0D00); it
+                        must be free in the export (no node's, not excluded, outside every
+                        provisioner's range). Each address has its own sequence store
+                        tools/.jhmesh_state_<ADDR>.json; never share an address with another
+                        client
+  --ha-storage DIR      Home Assistant's .storage directory: refuse every address its sequence
+                        store of this mesh (junghome_ble.seq.<mesh uuid>) holds a counter for, not
+                        only 0D00
+  --scan SCAN           proxy scan duration before connecting
+  --window WINDOW       collection window for group requests
+  --timeout TIMEOUT     per-attempt response timeout
+  --retries RETRIES
+  -v, --verbose
+===== mesh_poc.py scan
+usage: mesh_poc.py scan [-h] [--adv]
+
+options:
+  -h, --help  show this help message and exit
+  --adv       also print local name / manufacturer data / service UUIDs of each advertisement
+===== mesh_poc.py listen
+usage: mesh_poc.py listen [-h] [--seconds SECONDS] [--src SRC] [--dst DST]
+
+options:
+  -h, --help         show this help message and exit
+  --seconds SECONDS  listen duration
+  --src SRC          only messages from this element (hex)
+  --dst DST          only messages to this address (hex)
+===== mesh_poc.py get
+usage: mesh_poc.py get [-h] target
+
+positional arguments:
+  target
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py set
+usage: mesh_poc.py set [-h] [--t0 | --transition SECONDS] [--unack] target {on,off,true,false,1,0}
+
+positional arguments:
+  target
+  {on,off,true,false,1,0}
+                        on|off (true/false, 1/0); a typo is an error, not OFF
+
+options:
+  -h, --help            show this help message and exit
+  --t0                  send explicit transition time 0 (like the gateway does)
+  --transition SECONDS  transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s
+                        or 10 min)
+  --unack               use Set Unacknowledged
+===== mesh_poc.py blink
+usage: mesh_poc.py blink [-h] [--hold HOLD] target
+
+positional arguments:
+  target
+
+options:
+  -h, --help   show this help message and exit
+  --hold HOLD
+===== mesh_poc.py lightness
+usage: mesh_poc.py lightness [-h] [--transition SECONDS] target [value]
+
+positional arguments:
+  target
+  value                 0..65535; omitted = Get
+
+options:
+  -h, --help            show this help message and exit
+  --transition SECONDS  transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s
+                        or 10 min)
+===== mesh_poc.py ctl
+usage: mesh_poc.py ctl [-h] [--transition SECONDS] target lightness kelvin
+
+positional arguments:
+  target
+  lightness             0..65535
+  kelvin                colour temperature, 800..20000 K
+
+options:
+  -h, --help            show this help message and exit
+  --transition SECONDS  transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s
+                        or 10 min)
+===== mesh_poc.py delta
+usage: mesh_poc.py delta [-h] [--transition SECONDS] target delta
+
+positional arguments:
+  target
+  delta                 signed level change (the lightness range is 65535)
+
+options:
+  -h, --help            show this help message and exit
+  --transition SECONDS  transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s
+                        or 10 min)
+===== mesh_poc.py ctlrange
+usage: mesh_poc.py ctlrange [-h] target
+
+positional arguments:
+  target
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py scene
+usage: mesh_poc.py scene [-h] [--transition SECONDS] target number
+
+positional arguments:
+  target
+  number
+
+options:
+  -h, --help            show this help message and exit
+  --transition SECONDS  transition time, 0..37200 s (sent as the nearest step of 100 ms, 1 s, 10 s
+                        or 10 min)
+===== mesh_poc.py scene-actions
+usage: mesh_poc.py scene-actions [-h] target [number]
+
+positional arguments:
+  target      element address (hex) or name
+  number      one scene number; omitted = every scene
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py sched
+usage: mesh_poc.py sched [-h] [--slot SLOT] [--central-id CENTRAL_ID] target
+
+positional arguments:
+  target                element address (hex) or name
+
+options:
+  -h, --help            show this help message and exit
+  --slot SLOT           dump this slot (0..15) instead of the used ones
+  --central-id CENTRAL_ID
+                        centralScheduleId to match in the slot list
+===== mesh_poc.py health
+usage: mesh_poc.py health [-h] [--clear] [--test TEST] target
+
+positional arguments:
+  target       node address (hex), name or group
+
+options:
+  -h, --help   show this help message and exit
+  --clear      clear the registered faults first
+  --test TEST  run self-test N (company 0527) first
+===== mesh_poc.py prop
+usage: mesh_poc.py prop [-h] {get,set,list,lists} ...
+
+positional arguments:
+  {get,set,list,lists}
+    lists               ask an element on air which properties its servers hold
+
+options:
+  -h, --help            show this help message and exit
+===== mesh_poc.py prop get
+usage: mesh_poc.py prop get [-h]
+                            [--server {admin,manufacturer,user,sig_admin,sig_manufacturer,sig_user,sensor}]
+                            [--pad PAD]
+                            target property
+
+positional arguments:
+  target
+  property              name (key_mode) or hex id (5003)
+
+options:
+  -h, --help            show this help message and exit
+  --server {admin,manufacturer,user,sig_admin,sig_manufacturer,sig_user,sensor}
+                        override the hosting server
+  --pad PAD             append N zero bytes (forces segmentation above 11 bytes; test only)
+===== mesh_poc.py prop set
+usage: mesh_poc.py prop set [-h]
+                            [--server {admin,manufacturer,user,sig_admin,sig_manufacturer,sig_user,sensor}]
+                            [--unack] [--access {0,1,2,3}] [--yes]
+                            target property value
+
+positional arguments:
+  target
+  property              name (key_mode) or hex id (5003)
+  value                 codec text form, or hex:<bytes>
+
+options:
+  -h, --help            show this help message and exit
+  --server {admin,manufacturer,user,sig_admin,sig_manufacturer,sig_user,sensor}
+                        override the hosting server
+  --unack               use Set Unacknowledged
+  --access {0,1,2,3}    userAccess byte of an Admin Set (default: what the app sends for this
+                        property)
+  --yes                 confirm a Set to a group (every member takes it); a unicast target needs
+                        none
+===== mesh_poc.py prop list
+usage: mesh_poc.py prop list [-h] [--all] product
+
+positional arguments:
+  product     JUNG product id, hex (01 = 1-gang push-button)
+
+options:
+  -h, --help  show this help message and exit
+  --all       include firmware-only ids
+===== mesh_poc.py prop lists
+usage: mesh_poc.py prop lists [-h] target
+
+positional arguments:
+  target      element address (hex) or name
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py config
+usage: mesh_poc.py config [-h]
+                          {get-composition,audit,hops,hopmatrix,publication,subscribe,unsubscribe,subscriptions,bind,unbind} ...
+
+positional arguments:
+  {get-composition,audit,hops,hopmatrix,publication,subscribe,unsubscribe,subscriptions,bind,unbind}
+    audit               compare the node's settings, publications, subscriptions and AppKeys with
+                        the export (Gets only)
+    hops                mesh hops between two nodes (Heartbeat Subscription probe, everything
+                        restored)
+    hopmatrix           hops between every pair of nodes (each beats in turn, all others count;
+                        everything restored)
+
+options:
+  -h, --help            show this help message and exit
+===== mesh_poc.py config get-composition
+usage: mesh_poc.py config get-composition [-h] [--page PAGE] node
+
+positional arguments:
+  node         any element of the node, hex
+
+options:
+  -h, --help   show this help message and exit
+  --page PAGE
+===== mesh_poc.py config audit
+usage: mesh_poc.py config audit [-h] node
+
+positional arguments:
+  node        any element of the node, hex
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py config hops
+usage: mesh_poc.py config hops [-h] [--beats BEATS] [--period PERIOD] node origin
+
+positional arguments:
+  node             the node that counts, hex
+  origin           the node that beats, hex
+
+options:
+  -h, --help       show this help message and exit
+  --beats BEATS    heartbeats to send (default 4)
+  --period PERIOD  seconds between them (default 2)
+===== mesh_poc.py config hopmatrix
+usage: mesh_poc.py config hopmatrix [-h] [--beats BEATS] [--period PERIOD] [--parallel PARALLEL]
+                                    [--json JSON]
+                                    [nodes ...]
+
+positional arguments:
+  nodes                restrict to these nodes (any element, hex); default: every provisioned node
+
+options:
+  -h, --help           show this help message and exit
+  --beats BEATS        heartbeats per origin (default 4)
+  --period PERIOD      seconds between them (default 2)
+  --parallel PARALLEL  config exchanges in flight at once (default 3)
+  --json JSON          also write the pairs to this JSON file
+===== mesh_poc.py config publication
+usage: mesh_poc.py config publication [-h] [--dry-run] [--yes] node element model [group]
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+  group       group address (hex) or name; omitted = Get
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+  --yes       confirm the write: it changes the node now and does not update the export
+===== mesh_poc.py config subscribe
+usage: mesh_poc.py config subscribe [-h] [--dry-run] [--yes] node element model group
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+  group       group address (hex) or name
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+  --yes       confirm the write: it changes the node now and does not update the export
+===== mesh_poc.py config unsubscribe
+usage: mesh_poc.py config unsubscribe [-h] [--dry-run] [--yes] node element model group
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+  group       group address (hex) or name
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+  --yes       confirm the write: it changes the node now and does not update the export
+===== mesh_poc.py config subscriptions
+usage: mesh_poc.py config subscriptions [-h] [--dry-run] node element model
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+===== mesh_poc.py config bind
+usage: mesh_poc.py config bind [-h] [--dry-run] [--yes] node element model
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+  --yes       confirm the write: it changes the node now and does not update the export
+===== mesh_poc.py config unbind
+usage: mesh_poc.py config unbind [-h] [--dry-run] [--yes] node element model
+
+positional arguments:
+  node        any element of the node, hex
+  element     element address, hex
+  model       model id (1000, 05271013)
+
+options:
+  -h, --help  show this help message and exit
+  --dry-run   print the Config message that would be sent and stop
+  --yes       confirm the write: it changes the node now and does not update the export
+===== mesh_poc.py export
+usage: mesh_poc.py export [-h] {write} ...
+
+positional arguments:
+  {write}
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py export write
+usage: mesh_poc.py export write [-h] [--out OUT] [--strict] file
+
+positional arguments:
+  file
+
+options:
+  -h, --help  show this help message and exit
+  --out OUT   also write the re-rendered file here (never the input)
+  --strict    exit 1 when the round trip is not byte-identical
+===== mesh_poc.py provision
+usage: mesh_poc.py provision [-h] [--scan] [--unicast UNICAST] [--iv-index IV_INDEX] [--iv-update]
+                             [--seconds SECONDS] [--key-file KEY_FILE] [--yes]
+                             [uuid]
+
+positional arguments:
+  uuid                 Device UUID as `provision --scan` shows it
+
+options:
+  -h, --help           show this help message and exit
+  --scan               list the devices advertising the Mesh Provisioning Service and stop
+  --unicast UNICAST    primary unicast address for the new node, hex (all its elements must be
+                       free)
+  --iv-index IV_INDEX  the network's current IV index (default: the export's lower bound)
+  --iv-update          the network is in the IV Update procedure
+  --seconds SECONDS    scan duration (default 10)
+  --key-file KEY_FILE  owner-only file for the new device key (default
+                       tools/.jhmesh_devkey_<unicast>.json; must not exist)
+  --yes                really provision (the device only returns to unprovisioned by a factory
+                       reset)
+===== mesh_poc.py devices
+usage: mesh_poc.py devices [-h]
+
+options:
+  -h, --help  show this help message and exit
+===== mesh_poc.py ctlget
+usage: mesh_poc.py ctlget [-h] [--echo] target
+
+positional arguments:
+  target
+
+options:
+  -h, --help  show this help message and exit
+  --echo
