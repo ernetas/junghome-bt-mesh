@@ -47,7 +47,9 @@ Every brief links here; follow all of it.
   `tests/test_translations.py` stays green.
 - **On air.** Anything not seen working on this installation is marked "unverified on air" in its docstring, its
   description string and `docs/ha-integration.md`. Never contact a real device, gateway or host from a test; a probe
-  on the real mesh is run by the maintainer, or only when the maintainer allows it.
+  on the real mesh is run by the maintainer, or only when the maintainer allows it. Every new marker is cited in an
+  item of `docs/on-air-sweep.md` (`tools/on_air.py --uncovered docs/on-air-sweep.md` lists none;
+  `tests/test_on_air.py` fails otherwise).
 - **Secrets.** Never log, print, commit or quote key material (NetKey, AppKey, device keys, derived keys, the gateway
   token or password). Do not quote MACs, UUIDs, e-mail addresses or names of the installation either.
 - **No dates or clock times** in files, docs, code comments or commit messages.

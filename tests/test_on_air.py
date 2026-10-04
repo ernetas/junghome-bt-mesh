@@ -345,3 +345,16 @@ def test_the_checklist_cites_the_brief_rows_and_findings() -> None:
         assert f"`{symbol.rsplit('.', 1)[0]}`" in text, symbol
     for finding in ("F10", "F4", "F15"):
         assert finding in text
+
+
+def test_committed_tree_cites_every_marker_in_the_checklist(
+    committed: list[on_air.Marker],
+) -> None:
+    """Every citable marker has its item in `docs/on-air-sweep.md` (what `--uncovered` lists must stay empty)."""
+    checklist = (ROOT / "docs/on-air-sweep.md").read_text(encoding="utf-8")
+    left = [
+        f"{m.path}:{m.line}: {m.cite}"
+        for m in committed
+        if m.cite is not None and f"`{m.cite}`" not in checklist
+    ]
+    assert left == []
