@@ -1266,46 +1266,76 @@ for an answer (D32, `ui:uc:communicatewithdevice`); a tunable-white channel has 
 Fill in a private copy; the second pass of brief 30 takes it from there (flip each passing row to `implemented`
 citing the session and sequence number, open a regression test for each failure, remove the markers).
 
+### Groups A–D, remote, CLI only
+
+The maintainer's limits for this sweep: groups A–D only, everything set back in the same sitting; **no Home
+Assistant API** (no token, no change to its configuration, no debug logging); nothing that needs a person at a key,
+the app or a breaker; group E not run. The tools were the mesh CLI as its own client (`7FFF`, with `--ha-storage`,
+connected through proxy nodes other than the one Home Assistant used), the unattended sniffer's capture, Home
+Assistant's log at its configured INFO level and read-only views of its `.storage` (config entry, device registry,
+repairs registry, sequence store). Hence most items that check Home Assistant's own behaviour are *needs HA access*;
+where Home Assistant's own traffic in the capture settles part of an item, that part is recorded.
+
+- **Sessions.** Both are stretches of the unattended capture (`docs/sniffer.md`), decoded on the capture host with the
+  export Home Assistant uses. `sweep-ha`: Home Assistant's start on the build of this commit (the installed
+  integration was identical to it) and its first link. `sweep-cli`: the CLI's steps (source `7FFF`). Home Assistant
+  was restarted once more during the sweep, by someone else, on a newer working build; nothing below relies on that
+  run.
+- **Installation as found.** No dimmer insert (the DALI insert stood in where an item allows it); four DALI
+  tunable-white lights; both metering sockets power running appliances (so no socket was switched); the entry is set
+  up from an export file, not from the gateway. One push-button in the mesh is missing from the export (Home
+  Assistant warns about it at start and holds *unknown_nodes*); it answers the Time Set like the others.
+- **Restored.** Every value a step changed was written back and read back with the CLI in the same sitting: the
+  DALI light's colour-temperature range, lock, *basic light function*, Lightness Last and colour temperature; the
+  switch insert's lock, run-on time and LED colour; the meter's transmission settings; every load's on / off state.
+
 | Item | Result (pass / fail / skipped / not checkable) | Session, sequence numbers | Notes |
 |---|---|---|---|
-| A1 | | | |
-| A2 | | | |
-| A3 | | | |
-| A4 | | | |
-| A6 | | | |
-| A7 | | | |
-| A8 | | | |
-| A9 | | | |
-| B1 | | | |
-| B2 | | | |
-| B3 | | | |
-| B4 | | | |
-| B5 | | | |
-| B6 | | | |
-| B7 | | | |
-| B10 | | | |
-| B11 | | | |
-| B12 | | | |
-| C1 | | | |
-| C2 | | | |
-| C3 | | | |
-| C4 | | | |
-| C5 | | | |
-| C6 | | | |
-| C7 | | | |
-| C8 | | | |
-| C9 | | | |
-| D1 | | | |
-| D2 | | | |
-| D3 | | | |
-| D4 | | | |
-| D5 | | | |
-| D6 | | | |
-| D10 | | | |
-| D11 | | | |
-| D12 | | | |
-| E1 | | | |
-| E2 | | | |
-| E3 | | | |
-| E4 | | | |
-| E5 | | | |
+| A1 | pass (capture part); the entity part needs HA access | `sweep-ha`: `<ha>` Scene Get `01BF01`–`01BF09` | After the scene-action and fault rounds, a *Scene Get* (`8241`, no parameters) went to every element of `scenes[].addresses` (eight; the one to Home Assistant's own proxy node is not repeated on the advertising bearer, its answer is) and every one answered *Scene Status* (`5E`, 3 bytes `00 <current u16 LE>`, status 0). `active_members` and the *Scenes* sensor: needs HA access. |
+| A2 | partial: first link pass; second link not run | `sweep-ha`: `<ha>` Time Set `01BCFA`, location `01BCFB`, first state Get `01BCFC`, first *Scene Action Setup Get* `01BE77`, first *Health Fault Get* `01BEDC`, first *Scene Get* `01BF01` | First link in the specified order: *Time Set* and *Generic Location Global Set Unack* (both to `FFFF`) are the first two messages Home Assistant sends on the link; then the state Gets (OnOff, CTL, Sensor) with the property reads and the heartbeat publication Sets; then scene actions, fault registers, scene registers. The second link (the 15-minute freshness) needs Home Assistant's link ended, which the limits of this sweep left out (`bluetoothctl` on the HA host), and the link never dropped by itself during the sweep. |
+| A3 | partial: first link pass; second link not run | `sweep-ha`: `<ha>` *Generic Manufacturer Property Get* `0x001A` from `01BD0B` | Each node got one software-version Get on the first link (every node but Home Assistant's own proxy node seen on air, for the reason in A1). As far as the capture shows, every repeated property Get to the same element and id was either the next attempt about 3 s after the first (Home Assistant had not received the answer through its proxy; for 13 of them no answer was heard on air either) or a read-back after a Set from the installation's own LED automation, never a second queue entry; the gateway answers `0x001A` with the property id alone and was asked twice that way. The second link: as A2. |
+| A4 | partial | — | Over the sweep: no *Another client uses Home Assistant's JUNG HOME address* repair in the repairs registry, no *disconnect … timed out* warning and no lost link in the log, the CLI's own traffic notwithstanding. `address_shared` and `proxy_config_dropped` in the diagnostics: needs HA access. |
+| A5 | partial | CLI `scan --adv` in `sweep-cli`; `sweep-ha`: no *InsertId* / *ButtonLayout* Get from `<ha>` | The JUNG adverts of 16 nodes caught in one scan; every one matched the export's InsertId and layout except one 1-gang push-button (`<node>`), exported as a switch insert (function 0) and advertising function 6 (extension insert). Home Assistant raised *insert_mismatch* at start (in the repairs registry), as the pass expects for a real difference; its device model for that node names the export's insert. Every push-button has an export InsertId, and no InsertId / ButtonLayout Get went out (expected: none). The device registry's models name the inserts and the buttons' layouts; whether they match what the app shows needs a person, the keys' `position` needs HA access. |
+| A6 | partial | `sweep-ha`: `<ha>` Time Set `01BCFA`; `sweep-cli`: CLI *Time Get* (`8237`) to three nodes | 27 of the 29 nodes' *Time Status* to `<ha>` heard within seconds of the connect-time Time Set (two not heard), plus the node missing from the export. The probe (a short script over `jhmesh`, CLI address): each node answered *Time Status* with the zone Home Assistant sent and a clock 0.44–0.47 s behind the capture host's at reception (the round trip included). The daily read (Time Get, Time Zone Get, Location Get) needs a day of uptime and did not come; the *Clock offset* sensors, `clocks` and the repair need HA access; the node set ten minutes off was not done. |
+| A7 | readings taken (nothing to pass or fail) | `sweep-cli` | Property lists: the DALI insert's primary serves admin `0x1008`, `0x1009`, `0x1011`–`0x1013`, `0x0009`, `0x100E`, `0x000E` and an id `0x1FFF` unknown to the catalogue (a Get returns the id alone), and its manufacturer server lists `0x0F01` / `0x0F02`; a key element serves `5003`, `5006`–`5008`, `5002`, `500A`, `0F00`, `500C` (no manufacturer ids, SIG servers silent); the meter element serves `5004`, `5005`, `0F00`, `5010`, `5011`, `5014` and the SIG energy ids. Runtime statistics `0x0F01` / `0x0F02`: the id alone on `<node>`, `<mini el>`, `<socket el>`, `<meter el>` and `<tw el0>` (even where listed): nothing that counts. `transmission_settings` `0100` on `<key el>`, `<input el>`, `<meter el>`; `key_toggle_enable` `01` on `<key el>` and `<input el>`. `<tw el0>`: hotel `33`, basic light `00`, night `33`, `presentation_mode_enable` `006f002008000000`, `presentation_mode_time` `b400002008000000` (8 bytes each). `<light el>` (switch insert): hotel the id alone. No light has a run-on time (Home Assistant's start reads `0x1007` 0 s everywhere), so the run-on step moved to C6 step 4. LED `[r][g][b][mode]`: on `04640000`, off `641b0000`. No dimmer: hardware not present. |
+| A8 | partial | `sweep-cli`: CLI *Friend Get* `004261` → *Friend Status* not supported; *NetKey Get* `004262` → `[0]`; *AppKey Get* `004263` → `[0]` | `config audit` of a light node and a socket node printed `net_keys 0  app_keys 0`; on air one *NetKey Get*, one *AppKey Get netkey=0* and one *Friend Get* per run, the lists `[0]`, the light node's Friend Status *not supported*. The CLI printed `friend ?` (its link through a distant proxy lost several answers in both audits). `audit_network` and its `keys` / `settings.friend`: needs HA access. Besides the known phantom Scene Server / Scene Setup Server entries of `docs/hidden-features.md` §9, the audit of the light node found its key element's Light Lightness Client and Light CTL Client (`1302`, `1305`) subscribed to the element group the export does not list there. |
+| A9 | needs HA access | — | The device registry's software versions are `2.2.0.2` on the push-buttons, `2.2.0.1` on the sockets and mini actuators. |
+| A10 | needs HA access | — | The discovered-flows list is not readable without the API; this entry is set up from a file. |
+| B1 | needs HA access | — | No *CTL Temperature Set* from `<ha>` during the sweep. |
+| B2 | needs HA access | — | No load command from `<ha>` during the matching run; the dimmer and hold-to-dim steps: hardware not present (no dimmer). |
+| B3 | needs a person | — | The app's change; the entity side needs HA access. |
+| B4 | needs a person | — | Also needs HA access. |
+| B5 | hardware not present | — | No dimmer; it needs a person too. |
+| B6 | needs HA access | — | Entity availability and the link history; ending the link was left out (A2). |
+| B7 | needs a person | — | A breaker. |
+| B8 | partial: statuses only | `sweep-cli`: `<tw el0>` *Lightness Set* `0068E7`, `006AE9`, *CTL Set* `006CEB`, *OnOff Set* off `006EED`, on `0070EF`; `<light el>` on `0078F7`, off `007AF9` | Per kind, with 3 s: **DALI Lightness** fades: the answer carries target and remaining (2.8 s; the target rounded to the DALI's step, 6553 → 6425), the element group gets statuses about every 100 ms over the last half second and a final one at the end, and upwards to 65535 the same with a final status after 3 s. **DALI CTL Set**: answered at once with the new lightness and temperature, no target, nothing after: the transition is not reported. **DALI OnOff off**: a short Status (on), then *on, target off, remaining 0*, and off after about 3 s; **on**: at once (full level within 0.4 s, no transition). **Switch insert on**: at once; **off**: answered *on, target off, remaining 2.8 s*, off after 3 s (the relay waits the transition out). Whether anything visibly fades needs a person; the scene and the dimmer were not run (a recall to all nodes is not harmless here; no dimmer). Restored and read back. |
+| B9 | needs HA access | — | Also needs the app. |
+| B10 | needs HA access | — | `locate_node` is a Home Assistant action. |
+| B11 | needs a person | — | A breaker. |
+| B12 | needs a person | — | |
+| C1 | partial: the probe, outcome (b) | `sweep-cli`: *Light CTL Temperature Range Set* `00A11A` → *Range Status* `19040D` (group), `19040E`; restore Set `00A31D` → `190412` | The CLI sent Home Assistant's message (acknowledged `826B`, parameters `34 08 70 17`, 2100..6000 K) to `<tw el0>`: answered at once by a *Range Status* (`8263`) status 0 with 2100..6000 K, to the sender and to the element group, and the Range Get read 2100..6000. **The DALI insert applies the range**: outcome (b), against the earlier probe's prediction (a). Set back to 2000..6000 and read back. Home Assistant's own Set from the entity, `min_color_temp_kelvin`, the DALI light's switch-on colour temperature: needs HA access; the dimmer's setup states: hardware not present. |
+| C2 | needs a person | — | Also needs HA access. |
+| C3 | partial: the probe without the app | `sweep-cli`: lock `00A722` (`<light el>`), `00BD3D` (`<tw el0>`); Sets while locked `00AB28` → Status `0E04C6`, `00BF40` → `190433`, `00C142` → `19043C`; refused unlock `00AF2C`; unlock `00B534`, `00C544` | **Lock** `02 01 00 00`: the Admin Property Status to the sender carries 8 bytes (`02 01 0000` and the 4-byte value), and **the load publishes an LBC *User* Property Status of `0x0009` to its element group**, twice; so a lock does reach others than the sender. **While locked**, an OnOff Set (switch insert, DALI) and a Lightness Set (DALI) are each answered with a Status showing the unchanged state (off / present 0), to the sender, and the load publishes its `0x0009` status to the group again; it keeps its state. This is the *answers with its old state* branch of §12, not silence. **Unlock with priority 0** (`00 00 00 00`) is refused: a Status with the property id alone, the lock stays. The app's unlock `00 01 00 00` works, and the read-back is `00 00 0000 …` (priority back to 0), exactly the value read before the probe. The app's lock and steps 2–4: needs a person / needs HA access; the dimmer: hardware not present (DALI insert used). |
+| C4 | needs a person | — | Whether an input is wired is unknown from here. |
+| C5 | needs HA access | — | |
+| C6 | partial: steps 1, 3 (basic light), 4 and 5 (read-back); everything restored | `sweep-cli`: meter `0F00` Sets `010D8B`, `010F8D`, `01118F`, restore `011391`; basic light `00ED6D`, OFF `00F171` → CTL Status `190466`; run-on `00D757`, ON `00D959` → `0E04F3`, Get `00DB5B` → `0E04F5`; LED `00E565`, restore `00E969` | **1, meter rhythm:** `0000` is answered `0100`, `0101` is answered `0100`, `0200` is kept (read back `0200`); with each, over four minutes, the meter kept its rhythm (power, voltage and current about every 65 s, plus statuses on change), so no setting showed an effect in that window. Restored `0100` (read back), rhythm unchanged afterwards. **2, key toggling:** needs a person. **3:** with `basic_light_function_enable` `01`, an OFF Set leaves `<tw light>` on: the OnOff Status stays on and the CTL Status shows lightness 13107 (20 %), i.e. the hotel value `0x33` read as 51/255. Restored `00`; that OFF had also moved the light's Lightness Last to 13107 and its temperature to 2700 K, both set back (Last `ffff`, 2000 K, off; read back). The night value and the presentation ids were left as read (daytime; the night level needs the dark and a person). **4, run-on:** with `timed_on_duration` 20 s on `<light el>`, the ON Set's Status and a Get during the run-on are the short form (`present=ON`, no target or remaining time), and the light published OFF by itself about 20 s later: this firmware does not report the remaining time, so *Switches off at* stays unknown (the sensor can go). Restored 0 s. **5, LED:** `32143c00` (outside the app's palette) accepted and read back unchanged; whether the LED shows it needs a person. Restored `04640000` (read back). |
+| C7 | needs HA access | — | This entry is set up from a file, not from the gateway. |
+| C8 | needs a person | — | The phone and the app. |
+| C9 | needs HA access | — | A reconfigure flow. |
+| D1 | needs HA access | — | Also: both metering sockets power running appliances, so no harmless load. |
+| D2 | needs HA access | — | Also needs a person at the key. |
+| D3 | needs HA access | — | Also needs the app. |
+| D4 | needs HA access | — | Also needs the app. |
+| D5 | needs HA access | — | |
+| D6 | needs HA access | — | Also needs the app and a gateway entry. |
+| D7 | needs HA access | — | |
+| D8 | needs HA access | — | |
+| D9 | needs a person | — | The app's capture first; then needs HA access. |
+| D10 | needs a person | — | Also needs HA access. |
+| D11 | needs HA access | — | |
+| D12 | needs HA access | — | |
+| E1 | group E, excluded by the maintainer | — | |
+| E2 | group E, excluded by the maintainer | — | |
+| E3 | group E, excluded by the maintainer | — | |
+| E4 | group E, excluded by the maintainer | — | |
+| E5 | group E, excluded by the maintainer | — | |
