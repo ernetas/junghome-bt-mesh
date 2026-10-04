@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opțiuni JUNG HOME (Bluetooth Mesh)",
+        "title": "Opțiuni JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Raportează clicurile doar după ce un dublu clic este exclus",
           "heartbeats": "Semnale heartbeat ale nodurilor (marchează ca indisponibil un dispozitiv care tace)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Preia entitățile integrării JUNG HOME Gateway",
-      "description": "Integrarea JUNG HOME Gateway este configurată alături de integrarea Bluetooth Mesh {title}, așa că fiecare lumină, priză, tastă și scenă există de două ori. Mută aici entitățile gateway-ului — își păstrează ID-urile de entitate, numele, zonele și istoricul — din Setări → Dispozitive și servicii → JUNG HOME (Bluetooth Mesh) → Reconfigurează → Importă entitățile integrării JUNG HOME Gateway, apoi șterge intrarea gateway-ului. Ignoră această problemă dacă vrei să le păstrezi pe amândouă."
+      "description": "Integrarea JUNG HOME Gateway este configurată alături de integrarea Bluetooth Mesh {title}, așa că fiecare lumină, priză, tastă și scenă există de două ori. Mută aici entitățile gateway-ului — își păstrează ID-urile de entitate, numele, zonele și istoricul — din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → Importă entitățile integrării JUNG HOME Gateway, apoi șterge intrarea gateway-ului. Ignoră această problemă dacă vrei să le păstrezi pe amândouă."
     },
     "export_stale": {
       "title": "Cheile rețelei mesh JUNG HOME s-au schimbat",

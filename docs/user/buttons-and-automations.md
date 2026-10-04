@@ -58,7 +58,7 @@ happened (`type`). The [reference](../ha-integration.md#event) lists everything 
 By default a double press reports a `click` for the first press and a `double_click` for the second, so an
 automation on `click` also runs on a double press. If a key should do one thing on a click and another on a double
 click, turn on **Report clicks only once a double click is ruled out** under *Settings → Devices & services → JUNG
-HOME (Bluetooth Mesh) → Configure*. Clicks are then reported half a second late, and a double press reports only the
+HOME Bluetooth Mesh → Configure*. Clicks are then reported half a second late, and a double press reports only the
 `double_click`.
 
 ### Dim a light while a key is held

@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Alternativ för JUNG HOME (Bluetooth Mesh)",
+        "title": "Alternativ för JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Rapportera klick först när ett dubbelklick är uteslutet",
           "heartbeats": "Heartbeats från noder (markera en tyst enhet som inte tillgänglig)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Ta över entiteterna från JUNG HOME Gateway-integrationen",
-      "description": "JUNG HOME Gateway-integrationen är konfigurerad bredvid Bluetooth Mesh-integrationen {title}, så varje lampa, uttag, knapp och scen finns två gånger. Flytta gateway-entiteterna hit — de behåller sina entitets-ID:n, namn, områden och historik — under Inställningar → Enheter och tjänster → JUNG HOME (Bluetooth Mesh) → Omkonfigurera → Importera entiteterna från JUNG HOME Gateway-integrationen, och ta sedan bort gateway-posten. Ignorera det här problemet om du vill behålla båda."
+      "description": "JUNG HOME Gateway-integrationen är konfigurerad bredvid Bluetooth Mesh-integrationen {title}, så varje lampa, uttag, knapp och scen finns två gånger. Flytta gateway-entiteterna hit — de behåller sina entitets-ID:n, namn, områden och historik — under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → Importera entiteterna från JUNG HOME Gateway-integrationen, och ta sedan bort gateway-posten. Ignorera det här problemet om du vill behålla båda."
     },
     "export_stale": {
       "title": "JUNG HOME-meshets nycklar har ändrats",

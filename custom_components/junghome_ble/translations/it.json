@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opzioni di JUNG HOME (Bluetooth Mesh)",
+        "title": "Opzioni di JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Segnala i clic solo dopo aver escluso un doppio clic",
           "heartbeats": "Heartbeat dei nodi (segna come non disponibile un dispositivo silenzioso)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Rileva le entità dell'integrazione JUNG HOME Gateway",
-      "description": "L'integrazione JUNG HOME Gateway è configurata accanto all'integrazione Bluetooth Mesh {title}, quindi ogni luce, presa, tasto e scena esiste due volte. Sposta qui le entità del gateway — mantengono i loro ID entità, nomi, aree e cronologia — in Impostazioni → Dispositivi e servizi → JUNG HOME (Bluetooth Mesh) → Riconfigura → Importa le entità dell'integrazione JUNG HOME Gateway, poi elimina la voce del gateway. Ignora questo problema se vuoi mantenerle entrambe."
+      "description": "L'integrazione JUNG HOME Gateway è configurata accanto all'integrazione Bluetooth Mesh {title}, quindi ogni luce, presa, tasto e scena esiste due volte. Sposta qui le entità del gateway — mantengono i loro ID entità, nomi, aree e cronologia — in Impostazioni → Dispositivi e servizi → JUNG HOME Bluetooth Mesh → Riconfigura → Importa le entità dell'integrazione JUNG HOME Gateway, poi elimina la voce del gateway. Ignora questo problema se vuoi mantenerle entrambe."
     },
     "export_stale": {
       "title": "Le chiavi della mesh JUNG HOME sono cambiate",

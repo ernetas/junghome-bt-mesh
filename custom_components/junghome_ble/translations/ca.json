@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opcions de JUNG HOME (Bluetooth Mesh)",
+        "title": "Opcions de JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Informa dels clics només quan es descarta un doble clic",
           "heartbeats": "Heartbeats dels nodes (marca com a no disponible un dispositiu silenciós)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Traspassa les entitats de la integració JUNG HOME Gateway",
-      "description": "La integració JUNG HOME Gateway està configurada al costat de la integració Bluetooth Mesh {title}, així que cada llum, endoll, tecla i escena existeix dues vegades. Mou aquí les entitats de la passarel·la — conserven els seus ID d'entitat, noms, àrees i historial — a Configuració → Dispositius i serveis → JUNG HOME (Bluetooth Mesh) → Reconfigura → Importa les entitats de la integració JUNG HOME Gateway, i després elimina l'entrada de la passarel·la. Ignora aquest problema si vols conservar totes dues."
+      "description": "La integració JUNG HOME Gateway està configurada al costat de la integració Bluetooth Mesh {title}, així que cada llum, endoll, tecla i escena existeix dues vegades. Mou aquí les entitats de la passarel·la — conserven els seus ID d'entitat, noms, àrees i historial — a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → Importa les entitats de la integració JUNG HOME Gateway, i després elimina l'entrada de la passarel·la. Ignora aquest problema si vols conservar totes dues."
     },
     "export_stale": {
       "title": "Les claus del mesh JUNG HOME han canviat",

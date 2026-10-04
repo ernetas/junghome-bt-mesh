@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "JUNG HOME (Bluetooth Mesh) seçenekleri",
+        "title": "JUNG HOME Bluetooth Mesh seçenekleri",
         "data": {
           "click_delay": "Tıklamaları yalnızca çift tıklama olasılığı ortadan kalktığında bildir",
           "heartbeats": "Düğüm heartbeat'leri (sessiz bir cihazı kullanılamaz olarak işaretle)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "JUNG HOME Gateway entegrasyonunun varlıklarını devral",
-      "description": "JUNG HOME Gateway entegrasyonu, {title} Bluetooth Mesh entegrasyonunun yanında kurulu; bu yüzden her ışık, priz, düğme ve sahne iki kez var. Ağ geçidi varlıklarını Ayarlar → Cihazlar ve hizmetler → JUNG HOME (Bluetooth Mesh) → Yeniden yapılandır → JUNG HOME Gateway entegrasyonunun varlıklarını içe aktar altında buraya taşıyın — varlık kimliklerini, adlarını, alanlarını ve geçmişlerini korurlar —, ardından ağ geçidi girişini silin. İkisini birden tutmak istiyorsanız bu sorunu yok sayın."
+      "description": "JUNG HOME Gateway entegrasyonu, {title} Bluetooth Mesh entegrasyonunun yanında kurulu; bu yüzden her ışık, priz, düğme ve sahne iki kez var. Ağ geçidi varlıklarını Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → JUNG HOME Gateway entegrasyonunun varlıklarını içe aktar altında buraya taşıyın — varlık kimliklerini, adlarını, alanlarını ve geçmişlerini korurlar —, ardından ağ geçidi girişini silin. İkisini birden tutmak istiyorsanız bu sorunu yok sayın."
     },
     "export_stale": {
       "title": "JUNG HOME mesh anahtarları değişti",

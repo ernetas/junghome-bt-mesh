@@ -2,7 +2,7 @@ blueprint:
   name: JUNG HOME key dims a JUNG light
   description: >-
     Dim a JUNG HOME dimmer or tunable-white light the way a rocker wired to it does, with a key that is not wired
-    to it (integration *JUNG HOME (Bluetooth Mesh)*).
+    to it (integration *JUNG HOME Bluetooth Mesh*).
 
 
     Holding the upper half of a rocker starts dimming the light up, holding the lower half down (the action

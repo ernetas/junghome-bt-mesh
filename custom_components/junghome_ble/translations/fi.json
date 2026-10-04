@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "JUNG HOME (Bluetooth Mesh) -asetukset",
+        "title": "JUNG HOME Bluetooth Mesh -asetukset",
         "data": {
           "click_delay": "Ilmoita napsautukset vasta, kun kaksoisnapsautus on suljettu pois",
           "heartbeats": "Solmujen heartbeat-viestit (hiljainen laite merkitään ei käytettävissä olevaksi)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Ota JUNG HOME Gateway -integraation entiteetit haltuun",
-      "description": "JUNG HOME Gateway -integraatio on määritetty Bluetooth Mesh -integraation {title} rinnalle, joten jokainen valaisin, pistorasia, painike ja tilanne on kahteen kertaan. Siirrä yhdyskäytävän entiteetit tänne — ne säilyttävät entiteettitunnuksensa, nimensä, alueensa ja historiansa — kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME (Bluetooth Mesh) → Määritä uudelleen → Tuo JUNG HOME Gateway -integraation entiteetit ja poista sitten yhdyskäytävämerkintä. Ohita tämä ongelma, jos haluat pitää molemmat."
+      "description": "JUNG HOME Gateway -integraatio on määritetty Bluetooth Mesh -integraation {title} rinnalle, joten jokainen valaisin, pistorasia, painike ja tilanne on kahteen kertaan. Siirrä yhdyskäytävän entiteetit tänne — ne säilyttävät entiteettitunnuksensa, nimensä, alueensa ja historiansa — kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → Tuo JUNG HOME Gateway -integraation entiteetit ja poista sitten yhdyskäytävämerkintä. Ohita tämä ongelma, jos haluat pitää molemmat."
     },
     "export_stale": {
       "title": "JUNG HOME -mesh-verkon avaimet ovat vaihtuneet",

@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Možnosti JUNG HOME (Bluetooth Mesh)",
+        "title": "Možnosti JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Hlásiť kliknutia až po vylúčení dvojkliku",
           "heartbeats": "Heartbeat uzlov (označiť tiché zariadenie ako nedostupné)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Prevziať entity integrácie JUNG HOME Gateway",
-      "description": "Integrácia JUNG HOME Gateway je nastavená vedľa integrácie Bluetooth Mesh {title}, takže každé svetlo, zásuvka, tlačidlo a scéna existuje dvakrát. Presuňte entity brány sem — zachovajú si svoje ID entít, názvy, oblasti a históriu — v časti Nastavenia → Zariadenia a služby → JUNG HOME (Bluetooth Mesh) → Prekonfigurovať → Importovať entity integrácie JUNG HOME Gateway a potom odstráňte záznam brány. Ak chcete ponechať obe, túto opravu ignorujte."
+      "description": "Integrácia JUNG HOME Gateway je nastavená vedľa integrácie Bluetooth Mesh {title}, takže každé svetlo, zásuvka, tlačidlo a scéna existuje dvakrát. Presuňte entity brány sem — zachovajú si svoje ID entít, názvy, oblasti a históriu — v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → Importovať entity integrácie JUNG HOME Gateway a potom odstráňte záznam brány. Ak chcete ponechať obe, túto opravu ignorujte."
     },
     "export_stale": {
       "title": "Kľúče siete JUNG HOME mesh sa zmenili",

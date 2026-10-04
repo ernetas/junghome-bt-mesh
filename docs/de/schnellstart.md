@@ -22,7 +22,7 @@ weicht ab: Was die App *Bereich* nennt, heißt hier *Raum*, denn *Bereich* ist i
 ## Installation
 
 - **Mit HACS:** *HACS → Integrationen → ⋮ → Benutzerdefinierte Repositories*, die Adresse dieses Repositorys mit der
-  Kategorie *Integration* hinzufügen, *JUNG HOME (Bluetooth Mesh)* installieren, Home Assistant neu starten.
+  Kategorie *Integration* hinzufügen, *JUNG HOME Bluetooth Mesh* installieren, Home Assistant neu starten.
 - **Von Hand:** `junghome_ble.zip` aus dem neuesten Release in den Ordner `custom_components/` der Konfiguration
   entpacken (so dass die Dateien in `custom_components/junghome_ble/` liegen), Home Assistant neu starten.
 
@@ -35,7 +35,7 @@ Unter *Einstellungen → Geräte & Dienste → Entdeckt* erscheint oft von selbs
 - *Bluetooth Mesh …*, wenn ein Bluetooth-Mesh-Netzwerk in Reichweite ist. Home Assistant bietet jedes an, das es
   sieht, auch die anderer Hersteller: nur hinzufügen, wenn es deine JUNG HOME Installation ist.
 
-Sonst *Einstellungen → Geräte & Dienste → Integration hinzufügen → JUNG HOME (Bluetooth Mesh)*. Home Assistant fragt
+Sonst *Einstellungen → Geräte & Dienste → Integration hinzufügen → JUNG HOME Bluetooth Mesh*. Home Assistant fragt
 dann (außer bei der Gateway-Karte), woher der Netzwerk-Export der App kommt — eine der drei Quellen:
 
 1. **Vom JUNG HOME Gateway abrufen** (Gateway-Firmware 2.1 oder neuer): Adresse des Gateways eingeben

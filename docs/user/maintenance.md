@@ -21,7 +21,7 @@ comes back by itself the moment it is heard again (a status, a key press, an ans
 every five minutes. Check its power (a tripped breaker, a switched-off socket strip). Battery devices are never marked
 unavailable: they sleep.
 
-With the **Node heartbeats** option on (*Settings → Devices & services → JUNG HOME (Bluetooth Mesh) → Configure*),
+With the **Node heartbeats** option on (*Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure*),
 every mains-powered device sends Home Assistant a short sign of life every minute, so one that loses power is marked
 unavailable within about three and a half minutes even when nobody uses it — and comes back by itself when power
 returns. The option is off by default; switch it off before you remove the integration.
@@ -257,7 +257,7 @@ reach; Home Assistant keeps trying. [Details](../ha-integration.md#repair-issue-
 
 ## Diagnostics
 
-*Settings → Devices & services → JUNG HOME (Bluetooth Mesh) → ⋮ → Download diagnostics* saves a file with the
+*Settings → Devices & services → JUNG HOME Bluetooth Mesh → ⋮ → Download diagnostics* saves a file with the
 state of the connection, the devices and the last connections — never a key, with Bluetooth addresses and file
 paths left out.
 Each device's page has its own *Download diagnostics* too. Attach it when you report a problem.
@@ -276,7 +276,7 @@ integration's files by hand from an older copy.
 ## Removing the integration
 
 1. Turn off the *Node heartbeats* option first, if you turned it on.
-2. *Settings → Devices & services → JUNG HOME (Bluetooth Mesh) → ⋮ → Delete*.
+2. *Settings → Devices & services → JUNG HOME Bluetooth Mesh → ⋮ → Delete*.
 3. Delete the export file from the host if you pointed the integration at one by path: it contains every key.
 
 Nothing has to be undone in the JUNG HOME app. What Home Assistant changed on the devices (rooms, key connections,

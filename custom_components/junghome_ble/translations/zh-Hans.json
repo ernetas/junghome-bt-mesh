@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "接管 JUNG HOME 网关集成的实体",
-      "description": "JUNG HOME 网关集成与 Bluetooth Mesh 集成 {title} 同时处于设置状态，因此每个灯、插座、按钮和场景都存在两份。请在 设置 → 设备与服务 → JUNG HOME (Bluetooth Mesh) → 重新配置 → 导入 JUNG HOME 网关集成的实体 中将网关实体移到此处——它们会保留实体 ID、名称、区域和历史记录——然后删除网关条目。如果您想保留两者，请忽略此问题。"
+      "description": "JUNG HOME 网关集成与 Bluetooth Mesh 集成 {title} 同时处于设置状态，因此每个灯、插座、按钮和场景都存在两份。请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导入 JUNG HOME 网关集成的实体 中将网关实体移到此处——它们会保留实体 ID、名称、区域和历史记录——然后删除网关条目。如果您想保留两者，请忽略此问题。"
     },
     "export_stale": {
       "title": "JUNG HOME Mesh 密钥已更改",

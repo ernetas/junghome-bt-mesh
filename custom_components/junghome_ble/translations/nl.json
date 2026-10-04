@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opties voor JUNG HOME (Bluetooth Mesh)",
+        "title": "Opties voor JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Klikken pas melden als een dubbelklik is uitgesloten",
           "heartbeats": "Heartbeats van nodes (een stil apparaat als niet beschikbaar markeren)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "De entiteiten van de JUNG HOME Gateway-integratie overnemen",
-      "description": "De JUNG HOME Gateway-integratie is ingesteld naast de Bluetooth Mesh-integratie {title}, dus elke lamp, elk stopcontact, elke knop en elke scène bestaat twee keer. Verplaats de gateway-entiteiten hierheen — ze behouden hun entiteit-ID's, namen, ruimtes en geschiedenis — onder Instellingen → Apparaten & diensten → JUNG HOME (Bluetooth Mesh) → Herconfigureren → De entiteiten van de JUNG HOME Gateway-integratie importeren, en verwijder daarna het gateway-item. Negeer dit probleem als je beide wilt houden."
+      "description": "De JUNG HOME Gateway-integratie is ingesteld naast de Bluetooth Mesh-integratie {title}, dus elke lamp, elk stopcontact, elke knop en elke scène bestaat twee keer. Verplaats de gateway-entiteiten hierheen — ze behouden hun entiteit-ID's, namen, ruimtes en geschiedenis — onder Instellingen → Apparaten & diensten → JUNG HOME Bluetooth Mesh → Herconfigureren → De entiteiten van de JUNG HOME Gateway-integratie importeren, en verwijder daarna het gateway-item. Negeer dit probleem als je beide wilt houden."
     },
     "export_stale": {
       "title": "De sleutels van de JUNG HOME-mesh zijn gewijzigd",

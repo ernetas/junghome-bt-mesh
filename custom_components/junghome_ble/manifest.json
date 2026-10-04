@@ -1,6 +1,6 @@
 {
   "domain": "junghome_ble",
-  "name": "JUNG HOME (Bluetooth Mesh)",
+  "name": "JUNG HOME Bluetooth Mesh",
   "after_dependencies": ["recorder"],
   "bluetooth": [
     {

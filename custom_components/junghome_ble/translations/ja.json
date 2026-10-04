@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "JUNG HOME (Bluetooth Mesh) のオプション",
+        "title": "JUNG HOME Bluetooth Mesh のオプション",
         "data": {
           "click_delay": "ダブルクリックでないと確定してからクリックを通知する",
           "heartbeats": "ノードのハートビート（応答しないデバイスを利用不可にする）",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "JUNG HOME ゲートウェイ統合のエンティティを引き継ぐ",
-      "description": "JUNG HOME ゲートウェイ統合が Bluetooth Mesh 統合 {title} と並行してセットアップされているため、すべての照明、コンセント、ボタン、シーンが二重に存在します。設定 → デバイスとサービス → JUNG HOME (Bluetooth Mesh) → 再構成 → 「JUNG HOME ゲートウェイ統合のエンティティをインポート」で、ゲートウェイのエンティティをこちらに移行してから（エンティティ ID、名前、エリア、履歴は維持されます）、ゲートウェイのエントリを削除してください。両方を維持したい場合は、この修復を無視してください。"
+      "description": "JUNG HOME ゲートウェイ統合が Bluetooth Mesh 統合 {title} と並行してセットアップされているため、すべての照明、コンセント、ボタン、シーンが二重に存在します。設定 → デバイスとサービス → JUNG HOME Bluetooth Mesh → 再構成 → 「JUNG HOME ゲートウェイ統合のエンティティをインポート」で、ゲートウェイのエンティティをこちらに移行してから（エンティティ ID、名前、エリア、履歴は維持されます）、ゲートウェイのエントリを削除してください。両方を維持したい場合は、この修復を無視してください。"
     },
     "export_stale": {
       "title": "JUNG HOME のメッシュのキーが変更されました",

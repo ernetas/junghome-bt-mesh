@@ -27,7 +27,7 @@ USB 3 ports and SSDs avoids interference.
 ## Install
 
 **With HACS:** *HACS → Integrations → ⋮ → Custom repositories*, add this repository's URL with the category
-*Integration*, install *JUNG HOME (Bluetooth Mesh)*, then restart Home Assistant.
+*Integration*, install *JUNG HOME Bluetooth Mesh*, then restart Home Assistant.
 
 **By hand:** take `junghome_ble.zip` from the latest release and unpack it into your configuration's
 `custom_components/` folder (so that the files end up in `custom_components/junghome_ble/`), then restart Home
@@ -43,7 +43,7 @@ Home Assistant may find the installation by itself, under *Settings → Devices 
 - a card *Bluetooth Mesh …* when a Bluetooth Mesh network is in range. Home Assistant offers every one it sees, other
   brands' too: confirm only if it is your JUNG HOME installation.
 
-Otherwise go to *Settings → Devices & services → Add integration* and search for **JUNG HOME (Bluetooth Mesh)**.
+Otherwise go to *Settings → Devices & services → Add integration* and search for **JUNG HOME Bluetooth Mesh**.
 Either way (but for the gateway card) you are asked where the network export comes from. Pick one of the three:
 
 ### From the JUNG HOME Gateway
@@ -134,7 +134,7 @@ The devices then start in these areas:
 
 This happens once, when the device first appears: afterwards move devices to any area you like.
 
-To change the choice later, open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)**, the entry's menu,
+To change the choice later, open **Settings → Devices & services → JUNG HOME Bluetooth Mesh**, the entry's menu,
 **Reconfigure → Change which area each room's devices go to**. It moves the devices that are still in the area the
 previous choice gave them, or in none, and says how many moved. **A device you placed in another area yourself is
 never moved.**

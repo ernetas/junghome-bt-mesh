@@ -1,11 +1,11 @@
-# JUNG HOME (Bluetooth Mesh)
+# JUNG HOME Bluetooth Mesh
 
 > **Looking for how to do something?** Start with the [user guide](user/README.md): setting up, everyday use,
 > buttons and automations, energy, changing the installation, maintenance and an FAQ, in plain words. This page is
 > the complete reference behind it; every entity is listed in the [entity reference](user/entities.md), and the
 > notes for developers are in [docs/dev](dev/README.md).
 
-The **JUNG HOME (Bluetooth Mesh)** integration (`junghome_ble`) connects Home Assistant directly to the Bluetooth
+The **JUNG HOME Bluetooth Mesh** integration (`junghome_ble`) connects Home Assistant directly to the Bluetooth
 Mesh network of a [JUNG HOME](https://www.jung.de/) installation by Albrecht JUNG GmbH & Co. KG. JUNG HOME
 push-buttons (with switch, dimmer or DALI tunable-white inserts), sockets and actuators form a Bluetooth SIG Mesh
 network that is normally operated from the JUNG HOME app and, optionally, the JUNG HOME Gateway. This integration
@@ -997,7 +997,7 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
      serial, and none for a gateway an entry already names by the announced address or host name. An entry that
      names it `junghome.local` is not recognised: its card is offered, and finishing it ends with *already
      configured* (the Network ID of the fetched export). Setting up from the card is unverified on air.
-   - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME (Bluetooth Mesh)*,
+   - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME Bluetooth Mesh*,
      choose where the export comes from (gateway, upload, or a path on the host) and fill in the
      [configuration parameters](#configuration-parameters). The discovery card leads to the same choice.
 
@@ -1022,7 +1022,7 @@ All three settings are entered in the configuration dialog and can be changed la
 
 ## Options
 
-Open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh) → Configure** (the entry's options). Saving reloads
+Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure** (the entry's options). Saving reloads
 the integration when something changed.
 
 | Option | Default | Description |
@@ -1098,7 +1098,7 @@ loads. An entry set up from the gateway follows the changes made in the JUNG HOM
 in the app: after adding, removing or re-provisioning a device, changing what a rocker controls, renaming things,
 changing rooms or editing scenes, and after a key refresh (see [Known limitations](#known-limitations)).
 
-1. Open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)**, the entry's menu, **Reconfigure**.
+1. Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh**, the entry's menu, **Reconfigure**.
 2. Pick a source. If the entry was set up from the gateway, **Fetch it again from the gateway** downloads the current
    project with one click (the app uploads its project to the gateway automatically after every change). Should the
    gateway no longer accept Home Assistant's access (for example after *Reset permissions* in the app), you are asked
@@ -1206,7 +1206,7 @@ customising them here.
 **Steps.**
 
 1. Keep both integrations set up and loaded; do not delete the gateway entry yet.
-2. Open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)**, the entry's menu, **Reconfigure**, and pick
+2. Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh**, the entry's menu, **Reconfigure**, and pick
    **Import the entities of the JUNG HOME Gateway integration**.
 3. The dialog shows the plan: which gateway entities will move onto which entities here, which are kept because
    they were customised, which have no counterpart on either side. Nothing has been changed at this point; close
@@ -2649,7 +2649,7 @@ the installation through it. Submit the dialog again in a minute.
 
 ### Enabling debug logging
 
-Open **Settings → Devices & services → JUNG HOME (Bluetooth Mesh)** and select **Enable debug logging** in the entry's
+Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh** and select **Enable debug logging** in the entry's
 menu (select it again to disable and download the log), or add to `configuration.yaml`:
 
 ```yaml
@@ -2699,8 +2699,8 @@ from loading) and the open repair issues. A device's download shows the same whi
 
 ## Removal
 
-The integration follows the standard removal procedure: go to **Settings → Devices & services → JUNG HOME (Bluetooth
-Mesh)**, open the entry's menu and select **Delete**. If you no longer want the integration itself, also delete
+The integration follows the standard removal procedure: go to **Settings → Devices & services → JUNG HOME Bluetooth
+Mesh**, open the entry's menu and select **Delete**. If you no longer want the integration itself, also delete
 `custom_components/junghome_ble/` and restart Home Assistant.
 
 Afterwards:

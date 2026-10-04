@@ -2,7 +2,7 @@ blueprint:
   name: JUNG HOME key switches and dims lights
   description: >-
     Switch and dim any lights with a key of a JUNG HOME push-button, wall transmitter or mini actuator input
-    (integration *JUNG HOME (Bluetooth Mesh)*).
+    (integration *JUNG HOME Bluetooth Mesh*).
 
 
     A click on the upper half of a rocker switches the lights on, a click on the lower half switches them off, and

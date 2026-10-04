@@ -18,13 +18,13 @@ welcome.
 ## Install
 
 - **HACS:** *HACS → Integrations → ⋮ → Custom repositories* → this repository's URL, category *Integration*; install
-  *JUNG HOME (Bluetooth Mesh)* and restart Home Assistant.
+  *JUNG HOME Bluetooth Mesh* and restart Home Assistant.
 - **By hand:** unpack `junghome_ble.zip` from the latest release into your configuration's `custom_components/`
   (the mesh library is inside it) and restart Home Assistant.
 
 ## Set up
 
-*Settings → Devices & services → Add integration → JUNG HOME (Bluetooth Mesh)*, then fetch the network from your
+*Settings → Devices & services → Add integration → JUNG HOME Bluetooth Mesh*, then fetch the network from your
 JUNG HOME Gateway, or upload the export the JUNG HOME app shares (*Project → Share via file*, `JungHome.json`).
 Everything else — devices, rooms, scenes, key connections — comes from that export. Step by step:
 [Getting started](docs/user/getting-started.md).

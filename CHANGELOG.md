@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 (unreleased)
+
+### Changed
+
+- The integration is called *JUNG HOME Bluetooth Mesh* (was *JUNG HOME (Bluetooth Mesh)*) in Home Assistant's
+  integration list, HACS and the docs (decision M15). Nothing else changes: the domain, entries, devices and entities
+  stay as they are, and the gateway still shows Home Assistant's access request as *Home Assistant (Bluetooth Mesh)*.
+
 ## 1.1.0
 
 ### Upgrading

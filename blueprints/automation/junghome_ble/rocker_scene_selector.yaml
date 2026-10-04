@@ -3,7 +3,7 @@ blueprint:
   description: >-
     Give each gesture of a JUNG HOME rocker its own action — a scene, a script, a media player, anything — with up
     to six of them: click, double click and hold, each on the upper and the lower half (integration *JUNG HOME
-    (Bluetooth Mesh)*). Leave a gesture empty to ignore it.
+    Bluetooth Mesh*). Leave a gesture empty to ignore it.
 
 
     A single key has no halves: it runs the upper half's actions. By default a double press reports a click first,

@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "JUNG HOME (Bluetooth Mesh) parinktys",
+        "title": "JUNG HOME Bluetooth Mesh parinktys",
         "data": {
           "click_delay": "Pranešti apie spustelėjimą tik įsitikinus, kad tai ne dvigubas spustelėjimas",
           "heartbeats": "Mazgų gyvybingumo signalai (tylintį įrenginį žymėti kaip nepasiekiamą)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "Perimti „JUNG HOME Gateway“ integracijos objektus",
-      "description": "Šalia Bluetooth Mesh integracijos {title} sukonfigūruota ir „JUNG HOME Gateway“ integracija, todėl kiekvienas šviestuvas, lizdas, mygtukas ir scena yra po du kartus. Perkelkite sietuvo objektus čia – jie išlaikys savo objektų ID, pavadinimus, sritis ir istoriją – per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME (Bluetooth Mesh) → Perkonfigūruoti → Importuoti „JUNG HOME Gateway“ integracijos objektus, tada ištrinkite sietuvo įrašą. Jei norite palikti abi integracijas, šios problemos nepaisykite."
+      "description": "Šalia Bluetooth Mesh integracijos {title} sukonfigūruota ir „JUNG HOME Gateway“ integracija, todėl kiekvienas šviestuvas, lizdas, mygtukas ir scena yra po du kartus. Perkelkite sietuvo objektus čia – jie išlaikys savo objektų ID, pavadinimus, sritis ir istoriją – per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → Importuoti „JUNG HOME Gateway“ integracijos objektus, tada ištrinkite sietuvo įrašą. Jei norite palikti abi integracijas, šios problemos nepaisykite."
     },
     "export_stale": {
       "title": "„JUNG HOME“ tinklo raktai pasikeitė",

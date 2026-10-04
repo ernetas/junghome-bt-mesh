@@ -217,7 +217,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Optionen für JUNG HOME (Bluetooth Mesh)",
+        "title": "Optionen für JUNG HOME Bluetooth Mesh",
         "data": {
           "click_delay": "Klicks erst melden, wenn ein Doppelklick ausgeschlossen ist",
           "heartbeats": "Heartbeats der Knoten (ein stummes Gerät als nicht verfügbar markieren)",
@@ -1857,7 +1857,7 @@
     },
     "gateway_import": {
       "title": "Entitäten der JUNG HOME Gateway Integration übernehmen",
-      "description": "Die JUNG HOME Gateway Integration ist neben der Bluetooth Mesh Integration {title} eingerichtet, daher gibt es jedes Licht, jede Steckdose, jede Taste und jede Szene doppelt. Verschiebe die Gateway-Entitäten hierher – sie behalten ihre Entitäts-IDs, Namen, Bereiche und ihren Verlauf – unter Einstellungen → Geräte & Dienste → JUNG HOME (Bluetooth Mesh) → Neu konfigurieren → Entitäten der JUNG HOME Gateway Integration importieren, und lösche danach den Gateway-Eintrag. Ignoriere diese Reparatur, wenn du beide behalten willst."
+      "description": "Die JUNG HOME Gateway Integration ist neben der Bluetooth Mesh Integration {title} eingerichtet, daher gibt es jedes Licht, jede Steckdose, jede Taste und jede Szene doppelt. Verschiebe die Gateway-Entitäten hierher – sie behalten ihre Entitäts-IDs, Namen, Bereiche und ihren Verlauf – unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Entitäten der JUNG HOME Gateway Integration importieren, und lösche danach den Gateway-Eintrag. Ignoriere diese Reparatur, wenn du beide behalten willst."
     },
     "export_stale": {
       "title": "Die Keys des JUNG HOME Mesh haben sich geändert",

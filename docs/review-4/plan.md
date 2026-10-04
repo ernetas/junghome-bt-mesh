@@ -441,6 +441,8 @@ Dependencies (hard unless marked *soft*):
 - **M15 — Display name (brief 67).** Keep "JUNG HOME (Bluetooth Mesh)" in `manifest.json` / `hacs.json`, or add
   "unofficial" wording; either way the README states near the top that the project is unofficial and not affiliated
   with JUNG (`DISCLAIMER.md`).
+  **Taken:** no "unofficial" in the name, renamed *JUNG HOME Bluetooth Mesh* (without parentheses); the README and
+  `DISCLAIMER.md` keep saying it is unofficial.
 
 ## Status
 

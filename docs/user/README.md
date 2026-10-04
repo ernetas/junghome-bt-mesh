@@ -1,4 +1,4 @@
-# JUNG HOME (Bluetooth Mesh) — user guide
+# JUNG HOME Bluetooth Mesh — user guide
 
 This integration lets Home Assistant control a JUNG HOME installation — lights, sockets, blinds, push-buttons,
 room thermostats and detectors — directly over Bluetooth, without the JUNG HOME Gateway and without a cloud

@@ -216,7 +216,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "JUNG HOME (Bluetooth Mesh) beállításai",
+        "title": "JUNG HOME Bluetooth Mesh beállításai",
         "data": {
           "click_delay": "Kattintások jelentése csak akkor, ha a dupla kattintás kizárható",
           "heartbeats": "Csomópontok életjele (a néma eszköz megjelölése nem elérhetőként)",
@@ -1856,7 +1856,7 @@
     },
     "gateway_import": {
       "title": "A JUNG HOME Gateway integráció entitásainak átvétele",
-      "description": "A JUNG HOME Gateway integráció a(z) {title} Bluetooth Mesh integráció mellett is be van állítva, így minden lámpa, aljzat, gomb és jelenet kétszer létezik. Helyezze át ide az átjáró entitásait — megtartják entitásazonosítóikat, nevüket, területüket és előzményeiket — a Beállítások → Eszközök és szolgáltatások → JUNG HOME (Bluetooth Mesh) → Újrakonfigurálás → A JUNG HOME Gateway integráció entitásainak importálása menüpontban, majd törölje az átjáró bejegyzését. Hagyja figyelmen kívül ezt a problémát, ha mindkettőt meg szeretné tartani."
+      "description": "A JUNG HOME Gateway integráció a(z) {title} Bluetooth Mesh integráció mellett is be van állítva, így minden lámpa, aljzat, gomb és jelenet kétszer létezik. Helyezze át ide az átjáró entitásait — megtartják entitásazonosítóikat, nevüket, területüket és előzményeiket — a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → A JUNG HOME Gateway integráció entitásainak importálása menüpontban, majd törölje az átjáró bejegyzését. Hagyja figyelmen kívül ezt a problémát, ha mindkettőt meg szeretné tartani."
     },
     "export_stale": {
       "title": "A JUNG HOME mesh hálózat kulcsai megváltoztak",
