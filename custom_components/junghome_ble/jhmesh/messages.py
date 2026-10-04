@@ -1432,7 +1432,121 @@ def _describe_attention(op: int, p: bytes) -> str:
     return f"{name} {p[0]}s" if p else name
 
 
+def _describe_onoff_status(op: int, p: bytes) -> str:
+    s = f"Generic OnOff Status present={'ON' if p[0] else 'OFF'}"
+    if len(p) >= 3:
+        s += f" target={'ON' if p[1] else 'OFF'} remaining={_time(p[2])}"
+    return s
+
+
+def _describe_level_status(op: int, p: bytes) -> str:
+    s = f"Generic Level Status present={_s16(p, 0)}"
+    if len(p) >= 5:
+        s += f" target={_s16(p, 2)} remaining={_time(p[4])}"
+    return s
+
+
+def _describe_lightness_status(op: int, p: bytes) -> str:
+    s = f"Light Lightness Status present={_u16(p, 0)}"
+    if len(p) >= 5:
+        s += f" target={_u16(p, 2)} remaining={_time(p[4])}"
+    return s
+
+
+def _describe_ctl_status(op: int, p: bytes) -> str:
+    s = f"Light CTL Status lightness={_u16(p, 0)} temp={_u16(p, 2)}K"
+    if len(p) >= 9:
+        s += f" target_l={_u16(p, 4)} target_t={_u16(p, 6)} remaining={_time(p[8])}"
+    return s
+
+
+def _describe_ctl_temperature_status(op: int, p: bytes) -> str:
+    s = f"Light CTL Temperature Status temp={_u16(p, 0)}K deltaUV={_s16(p, 2)}"
+    if (
+        len(p) >= 9
+    ):  # §6.3.1.14: optional target temperature, target Delta UV, remaining time
+        s += f" target_t={_u16(p, 4)} target_uv={_s16(p, 6)} remaining={_time(p[8])}"
+    return s
+
+
+def _describe_scene_status(op: int, p: bytes) -> str:
+    st = decode_scene_status(p)
+    s = f"Scene Status status={st.status} current={st.current}"
+    if st.target is not None and st.remaining is not None:
+        s += f" target={st.target} remaining={_time(st.remaining)}"
+    return s
+
+
+def _describe_scene_register_status(op: int, p: bytes) -> str:
+    r = decode_scene_register_status(p)
+    return f"Scene Register Status status={r.status} current={r.current} scenes={list(r.scenes)}"
+
+
+def _describe_sensor_status(op: int, p: bytes) -> str:
+    return f"Sensor Status {_sensor(p)}"
+
+
+def _describe_sig_property_status(op: int, p: bytes) -> str:
+    pid = int.from_bytes(p[:2], "little")
+    return f"{SIG_PROP_STATUS[op]} {_property_text(pid, p[2:], access=True, sig=True)}"
+
+
+def _describe_sig_property_get(op: int, p: bytes) -> str:
+    pid = int.from_bytes(p[:2], "little")
+    return f"{SIG_PROP_GET[op]} {_property_text(pid, None, sig=True)}"
+
+
+def _describe_dtt_status(op: int, p: bytes) -> str:
+    return f"Default Transition Time Status {_time(p[0])}"
+
+
+def _describe_onpowerup_status(op: int, p: bytes) -> str:
+    return f"OnPowerUp Status {p[0]}"
+
+
+def _describe_time(op: int, p: bytes) -> str:
+    return f"Time {'Set' if op == TIME_SET else 'Status'} {_tai_time(p)}"
+
+
+def _describe_onoff_set(op: int, p: bytes) -> str:
+    return (
+        f"Generic OnOff Set{'' if op == GEN_ONOFF_SET else ' Unack'} {'ON' if p[0] else 'OFF'} tid={p[1]}"
+        + (f" transition={_time(p[2])} delay={p[3] * 5}ms" if len(p) >= 4 else "")
+    )
+
+
+def _describe_lightness_set(op: int, p: bytes) -> str:
+    return f"Light Lightness Set{'' if op == LIGHT_LIGHTNESS_SET else ' Unack'} {int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
+
+
+def _describe_ctl_set(op: int, p: bytes) -> str:
+    return f"Light CTL Set{'' if op == LIGHT_CTL_SET else ' Unack'} l={int.from_bytes(p[:2], 'little')} t={int.from_bytes(p[2:4], 'little')}K{_set_tail(p, 6)}"
+
+
+def _describe_scene_recall(op: int, p: bytes) -> str:
+    return f"Scene Recall{'' if op == SCENE_RECALL else ' Unack'} scene={int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
+
+
+def _describe_scene_store_delete(op: int, p: bytes) -> str:
+    name = "Scene Store" if op in (SCENE_STORE, SCENE_STORE_UNACK) else "Scene Delete"
+    unack = "" if op in (SCENE_STORE, SCENE_DELETE) else " Unack"
+    return f"{name}{unack} scene={int.from_bytes(p[:2], 'little')}"
+
+
+def _describe_sensor_get(op: int, p: bytes) -> str:
+    return "Sensor Get" + (
+        f" prop 0x{int.from_bytes(p[:2], 'little'):04X}" if len(p) >= 2 else ""
+    )
+
+
+# the SIG messages `describe` names: the parameterless Gets by name, every other message by its formatter
 _SIG_GETS = {
+    GEN_ONOFF_GET: "Generic OnOff Get",
+    LIGHT_LIGHTNESS_GET: "Light Lightness Get",
+    LIGHT_CTL_GET: "Light CTL Get",
+    SCENE_GET: "Scene Get",
+    SCENE_REGISTER_GET: "Scene Register Get",
+    TIME_GET: "Time Get",
     GEN_MANU_PROPS_GET: "Generic Manufacturer Properties Get",
     GEN_ADMIN_PROPS_GET: "Generic Admin Properties Get",
     GEN_USER_PROPS_GET: "Generic User Properties Get",
@@ -1454,6 +1568,33 @@ _SIG_GETS = {
     LIGHT_CTL_TEMP_GET: "Light CTL Temperature Get",
 }
 _SIG_DESCRIBERS: dict[int, Callable[[int, bytes], str]] = {
+    GEN_ONOFF_STATUS: _describe_onoff_status,
+    GEN_LEVEL_STATUS: _describe_level_status,
+    LIGHT_LIGHTNESS_STATUS: _describe_lightness_status,
+    LIGHT_CTL_STATUS: _describe_ctl_status,
+    LIGHT_CTL_TEMP_STATUS: _describe_ctl_temperature_status,
+    SCENE_STATUS: _describe_scene_status,
+    SCENE_REGISTER_STATUS: _describe_scene_register_status,
+    SENSOR_STATUS: _describe_sensor_status,
+    **dict.fromkeys(SIG_PROP_STATUS, _describe_sig_property_status),
+    **dict.fromkeys(SIG_PROP_GET, _describe_sig_property_get),
+    GEN_DTT_STATUS: _describe_dtt_status,
+    GEN_ONPOWERUP_STATUS: _describe_onpowerup_status,
+    TIME_SET: _describe_time,
+    TIME_STATUS: _describe_time,
+    GEN_ONOFF_SET: _describe_onoff_set,
+    GEN_ONOFF_SET_UNACK: _describe_onoff_set,
+    LIGHT_LIGHTNESS_SET: _describe_lightness_set,
+    LIGHT_LIGHTNESS_SET_UNACK: _describe_lightness_set,
+    LIGHT_CTL_SET: _describe_ctl_set,
+    LIGHT_CTL_SET_UNACK: _describe_ctl_set,
+    SCENE_RECALL: _describe_scene_recall,
+    SCENE_RECALL_UNACK: _describe_scene_recall,
+    SCENE_STORE: _describe_scene_store_delete,
+    SCENE_STORE_UNACK: _describe_scene_store_delete,
+    SCENE_DELETE: _describe_scene_store_delete,
+    SCENE_DELETE_UNACK: _describe_scene_store_delete,
+    SENSOR_GET: _describe_sensor_get,
     GEN_LEVEL_SET: _describe_level_set,
     GEN_LEVEL_SET_UNACK: _describe_level_set,
     GEN_DELTA_SET: _describe_delta_set,
@@ -1505,14 +1646,6 @@ _SIG_DESCRIBERS: dict[int, Callable[[int, bytes], str]] = {
     HEALTH_ATTENTION_SET_UNACK: _describe_attention,
     HEALTH_ATTENTION_STATUS: _describe_attention,
 }
-
-
-def _describe_sig_extra(op: int, p: bytes) -> str | None:
-    """Describe the roadmap-0.2 SIG messages: table-driven so `_describe` stays one branch per legacy message."""
-    if op in _SIG_GETS:
-        return _SIG_GETS[op]
-    fn = _SIG_DESCRIBERS.get(op)
-    return fn(op, p) if fn else None
 
 
 def vendor_property_get(model_kind: str, property_id: int) -> bytes:
@@ -1862,114 +1995,31 @@ def _raw(p: bytes, devkey: bool) -> str:
     return config_messages.byte_count(p) if devkey else p.hex()
 
 
-def _describe(access_pdu: bytes, devkey: bool) -> str:  # noqa: C901, PLR0911, PLR0915  # flat opcode → text dispatch, one branch per message
+def _describe(access_pdu: bytes, devkey: bool) -> str:
     op, cid, p = decode_opcode(access_pdu)
     if cid is not None:
-        name = (
-            VENDOR_NAMES.get(op, f"vendor op {op:02X}")
-            if cid == JUNG_CID
-            else f"vendor {cid:04X} op {op:02X}"
-        )
-        if cid == JUNG_CID and op in _VENDOR_PROP_OPS and len(p) >= 2:
-            return f"{name} {_describe_vendor_property(op, p)}"
-        if cid == JUNG_CID and op in _VENDOR_LIST_STATUS_OPS:
-            return f"{name} {_property_list_text(property_ids(p), sig=False)}"
-        if cid == JUNG_CID:
-            model_text = vendor_models.describe_vendor_model(op, p)
-            if model_text is not None:
-                return f"{name} {model_text}".rstrip()
-        return f"{name} {_raw(p, devkey)}".rstrip()
-    extra_sig = _describe_sig_extra(op, p)
-    if extra_sig is not None:
-        return extra_sig
-    if op == GEN_ONOFF_STATUS:
-        s = f"Generic OnOff Status present={'ON' if p[0] else 'OFF'}"
-        if len(p) >= 3:
-            s += f" target={'ON' if p[1] else 'OFF'} remaining={_time(p[2])}"
-        return s
-    if op == GEN_LEVEL_STATUS:
-        s = f"Generic Level Status present={_s16(p, 0)}"
-        if len(p) >= 5:
-            s += f" target={_s16(p, 2)} remaining={_time(p[4])}"
-        return s
-    if op == LIGHT_LIGHTNESS_STATUS:
-        s = f"Light Lightness Status present={_u16(p, 0)}"
-        if len(p) >= 5:
-            s += f" target={_u16(p, 2)} remaining={_time(p[4])}"
-        return s
-    if op == LIGHT_CTL_STATUS:
-        s = f"Light CTL Status lightness={_u16(p, 0)} temp={_u16(p, 2)}K"
-        if len(p) >= 9:
-            s += f" target_l={_u16(p, 4)} target_t={_u16(p, 6)} remaining={_time(p[8])}"
-        return s
-    if op == LIGHT_CTL_TEMP_STATUS:
-        s = f"Light CTL Temperature Status temp={_u16(p, 0)}K deltaUV={_s16(p, 2)}"
-        if (
-            len(p) >= 9
-        ):  # §6.3.1.14: optional target temperature, target Delta UV, remaining time
-            s += (
-                f" target_t={_u16(p, 4)} target_uv={_s16(p, 6)} remaining={_time(p[8])}"
-            )
-        return s
-    if op == SCENE_STATUS:
-        st = decode_scene_status(p)
-        s = f"Scene Status status={st.status} current={st.current}"
-        if st.target is not None and st.remaining is not None:
-            s += f" target={st.target} remaining={_time(st.remaining)}"
-        return s
-    if op == SCENE_REGISTER_STATUS:
-        r = decode_scene_register_status(p)
-        return f"Scene Register Status status={r.status} current={r.current} scenes={list(r.scenes)}"
-    if op == SENSOR_STATUS:
-        return f"Sensor Status {_sensor(p)}"
-    if (status_name := SIG_PROP_STATUS.get(op)) is not None:
-        pid = int.from_bytes(p[:2], "little")
-        return f"{status_name} {_property_text(pid, p[2:], access=True, sig=True)}"
-    if op in SIG_PROP_GET:
-        pid = int.from_bytes(p[:2], "little")
-        return f"{SIG_PROP_GET[op]} {_property_text(pid, None, sig=True)}"
-    if op == GEN_DTT_STATUS:
-        return f"Default Transition Time Status {_time(p[0])}"
-    if op == GEN_ONPOWERUP_STATUS:
-        return f"OnPowerUp Status {p[0]}"
-    if op in (TIME_SET, TIME_STATUS):
-        return f"Time {'Set' if op == TIME_SET else 'Status'} {_tai_time(p)}"
-    if op == TIME_GET:
-        return "Time Get"
+        return _describe_vendor(op, cid, p, devkey)
+    if op in _SIG_GETS:
+        return _SIG_GETS[op]
+    if (formatter := _SIG_DESCRIBERS.get(op)) is not None:
+        return formatter(op, p)
     if op in config_messages.CONFIG_NAMES:
         return config_messages.describe_config(op, p, devkey=devkey)
-    if op in (GEN_ONOFF_SET, GEN_ONOFF_SET_UNACK):
-        return (
-            f"Generic OnOff Set{'' if op == GEN_ONOFF_SET else ' Unack'} {'ON' if p[0] else 'OFF'} tid={p[1]}"
-            + (f" transition={_time(p[2])} delay={p[3] * 5}ms" if len(p) >= 4 else "")
-        )
-    if op in (LIGHT_LIGHTNESS_SET, LIGHT_LIGHTNESS_SET_UNACK):
-        return f"Light Lightness Set{'' if op == LIGHT_LIGHTNESS_SET else ' Unack'} {int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
-    if op in (LIGHT_CTL_SET, LIGHT_CTL_SET_UNACK):
-        return f"Light CTL Set{'' if op == LIGHT_CTL_SET else ' Unack'} l={int.from_bytes(p[:2], 'little')} t={int.from_bytes(p[2:4], 'little')}K{_set_tail(p, 6)}"
-    if op in (SCENE_RECALL, SCENE_RECALL_UNACK):
-        return f"Scene Recall{'' if op == SCENE_RECALL else ' Unack'} scene={int.from_bytes(p[:2], 'little')}{_set_tail(p, 2)}"
-    if op == GEN_ONOFF_GET:
-        return "Generic OnOff Get"
-    if op == LIGHT_LIGHTNESS_GET:
-        return "Light Lightness Get"
-    if op == LIGHT_CTL_GET:
-        return "Light CTL Get"
-    if op == SCENE_GET:
-        return "Scene Get"
-    if op == SCENE_REGISTER_GET:
-        return "Scene Register Get"
-    if op in (SCENE_STORE, SCENE_STORE_UNACK, SCENE_DELETE, SCENE_DELETE_UNACK):
-        name = (
-            "Scene Store" if op in (SCENE_STORE, SCENE_STORE_UNACK) else "Scene Delete"
-        )
-        unack = "" if op in (SCENE_STORE, SCENE_DELETE) else " Unack"
-        return f"{name}{unack} scene={int.from_bytes(p[:2], 'little')}"
-    if op == SENSOR_GET:
-        return "Sensor Get" + (
-            f" prop 0x{int.from_bytes(p[:2], 'little'):04X}" if len(p) >= 2 else ""
-        )
     return f"SIG op {op:04X} {_raw(p, devkey)}"
+
+
+def _describe_vendor(op: int, cid: int, p: bytes, devkey: bool) -> str:
+    if cid != JUNG_CID:
+        return f"vendor {cid:04X} op {op:02X} {_raw(p, devkey)}".rstrip()
+    name = VENDOR_NAMES.get(op, f"vendor op {op:02X}")
+    if op in _VENDOR_PROP_OPS and len(p) >= 2:
+        return f"{name} {_describe_vendor_property(op, p)}"
+    if op in _VENDOR_LIST_STATUS_OPS:
+        return f"{name} {_property_list_text(property_ids(p), sig=False)}"
+    model_text = vendor_models.describe_vendor_model(op, p)
+    if model_text is not None:
+        return f"{name} {model_text}".rstrip()
+    return f"{name} {_raw(p, devkey)}".rstrip()
 
 
 def sensor_values(p: bytes) -> list[tuple[int, bytes]]:

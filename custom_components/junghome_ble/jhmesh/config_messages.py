@@ -1529,90 +1529,148 @@ def byte_count(p: bytes) -> str:
     return f"<{len(p)} byte{'' if len(p) == 1 else 's'}>"
 
 
-def _describe_params(opcode: int, p: bytes) -> str:  # noqa: PLR0911  # flat opcode → text dispatch
+def _describe_params(opcode: int, p: bytes) -> str:
     decoded = decode_config(opcode, p)
     if decoded is not None:
         return _describe_status(decoded)
-    if opcode in (CONFIG_APPKEY_ADD, CONFIG_APPKEY_UPDATE):
-        _need(p, 19, CONFIG_NAMES[opcode])
-        net, app = _unpack_key_indexes(p[:3])
-        return f"netkey={net} appkey={app} key=<16 bytes>"  # never log key material
-    if opcode == CONFIG_APPKEY_DELETE:
-        _need(p, 3, "AppKey Delete")
-        net, app = _unpack_key_indexes(p[:3])
-        return f"netkey={net} appkey={app}"
-    if opcode in (CONFIG_NETKEY_ADD, CONFIG_NETKEY_UPDATE):
-        _need(p, 18, CONFIG_NAMES[opcode])
-        return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} key=<16 bytes>"
-    if opcode in (
-        CONFIG_NETKEY_DELETE,
-        CONFIG_KEY_REFRESH_PHASE_GET,
-        CONFIG_APPKEY_GET,
-        CONFIG_NODE_IDENTITY_GET,
-    ):
-        _need(p, 2, CONFIG_NAMES[opcode])
-        return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF}"
-    if opcode == CONFIG_KEY_REFRESH_PHASE_SET:
-        _need(p, 3, "Key Refresh Phase Set")
-        return f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} transition={p[2]}"
-    if opcode == CONFIG_NODE_IDENTITY_SET:
-        _need(p, 3, "Node Identity Set")
-        return (
-            f"netkey={int.from_bytes(p[:2], 'little') & 0xFFF} {_identity_name(p[2])}"
-        )
-    if opcode == CONFIG_COMPOSITION_DATA_GET:
-        _need(p, 1, "Composition Data Get")
-        return f"page={p[0]}"
-    if opcode in (CONFIG_MODEL_APP_BIND, CONFIG_MODEL_APP_UNBIND):
-        _need(p, 6, name := CONFIG_NAMES[opcode])
-        return (
-            f"elem={int.from_bytes(p[:2], 'little'):04X} appkey={int.from_bytes(p[2:4], 'little') & 0xFFF}"
-            f" model={model_id_str(_model_tail(p[4:], name))}"
-        )
-    if opcode == CONFIG_MODEL_PUBLICATION_SET:
-        s = decode_model_publication_status(b"\x00" + p)
-        return _publication_fields(s)
-    if opcode in (
-        CONFIG_MODEL_PUBLICATION_GET,
-        CONFIG_MODEL_SUBSCRIPTION_DELETE_ALL,
-        CONFIG_SIG_MODEL_SUBSCRIPTION_GET,
-        CONFIG_VENDOR_MODEL_SUBSCRIPTION_GET,
-        CONFIG_SIG_MODEL_APP_GET,
-        CONFIG_VENDOR_MODEL_APP_GET,
-    ):
-        _need(p, 4, name := CONFIG_NAMES[opcode])
-        return f"elem={int.from_bytes(p[:2], 'little'):04X} model={model_id_str(_model_tail(p[2:], name))}"
-    if opcode in (
-        CONFIG_MODEL_SUBSCRIPTION_ADD,
-        CONFIG_MODEL_SUBSCRIPTION_DELETE,
-        CONFIG_MODEL_SUBSCRIPTION_OVERWRITE,
-    ):
-        _need(p, 6, name := CONFIG_NAMES[opcode])
-        return (
-            f"elem={int.from_bytes(p[:2], 'little'):04X} address={int.from_bytes(p[2:4], 'little'):04X}"
-            f" model={model_id_str(_model_tail(p[4:], name))}"
-        )
-    if opcode in (CONFIG_GATT_PROXY_SET, CONFIG_BEACON_SET):
-        _need(p, 1, CONFIG_NAMES[opcode])
-        return f"{'enabled' if p[0] else 'disabled'}"
-    if opcode == CONFIG_DEFAULT_TTL_SET:
-        _need(p, 1, "Default TTL Set")
-        return f"ttl={p[0]}"
-    if opcode == CONFIG_RELAY_SET:
-        return _describe_status(decode_relay_status(p))
-    if opcode == CONFIG_NETWORK_TRANSMIT_SET:
-        return _describe_status(decode_network_transmit_status(p))
-    if opcode == CONFIG_HEARTBEAT_PUBLICATION_SET:
-        return _describe_status(decode_heartbeat_publication_status(b"\x00" + p))[
-            len("Success: ") :
-        ]
-    if opcode == CONFIG_HEARTBEAT_SUBSCRIPTION_SET:
-        _need(p, 5, "Heartbeat Subscription Set")
-        return (
-            f"src={int.from_bytes(p[:2], 'little'):04X} dst={int.from_bytes(p[2:4], 'little'):04X}"
-            f" period_log={p[4]} ({heartbeat_period_seconds(p[4])}s)"
-        )
-    return p.hex()  # the parameterless Gets and Node Reset
+    formatter = _PARAM_FORMATTERS.get(opcode)
+    return (
+        formatter(opcode, p) if formatter else p.hex()
+    )  # the parameterless Gets and Node Reset
+
+
+def _netkey(p: bytes) -> int:
+    return int.from_bytes(p[:2], "little") & 0xFFF
+
+
+def _appkey_add(opcode: int, p: bytes) -> str:
+    _need(p, 19, CONFIG_NAMES[opcode])
+    net, app = _unpack_key_indexes(p[:3])
+    return f"netkey={net} appkey={app} key=<16 bytes>"  # never log key material
+
+
+def _appkey_delete(opcode: int, p: bytes) -> str:
+    _need(p, 3, "AppKey Delete")
+    net, app = _unpack_key_indexes(p[:3])
+    return f"netkey={net} appkey={app}"
+
+
+def _netkey_add(opcode: int, p: bytes) -> str:
+    _need(p, 18, CONFIG_NAMES[opcode])
+    return f"netkey={_netkey(p)} key=<16 bytes>"
+
+
+def _netkey_only(opcode: int, p: bytes) -> str:
+    _need(p, 2, CONFIG_NAMES[opcode])
+    return f"netkey={_netkey(p)}"
+
+
+def _key_refresh_phase_set(opcode: int, p: bytes) -> str:
+    _need(p, 3, "Key Refresh Phase Set")
+    return f"netkey={_netkey(p)} transition={p[2]}"
+
+
+def _node_identity_set(opcode: int, p: bytes) -> str:
+    _need(p, 3, "Node Identity Set")
+    return f"netkey={_netkey(p)} {_identity_name(p[2])}"
+
+
+def _composition_data_get(opcode: int, p: bytes) -> str:
+    _need(p, 1, "Composition Data Get")
+    return f"page={p[0]}"
+
+
+def _model_app_bind(opcode: int, p: bytes) -> str:
+    _need(p, 6, name := CONFIG_NAMES[opcode])
+    return (
+        f"elem={int.from_bytes(p[:2], 'little'):04X} appkey={int.from_bytes(p[2:4], 'little') & 0xFFF}"
+        f" model={model_id_str(_model_tail(p[4:], name))}"
+    )
+
+
+def _model_publication_set(opcode: int, p: bytes) -> str:
+    return _publication_fields(decode_model_publication_status(b"\x00" + p))
+
+
+def _element_model(opcode: int, p: bytes) -> str:
+    _need(p, 4, name := CONFIG_NAMES[opcode])
+    return f"elem={int.from_bytes(p[:2], 'little'):04X} model={model_id_str(_model_tail(p[2:], name))}"
+
+
+def _model_subscription_change(opcode: int, p: bytes) -> str:
+    _need(p, 6, name := CONFIG_NAMES[opcode])
+    return (
+        f"elem={int.from_bytes(p[:2], 'little'):04X} address={int.from_bytes(p[2:4], 'little'):04X}"
+        f" model={model_id_str(_model_tail(p[4:], name))}"
+    )
+
+
+def _enabled_set(opcode: int, p: bytes) -> str:
+    _need(p, 1, CONFIG_NAMES[opcode])
+    return f"{'enabled' if p[0] else 'disabled'}"
+
+
+def _default_ttl_set(opcode: int, p: bytes) -> str:
+    _need(p, 1, "Default TTL Set")
+    return f"ttl={p[0]}"
+
+
+def _relay_set(opcode: int, p: bytes) -> str:
+    return _describe_status(decode_relay_status(p))
+
+
+def _network_transmit_set(opcode: int, p: bytes) -> str:
+    return _describe_status(decode_network_transmit_status(p))
+
+
+def _heartbeat_publication_set(opcode: int, p: bytes) -> str:
+    return _describe_status(decode_heartbeat_publication_status(b"\x00" + p))[
+        len("Success: ") :
+    ]
+
+
+def _heartbeat_subscription_set(opcode: int, p: bytes) -> str:
+    _need(p, 5, "Heartbeat Subscription Set")
+    return (
+        f"src={int.from_bytes(p[:2], 'little'):04X} dst={int.from_bytes(p[2:4], 'little'):04X}"
+        f" period_log={p[4]} ({heartbeat_period_seconds(p[4])}s)"
+    )
+
+
+# the parameters of every Config message that is not a status `decode_config` decodes, by opcode
+_PARAM_FORMATTERS: dict[int, Callable[[int, bytes], str]] = {
+    CONFIG_APPKEY_ADD: _appkey_add,
+    CONFIG_APPKEY_UPDATE: _appkey_add,
+    CONFIG_APPKEY_DELETE: _appkey_delete,
+    CONFIG_NETKEY_ADD: _netkey_add,
+    CONFIG_NETKEY_UPDATE: _netkey_add,
+    CONFIG_NETKEY_DELETE: _netkey_only,
+    CONFIG_KEY_REFRESH_PHASE_GET: _netkey_only,
+    CONFIG_APPKEY_GET: _netkey_only,
+    CONFIG_NODE_IDENTITY_GET: _netkey_only,
+    CONFIG_KEY_REFRESH_PHASE_SET: _key_refresh_phase_set,
+    CONFIG_NODE_IDENTITY_SET: _node_identity_set,
+    CONFIG_COMPOSITION_DATA_GET: _composition_data_get,
+    CONFIG_MODEL_APP_BIND: _model_app_bind,
+    CONFIG_MODEL_APP_UNBIND: _model_app_bind,
+    CONFIG_MODEL_PUBLICATION_SET: _model_publication_set,
+    CONFIG_MODEL_PUBLICATION_GET: _element_model,
+    CONFIG_MODEL_SUBSCRIPTION_DELETE_ALL: _element_model,
+    CONFIG_SIG_MODEL_SUBSCRIPTION_GET: _element_model,
+    CONFIG_VENDOR_MODEL_SUBSCRIPTION_GET: _element_model,
+    CONFIG_SIG_MODEL_APP_GET: _element_model,
+    CONFIG_VENDOR_MODEL_APP_GET: _element_model,
+    CONFIG_MODEL_SUBSCRIPTION_ADD: _model_subscription_change,
+    CONFIG_MODEL_SUBSCRIPTION_DELETE: _model_subscription_change,
+    CONFIG_MODEL_SUBSCRIPTION_OVERWRITE: _model_subscription_change,
+    CONFIG_GATT_PROXY_SET: _enabled_set,
+    CONFIG_BEACON_SET: _enabled_set,
+    CONFIG_DEFAULT_TTL_SET: _default_ttl_set,
+    CONFIG_RELAY_SET: _relay_set,
+    CONFIG_NETWORK_TRANSMIT_SET: _network_transmit_set,
+    CONFIG_HEARTBEAT_PUBLICATION_SET: _heartbeat_publication_set,
+    CONFIG_HEARTBEAT_SUBSCRIPTION_SET: _heartbeat_subscription_set,
+}
 
 
 def _publication_fields(s: ModelPublicationStatus) -> str:
