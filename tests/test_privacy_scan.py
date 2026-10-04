@@ -149,6 +149,9 @@ def test_a_malformed_allowlist_line_is_an_error(tmp_path: Path, line: str) -> No
         write_allowlist(tmp_path, f"# header\n{line}\n")
 
 
+# scans every file of the tree: over 2 s of CPU alone, past the 5 s budget (`CALL_BUDGET`) under `-n auto` load —
+# no real-clock wait, the work is the time
+@pytest.mark.slow_ok
 def test_the_tree_is_clean(capsys: pytest.CaptureFixture[str]) -> None:
     assert S.main([]) == 0
     assert capsys.readouterr().out == ""

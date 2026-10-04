@@ -52,6 +52,9 @@ def test_committed_anchor_coverage(committed: list[parity.Problem]) -> None:
 @pytest.mark.skipif(
     not (JADX / "sources").is_dir(), reason="the decompiled APK is not checked in"
 )
+# reads and scans the whole decompiled APK (some 24,000 sources): about 3 s of CPU alone, and more than the
+# 5 s budget (`CALL_BUDGET`) when `-n auto` gives every core a worker — no real-clock wait, the work is the time
+@pytest.mark.slow_ok
 def test_committed_anchors_match_the_decompiled_apk() -> None:
     found = parity.extract_anchors(JADX)
     anchors = parity.read_json(ROOT / parity.PARITY / parity.ANCHORS)["anchors"]

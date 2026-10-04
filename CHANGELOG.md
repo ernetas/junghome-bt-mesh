@@ -83,6 +83,11 @@
   `.pre-commit-config.yaml` (commit and tag), under the same three-day minimum release age as every other pin, and
   ruff's hook in one PR with `requirements-lint.txt`. `tests/test_renovate.py` checks the configuration offline
   (every rule described, the manager on and aged, every hook a frozen GitHub tag, ruff in step).
+- The APK-anchor parity test (`test_committed_anchors_match_the_decompiled_apk`, run where the decompiled APK is
+  present) no longer fails now and then under `pytest -n auto`: it scans some 24,000 sources, about 3 s of CPU alone,
+  and with a worker on every core it went past the 5 s per-test budget of `tests/conftest.py` (6.8 s seen), which
+  is meant for real-clock waits. It is marked `slow_ok`, as is `test_privacy_scan.py::test_the_tree_is_clean`
+  (every file of the tree, 5.0 s seen) for the same reason.
 
 ## 1.2.0
 
