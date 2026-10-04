@@ -287,7 +287,7 @@ class Refresh:
             _LOGGER.debug("refresh aborted: %s", err)
             return False
         if self.hub.rx_to_us > answered:
-            self.hub.report_pdus_dropped(False)
+            self.hub.issues.report_pdus_dropped(False)
         elif jobs and (
             self.hub.rx_messages > heard
             or (self.hub.beacon_authenticated and self.hub.rx_decoded_link == 0)
@@ -297,7 +297,7 @@ class Refresh:
                 "(stale sequence number, or address %04X is used by another client)",
                 self.hub.proxy.state.src,
             )
-            self.hub.report_pdus_dropped(True)
+            self.hub.issues.report_pdus_dropped(True)
         return True
 
     def state_jobs(

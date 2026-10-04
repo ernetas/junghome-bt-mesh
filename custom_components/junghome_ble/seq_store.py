@@ -1269,7 +1269,7 @@ def _refuse_duplicate_mesh(
     and the later `HAState` takes the counters over (`SEQ_OWNERS`), so the first hub would refuse every send from
     then on — muted, with nothing but a DEBUG line to show. So the first one keeps running and this one does not
     start. The issue is `entry`'s: its removal deletes it (`async_remove_entry`), and so does its next successful
-    start (`JungHomeHub._clear_issues`). An owner of the same entry (a reload's predecessor) is no obstacle, nor is
+    start (`Issues.clear`). An owner of the same entry (a reload's predecessor) is no obstacle, nor is
     one whose entry is gone or no longer running.
     """
     owner = hass.data.get(SEQ_OWNERS, {}).get(mesh_uuid.lower())

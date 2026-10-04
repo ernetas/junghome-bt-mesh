@@ -33,8 +33,9 @@ from custom_components.junghome_ble.const import (
     OPTION_CLICK_DELAY,
     OPTION_HEARTBEATS,
 )
-from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN, JungHomeHub
+from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
 from custom_components.junghome_ble.diagnostics import redact_paths
+from custom_components.junghome_ble.hub.issues import Issues
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
@@ -435,7 +436,7 @@ async def test_gateway_entry_data_is_redacted(
 @pytest.fixture
 def no_time_keeper_check(monkeypatch: pytest.MonkeyPatch) -> None:
     """The time keeper repair stays shut from before the setup on (requested ahead of `init_integration`)."""
-    monkeypatch.setattr(JungHomeHub, "_report_time_keeper", lambda self: None)
+    monkeypatch.setattr(Issues, "report_time_keeper", lambda self: None)
 
 
 async def test_diagnostics_include_the_options_and_the_open_repairs(

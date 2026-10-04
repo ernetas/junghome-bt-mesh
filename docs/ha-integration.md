@@ -2493,7 +2493,7 @@ installation.
 
 ### Repair issue "JUNG HOME mesh is at another IV index"
 
-An authenticated beacon states an IV index Home Assistant cannot follow (`JungHomeHub._check_iv_index`): the mesh is
+An authenticated beacon states an IV index Home Assistant cannot follow (`Issues.check_iv_index`): the mesh is
 more than 42 ahead (Home Assistant was away through many IV Updates), or Home Assistant is two or more ahead of the
 mesh, which the mesh itself never is (its store belongs to another mesh, or beacons forged with the network key
 pushed it there). The devices ignore Home Assistant until it is fixed.

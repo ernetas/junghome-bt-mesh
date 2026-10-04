@@ -204,7 +204,7 @@ async def test_the_repair_while_no_node_keeps_the_pucks_time(
     candidates = [0x0148, 0x0172, 0x0232, 0x0300, PUCK]
     for unicast in candidates:
         hub.node_info(unicast).pop(NODE_INFO_TIME_ROLE, None)
-    hub._report_time_keeper()
+    hub.issues.report_time_keeper()
     assert issue(hass, env) is None
     for unicast in candidates:
         assert issue(hass, env) is None  # until the last one answered
@@ -222,7 +222,7 @@ async def test_the_repair_while_no_node_keeps_the_pucks_time(
     hub.remember_node_info(SOCKET, NODE_INFO_TIME_ROLE, b"\x03")
     assert issue(hass, env) is not None
     hub.cdb.node_by_addr(PUCK).pid = 0x0004
-    hub._report_time_keeper()
+    hub.issues.report_time_keeper()
     assert issue(hass, env) is None
 
 

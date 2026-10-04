@@ -2181,7 +2181,7 @@
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._parse_beacon",
     "custom_components/junghome_ble/jhmesh/pdu.py::parse_beacon",
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._on_beacon",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_iv_index",
+    "custom_components/junghome_ble/hub/issues.py::Issues.check_iv_index",
     "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._decode_beacon"
    ],
    "tests": [
@@ -2265,7 +2265,7 @@
    "tests": [
     "tests/jhmesh/test_pdu.py::test_network_decrypt_rejects_wrong_nid_or_short_pdu",
     "tests/jhmesh/test_client.py::test_undecryptable_messages_are_ignored",
-    "tests/test_coordinator.py::test_undecryptable_traffic_next_to_decodable_traffic_is_no_stale_export",
+    "tests/test_hub_issues.py::test_undecryptable_traffic_next_to_decodable_traffic_is_no_stale_export",
     "tests/jhmesh/test_sniffer.py::test_decoder_foreign_and_undecryptable_network_pdus"
    ]
   },

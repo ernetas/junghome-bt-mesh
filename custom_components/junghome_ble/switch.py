@@ -730,7 +730,7 @@ class JungHomeTimeKeeper(JungHomeEntity, SwitchEntity):
 
     The app's `TimeKeeperConfiguration` (network-logic.md §6.2), by hand: the app elects one mains node itself
     whenever the project has a PP2 puck (`EnsureTimeKeeper`), Home Assistant lets the user pick one, and raises
-    the `time_keeper_missing` repair while none is (`JungHomeHub._report_time_keeper`). On: the node's Time Server
+    the `time_keeper_missing` repair while none is (`Issues.report_time_keeper`). On: the node's Time Server
     publishes to `FEFF` (`MeshConfigurator.set_time_keeper`), then Time Role Set 2 (relay) to its Time Setup
     Server; off: the publication removed, then Time Role Set 3 (client). Shows the time role the node last
     answered (the connect-time Time Role Get, `properties.reader.PropertyReader`, or the answer to the Set): on for

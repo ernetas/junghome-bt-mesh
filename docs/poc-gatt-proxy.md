@@ -244,7 +244,7 @@ The full event set, from the gateway firmware's decoder
   sequence number restarts only when the transmit index rises; the proxy filter is re-sent after an IV change
   (§4 there) and the replay list keeps the previous index's entries. HA shows the IV index and the sequence space
   used (its own and the mesh's highest source) as diagnostic sensors and raises the `sequence_space_low` repair once
-  a source passes `0xC00000` (`sensor.py` `MESH_DIAGNOSTICS`, `JungHomeHub._check_sequence_space`).
+  a source passes `0xC00000` (`sensor.py` `MESH_DIAGNOSTICS`, `Issues.check_sequence_space`).
 - Key refresh is still open: it is only detected (a Phase 2 beacon with the Key Refresh flag that our key cannot
   authenticate raises the `key_refresh` repair hint), not followed — the keys must be re-exported.
 - ~~Mapping the CDB + `device_metadata.json` into HA entities~~ — done (`jhmesh/devices.py`; the app's own device

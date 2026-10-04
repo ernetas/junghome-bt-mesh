@@ -216,17 +216,17 @@ async def test_sequence_space_running_low_raises_an_issue(
     # a source outside the export is named by its address
     # (well above the others: the answers to the connect-time reads keep coming from the fake mesh meanwhile)
     hub.proxy.state.rpl[0x0999] = (0, SEQUENCE_SPACE_WARN + 0x1000)
-    hub._check_sequence_space()
+    hub.issues.check_sequence_space()
     issue = find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW)
     assert issue is not None
     assert issue.translation_placeholders["source"] == "0999"
     # an IV Update later everyone starts over: the issue goes
     hub.proxy.state.rpl.clear()
-    hub._check_sequence_space()
+    hub.issues.check_sequence_space()
     assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is None
     # and it goes with the unload too
     hub.proxy.state.rpl[0x0999] = (0, SEQUENCE_SPACE_WARN)
-    hub._check_sequence_space()
+    hub.issues.check_sequence_space()
     assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is not None
     assert await hass.config_entries.async_unload(diagnostics.entry_id)
     await hass.async_block_till_done()

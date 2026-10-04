@@ -354,7 +354,7 @@ UPLOAD = {CONF_EXPORT_FILE: "0123456789abcdef"}
 async def test_the_new_export_repair_takes_an_upload(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    hub_of(init_integration).report_key_refresh()
+    hub_of(init_integration).issues.report_key_refresh()
     issue = raised(hass, ISSUE_KEY_REFRESH)
     assert issue.data == {"entry_id": init_integration.entry_id}
     flow = await start(hass, issue)
@@ -401,7 +401,7 @@ async def test_the_app_changed_notice_is_fixed_by_a_new_export_from_either_repai
     assert form["description_placeholders"] == {"title": "JUNG HOME mesh test"}
 
     # the key-refresh repair's new export clears it too
-    hub_of(init_integration).report_key_refresh()
+    hub_of(init_integration).issues.report_key_refresh()
     other = await start(hass, raised(hass, ISSUE_KEY_REFRESH))
     with uploaded(SHARE_EXPORT_PATH):
         result = await other.async_step_upload(UPLOAD)
@@ -441,7 +441,7 @@ async def test_the_new_export_repair_refuses_an_upload_that_does_not_pass(
     """The file leaves Home Assistant's upload folder whatever fails, and is not kept in ours."""
     if upload == "garbage":
         upload = write(tmp_path / "garbage.json", "not json")
-    hub_of(init_integration).report_key_refresh()
+    hub_of(init_integration).issues.report_key_refresh()
     flow = await start(hass, raised(hass, ISSUE_KEY_REFRESH))
     with (
         uploaded(SHARE_EXPORT_PATH if upload == "taken" else upload) as consumed,
@@ -476,7 +476,7 @@ async def test_the_new_export_repair_refuses_another_mesh_and_a_gone_entry(
             "meshUUID": "2BEC62AA-0000-4000-8000-000000000002",
         }
     }
-    hub_of(init_integration).report_key_refresh()
+    hub_of(init_integration).issues.report_key_refresh()
     issue = raised(hass, ISSUE_KEY_REFRESH)
     flow = await start(hass, issue)
     with uploaded(write(tmp_path / "other.json", json.dumps(other))):
@@ -539,7 +539,7 @@ def gateway_entry(
 
 
 def stale_issue(hass: HomeAssistant, entry: MockConfigEntry) -> ir.IssueEntry:
-    """`export_stale` as the hub raises it (`JungHomeHub._report_export_stale`)."""
+    """`export_stale` as the hub raises it (`Issues.report_export_stale`)."""
     ir.async_create_issue(
         hass,
         DOMAIN,

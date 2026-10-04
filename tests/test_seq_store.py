@@ -1028,7 +1028,7 @@ async def test_pdus_dropped_fix_skips_ahead_and_reconnects(
     (`pdus_dropped`). The issue's fix moves the counter SEQ_SKIP_AHEAD on and renews the link."""
     hub = hub_of(init_integration)
     seq = hub.state.seq
-    hub.report_pdus_dropped(True)
+    hub.issues.report_pdus_dropped(True)
     assert (await run_fix_flow(hass, ISSUE_PDUS_DROPPED))["type"] == "create_entry"
     await wait_until(hass, lambda: fake_link.connect_count == 2, what="a new link")
     await wait_for_link(hass, init_integration)
@@ -1041,7 +1041,7 @@ async def test_pdus_dropped_fix_skips_ahead_and_reconnects(
 async def test_pdus_dropped_fix_aborts_without_a_loaded_entry(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    hub_of(init_integration).report_pdus_dropped(True)
+    hub_of(init_integration).issues.report_pdus_dropped(True)
     assert await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
     init_integration.runtime_data = None  # type: ignore[assignment]

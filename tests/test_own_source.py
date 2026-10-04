@@ -56,7 +56,9 @@ async def test_another_client_on_our_address_stops_sends_until_the_repair(
 ) -> None:
     hub = hub_of(init_integration)
     seq = hub.state.seq
-    hub.report_pdus_dropped(True)  # what the nodes dropping our PDUs looked like so far
+    hub.issues.report_pdus_dropped(
+        True
+    )  # what the nodes dropping our PDUs looked like so far
 
     with caplog.at_level(logging.ERROR):
         seen = other_client_sends(fake_link)
@@ -76,7 +78,7 @@ async def test_another_client_on_our_address_stops_sends_until_the_repair(
     )
     # the shared address is the explanation: no `pdus_dropped` next to it, and none raised while it is open
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
-    hub.report_pdus_dropped(True)
+    hub.issues.report_pdus_dropped(True)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
     # nothing goes out, not even after waiting: no number is taken, none can collide
@@ -159,7 +161,7 @@ async def test_the_repair_after_the_sighting_was_cleared_only_deletes_the_issue(
 ) -> None:
     hub = hub_of(init_integration)
     seq = hub.state.seq
-    hub._report_address_shared()  # an issue whose sighting is gone (cleared meanwhile)
+    hub.issues.report_address_shared()  # an issue whose sighting is gone (cleared meanwhile)
     assert (await run_fix_flow(hass, ISSUE_ADDRESS_SHARED))["type"] == "create_entry"
     assert find_issue(hass, ISSUE_ADDRESS_SHARED) is None
     assert hub.state.seq == seq

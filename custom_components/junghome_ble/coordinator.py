@@ -47,27 +47,15 @@ from .const import (
     CONNECT_BEACON_WAIT,
     DEFAULT_HEARTBEATS,
     DOMAIN,
-    EXPORT_STALE_THRESHOLD,
     FAILED_PROXY_COOLDOWN,
     FILTER_STATUS_TIMEOUT,
     HEARTBEAT_CHECK_INTERVAL,
     HUB_DATA_KEYS,
     IDENTIFY_SECONDS,
-    ISSUE_ADDRESS_SHARED,
-    ISSUE_ADDRESS_SHARED_AGAIN,
-    ISSUE_BLUETOOTH_UNAVAILABLE,
-    ISSUE_DUPLICATE_MESH,
-    ISSUE_EXPORT_STALE,
     ISSUE_INSERT_MISMATCH,
-    ISSUE_IV_INDEX_AHEAD,
-    ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
     ISSUE_NODE_CLOCK_WRONG,
-    ISSUE_PDUS_DROPPED,
     ISSUE_SEQ_STORE_LOST,
-    ISSUE_SEQ_STORE_UNWRITABLE,
-    ISSUE_SEQUENCE_SPACE_LOW,
-    ISSUE_TIME_KEEPER_MISSING,
     ISSUE_UNKNOWN_NODES,
     ISSUE_VAULT_KEY_REFRESH,
     KEEP_ALIVE_ATTEMPTS,
@@ -92,7 +80,6 @@ from .const import (
     SCENE_RECALL_WINDOW,
     SEQ_SKIP_AHEAD,
     SEQUENCE_CHECK_INTERVAL,
-    SEQUENCE_SPACE_WARN,
     SHORT_LINK,
     SHORT_LINK_STREAK,
     SIG_SOFTWARE_VERSION,
@@ -104,7 +91,6 @@ from .const import (
     STOP_TIMEOUT,
     TIME_SET_INTERVAL,
     issue_id,
-    learn_more_url,
 )
 from .entity import update_node_device
 from .hub.clock import Clock, next_utc_offset_change
@@ -122,6 +108,7 @@ from .hub.export_watch import (
     ExportWatch,
     is_gateway_host,
 )
+from .hub.issues import SEQ_STALL_ISSUE_AFTER, Issues
 from .hub.liveness import Liveness
 from .hub.refresh import ONOFF_GET, STATE_GETS, Refresh
 from .hub_gestures import ButtonGestures, EventListener
@@ -146,14 +133,12 @@ from .jhmesh.client import (
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
     BATTERY_PIDS,
-    PP2_PIDS,
     Devices,
     Light,
     Metadata,
     MeteredLoad,
     Socket,
     build_devices,
-    time_keeper_candidates,
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
 from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
@@ -199,7 +184,6 @@ from .seq_store import (
     _usable_record,
     async_apply_followed_key_refresh,
     async_migrate_legacy_seq_store,
-    async_rewind_seq_floor,
     async_skip_seq_store_ahead,
     merge_legacy_seq_store,
     seq_backup_store,
@@ -237,6 +221,7 @@ __all__ = [
     "SEQ_OWNERS",
     "SEQ_RESTART_MARGIN",
     "SEQ_SAVE_EVERY",
+    "SEQ_STALL_ISSUE_AFTER",
     "SEQ_STALL_RETRY",
     "SEQ_STORAGE_MINOR_VERSION",
     "SEQ_STORES",
@@ -262,9 +247,6 @@ __all__ = [
     "seq_store_for_uuid",
 ]
 
-# the time roles a node keeping the PP2 pucks' time answers (Time Role Status): authority, relay
-TIME_KEEPER_ROLES = frozenset({1, 2})
-
 # `async_wait_settled`: state Gets while a load ramps to a new state, the pause between them (JUNG dimmers fade
 # with their own ramps, a few seconds at most), and how long it asks at most, however many Gets go unanswered
 SETTLE_ATTEMPTS = 20
@@ -280,8 +262,6 @@ TRANSITION_REREAD_SLACK = 1.0
 # how long one send waits for the store to catch up (`JungHomeHub.while_seq_stalls`) before it is given up on: a
 # healthy store lands its write within a second, one that refuses for this long will not do so by waiting
 SEQ_STALL_DEADLINE = 120.0
-# how long the store may refuse before `seq_store_unwritable` is raised (`HAState.report_unwritable`)
-SEQ_STALL_ISSUE_AFTER = 60.0
 SIG_PROPERTY_STATUS_OPCODES = (
     M.GEN_USER_PROP_STATUS,
     M.GEN_ADMIN_PROP_STATUS,
@@ -668,8 +648,9 @@ class JungHomeHub:
         self.state = (
             state  # our address, sequence number and IV state, persisted per mesh
         )
-        state.stall_listener = self._seq_stall_started
-        self._unsub_seq_stall: CALLBACK_TYPE | None = None
+        # the repair issues and their fixes (`hub/issues.py`); it watches the store's stalls
+        self.issues = Issues(self)
+        state.stall_listener = self.issues.seq_stall_started
         # the nodes' reachability and heartbeats (`hub/liveness.py`, review-4 A4-3)
         self.liveness = Liveness(self)
         self.proxy = ProxyClient(
@@ -682,7 +663,7 @@ class JungHomeHub:
             on_undecryptable=self._on_undecryptable,
             on_heartbeat=self.liveness.on_heartbeat,
             on_key_refresh=self._on_key_refresh,
-            on_foreign_own_source=self._on_foreign_own_source,
+            on_foreign_own_source=self.issues.on_foreign_own_source,
         )
         self.states: dict[int, ElementState] = {}
         for unicast, info in (
@@ -701,7 +682,6 @@ class JungHomeHub:
         self.link_count = 0  # links made so far: entities tell "asked on this link already" from "ask again" by it
         self._connect_failure_logged = False  # the first failure of a link-down period is a WARNING, the rest DEBUG
         self.link_state = LINK_SEARCHING  # one of LINK_STATES (`set_link_state`), for the link state sensor
-        self._bluetooth_off = False  # `bluetooth_unavailable` is raised
         self._task: asyncio.Task[None] | None = None
         # the connect-time reads of every link (`hub/refresh.py`)
         self.refresh = Refresh(self)
@@ -717,10 +697,6 @@ class JungHomeHub:
         self.rx_to_us = (
             0  # ... of which unicast to our address: proof that nodes accept our PDUs
         )
-        self._pdus_dropped = False
-        # the `address_shared` repair skipped past another client's numbers since this hub started: a new sighting
-        # asks for another address (`_report_address_shared`)
-        self._address_shared_skipped = False
         # per link: whether the proxy's Secure Network Beacon authenticated (it sends one right after we subscribe),
         # and the watchdog waiting for its Filter Status (`_filter_status_overdue`)
         self.beacon_authenticated = False
@@ -793,7 +769,6 @@ class JungHomeHub:
         self.restarted: dict[int, datetime] = {}
         self._last_seq: dict[int, int] = {}
         self._node_signalled: dict[int, float] = {}
-        self._unsub_seq_check: CALLBACK_TYPE | None = None
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread: dict[int, CALLBACK_TYPE] = {}
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
@@ -806,7 +781,6 @@ class JungHomeHub:
         # per link: what the proxy forwarded that our keys could open, and what they could not (stale export detection)
         self.rx_decoded_link = 0
         self.rx_undecodable_link = 0
-        self._export_stale = False
         # the keys' gestures: clicks held back (the `click_delay` option, read from the entry here), holds, repeat
         # suppression and the event listeners (`hub_gestures.py`, review-4 A4-3); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
@@ -944,12 +918,12 @@ class JungHomeHub:
         # stale-export issue again as soon as the first link carries traffic; likewise a new export knows the nodes
         # the last hub saw advertising: any it still lacks are re-reported (`async_stop` cleared them all already;
         # this covers a hub whose predecessor never ran)
-        self._clear_issues()
+        self.issues.clear()
         self.inserts.report_mismatch()
-        self._report_time_keeper()
+        self.issues.report_time_keeper()
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
-            self._report_address_shared()
+            self.issues.report_address_shared()
         self._unsub_adv = bluetooth.async_register_callback(
             self.hass,
             self._adv_seen,
@@ -969,9 +943,9 @@ class JungHomeHub:
                 self.liveness.check_heartbeats,
                 timedelta(seconds=HEARTBEAT_CHECK_INTERVAL),
             )
-        self._unsub_seq_check = async_track_time_interval(
+        self.issues.unsub_seq_check = async_track_time_interval(
             self.hass,
-            self._check_sequence_space,
+            self.issues.check_sequence_space,
             timedelta(seconds=SEQUENCE_CHECK_INTERVAL),
         )
 
@@ -993,19 +967,19 @@ class JungHomeHub:
             self.clock.unsub_time,
             self.energy.unsub_energy,
             self.liveness.unsub_heartbeats,
-            self._unsub_seq_check,
+            self.issues.unsub_seq_check,
             self._unsub_grace,
             self._unsub_ha_stop,
             self._unsub_echo,
             self.clock.unsub_offset_change,
-            self._unsub_seq_stall,
+            self.issues.unsub_seq_stall,
         ):
             if unsub:
                 unsub()
         self._unsub_grace = self._unsub_ha_stop = self._unsub_echo = None
-        self.clock.unsub_offset_change = self._unsub_seq_stall = None
+        self.clock.unsub_offset_change = self.issues.unsub_seq_stall = None
         self._unsub_adv = self.clock.unsub_time = self.energy.unsub_energy = None
-        self.liveness.unsub_heartbeats = self._unsub_seq_check = None
+        self.liveness.unsub_heartbeats = self.issues.unsub_seq_check = None
         self.export_watch.cancel_timer()
         self._cancel_filter_watch()
         # not a pending retry of a failed upload: it is the entry's and outlives the reload most changes end with
@@ -1044,26 +1018,7 @@ class JungHomeHub:
             # nothing is sent after the detach: the counter can be stored as exact; and an unloaded mesh has no
             # live problems to show — a restart raises them again if they persist
             await self.state.async_close()
-            self._clear_issues()
-
-    def _clear_issues(self) -> None:
-        for key in (
-            ISSUE_SEQ_STORE_UNWRITABLE,
-            ISSUE_IV_INDEX_MISMATCH,
-            ISSUE_SEQUENCE_SPACE_LOW,
-            ISSUE_KEY_REFRESH,
-            ISSUE_PDUS_DROPPED,
-            ISSUE_ADDRESS_SHARED,
-            ISSUE_EXPORT_STALE,
-            ISSUE_UNKNOWN_NODES,
-            ISSUE_DUPLICATE_MESH,
-            ISSUE_BLUETOOTH_UNAVAILABLE,
-            ISSUE_VAULT_KEY_REFRESH,
-            ISSUE_INSERT_MISMATCH,
-            ISSUE_NODE_CLOCK_WRONG,
-            ISSUE_TIME_KEEPER_MISSING,
-        ):
-            ir.async_delete_issue(self.hass, DOMAIN, issue_id(self.entry, key))
+            self.issues.clear()
 
     @staticmethod
     async def _cancel(task: asyncio.Task[None] | None) -> None:
@@ -1386,7 +1341,7 @@ class JungHomeHub:
                     "Unexpected error in the JUNG mesh connection loop; trying again in %.0f s",
                     CONNECT_BACKOFF_MAX,
                 )
-                await self._drop_link(
+                await self.drop_link(
                     "an unexpected error in the connection loop", penalise=False
                 )
                 self._set_available(False)
@@ -1415,7 +1370,7 @@ class JungHomeHub:
                 pass
             return
         info = cands[0]
-        self._report_bluetooth_unavailable(
+        self.issues.report_bluetooth_unavailable(
             False
         )  # a proxy node was seen: something hears the mesh
         self.set_link_state(LINK_CONNECTING)
@@ -1444,7 +1399,7 @@ class JungHomeHub:
         if self._link_end is None:
             # gone without the disconnected callback (a transport that only turned `is_connected` False): the
             # client is still attached and nothing ended the link yet
-            await self._drop_link("the transport reported it closed", penalise=None)
+            await self.drop_link("the transport reported it closed", penalise=None)
         self._set_available(False)
         await asyncio.sleep(self._judge_link(info.address, failed, backoff))
 
@@ -1488,7 +1443,7 @@ class JungHomeHub:
         return pause
 
     async def _watch_link(self) -> None:
-        """Block while the link is up; drop it (`_drop_link`) when the proxy went silent.
+        """Block while the link is up; drop it (`drop_link`) when the proxy went silent.
 
         A GATT proxy that stops forwarding (stuck filter, half-dead relay) never disconnects by itself. A mesh with a
         gateway is never quiet (it polls every load every 15 s), but one without can be silent for hours at night, so
@@ -1512,7 +1467,7 @@ class JungHomeHub:
                     self.proxy_address,
                     time.monotonic() - self._last_rx,
                 )
-                await self._drop_link("the proxy went silent", penalise=True)
+                await self.drop_link("the proxy went silent", penalise=True)
                 return
             if self._probe_link.is_set():
                 self._probe_link.clear()
@@ -1528,7 +1483,7 @@ class JungHomeHub:
                         "Get; dropping the link",
                         self.proxy_address,
                     )
-                    await self._drop_link(
+                    await self.drop_link(
                         "the proxy answered neither a command nor a keep-alive Get",
                         penalise=True,
                     )
@@ -1628,37 +1583,11 @@ class JungHomeHub:
 
         The app locks its screen while the phone's Bluetooth is off (`ObserveBluetoothState`); here the equivalent
         is no connectable scanner at all — the adapter is off, unplugged or failed, every ESPHome proxy is gone —
-        which raises `bluetooth_unavailable` (`_report_bluetooth_unavailable`).
+        which raises `bluetooth_unavailable` (`Issues.report_bluetooth_unavailable`).
         """
         off = bluetooth.async_scanner_count(self.hass, connectable=True) == 0
-        self._report_bluetooth_unavailable(off)
+        self.issues.report_bluetooth_unavailable(off)
         self.set_link_state(LINK_BLUETOOTH_OFF if off else LINK_SEARCHING)
-
-    def _report_bluetooth_unavailable(self, off: bool) -> None:
-        """Raise (or clear) the repair issue for a Home Assistant without a connectable Bluetooth scanner.
-
-        Cleared as soon as a scanner is back or a proxy node of the mesh is seen at all.
-        """
-        if off == self._bluetooth_off:
-            return
-        self._bluetooth_off = off
-        key = issue_id(self.entry, ISSUE_BLUETOOTH_UNAVAILABLE)
-        if not off:
-            ir.async_delete_issue(self.hass, DOMAIN, key)
-            return
-        _LOGGER.warning(
-            "No connectable Bluetooth adapter or proxy is available: the JUNG mesh cannot be reached"
-        )
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            key,
-            is_fixable=False,
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_BLUETOOTH_UNAVAILABLE,
-            learn_more_url=learn_more_url(ISSUE_BLUETOOTH_UNAVAILABLE),
-            translation_placeholders={"title": self.entry.title},
-        )
 
     async def _connect_to(self, info: bluetooth.BluetoothServiceInfoBleak) -> None:
         """Connect to the proxy node `info` advertised from and start the link's work.
@@ -1775,7 +1704,7 @@ class JungHomeHub:
             FILTER_STATUS_TIMEOUT,
             self.proxy.state.src,
         )
-        self.report_pdus_dropped(True)
+        self.issues.report_pdus_dropped(True)
 
     def _set_available(self, available: bool) -> None:
         """Record the link state and tell the entities, unless it is "still unavailable" with nothing to clear.
@@ -1816,7 +1745,7 @@ class JungHomeHub:
         self._link_ended("the proxy disconnected", None)
         self._link_lost.set()
 
-    async def _drop_link(self, reason: str, *, penalise: bool | None) -> None:
+    async def drop_link(self, reason: str, *, penalise: bool | None) -> None:
         """End the current link ourselves, for `reason`; `penalise` as in `LinkEnd`.
 
         Every path that detaches a link it still had goes through here (review-4 R4-3: only a transport's
@@ -1904,8 +1833,8 @@ class JungHomeHub:
         """
         self._last_rx = time.monotonic()
         self._cancel_filter_watch()
-        if self._pdus_dropped:
-            self.report_pdus_dropped(False)
+        if self.issues.pdus_dropped:
+            self.issues.report_pdus_dropped(False)
         if self.proxy_node == proxy_unicast:
             return
         self.proxy_node = proxy_unicast
@@ -1969,20 +1898,6 @@ class JungHomeHub:
             await asyncio.gather(
                 *(self.while_seq_stalls(job) for job in jobs[i : i + REFRESH_CHUNK])
             )
-
-    @callback
-    def _seq_stall_started(self) -> None:
-        """Look again SEQ_STALL_ISSUE_AFTER after the store began holding sends back (`HAState.reserve_seq`)."""
-        if self._unsub_seq_stall is not None:
-            self._unsub_seq_stall()  # an earlier stall's, which ended meanwhile
-        self._unsub_seq_stall = async_call_later(
-            self.hass, SEQ_STALL_ISSUE_AFTER, self._seq_stall_overdue
-        )
-
-    @callback
-    def _seq_stall_overdue(self, _now: datetime) -> None:
-        self._unsub_seq_stall = None
-        self.state.report_unwritable()
 
     async def while_seq_stalls[T](self, send: Callable[[], Awaitable[T]]) -> T:
         """Run `send`, again every SEQ_STALL_RETRY seconds while the sequence-number store holds it back, for a while.
@@ -2281,39 +2196,6 @@ class JungHomeHub:
         seq, src = max(sources)
         return src, seq
 
-    @callback
-    def _check_sequence_space(self, _now: datetime | None = None) -> None:
-        """Raise `sequence_space_low` while a source is past SEQUENCE_SPACE_WARN (review-3 N2); clear it after.
-
-        Every source (node, app, Home Assistant) stops sending at the end of the 24-bit space of the current IV
-        index; the IV Update that resets it is started by the gateway (Home Assistant only follows one). The
-        numbers are those the replay protection accepted, so they are what the mesh really used.
-        """
-        highest = self.highest_seq()
-        key = issue_id(self.entry, ISSUE_SEQUENCE_SPACE_LOW)
-        if highest is None or highest[1] < SEQUENCE_SPACE_WARN:
-            ir.async_delete_issue(self.hass, DOMAIN, key)
-            return
-        src, seq = highest
-        node = self.cdb.node_by_addr(src)
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            key,
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_SEQUENCE_SPACE_LOW,
-            learn_more_url=learn_more_url(ISSUE_SEQUENCE_SPACE_LOW),
-            translation_placeholders={
-                "title": self.entry.title,
-                "source": f"{node.name} {src:04X}"
-                if node is not None
-                else f"{src:04X}",
-                "percent": f"{100 * seq // 0xFFFFFF}",
-                "iv_index": str(self.proxy.state.iv_index),
-            },
-        )
-
     # ------------------------------------------------------------------ incoming messages
     def element_state(self, addr: int) -> ElementState:
         """Return the cached state of the element at `addr`, creating an empty one on first contact."""
@@ -2336,14 +2218,14 @@ class JungHomeHub:
         self.liveness.heard_from(m.src)
         if self.heartbeats_enabled:
             self.liveness.mark_alive(m.src)  # any message is as good as a heartbeat
-        if self._export_stale:
-            self._report_export_stale(
+        if self.issues.export_stale:
+            self.issues.report_export_stale(
                 False
             )  # our keys opened something: the export fits the mesh after all
         if m.dst == self.proxy.state.src:
             self.rx_to_us += 1
-            if self._pdus_dropped:
-                self.report_pdus_dropped(
+            if self.issues.pdus_dropped:
+                self.issues.report_pdus_dropped(
                     False
                 )  # a node answered us: our PDUs get through again
         if self.app_follow is not None:
@@ -2537,7 +2419,7 @@ class JungHomeHub:
             return
         info[name] = raw
         if name == NODE_INFO_TIME_ROLE:
-            self._report_time_keeper()
+            self.issues.report_time_keeper()
         node_versions_store(self.hass, self.entry.entry_id).async_delay_save(
             lambda: {
                 f"{a:04X}": {k: v.hex() for k, v in items.items()}
@@ -2547,40 +2429,6 @@ class JungHomeHub:
         )
         if (node := self.cdb.node_by_addr(unicast)) is not None:
             update_node_device(self.hass, self, node)
-
-    @callback
-    def _report_time_keeper(self) -> None:
-        """Raise the `time_keeper_missing` repair while the project has PP2 pucks and no node keeps their time (F4-14).
-
-        The app elects a time keeper itself whenever a PP2 puck is in the project (`EnsureTimeKeeper`,
-        network-logic.md §6.2); Home Assistant leaves the choice to the user (`switch.JungHomeTimeKeeper`). Raised
-        only once every node that could keep the time (`devices.time_keeper_candidates`) answered its time role (the
-        connect-time Time Role Get): a role not asked yet is no evidence. One that answered relay or authority keeps
-        it. Names the pucks' addresses. Unverified on air: no puck in the installation.
-        """
-        issue = issue_id(self.entry, ISSUE_TIME_KEEPER_MISSING)
-        pucks = sorted(n.unicast for n in self.cdb.nodes if n.pid in PP2_PIDS)
-        roles = [
-            self.node_info(n.unicast).get(NODE_INFO_TIME_ROLE)
-            for n in time_keeper_candidates(self.cdb)
-        ]
-        known = [role[0] for role in roles if role]
-        if not pucks or len(known) < len(roles) or set(known) & TIME_KEEPER_ROLES:
-            ir.async_delete_issue(self.hass, DOMAIN, issue)
-            return
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue,
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_TIME_KEEPER_MISSING,
-            learn_more_url=learn_more_url(ISSUE_TIME_KEEPER_MISSING),
-            translation_placeholders={
-                "title": self.entry.title,
-                "pucks": ", ".join(f"{a:04X}" for a in pucks),
-            },
-        )
 
     def _lacks_precise_energy(self, src: int) -> None:
         """Fall back to 0x006A for the *Energy* of a load other than a socket whose meter `src` says it has no 0x0072.
@@ -2772,7 +2620,19 @@ class JungHomeHub:
 
         publish_button_event(self.hass, self, addr, event, attrs)
 
-    # ------------------------------------------------------------------ repairs
+    # ------------------------------------------------------------------ repairs (`hub/issues.py`)
+    async def async_rewind_iv_index(self, network: int) -> str | None:
+        """Take Home Assistant's IV index back to the mesh's `network` (`Issues.async_rewind_iv_index`)."""
+        return await self.issues.async_rewind_iv_index(network)
+
+    async def async_skip_ahead(self) -> None:
+        """Jump our counter ahead and start a fresh link (`Issues.async_skip_ahead`)."""
+        await self.issues.async_skip_ahead()
+
+    async def async_skip_past_shared(self) -> None:
+        """Continue past the other client's numbers and send again (`Issues.async_skip_past_shared`)."""
+        await self.issues.async_skip_past_shared()
+
     def _on_beacon(self, beacon: SecureNetworkBeacon) -> None:
         """Account for a beacon of the proxy; one flagging a key refresh that our key cannot open raises an issue.
 
@@ -2784,139 +2644,15 @@ class JungHomeHub:
         """
         self._last_rx = time.monotonic()
         if not beacon.authenticated:
-            self._count_undecodable()
+            self.issues.count_undecodable()
             if beacon.key_refresh:
-                self.report_key_refresh()
+                self.issues.report_key_refresh()
             return
         self.beacon_authenticated = True
-        self._check_iv_index(beacon.iv_index)
-
-    def _check_iv_index(self, network: int) -> None:
-        """Raise `iv_index_mismatch` when the mesh's IV index is one Home Assistant cannot follow (review-3 T5).
-
-        `LocalState.apply_beacon` follows an index up to 42 ahead (IV Index Recovery) and ignores an older one (a
-        lagging node, one behind for up to 96 hours during an update). Further ahead — Home Assistant was away
-        through more IV updates than recovery allows, or its store is from another mesh — or two and more behind —
-        its store is ahead of the mesh — every node drops Home Assistant's messages and the beacon that says why
-        used to be dropped silently. Cleared by the next beacon within reach.
-
-        Home Assistant ahead (pushed there by forged beacons, or a store of another mesh) is fixable when going back
-        keeps every nonce unique (`LocalState.can_rewind_to`): the repair (`ISSUE_IV_INDEX_AHEAD`'s text, the
-        `iv_index_mismatch` fix flow) rewinds to the mesh's index, `async_rewind_iv_index`. Otherwise, and when the
-        mesh is ahead, the way back is a new unicast address (Reconfigure).
-        """
-        state = self.proxy.state
-        key = issue_id(self.entry, ISSUE_IV_INDEX_MISMATCH)
-        if not state.iv_known or state.iv_index - 1 <= network <= state.iv_index + 42:
-            ir.async_delete_issue(self.hass, DOMAIN, key)
-            return
-        _LOGGER.warning(
-            "The mesh is at IV index %d, Home Assistant at %d: out of the reach of IV Index Recovery",
-            network,
-            state.iv_index,
-        )
-        fixable = state.can_rewind_to(network)  # behind us, and the record knows enough
-        translation_key = ISSUE_IV_INDEX_AHEAD if fixable else ISSUE_IV_INDEX_MISMATCH
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            key,
-            is_fixable=fixable,
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=translation_key,
-            learn_more_url=learn_more_url(translation_key),
-            translation_placeholders={
-                "title": self.entry.title,
-                "mesh": str(network),
-                "ours": str(state.iv_index),
-            },
-            data={"entry_id": self.entry.entry_id, "network": network}
-            if fixable
-            else None,
-        )
-
-    async def async_rewind_iv_index(self, network: int) -> str | None:
-        """Take Home Assistant's IV index back to the mesh's `network` (the fixable `iv_index_mismatch` repair).
-
-        Only while Home Assistant is still ahead out of reach and the rewind keeps every nonce unique — the state may
-        have moved since the issue was raised; the repair floor is written first (`async_rewind_seq_floor`), then
-        `LocalState.rewind_iv_index` moves the counter past every number sent from the mesh's index on, guarded up
-        to the old index, and `HAState.persist` writes both copies of the store at once (the transmit index
-        changed). The caller reloads the entry, so the next setup starts at the mesh's index. Returns None when
-        done, else the reason the repair flow aborts with.
-        """
-        state = self.state
-        if not (
-            state.iv_known
-            and network < state.iv_index - 1
-            and state.can_rewind_to(network)
-        ):
-            return "iv_index_not_ahead"
-        seq, guard = state.rewind_point()
-        if not await async_rewind_seq_floor(
-            self.hass, self.cdb.mesh_uuid, f"{state.src:04X}", network, seq, guard
-        ):
-            _LOGGER.error(
-                "Could not write the sequence-number floor of address %04X: not going back without it",
-                state.src,
-            )
-            return "seq_store_not_written"
-        # the IV state moved while the floor was written: what it holds may no longer cover it
-        if not state.can_rewind_to(network) or state.rewind_point()[1] > guard:
-            return "iv_index_not_ahead"
-        seq = state.rewind_iv_index(network)
-        _LOGGER.warning(
-            "IV index of address %04X goes back to the mesh's %d; its sequence numbers continue from %06X",
-            state.src,
-            network,
-            seq,
-        )
-        return None
+        self.issues.check_iv_index(beacon.iv_index)
 
     def _on_undecryptable(self) -> None:
-        self._count_undecodable()
-
-    def _count_undecodable(self) -> None:
-        """Count a PDU our keys cannot open, or a beacon they cannot authenticate.
-
-        One or two are normal (another mesh in range, a node the export does not know). A link that has forwarded
-        EXPORT_STALE_THRESHOLD of them and nothing decodable is a mesh whose keys are not the export's: a key refresh
-        completed after the export was made (`docs/cross-repo-analysis.md` §5). Without this the symptom is only a
-        silent link dropped by the watchdog every LINK_IDLE_TIMEOUT.
-        """
-        self.rx_undecodable_link += 1
-        if (
-            not self._export_stale
-            and self.rx_decoded_link == 0
-            and self.rx_undecodable_link >= EXPORT_STALE_THRESHOLD
-        ):
-            self._report_export_stale(True)
-
-    def _report_export_stale(self, stale: bool) -> None:
-        """Raise (or clear) the repair issue for a mesh whose keys are not the ones in the export."""
-        self._export_stale = stale
-        if not stale:
-            ir.async_delete_issue(
-                self.hass, DOMAIN, issue_id(self.entry, ISSUE_EXPORT_STALE)
-            )
-            return
-        _LOGGER.error(
-            "Nothing heard through proxy node %s can be decrypted with the keys of the export (%d messages so far): "
-            "the mesh keys changed — export the network again and reconfigure",
-            self.proxy_address,
-            self.rx_undecodable_link,
-        )
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_EXPORT_STALE),
-            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
-            data={"entry_id": self.entry.entry_id},
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_EXPORT_STALE,
-            learn_more_url=learn_more_url(ISSUE_EXPORT_STALE),
-            translation_placeholders={"title": self.entry.title},
-        )
+        self.issues.count_undecodable()
 
     @callback
     def _on_key_refresh(self, phase: int, key: NetKeyMaterial) -> None:
@@ -2951,137 +2687,6 @@ class JungHomeHub:
         if self.hass.config_entries.async_get_entry(self.entry.entry_id) is self.entry:
             self.hass.config_entries.async_update_entry(
                 self.entry, unique_id=network_id
-            )
-
-    def report_key_refresh(self) -> None:
-        """Raise a repair issue: the keys in the export are being replaced, the mesh will stop accepting us."""
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_KEY_REFRESH),
-            is_fixable=True,  # its repair loads a new export (`repairs.NewExportFlow`)
-            data={"entry_id": self.entry.entry_id},
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_KEY_REFRESH,
-            learn_more_url=learn_more_url(ISSUE_KEY_REFRESH),
-            translation_placeholders={"title": self.entry.title},
-        )
-
-    async def async_skip_ahead(self) -> None:
-        """Jump our counter SEQ_SKIP_AHEAD ahead and start a fresh link (the `pdus_dropped` repair).
-
-        The nodes drop our messages as replays when they know our numbers higher than we do: a store restored
-        from an older backup, or lost. Past them the new link's filter request and refresh get through.
-        """
-        seq = self.state.skip_ahead(SEQ_SKIP_AHEAD)
-        _LOGGER.warning(
-            "Sequence numbers of address %04X continue from %06X; reconnecting",
-            self.state.src,
-            seq,
-        )
-        if self.proxy.connected:
-            # not the proxy's fault: no verdict on it, and the entities keep the grace (review-4 R4-3)
-            await self._drop_link("sequence numbers skipped ahead", penalise=False)
-
-    def report_pdus_dropped(self, dropped: bool) -> None:
-        """Raise (or clear) the repair issue for a mesh that ignores us although the link works (the caller logs why).
-
-        Raised by the Filter Status watchdog and by an unanswered state refresh; cleared by a Filter Status or by
-        the first message addressed to us (`_on_message`). Not raised while another client is known to send from
-        our address (`address_shared` names the cause, and its repair is the one that helps).
-        """
-        if dropped and self.state.address_shared is not None:
-            return
-        self._pdus_dropped = dropped
-        if not dropped:
-            ir.async_delete_issue(
-                self.hass, DOMAIN, issue_id(self.entry, ISSUE_PDUS_DROPPED)
-            )
-            return
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_PDUS_DROPPED),
-            is_fixable=True,
-            data={"entry_id": self.entry.entry_id},
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=ISSUE_PDUS_DROPPED,
-            learn_more_url=learn_more_url(ISSUE_PDUS_DROPPED),
-            translation_placeholders={
-                "title": self.entry.title,
-                "unicast": f"{self.proxy.state.src:04X}",
-            },
-        )
-
-    def _on_foreign_own_source(self, iv_index: int, seq: int) -> None:
-        """Another client sends from our address: the proxy delivered a PDU from it with a number we never sent (S I2).
-
-        Its numbers and ours run into each other — every one both send is a reused nonce, and the nodes drop ours as
-        replays below its last — so from here on nothing is sent (`HAState.note_address_shared`, `AddressShared`)
-        until `address_shared` is repaired. That issue explains the dropped PDUs better than `pdus_dropped` does,
-        which it replaces.
-        """
-        if self.state.note_address_shared(iv_index, seq):
-            _LOGGER.error(
-                "Another Bluetooth mesh client sends from Home Assistant's address %04X (sequence number %06X under "
-                "IV index %d, which Home Assistant never sent): nothing is sent to the mesh %s until the repair is "
-                "confirmed",
-                self.state.src,
-                seq,
-                iv_index,
-                self.entry.title,
-            )
-        if self._pdus_dropped:
-            self.report_pdus_dropped(False)
-        self._report_address_shared()
-
-    def _report_address_shared(self) -> None:
-        """Raise `address_shared`; once its repair skipped past the other client, with the text asking for another address.
-
-        The same issue id either way (`ISSUE_ADDRESS_SHARED_AGAIN` is only its other translation key).
-        """
-        translation_key = (
-            ISSUE_ADDRESS_SHARED_AGAIN
-            if self._address_shared_skipped
-            else ISSUE_ADDRESS_SHARED
-        )
-        ir.async_create_issue(
-            self.hass,
-            DOMAIN,
-            issue_id(self.entry, ISSUE_ADDRESS_SHARED),
-            is_fixable=True,
-            data={"entry_id": self.entry.entry_id},
-            severity=ir.IssueSeverity.ERROR,
-            translation_key=translation_key,
-            learn_more_url=learn_more_url(translation_key),
-            translation_placeholders={
-                "title": self.entry.title,
-                "unicast": f"{self.state.src:04X}",
-            },
-        )
-
-    async def async_skip_past_shared(self) -> None:
-        """Continue past the other client's numbers and send again (the `address_shared` repair).
-
-        The issue goes at once; should the other client still send above the new counter, it comes back asking for
-        another address. A link whose proxy never took our filter (its request was refused too) is renewed: on the
-        default white list the proxy forwards next to nothing.
-        """
-        seq = self.state.skip_past_shared()
-        self._address_shared_skipped = True
-        ir.async_delete_issue(
-            self.hass, DOMAIN, issue_id(self.entry, ISSUE_ADDRESS_SHARED)
-        )
-        if seq is None:
-            return
-        _LOGGER.warning(
-            "Sequence numbers of address %04X continue from %06X, past the other client's",
-            self.state.src,
-            seq,
-        )
-        if self.proxy.connected and self.proxy.proxy_addr is None:
-            await self._drop_link(
-                "sequence numbers skipped past another client's", penalise=False
             )
 
     # ------------------------------------------------------------------ commands

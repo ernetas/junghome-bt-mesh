@@ -132,7 +132,7 @@ async def test_setup_and_unload(
     )
 
     # a live repair issue of this mesh is cleared with the unload (nothing of it is running any more)
-    entry.runtime_data.report_key_refresh()
+    entry.runtime_data.issues.report_key_refresh()
     assert find_issue(hass, ISSUE_KEY_REFRESH) is not None
     assert (
         find_issue(hass, ISSUE_KEY_REFRESH).issue_id == f"key_refresh_{entry.entry_id}"

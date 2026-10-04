@@ -4847,7 +4847,7 @@
    "code": [
     "custom_components/junghome_ble/switch.py::JungHomeTimeKeeper",
     "custom_components/junghome_ble/configurator/nodes.py::Nodes.set_time_keeper",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._report_time_keeper",
+    "custom_components/junghome_ble/hub/issues.py::Issues.report_time_keeper",
     "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.ensure_time_keeper_group",
     "custom_components/junghome_ble/jhmesh/commission.py::_Builder.fixed_groups"
@@ -5105,7 +5105,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub._check_bluetooth",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub._report_bluetooth_unavailable",
+    "custom_components/junghome_ble/hub/issues.py::Issues.report_bluetooth_unavailable",
     "custom_components/junghome_ble/__init__.py::async_setup_entry",
     "custom_components/junghome_ble/strings.json::issues.bluetooth_unavailable"
    ],
@@ -8169,7 +8169,7 @@
     "custom_components/junghome_ble/strings.json::issues.key_refresh"
    ],
    "tests": [
-    "tests/test_coordinator.py::test_key_refresh_beacon_raises_a_repair_issue"
+    "tests/test_hub_issues.py::test_key_refresh_beacon_raises_a_repair_issue"
    ],
    "class": "dup",
    "reason": "Reading (and showing) a node's key refresh phase is sending Config Key Refresh Phase Get, judged under msg:op:8015.",

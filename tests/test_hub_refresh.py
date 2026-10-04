@@ -144,7 +144,7 @@ async def test_unanswered_refresh_while_the_mesh_is_busy_raises_a_repair(
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
     # ... and so does an answered refresh
-    hub.report_pdus_dropped(True)
+    hub.issues.report_pdus_dropped(True)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is not None
     answer_gets(fake_link)
     await hub.refresh._refresh_all()
