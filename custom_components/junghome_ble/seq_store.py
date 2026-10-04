@@ -13,9 +13,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, TypedDict, cast
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
@@ -75,6 +75,31 @@ SEQ_SAVE_EVERY = 64
 # floor write that fails has three more chances before sends are held back for it
 SEQ_FLOOR_EVERY = 1 << 20
 SEQ_STALL_RETRY = 5.0  # seconds between forced-save retries while reserve_seq() is refusing to hand out numbers
+
+
+class SeqRecord(TypedDict, total=False):
+    """One address's record in the sequence-number store: `{"addresses": {"<src>": record}, "mesh": {…}}`.
+
+    What `LocalState.to_stored` writes, without `src` (the record's key), plus Home Assistant's own: `clean` (the
+    hub closed it: no restart margin), `address_shared` and a backup's mark `in_backup` (see
+    `SEQ_STORAGE_MINOR_VERSION`). A floor entry (`seq_floor_store_for_uuid`) holds `iv_index`, `seq` and
+    `seq_guard` only. A record as read is whatever the file held: `LocalState.parse_record` checks it.
+    """
+
+    seq: int
+    iv_index: int
+    iv_update_active: bool
+    iv_known: bool
+    rpl: dict[str, list[int]]
+    seq_peak: int
+    seq_peak_from: int
+    key_refresh: dict[str, Any] | None
+    seq_guard: int
+    iv_changed_at: float
+    iv_recovered_at: float
+    clean: bool
+    address_shared: list[int]
+    in_backup: str
 
 
 SEQ_STORES: HassKey[dict[str, SeqStore]] = HassKey(f"{DOMAIN}_seq_stores")
@@ -233,14 +258,14 @@ def _newest_corrupt_seq_store(path: str) -> str | None:
     return matches[-1].name if matches else None
 
 
-def _usable_record(data: Any, key: str) -> dict[str, Any] | None:
+def _usable_record(data: Any, key: str) -> SeqRecord | None:
     """Address `key`'s record in a loaded store when `LocalState` can resume from it, else None (absent or unusable)."""
     try:
         record = data["addresses"][key]
         LocalState.parse_record({**record, "src": key})
     except (KeyError, IndexError, ValueError, TypeError, AttributeError):
         return None
-    return dict(record)
+    return cast("SeqRecord", dict(record))
 
 
 def _has_history(data: Any, key: str) -> bool:
@@ -391,7 +416,7 @@ async def async_rewind_seq_floor(
     data = {
         "addresses": {
             **floors,
-            key: {"iv_index": iv_index, "seq": seq, "seq_guard": guard},
+            key: SeqRecord(iv_index=iv_index, seq=seq, seq_guard=guard),
         }
     }
     await floor_store.async_save(data)
@@ -423,7 +448,7 @@ async def async_skip_seq_store_ahead(
     # a guard an earlier `iv_index_mismatch` repair left (`async_rewind_seq_floor`): numbers were sent under every
     # index up to it, so it stays — the first beacon raises it to its own index + 1 if that is higher
     guard = _carried_seq_guard([floors.get(key)])
-    floor_entry: dict[str, Any] = {"iv_index": iv_index, "seq": seq}
+    floor_entry: SeqRecord = {"iv_index": iv_index, "seq": seq}
     if guard != SEQ_GUARD_FIRST_BEACON:
         floor_entry["seq_guard"] = guard
     floor = {"addresses": {**floors, key: floor_entry}}
@@ -620,7 +645,7 @@ def _report_seq_store_lost(
     )
 
 
-def _tx_rank(record: dict[str, Any]) -> tuple[int, int]:
+def _tx_rank(record: Mapping[str, Any]) -> tuple[int, int]:
     """(transmit IV index, seq) of a stored record, for ranking which of two is further along.
 
     The transmit index is `iv_index - 1` while `iv_update_active` — nodes keep sending with the old index
@@ -919,7 +944,7 @@ class HAState(LocalState):
         self._floor_asked = current
         key = f"{self.src:04X}"
         floors = _addresses_of(self._floor_store.written) or {}
-        entry: dict[str, Any] = {"iv_index": current[0], "seq": current[1]}
+        entry: SeqRecord = {"iv_index": current[0], "seq": current[1]}
         guard = _carried_seq_guard([floors.get(key), {"seq_guard": self.seq_guard}])
         if guard >= current[0]:
             entry["seq_guard"] = guard

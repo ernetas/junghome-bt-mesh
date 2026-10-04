@@ -48,6 +48,7 @@ from custom_components.junghome_ble.jhmesh.export import (
     KEY_MODE_SWITCH,
     RENAME_MAX_LENGTH,
     AllocationCrowded,
+    DeviceRow,
     ExportError,
     InvalidName,
     ProjectFile,
@@ -481,7 +482,7 @@ def room_keys(pf: ProjectFile, element: Element, group: int) -> list[int]:
     ]
 
 
-def device_entry(pf: ProjectFile, node: Node, location: int) -> dict[str, Any] | None:
+def device_entry(pf: ProjectFile, node: Node, location: int) -> DeviceRow | None:
     """Return the `meta.devices[]` entry covering an element location (`ProjectFile.device_entry`)."""
     return pf.device_entry(node, location)
 

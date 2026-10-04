@@ -32,7 +32,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict, cast
 
 from . import vendor_models as V
 from .cdb import (
@@ -101,6 +101,8 @@ __all__ = [
     "SHARE_KEYS",
     "Allocation",
     "AllocationCrowded",
+    "DeviceIdRow",
+    "DeviceRow",
     "ExportError",
     "Flavour",
     "InvalidName",
@@ -109,6 +111,9 @@ __all__ = [
     "NewerExportError",
     "ProjectFile",
     "RoomLink",
+    "RoomLinkRow",
+    "SceneConfigRow",
+    "SceneLinkRow",
     "Style",
     "cdb_element_groups",
     "check_name",
@@ -488,6 +493,58 @@ class ModelChange:
     kind: Literal["subscribe", "unsubscribe", "publish"]
 
 
+class DeviceIdRow(TypedDict, total=False):
+    """A `meta.devices[]` row's `deviceId`: the node (`nodeId`, its UUID) and the element locations it covers."""
+
+    actuatorFunctionId: int
+    locationIds: list[int]
+    insertType: int
+    productId: int
+    nodeId: str
+
+
+class DeviceRow(TypedDict, total=False):
+    """A `meta.devices[]` row: one app device — its name, MAC, `deviceId` and the room links of its keys.
+
+    As read from a file, whatever the app wrote: `cachedGroupConnectionMetadata` may hold a stray `null` (`meta_rows`
+    skips it), so it is a list of anything; its object rows are `RoomLinkRow`s.
+    """
+
+    name: str
+    macAddress: str
+    deviceId: DeviceIdRow
+    cachedGroupConnectionMetadata: list[Any]
+
+
+class RoomLinkRow(TypedDict, total=False):
+    """A `cachedGroupConnectionMetadata` row (`KeyModeGroupConfig`): a key's room link.
+
+    Addresses are ints as Gson writes them, or hex strings in a file that uses those; `function` is the
+    `GroupFunction` name, or its ordinal (`function_code`).
+    """
+
+    elementAddress: int | str
+    groupAddress: int | str
+    publishAddress: int | str
+    function: str | int
+
+
+class SceneConfigRow(TypedDict, total=False):
+    """A `keyModeSceneConfigExports` row's `sceneConfig` (`MeshPropertyExport.java:153-161`)."""
+
+    transitionStepSeconds: int
+    sceneId: int
+    transitionResolution: int
+    publicationAddress: int | str
+
+
+class SceneLinkRow(TypedDict, total=False):
+    """A `keyModeSceneConfigExports` row: the scene a key recalls, as the app shows it."""
+
+    sceneConfig: SceneConfigRow
+    elementAddress: int | str
+
+
 @dataclass(frozen=True)
 class RoomLink:
     """A key's room link as the app caches it (a `cachedGroupConnectionMetadata` row of `meta.devices[]`).
@@ -502,7 +559,7 @@ class RoomLink:
     function: int | None
 
     @classmethod
-    def of(cls, row: dict[str, Any]) -> RoomLink:
+    def of(cls, row: Mapping[str, Any]) -> RoomLink:
         """Read a `cachedGroupConnectionMetadata` row."""
         return cls(
             as_int(row.get("elementAddress")),
@@ -1293,10 +1350,10 @@ class ProjectFile:
         del self.cdb.groups[address]
         return changes
 
-    def room_connections(self, group: int) -> list[dict[str, Any]]:
+    def room_connections(self, group: int) -> list[RoomLinkRow]:
         """`cachedGroupConnectionMetadata` rows of every button linked to room `group`."""
         return [
-            c
+            cast("RoomLinkRow", c)
             for dev in meta_rows(self._meta("devices"))
             for c in meta_rows(meta_list(dev.get("cachedGroupConnectionMetadata")))
             if as_int(c.get("groupAddress")) == group
@@ -1332,7 +1389,7 @@ class ProjectFile:
 
     def add_room_link(
         self,
-        entry: dict[str, Any],
+        entry: DeviceRow,
         key: int,
         room: int,
         publish: int,
@@ -1658,7 +1715,7 @@ class ProjectFile:
             self.meta["keyModeSceneConfigExports"] = kept
 
     # ------------------------------------------------------------------ device names (§8.3 row 8)
-    def device_entry(self, node: Node, location: int) -> dict[str, Any] | None:
+    def device_entry(self, node: Node, location: int) -> DeviceRow | None:
         """Return the `meta.devices[]` entry covering an element location: the most specific one, as the app resolves it."""
         best: dict[str, Any] | None = None
         best_size = 0
@@ -1674,10 +1731,10 @@ class ProjectFile:
                 continue
             if location in locations and (best is None or len(locations) < best_size):
                 best, best_size = dev, len(locations)
-        return best
+        return cast("DeviceRow | None", best)
 
     @staticmethod
-    def device_locations(entry: dict[str, Any]) -> list[int] | None:
+    def device_locations(entry: DeviceRow) -> list[int] | None:
         """Return the sorted `locationIds` of a `meta.devices[]` entry; None when they are not a list of numbers."""
         return location_ids(entry.get("deviceId", {}).get("locationIds"))
 
@@ -1717,7 +1774,7 @@ class ProjectFile:
 
     def set_device_name(
         self, node: Node | int | str, locations: Iterable[int], name: str
-    ) -> dict[str, Any]:
+    ) -> DeviceRow:
         """Name the app device `(nodeId, locationIds)`: `meta.devices[].name` only, the CDB node is untouched.
 
         A device the `meta` block does not know yet gets a full entry (MAC from the EUI-64 UUID, product id from
@@ -1728,7 +1785,7 @@ class ProjectFile:
         entry = self._device_entry(n, locs)
         if entry is not None:
             entry["name"] = name
-            return entry
+            return cast("DeviceRow", entry)
         devices = self._meta("devices")
         template = _first(meta_rows(devices))
         entry = _ordered_like(
@@ -1750,7 +1807,7 @@ class ProjectFile:
             },
         )
         devices.append(entry)
-        return entry
+        return cast("DeviceRow", entry)
 
     # ------------------------------------------------------------------ nodes (review-3 N3)
     def add_node_entry(
@@ -1891,10 +1948,10 @@ class ProjectFile:
             if parse_address(str(n.get("unicastAddress", "0"))) == unicast
         )
 
-    def device_rows(self, node: Node) -> list[dict[str, Any]]:
+    def device_rows(self, node: Node) -> list[DeviceRow]:
         """Return the app device rows (`meta.devices`) of `node`: the app's logical devices of it."""
         return [
-            dev
+            cast("DeviceRow", dev)
             for dev in meta_rows(self._meta("devices"))
             if isinstance(dev.get("deviceId"), dict)
             and canonical_uuid(str(dev["deviceId"].get("nodeId", ""))) == node.uuid

@@ -56,6 +56,8 @@
   (`tools/import_graph.py`, `tests/test_layers.py`, which also keeps every module off the platform modules and
   `jhmesh` off the integration). New modules for what moved: `device_info.py` (the device model, from
   `entity.py`), `element_state.py`, `bus_events.py` (from `event.py`), `actions/dim.py` (from `light.py`).
+  `TypedDict`s describe the export's `meta` rows (`jhmesh.export.DeviceRow`, `RoomLinkRow`, `SceneLinkRow`, …),
+  a sequence-number record (`seq_store.SeqRecord`) and the diagnostics (`diagnostics.EntryDiagnostics`, …).
   Nothing changes in behaviour.
 
 ### Fixed

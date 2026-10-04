@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import re
 import time
+from collections.abc import Mapping
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from homeassistant.components import bluetooth
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
@@ -96,12 +97,92 @@ PROXY_KINDS = {
 }
 
 
+class NetworkSummary(TypedDict):
+    """The export's summary in the diagnostics (`_network`): the mesh, its public Network ID and how much it holds."""
+
+    mesh_uuid: str
+    network_id: str
+    nodes: int
+    groups: int
+    scenes: list[int]
+
+
+class LocalDiagnostics(TypedDict):
+    """Our node's state in the diagnostics (`local`): address, sequence number, IV index, the store's back-pressure."""
+
+    src: str
+    seq: int
+    iv_index: int
+    iv_update_active: bool
+    stalled_for: float | None
+    last_write_error: str | None
+    durable_headroom: int
+    address_shared: list[int] | None
+
+
+class LinkDiagnostics(TypedDict):
+    """The proxy link in the diagnostics (`link`): the node, the proxies in range, the unknown nodes, the history."""
+
+    connected: bool
+    proxy_address: str | None
+    proxy_node: str | None
+    connected_since: float | None
+    mtu: int
+    proxy_config_dropped: int
+    visible_proxies: list[dict[str, Any]]
+    unknown_nodes: list[dict[str, Any]]
+    history: list[dict[str, Any]]
+
+
+class LinkStatsDiagnostics(TypedDict):
+    """What the proxy links carried and dropped (`link_stats`, `jhmesh.stats.LinkStats` as dicts)."""
+
+    current: dict[str, Any]
+    total: dict[str, Any]
+    links: int
+
+
+class EntryDiagnostics(TypedDict):
+    """The diagnostics of a loaded entry (`async_get_config_entry_diagnostics`), node UUIDs and keys redacted."""
+
+    entry: dict[str, Any]
+    options: dict[str, Any]
+    network: NetworkSummary
+    local: LocalDiagnostics
+    link: LinkDiagnostics
+    link_stats: LinkStatsDiagnostics
+    heartbeats: dict[str, Any]
+    audit: dict[str, dict[str, Any]]
+    plans: list[dict[str, Any]]
+    carry_over_conflicts: list[str]
+    key_refresh: dict[str, Any]
+    added_devices: dict[str, Any]
+    unreachable: list[str]
+    clocks: dict[str, dict[str, Any] | None]
+    issues: list[str]
+    devices: dict[str, Any]
+    states: dict[str, dict[str, Any]]
+
+
+class UnloadedDiagnostics(TypedDict):
+    """The diagnostics of an entry that is not loaded (`_unloaded_diagnostics`): no hub, what can be had without."""
+
+    entry: dict[str, Any]
+    options: dict[str, Any]
+    state: str
+    reason: str | None
+    reason_key: str | None
+    network: NetworkSummary | dict[str, str]
+    bluetooth: dict[str, Any]
+    issues: list[str]
+
+
 def redact_paths(text: str | None) -> str | None:
     """Return `text` with every file path in it redacted: an OS error's text without the path that can name the user."""
     return None if text is None else _PATH.sub(REDACTED, text)
 
 
-def redact_node_uuids(hub: JungHomeHub, data: dict[str, Any]) -> dict[str, Any]:
+def redact_node_uuids[T: Mapping[str, Any]](hub: JungHomeHub, data: T) -> T:
     """Return `data` with the MAC half of every MAC-derived node UUID replaced by `xxxxxxxx-xxxx-<unicast>`.
 
     Applied to the finished document, so every place a UUID reaches (the node's `uuid`, `node:<uuid>` and
@@ -127,7 +208,7 @@ def redact_node_uuids(hub: JungHomeHub, data: dict[str, Any]) -> dict[str, Any]:
             return [mask(v) for v in value]
         return value
 
-    return cast("dict[str, Any]", mask(data))
+    return cast("T", mask(data))
 
 
 def _state_dict(state: ElementState) -> dict[str, Any]:
@@ -260,13 +341,13 @@ def _device_summary(hub: JungHomeHub, node: Node | None = None) -> dict[str, Any
 
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: JungHomeConfigEntry
-) -> dict[str, Any]:
+) -> EntryDiagnostics | UnloadedDiagnostics:
     """Describe the link, our node state, the export summary and the derived devices; an entry not loaded briefly."""
     if entry.state is not ConfigEntryState.LOADED:
         return await _unloaded_diagnostics(hass, entry)
     hub = entry.runtime_data
     st = hub.proxy.state
-    link = {
+    link: LinkDiagnostics = {
         "connected": hub.connected,
         "proxy_address": hub.proxy_address,
         "proxy_node": f"{hub.proxy_node:04X}" if hub.proxy_node else None,
@@ -293,75 +374,73 @@ async def async_get_config_entry_diagnostics(
         # why the last links ended, newest first (review-4 R I-9)
         "history": _link_history(hub),
     }
-    return redact_node_uuids(
-        hub,
-        {
-            "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
-            "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
-            "network": _network(hub.cdb, hub.proxy.nk.network_id),
-            "local": {
-                "src": f"{st.src:04X}",
-                "seq": st.seq,
-                "iv_index": st.iv_index,
-                "iv_update_active": st.iv_update_active,
-                # the sequence-number store's back-pressure: how long sends have been held back (None: they are
-                # not), the last write's error, and how many numbers may go out before the next hold
-                "stalled_for": hub.state.stalled_for,
-                "last_write_error": redact_paths(hub.state.last_write_error),
-                "durable_headroom": hub.state.durable_headroom,
-                # another client seen sending from our address (the open `address_shared` repair): the highest
-                # [IV index, seq] it was seen with; None when none was
-                "address_shared": None
-                if hub.state.address_shared is None
-                else list(hub.state.address_shared),
-            },
-            "link": async_redact_data(link, TO_REDACT_LINK),
-            # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`, review-4 A4-14): the current link
-            # (the last one while none is up), every link since the entry loaded, and how many links that was
-            "link_stats": {
-                "current": asdict(hub.proxy.link_stats),
-                "total": asdict(hub.proxy.total_stats),
-                "links": hub.link_count,
-            },
-            "heartbeats": _heartbeats(hub),
-            # each node's last `audit_network` result (settings and findings, no keys) since the entry loaded
-            "audit": {
-                f"{unicast:04X}": result.as_dict()
-                for unicast, result in sorted(hub.audits.items())
-            },
-            # the last calls that ran a plan, oldest first: action, outcome, messages accepted, step texts and the
-            # error key (review-4 W I7; addresses and message names, no key material)
-            "plans": list(plan_history(hass, entry.entry_id)),
-            # where the last adopted app export kept its own version over Home Assistant's (the open
-            # `carry_over_conflict` repair), UUIDs redacted
-            "carry_over_conflicts": _carry_over_conflicts(hass, entry),
-            # the followed key refresh, how far it is proven, and how far each device Home Assistant added came
-            # through it (review-4 D11: phases and Network IDs, never a key)
-            "key_refresh": hub.vault_refresh.diagnostics(),
-            # the devices Home Assistant added (`add_device`): recorded or pending, and what each offered for its
-            # provisioning and the method used (review-4 P4-8: names and flags, never a value or a key)
-            "added_devices": _added_devices(hub),
-            # nodes that left a full-budget request unanswered and were not heard from since
-            "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
-            # each node's clock offset, zone offset and stored location (compared with home, never shown) as it
-            # last answered them (`node_clocks.py`)
-            "clocks": {
-                f"{unicast:04X}": hub.clocks.diagnostics(unicast)
-                for unicast in sorted(hub.clocks.clocks)
-            },
-            "issues": _issues(hass),
-            "devices": {
-                **_device_summary(hub),
-                "scenes": [asdict(s) for s in hub.devices.scenes],
-            },
-            "states": {
-                f"{addr:04X}": _state_dict(state) for addr, state in hub.states.items()
-            },
+    data: EntryDiagnostics = {
+        "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
+        "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
+        "network": _network(hub.cdb, hub.proxy.nk.network_id),
+        "local": {
+            "src": f"{st.src:04X}",
+            "seq": st.seq,
+            "iv_index": st.iv_index,
+            "iv_update_active": st.iv_update_active,
+            # the sequence-number store's back-pressure: how long sends have been held back (None: they are
+            # not), the last write's error, and how many numbers may go out before the next hold
+            "stalled_for": hub.state.stalled_for,
+            "last_write_error": redact_paths(hub.state.last_write_error),
+            "durable_headroom": hub.state.durable_headroom,
+            # another client seen sending from our address (the open `address_shared` repair): the highest
+            # [IV index, seq] it was seen with; None when none was
+            "address_shared": None
+            if hub.state.address_shared is None
+            else list(hub.state.address_shared),
         },
-    )
+        "link": async_redact_data(link, TO_REDACT_LINK),
+        # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`, review-4 A4-14): the current link
+        # (the last one while none is up), every link since the entry loaded, and how many links that was
+        "link_stats": {
+            "current": asdict(hub.proxy.link_stats),
+            "total": asdict(hub.proxy.total_stats),
+            "links": hub.link_count,
+        },
+        "heartbeats": _heartbeats(hub),
+        # each node's last `audit_network` result (settings and findings, no keys) since the entry loaded
+        "audit": {
+            f"{unicast:04X}": result.as_dict()
+            for unicast, result in sorted(hub.audits.items())
+        },
+        # the last calls that ran a plan, oldest first: action, outcome, messages accepted, step texts and the
+        # error key (review-4 W I7; addresses and message names, no key material)
+        "plans": list(plan_history(hass, entry.entry_id)),
+        # where the last adopted app export kept its own version over Home Assistant's (the open
+        # `carry_over_conflict` repair), UUIDs redacted
+        "carry_over_conflicts": _carry_over_conflicts(hass, entry),
+        # the followed key refresh, how far it is proven, and how far each device Home Assistant added came
+        # through it (review-4 D11: phases and Network IDs, never a key)
+        "key_refresh": hub.vault_refresh.diagnostics(),
+        # the devices Home Assistant added (`add_device`): recorded or pending, and what each offered for its
+        # provisioning and the method used (review-4 P4-8: names and flags, never a value or a key)
+        "added_devices": _added_devices(hub),
+        # nodes that left a full-budget request unanswered and were not heard from since
+        "unreachable": [f"{unicast:04X}" for unicast in sorted(hub.unreachable)],
+        # each node's clock offset, zone offset and stored location (compared with home, never shown) as it
+        # last answered them (`node_clocks.py`)
+        "clocks": {
+            f"{unicast:04X}": hub.clocks.diagnostics(unicast)
+            for unicast in sorted(hub.clocks.clocks)
+        },
+        "issues": _issues(hass),
+        "devices": {
+            **_device_summary(hub),
+            "scenes": [asdict(s) for s in hub.devices.scenes],
+        },
+        "states": {
+            f"{addr:04X}": _state_dict(state) for addr, state in hub.states.items()
+        },
+    }
+    return redact_node_uuids(hub, data)
 
 
-def _network(cdb: CDB, network_id: bytes) -> dict[str, Any]:
+def _network(cdb: CDB, network_id: bytes) -> NetworkSummary:
     """Summarise the export: the mesh, the public Network ID it is known by and how much it holds."""
     return {
         "mesh_uuid": cdb.mesh_uuid,
@@ -414,13 +493,14 @@ def _link_history(hub: JungHomeHub) -> list[dict[str, Any]]:
 
 async def _unloaded_diagnostics(
     hass: HomeAssistant, entry: JungHomeConfigEntry
-) -> dict[str, Any]:
+) -> UnloadedDiagnostics:
     """Describe an entry that is not loaded (retrying, failed, set up or unloaded): no hub, so what can be had without.
 
     Its state and why (any path in the reason redacted), the Mesh Proxy nodes Bluetooth sees (MACs redacted; their
     advert's kind and whether it fits the export), the export's summary when it loads, and the open repairs.
     """
     cdb: CDB | None = None
+    network: NetworkSummary | dict[str, str]
     try:
         loaded, _devices = await hass.async_add_executor_job(
             load_network,
@@ -541,7 +621,7 @@ def _node_of(hub: JungHomeHub, identifiers: set[str]) -> Node | None:
 
 async def async_get_device_diagnostics(
     hass: HomeAssistant, entry: JungHomeConfigEntry, device: DeviceEntry
-) -> dict[str, Any]:
+) -> Mapping[str, Any]:
     """Describe the node behind a device page: composition, what we derived from it and the cached element states.
 
     Without a loaded entry there is no device model to look the node up in: the entry's own diagnostics stand in.
