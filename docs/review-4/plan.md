@@ -574,6 +574,11 @@ Dependencies (hard unless marked *soft*):
   the integration's and the tools' comments and docstrings, docstrings that restated the code trimmed; A4-18
   `describe` / `describe_config` and the tools' parsers built from tables, pinned by golden files. The `jhmesh`
   imports stay relative until the library is published on PyPI (`docs/roadmap.md`).
+- **Wave 21 (brief 64): done.** Q4-14, Q4-18 personal environment details scrubbed from docs and tests (paths,
+  host remarks, a zone, home-range test IPs, capture-looking identifiers); Q4-15 `.gitignore` covers `android/`,
+  exports anywhere, `.claude/`, `*.tmp`; D2 `tools/privacy_scan.py` with its allowlist in CI's lint job and as a
+  pre-commit hook (`--history` is run by hand: the public history's session trailers and author e-mail are the
+  maintainer's call); D1 `.pre-commit-config.yaml`; D3 `noxfile.py` mirroring the CI jobs.
 - **On-air sweep, groups A–D remote with the CLI only:** results in `docs/on-air-sweep.md`; no product failure; C1
   took outcome (b); C3 three new facts about locked loads; C6 the run-on time is never reported (a decision on
   *Switches off at*). The second pass (ledger rows, markers) waits for the maintainer's review.
@@ -584,4 +589,4 @@ Dependencies (hard unless marked *soft*):
   the roadmap and the README updated; `tests/test_brand.py` checks the images. `quality_scale.yaml` parses again
   (one unquoted comment held `: `, which no check caught).
 
-Every other finding, every low item and briefs 64 and 67 are TODO; the on-air sweep is the maintainer's.
+Every other finding, every low item and brief 67 is TODO; the on-air sweep is the maintainer's.
