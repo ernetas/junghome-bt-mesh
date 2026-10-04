@@ -378,6 +378,8 @@ Dependencies (hard unless marked *soft*):
 
 - **M1 — Observability (A4-14, brief 61).** A `jhmesh.trace` child logger and `LinkStats` change existing log record
   names and add diagnostics keys (snapshot update). Accept, or keep names and add counters only?
+  **Taken:** accepted — the `jhmesh.trace` child logger and `LinkStats`, with the renamed log records and the new
+  diagnostics keys (snapshot update), said so under *Upgrading* in the CHANGELOG.
 - **M2 — Public release (Q4-3, brief 65).** A new repository with one clean commit (noreply author, no session
   trailers) and the private one archived — recommended — or rewrite and flip this one (unreachable commits and PR refs
   stay fetchable by SHA on the existing remote).
