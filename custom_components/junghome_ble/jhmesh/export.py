@@ -377,20 +377,14 @@ def suffixed_name(name: str, names: Iterable[str]) -> str:
 
 
 def write_private(path: Path, data: bytes) -> None:
-    """Write `data` to `path` atomically, readable by the owner only (the file holds every mesh key).
-
-    Creates the directory. The target is always either its old content in full or the new one in full, never a
-    truncated or partial write, whatever crashes or loses power partway through (`fileio.atomic_write`).
-    """
+    """Write `data` to `path` atomically (`fileio.atomic_write`), readable by the owner only: it holds every key."""
     atomic_write(path, data, private=True)
 
 
 def write_private_with_backup(path: Path, data: bytes) -> None:
     """Atomically replace `path` with `data`, keeping the previous content as the newest backup (`fileio.backup_paths`).
 
-    For a target that is the only on-disk record of something (an adopted gateway export, which the config
-    flow's own `ProjectFile.save` never gets to write first) and where a plain `write_private` would otherwise
-    lose the pre-write copy for good.
+    For a target that is the only on-disk record of what it held (an adopted gateway export).
     """
     atomic_write(path, data, private=True, backup=True)
 
@@ -1074,10 +1068,7 @@ class ProjectFile:
         return {a: n for a, n in self.cdb.groups.items() if is_room(a, n)}
 
     def used_group_addresses(self) -> set[int]:
-        """Every address the export uses as a group anywhere, whether or not the CDB lists the group.
-
-        `group_addresses_in_use` on this file's CDB and `meta`.
-        """
+        """Every address the export uses as a group anywhere, whether or not the CDB lists the group."""
         return group_addresses_in_use(self.cdb, self.meta)
 
     def _policy(self, kind: str, policy: Allocation | None) -> Allocation:

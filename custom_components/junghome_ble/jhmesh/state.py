@@ -426,14 +426,7 @@ class LocalState:
             self._write(self.path, self.to_stored())
 
     def _write(self, path: Path, data: dict[str, Any]) -> None:
-        """Write `data` to `path` atomically and owner-only (`fileio.atomic_write`): a temp file, fsynced, renamed over.
-
-        `os.replace` alone only guarantees a reader never observes a torn file; without an fsync first, a
-        crash right after the rename can still leave the new name pointing at content the filesystem never
-        wrote out to disk (the delayed-allocation behaviour that made the old truncate-then-write pattern
-        leave an empty file after a power loss, one rename later). Owner-only because the record holds the new
-        NetKey while a key refresh is followed (`to_stored`); the umask's mode left it world-readable.
-        """
+        """Write `data` to `path` atomically (`fileio.atomic_write`), owner-only: it holds a key refresh's NetKey."""
         atomic_write(path, json.dumps(data).encode(), private=True)
 
     def _backup(self, force: bool = False) -> None:

@@ -819,13 +819,9 @@ async def _mesh_uuid_taken(
 ) -> bool:
     """Return True when another entry already belongs to this mesh (by mesh UUID, which survives a key refresh).
 
-    The unique id is the mesh UUID too, but an entry whose export could not be read at its migration
-    still holds the Network ID it had before: without this check, fetching or uploading the same mesh's export
-    through "Add integration" instead of the existing entry's Reconfigure would create a second entry for it. Two
-    entries sharing a mesh would then also share its sequence-number store (`seq_store.seq_store`, keyed on the
-    mesh UUID) — each holding its own stale in-memory copy of the other addresses' records (`HAState._addresses`,
-    loaded once) and overwriting them with that stale copy on every save, which can roll a sibling entry's counter
-    backwards on its next load. One entry per mesh avoids the race outright; point the user at Reconfigure instead.
+    The unique id is the mesh UUID too, but an entry whose export could not be read at its migration still holds
+    its old Network ID. Two entries of one mesh would share its sequence-number store, each overwriting the other's
+    records with a stale copy, which can roll a counter back: the user is pointed at Reconfigure instead.
     """
     for entry in hass.config_entries.async_entries(DOMAIN):
         if (
@@ -841,10 +837,7 @@ async def _mesh_uuid_taken(
 async def _async_keep_incoming(
     hass: HomeAssistant, incoming: Path, data: dict[str, Any], cdb: CDB
 ) -> None:
-    """Give a validated fetched/uploaded export its final name and point the entry data at it.
-
-    The export it replaces, if any, is kept beside it (`pre_reconfigure_path`).
-    """
+    """Give a validated fetched/uploaded export its final name (`_replace_keeping`); point the entry data at it."""
     final = export_path(hass, cdb.mesh_uuid)
     await hass.async_add_executor_job(_replace_keeping, incoming, final)
     data[CONF_CDB_PATH] = str(final)

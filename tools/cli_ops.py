@@ -964,11 +964,7 @@ def roundtrip_export(path: Path) -> tuple[str, list[str]]:
 
 
 def write_private(path: Path, text: str) -> None:
-    """Write `text` to `path` readable by the owner only (0600), whatever the umask: an export holds every mesh key.
-
-    Atomic (the library's writer: a temporary file renamed over the target), so an interrupted write never leaves
-    a truncated export behind.
-    """
+    """Write `text` to `path` atomically, readable by the owner only (0600): an export holds every mesh key."""
     write_private_bytes(Path(path), text.encode())
 
 

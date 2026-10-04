@@ -865,7 +865,7 @@ class JungHomeHub:
             self.vault_refresh.task = None
         finally:
             # always reached, even if one of the cancels above still raised: an unclosed link keeps holding a
-            # connection slot, and an unclosed counter keeps persisting into the shared store forever (HAC-04)
+            # connection slot, and an unclosed counter keeps persisting into the shared store forever
             try:
                 await asyncio.wait_for(self.proxy.detach(), STOP_TIMEOUT)
             except TimeoutError:

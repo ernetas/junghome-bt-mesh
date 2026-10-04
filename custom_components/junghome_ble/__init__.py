@@ -151,7 +151,7 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Bring an entry up to the flow's version: 1.2 names its `CONF_SOURCE` (HAC-07), 1.3 its unique id the mesh UUID.
+    """Bring an entry up to the flow's version: 1.2 names its `CONF_SOURCE`, 1.3 its unique id the mesh UUID.
 
     Entries from before `CONF_SOURCE` had none, and the places that branch on it disagreed about them: an old
     gateway entry never refreshed its export for an unknown node, and removing an old gateway or upload entry left
@@ -204,7 +204,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
 
     # Before the not-ready check below, which can retry indefinitely without ever reaching
     # JungHomeHub.async_create (no proxy seen yet is common right after a restart): an entry stuck there must
-    # still migrate its 0.2 per-entry store, or removing it while stuck strands that record (HAC-06).
+    # still migrate its 0.2 per-entry store, or removing it while stuck strands that record.
     await async_migrate_legacy_seq_store(hass, entry, cdb.mesh_uuid)
 
     # a key refresh completed since the export was made: its new key, which the hub followed
@@ -314,11 +314,8 @@ async def _async_entry_updated(hass: HomeAssistant, entry: JungHomeConfigEntry) 
     """Reload the entry when its options or the data the running hub was built from changed.
 
     Home Assistant wants the update listener to do the reloading (a flow that reloads next to a listener is
-    deprecated), so the reconfigure flow only updates the entry and leaves the reload to this listener for a
-    loaded entry (`config_flow._async_finish_checked` reloads the others itself). The listener is registered by a
-    successful setup and removed with the unload, so it runs for a loaded entry; the hub compares the entry with
-    what it started from (`JungHomeHub.needs_rebuild`), so a new title or gateway token / fingerprint changes
-    nothing.
+    deprecated): the reconfigure flow only updates a loaded entry. A new title or gateway token / fingerprint is
+    not what the hub was built from (`JungHomeHub.needs_rebuild`) and changes nothing.
     """
     if (
         entry.state is ConfigEntryState.LOADED
@@ -346,7 +343,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     instead of reusing nonces the nodes have already seen. An entry whose setup never reached
     `JungHomeHub.async_create` (SETUP_RETRY, SETUP_ERROR) never migrated its own 0.2 per-entry store into the
     mesh's, so that has to happen here too — before the export is deleted below, since a gateway/upload entry's
-    CDB file is the fallback this uses to find the mesh UUID (HAC-06).
+    CDB file is the fallback this uses to find the mesh UUID.
     """
     # a pending retry of a failed upload outlives reloads (`ExportStore._upload_or_retry`), not the entry
     cancel_upload_retry(hass, entry.entry_id)

@@ -1170,6 +1170,7 @@ class SubCommand:
 def add_sub_commands(
     parser: argparse.ArgumentParser, dest: str, commands: tuple[SubCommand, ...]
 ) -> None:
+    """Add `commands` to `parser`, the chosen one's name stored under `dest`, and their own sub-commands."""
     sub = parser.add_subparsers(dest=dest, required=True)
     for command in commands:
         # a sub-command without help is not listed with an empty one

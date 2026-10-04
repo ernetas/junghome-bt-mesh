@@ -160,11 +160,7 @@ class NodeInserts:
         self._late: set[int] = set()
 
     async def async_setup(self) -> None:
-        """Take what the nodes reported before the devices are registered: the cached adverts, earlier answers.
-
-        A push-button whose export has no InsertId gets the load class of the insert it advertised or answered
-        (`apply_reported`); the insert and layout names are loaded in Home Assistant's language.
-        """
+        """Take what the nodes reported (cached adverts, earlier answers) before the devices are registered."""
         hub = self.hub
         self.adverts.update(node_adverts(hub.hass, hub.cdb))
         hub.devices = apply_reported(hub.cdb, hub.devices, self.adverts, hub.node_info)

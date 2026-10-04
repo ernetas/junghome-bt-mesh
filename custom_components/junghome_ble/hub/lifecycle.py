@@ -54,7 +54,7 @@ TASKS = (
 
 
 async def async_cancel_task(task: asyncio.Task[None] | None) -> None:
-    """Cancel `task` and wait for it, without raising an error it had already failed with (HAC-04).
+    """Cancel `task` and wait for it, without raising an error it had already failed with.
 
     `cancel()` is a no-op on a task that is already done; a task that finished with an exception before we
     got here then re-raises it from `await task`, which is not an error this cancel caused and was never

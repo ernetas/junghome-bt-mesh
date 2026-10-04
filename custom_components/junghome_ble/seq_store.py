@@ -157,26 +157,13 @@ class SeqStore(Store[dict[str, Any]]):
 
 
 def seq_store_for_uuid(hass: HomeAssistant, mesh_uuid: str) -> SeqStore:
-    """Return the sequence-number store of a mesh, keyed by its (lower-cased) UUID directly.
+    """Return the sequence-number store of a mesh, keyed by its (lower-cased) UUID, for callers without a `CDB`.
 
-    `seq_store` is the usual way in (it has a `CDB` to read the UUID from); this one is for the few callers that
-    only have the UUID itself — `async_migrate_legacy_seq_store` runs before a hub, and so before a `CDB`, exists.
-
-    One `Store` object per mesh UUID for the life of `hass` (cached in `SEQ_STORES`), not a fresh one per call:
-    the config flow refuses a second entry for an already-configured mesh (`_mesh_uuid_taken`), but an
-    installation upgraded from before that check — or a store edited by hand — could still have two live hubs
-    for one mesh. `Store` never lets an older *scheduled* write clobber a newer one (a single pending-write slot,
-    consumed once: see `homeassistant.helpers.storage.Store._async_handle_write_data`), but only within one
-    object; two separate `Store` instances for the same key share none of that and would each queue its own
-    write, the two racing to be the one the OS actually wrote last. Sharing the object at least serialises the
-    two through the same slot; it does not make `HAState` aware of a sibling's address (`_addresses` is a
-    snapshot taken when the hub was built, never refreshed — the guards against that are `_mesh_uuid_taken`, one
-    entry per mesh, and `_refuse_duplicate_mesh`, one running hub per mesh, not anything here).
-
-    `atomic_writes=True` (HA's `write_utf8_file_atomic`) fsyncs the temp file and the directory before the
-    rename, unlike the default writer — the same reasoning as `LocalState._write`'s own atomic write. `private=True`
-    keeps it owner-only (0600; HA writes 0644 otherwise): a record holds the new NetKey while a key refresh is
-    followed (`LocalState.to_stored`). The `.backup` and `.floor` stores are created the same way.
+    One `Store` object per mesh UUID for the life of `hass` (`SEQ_STORES`): `Store` keeps an older scheduled write
+    from clobbering a newer one only within one object, and two live hubs of one mesh (an installation from before
+    `_mesh_uuid_taken`) would otherwise race their writes. `atomic_writes=True` fsyncs before the rename;
+    `private=True` keeps it owner-only, as a record holds the new NetKey while a key refresh is followed. The
+    `.backup` and `.floor` stores are created the same way.
     """
     stores = hass.data.setdefault(SEQ_STORES, {})
     key = mesh_uuid.lower()
@@ -651,11 +638,8 @@ def _report_seq_store_lost(
 def _tx_rank(record: Mapping[str, Any]) -> tuple[int, int]:
     """(transmit IV index, seq) of a stored record, for ranking which of two is further along.
 
-    The transmit index is `iv_index - 1` while `iv_update_active` — nodes keep sending with the old index
-    during an update — so ranking by the stored `iv_index` alone can prefer a record that is actually behind:
-    `{iv_index: 5, iv_update_active: True, seq: 100}` (transmits under IV 4) would outrank
-    `{iv_index: 5, iv_update_active: False, seq: 50}` (transmits under IV 5) even though the second is the one
-    further along.
+    The transmit index is `iv_index - 1` while `iv_update_active`: ranked by the stored `iv_index` alone, a record
+    still sending under the old index would outrank one that is further along.
     """
     iv = int(record.get("iv_index", 0))
     return (iv - 1 if record.get("iv_update_active") else iv, int(record.get("seq", 0)))
@@ -684,7 +668,7 @@ async def async_migrate_legacy_seq_store(
     """Fold a 0.2 per-entry sequence-number store (`junghome_ble.<entry_id>`) into its mesh's store, then remove it.
 
     Called from `async_setup_entry` right after `load_network` succeeds, before the not-ready check that can
-    retry indefinitely without ever reaching `JungHomeHub.async_create` (HAC-06: an entry stuck in that retry
+    retry indefinitely without ever reaching `JungHomeHub.async_create` (an entry stuck in that retry
     never migrated, and removing it then stranded the legacy record — the very record a remove-and-re-add is
     supposed to preserve through `seq_store`); `async_create` also calls it, a no-op by the time it does; and
     `async_remove_entry` calls it too, so an entry that never got this far still migrates before its data is
@@ -800,7 +784,7 @@ class HAState(LocalState):
         `super().__init__` runs `persist()` for the first time, makes this the one `HAState` allowed to write —
         a reload can start a successor while `JungHomeHub.async_stop` is still finishing an old one behind it
         (`ConfigEntry._async_process_on_unload`'s 10 s wait does not block the reload), and the old one's
-        `persist()`/`async_close()` must not overwrite what the new one has already sent (HAC-02). `entry_id`
+        `persist()`/`async_close()` must not overwrite what the new one has already sent. `entry_id`
         names the config entry whose hub this is: a successor must be of the same entry (`JungHomeHub.async_create`
         refuses another entry's hub for a mesh that already has a running one).
         """
@@ -855,7 +839,7 @@ class HAState(LocalState):
         )
 
     def _owns_the_store(self) -> bool:
-        """Whether this is still the mesh's current `HAState` (HAC-02): a superseded one must never write again."""
+        """Whether this is still the mesh's current `HAState`: a superseded one must never write again."""
         return self._store.hass.data.get(SEQ_OWNERS, {}).get(self._key) is self
 
     def load(self) -> dict[str, Any] | None:
@@ -886,7 +870,7 @@ class HAState(LocalState):
         single pending-write slot), but neither hub's `_addresses` ever learns the other moved: one running hub
         per mesh (`_refuse_duplicate_mesh`) is what actually avoids the race, not this store.
 
-        A no-op once a successor `HAState` has taken over `_key` (HAC-02): the only numbers this instance has
+        A no-op once a successor `HAState` has taken over `_key`: the only numbers this instance has
         not itself persisted are fewer than `SEQ_SAVE_EVERY` plus whatever was in flight, all below what the
         successor loaded (it added `SEQ_RESTART_MARGIN`), so silently dropping this write is safe.
         """
@@ -1015,14 +999,14 @@ class HAState(LocalState):
         return (self.tx_iv_index, 0) if point is None else point
 
     def reserve_seq(self, count: int) -> int:
-        """Refuse to hand out numbers a restart could not tell were already used (HAC-05).
+        """Refuse to hand out numbers a restart could not tell were already used.
 
         `LocalState.reserve_seq` alone assumes every number it hands out is durably written soon after; nothing
         enforced that here, so a stalled or failing store write let sends run arbitrarily far ahead of what a
         restart would actually load, reusing nonces once it did. Retried every `SEQ_STALL_RETRY` seconds instead
         of once, because the immediate save this forces is itself async — see `persist`.
 
-        A superseded `HAState` (HAC-02) refuses outright: it can no longer persist what it hands out, and `_limit`
+        A superseded `HAState` refuses outright: it can no longer persist what it hands out, and `_limit`
         reads the shared store's `written`, which the successor keeps advancing into the numbers it sends with.
 
         The first refusal since a number was last handed out starts a stall (`stalled_for`), which `stall_listener`
@@ -1072,7 +1056,7 @@ class HAState(LocalState):
         Without it a store that never lands a write (a full disk, an SD card remounted read-only) only showed as
         `pdus_dropped` once the proxy filter went unanswered, and that repair's skip-ahead cannot be written either.
         A store that caught up meanwhile, with nothing sent since, ends the stall here instead; a superseded
-        `HAState` (HAC-02) reports nothing, its successor has the store now.
+        `HAState` reports nothing, its successor has the store now.
         """
         if self._stalled_since is None or not self._owns_the_store():
             return
@@ -1220,7 +1204,7 @@ class HAState(LocalState):
     async def async_close(self) -> None:
         """Write the counter now, marked cleanly closed: the next load of this address needs no restart margin.
 
-        A no-op once superseded (HAC-02): a slow `async_stop` finishing after a reload's successor has already
+        A no-op once superseded: a slow `async_stop` finishing after a reload's successor has already
         started must not write its own, now-stale, counter over the successor's — see `persist`.
         """
         if not self._owns_the_store():
@@ -1256,7 +1240,7 @@ class HAState(LocalState):
         """Write both copies now and wait for the writes (the backup hooks: `backup.py`).
 
         `_closed` is left as it is — a hub stopped before the backup keeps its record `clean` — and a superseded
-        `HAState` writes nothing (HAC-02).
+        `HAState` writes nothing.
         """
         if not self._owns_the_store():
             return

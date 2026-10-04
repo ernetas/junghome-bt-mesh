@@ -394,11 +394,7 @@ class CDB:
 
     @staticmethod
     def parse(text: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
-        """Accept both export flavours.
-
-        The raw nRF Mesh CDB (`{"meshNetwork": …}`, iOS app container) and the app's "share via file"
-        `JungHome.json` (`{"version", "meta", "network": "<Base64 CDB JSON>"}`).
-        """
+        """Accept both export flavours: the raw nRF Mesh CDB and the app's "share via file" `JungHome.json`."""
         net, meta, _doc, _inner = CDB.parse_document(text)
         return net, meta
 

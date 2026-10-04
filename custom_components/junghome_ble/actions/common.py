@@ -225,7 +225,7 @@ async def _run(
         except BaseException as err:
             _report_plan(hass, entry_id, configurator, err)
             # a stopped plan raises after recording what the mesh accepted, and so does a cancelled one: the
-            # device model must follow the export all the same (CFG-15), still under the lock — the cancellation
+            # device model must follow the export all the same, still under the lock — the cancellation
             # (or the error) goes on once the model followed
             if configurator.recorded:
                 await _follow(hass, entry_id, reload=reload, scenes=scenes)

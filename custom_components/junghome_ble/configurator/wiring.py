@@ -335,7 +335,7 @@ def app_copy_path(cdb_path: str | Path) -> Path:
 def pre_adopt_path(cdb_path: str | Path) -> Path:
     """Where the export is kept as it was before the last adoption of the gateway's export (`<export>.pre-adopt`).
 
-    Review-3 W7: an adoption replaces Home Assistant's copy wholesale (with its changes carried over, but a
+    An adoption replaces Home Assistant's copy wholesale (with its changes carried over, but a
     merge can be wrong), and the change planned on it usually saves right after — the rotating backups of the
     saves soon pass the copy by. This one stays until the next adoption.
     """
@@ -796,11 +796,7 @@ def scene_link_group(pf: ProjectFile, key: Element) -> int | None:
 def record_scene_link(
     pf: ProjectFile, key: int, number: int, publication: int | None
 ) -> None:
-    """Store the `keyModeSceneConfigExports` row that makes the app show the key as recalling scene `number`.
-
-    `ProjectFile.record_scene_link`: no transition as the app writes it, the key's earlier row replaced, an
-    existing row's style mirrored.
-    """
+    """Store the `keyModeSceneConfigExports` row that makes the app show the key as recalling scene `number`."""
     pf.record_scene_link(key, number, publication)
 
 

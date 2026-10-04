@@ -698,7 +698,7 @@ class ExportStore:
     ) -> tuple[str, int, list[Change]]:
         """Blocking: put Home Assistant's changes onto the gateway's export `text`; (result, applied, conflicts).
 
-        Review-3 W1: the app uploads its whole project after every change but never downloads one, so its upload
+        The app uploads its whole project after every change but never downloads one, so its upload
         lacks what Home Assistant changed since — which the nodes still hold. The changes are the difference
         between the app's previous upload (`app_copy_path`) and the file on disk; `jhmesh.merge` applies them
         to the new upload, and a change the app overrode meanwhile (its Config messages went out later) is left
@@ -1366,13 +1366,9 @@ class ExportStore:
             return adopted
 
     async def async_current_export(self) -> ProjectFile:
-        """Return the export as a change would plan on it now, for a plan made outside the configurator (`add_device`).
+        """Return the export as a change would plan on it now (`load`), for a plan made outside the configurator.
 
-        What `load` reads, under the lock: the gateway's export when only it changed since Home Assistant last
-        synced (adopted — `recorded` / `adopted` then tell `actions.common._run` to follow it even if the call fails
-        later), refused when both sides changed, else the copy on disk; with the provisioner identity on, the vault's
-        nodes merged in. The running hub's CDB is the export as the hub last took it over, which misses what the app
-        added since.
+        The running hub's CDB is the export as the hub last took it over, which misses what the app added since.
         """
         async with self.lock:
             return await self.load()

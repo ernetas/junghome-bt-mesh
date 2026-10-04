@@ -884,13 +884,9 @@ def meter_element(node: Node) -> Element | None:
     """Return the node's meter: its first Sensor Server element, on any product but a detector or a thermostat.
 
     What the composition shows, not a product list: the metering socket (0x0003) has it on an element of its own
-    at location 0x0040 (`docs/hidden-features.md` §1: Sensor Server, the SIG property servers with the energy
-    counters, an OnOff client for its thresholds), the plain socket (0x000C) has none. The energy puck (0x0010)
-    measures its output too (`docs/android/properties.md` §4: the app's `MeasureLampDevice` reads Sensor 0x0081,
-    SIG 0x006A and the charts 0x5010 / 0x5011); where its Sensor Server sits is unverified on air (no puck seen),
-    so it counts at any key location (>= 0x0040), as the socket's does. A Sensor Server on a load element (below
-    0x0040) is no meter: it would otherwise meter the primary load of any node that has one. A detector's Sensor Server is the detector (`_is_detector`), an RTR's its room
-    temperature: neither measures a load. The gateway has a Sensor *client* only.
+    at location 0x0040 (`docs/hidden-features.md` §1), the plain socket (0x000C) has none. Where the energy puck's
+    (0x0010) sits is unverified on air, so any key location (>= 0x0040) counts. A Sensor Server on a load element
+    is no meter, a detector's is the detector and an RTR's its room temperature.
     """
     if node.pid in DETECTOR_PIDS or node.pid in THERMOSTAT_PIDS:
         return None
