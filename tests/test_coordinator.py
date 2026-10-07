@@ -433,6 +433,25 @@ async def test_initial_connection_and_refresh(
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
 
 
+async def test_the_hub_keeps_the_sources_and_groups_heard(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 S5-4: what a new device's addresses and element groups keep clear of besides the export and the
+    vault — every source heard (the replay list, this run's, the nodes last seen) and every group a message went to."""
+    hub = hub_of(init_integration)
+    fake_link.inject(LIGHT_SWITCH, 0xC061, onoff_status(True))
+    fake_link.inject(LIGHT_SWITCH, hub.proxy.state.src, onoff_status(True))
+    await hass.async_block_till_done()
+    assert 0xC061 in hub.heard_groups
+    assert hub.proxy.state.src not in hub.heard_groups
+    hub.last_seen[0x7F00] = dt_util.utcnow()
+    hub.proxy.state.rpl[0x7F10] = (0, 5)
+    assert {LIGHT_SWITCH, 0x7F00, 0x7F10} <= hub.heard_sources()
+    del hub.proxy.state.rpl[0x7F10]
+
+
 async def test_an_unchanged_status_writes_no_state(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
@@ -515,7 +534,15 @@ async def test_sequence_number_survives_a_reload(
     await hass.async_block_till_done()
     saved = hass_storage[SEQ_STORE_KEY]["data"]["addresses"]
     assert set(saved) == {"0D00"}
-    assert {k: v for k, v in saved["0D00"].items() if k != "rpl"} == {
+    assert (
+        saved["0D00"]["send_rate"]["sent"] == seq
+    )  # every number handed out counts (review-5 S5-1)
+    assert isinstance(saved["0D00"]["written_at"], float)
+    assert {
+        k: v
+        for k, v in saved["0D00"].items()
+        if k not in ("rpl", "written_at", "send_rate")
+    } == {
         "seq": seq,
         "iv_index": 0,
         "iv_update_active": False,
@@ -1179,7 +1206,9 @@ async def test_iv_update_beacon_through_the_hub_persists_the_restart(
     assert (state.tx_iv_index, state.seq) == (1, 0)
     await hass.async_block_till_done()
     stored = hass_storage[SEQ_STORE_KEY]["data"]["addresses"]["0D00"]
-    assert {k: v for k, v in stored.items() if k != "rpl"} == {
+    assert {
+        k: v for k, v in stored.items() if k not in ("rpl", "written_at", "send_rate")
+    } == {
         "seq": 0,
         "iv_index": 1,
         "iv_update_active": False,

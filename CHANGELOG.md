@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.5.0 (unreleased)
+
+### Fixed
+
+- **A restored backup skips by how much Home Assistant sends, not a fixed 2^20** (review-5 S5-1). A Home Assistant
+  backup restored months later continued 2^20 numbers past its sequence-number record, whatever its age — but the
+  integration's own traffic outruns that within months (the energy poll alone sends about 420 000 numbers a year per
+  metering socket; every unreachable device gets a heartbeat setting about 263 000 times a year), so an old backup
+  reused nonces and the devices ignored Home Assistant. Every record now keeps when it was written and how many
+  numbers its address sends a day, and the backup's mark keeps when the backup began; a restore continues twice that
+  rate for every day of the backup's age, at least 2^20. One that would pass the end of the sequence numbers is no
+  longer capped quietly: Home Assistant sends nothing under that IV index and the new repair issue *Restored backup
+  too old for the JUNG HOME mesh …* says to start an IV Update or use a new address. A record of an older version
+  (no write time) continues 2^22; a clock behind the record's time keeps the entry from starting until it is set.
+  The diagnostics show the rate per address and how many days a restore skip covers (`local.send_rates`).
+  Unverified on air.
+- **A device added after a backup is not given away again after its restore** (review-5 S5-4). A restore rolls the
+  device vault and the export back together, so a device Home Assistant added after the backup was in neither, and
+  the next `add_device` picked exactly its addresses. A new device now keeps clear of every source heard on the mesh
+  (the replay list, the sources heard since the start, the devices last seen — with, below a source nobody knows, as
+  many addresses as the largest device has elements) and of every group address heard since the start, on top of
+  the export and the vault. What a restore rolls back is documented.
+- **Nothing left of the sequence-number store starts 2^22 in** (review-5 S5-5). With the store, its `.backup` and
+  its `.floor` all gone but the export or the vault saying the address was used, the counter started 2^20
+  from 0 — outrun within a year on an installation that stays at one IV index. It starts 2^22 in, as the *sequence
+  numbers lost* repair does with nothing left.
+
 ## 1.4.1 (unreleased)
 
 ### Changed

@@ -1126,6 +1126,21 @@ class RefusingFrom(FreshNodes):
         return super().__call__(node, access)
 
 
+def block_clear_of_what_is_heard(hub: JungHomeHub, heard: int, count: int) -> int:
+    """Where a new node of `count` elements goes once the block at `heard` is heard on air (review-5 S5-4).
+
+    Sources heard there — a node neither the export nor the vault knows, as after a restored backup — keep that
+    block, and the addresses its node may have below it, from being handed out.
+    """
+    avoided = onboard._heard_unicasts(hub, hub.cdb, set())
+    assert set(range(heard - count + 1, heard + count)) <= avoided
+    block = free_unicast_block(
+        hub.cdb, count, avoid=[hub.proxy.state.src, *avoided], own=hub.vault.own_uuid
+    )
+    assert block is not None
+    return block
+
+
 def learn_new_nodes(hub: JungHomeHub, fake_link: FakeProxyLink) -> list[dict[int, Any]]:
     """Let the fake mesh learn each node the hub makes known; return the replay list as it was at each such call."""
     add = hub.proxy.add_node
@@ -1252,9 +1267,10 @@ async def test_a_pending_node_keeps_its_addresses_and_element_groups(
     k: int,
 ) -> None:
     """The reviewers' repro: device A is provisioned, then its commissioning is refused at step k; device B added
-    next gets other addresses and other element groups (before, both got the same block and groups). What the
-    replay list held for A's new addresses (a node reset since) is gone before A answers anything, A is named by
-    the repair issue, and B's name, another device's already, is numbered as the app numbers it."""
+    next gets other addresses and other element groups (before, both got the same block and groups). A source the
+    replay list holds is no address to hand out (review-5 S5-4), what it holds for A's new addresses is gone before
+    A answers anything, A is named by the repair issue, and B's name, another device's already, is numbered as the
+    app numbers it."""
     hub = provisioning_entry.runtime_data
     template = hub.cdb.node_by_addr(TEMPLATE)
     assert template is not None
@@ -1271,6 +1287,7 @@ async def test_a_pending_node_keeps_its_addresses_and_element_groups(
     )  # far past any number the fake mesh sends
     for address in range(expected, expected + count):
         hub.proxy.state.rpl[address] = stale
+    expected = block_clear_of_what_is_heard(hub, expected, count)
     fake_link.config_reply = RefusingFrom(fake_link, k)
     with (
         patch.object(
@@ -1560,6 +1577,16 @@ async def test_reset_pending_device_forced_and_refused(
         )
 
 
+async def test_without_a_vault_the_groups_heard_are_reserved(
+    hass: HomeAssistant, provisioning_entry: MockConfigEntry
+) -> None:
+    """Review-5 S5-4: a restored backup can take the vault back to none at all; the groups heard still count."""
+    hub = provisioning_entry.runtime_data
+    with patch.object(hub.vault, "vault", None):
+        hub.heard_groups.add(0xC0F5)
+        assert onboard._reserved_groups(hub) == {0xC0F5}
+
+
 async def test_an_older_vaults_pending_node_is_warned_about(
     hass: HomeAssistant,
     provisioning_entry: MockConfigEntry,
@@ -1574,6 +1601,9 @@ async def test_an_older_vaults_pending_node_is_warned_about(
     assert vault is not None
     vault.nodes[PENDING_UUID].groups_known = False
     assert onboard._reserved_groups(hub) == {0xC0F0}
+    # and every group heard on air (review-5 S5-4: a device a restored backup took out of the vault holds its own)
+    hub.heard_groups.add(0xC0F5)
+    assert onboard._reserved_groups(hub) == {0xC0F0, 0xC0F5}
     assert "does not say which element groups it holds" in caplog.text
     assert f"{PENDING:04X}" in caplog.text
 

@@ -125,6 +125,7 @@ class LocalDiagnostics(TypedDict):
     last_write_error: str | None
     durable_headroom: int
     address_shared: list[int] | None
+    send_rates: dict[str, dict[str, Any]]
 
 
 class LinkDiagnostics(TypedDict):
@@ -404,6 +405,10 @@ async def async_get_config_entry_diagnostics(
             "address_shared": None
             if hub.state.address_shared is None
             else list(hub.state.address_shared),
+            # per address of the sequence-number store (ours live): numbers sent per day, and for a backup taken
+            # now the age up to which its restore skips only the minimum and the age past which its restore would
+            # send nothing (`seq_store.restore_coverage`; review-5 S5-1)
+            "send_rates": hub.state.send_rates(),
         },
         "link": async_redact_data(link, TO_REDACT_LINK),
         # what the proxy links carried and dropped (`jhmesh.stats.LinkStats`): the current link

@@ -1256,15 +1256,23 @@ spend.
 ### E2 · Backup and restore
 
 - **Checks:** review-4 D5 — a backup marks every sequence-number record; a start that finds a mark it did not set skips
-  2^20 numbers ahead.
+  ahead. Review-5 S5-1 — the skip is twice the address's measured send rate over the backup's age, at least 2^20; one
+  that would pass the end of the sequence space sends nothing and raises *Restored backup too old*.
 - **Needs:** Home Assistant's backups. **Stays changed:** 2^20 of the 2^24 numbers of the current IV index are spent
-  (one sixteenth); everything else changed since the backup is rolled back by the restore, not by the integration.
-- **Do:** take a backup (*Settings → System → Backups*), note the *Sequence numbers used*; switch a light a few
+  (one sixteenth; more for a backup older than *minimum_covers_days*); everything else changed since the backup is
+  rolled back by the restore, not by the integration.
+- **Do:** download the diagnostics and note `local.send_rates` of `<ha>` (numbers a day, how many days the minimum
+  covers); take a backup (*Settings → System → Backups*), note the *Sequence numbers used*; switch a light a few
   times; restore the backup.
 - **Pass:** the backup completes (the log shows the records marked, at most a 10 s wait); after the restore the log
-  warns that the record was restored from a backup and continues 2^20 past it, *Sequence numbers used* jumps by
-  about 2^20, and the lights answer at once. With the Supervisor, the same through its backup.
-- **Markers:** `custom_components/junghome_ble/backup.py::<module>`.
+  warns that the record was restored from a backup, names its age in days and continues 2^20 past it (the age is well
+  under *minimum_covers_days*), *Sequence numbers used* jumps by about 2^20, and the lights answer at once; no
+  *Restored backup too old* repair. With the Supervisor, the same through its backup. The refusal itself (a backup
+  older than *restore_covers_days*) is not checked here: it would leave Home Assistant mute until an IV Update.
+- **Markers:** `custom_components/junghome_ble/backup.py::<module>`,
+  `custom_components/junghome_ble/seq_store.py::SendRate`,
+  `custom_components/junghome_ble/seq_store.py::_async_skip_restored_record`,
+  `custom_components/junghome_ble/strings.json::issues.restore_too_old.description`.
 
 ### E3 · A new unicast address starts 2^20 in
 

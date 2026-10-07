@@ -2103,7 +2103,11 @@ Mesh Provisioning Service 0x1827): Bluetooth address, Device UUID, product id, s
    left below them) — with the option
    [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) on, inside Home Assistant's own
    range, its element groups in Home Assistant's group range — and never the addresses or element groups of a device
-   Home Assistant added before, recorded or not (see *pending devices* below). It is provisioned over PB-GATT (the
+   Home Assistant added before, recorded or not (see *pending devices* below), nor an address or group heard on the
+   mesh: any source in the replay list or heard since the start (with, below a source neither the export nor the
+   vault knows, as many addresses as the largest device of the export has elements) and any group a message heard
+   since the start went to — a restored backup takes a device added after it out of the export and the vault, but it
+   keeps sending from its addresses (review-5 S5-4). It is provisioned over PB-GATT (the
    export's NetKey and the mesh's IV state; `jhmesh.provisioning`, checked against the specification's sample
    data) with the strongest method the device offers — see *Provisioning methods* below — within the app's 30 s for
    the whole provisioning, only once a network beacon on the current Bluetooth connection confirmed that IV state (otherwise the action
@@ -2300,22 +2304,36 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   nothing under an IV index the file does not hold yet, nor 2^22 numbers past the last entry written — so the
   *sequence numbers lost* repair continues past every number sent however often both copies of the store are lost. Removing and re-adding the integration, or changing the address away and back, continues
   the counters, so no number is ever reused. **A Home Assistant backup** is safe to restore (unverified on air): while
-  a backup is taken the integration marks every record of the store and waits — at most 10 s, never failing the
-  backup — until both copies on disk carry the mark, and removes it once the backup is done. A start that finds a mark
+  a backup is taken the integration marks every record of the store, with the time the backup began, and waits — at
+  most 10 s, never failing the backup — until both copies on disk carry the mark, and removes it once the backup is
+  done. Every record also keeps when it was written and how many numbers its address sends a day (measured over days
+  of Home Assistant running; until an hour of sending is measured, 32 768 a day is assumed). A start that finds a mark
   it did not set itself (the backup was restored, or Home Assistant stopped during one) logs *The sequence-number
-  record of address … was restored from a backup, or Home Assistant stopped during one* and continues 2^20 numbers
-  past the record — everything sent since the backup, up to a million messages — and keeps counting on, rather than
-  restarting at 0, under every IV index up to one past the network's index the first beacon names (the numbers sent
-  since may have gone out under a newer index than the record's). A restore costs 2^20 of the 2^24 numbers of the IV
-  index, once (so does a Home Assistant that stopped during a backup, at its next start): nothing on disk says how
-  many numbers went out after the backup, so the skip has to cover a generous worst case. The floor is written first,
-  so a later loss of the store still knows them. Supervisor backups call the same hooks (`backup/start` and
-  `backup/end`). Not
-  covered: restoring the same backup a second time, or an older backup after a newer one (nothing outside the
-  restored files remembers the first restore: the second continues from the same point and repeats what the first
-  sent); a mesh whose entry was not loaded at all since Home Assistant started (nothing marks its records); a backup
-  whose store writes did not land (logged: *… was not written before the backup*); and more than 2^20 numbers sent
-  between the backup and the restore. In those cases give Home Assistant a new address (Reconfigure) after the
+  record of address … was restored from a backup (… days old), or Home Assistant stopped during one* and continues
+  past the record by twice what the address sends in a day for every day of the backup's age, at least 2^20 numbers
+  — everything sent since the backup even if the rate doubled — and keeps counting on, rather than restarting at 0,
+  under every IV index up to one past the network's index the first beacon names (the numbers sent since may have
+  gone out under a newer index than the record's). A fixed 2^20 was outrun within months by Home Assistant's own
+  traffic (review-5 S5-1): the energy poll alone sends about 420 000 numbers a year per metering socket, and every
+  unreachable device gets a heartbeat setting about 263 000 times a year. A restore costs at least 2^20 of the 2^24
+  numbers of the IV index, once (so does a Home Assistant that stopped during a backup, at its next start). When the
+  skip would pass the end of the sequence numbers, Home Assistant goes to the end instead and sends nothing under
+  that IV index: the repair issue [*Restored backup too old*](#repair-issue-restored-backup-too-old-for-the-jung-home-mesh-)
+  says so. A record an older version wrote (no write time) continues 2^22 numbers on; a clock behind the record's
+  time keeps the entry from starting (retried) until it is set. The diagnostics show, per address, the numbers a day
+  and, for a backup taken now, the age up to which its restore costs only the 2^20 and the age past which it would
+  be refused (`local.send_rates`: `numbers_per_day`, `minimum_covers_days`, `restore_covers_days`). The floor is
+  written first, so a later loss of the store still knows the numbers. Supervisor backups call the same hooks
+  (`backup/start` and `backup/end`). A restore also rolls back the device vault and the export: a device Home
+  Assistant added after the backup is in neither any more — its device key is gone, so it has to be reset by hand
+  and added again — and Home Assistant gives no new device an address or element group it heard on the mesh since it
+  started (see [Adding devices](#actions-adding-and-removing-devices-experimental)). Not covered: restoring the same backup a second
+  time, an older backup after a newer one, or one taken before a *sequence numbers lost* or *devices ignore Home
+  Assistant* repair skipped ahead (nothing outside the restored files remembers the first restore or the skip: the
+  second start repeats numbers); a mesh whose entry was not loaded at all since Home Assistant started (nothing marks
+  its records); a backup whose store writes did not land (logged: *… was not written before the backup*); and a
+  send rate more than doubled since the backup. In those cases give Home Assistant a new address (Reconfigure) after
+  the
   restore. If the file is deleted or a copy of the configuration directory taken some other way is restored, the
   mesh will ignore Home Assistant's commands until the address is changed. The integration notices
   this on every connection — the proxy node itself drops the filter request the link starts with and never answers it
@@ -2328,7 +2346,8 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   immediately with a fresh sequence-number space if the store has never seen it. When something says the address may
   have sent before — the export has Home Assistant's provisioner node or any node there, the vault keeps Home
   Assistant's identity in this mesh, or the store knows other addresses (as it does after any earlier address) — the
-  numbers start 2^20 in rather than at 0, and pending the first beacon they keep counting under its index (the log
+  numbers start 2^20 in rather than at 0 — 2^22 when the store, its `.backup` and the `.floor` are all gone (review-5
+  S5-5: nothing bounds what was sent then) — and pending the first beacon they keep counting under its index (the log
   says *Address XXXX has no sequence-number record, but …*): a lost record of that address no longer leaves the
   devices ignoring Home Assistant until the *devices ignore Home Assistant* repair. It costs 2^20 of the 2^24 numbers
   of the IV index once, also on an address that really is new; unverified on air. An address another client uses is
@@ -2669,6 +2688,21 @@ land the repair aborts and nothing changes. Do not restore the store from a back
 number sent since it was taken (see *The sequence-number store must be kept* under
 [Known limitations](#known-limitations)).
 
+### Repair issue "Restored backup too old for the JUNG HOME mesh …"
+
+Home Assistant was restored from a backup, and the numbers its address may have sent since the backup was taken —
+twice its measured send rate (the diagnostics' `local.send_rates`) for every day of the backup's age — reach past the
+end of the sequence numbers of the current IV index (review-5 S5-1). Rather than cap the skip there quietly and reuse
+numbers the devices already saw, the counter is set to the end: Home Assistant sends nothing to the mesh (the link
+stays up to learn the IV index from the proxy's beacons), and the log says how old the backup was and at what rate the
+address sends. Two ways on: an IV Update — start one with [`start_iv_update`](#actions-iv-update) (it cannot be undone;
+Home Assistant sends again once the mesh is at an IV index it cannot have sent under, and since the restored record
+keeps counting up to one past the index the first beacon names, that can take two updates in a row, 96 hours or more
+apart) — or a unicast address Home Assistant has never used, under *Reconfigure*. Do not restore the store from
+another copy. The issue persists across restarts and clears itself once Home Assistant's counter is below the end
+again (checked with the sequence space, every 10 minutes). Unverified on air: a restore that old has not been tried on
+this installation.
+
 ### Repair issue "JUNG HOME mesh sequence numbers running low"
 
 A sender of the mesh — a device, the app or Home Assistant, named in the issue — has used three quarters of the
@@ -2903,7 +2937,10 @@ paths and Bluetooth addresses are redacted), a summary of the network (mesh UUID
 number and IV index (with the last IV Update under `iv_update` — who started it, Home Assistant or a beacon, when,
 whether the mesh confirmed one Home Assistant started, and when normal operation is due —, how long the
 sequence-number store has held sends back, its last write error and how many
-numbers may go out before the next hold; the file path in that error is redacted, the error itself kept), the link
+numbers may go out before the next hold; the file path in that error is redacted, the error itself kept; and per
+address of the sequence-number store under `send_rates`: the numbers sent a day, and for a backup taken now the age in
+days up to which its restore costs only 2^20 numbers and the age past which it would be refused — see *The
+sequence-number store must be kept* under [Known limitations](#known-limitations)), the link
 state (connected node, MTU, connection time, visible proxy nodes), under `link_stats` what the current link (the last
 one while none is up) and every link since the entry loaded carried and dropped — PDUs sent (`tx`) and received
 (`rx`), access messages decoded (`messages`) and those addressed to Home Assistant (`messages_to_us`), PDUs the keys

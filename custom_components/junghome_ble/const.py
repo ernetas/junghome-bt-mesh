@@ -318,6 +318,9 @@ ISSUE_IV_INDEX_AHEAD: Final = "iv_index_ahead"
 # a source of the mesh (a node, the app, Home Assistant) used most of the sequence space of the current IV index
 ISSUE_SEQUENCE_SPACE_LOW: Final = "sequence_space_low"
 ISSUE_SEQ_STORE_LOST: Final = "seq_store_lost"  # our address has history, but neither copy of its sequence-number record is usable
+# a restored backup is so old that what our address may have sent since reaches the end of its sequence space: it
+# sends nothing until an IV Update or another address
+ISSUE_RESTORE_TOO_OLD: Final = "restore_too_old"
 # the sequence-number store has refused every write for a while: sends are held back until one lands
 ISSUE_SEQ_STORE_UNWRITABLE: Final = "seq_store_unwritable"
 # a PDU from Home Assistant's own address with a number it never sent: another client uses the address;
@@ -326,9 +329,14 @@ ISSUE_ADDRESS_SHARED: Final = "address_shared"
 # ... the same issue (its id stays `address_shared_<entry id>`) seen again after that repair skipped past it once:
 # the text that asks for another address (a translation key cannot hold two descriptions)
 ISSUE_ADDRESS_SHARED_AGAIN: Final = "address_shared_again"
-# How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`):
-# past what the nodes may remember from the best record left, or — nothing left at all — this far from 0. A year of
-# a busy link (polls, refreshes, keep-alives) is well under the first; the 24-bit space holds 16 of them.
+# How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`,
+# an address without a record that may have sent: `coordinator._evidence_of_use`): past what the nodes may remember
+# from the best record left; the 24-bit space holds 16 of them. It covers months, not years, of Home Assistant's own
+# traffic (review-5 S5-1): the energy poll alone sends 4 property Gets per metered load every 300 s, about 420 000
+# numbers per load a year, and every unreachable node gets a Heartbeat Publication Set every 120 s, about 263 000 a
+# year — two metering sockets and one unpowered device pass 2^20 in eleven months, ten sockets in under three. So a
+# restored backup skips by its measured send rate and age instead, this at least (`seq_store._restore_skip`), and an
+# address with nothing at all left skips `seq_store.SEQ_SKIP_UNKNOWN`.
 SEQ_SKIP_AHEAD: Final = 1 << 20
 # Diagnostics. A node's link diagnostics are signalled at most once per this many seconds
 # (last seen and signal strength change with every message and advertisement); the sequence space of every source
@@ -405,6 +413,7 @@ ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
         ISSUE_KEY_REFRESH: "jung-home-mesh-keys-are-changing",
         ISSUE_EXPORT_STALE: "jung-home-mesh-keys-have-changed",
         ISSUE_SEQ_STORE_LOST: "sequence-numbers-of-the-jung-home-mesh--lost",
+        ISSUE_RESTORE_TOO_OLD: "restored-backup-too-old-for-the-jung-home-mesh-",
         ISSUE_SEQ_STORE_UNWRITABLE: "jung-home-sequence-numbers-cannot-be-saved",
         ISSUE_SEQUENCE_SPACE_LOW: "jung-home-mesh-sequence-numbers-running-low",
         ISSUE_IV_INDEX_MISMATCH: "jung-home-mesh-is-at-another-iv-index",

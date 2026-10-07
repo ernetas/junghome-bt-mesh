@@ -91,9 +91,14 @@ ENTRY_DATA = {
 
 
 def stored_addresses(hass_storage: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """The address records the mesh's store holds right now, without the replay lists (W2's `to_stored`)."""
+    """The address records the mesh's store holds right now, without the replay lists (W2's `to_stored`) and the
+    wall-clock fields of the send rate (`written_at`, `send_rate`: review-5 S5-1, tested on their own)."""
     return {
-        src: {key: value for key, value in record.items() if key != "rpl"}
+        src: {
+            key: value
+            for key, value in record.items()
+            if key not in ("rpl", "written_at", "send_rate")
+        }
         for src, record in hass_storage[SEQ_STORE_KEY]["data"]["addresses"].items()
     }
 
@@ -994,6 +999,35 @@ async def test_the_lost_store_repair_keeps_the_mesh_level_part(
     await wait_for_link(hass, init_integration)
 
 
+async def test_nothing_left_of_a_used_address_starts_it_further_in(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_storage: dict[str, Any],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-5 S5-5: the store, its `.backup` and the floor all gone (a "clean" removal of `.storage/junghome_ble.*`,
+    a partial restore), but something says the address was used: nothing bounds what it sent, and an installation
+    stays at one IV index for years, so it starts SEQ_SKIP_UNKNOWN in — what the `seq_store_lost` repair takes with
+    nothing left — not SEQ_SKIP_AHEAD."""
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup", f"{SEQ_STORE_KEY}.floor"):
+        hass_storage.pop(key, None)
+    with patch.object(
+        coordinator,
+        "_evidence_of_use",
+        return_value="the vault keeps Home Assistant's identity in this mesh",
+    ):
+        assert await hass.config_entries.async_setup(init_integration.entry_id)
+        await wait_for_link(hass, init_integration)
+    assert f"its numbers start at {SEQ_SKIP_UNKNOWN:06X}" in caplog.text
+    assert (
+        SEQ_SKIP_UNKNOWN
+        < hub_of(init_integration).state.seq
+        < SEQ_SKIP_UNKNOWN + 2 * SEQ_RESTART_MARGIN
+    )
+
+
 def test_evidence_that_an_address_without_a_record_was_used() -> None:
     """Review-4 S I5: an address without a record anywhere started at 0 even when the export, the vault or the store
     showed it was used before (only a warning). What counts, in order; nothing at all is a fresh address."""
@@ -1637,7 +1671,8 @@ async def test_store_minor_versions_both_ways(
     hass: HomeAssistant, hass_storage: dict[str, Any]
 ) -> None:
     """1.1 records (no `seq_guard`, no `in_backup`, no mesh-level part) load unchanged into this version's store; a
-    1.5 store (with a guard, a backup's mark, another client's numbers and the mesh's key refresh) loads unchanged
+    1.6 store (with a guard, a backup's mark and time, another client's numbers, the write time and send rate, and
+    the mesh's key refresh) loads unchanged
     into a reader of 1.1 that has no migration for it — an older integration keeps starting."""
     key = f"{DOMAIN}.seq.test-minor"
     record = {"seq": 7, "iv_index": 2, "iv_update_active": False, "clean": False}
@@ -1647,14 +1682,17 @@ async def test_store_minor_versions_both_ways(
         "data": {"addresses": {"0D00": record}},
     }
     store = SeqStore(hass, STORAGE_VERSION, key, atomic_writes=True)
-    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 5
+    assert store.minor_version == SEQ_STORAGE_MINOR_VERSION == 6
     assert await store.async_load() == {"addresses": {"0D00": record}}
-    assert hass_storage[key]["minor_version"] == 5
+    assert hass_storage[key]["minor_version"] == 6
     guarded = {
         **record,
         "seq_guard": SEQ_GUARD_FIRST_BEACON,
         "in_backup": "0" * 32,
+        "backup_at": 5.0,
         "address_shared": [2, 900],
+        "written_at": 9.0,
+        "send_rate": {"per_day": 100.0, "sent": 3, "seconds": 60.0},
     }
     newer = {"addresses": {"0D00": guarded}, "mesh": {"key_refresh": None}}
     await store.async_save(newer)

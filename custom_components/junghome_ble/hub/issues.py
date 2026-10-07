@@ -33,6 +33,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_KEY_REFRESH,
     ISSUE_NODE_CLOCK_WRONG,
     ISSUE_PDUS_DROPPED,
+    ISSUE_RESTORE_TOO_OLD,
     ISSUE_SEQ_STORE_UNWRITABLE,
     ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_TIME_KEEPER_MISSING,
@@ -47,6 +48,7 @@ from custom_components.junghome_ble.jhmesh.devices import (
     PP2_PIDS,
     time_keeper_candidates,
 )
+from custom_components.junghome_ble.jhmesh.state import SEQ_TX_LIMIT
 from custom_components.junghome_ble.protocols import HubPort
 from custom_components.junghome_ble.seq_store import async_rewind_seq_floor
 
@@ -179,7 +181,14 @@ class Issues:
         node's restart skips it a whole persisted block ahead, so a mains node that often loses power runs low
         first. The numbers are those the replay protection accepted, so they are what the mesh really used. Cleared
         once the IV index moves on (an update in progress counts: its index is the new one).
+
+        `restore_too_old` (raised by the start that skipped a restored record to the end of the space:
+        `seq_store._async_skip_restored_record`) goes here too, once our counter is below `SEQ_TX_LIMIT` again.
         """
+        if self.hub.proxy.state.seq < SEQ_TX_LIMIT:
+            ir.async_delete_issue(
+                self.hub.hass, DOMAIN, issue_id(self.hub.entry, ISSUE_RESTORE_TOO_OLD)
+            )
         highest = self.sequence_space_low()
         key = issue_id(self.hub.entry, ISSUE_SEQUENCE_SPACE_LOW)
         if highest is None:

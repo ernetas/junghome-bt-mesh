@@ -5,11 +5,16 @@ rounds, and long runs that take the counter millions further), beacons and IV Up
 the hub reloaded in the same process (closed
 cleanly, or a successor started while the old hub is still stopping — HAC-02), Home Assistant killed with writes
 still pending, the storage writes of the store or of its `.backup` copy failing (a full disk, a filesystem gone
-read-only), a copy lost or unreadable, the `seq_store_lost` repair (and the floor file it keeps), a Home Assistant
-backup taken (the integration's `backup` platform hooks around it) and restored later — and after every step checks
-that nothing it was handed was handed before under the same transmit IV index. A hub is created the way the integration creates
-it: `JungHomeHub.async_create` picks the record (the store, else the backup, else the repair issue) and builds
-the `HAState`.
+read-only), a copy lost or unreadable, the `seq_store_lost` repair (and the floor file it keeps), Home Assistant
+backups taken (the integration's `backup` platform hooks around them) and any of them restored later, however much
+was sent since — and after every step checks that nothing it was handed was handed before under the same transmit IV
+index. A hub is created the way the integration creates it: `JungHomeHub.async_create` picks the record (the store,
+else the backup, else the repair issue) and builds the `HAState`.
+
+The address sends at a constant rate, which its records measure (review-5 S5-1): the wall clock the store reads
+(`seq_store.wall_now`) moves with every number handed out, RATE numbers a second, the months of a long run too, and
+by nothing else — so what a restore skips (twice the rate over the backup's age) is what the design promises to
+cover, and a restore of a backup taken long before still continues past every number sent since.
 
 Hypothesis runs in an executor thread; every step is a coroutine on Home Assistant's loop, where the store and
 `HAState` live.
@@ -18,10 +23,11 @@ What the design does not claim to survive is left out: both copies deleted witho
 file to show numbers were sent: the address starts at 0, documented), the repair's floor file damaged, two hubs of
 one mesh running side by side (refused by `_refuse_duplicate_mesh`), and
 of backups: restoring one whose pre-backup write did not land (the hook logs it and lets the backup go on) or that
-was taken while the address's setup was refused (no hub owned its counter), restoring the same backup twice, and
-restoring any after a Home Assistant that stopped during a backup — nothing on disk survives a restore, so a restore
-continues from what the archive holds alone, and a second start from the same marked records lands on the numbers
-the first one sent (`backup_taken`, `restore`; documented).
+was taken while the address's setup was refused (no hub owned its counter), restoring a second one after a restore
+(the same, an older or a newer one), and restoring one taken before a Home Assistant that stopped during a backup or
+before a `seq_store_lost` repair — nothing on disk survives a restore, so a restore continues from what the archive
+holds alone, and a jump of the counter is no traffic its rate counts: a start from records taken before it lands
+on the numbers sent after it (`backup_taken`, `restore`; documented in `backup.py`).
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ import copy
 import itertools
 from collections.abc import Coroutine
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
@@ -46,6 +53,7 @@ from hypothesis.stateful import (
 )
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.junghome_ble import seq_store as seq_store_module
 from custom_components.junghome_ble.backup import async_post_backup, async_pre_backup
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -94,6 +102,10 @@ pytestmark = pytest.mark.filterwarnings(
 UNICAST = 0x0D00
 KEY = f"{UNICAST:04X}"
 _meshes = itertools.count(1)
+# the address's send rate, numbers per second (8640 a day: the wall clock moves 10 s per number handed out), and the
+# wall clock it starts from
+RATE = 0.1
+WALL_START = 1_000_000_000.0
 
 
 class Disk:
@@ -169,9 +181,13 @@ class HAStateMachine(RuleBasedStateMachine):
         self.refused = False  # the last start raised the seq_store_lost issue
         self.network_iv = 0  # the highest IV index a beacon announced: the network's
         self.now = 0.0  # the wall clock beacons are applied at (`time_passes` moves it past the IV Update timing)
-        # the sequence-number files of the last backup taken, and whether a restore of it is one the design covers
-        self.archive: dict[str, Any] | None = None
-        self.archive_covered = False
+        # the wall clock the store reads (the module docstring: it moves with the numbers handed out)
+        self.wall = WALL_START
+        self._clock = patch.object(seq_store_module, "wall_now", lambda: self.wall)
+        self._clock.start()
+        # the sequence-number files of every backup taken since the last restore (and since nothing made a restore
+        # of them one the design does not cover), oldest first
+        self.archives: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------ plumbing
     def run(self, coro: Coroutine[Any, Any, Any]) -> Any:
@@ -257,6 +273,8 @@ class HAStateMachine(RuleBasedStateMachine):
         self.run(self._create())
 
     def teardown(self) -> None:
+        self._clock.stop()
+
         async def clean_up() -> None:
             await self.hass.async_block_till_done()
             for store in self.stores:
@@ -296,6 +314,7 @@ class HAStateMachine(RuleBasedStateMachine):
             return
         tx, first = got
         self.step += 1
+        self.wall += count / RATE
         for seq in range(first, first + count):
             assert 0 <= seq <= SEQ_TX_LIMIT
             assert (tx, seq) not in self.used, (
@@ -388,18 +407,22 @@ class HAStateMachine(RuleBasedStateMachine):
     @rule(chunks=st.integers(1, 5))
     def long_run(self, chunks: int) -> None:
         """Months of traffic at once: the counter `chunks` times SEQ_FLOOR_EVERY on (`HAState.skip_ahead`, saved at
-        once), then a send there — past what a repair would continue to from the floor written before, for the
-        floor to keep up with (review-4 S4-8). More than a restored backup covers (SEQ_SKIP_AHEAD): the last backup
-        is no longer one to restore (the module docstring's exclusions)."""
+        once) as numbers handed out at the address's rate — counted by its `SendRate`, the wall clock moved by the
+        time they take — then a send there: past what a repair would continue to from the floor written before, for
+        the floor to keep up with (review-4 S4-8), and more than SEQ_SKIP_AHEAD, so a restore of a backup taken
+        before has to skip by the rate (review-5 S5-1)."""
         state = self.state
         assert state is not None
+        count = chunks * SEQ_FLOOR_EVERY
 
         async def run() -> None:
-            state.skip_ahead(chunks * SEQ_FLOOR_EVERY)
+            before = state.seq
+            state.skip_ahead(count)
+            state.send_rate.note_sent(state.seq - before)
+            self.wall += (state.seq - before) / RATE
             await self._elapse()
 
         self.run(run())
-        self.archive_covered = False
         self.send(count=1)
 
     @precondition(lambda self: self.state is not None)
@@ -458,9 +481,9 @@ class HAStateMachine(RuleBasedStateMachine):
         die before the post-backup hook ran (the files keep the mark: the next start skips ahead once).
 
         A restore is covered when a hub owned the counter and both copies could be written when the backup was
-        taken; otherwise the archive is kept but never restored. A backup Home Assistant died during leaves no
-        archive, and the one before it is not restored any more either: the start after the stop skipped ahead from
-        the very records a restore of it may continue from (the module docstring's exclusions).
+        taken; otherwise the archive is never restored. A backup Home Assistant died during leaves no archive, and
+        the ones before it are not restored any more either: the start after the stop skipped ahead from the very
+        records a restore of them may continue from, a jump no rate counts (the module docstring's exclusions).
         """
 
         async def take() -> dict[str, Any] | None:
@@ -468,7 +491,7 @@ class HAStateMachine(RuleBasedStateMachine):
             if during == "reload" and self.state is not None:
                 await self.state.async_close()
                 await self._create()
-            self.archive_covered = self.state is not None and not (
+            covered = self.state is not None and not (
                 {"primary", "backup"} & self.disk.failing
             )
             archive = {
@@ -482,19 +505,23 @@ class HAStateMachine(RuleBasedStateMachine):
                 await self._create()
                 return None
             await async_post_backup(self.hass)
-            return archive
+            return archive if covered else None
 
-        self.archive = self.run(take())
+        archive = self.run(take())
+        if during == "killed":
+            self.archives.clear()
+        elif archive is not None:
+            self.archives.append(archive)
 
-    @precondition(lambda self: self.archive is not None and self.archive_covered)
-    @rule()
-    def restore(self) -> None:
-        """The last backup is restored, once: Home Assistant stops, its configuration directory is replaced by the
-        archive's — the store, its backup copy and the floor come back together, readable — and it starts again.
-        The network does not go back with it: its IV index stays, and so does every number already sent."""
-        archive = self.archive
-        assert archive is not None
-        self.archive = None
+    @precondition(lambda self: self.archives)
+    @rule(which=st.integers(0, 1 << 16))
+    def restore(self, which: int) -> None:
+        """A backup taken at any earlier step is restored: Home Assistant stops, its configuration directory is
+        replaced by the archive's — the store, its backup copy and the floor come back together, readable — and it
+        starts again. The network does not go back with it: its IV index stays, and so does every number already
+        sent, however long ago the backup was taken. No other backup is restored after it (the module docstring)."""
+        archive = self.archives[which % len(self.archives)]
+        self.archives.clear()
 
         async def restore() -> None:
             await self._die()
@@ -521,6 +548,7 @@ class HAStateMachine(RuleBasedStateMachine):
             await self._create()
 
         self.run(fix())
+        self.archives.clear()  # a jump no rate counts: no backup from before it is restored
 
     # ------------------------------------------------------------------ the disk
     @rule(
@@ -756,8 +784,71 @@ async def test_a_restored_backup_never_resumes_below_numbers_sent(
             for _ in range(40):
                 machine.send(count=32)
             machine.time_passes()
-            machine.restore()
+            machine.restore(which=0)
             machine.send(count=1)
+        finally:
+            machine.teardown()
+
+    await hass.async_add_executor_job(steps)
+
+
+async def test_a_backup_restored_after_months_of_traffic_skips_by_the_rate(
+    hass: HomeAssistant, hass_storage: dict[str, Any]
+) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Seq store machine",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_METADATA_DIR: META_DIR, CONF_UNICAST: KEY},
+    )
+    entry.add_to_hass(hass)
+
+    def steps() -> None:
+        # review-5 S5-1: an hour and more of sending measured, a backup, then months of traffic at that rate (three
+        # times 2^20 numbers) and the restore of the backup taken before them — the fixed 2^20 skip resumed below the
+        # numbers sent since; twice the rate over the backup's age does not. A second backup, taken after the
+        # months, may be the one restored too; the restore of a backup older than the space can cover sends nothing.
+        for which in (0, 1):
+            machine = HAStateMachine(hass, hass_storage, entry)
+            try:
+                machine.start(start=None, iv_index=0)
+                for _ in range(15):
+                    machine.busy(rounds=40)
+                machine.backup_taken(during="nothing")
+                machine.long_run(chunks=3)
+                machine.backup_taken(during="nothing")
+                machine.busy(rounds=10)
+                machine.restore(which=which)
+                assert machine.state is not None
+                assert machine.state.seq > max(seq for _tx, seq in machine.used)
+                machine.busy(rounds=10)
+            finally:
+                machine.teardown()
+        machine = HAStateMachine(hass, hass_storage, entry)
+        try:
+            machine.start(start=None, iv_index=0)
+            for _ in range(15):
+                machine.busy(rounds=40)
+            machine.backup_taken(during="nothing")
+            machine.long_run(chunks=5)
+            machine.long_run(chunks=4)
+            machine.restore(which=0)
+            assert machine.state is not None
+            assert (
+                machine.state.seq > SEQ_TX_LIMIT
+            )  # refused: nothing goes out under this index
+            sent = len(machine.used)
+            machine.busy(rounds=5)
+            assert len(machine.used) == sent
+            machine.beacon(
+                delta=0, update=False
+            )  # the proxy's beacon on the next link: still index 0
+            machine.iv_update()
+            assert (
+                machine.state.seq > SEQ_TX_LIMIT
+            )  # the first beacon's index + 1 is guarded: still nothing
+            machine.iv_update()  # the second update starts over
+            assert machine.state.seq < SEQ_TX_LIMIT
+            machine.busy(rounds=5)
         finally:
             machine.teardown()
 
@@ -786,7 +877,7 @@ async def test_a_restored_backup_keeps_counting_under_an_index_moved_on_since(
             for _ in range(40):
                 machine.send(count=32)
             machine.time_passes()
-            machine.restore()
+            machine.restore(which=0)
             machine.beacon(delta=0, update=False)
             machine.send(count=1)
         finally:

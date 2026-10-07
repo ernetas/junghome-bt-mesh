@@ -118,7 +118,7 @@ from .jhmesh.devices import (
     build_devices,
 )
 from .jhmesh.keyrefresh import KeyRefreshRecord
-from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_unicast
+from .jhmesh.pdu import ALL_NODES, SecureNetworkBeacon, is_group, is_unicast
 from .jhmesh.properties import (
     SIG_PROPERTIES,
     SIG_SOFTWARE_VERSION,
@@ -138,6 +138,7 @@ from .node_info import (
     node_versions_store,
 )
 from .seq_store import (
+    SEQ_BACKUP_AT,
     SEQ_BACKUP_STORES,
     SEQ_BACKUP_TOKEN,
     SEQ_FLOOR_EVERY,
@@ -145,6 +146,7 @@ from .seq_store import (
     SEQ_OWNERS,
     SEQ_RESTART_MARGIN,
     SEQ_SAVE_EVERY,
+    SEQ_SKIP_UNKNOWN,
     SEQ_STALL_RETRY,
     SEQ_STORAGE_MINOR_VERSION,
     SEQ_STORES,
@@ -223,6 +225,7 @@ __all__ = [
     "NODE_VERSIONS_SAVE_DELAY",
     "NODE_VERSIONS_STORAGE_VERSION",
     "NODE_VERSION_STORES",
+    "SEQ_BACKUP_AT",
     "SEQ_BACKUP_STORES",
     "SEQ_BACKUP_TOKEN",
     "SEQ_FLOOR_EVERY",
@@ -444,7 +447,8 @@ def _evidence_of_use(
     keeps Home Assistant's identity in this mesh (it ran here, so a store existed); or the loaded `stores` (the store,
     its `.backup` copy, the floor) know other addresses (this Home Assistant sent in this mesh, a lost record of
     this one would look the same). Wrong only for a genuinely fresh address on an installation that matches: that
-    one spends SEQ_SKIP_AHEAD of its 2^24 numbers, once.
+    one spends SEQ_SKIP_AHEAD of its 2^24 numbers, once — SEQ_SKIP_UNKNOWN when none of the stores is left at all
+    (`JungHomeHub.async_create`).
     """
     if recognise(cdb, unicast) is not None:
         return "the export holds Home Assistant's provisioner node there"
@@ -641,6 +645,9 @@ class JungHomeHub:
         self.restarted: dict[int, datetime] = {}
         self._last_seq: dict[int, int] = {}
         self._node_signalled: dict[int, float] = {}
+        # every group address a message heard on this run was sent to: a new device's element groups keep clear of
+        # them, as of the sources heard (`heard_sources`; `onboard._reserved_groups`, review-5 S5-4)
+        self.heard_groups: set[int] = set()
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread = self.lifecycle.keyed("transition_reread")
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
@@ -679,7 +686,10 @@ class JungHomeHub:
         One running hub per mesh: another entry's hub already owning the mesh's counters (`SEQ_OWNERS`) refuses
         this one (`_refuse_duplicate_mesh`). A record restored from a Home Assistant backup continues past every
         number sent since (`_async_skip_restored_record`). An address without a record anywhere starts at 0 only
-        when nothing says it was used before (`_evidence_of_use`); otherwise SEQ_SKIP_AHEAD on.
+        when nothing says it was used before (`_evidence_of_use`); otherwise SEQ_SKIP_AHEAD on — SEQ_SKIP_UNKNOWN
+        when the store, its `.backup` and the floor are all gone (review-5 S5-5: nothing bounds what was sent, and
+        an installation stays at one IV index for years, so 2^20 is outrun within one; the same distance the
+        `seq_store_lost` repair takes with nothing left).
         """
         if not await async_migrate_legacy_seq_store(hass, entry, cdb.mesh_uuid):
             raise ConfigEntryNotReady(
@@ -727,7 +737,7 @@ class JungHomeHub:
                 data = backup_data
                 await store.async_save(data)
         restored = await _async_skip_restored_record(
-            hass, cdb.mesh_uuid, key, data, backup_data, floor_data
+            hass, entry, cdb.mesh_uuid, key, data, backup_data, floor_data
         )
         if restored is not data:
             data = backup_data = restored
@@ -741,19 +751,21 @@ class JungHomeHub:
         ):
             # only in what the `HAState` starts from — on disk it is the first save, which sends
             # wait for (`_limit`): a crash before it lands starts here again, with nothing sent
+            nothing_left = data is None and backup_data is None and floor_data is None
+            first = SEQ_SKIP_UNKNOWN if nothing_left else SEQ_SKIP_AHEAD
             _LOGGER.warning(
                 "Address %s has no sequence-number record, but %s: its numbers start at %06X, past any it may "
                 "have sent, rather than at 0",
                 key,
                 why,
-                SEQ_SKIP_AHEAD,
+                first,
             )
             start = _store_with(
                 data,
                 {
                     **(_addresses_of(data) or {}),
                     key: {
-                        "seq": SEQ_SKIP_AHEAD,
+                        "seq": first,
                         "iv_index": 0,
                         "iv_update_active": False,
                         "iv_known": False,
@@ -1399,6 +1411,13 @@ class JungHomeHub:
             self.hass, SIGNAL_NODE.format(self.entry.entry_id, unicast)
         )
 
+    def heard_sources(self) -> set[int]:
+        """Every unicast source heard on air: in the replay list (kept with the counter), on this run, last seen.
+
+        What a new device's addresses keep clear of besides the export and the vault (`onboard._heard_unicasts`).
+        """
+        return {*self.proxy.state.rpl, *self._last_seq, *self.last_seen}
+
     def _note_seq(self, src: int, seq: int) -> None:
         """Follow the source's sequence numbers; a jump into a fresh block of the counter is a restart.
 
@@ -1465,6 +1484,8 @@ class JungHomeHub:
         """Account for the traffic (link watchdog, drop detection, stale-export detection, the app), then hand the message to its handler."""
         self.link.last_rx = time.monotonic()
         self._note_seq(m.src, m.seq)
+        if is_group(m.dst):
+            self.heard_groups.add(m.dst)
         self.liveness.heard_from(m.src)
         if self.heartbeats_enabled:
             self.liveness.mark_alive(m.src)  # any message is as good as a heartbeat

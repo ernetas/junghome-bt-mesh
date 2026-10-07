@@ -1084,6 +1084,9 @@
     "seq_store_not_written": {
       "message": "The sequence-number record of an older version could not be saved into the mesh's store (`.storage/junghome_ble.seq.*`); check that the configuration directory is writable."
     },
+    "seq_clock_behind": {
+      "message": "The sequence-number record was restored from a backup, and Home Assistant's clock is behind the time the record was written; the setup waits until the clock is set (check the host's time synchronisation)."
+    },
     "seq_floor_not_written": {
       "message": "The sequence-number record was restored from a backup, and its floor (`.storage/junghome_ble.seq.*.floor`) could not be written before skipping ahead; check that the configuration directory is writable."
     },
@@ -2099,6 +2102,10 @@
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway no longer accepts Home Assistant",
       "description": "The JUNG HOME Gateway at {host} rejects the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). Home Assistant keeps changing rooms, key connections and scenes in its own export, but no longer hands it to the gateway, so the app does not see those changes; the devices keep working. Home Assistant asks for access again: follow its request to re-authenticate JUNG HOME (Settings → Devices & services; Repairs also lists it as expired authentication) and enter the gateway's network-key password or approve the new access request in the app. The issue clears once the gateway accepts Home Assistant again; the action Sync gateway then hands over the changes made since."
+    },
+    "restore_too_old": {
+      "title": "Restored backup too old for the JUNG HOME mesh {title}",
+      "description": "Home Assistant was restored from a backup, and at the rate Home Assistant's address {unicast} sends, the sequence numbers it may have used since that backup was taken reach the end of the numbers of the mesh's current IV index. Sending again would reuse numbers the devices already saw: they would ignore Home Assistant, and every reused number weakens the mesh's encryption. So Home Assistant sends nothing to the mesh until one of these is done: an IV Update of the mesh — start one with the action `junghome_ble.start_iv_update` (*Developer tools → Actions*, with `confirm: true`; it cannot be undone; Home Assistant sends again once the mesh is at an IV index it cannot have sent under, which after a restore can take two IV Updates in a row) — or a unicast address Home Assistant has never used, set under *Reconfigure*. Do not restore the sequence-number store from another copy. The notice clears itself once Home Assistant can send again. Unverified on air."
     },
     "seq_store_lost": {
       "title": "Sequence numbers of the JUNG HOME mesh {title} lost",

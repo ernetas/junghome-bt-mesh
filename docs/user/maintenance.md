@@ -207,6 +207,15 @@ The counter store has no usable record for Home Assistant's address, so the inte
 the notice: Home Assistant continues far past every number it may have used and starts again.
 [Details](../ha-integration.md#repair-issue-sequence-numbers-of-the-jung-home-mesh--lost)
 
+#### Restored backup too old for the JUNG HOME mesh …
+
+Home Assistant was restored from a backup so old that, at the rate it sends, the numbers it may have used since
+reach the end of the current IV index's numbers, so it sends nothing to the devices. Start an IV Update with the
+action `junghome_ble.start_iv_update` (*Developer tools → Actions*, with `confirm: true`; after a restore it can take
+two in a row), or give Home Assistant a new address under *Reconfigure*. The notice clears itself once Home Assistant
+can send again (**unverified on air**).
+[Details](../ha-integration.md#repair-issue-restored-backup-too-old-for-the-jung-home-mesh-)
+
 #### JUNG HOME sequence numbers cannot be saved
 
 The disk is full or became read-only (a failing SD card, for example), so Home Assistant holds its messages back.
@@ -291,8 +300,14 @@ With `jhmesh: warning` and `jhmesh.trace: debug` the log shows the messages alon
 ## Backups
 
 Home Assistant backups include everything the integration needs. Restoring one is safe: Home Assistant notices the
-restore and continues its counters far enough ahead (**unverified on air**). Do not restore the
-integration's files by hand from an older copy.
+restore and continues its counters far enough ahead — by twice what it sends in a day, for every day since the backup
+(the diagnostics show both numbers per address, `send_rates`) — and when that would pass the end of the counter it
+sends nothing and says so (*Restored backup too old*; **unverified on air**). Do not restore the integration's files
+by hand from an older copy.
+
+A restore also takes back the export and the keys of the devices Home Assistant added since the backup: such a
+device has to be reset by hand and added again. Home Assistant gives no new device an address or group it heard on
+the mesh since it started, so the lost device's addresses are not handed out twice once it was heard.
 
 ## Downloading the export
 

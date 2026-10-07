@@ -40,11 +40,15 @@ from custom_components.junghome_ble.diagnostics import redact_paths
 from custom_components.junghome_ble.hub.issues import Issues
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
-from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
+from custom_components.junghome_ble.jhmesh.client import (
+    MESH_PROXY_SERVICE,
+    SEQ_TX_LIMIT,
+)
 from custom_components.junghome_ble.jhmesh.pdu import (
     encode_opcode,
 )
 from custom_components.junghome_ble.jhmesh.stats import LinkStats
+from custom_components.junghome_ble.seq_store import SEQ_RATE_UNMEASURED
 
 from . import key_scan
 from .conftest import (
@@ -204,6 +208,16 @@ async def test_diagnostics(
         "last_write_error": None,
         "durable_headroom": headroom,
         "address_shared": None,
+        # review-5 S5-1: not an hour of sending measured yet, so SEQ_RATE_UNMEASURED a day is assumed
+        "send_rates": {
+            "0D00": {
+                "numbers_per_day": SEQ_RATE_UNMEASURED,
+                "minimum_covers_days": 16.0,
+                "restore_covers_days": round(
+                    (SEQ_TX_LIMIT - seq) / (2 * SEQ_RATE_UNMEASURED), 1
+                ),
+            }
+        },
     }
 
     # no key refresh, no device Home Assistant added (review-4 D11: phases and Network IDs only, never a key)

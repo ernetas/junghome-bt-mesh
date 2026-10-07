@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
@@ -28,6 +29,7 @@ from homeassistant.util.hass_dict import HassKey
 from .const import (
     DOMAIN,
     ISSUE_DUPLICATE_MESH,
+    ISSUE_RESTORE_TOO_OLD,
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQ_STORE_UNWRITABLE,
     SEQ_SKIP_AHEAD,
@@ -61,8 +63,22 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-# how far from 0 the counter jumps when nothing at all is left of an address's numbers (`const.SEQ_SKIP_AHEAD`)
+# how far from 0 the counter jumps when nothing at all is left of an address's numbers (`const.SEQ_SKIP_AHEAD`); also
+# how far a restored record no write time is known of (an older version wrote it) continues
 SEQ_SKIP_UNKNOWN: Final = 1 << 22
+# The send rate (`SendRate`): numbers handed out per day, measured over windows of a day of the hub's running time.
+# A window shorter than SEQ_RATE_MIN_SPAN measures nothing yet: until one is longer, or one completed, an address is
+# taken to send SEQ_RATE_UNMEASURED a day — about 12 million a year, what some thirty metering sockets polled every
+# 300 s send (`const.SEQ_SKIP_AHEAD`).
+SEQ_RATE_WINDOW: Final = 86_400.0
+SEQ_RATE_MIN_SPAN: Final = 3_600.0
+SEQ_RATE_UNMEASURED: Final = 1 << 15
+# A restored record continues this many times the numbers its rate sends during the backup's age: the rate may have
+# grown since the backup (more devices, more of them unreachable), and the skip is all that covers it
+SEQ_RESTORE_RATE_FACTOR: Final = 2
+# how far ahead of the clock a restored record's write time may lie before the clock, not the record, is taken
+# to be wrong (seconds; a clock slewed by NTP between the backup and the start)
+SEQ_CLOCK_TOLERANCE: Final = 300.0
 
 
 STORAGE_VERSION = 1
@@ -70,10 +86,12 @@ STORAGE_VERSION = 1
 # written by the `seq_store_lost` repair), 3 its optional `in_backup` (the mark of a Home Assistant backup being
 # taken, `backup.py`), 4 the mesh-level part next to `addresses`, `{"mesh": {"key_refresh": …}}` (the key refresh
 # followed, `HAState`: the address's own record keeps a copy, for an older reader), 5 an address record's optional
-# `address_shared` (`[IV index, seq]` another client sent from the address, `HAState.address_shared`). A minor bump: Home Assistant
-# loads a store of a higher minor version with the same major one as it is when the reader has no migration for it,
-# so an older integration reads these records (and ignores the fields) rather than failing to start.
-SEQ_STORAGE_MINOR_VERSION = 5
+# `address_shared` (`[IV index, seq]` another client sent from the address, `HAState.address_shared`), 6 its
+# `written_at` (when Home Assistant wrote it), `send_rate` (`SendRate.to_stored`) and, next to the mark, `backup_at`
+# (when the backup began). A minor bump: Home Assistant loads a store of a higher minor version with the same major
+# one as it is when the reader has no migration for it, so an older integration reads these records (and ignores the
+# fields) rather than failing to start.
+SEQ_STORAGE_MINOR_VERSION = 6
 # Sequence-number persistence (`HAState`): the margin added to a counter found in use, and how many numbers may
 # pass between two forced store writes — see the class docstring for the arithmetic.
 SEQ_RESTART_MARGIN = 512
@@ -89,8 +107,9 @@ class SeqRecord(TypedDict, total=False):
     """One address's record in the sequence-number store: `{"addresses": {"<src>": record}, "mesh": {…}}`.
 
     What `LocalState.to_stored` writes, without `src` (the record's key), plus Home Assistant's own: `clean` (the
-    hub closed it: no restart margin), `address_shared` and a backup's mark `in_backup` (see
-    `SEQ_STORAGE_MINOR_VERSION`). A floor entry (`seq_floor_store_for_uuid`) holds `iv_index`, `seq` and
+    hub closed it: no restart margin), `address_shared`, when it was written (`written_at`, seconds since the epoch)
+    and the address's send rate (`send_rate`), and a backup's mark `in_backup` with the time the backup began
+    (`backup_at`) (see `SEQ_STORAGE_MINOR_VERSION`). A floor entry (`seq_floor_store_for_uuid`) holds `iv_index`, `seq` and
     `seq_guard` only. A record as read is whatever the file held: `LocalState.parse_record` checks it.
     """
 
@@ -110,7 +129,10 @@ class SeqRecord(TypedDict, total=False):
     iv_update_confirmed: bool
     clean: bool
     address_shared: list[int]
+    written_at: float
+    send_rate: dict[str, Any]
     in_backup: str
+    backup_at: float
 
 
 SEQ_STORES: HassKey[dict[str, SeqStore]] = HassKey(f"{DOMAIN}_seq_stores")
@@ -119,6 +141,19 @@ SEQ_OWNERS: HassKey[dict[str, HAState]] = HassKey(f"{DOMAIN}_seq_owners")
 # while it is set carries it (`HAState._snapshot`), so a start that finds a record with a mark this process did not
 # set knows the record came back from a backup, or that Home Assistant stopped during one
 SEQ_BACKUP_TOKEN: HassKey[str] = HassKey(f"{DOMAIN}_seq_backup_token")
+# ... and when that backup began (seconds since the epoch), written next to the mark (`backup_at`)
+SEQ_BACKUP_AT: HassKey[float] = HassKey(f"{DOMAIN}_seq_backup_at")
+# the fields of a backup's mark, which a record loses with it (`_without_mark`)
+_MARK_FIELDS: Final = ("in_backup", "backup_at")
+
+
+def wall_now() -> float:
+    """Return the wall clock (seconds since the epoch), looked up at call time (the tests set their own).
+
+    The send rate and a restored record's age are measured with it: they have to mean the same across a restart and a
+    restore, which the monotonic clock does not.
+    """
+    return time.time()
 
 
 def _utc(timestamp: float | None) -> str | None:
@@ -177,10 +212,11 @@ class SeqStore(Store[dict[str, Any]]):
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: Any
     ) -> Any:
-        """1.1 … 1.4 → 1.5: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark).
+        """1.1 … 1.5 → 1.6: the records stay as they are (no `seq_guard`: no guard pending; no `in_backup`: no mark).
 
         No `mesh` part: the key refresh is read from the address's own record (`_stored_key_refresh`); no
-        `address_shared`: no other client seen.
+        `address_shared`: no other client seen; no `written_at` / `send_rate`: a restore of the record continues
+        SEQ_SKIP_UNKNOWN (`_restore_skip`), and its rate is measured from now on.
         """
         if old_major_version != STORAGE_VERSION:
             raise NotImplementedError
@@ -318,7 +354,7 @@ def _without_mark(record: Any, token: str | None) -> Any:
         return record
     if record.get("in_backup") != token:
         return record
-    return {name: value for name, value in record.items() if name != "in_backup"}
+    return {name: value for name, value in record.items() if name not in _MARK_FIELDS}
 
 
 def _addresses_of(data: Any) -> dict[str, Any] | None:
@@ -426,6 +462,168 @@ def _carried_seq_guard(records: Sequence[Any]) -> int:
     return guard
 
 
+def _non_negative(what: str, value: Any) -> float:
+    """Return a stored number as a float; TypeError / ValueError unless it is a finite, non-negative number."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError(f"{what} {value!r} is not a number")
+    if not 0 <= value < math.inf:
+        raise ValueError(f"{what} {value!r} is out of range")
+    return float(value)
+
+
+def _stored_time(record: Mapping[str, Any], name: str) -> float | None:
+    """Return a record's wall-clock time `name` (`written_at`, `backup_at`); None when it has none, or none usable."""
+    try:
+        return _non_negative(name, record[name])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+class SendRate:
+    """How many sequence numbers an address hands out per day: what a restored record of it skips (`_restore_skip`).
+
+    Measured over windows of SEQ_RATE_WINDOW of the hub's running time — the time between two writes of the
+    record (`tick`) while an `HAState` of the address runs; a stopped Home Assistant adds none, so its downtime does
+    not dilute the rate — and the numbers handed out in that time (`note_sent`; a jump of the counter, by a skip or
+    a repair, is no traffic and is not counted). A completed window's rate replaces `measured` when it is higher,
+    and otherwise takes it half-way down: a busy day counts at once, a quiet one by halves, so a window diluted by a
+    clock that jumped forward within one tick still leaves half the rate, which SEQ_RESTORE_RATE_FACTOR doubles.
+    The window in progress counts too once it is SEQ_RATE_MIN_SPAN long; before any window measured that much,
+    SEQ_RATE_UNMEASURED is assumed (`per_day`). Unverified on air: the rates are measured on the fake proxy only.
+    """
+
+    def __init__(
+        self, measured: float | None = None, sent: int = 0, seconds: float = 0.0
+    ) -> None:
+        """Start from what a record kept: the last windows' rate (`measured`, per day), the open window's numbers and time."""
+        self.measured = measured
+        self.sent = sent
+        self.seconds = seconds
+        self._ticked: float | None = (
+            None  # the wall clock of the last tick; None: this run has not ticked yet
+        )
+
+    @classmethod
+    def from_stored(cls, stored: Any) -> SendRate:
+        """Read a record's `send_rate`; nothing measured when it has none, or one that is not one (logged)."""
+        if stored is None:
+            return cls()
+        try:
+            measured = stored.get("per_day")
+            sent = stored["sent"]
+            if isinstance(sent, bool) or not isinstance(sent, int) or sent < 0:
+                raise ValueError(f"numbers sent {sent!r} is not a count")
+            return cls(
+                None if measured is None else _non_negative("send rate", measured),
+                sent,
+                _non_negative("send-rate window", stored["seconds"]),
+            )
+        except (AttributeError, KeyError, TypeError, ValueError) as err:
+            _LOGGER.warning(
+                "Ignoring an unusable send rate in the sequence-number store (%s)", err
+            )
+            return cls()
+
+    def to_stored(self) -> dict[str, Any]:
+        """Return the record's `send_rate`: `{"per_day": measured, "sent": …, "seconds": …}`."""
+        return {"per_day": self.measured, "sent": self.sent, "seconds": self.seconds}
+
+    def note_sent(self, count: int) -> None:
+        """Count `count` numbers handed out into the open window."""
+        self.sent += count
+
+    def tick(self, now: float) -> None:
+        """Add the running time since the last tick to the open window; close the window once it is a day long.
+
+        The first tick of a run only starts the clock. A clock set back adds nothing.
+        """
+        if self._ticked is not None:
+            self.seconds += max(now - self._ticked, 0.0)
+        self._ticked = now
+        if self.seconds >= SEQ_RATE_WINDOW:
+            rate = self.sent * SEQ_RATE_WINDOW / self.seconds
+            self.measured = (
+                rate
+                if self.measured is None or rate >= self.measured
+                else (self.measured + rate) / 2
+            )
+            self.sent, self.seconds = 0, 0.0
+
+    def per_day(self) -> float:
+        """Numbers per day a restore takes the address to have sent since its record was written (the class docstring)."""
+        current = (
+            self.sent * SEQ_RATE_WINDOW / self.seconds
+            if self.seconds >= SEQ_RATE_MIN_SPAN
+            else None
+        )
+        if self.measured is None:
+            if current is not None:
+                return current
+            return max(
+                float(SEQ_RATE_UNMEASURED),
+                self.sent * SEQ_RATE_WINDOW / SEQ_RATE_MIN_SPAN,
+            )
+        return self.measured if current is None else max(self.measured, current)
+
+
+def restore_coverage(per_day: float, seq: int) -> dict[str, Any]:
+    """Describe what a restore of an address sending `per_day` numbers a day, at `seq` now, would skip (diagnostics).
+
+    For a backup taken now: `numbers_per_day`; `minimum_covers_days`, the age up to which its restore skips only
+    the minimum, SEQ_SKIP_AHEAD; `restore_covers_days`, the age past which its restore would skip beyond the end of
+    the sequence space and send nothing (`restore_too_old`). None: any age (nothing is sent).
+    """
+    per_skip = SEQ_RESTORE_RATE_FACTOR * per_day
+    left = SEQ_TX_LIMIT - seq
+    return {
+        "numbers_per_day": round(per_day),
+        "minimum_covers_days": None
+        if per_skip <= 0
+        else round(SEQ_SKIP_AHEAD / per_skip, 1),
+        "restore_covers_days": 0.0
+        if left < SEQ_SKIP_AHEAD
+        else None
+        if per_skip <= 0
+        else round(left / per_skip, 1),
+    }
+
+
+class ClockBehind(ValueError):
+    """A restored record says it was written later than the clock says it is now: the clock is wrong (not set yet)."""
+
+
+def _restore_skip(
+    records: Sequence[Any], now: float
+) -> tuple[int, float | None, float]:
+    """(numbers to skip, the backup's age in seconds, numbers per day) for a restored address with `records` (both copies).
+
+    The age runs from the earliest time the records give (their write, the backup's start): every number sent
+    since then may be in use. The skip covers SEQ_RESTORE_RATE_FACTOR times what the highest rate of the copies
+    sends in that time, at least SEQ_SKIP_AHEAD. Records no write time is known of (an older version wrote them)
+    continue SEQ_SKIP_UNKNOWN, age None. `ClockBehind` when the earliest time lies more than SEQ_CLOCK_TOLERANCE
+    ahead of `now`: no age can be measured with that clock.
+    """
+    usable = [record for record in records if isinstance(record, Mapping)]
+    times = [
+        time_
+        for record in usable
+        for name in ("written_at", "backup_at")
+        if (time_ := _stored_time(record, name)) is not None
+    ]
+    rate = max(
+        (SendRate.from_stored(record.get("send_rate")).per_day() for record in usable),
+        default=float(SEQ_RATE_UNMEASURED),
+    )
+    if not times:
+        return SEQ_SKIP_UNKNOWN, None, rate
+    since = min(times)
+    if since - now > SEQ_CLOCK_TOLERANCE:
+        raise ClockBehind(f"written at {since:.0f}, the clock says {now:.0f}")
+    age = max(now - since, 0.0)
+    skip = math.ceil(SEQ_RESTORE_RATE_FACTOR * rate * age / SEQ_RATE_WINDOW)
+    return max(SEQ_SKIP_AHEAD, skip), age, rate
+
+
 async def async_rewind_seq_floor(
     hass: HomeAssistant, mesh_uuid: str, key: str, iv_index: int, seq: int, guard: int
 ) -> bool:
@@ -520,6 +718,7 @@ async def async_skip_seq_store_ahead(
 
 async def _async_skip_restored_record(
     hass: HomeAssistant,
+    entry: ConfigEntry,
     mesh_uuid: str,
     key: str,
     data: dict[str, Any] | None,
@@ -533,16 +732,21 @@ async def _async_skip_restored_record(
     taken is in use: the start resumed below them, and an IV Update since then restarted the counter at 0 under
     the index they went out with. Every record written while a backup is being taken carries its mark (`in_backup`,
     `backup.async_pre_backup`); one that carries a mark this process did not set (a reload during the backup is no
-    restore) is rewritten as the `seq_store_lost` repair does: SEQ_SKIP_AHEAD past the further copy (never past
-    `SEQ_TX_LIMIT`), not `clean`, `seq_guard` pending the first beacon, the rest kept. A concrete guard the record,
+    restore) is rewritten as the `seq_store_lost` repair does: past the further copy by what the address may have
+    sent since the record was written (`_restore_skip`: twice its send rate over the backup's age, at least
+    SEQ_SKIP_AHEAD — review-5 S5-1: a fixed 2^20 was outrun within months by the hub's own polls), not `clean`,
+    `seq_guard` pending the first beacon, the rest kept. A concrete guard the record,
     its copy or the floor already holds (an `iv_index_mismatch` rewind: numbers went out under every index up to
     it) is kept instead, with the index stored as not known, so the first beacon still raises it to one past its
     own index (`LocalState.apply_beacon`) rather than leaving it below the indexes used since. The floor first, then both
     copies, all before the `HAState` is built. A Home Assistant that stopped during a backup leaves the mark too:
     its next start skips ahead once, for nothing.
 
-    Not ready, with nothing else written, when the floor's write does not land: a later loss of both copies would
-    not know these numbers.
+    A skip that would pass `SEQ_TX_LIMIT` is not capped quietly: the counter goes to the limit, so nothing is sent
+    under this IV index any more, and the `restore_too_old` repair says so — an IV Update, or an address never
+    used, is the way on (unverified on air). Not ready, with nothing written, while the clock is behind the record
+    (`ClockBehind`: a host without a clock of its own, before its time is set), and with nothing else written when
+    the floor's write does not land: a later loss of both copies would not know these numbers.
     """
     record = _usable_record(data, key)
     if record is None:
@@ -551,28 +755,44 @@ async def _async_skip_restored_record(
     if mark is None or mark == hass.data.get(SEQ_BACKUP_TOKEN):
         return data
     other = _usable_record(backup_data, key)
+    try:
+        skip, age, per_day = _restore_skip([record, other], wall_now())
+    except ClockBehind as err:
+        _LOGGER.error(
+            "The sequence-number record of address %s was restored from a backup, but the clock is behind the "
+            "time it was written (%s): waiting for the clock to be set",
+            key,
+            err,
+        )
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN, translation_key="seq_clock_behind"
+        ) from err
     if other is not None and _tx_rank(other) > _tx_rank(record):
         record = other
     tx, seq = _tx_rank(record)
-    seq = min(seq + SEQ_SKIP_AHEAD, SEQ_TX_LIMIT)
+    refused = seq + skip > SEQ_TX_LIMIT
+    seq = min(seq + skip, SEQ_TX_LIMIT)
     floors = _addresses_of(floor_data) or {}
     guard = _carried_seq_guard([record, other, floors.get(key)])
     _LOGGER.warning(
-        "The sequence-number record of address %s was restored from a backup, or Home Assistant stopped during "
+        "The sequence-number record of address %s was restored from a backup (%s), or Home Assistant stopped during "
         "one: its numbers continue from %06X, past any sent since",
         key,
+        "written at an unknown time"
+        if age is None
+        else f"{age / SEQ_RATE_WINDOW:.1f} days old",
         seq,
     )
     floor_store = seq_floor_store_for_uuid(hass, mesh_uuid)
     known = _furthest([floors.get(key)])
-    entry: dict[str, Any] = (
+    entry_: dict[str, Any] = (
         {"iv_index": tx, "seq": seq}
         if known is None or (tx, seq) > known
         else dict(floors[key])
     )
     if guard != SEQ_GUARD_FIRST_BEACON:
-        entry["seq_guard"] = guard
-    floor = {"addresses": {**floors, key: entry}}
+        entry_["seq_guard"] = guard
+    floor = {"addresses": {**floors, key: entry_}}
     await floor_store.async_save(floor)
     if floor_store.written is not floor:
         _LOGGER.error(
@@ -583,7 +803,9 @@ async def _async_skip_restored_record(
         raise ConfigEntryNotReady(
             translation_domain=DOMAIN, translation_key="seq_floor_not_written"
         )
-    restored = {name: value for name, value in record.items() if name != "in_backup"}
+    restored = {
+        name: value for name, value in record.items() if name not in _MARK_FIELDS
+    }
     data = _store_with(
         data,
         {
@@ -599,7 +821,38 @@ async def _async_skip_restored_record(
     )
     await seq_store_for_uuid(hass, mesh_uuid).async_save(data)
     await seq_backup_store_for_uuid(hass, mesh_uuid).async_save(data)
+    if refused:
+        _report_restore_too_old(hass, entry, key, age, per_day)
     return data
+
+
+def _report_restore_too_old(
+    hass: HomeAssistant, entry: ConfigEntry, key: str, age: float | None, per_day: float
+) -> None:
+    """Raise `restore_too_old`: the restored address may have sent up to the end of its sequence space; it sends nothing.
+
+    Persistent (it says why Home Assistant is mute after the restart that skipped); `Issues.check_sequence_space`
+    deletes it once the counter is below `SEQ_TX_LIMIT` again (an IV Update moved it on, or another address).
+    """
+    _LOGGER.error(
+        "Address %s may have sent to the end of its sequence numbers since the restored backup was taken (%s, about "
+        "%.0f numbers a day): it sends nothing under this IV index — start an IV Update, or give Home Assistant an "
+        "address it never used",
+        key,
+        "of unknown age" if age is None else f"{age / SEQ_RATE_WINDOW:.1f} days old",
+        per_day,
+    )
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id(entry, ISSUE_RESTORE_TOO_OLD),
+        is_fixable=False,
+        is_persistent=True,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key=ISSUE_RESTORE_TOO_OLD,
+        learn_more_url=learn_more_url(ISSUE_RESTORE_TOO_OLD),
+        translation_placeholders={"title": entry.title, "unicast": key},
+    )
 
 
 async def async_apply_followed_key_refresh(
@@ -843,6 +1096,7 @@ class HAState(LocalState):
         # a backup being taken right now (`backup.async_pre_backup`): its mark goes into every record this one
         # writes too, or a reload during the backup would leave the archive a record without it
         self.backup_token: str | None = hass.data.get(SEQ_BACKUP_TOKEN)
+        self.backup_at: float | None = hass.data.get(SEQ_BACKUP_AT)
         self._addresses: dict[str, dict[str, Any]] = {
             src: _without_mark(record, self.backup_token)
             for src, record in ((data or {}).get("addresses") or {}).items()
@@ -874,6 +1128,11 @@ class HAState(LocalState):
             else {**record, "src": src, "key_refresh": _stored_key_refresh(data, src)}
         )
         margin = 0 if record is not None and record.get("clean") else SEQ_RESTART_MARGIN
+        # what a restore of this record skips (`_restore_skip`), measured on from where the record left it
+        self.send_rate = SendRate.from_stored(
+            record.get("send_rate") if isinstance(record, dict) else None
+        )
+        self.send_rate.tick(wall_now())
         super().__init__(
             None, default_src, restart_margin=margin, configured_src_wins=True
         )
@@ -1083,7 +1342,9 @@ class HAState(LocalState):
         self._stalled_at = None
         if self._stalled_since is not None or self._stall_issue_open:
             self._end_stall()
-        return super().reserve_seq(count)
+        first = super().reserve_seq(count)
+        self.send_rate.note_sent(count)
+        return first
 
     def _held_back(self, count: int) -> bool:
         """Whether `count` more numbers lie beyond what a restart could continue from (`_limit`)."""
@@ -1258,18 +1519,31 @@ class HAState(LocalState):
         `force_dirty` is for the backup copy: it must never claim a clean close, since it is always somewhat
         behind the primary and a restart from it must add the margin regardless of how this hub actually ended.
 
-        While a backup is being taken (`backup_token`) every record carries its mark, the other addresses' too: an
-        address switched to after the backup and back again before a restore comes back just as stale as ours. A
-        record that already carries an earlier backup's mark keeps it (it skips ahead either way when next used).
+        Our record carries the time of the write (`written_at`) and the send rate (`send_rate`, its clock ticked
+        here): what a restore of it skips (`_restore_skip`).
+
+        While a backup is being taken (`backup_token`) every record carries its mark and the backup's start
+        (`backup_at`), the other addresses' too: an address switched to after the backup and back again before a
+        restore comes back just as stale as ours. A record that already carries an earlier backup's mark keeps it
+        (it skips ahead either way when next used).
         """
+        now = wall_now()
+        self.send_rate.tick(now)
         record = {key: value for key, value in self.to_stored().items() if key != "src"}
         record["clean"] = False if force_dirty else self._closed
         if self.address_shared is not None:
             record["address_shared"] = list(self.address_shared)
+        record["written_at"] = now
+        record["send_rate"] = self.send_rate.to_stored()
         addresses = {**self._addresses, f"{self.src:04X}": record}
         if (token := self.backup_token) is not None:
+            mark: dict[str, Any] = {"in_backup": token}
+            if self.backup_at is not None:
+                mark["backup_at"] = self.backup_at
             addresses = {
-                src: {"in_backup": token, **other} if isinstance(other, dict) else other
+                src: other
+                if not isinstance(other, dict) or "in_backup" in other
+                else {**mark, **other}
                 for src, other in addresses.items()
             }
         # the mesh's key refresh, whatever it is (None too: it ends a stale one another address's record still has)
@@ -1308,6 +1582,17 @@ class HAState(LocalState):
                 "the sequence-number store does not hold the new IV state: "
                 + (self._store.write_error or "not written")
             )
+
+    def send_rates(self) -> dict[str, dict[str, Any]]:
+        """Per address of the store, its send rate as the diagnostics show it (`restore_coverage`); ours live."""
+        rates: dict[str, dict[str, Any]] = {}
+        for src, record in self._addresses.items():
+            usable = _usable_record({"addresses": {src: record}}, src)
+            if usable is not None and src != f"{self.src:04X}":
+                rate = SendRate.from_stored(usable.get("send_rate"))
+                rates[src] = restore_coverage(rate.per_day(), int(usable["seq"]))
+        rates[f"{self.src:04X}"] = restore_coverage(self.send_rate.per_day(), self.seq)
+        return rates
 
     def carries_backup_token(self, token: str) -> bool:
         """Whether what both copies durably hold for our address carries the backup's mark `token`."""
