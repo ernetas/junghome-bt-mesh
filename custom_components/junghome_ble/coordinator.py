@@ -1574,22 +1574,29 @@ class JungHomeHub:
     def _on_onoff_status(self, m: AccessMessage, p: bytes) -> None:
         """Store a Generic OnOff Status `[present u8]` or `[present u8][target u8][remaining u8]`: present is the state.
 
-        A load that is on, heading off with a known remaining time, also sets `off_at` (the *Switches off at*
-        sensor); any other Status clears it. A JUNG load with a run-on time (`0x1007`) does not report the time left
-        this way: on air a switch insert answered with the short form during its run-on time and switched off by
-        itself. One switched off with a transition does (`on, target off, remaining`).
+        It also keeps `off_at`, the *Switches off at* sensor. A load that is on, heading off with a known remaining
+        time (switched off with a transition: `on, target off, remaining`), is off then. A JUNG load running out its
+        run-on time (`0x1007`) does not report the time left (sweep C6.4: the short form, then off by itself), so a
+        load with a run-on time that is seen switching on — a Status on after one off, or one it published (a key,
+        the app, an automation switched it) — is off that long after it (`ElementState.run_on`); a later on restarts
+        it, and an answer to Home Assistant's own Get of a load already on leaves it as it was. Off clears it, and so
+        does an on without a run-on time (unknown, or 0: the load stays on).
+        Unverified on air: that the run-on time runs from the Status, and that a load already on restarts it.
         """
         if not p:
             return
         st = self.element_state(m.src)
+        was_on = st.on
         st.on = bool(p[0])
         st.target_on = bool(p[1]) if len(p) >= 3 else st.on
         remaining = M.remaining_time(M.GEN_ONOFF_STATUS, p)
-        st.off_at = (
-            dt_util.utcnow() + timedelta(seconds=remaining)
-            if st.on and not st.target_on and remaining
-            else None
-        )
+        run_on = st.run_on
+        if st.on and not st.target_on and remaining:
+            st.off_at = dt_util.utcnow() + timedelta(seconds=remaining)
+        elif not st.on or not run_on:
+            st.off_at = None
+        elif was_on is False or m.dst != self.proxy.state.src:
+            st.off_at = dt_util.utcnow() + timedelta(seconds=run_on)
         self.notify_update(m.src)
 
     @register_status_handler(M.LIGHT_LIGHTNESS_STATUS)

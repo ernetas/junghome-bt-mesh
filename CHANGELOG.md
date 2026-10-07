@@ -224,6 +224,12 @@
   client models, whose subscription to their load's element group is a note rather than a finding, held `1009` — the
   Generic Power Level *Server* — and lacked `1008`, the Generic Power OnOff Client. A Power OnOff Client hearing its
   load is now the note, and a stray subscription on the Power Level Server a counted finding.
+- ***Switches off at* shows when a run-on time ends** (review-5 F5-9). The sensor was set only from an OnOff Status
+  with a remaining time, which a JUNG load sends only while fading off — never through its run-on time (sweep C6.4) —
+  so it stayed `unknown`. Now a load whose *Run-on time* was read non-zero and that Home Assistant sees switching on
+  (a Status on after one off, or one the load published because a key, the app or an automation switched it) is off
+  that long after it; every such on starts it again, off clears it. A fade to off still shows its own remaining
+  time. Unverified on air.
 
 ### Internal
 

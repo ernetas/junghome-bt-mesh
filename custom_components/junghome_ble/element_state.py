@@ -16,6 +16,9 @@ from .jhmesh.messages import STATE_STEP
 from .jhmesh.properties import PROPERTIES, EnforcedOutput
 
 PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`)
+PROPERTY_RUN_ON = (
+    0x1007  # TimedOnDuration: a load's run-on time (`ElementState.run_on`)
+)
 
 
 @dataclass
@@ -33,8 +36,8 @@ class ElementState:
     target_on: bool | None = None
     target_lightness: int | None = None
     target_kelvin: int | None = None
-    # when the element will be off by its last Generic OnOff Status: on, heading off, with a known remaining time
-    # (a run-on time running out, or a fade to off); None otherwise (`_on_onoff_status`)
+    # when the element will be off: by its last Generic OnOff Status (on, heading off, with a known remaining time:
+    # a fade to off), else by its run-on time from when it was seen switching on; None otherwise (`_on_onoff_status`)
     off_at: datetime | None = None
     # a CTL light's own temperature range (Light CTL Temperature Range Status); None until read
     kelvin_min: int | None = None
@@ -92,6 +95,20 @@ class ElementState:
             if value.locked and value.time_s
             else None
         )
+
+    @property
+    def run_on(self) -> float | None:
+        """The load's run-on time in seconds (`0x1007` as last read, its *Run-on time* entity); None unknown or malformed.
+
+        0 is a load that stays on until switched off.
+        """
+        raw = self.properties.get(PROPERTY_RUN_ON)
+        if raw is None:
+            return None
+        try:
+            return float(PROPERTIES[PROPERTY_RUN_ON].codec.decode(raw))
+        except ValueError:
+            return None
 
     def lock_reported_since(self, moment: float) -> bool:
         """Whether the load reported its lock at or after `moment` (a `time.monotonic()`).

@@ -499,8 +499,10 @@ the app's palette (and LED 2 following LED 1 while synchronised), and a second e
 would fight it; such a colour shows as `unknown` there. The runtime statistics sit on the Manufacturer server in
 the catalogue, where every node lists them; and every light and socket has a *Switches off at* sensor (disabled by
 default, read-only) from the remaining time of an OnOff Status heading off. A run-on time
-is not reported that way (above), so the sensor stays unknown through one; a transition to off is (a switch insert
-switched off with a 3 s transition answers *on, target off, remaining 2.8 s*, §11). The sensor is kept for now.
+is not reported that way (above); a transition to off is (a switch insert switched off with a 3 s transition answers
+*on, target off, remaining 2.8 s*, §11). So the sensor counts the run-on time itself (review-5 F5-9): a load whose
+`0x1007` was read non-zero and that is seen switching on is off that long after it, started again by every on it
+publishes (unverified on air).
 
 The probe, in two halves of `on-air-sweep.md`: **A7** reads every id above (twice for the statistics, minutes apart)
 and the OnOff Status of a light whose run-on time is set, right after its key switched it on — read-only, any time;

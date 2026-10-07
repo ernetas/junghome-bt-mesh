@@ -855,15 +855,17 @@ Each item writes a device setting and restores the value noted in [0](#note-what
      clock), compare the level; restore. `prop set <tw el0> presentation_mode_time hex:<as read, first two bytes
      changed>`, `prop get` both presentation ids; restore.
   4. Run-on remaining time: `prop set <light el> timed_on_duration 20`, `set <light el> on`, then `get <light el>`
-     within the 20 s: is there `target=OFF remaining=…`? Watch *Switches off at*; restore `timed_on_duration` to the
-     value as read.
+     within the 20 s: is there `target=OFF remaining=…`? Watch *Switches off at* (enabled, after a reload so that
+     Home Assistant read the 20 s): switched on by its key, it shows about 20 s ahead, a second press within the 20 s
+     moves it on, and the light goes off at the time shown; restore `timed_on_duration` to the value as read.
   5. LED: `prop set <node> led1_mode_on hex:<r><g><b><mode as read>` with a colour outside the app's palette (each
      channel 0..100, e.g. `32143c`): does the LED show it, does the read-back keep it? Restore `hex:<as read>`.
 - **Capture:** the CLI output and `listen`; per step, what the load or LED did.
 - **Pass:** each value read back as written and restored at the end. Write every outcome into
   `docs/hidden-features.md` §13 and `docs/android/properties.md` §1.10; then, per id that is settled: a codec in
   `jhmesh/properties.py` (number for a percentage, switch for an enable), its id in `FIRMWARE_ENTITIES`, *Switches
-  off at* kept or removed by step 4, an RGB light per LED state only if step 5 worked.
+  off at* checked by step 4 (it counts the run-on time itself since review-5 F5-9), an RGB light per LED state only
+  if step 5 worked.
 - **Markers:** `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_onoff_status`,
   `custom_components/junghome_ble/sensor.py::JungHomeSwitchOffAt`.
 

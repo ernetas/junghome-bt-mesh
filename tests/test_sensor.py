@@ -365,6 +365,56 @@ async def test_switch_off_at_follows_the_remaining_time_of_an_onoff_status(
         assert hass.states.get(eid).state == STATE_UNKNOWN, args
 
 
+async def test_switch_off_at_follows_the_run_on_time(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Review-5 F5-9: a load with a run-on time (`0x1007`, as read) seen switching on is off that long after it,
+    as the load does not report the time left (sweep C6.4). An on it published restarts it, an answer to Home
+    Assistant's Get of a load already on leaves it, off or no run-on time clears it."""
+    uid = f"{UID_LIGHT_SWITCH}-off_at"
+    er.async_get(hass).async_get_or_create("sensor", DOMAIN, uid, disabled_by=None)
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    hub = mock_config_entry.runtime_data
+    eid = entity_id(hass, "sensor", uid)
+    now = dt_util.utcnow().replace(microsecond=0)
+    freezer.move_to(now)
+    st = hub.element_state(LIGHT_SWITCH)
+    st.properties[0x1007] = (20_000).to_bytes(4, "little")  # 20 s, in ms
+
+    async def status(on: bool, dst: int = OUR_ADDRESS) -> str:
+        fake_link.inject(LIGHT_SWITCH, dst, onoff_status(on))
+        await hass.async_block_till_done()
+        return hass.states.get(eid).state
+
+    def at(seconds: float) -> str:
+        return (now + timedelta(seconds=seconds)).isoformat()
+
+    st.on = None  # nothing known yet: an answer to Home Assistant's Get says nothing of when it switched on
+    assert await status(True) == STATE_UNKNOWN
+    assert await status(False) == STATE_UNKNOWN
+    assert await status(True) == at(20)  # switched on, from off
+    freezer.tick(timedelta(seconds=5))
+    assert await status(True) == at(20)  # read back while on: still counting
+    assert await status(True, 0xC061) == at(
+        25
+    )  # published: switched on again, restarted
+    assert await status(False, 0xC061) == STATE_UNKNOWN
+
+    st.properties[0x1007] = bytes(4)  # 0: the load stays on
+    assert await status(True, 0xC061) == STATE_UNKNOWN
+    st.properties[0x1007] = b"\x01"  # not a run-on time
+    assert st.run_on is None
+    assert await status(True, 0xC061) == STATE_UNKNOWN
+    del st.properties[0x1007]  # never read
+    assert await status(True, 0xC061) == STATE_UNKNOWN
+
+
 async def test_wear_counters_are_read_from_the_load(
     hass: HomeAssistant,
     entity_registry_enabled_by_default: None,
