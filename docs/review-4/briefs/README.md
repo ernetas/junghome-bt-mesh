@@ -43,8 +43,10 @@ Every brief links here; follow all of it.
   6. `$PY -m pytest tests/test_parity.py -q` when a parity ledger row changed (and `tools/parity.py check`).
 - **Docstrings.** Match the surrounding code's docstring density and its "why, not what" style. Moved code keeps its
   text.
-- **User strings.** Every new user-visible string goes into both `strings.json` and `translations/en.json`;
-  `tests/test_translations.py` stays green.
+- **User strings.** Every new user-visible string goes into both `strings.json` and `translations/en.json`, and,
+  translated, into every other `translations/*.json`; `tests/test_translations.py` stays green. A changed English text
+  is re-translated in every language in the same change, and `tools/translation_sources.py` refreshes the record
+  (`tests/translation_sources.json`) the tests check it against.
 - **On air.** Anything not seen working on this installation is marked "unverified on air" in its docstring, its
   description string and `docs/ha-integration.md`. Never contact a real device, gateway or host from a test; a probe
   on the real mesh is run by the maintainer, or only when the maintainer allows it. Every new marker is cited in an
